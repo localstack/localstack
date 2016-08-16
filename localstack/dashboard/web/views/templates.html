@@ -1,0 +1,47 @@
+<div>
+
+	<div class="plumb kinesis layoutnode selectnode" id="kinesis">
+		<div class="title">Kinesis</div>
+		<div>{{name}}</div>
+		<a class="show_hide">show shards</a>
+		<div class="shards children invisible">
+		</div>
+	</div>
+
+	<div class="plumb shard selectnode" id="kinesis_shard">
+		<div class="title">Shard '{{name}}'</div>
+	</div>
+
+	<div class="plumb kinesis layoutnode selectnode" id="firehose">
+		<div class="title">Kinesis Firehose</div>
+		<div>{{name}}</div>
+		<div class="shards children">
+		</div>
+	</div>
+
+	<div class="plumb lambda layoutnode selectnode" id="lambda">
+		<div class="title">Lambda</div>
+		<div>{{name}}</div>
+	</div>
+
+	<div class="plumb s3 layoutnode selectnode" id="s3">
+		<div class="title">S3 Bucket</div>
+		<div>{{name}}</div>
+	</div>
+
+	<div class="plumb es layoutnode selectnode" id="es">
+		<div class="title">Elasticsearch</div>
+		<div>{{name}}</div>
+	</div>
+
+	<div class="plumb micros layoutnode selectnode" id="micros">
+		<div class="title">Micros</div>
+		<div>{{name}}</div>
+	</div>
+
+	<div class="plumb dynamodb layoutnode selectnode" id="dynamodb">
+		<div class="title">DynamoDB</div>
+		<div>{{name}}</div>
+	</div>
+
+</div>

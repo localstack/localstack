@@ -1,0 +1,9 @@
+*.pyc
+/infra/
+/node_modules/
+/nosetests.xml
+/.venv/
+.settings/
+.project
+.classpath
+node_modules/

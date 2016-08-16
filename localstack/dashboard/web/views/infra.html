@@ -1,0 +1,49 @@
+<section class="fullsize">
+
+  <div class="aui-page-panel fullsize" id="infra-panel"  r-directions="['down','bottom']">
+    <div class="aui-page-panel-inner fullsize" style="margin: 0px;">
+      <section class="aui-page-panel-content fullsize" style="margin: 0px;">
+
+        <div ui-layout>
+          <ui-layout options="{ flow : 'column' }" class="stretch">
+
+            <sidebar ui-layout-container size="15%" class="stretch">
+              <div>
+                <form class="aui">
+                  <h2>Settings</h2>
+                  <table>
+                    <tr><td>Hide disconnected nodes</td><td><input type="checkbox" ng-model="settings.hideDisconnected" /></td></tr>
+                    <tr><td>Name filter</td><td><input type="text" ng-model="settings.nameFilter" class="text"/></td></tr>
+                    <tr><td></td><td><button class="aui-button aui-button-primary" ng-click="actions.loadGraph()">Refresh Graph</button></td></tr>
+                  </table>
+                </form>
+              </div>
+            </sidebar>
+
+            <div ui-layout-container="central">
+              <div ng-include="'views/infra.graph.html'" class="fullsize"></div>
+            </div>
+
+            <sidebar ui-layout-container size="25%" min-size="160px" class="stretch">
+              <div ng-include="'views/infra.details.html'"></div>
+            </sidebar>
+
+          </ui-layout>
+        </div>
+
+        <div class="clearfix"/>
+      </section>
+    </div>
+  </div>
+
+  <div style="position: absolute; top: 40px">
+    <header class="aui-page-header">
+      <div class="aui-page-header-inner">
+        <div class="aui-page-header-main">
+          <h1>Infrastructure Deployment Overview</h1>
+        </div>
+      </div>
+    </header>
+  </div>
+
+</section>

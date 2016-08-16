@@ -1,0 +1,10 @@
+{
+  "name": "localstack",
+  "author": "Atlassian A&I Team <greenzone-team@atlassian.com>",
+  "description": "Local Cloud Stack and Utilities",
+  "version": "0.0.1",
+  "dependencies": {
+    "kinesalite": "1.11.5",
+    "dynalite": "1.0.2"
+  }
+}

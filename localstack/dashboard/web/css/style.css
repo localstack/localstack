@@ -1,0 +1,182 @@
+.panel-centered {
+	width: 100%;
+	text-align: center;
+}
+
+table.aui-table tr.summary td {
+	font-weight: bold;
+}
+
+table.aui-table tr.summary {
+	border-top: 3px solid #cccccc;
+}
+
+h1 {
+    font-size: 23px;
+    padding: 8px;
+}
+
+.fullsize {
+    width: 100%;
+    height: 100%;
+}
+
+sidebar div {
+    padding: 8px;
+}
+
+#infra-panel {
+    height: auto;
+    top: 0px;
+    bottom: 0px;
+    position: absolute;
+    margin-top: 90px;
+}
+
+/* elements */
+
+/*.aws2 text {
+    font-weight: bold;
+}
+.aws2 .body {
+    fill: #ffffff;
+    stroke: #31d0c6;
+    stroke-width: 5px;
+}
+.aws2 .label {
+    font-size: 16px;
+}
+.aws2 .port-body {
+    stroke: #ffffff;
+    stroke-width: 3px;
+    r: 5;
+    fill: #7c68fc;
+}
+.aws2 .port-body:hover {
+    opacity: 1;
+    fill: #ff7e5d;
+}
+.aws2 .port-label {
+    fill: #7c68fc;
+    display: none;
+}
+.aws2.Atomic .body {
+    stroke: #feb663;
+}
+.aws2.Atomic .label {
+    fill: #feb663;
+}
+.link .connection {
+    stroke: #4B4F6A;
+    stroke-width: 4px;
+}
+.link .marker-arrowhead, .link .marker-vertex {
+    fill: #31D0C6;
+}
+.link .marker-arrowhead:hover {
+    fill: #F39C12;    
+}
+.link-tools .tool-remove circle {
+    fill: #fe854f;
+}
+.aws2.highlighted-parent .body {
+    stroke: #fe854f;
+    transition: stroke 1s;
+}
+.aws2.highlighted-parent .label {
+    fill: #fe854f;
+    transition: fill 1s;
+    text-decoration: underline;
+}
+.link-tools {
+	display: none;
+}*/
+
+.wordwrap {
+   word-wrap: break-word;
+}
+
+td.name {
+    font-weight: bold;
+}
+
+svg {
+    z-index: 1000;
+}
+.invisible {
+    display: none;
+}
+.plumb {
+    position: absolute;
+}
+
+a {
+    cursor: pointer;
+}
+
+.code .panel {
+    border: 1px solid #bbbbbf;
+    border-radius: 5px;
+    height: 90%;
+    overflow: auto;
+    float: left;
+    display: block;
+    padding: 10px;
+}
+.code .panel-left {
+    width: 27%;
+    float: left;
+}
+.code .panel-left .selected {
+    font-weight: bold;
+}
+.code .panel-right {
+    width: 67%;
+    float: right;
+}
+.aui-dialog2-header {
+    height: 45px;
+}
+#code-dialog {
+    width: 70%;
+}
+#code-dialog .code {
+    height: 100%;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-right: 10px;
+    padding-left: 10px;
+}
+#code-dialog .aui-dialog2-footer div {
+    padding: 0px;
+}
+#code-dialog .aui-dialog2-content {
+    padding: 0px;
+    height: 100%;
+}
+.plumb * {
+   word-wrap: break-word;
+}
+
+.layoutnode {
+    border: 2px solid #bbbbbf;
+    border-radius: 5px;
+    padding: 6px;
+    max-width: 100px;
+    background: #fafbfe;
+}
+.layoutnode.selected, .shard.selected {
+    border: 2px solid #888888;
+    background: #dddddd;
+    z-index: 1000;
+}
+.shard {
+    position: static;
+    display: block;
+    border: 1px solid #aaaaaa;
+    border-radius: 5px;
+    padding: 3px;
+}
+.plumb .title {
+    font-weight: bold;
+}

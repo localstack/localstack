@@ -1,0 +1,94 @@
+<section ng-controller="infraDetailsCtrl">
+
+  <div ng-hide="state.loading || !selection.obj">
+    <h3>Selection</h3>
+    <table>
+      <tr><td class="name">Selected Element:</td><td>{{selection.obj.attrs.name}}</td></tr>
+      <tr><td class="name">Element Type:</td><td>{{selection.obj.attrs.type}}</td></tr>
+      <tr><td class="name">Amazon ARN:</td><td>{{selection.obj.attrs.arn || 'n/a'}}</td></tr>
+    </table>
+    <h3>Element Properties</h3>
+    <div ng-show="selection.obj.attrs.type == 's3'">
+      <table>
+        <tr><td class="name">Size:</td><td>{{selection.obj.attrs.instances || 'n/a'}} KB</td></tr>
+        <tr><td class="name">Number of Objects:</td><td>{{selection.obj.attrs.instances || 'n/a'}}</td></tr>
+      </table>
+    </div>
+    <div ng-show="selection.obj.attrs.type == 'lambda'">
+      <table>
+        <tr><td class="name">Number of Instances:</td><td>{{selection.obj.attrs.instances || 'n/a'}}</td></tr>
+      </table>
+      <button class="aui-button aui-button-primary" ng-click="showLambdaCode()" ng-disabled="state.lambda.loading">
+        {{state.lambda.loading ? 'Loading' : 'Show Code'}}</button>
+    </div>
+    <div ng-show="selection.obj.attrs.type == 'kinesis'">
+      
+    </div>
+    <div ng-show="selection.obj.attrs.type == 'es'">
+      <table>
+        <tr><td class="name">Indexes:</td><td>{{selection.obj.attrs.indexes || 0}}</td></tr>
+      </table>
+    </div>
+    <div ng-show="selection.obj.attrs.type == 'kinesis_shard'">
+      <table>
+        <tr><td class="name">Shard ID:</td><td>{{selection.obj.attrs.arn || 0}}</td></tr>
+      </table>
+      <h3>Recent Events</h3>
+      <table class="aui aui-table aui-table-sortable" id="hosts-table" ts-wrapper>
+        <thead>
+          <tr>
+            <th ts-criteria="ApproximateArrivalTimestamp" id="event_time">Timestamp</th>
+            <th ts-criteria="PartitionKey" id="event_key">Partition Key</th>
+            <th ts-criteria="Data" id="event_data">Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr ng-repeat="value in state.kinesis.data[selection.obj.attrs.dataKey] track by value.SequenceNumber" ts-repeat>
+            <td headers="event_time">{{format_datetime(value.ApproximateArrivalTimestamp * 1000)}}</td>
+            <td headers="event_key">{{value.PartitionKey}}</td>
+            <td headers="event_data">{{trim(value.Data, 100)}}</td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="aui-button aui-button-primary" ng-click="getKinesisEvents()" ng-disabled="state.kinesis.loading">
+        {{state.kinesis.loading ? 'Loading' : 'Load Data'}}</button>
+    </div>
+    <div ng-show="selection.obj.attrs.type == 'micros'">
+      
+    </div>
+    <h3>Costs</h3>
+    t.b.a.
+  </div>
+</section>
+
+<section role="dialog" id="code-dialog" class="aui-layer aui-dialog2 aui-dialog2-medium" ng-show="state.lambda.dialog.visible" data-aui-modal="true" style="z-index: 3000;">
+  <header class="aui-dialog2-header">
+    <h2 class="aui-dialog2-header-main">Lambda Function Source Code</h2>
+  </header>
+  <div class="aui-dialog2-content">
+    <p>{{state.lambda.dialog.data.text}}</p>
+    <div class="code">
+      <div class="panel panel-left">
+        <b>Files</b>
+        <ul>
+          <li ng-repeat="(file,value) in state.lambda.data[selection.obj.attrs.arn]">
+            <a ng-click="state.lambda.dialog.selectedFile = file"
+                ng-class="{'selected': state.lambda.dialog.selectedFile == file}">{{file}}</a>
+          </li>
+        </ul>
+      </div>
+      <div class="panel panel-right">
+        <b>Code</b>
+        <pre>
+          {{state.lambda.data[selection.obj.attrs.arn][state.lambda.dialog.selectedFile]}}
+        </pre>
+      </div>
+    </div>
+  </div>
+  <footer class="aui-dialog2-footer">
+    <div class="aui-dialog2-footer-actions">
+      <button id="dialog-submit-button" class="aui-button aui-button-primary" ng-click="state.lambda.dialog.ok()">Close</button>
+    </div>
+  </footer>
+</section>
+<div class="aui-blanket" tabindex="0" ng-show="state.lambda.dialog.visible" aria-hidden="{{!state.lambda.dialog.visible}}" style="z-index: 2980;"></div>

@@ -1,0 +1,90 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="en" ng-app="app" class="no-js fullsize" content="text/html; charset=UTF8">
+<head>
+  <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/img/arrows-circle.png" />
+  <link rel="stylesheet" href="node_modules/@atlassian/aui/dist/aui/css/aui.css" media="all">
+  <link rel="stylesheet" href="node_modules/@atlassian/aui/dist/aui/css/aui-experimental.css" media="all">
+  <link rel="stylesheet" href="node_modules/angular-aui/lib/aui/5.9.5/css/aui-iconfonts.css" media="all">
+  <link rel="stylesheet" href="node_modules/angular-tablesort/tablesort.css" media="all">
+  <link rel="stylesheet" href="node_modules/jsplumb/css/jsPlumbToolkit-defaults.css" media="all">
+  <link rel="stylesheet" href="node_modules/angular-resizable/angular-resizable.min.css" media="all">
+  <link rel="stylesheet" href="node_modules/angular-ui-layout/src/ui-layout.css" media="all">
+  <link rel="stylesheet" href="css/style.css" media="all">
+</head>
+<body class="fullsize">
+
+<div id="page" class="fullsize">
+
+  <!-- Header -->
+  <header id="header" role="banner" style="z-index: 1000; position: absolute; top: 0px; width: 100%;">
+    <nav class="aui-header aui-dropdown2-trigger-group" role="navigation">
+      <div class="aui-header-inner">
+        <div class="aui-header-primary">
+          <h1 id="logo" class="aui-header-logo aui-header-logo-textonly">
+          		<span class="aui-header-logo-device">
+                <img src="img/arrows-circle.png" style="width: 30px; height: 30px; padding: 2px; margin-right: 10px;"/></span>
+          </h1>
+          <ul class="aui-nav">
+            <li><a id="data-link" href="/#/">Infrastructure</a></li>
+            <li><a id="data-link" href="/#/config">Settings</a></li>
+          </ul>
+        </div>
+        <div class="aui-header-secondary">
+          <ul class="aui-nav">
+            <li><span style="display: block; line-height: 1; padding: 13px 10px;">Dashboard</span></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Content -->
+  <section id="content" role="main" ui-view class="fullsize" style="position: absolute; top: 0px; padding-top: 40px; z-index: 1"> </section>
+
+</div>
+
+<script src="node_modules/jquery/dist/jquery.min.js"></script>
+<script src="node_modules/dagre/dist/dagre.js"></script>
+<script src="node_modules/jsplumb/dist/js/jsplumb-2.1.4.js"></script>
+<script src="node_modules/swagger-client/browser/swagger-client.js"></script>
+<script src="node_modules/almond/almond.js"></script>
+<script src="node_modules/angular/angular.js"></script>
+<script src="node_modules/text/text.js"></script>
+<script src="node_modules/angular-ui-router/release/angular-ui-router.js"></script>
+<script src="node_modules/angular-aui/dist/angular-aui.js"></script>
+<script src="node_modules/angular-resource/angular-resource.js"></script>
+<script src="node_modules/angular-sanitize/angular-sanitize.js"></script>
+<script src="node_modules/showdown/compressed/showdown.js"></script>
+<script src="node_modules/angular-tablesort/js/angular-tablesort.js"></script>
+<script src="node_modules/@atlassian/aui/dist/aui/js/aui.js"></script>
+<script src="node_modules/@atlassian/aui/dist/aui/js/aui-experimental.js"></script>
+<script src="node_modules/angular-resizable/angular-resizable.min.js"></script>
+<script src="node_modules/angular-ui-layout/src/ui-layout.js"></script>
+
+<script>
+$.urlParam = function(name){
+  var results = new RegExp('[\?&]' + name + '=([^&#]*)').exec(window.location.href);
+  if (results==null){
+     return null;
+  }
+  else{
+     return results[1] || 0;
+  }
+}
+
+AJS.tablessortable.setTableSortable($(".aui-table-sortable"));
+</script>
+
+<!-- <script src="js/joint.defs.js"></script> -->
+<script src="js/app.js"></script>
+<script src="js/services.js"></script>
+<script src="views/infra.js"></script>
+<script src="views/infra.graph.js"></script>
+<script src="views/infra.details.js"></script>
+<script src="views/config.js"></script>
+
+</body>
+</html>

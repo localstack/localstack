@@ -1,0 +1,9 @@
+<section ng-controller="graphCtrl" class="fullsize">
+
+	<div ng-show="loading" style="padding: 20px;">
+		<img src="img/loading.gif" alt="Loading"/> Retrieving deployment model from AWS.
+		This can take a long time, please be patient and do not reload this page...
+	</div>
+	<div ng-show="status">{{status}}</div>
+ 	<div ng-hide="loading" class="jtk-surface jtk-surface-nopan fullsize" id="graph" style="overflow: auto;"></div>
+</section>

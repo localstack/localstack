@@ -1,0 +1,43 @@
+<section id="content">
+
+<header class="aui-page-header">
+  <div class="aui-page-header-inner">
+  <div class="aui-page-header-main">
+    <h1 style="font-size: 24px" id="heading-title">Configuration Settings</h1>
+  </div>
+  </div>
+</header>
+
+<div class="aui-page-panel">
+  <div class="aui-page-panel-inner">
+    <section class="aui-page-panel-content">
+      <div ng-hide="loading">
+        <form class="aui">
+          <table class="aui aui-table aui-table-sortable" id="hosts-table" ts-wrapper>
+            <thead>
+              <tr>
+                <th ts-criteria="key" id="config_key" ts-default>Key</th>
+                <th ts-criteria="load.cpu" id="config_descr">Description</th>
+                <th ts-criteria="value" id="config_value" style="width: 40%">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat="entry in config track by entry.key" ts-repeat>
+                <td headers="config_key">{{entry.key}}</td>
+                <td headers="config_descr">{{entry.description}}</td>
+                <td headers="config_value"><input class="text long-field" ng-model="entry.value" style="width: 100%"/></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top: 20px">
+            <button class="aui-button aui-button-primary" ng-click="save()">Save</button>
+          </div>
+        </form>
+      </div>
+      <div class="aui panel-centered" ng-show="loading">
+        <img src="img/loading.gif" alt="loading"/> loading data ...
+      </div>
+    </section>
+  </div>
+</div>
+</section>
