@@ -1,10 +1,10 @@
-# Localstack - A fully functional local AWS cloud stack
+# LocalStack - A fully functional local AWS cloud stack
 
-*Localstack* provides an easy-to-use test/mocking framework for developing Cloud applications.
+*LocalStack* provides an easy-to-use test/mocking framework for developing Cloud applications.
 
 Currently, the focus is primarily on supporting the AWS cloud stack.
 
-*Localstack* spins up the following Cloud APIs:
+*LocalStack* spins up the following Cloud APIs:
 
 * **Api Gateway** at http://localhost:4567
 * **Kinesis** at http://localhost:4568
@@ -62,7 +62,7 @@ aws --endpoint-url=http://localhost:4568 kinesis list-streams
 }
 ```
 
-If you want to use *Localstack* in your integration tests, simply fire up the
+If you want to use *LocalStack* in your integration tests, simply fire up the
 infrastructure in your test setup method:
 
 ```
@@ -77,6 +77,7 @@ The projects also comes with a simple Web dashboard that allows to view the
 deployed AWS components and the relationship between them.
 
 ```
+make install-web
 make web
 ```
 
@@ -84,7 +85,7 @@ make web
 
 Copyright (c) 2016 Atlassian and others.
 
-*Localstack* is released under the Apache License, Version 2.0 (see LICENSE.txt).
+*LocalStack* is released under the Apache License, Version 2.0 (see LICENSE.txt).
 
 We build on a number of third-party software tools, with the following licenses:
 

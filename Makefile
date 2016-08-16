@@ -10,12 +10,14 @@ install:           ## Install npm/pip dependencies, compile code
 	(test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv)
 	(test -e $(VENV_DIR) || virtualenv $(VENV_DIR))
 	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
-	(cd localstack/dashboard/web && (test ! -e package.json || npm install))
-	(test -e infra/elasticsearch || { mkdir -p infra; cd infra; curl -o es.zip $(ES_URL); unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; })
-	(test -e infra/amazon-kinesis-client/amazon-kinesis-client.jar || { mkdir -p infra/amazon-kinesis-client; curl -o infra/amazon-kinesis-client/amazon-kinesis-client.jar $(KCL_URL); })
+	(test -e localstack/infra/elasticsearch || { mkdir -p localstack/infra; cd localstack/infra; curl -o es.zip $(ES_URL); unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; })
+	(test -e localstack/infra/amazon-kinesis-client/amazon-kinesis-client.jar || { mkdir -p localstack/infra/amazon-kinesis-client; curl -o localstack/infra/amazon-kinesis-client/amazon-kinesis-client.jar $(KCL_URL); })
+	(cd localstack/ && (test ! -e package.json || npm install))
+	make compile
+	# make install-web
 
 install-web:       ## Install npm dependencies for dashboard Web UI
-	(cd dashboard/web/ && npm install)
+	(cd localstack/dashboard/web && (test ! -e package.json || npm install))
 
 compile:
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()') localstack/utils/kinesis/java/com/atlassian/*.java
@@ -36,10 +38,11 @@ lint:              ## Run code linter to check code style
 	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR) .)
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
-	(cd localstack/dashboard/web/ && rm -rf node_modules/)
-	(cd localstack/mock && rm -rf target/)
+	rm -rf localstack/dashboard/web/node_modules/
+	rm -rf localstack/mock/target/
+	rm -rf localstack/infra/amazon-kinesis-client
+	rm -rf localstack/infra/elasticsearch
+	rm -rf localstack/node_modules/
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
-	rm -rf infra/amazon-kinesis-client infra/elasticsearch
-	rm -rf node_modules/
 
 .PHONY: usage compile clean install web install-web infra test

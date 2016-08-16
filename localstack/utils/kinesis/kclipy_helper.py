@@ -51,7 +51,7 @@ def get_kcl_classpath(properties=None, paths=[]):
     # add path of custom java code
     dir_name = os.path.dirname(os.path.realpath(__file__))
     paths.append(os.path.realpath(os.path.join(dir_name, 'java')))
-    paths.insert(0, os.path.realpath(os.path.join(dir_name, '..', '..', '..',
+    paths.insert(0, os.path.realpath(os.path.join(dir_name, '..', '..',
             'infra', 'amazon-kinesis-client', 'amazon-kinesis-client.jar')))
     return ":".join([p for p in paths if p != ''])
 

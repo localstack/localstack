@@ -17,7 +17,7 @@ from localstack.mock.generic_proxy import GenericProxy
 from localstack.constants import *
 
 this_path = os.path.dirname(os.path.realpath(__file__))
-root_path = os.path.realpath(os.path.join(this_path, '..', '..'))
+root_path = os.path.realpath(os.path.join(this_path, '..'))
 
 # will be set to True if user hits CTRL-C
 KILLED = False

@@ -1,4 +1,5 @@
 *.pyc
+*.class
 /infra/
 /node_modules/
 /nosetests.xml
@@ -6,4 +7,6 @@
 .settings/
 .project
 .classpath
+/.coverage
 node_modules/
+localstack/infra/

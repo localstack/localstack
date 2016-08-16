@@ -19,6 +19,9 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
 
 
+EVENTS_FILE_PATTERN = '/tmp/kclipy.*.fifo'
+
+
 class KinesisProcessor(kcl.RecordProcessorBase):
 
     def __init__(self, log_file=None, processor_func=None, auto_checkpoint=True):
@@ -225,7 +228,7 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     """
     env = aws_stack.get_environment(env)
     if not events_file:
-        events_file = os.path.join('/tmp/', 'kclipy.%s.fifo' % short_uid())
+        events_file = os.path.join(EVENTS_FILE_PATTERN.replace('*', '%s') % short_uid())
         TMP_FILES.append(events_file)
     if not processor_script:
         processor_script = generate_processor_script(events_file, log_file=log_file)
