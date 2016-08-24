@@ -22,7 +22,7 @@ from localstack.constants import ENV_DEV, LAMBDA_TEST_ROLE
 from localstack.mock import infra
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
-from ..tests.lambdas import lambda_integration
+from .lambdas import lambda_integration
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_TABLE_NAME = 'test_stream_table'

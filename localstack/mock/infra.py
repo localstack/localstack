@@ -25,6 +25,10 @@ KILLED = False
 # cache table definitions - used for testing
 TABLE_DEFINITIONS = {}
 
+# constants
+KINESIS_ACTION_PUT_RECORD = 'Kinesis_20131202.PutRecord'
+KINESIS_ACTION_PUT_RECORDS = 'Kinesis_20131202.PutRecords'
+
 
 def do_run(cmd, async):
     if async:

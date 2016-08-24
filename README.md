@@ -20,7 +20,7 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 * `make`
 * `python`
 * `pip` (python package manager)
-* `npm` (node.js package manager, needed for Web UI dependencies)
+* `npm` (node.js package manager)
 * `java`/`javac` (Java runtime environment and compiler)
 
 ## Installation
@@ -32,9 +32,9 @@ make install
 ```
 
 This will install the required pip dependencies in a local Python virtualenv directory 
-`.venv` (your global python packages will remain untouched), as well as the node modules
-for the Web UI in `./dashboard/node_modules/`. Depending in your system, some pip/npm
-modules may require additional native libs installed.
+`.venv` (your global python packages will remain untouched), as well as some node modules
+in `./localstack/node_modules/`. Depending in your system, some pip/npm modules may require
+additional native libs installed.
 
 ## Testing
 

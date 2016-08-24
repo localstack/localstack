@@ -1,0 +1,3 @@
+.venv/
+localstack/node_modules/
+localstack/dashboard/web/node_modules/

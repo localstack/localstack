@@ -9,10 +9,12 @@ usage:             ## Show this help
 install:           ## Install npm/pip dependencies, compile code
 	(test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv)
 	(test -e $(VENV_DIR) || virtualenv $(VENV_DIR))
+	($(VENV_RUN) && pip install --upgrade pip)
 	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
 	(test -e localstack/infra/elasticsearch || { mkdir -p localstack/infra; cd localstack/infra; curl -o es.zip $(ES_URL); unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; })
 	(test -e localstack/infra/amazon-kinesis-client/amazon-kinesis-client.jar || { mkdir -p localstack/infra/amazon-kinesis-client; curl -o localstack/infra/amazon-kinesis-client/amazon-kinesis-client.jar $(KCL_URL); })
-	(cd localstack/ && (test ! -e package.json || npm install))
+	(npm install -g npm || sudo npm install -g npm)
+	(cd localstack/ && (test ! -e package.json || (npm cache clear && npm install)))
 	make compile
 	# make install-web
 

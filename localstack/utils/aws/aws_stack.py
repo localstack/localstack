@@ -1,12 +1,10 @@
 import os
 import boto3
-import airspeed
 import requests
 import json
 import base64
 import logging
 from elasticsearch import Elasticsearch
-from jsonpath_rw import jsonpath, parse
 from localstack.constants import *
 from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
@@ -65,8 +63,9 @@ def create_environment_file(env, fallback_to_environ=True):
     try:
         save_file(ENVIRONMENT_FILE, env)
     except Exception, e:
-        LOGGER.warning('Unable to create file "%s" in CWD "%s" (setting $ENV instead: %s): %s' %
-            (ENVIRONMENT_FILE, os.getcwd(), fallback_to_environ, e))
+        # LOGGER.warning('Unable to create file "%s" in CWD "%s" (setting $ENV instead: %s): %s' %
+        #    (ENVIRONMENT_FILE, os.getcwd(), fallback_to_environ, e))
+        # in Lambda environments on AWS we cannot create files, hence simply set $ENV here
         if fallback_to_environ:
             os.environ['ENV'] = env
 
@@ -138,6 +137,7 @@ class VelocityInput:
         self.value = value
 
     def path(self, path):
+        from jsonpath_rw import parse
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
         jsonpath_expr = parse(path)
         result = [match.value for match in jsonpath_expr.find(value)]
@@ -163,6 +163,7 @@ class VelocityUtil:
 
 
 def render_velocity_template(template, context, as_json=False):
+    import airspeed
     t = airspeed.Template(template)
     variables = {
         'input': VelocityInput(context),
@@ -183,14 +184,20 @@ def dynamodb_stream_arn(table_name):
         (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, table_name, timestamp()))
 
 
-def lambda_function_arn(function_name, account_id=TEST_AWS_ACCOUNT_ID, env=None):
-    env = get_environment(env)
+def lambda_function_arn(function_name, account_id=TEST_AWS_ACCOUNT_ID):
     return "arn:aws:lambda:%s:%s:function:%s" % (DEFAULT_REGION, account_id, function_name)
 
 
-def kinesis_stream_arn(stream_name, account_id=TEST_AWS_ACCOUNT_ID, env=None):
-    env = get_environment(env)
+def kinesis_stream_arn(stream_name, account_id=TEST_AWS_ACCOUNT_ID):
     return "arn:aws:kinesis:%s:%s:stream/%s" % (DEFAULT_REGION, account_id, stream_name)
+
+
+def firehose_stream_arn(stream_name, account_id=TEST_AWS_ACCOUNT_ID):
+    return ("arn:aws:firehose:%s:%s:deliverystream/%s" % (DEFAULT_REGION, account_id, stream_name))
+
+
+def s3_bucket_arn(bucket_name, account_id=TEST_AWS_ACCOUNT_ID):
+    return "arn:aws:s3:::%s" % (bucket_name)
 
 
 def dynamodb_get_item_raw(dynamodb_url, request):

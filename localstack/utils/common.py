@@ -47,13 +47,14 @@ class FuncThread (threading.Thread):
 
 
 class ShellCommandThread (FuncThread):
-    def __init__(self, cmd, params={}):
+    def __init__(self, cmd, params={}, outfile=None):
         self.cmd = cmd
         self.process = None
+        self.outfile = outfile
         FuncThread.__init__(self, self.run_cmd, params)
 
     def run_cmd(self, params):
-        self.process = run(self.cmd, async=True)
+        self.process = run(self.cmd, async=True, outfile=self.outfile)
         self.process.communicate()
 
     def is_killed(self):
@@ -158,7 +159,7 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
-def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False):
+def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, outfile=None):
     # don't use subprocess module as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
     # import subprocess
@@ -177,8 +178,8 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False):
             if stdin:
                 process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
             else:
-                process = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT,
-                    stdout=FNULL, stdin=subprocess.PIPE)
+                out = open(outfile, 'wb') if outfile else FNULL
+                process = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=out)
             return process
         except subprocess.CalledProcessError, e:
             if print_error:
@@ -223,6 +224,10 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN,
     finally:
         mutex_clean.release()
     return time_now
+
+
+def truncate(data, max_length=100):
+    return (data[:max_length] + '...') if len(data) > max_length else data
 
 
 def parallelize(func, list):

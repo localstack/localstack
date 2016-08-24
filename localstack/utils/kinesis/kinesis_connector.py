@@ -7,6 +7,7 @@ import sys
 import socket
 import time
 import traceback
+import threading
 from urlparse import urlparse
 from amazon_kclpy import kcl
 from docopt import docopt
@@ -65,7 +66,7 @@ class KinesisProcessorThread(ShellCommandThread):
         props_file = params['properties_file']
         cmd = kclipy_helper.get_kcl_app_command('java',
             multi_lang_daemon_class, props_file)
-        ShellCommandThread.__init__(self, cmd)
+        ShellCommandThread.__init__(self, cmd, outfile='%s.log' % props_file)
 
     @staticmethod
     def start_consumer(kinesis_stream):
@@ -91,20 +92,26 @@ class OutputReaderThread(FuncThread):
 
 
 class EventFileReaderThread(FuncThread):
-    def __init__(self, events_file, callback):
+    def __init__(self, events_file, callback, ready_mutex=None):
         FuncThread.__init__(self, self.retrieve_loop, None)
         self.running = True
         self.events_file = events_file
         self.callback = callback
+        self.ready_mutex = ready_mutex
 
     def retrieve_loop(self, params):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.bind(self.events_file)
         sock.listen(1)
+        if self.ready_mutex:
+            self.ready_mutex.release()
         while self.running:
-            conn, client_addr = sock.accept()
-            thread = FuncThread(self.handle_connection, conn)
-            thread.start()
+            try:
+                conn, client_addr = sock.accept()
+                thread = FuncThread(self.handle_connection, conn)
+                thread.start()
+            except Exception, e:
+                print('ERROR dispatching client request: %s %s' % (e, traceback.format_exc()))
         sock.close()
 
     def handle_connection(self, conn):
@@ -120,7 +127,7 @@ class EventFileReaderThread(FuncThread):
                     self.callback(records)
                 except Exception, e:
                     print("Unable to process JSON line: '%s': %s. Callback: %s" %
-                        (truncate(line), traceback.format_exc(e), self.callback))
+                        (truncate(line), traceback.format_exc(), self.callback))
         conn.close()
 
     def stop(self, quiet=True):
@@ -235,8 +242,11 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
 
     run('rm -f %s' % events_file)
     # start event reader thread (this process)
-    thread = EventFileReaderThread(events_file, listener_func)
+    ready_mutex = threading.Semaphore(0)
+    thread = EventFileReaderThread(events_file, listener_func, ready_mutex=ready_mutex)
     thread.start()
+    # Wait until the event reader thread is ready (to avoid 'Connection refused' error on the UNIX socket)
+    ready_mutex.acquire()
     # start KCL client (background process)
     if processor_script[-4:] == '.pyc':
         processor_script = processor_script[0:-1]

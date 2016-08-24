@@ -13,6 +13,8 @@ from flask import Flask, jsonify, request
 from datetime import datetime
 import __init__
 from localstack.constants import *
+from localstack.utils.common import short_uid
+from localstack.utils.aws.aws_stack import *
 
 APP_NAME = 'firehose_mock'
 
@@ -41,7 +43,7 @@ def add_s3_destination(stream_name, bucket_name, path_prefix):
         "DestinationId": str(uuid.uuid4()),
         "S3DestinationDescription": {
             "RoleARN": role_arn(stream_name),
-            "BucketARN": bucket_arn(bucket_name),
+            "BucketARN": s3_bucket_arn(bucket_name),
             "Prefix": path_prefix,
             "BufferingHints": {
                 "IntervalInSeconds": 60,
@@ -107,25 +109,28 @@ def update_destination(stream_name, destination_id,
         s3_update=None, elasticsearch_update=None, version_id=None):
     dest = get_destination(stream_name, destination_id)
     if elasticsearch_update:
-        print("WARN: Not implemented")
+        print('WARN: Firehose to Elasticsearch updates not yet implemented!')
     if s3_update:
         if 'S3DestinationDescription' not in dest:
             dest['S3DestinationDescription'] = {}
-        for k, v in s3_dest.iteritems():
+        for k, v in s3_update.iteritems():
             dest['S3DestinationDescription'][k] = v
+    return dest
 
 
-def create_stream(stream_name):
+def create_stream(stream_name, s3_destination=None):
     stream = {
-        "HasMoreDestinations": False,
-        "VersionId": "1",
-        "CreateTimestamp": time.time(),
-        "DeliveryStreamARN": stream_arn(stream_name),
-        "DeliveryStreamStatus": "ACTIVE",
-        "DeliveryStreamName": stream_name,
-        "Destinations": []
+        'HasMoreDestinations': False,
+        'VersionId': '1',
+        'CreateTimestamp': time.time(),
+        'DeliveryStreamARN': firehose_stream_arn(stream_name),
+        'DeliveryStreamStatus': 'ACTIVE',
+        'DeliveryStreamName': stream_name,
+        'Destinations': []
     }
     delivery_streams[stream_name] = stream
+    if s3_destination:
+        update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
     return stream
 
 
@@ -135,17 +140,8 @@ def get_stream(stream_name):
     return delivery_streams[stream_name]
 
 
-def bucket_arn(bucket_name):
-    return "arn:aws:s3:::%s" % bucket_name
-
-
 def bucket_name(bucket_arn):
     return bucket_arn.split(':::')[-1]
-
-
-def stream_arn(stream_name):
-    return ("arn:aws:firehose:us-east-1:%s:deliverystream/%s" %
-        (TEST_AWS_ACCOUNT_ID, stream_name))
 
 
 def role_arn(stream_name):
@@ -164,7 +160,7 @@ def post_request():
         }
     elif action == 'Firehose_20150804.CreateDeliveryStream':
         stream_name = data['DeliveryStreamName']
-        response = create_stream(stream_name)
+        response = create_stream(stream_name, s3_destination=data.get('S3DestinationConfiguration'))
     elif action == 'Firehose_20150804.DescribeDeliveryStream':
         stream_name = data['DeliveryStreamName']
         response = get_stream(stream_name)
