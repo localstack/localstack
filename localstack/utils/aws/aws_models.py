@@ -70,7 +70,7 @@ class KinesisStream(Component):
                 print 'an exception has occured'
 
     def wait_for(self):
-        GET_STATUS_SLEEP_SECS = 2
+        GET_STATUS_SLEEP_SECS = 5
         GET_STATUS_RETRIES = 50
         for i in range(0, GET_STATUS_RETRIES):
             try:

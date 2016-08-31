@@ -21,10 +21,13 @@ install:           ## Install npm/pip dependencies, compile code
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install))
 
-compile:
+compile:           ## Compile Java code (KCL library utils)
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()') localstack/utils/kinesis/java/com/atlassian/*.java
 	# TODO enable once we want to support Java-based Lambdas
 	# (cd localstack/mock && mvn package)
+
+publish:           ## Publish the library to a PyPi repository
+	($(VENV_RUN) && ./setup.py sdist upload)
 
 infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); localstack/mock/infra.py)
@@ -37,7 +40,7 @@ test:              ## Run automated tests
 	make lint
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR) .)
+	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR),dist .)
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/

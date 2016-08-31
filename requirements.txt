@@ -11,5 +11,7 @@ git+git://github.com/whummer/moto.git@feature/apigw-extensions
 nose==1.3.7
 pep8==1.7.0
 requests==2.11.0
+#restricted-pkg==1.1.2
+git+git://github.com/whummer/restricted_pkg.git@feat/param-custom-headers
 sh==1.11
 subprocess32==3.2.7

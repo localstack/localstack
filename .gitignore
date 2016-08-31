@@ -10,3 +10,7 @@
 /.coverage
 node_modules/
 localstack/infra/
+.DS_Store
+/build/
+/dist/
+*.egg-info/

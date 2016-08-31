@@ -8,7 +8,7 @@ import traceback
 import logging
 import base64
 import threading
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from datetime import datetime
 from localstack.constants import *
 from localstack.utils.common import *
@@ -201,6 +201,24 @@ def set_function_code(code, lambda_name):
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
 
+def do_list_functions():
+    funcs = []
+    for func_arn, func in lambda_arn_to_handler.iteritems():
+        func_name = func_arn.split(':function:')[-1]
+        funcs.append({
+            'Version': '$LATEST',
+            'FunctionName': func_name,
+            'FunctionArn': func_arn,
+            'Handler': LAMBDA_DEFAULT_HANDLER,
+            'Runtime': 'python2.7'
+            # 'Description': ''
+            # 'MemorySize': 192,
+            # 'CodeSize': 2526917,
+            # 'Timeout': 60,
+        })
+    return funcs
+
+
 @app.route('%s/functions' % PATH_ROOT, methods=['POST'])
 def create_function():
     """ Create new function
@@ -223,6 +241,35 @@ def create_function():
         raise
 
 
+@app.route('%s/functions/<function>' % PATH_ROOT, methods=['GET'])
+def get_function(function):
+    """ Get details for a single function
+        ---
+        operationId: 'getFunction'
+        parameters:
+            - name: 'request'
+              in: body
+            - name: 'function'
+              in: path
+    """
+    funcs = do_list_functions()
+    for func in funcs:
+        if func['FunctionName'] == function:
+            result = {
+                'Configuration': func,
+                'Code': {
+                    # TODO: add missing details here
+                }
+            }
+            return jsonify(func)
+    result = {
+        'ResponseMetadata': {
+            'HTTPStatusCode': 404
+        }
+    }
+    return make_response((jsonify(result), 404, {}))
+
+
 @app.route('%s/functions/' % PATH_ROOT, methods=['GET'])
 def list_functions():
     """ List functions
@@ -232,20 +279,7 @@ def list_functions():
             - name: 'request'
               in: body
     """
-    funcs = []
-    for func_arn, func in lambda_arn_to_handler.iteritems():
-        func_name = func_arn.split(':function:')[-1]
-        funcs.append({
-            'Version': '$LATEST',
-            'FunctionName': func_name,
-            'FunctionArn': func_arn,
-            'Handler': LAMBDA_DEFAULT_HANDLER,
-            'Runtime': 'python2.7'
-            # 'Description': ''
-            # 'MemorySize': 192,
-            # 'CodeSize': 2526917,
-            # 'Timeout': 60,
-        })
+    funcs = do_list_functions()
     result = {}
     result['Functions'] = funcs
     return jsonify(result)
