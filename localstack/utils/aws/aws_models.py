@@ -41,6 +41,7 @@ class KinesisStream(Component):
         try:
             self.conn.create_stream(StreamName=self.stream_name, ShardCount=self.num_shards)
         except Exception, e:
+            # TODO catch stream already exists exception, otherwise rethrow
             if raise_on_error:
                 raise e
 
@@ -51,7 +52,7 @@ class KinesisStream(Component):
     def put(self, data, key):
         if not isinstance(data, str):
             data = json.dumps(data)
-        self.conn.put_record(StreamName=self.stream_name, Data=data, PartitionKey=key)
+        return self.conn.put_record(StreamName=self.stream_name, Data=data, PartitionKey=key)
 
     def read(self, amount=-1, shard='shardId-000000000001'):
         s_iterator = kinesis_conn.get_shard_iterator(self.stream_name, shard, 'TRIM_HORIZON')
@@ -171,7 +172,24 @@ class DynamoDB(Component):
 class DynamoDBStream(Component):
     def __init__(self, id):
         super(DynamoDBStream, self).__init__(id)
-        self.table = -1
+        self.table = None
+
+
+class DynamoDBItem(Component):
+    def __init__(self, id, table=None, keys=None):
+        super(DynamoDBItem, self).__init__(id)
+        self.table = table
+        self.keys = keys
+
+    def __eq__(self, other):
+        if not isinstance(other, DynamoDBItem):
+            return False
+        return (other.table == self.table and
+            other.id == self.id and
+            other.keys == self.keys)
+
+    def __hash__(self):
+        return hash(self.table) + hash(self.id) + hash(self.keys)
 
 
 class ElasticSearch(Component):
