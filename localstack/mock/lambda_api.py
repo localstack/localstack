@@ -23,6 +23,8 @@ LAMBDA_EXECUTOR_JAR = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack',
     'mock', 'target', 'lambda-executor-1.0-SNAPSHOT.jar')
 LAMBDA_EXECUTOR_CLASS = 'com.atlassian.LambdaExecutor'
 
+LAMBDA_DEFAULT_HANDLER = 'handler.handler'
+
 app = Flask(APP_NAME)
 
 # map ARN strings to lambda function objects
@@ -208,11 +210,69 @@ def create_function():
             - name: 'request'
               in: body
     """
-    data = json.loads(request.data)
-    lambda_name = data['FunctionName']
-    lambda_arn_to_handler[func_arn(lambda_name)] = data['Handler']
-    code = data['Code']
-    set_function_code(code, lambda_name)
+    try:
+        data = json.loads(request.data)
+        lambda_name = data['FunctionName']
+        lambda_arn_to_handler[func_arn(lambda_name)] = data['Handler']
+        code = data['Code']
+        set_function_code(code, lambda_name)
+        result = {}
+        return jsonify(result)
+    except Exception, e:
+        print(e)
+        raise
+
+
+@app.route('%s/functions/' % PATH_ROOT, methods=['GET'])
+def list_functions():
+    """ List functions
+        ---
+        operationId: 'listFunctions'
+        parameters:
+            - name: 'request'
+              in: body
+    """
+    funcs = []
+    for func_arn, func in lambda_arn_to_handler.iteritems():
+        func_name = func_arn.split(':function:')[-1]
+        funcs.append({
+            'Version': '$LATEST',
+            'FunctionName': func_name,
+            'FunctionArn': func_arn,
+            'Handler': LAMBDA_DEFAULT_HANDLER,
+            'Runtime': 'python2.7'
+            # 'Description': ''
+            # 'MemorySize': 192,
+            # 'CodeSize': 2526917,
+            # 'Timeout': 60,
+        })
+    result = {}
+    result['Functions'] = funcs
+    return jsonify(result)
+
+
+@app.route('%s/functions/<function>' % PATH_ROOT, methods=['DELETE'])
+def delete_function(function):
+    """ Delete an existing function
+        ---
+        operationId: 'deleteFunction'
+        parameters:
+            - name: 'request'
+              in: body
+    """
+    if request.data:
+        data = json.loads(request.data)
+    arn = func_arn(function)
+    lambda_arn_to_function.pop(arn)
+    lambda_arn_to_cwd.pop(arn)
+    lambda_arn_to_handler.pop(arn)
+    i = 0
+    while i < len(event_source_mappings):
+        mapping = event_source_mappings[i]
+        if mapping['FunctionArn'] == arn:
+            del event_source_mappings[i]
+            i -= 1
+        i += 1
     result = {}
     return jsonify(result)
 

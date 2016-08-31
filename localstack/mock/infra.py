@@ -43,7 +43,7 @@ def do_run(cmd, async):
 def start_dynalite(port=DEFAULT_PORT_DYNAMODB, async=False, update_listener=None):
     backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
     cmd = '%s/node_modules/dynalite/cli.js --port %s' % (root_path, backend_port)
-    print("Starting mock DynamoDB...")
+    print("Starting mock DynamoDB (port %s)..." % port)
     proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
                         backend_port, update_listener=update_listener)
     proxy_thread.start()
@@ -55,7 +55,7 @@ def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, up
     backend_port = DEFAULT_PORT_KINESIS_BACKEND
     cmd = ('%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s' %
         (root_path, shard_limit, backend_port))
-    print("Starting mock Kinesis...")
+    print("Starting mock Kinesis (port %s)..." % port)
     proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
                         backend_port, update_listener=update_listener)
     proxy_thread.start()
@@ -66,7 +66,7 @@ def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, up
 def start_elasticsearch(port=DEFAULT_PORT_ELASTICSEARCH, delete_data=True, async=False):
     cmd = ('%s/infra/elasticsearch/bin/elasticsearch --http.port=%s --http.publish_port=%s' %
         (root_path, port, port))
-    print("Starting local Elasticsearch...")
+    print("Starting local Elasticsearch (port %s)..." % port)
     if delete_data:
         path = '%s/infra/elasticsearch/data/elasticsearch' % (root_path)
         run('rm -rf %s' % path)
@@ -76,7 +76,7 @@ def start_elasticsearch(port=DEFAULT_PORT_ELASTICSEARCH, delete_data=True, async
 def start_apigateway(port=DEFAULT_PORT_APIGATEWAY, async=False, update_listener=None):
     backend_port = DEFAULT_PORT_APIGATEWAY_BACKEND
     cmd = '%s/bin/moto_server apigateway -p%s' % (LOCALSTACK_VENV_FOLDER, backend_port)
-    print("Starting mock API Gateway...")
+    print("Starting mock API Gateway (port %s)..." % port)
     proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
                         backend_port, update_listener=update_listener)
     proxy_thread.start()
@@ -86,42 +86,42 @@ def start_apigateway(port=DEFAULT_PORT_APIGATEWAY, async=False, update_listener=
 
 def start_s3(port=DEFAULT_PORT_S3, async=False):
     cmd = '%s/bin/moto_server s3 -p%s' % (LOCALSTACK_VENV_FOLDER, port)
-    print("Starting mock S3 server...")
+    print("Starting mock S3 server (port %s)..." % port)
     return do_run(cmd, async)
 
 
-def start_firehose(async=False):
-    print("Starting mock Firehose...")
+def start_firehose(port=DEFAULT_PORT_FIREHOSE, async=False):
+    print("Starting mock Firehose (port %s)..." % port)
     if async:
-        thread = FuncThread(firehose_api.serve, DEFAULT_PORT_FIREHOSE, quiet=True)
+        thread = FuncThread(firehose_api.serve, port, quiet=True)
         thread.start()
         TMP_THREADS.append(thread)
         return thread
     else:
-        firehose_api.serve(DEFAULT_PORT_FIREHOSE)
+        firehose_api.serve(port)
 
 
-def start_dynamodbstreams(async=False):
-    print("Starting mock DynamoDB Streams...")
+def start_dynamodbstreams(port=DEFAULT_PORT_DYNAMODBSTREAMS, async=False):
+    print("Starting mock DynamoDB Streams (port %s)..." % port)
     if async:
-        thread = FuncThread(dynamodbstreams_api.serve, DEFAULT_PORT_DYNAMODBSTREAMS, quiet=True)
+        thread = FuncThread(dynamodbstreams_api.serve, port, quiet=True)
         thread.start()
         TMP_THREADS.append(thread)
         return thread
     else:
-        firehose_api.serve(DEFAULT_PORT_DYNAMODBSTREAMS)
+        firehose_api.serve(port)
 
 
-def start_lambda(async=False):
-    print("Starting mock Lambda...")
+def start_lambda(port=DEFAULT_PORT_LAMBDA, async=False):
+    print("Starting mock Lambda (port %s)..." % port)
     lambda_api.cleanup()
     if async:
-        thread = FuncThread(lambda_api.serve, DEFAULT_PORT_LAMBDA, quiet=True)
+        thread = FuncThread(lambda_api.serve, port, quiet=True)
         thread.start()
         TMP_THREADS.append(thread)
         return thread
     else:
-        lambda_api.serve(DEFAULT_PORT_LAMBDA)
+        lambda_api.serve(port)
 
 
 def stop_infra():

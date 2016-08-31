@@ -175,28 +175,38 @@ def render_velocity_template(template, context, as_json=False):
     return replaced
 
 
-def dynamodb_table_arn(table_name):
-    return "arn:aws:dynamodb:%s:%s:table/%s" % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, table_name)
+def dynamodb_table_arn(table_name, account_id=None):
+    if not account_id:
+        account_id = TEST_AWS_ACCOUNT_ID
+    return "arn:aws:dynamodb:%s:%s:table/%s" % (DEFAULT_REGION, account_id, table_name)
 
 
-def dynamodb_stream_arn(table_name):
+def dynamodb_stream_arn(table_name, account_id=None):
+    if not account_id:
+        account_id = TEST_AWS_ACCOUNT_ID
     return ("arn:aws:dynamodb:%s:%s:table/%s/stream/%s" %
-        (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, table_name, timestamp()))
+        (DEFAULT_REGION, account_id, table_name, timestamp()))
 
 
-def lambda_function_arn(function_name, account_id=TEST_AWS_ACCOUNT_ID):
+def lambda_function_arn(function_name, account_id=None):
+    if not account_id:
+        account_id = TEST_AWS_ACCOUNT_ID
     return "arn:aws:lambda:%s:%s:function:%s" % (DEFAULT_REGION, account_id, function_name)
 
 
-def kinesis_stream_arn(stream_name, account_id=TEST_AWS_ACCOUNT_ID):
+def kinesis_stream_arn(stream_name, account_id=None):
+    if not account_id:
+        account_id = TEST_AWS_ACCOUNT_ID
     return "arn:aws:kinesis:%s:%s:stream/%s" % (DEFAULT_REGION, account_id, stream_name)
 
 
-def firehose_stream_arn(stream_name, account_id=TEST_AWS_ACCOUNT_ID):
+def firehose_stream_arn(stream_name, account_id=None):
+    if not account_id:
+        account_id = TEST_AWS_ACCOUNT_ID
     return ("arn:aws:firehose:%s:%s:deliverystream/%s" % (DEFAULT_REGION, account_id, stream_name))
 
 
-def s3_bucket_arn(bucket_name, account_id=TEST_AWS_ACCOUNT_ID):
+def s3_bucket_arn(bucket_name, account_id=None):
     return "arn:aws:s3:::%s" % (bucket_name)
 
 

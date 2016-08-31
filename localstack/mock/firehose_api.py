@@ -9,7 +9,7 @@ import sys
 import boto3
 import base64
 import traceback
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from datetime import datetime
 import __init__
 from localstack.constants import *
@@ -164,6 +164,15 @@ def post_request():
     elif action == 'Firehose_20150804.DescribeDeliveryStream':
         stream_name = data['DeliveryStreamName']
         response = get_stream(stream_name)
+        if not response:
+            response = {
+                "__type": "ResourceNotFoundException",
+                "message": "Firehose %s under account %s not found." % (stream_name, TEST_AWS_ACCOUNT_ID)
+            }
+            return make_response((jsonify(response), 400, {}))
+        response = {
+            'DeliveryStreamDescription': response
+        }
     elif action == 'Firehose_20150804.PutRecord':
         stream_name = data['DeliveryStreamName']
         record = data['Record']
