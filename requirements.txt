@@ -7,11 +7,10 @@ elasticsearch==2.3.0
 flask==0.10.1
 flask_swagger==0.2.12
 jsonpath-rw==1.4.0
-git+git://github.com/whummer/moto.git@feature/apigw-extensions
+moto-ext==0.4.26
 nose==1.3.7
 pep8==1.7.0
 requests==2.11.0
-#restricted-pkg==1.1.2
-git+git://github.com/whummer/restricted_pkg.git@feat/param-custom-headers
+restricted_pkg_ext==1.1.3
 sh==1.11
 subprocess32==3.2.7

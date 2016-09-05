@@ -52,10 +52,13 @@ os.environ['TEST_DYNAMODBSTREAMS_URL'] = TEST_DYNAMODBSTREAMS_URL
 os.environ['TEST_AWS_ACCOUNT_ID'] = TEST_AWS_ACCOUNT_ID
 
 # root code folder
-LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
+LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 
 # virtualenv folder
 LOCALSTACK_VENV_FOLDER = os.path.join(LOCALSTACK_ROOT_FOLDER, '.venv')
+if not os.path.isdir(LOCALSTACK_VENV_FOLDER):
+    # assuming this package lives here: <python>/lib/pythonX.X/site-packages/localstack/
+    LOCALSTACK_VENV_FOLDER = os.path.realpath(os.path.join(LOCALSTACK_ROOT_FOLDER, '..', '..', '..'))
 
 # API Gateway path to indicate a user request sent to the gateway
 PATH_USER_REQUEST = '_user_request_'

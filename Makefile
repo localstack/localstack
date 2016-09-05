@@ -27,6 +27,7 @@ compile:           ## Compile Java code (KCL library utils)
 	# (cd localstack/mock && mvn package)
 
 publish:           ## Publish the library to a PyPi repository
+	# build and upload archive
 	($(VENV_RUN) && ./setup.py sdist upload)
 
 infra:             ## Manually start the local infrastructure for testing
@@ -48,6 +49,7 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf localstack/infra/amazon-kinesis-client
 	rm -rf localstack/infra/elasticsearch
 	rm -rf localstack/node_modules/
+	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 
 .PHONY: usage compile clean install web install-web infra test

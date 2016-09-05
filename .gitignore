@@ -14,3 +14,4 @@ localstack/infra/
 /build/
 /dist/
 *.egg-info/
+.eggs/
