@@ -21,6 +21,7 @@ from localstack.utils.aws.aws_models import KinesisStream
 
 
 EVENTS_FILE_PATTERN = '/tmp/kclipy.*.fifo'
+DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-app'
 
 
 class KinesisProcessor(kcl.RecordProcessorBase):
@@ -135,11 +136,14 @@ class EventFileReaderThread(FuncThread):
 
 
 # construct a stream info hash
-def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_url=None):
+def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_url=None,
+        ddb_lease_table_suffix=None):
+    if not ddb_lease_table_suffix:
+        ddb_lease_table_suffix = DEFAULT_DDB_LEASE_TABLE_SUFFIX
     # construct stream info
     env = aws_stack.get_environment(env)
     props_file = os.path.join('/tmp/', 'kclipy.%s.properties' % short_uid())
-    app_name = '%s-app' % stream_name
+    app_name = '%s%s' % (stream_name, ddb_lease_table_suffix)
     stream_info = {
         'name': stream_name,
         'region': DEFAULT_REGION,
@@ -167,10 +171,11 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
 
 
 def start_kcl_client_process(stream_name, listener_script,
-        log_file=None, env=None, configs={}, endpoint_url=None):
+        log_file=None, env=None, configs={}, endpoint_url=None, ddb_lease_table_suffix=None):
     env = aws_stack.get_environment(env)
     # construct stream info
-    stream_info = get_stream_info(stream_name, log_file, env=env, endpoint_url=endpoint_url)
+    stream_info = get_stream_info(stream_name, log_file, env=env, endpoint_url=endpoint_url,
+        ddb_lease_table_suffix=ddb_lease_table_suffix)
     props_file = stream_info['properties_file']
     # set kcl config options
     kwargs = {
@@ -227,7 +232,8 @@ if __name__ == '__main__':
 
 
 def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
-        events_file=None, endpoint_url=None, log_file=None, configs={}, env=None):
+        events_file=None, endpoint_url=None, log_file=None, configs={}, env=None,
+        ddb_lease_table_suffix=None):
     """
     High-level function that allows to subscribe to a Kinesis stream
     and receive events in a listener function. A KCL client process is
@@ -251,4 +257,5 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     if processor_script[-4:] == '.pyc':
         processor_script = processor_script[0:-1]
     return start_kcl_client_process(stream_name, processor_script,
-        endpoint_url=endpoint_url, log_file=log_file, configs=configs, env=env)
+        endpoint_url=endpoint_url, log_file=log_file, configs=configs, env=env,
+        ddb_lease_table_suffix=ddb_lease_table_suffix)
