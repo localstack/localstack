@@ -117,8 +117,16 @@ def create_lambda_function(func_name, zip_file, event_source_arn, handler=DEFAUL
 def start_test(env=ENV_DEV):
     try:
         # setup environment
+        spawn_thread = True
         if env == ENV_DEV:
-            infra.start_infra(async=True)
+            def do_start_infra(params):
+                infra.start_infra(async=True)
+            if spawn_thread:
+                thread = FuncThread(do_start_infra, None)
+                thread.start()
+                time.sleep(6)
+            else:
+                do_start_infra()
 
         dynamodb = aws_stack.connect_to_resource('dynamodb', env=env)
         dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams', env=env)

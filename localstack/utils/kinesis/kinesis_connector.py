@@ -209,15 +209,35 @@ def generate_processor_script(events_file, log_file=None):
     else:
         log_file = 'None'
     content = """#!/usr/bin/env python
-import os, sys, json, socket
+import os, sys, json, socket, time
+import subprocess32 as subprocess
 sys.path.insert(0, '%s/lib/python2.7/site-packages')
 sys.path.insert(0, '%s')
 from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.common import timestamp
 events_file = '%s'
 log_file = %s
 if __name__ == '__main__':
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(events_file)
+
+    num_tries = 3
+    sleep_time = 2
+    error = None
+    for i in range(0, num_tries):
+        try:
+            sock.connect(events_file)
+            error = None
+            break
+        except Exception, e:
+            error = e
+            if i < num_tries:
+                msg = '%%s: Unable to connect to UNIX socket. Retrying.' %% timestamp()
+                subprocess.check_output('echo "%%s" >> /tmp/kclipy.error.log' %% msg, shell=True)
+                time.sleep(sleep_time)
+    if error:
+        print("WARN: Unable to connect to UNIX socket after retrying: %%s" %% error)
+        raise error
+
     def receive_msg(records, checkpointer, shard_id):
         try:
             sock.send(b'%%s\\n' %% json.dumps(records))
