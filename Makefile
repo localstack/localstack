@@ -34,7 +34,7 @@ infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); localstack/mock/infra.py)
 
 web:               ## Start web application (dashboard)
-	($(VENV_RUN); PYTHONPATH=`pwd` localstack/main.py web --port=8081)
+	($(VENV_RUN); bin/localstack web --port=8081)
 
 test:              ## Run automated tests
 	$(VENV_RUN); PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' . && \

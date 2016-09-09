@@ -1,0 +1,36 @@
+#!/usr/bin/env python
+
+"""
+Main script for starting localstack components.
+
+Usage:
+  localstack infra
+  localstack web [ --port=<port> ]
+  localstack (-h | --help)
+
+Options:
+  -h --help     Show this screen.
+"""
+
+import os
+import sys
+
+PARENT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+if os.path.isdir(os.path.join(PARENT_FOLDER, '.venv')):
+    sys.path.insert(0, PARENT_FOLDER)
+
+from docopt import docopt
+from localstack.mock import infra
+
+DEFAULT_PORT = 8000
+
+if __name__ == "__main__":
+    args = docopt(__doc__)
+
+    if args['infra']:
+        print('Starting local dev environment. CTRL-C to quit.')
+        infra.start_infra()
+    elif args['web']:
+        import localstack.dashboard.api
+        port = args['--port'] or DEFAULT_PORT
+        localstack.dashboard.api.serve(port)
