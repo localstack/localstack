@@ -85,6 +85,7 @@ if __name__ == '__main__':
             'X-JFrog-Art-Api': os.environ['PYPI_REPO_PASSWORD'],
             'Authorization': None
         },
+        scripts=['bin/localstack'],
         packages=find_packages(exclude=("tests", "tests.*")),
         package_data=package_data,
         install_requires=install_requires,
