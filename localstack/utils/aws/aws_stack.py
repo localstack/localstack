@@ -15,6 +15,13 @@ ENVIRONMENT_FILE = '.env.properties'
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
+# Use this field if you want to provide a custom boto3 session.
+# This field takes priority over CREATE_NEW_SESSION_PER_BOTO3_CONNECTION
+CUSTOM_BOTO3_SESSION = None
+# Use this flag to enable creation of a new session for each boto3 connection.
+# This flag will be ignored if CUSTOM_BOTO3_SESSION is specified
+CREATE_NEW_SESSION_PER_BOTO3_CONNECTION = False
+
 
 class Environment(object):
     def __init__(self, region=None, prefix=None):
@@ -123,7 +130,14 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
     env = get_environment(env, region_name=region_name)
-    method = boto3.client if client else boto3.resource
+    my_session = None
+    if CUSTOM_BOTO3_SESSION:
+        my_session = CUSTOM_BOTO3_SESSION
+    elif CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
+        my_session = boto3.session.Session()
+    else:
+        my_session = boto3
+    method = my_session.client if client else my_session.resource
     if not endpoint_url:
         if env.region == REGION_LOCAL:
             endpoint_url = os.environ['TEST_%s_URL' % (service_name.upper())]
