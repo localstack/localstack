@@ -5,6 +5,7 @@ import hashlib
 import uuid
 import time
 import glob
+import requests
 from datetime import datetime
 from multiprocessing.dummy import Pool
 from localstack.constants import *
@@ -207,6 +208,18 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
     f.close()
     clean_cache()
     return result
+
+
+def make_http_request(url, data=None, headers=None, method='GET'):
+    if is_string(method):
+        method = requests.__dict__[method.lower()]
+
+    class NetrcBypassAuth(requests.auth.AuthBase):
+        """avoid requests library reading credentials from ~/.netrc file"""
+        def __call__(self, r):
+            return r
+
+    return method(url, headers=headers, data=data, auth=NetrcBypassAuth())
 
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,

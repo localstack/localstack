@@ -2,6 +2,7 @@ VENV_DIR = .venv
 VENV_RUN = source $(VENV_DIR)/bin/activate
 KCL_URL = http://central.maven.org/maven2/com/amazonaws/amazon-kinesis-client/1.6.3/amazon-kinesis-client-1.6.3.jar
 ES_URL = https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.3.3/elasticsearch-2.3.3.zip
+TMP_ARCHIVE_ES = /tmp/localstack.es.zip
 
 usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
@@ -11,7 +12,7 @@ install:           ## Install npm/pip dependencies, compile code
 	(test -e $(VENV_DIR) || virtualenv $(VENV_DIR))
 	($(VENV_RUN) && pip install --upgrade pip)
 	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
-	(test -e localstack/infra/elasticsearch || { mkdir -p localstack/infra; cd localstack/infra; curl -o es.zip $(ES_URL); unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; })
+	(test -e localstack/infra/elasticsearch || { mkdir -p localstack/infra; cd localstack/infra; test -f $(TMP_ARCHIVE_ES) || (curl -o $(TMP_ARCHIVE_ES) $(ES_URL)); cp $(TMP_ARCHIVE_ES) es.zip; unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; })
 	(test -e localstack/infra/amazon-kinesis-client/amazon-kinesis-client.jar || { mkdir -p localstack/infra/amazon-kinesis-client; curl -o localstack/infra/amazon-kinesis-client/amazon-kinesis-client.jar $(KCL_URL); })
 	(npm install -g npm || sudo npm install -g npm)
 	(cd localstack/ && (test ! -e package.json || (npm cache clear && npm install)))
@@ -51,5 +52,6 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf localstack/node_modules/
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
+	rm -f $(TMP_ARCHIVE_ES)
 
 .PHONY: usage compile clean install web install-web infra test

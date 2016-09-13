@@ -227,7 +227,8 @@ def s3_bucket_arn(bucket_name, account_id=None):
 def dynamodb_get_item_raw(dynamodb_url, request):
     headers = mock_aws_request_headers()
     headers['X-Amz-Target'] = 'DynamoDB_20120810.GetItem'
-    new_item = requests.post(dynamodb_url, data=json.dumps(request), headers=headers)
+    new_item = make_http_request(url=dynamodb_url,
+        method='POST', data=json.dumps(request), headers=headers)
     new_item = json.loads(new_item.text)
     return new_item
 

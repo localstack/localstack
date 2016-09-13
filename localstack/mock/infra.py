@@ -278,7 +278,8 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
             # TODO check whether the target of this API method is 'kinesis'
             headers = aws_stack.mock_aws_request_headers(service='kinesis')
             headers['X-Amz-Target'] = 'Kinesis_20131202.PutRecords'
-            result = make_request(TEST_KINESIS_URL, method='POST', data=new_request, headers=headers)
+            result = common.make_http_request(url=TEST_KINESIS_URL,
+                method='POST', data=new_request, headers=headers)
             return 200
         return True
 
@@ -338,6 +339,8 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
         req['Key'] = data['Key']
         new_item = aws_stack.dynamodb_get_item_raw(TEST_DYNAMODB_URL, req)
         if 'Item' not in new_item:
+            if 'message' in new_item:
+                print('WARNING: Unable to get item from DynamoDB: %s' % new_item['message'])
             return
         record['eventName'] = 'MODIFY'
         record['dynamodb']['Keys'] = data['Key']
@@ -370,18 +373,6 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     for src in sources:
         func_to_call = lambda_api.lambda_arn_to_function[src['FunctionArn']]
         lambda_api.run_lambda(func_to_call, event=event, context={})
-
-
-def make_request(url, headers, data, method='GET'):
-    if is_string(method):
-        method = requests.__dict__[method.lower()]
-
-    class NetrcBypassAuth(requests.auth.AuthBase):
-        """avoid requests library reading credentials from ~/.netrc file"""
-        def __call__(self, r):
-            return r
-
-    return method(url, headers=headers, data=data, auth=NetrcBypassAuth())
 
 
 def dynamodb_extract_keys(item, table_name):
