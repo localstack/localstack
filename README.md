@@ -109,7 +109,7 @@ We welcome feedback, bug reports, and pull requests!
 For pull requests, please stick to the following guidelines:
 
 * Add tests for any new features and bug fixes. Ideally, each PR should increase the test coverage.
-* Follow the existing style (e.g., tab indents).
+* Follow the existing code style (e.g., indents). A PEP8 code linting target is included in the Makefile.
 * Put a reasonable amount of comments into the code.
 * Separate unrelated changes into multiple pull requests.
 
