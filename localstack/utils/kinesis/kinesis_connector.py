@@ -65,9 +65,10 @@ class KinesisProcessorThread(ShellCommandThread):
     def __init__(self, params):
         multi_lang_daemon_class = 'com.atlassian.KinesisStarter'
         props_file = params['properties_file']
+        env_vars = params['env_vars']
         cmd = kclipy_helper.get_kcl_app_command('java',
             multi_lang_daemon_class, props_file)
-        ShellCommandThread.__init__(self, cmd, outfile='%s.log' % props_file)
+        ShellCommandThread.__init__(self, cmd, outfile='%s.log' % props_file, env_vars=env_vars)
 
     @staticmethod
     def start_consumer(kinesis_stream):
@@ -137,7 +138,7 @@ class EventFileReaderThread(FuncThread):
 
 # construct a stream info hash
 def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_url=None,
-        ddb_lease_table_suffix=None):
+        ddb_lease_table_suffix=None, env_vars={}):
     if not ddb_lease_table_suffix:
         ddb_lease_table_suffix = DEFAULT_DDB_LEASE_TABLE_SUFFIX
     # construct stream info
@@ -150,7 +151,8 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
         'shards': shards,
         'properties_file': props_file,
         'log_file': log_file,
-        'app_name': app_name
+        'app_name': app_name,
+        'env_vars': env_vars
     }
     # set local connection
     if env.region == REGION_LOCAL:
@@ -170,12 +172,12 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
     return stream_info
 
 
-def start_kcl_client_process(stream_name, listener_script,
-        log_file=None, env=None, configs={}, endpoint_url=None, ddb_lease_table_suffix=None):
+def start_kcl_client_process(stream_name, listener_script, log_file=None, env=None,
+        configs={}, endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}):
     env = aws_stack.get_environment(env)
     # construct stream info
     stream_info = get_stream_info(stream_name, log_file, env=env, endpoint_url=endpoint_url,
-        ddb_lease_table_suffix=ddb_lease_table_suffix)
+        ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars)
     props_file = stream_info['properties_file']
     # set kcl config options
     kwargs = {
@@ -253,7 +255,7 @@ if __name__ == '__main__':
 
 def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         events_file=None, endpoint_url=None, log_file=None, configs={}, env=None,
-        ddb_lease_table_suffix=None):
+        ddb_lease_table_suffix=None, env_vars={}):
     """
     High-level function that allows to subscribe to a Kinesis stream
     and receive events in a listener function. A KCL client process is
@@ -278,4 +280,4 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         processor_script = processor_script[0:-1]
     return start_kcl_client_process(stream_name, processor_script,
         endpoint_url=endpoint_url, log_file=log_file, configs=configs, env=env,
-        ddb_lease_table_suffix=ddb_lease_table_suffix)
+        ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars)

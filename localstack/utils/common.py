@@ -48,14 +48,15 @@ class FuncThread (threading.Thread):
 
 
 class ShellCommandThread (FuncThread):
-    def __init__(self, cmd, params={}, outfile=None):
+    def __init__(self, cmd, params={}, outfile=None, env_vars={}):
         self.cmd = cmd
         self.process = None
         self.outfile = outfile
+        self.env_vars = env_vars
         FuncThread.__init__(self, self.run_cmd, params)
 
     def run_cmd(self, params):
-        self.process = run(self.cmd, async=True, outfile=self.outfile)
+        self.process = run(self.cmd, async=True, outfile=self.outfile, env_vars=self.env_vars)
         self.process.communicate()
 
     def is_killed(self):
@@ -160,27 +161,31 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
-def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, outfile=None):
+def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, outfile=None, env_vars=None):
     # don't use subprocess module as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
     # import subprocess
     import subprocess32 as subprocess
+
+    env_dict = os.environ.copy()
+    if env_vars:
+        env_dict.update(env_vars)
 
     def do_run(cmd):
         try:
             if not async:
                 if stdin:
                     return subprocess.check_output(cmd, shell=True,
-                        stderr=subprocess.STDOUT, stdin=subprocess.PIPE)
-                return subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+                        stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env_dict)
+                return subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, env=env_dict)
             FNULL = open(os.devnull, 'w')
             # subprocess.Popen is not thread-safe, hence use a mutex here..
             mutex_popen.acquire()
             if stdin:
-                process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE)
+                process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, env=env_dict)
             else:
                 out = open(outfile, 'wb') if outfile else FNULL
-                process = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=out)
+                process = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=out, env=env_dict)
             return process
         except subprocess.CalledProcessError, e:
             if print_error:

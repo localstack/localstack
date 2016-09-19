@@ -175,7 +175,6 @@ def set_function_code(code, lambda_name):
                 class_name = lambda_arn_to_handler[func_arn(lambda_name)].split('::')[0]
                 classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, archive)
                 cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
-                # print(cmd)
                 output = run(cmd)
                 LOG.info('Lambda output: %s' % output.replace('\n', '\n> '))
 
@@ -191,6 +190,10 @@ def set_function_code(code, lambda_name):
                 run('cd %s && unzip %s' % (tmp_dir, zip_file_name))
                 main_script = '%s/%s' % (tmp_dir, LAMBDA_MAIN_SCRIPT_NAME)
                 lambda_cwd = tmp_dir
+                if not os.path.isfile(main_script):
+                    file_list = run('ls -la %s' % tmp_dir)
+                    LOG.warning('Content of Lambda archive: %s' % file_list)
+                    raise Exception('Unable to find handler script in Lambda archive.')
                 with open(main_script, "rb") as file_obj:
                     zip_file_content = file_obj.read()
 
@@ -237,7 +240,7 @@ def create_function():
         result = {}
         return jsonify(result)
     except Exception, e:
-        print(e)
+        print('ERROR: %s' % e)
         raise
 
 
