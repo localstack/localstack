@@ -53,6 +53,8 @@ def get_kcl_classpath(properties=None, paths=[]):
     paths.append(os.path.realpath(os.path.join(dir_name, 'java')))
     paths.insert(0, os.path.realpath(os.path.join(dir_name, '..', '..',
             'infra', 'amazon-kinesis-client', 'amazon-kinesis-client.jar')))
+    paths.insert(0, os.path.realpath(os.path.join(dir_name, '..', '..',
+            'infra', 'amazon-kinesis-client', 'aws-java-sdk-sts.jar')))
     return ":".join([p for p in paths if p != ''])
 
 
@@ -85,15 +87,17 @@ def get_kcl_app_command(java, multi_lang_daemon_class, properties, paths=[]):
         props=os.path.basename(properties))
 
 
-def create_config_file(config_file, executableName, streamName, applicationName, **kwargs):
+def create_config_file(config_file, executableName, streamName, applicationName, credentialsProvider=None, **kwargs):
+    if not credentialsProvider:
+        credentialsProvider = 'DefaultAWSCredentialsProviderChain'
     content = """
         executableName = %s
         streamName = %s
         applicationName = %s
-        AWSCredentialsProvider = DefaultAWSCredentialsProviderChain
+        AWSCredentialsProvider = %s
         processingLanguage = python/2.7
         regionName = us-east-1
-    """ % (executableName, streamName, applicationName)
+    """ % (executableName, streamName, applicationName, credentialsProvider)
     # optional properties
     for key, value in kwargs.iteritems():
         content += """
