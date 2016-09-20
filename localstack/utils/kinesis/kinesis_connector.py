@@ -68,7 +68,9 @@ class KinesisProcessorThread(ShellCommandThread):
         env_vars = params['env_vars']
         cmd = kclipy_helper.get_kcl_app_command('java',
             multi_lang_daemon_class, props_file)
-        ShellCommandThread.__init__(self, cmd, outfile='%s.log' % props_file, env_vars=env_vars)
+        tmp_logfile = '%s.log' % props_file
+        TMP_FILES.append(tmp_logfile)
+        ShellCommandThread.__init__(self, cmd, outfile=tmp_logfile, env_vars=env_vars)
 
     @staticmethod
     def start_consumer(kinesis_stream):
@@ -175,6 +177,16 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
 def start_kcl_client_process(stream_name, listener_script, log_file=None, env=None,
         configs={}, endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}):
     env = aws_stack.get_environment(env)
+    # decide which credentials provider to use
+    credentialsProvider = None
+    if 'AWS_ASSUME_ROLE_ARN' in os.environ and 'AWS_ASSUME_ROLE_SESSION_NAME' in os.environ:
+        # use special credentials provider that can assume IAM roles and handle temporary STS auth tokens
+        credentialsProvider = 'com.atlassian.DefaultSTSAssumeRoleSessionCredentialsProvider'
+        # pass through env variables to child process
+        for var_name in ['AWS_ASSUME_ROLE_ARN', 'AWS_ASSUME_ROLE_SESSION_NAME',
+                'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']:
+            if var_name in os.environ:
+                env_vars[var_name] = os.environ[var_name]
     # construct stream info
     stream_info = get_stream_info(stream_name, log_file, env=env, endpoint_url=endpoint_url,
         ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars)
@@ -195,7 +207,8 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     kwargs.update(configs)
     # create config file
     kclipy_helper.create_config_file(config_file=props_file, executableName=listener_script,
-        streamName=stream_name, applicationName=stream_info['app_name'], **kwargs)
+        streamName=stream_name, applicationName=stream_info['app_name'],
+        credentialsProvider=credentialsProvider, **kwargs)
     TMP_FILES.append(props_file)
     # start stream consumer
     stream = KinesisStream(id=stream_name, params=stream_info)
