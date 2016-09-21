@@ -48,7 +48,10 @@ class KinesisProcessor(kcl.RecordProcessorBase):
             self.log("Shutdown processor for shard '%s'" % self.shard_id)
         self.checkpointer = checkpointer
         if self.auto_checkpoint:
-            checkpointer.checkpoint()
+            try:
+                checkpointer.checkpoint()
+            except Exception, e:
+                print('ERROR: Unable to acknowledge checkpointer: %s' % e)
 
     def log(self, s):
         s = '%s\n' % s
@@ -179,13 +182,14 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     env = aws_stack.get_environment(env)
     # decide which credentials provider to use
     credentialsProvider = None
-    if 'AWS_ASSUME_ROLE_ARN' in os.environ and 'AWS_ASSUME_ROLE_SESSION_NAME' in os.environ:
+    if (('AWS_ASSUME_ROLE_ARN' in os.environ or 'AWS_ASSUME_ROLE_ARN' in env_vars) and
+            ('AWS_ASSUME_ROLE_SESSION_NAME' in os.environ or 'AWS_ASSUME_ROLE_SESSION_NAME' in env_vars)):
         # use special credentials provider that can assume IAM roles and handle temporary STS auth tokens
         credentialsProvider = 'com.atlassian.DefaultSTSAssumeRoleSessionCredentialsProvider'
         # pass through env variables to child process
         for var_name in ['AWS_ASSUME_ROLE_ARN', 'AWS_ASSUME_ROLE_SESSION_NAME',
                 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']:
-            if var_name in os.environ:
+            if var_name in os.environ and var_name not in env_vars:
                 env_vars[var_name] = os.environ[var_name]
     # construct stream info
     stream_info = get_stream_info(stream_name, log_file, env=env, endpoint_url=endpoint_url,
