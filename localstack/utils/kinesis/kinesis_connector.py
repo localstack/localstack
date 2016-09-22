@@ -4,10 +4,12 @@ import base64
 import json
 import os
 import sys
+import re
 import socket
 import time
 import traceback
 import threading
+import logging
 from urlparse import urlparse
 from amazon_kclpy import kcl
 from docopt import docopt
@@ -21,7 +23,21 @@ from localstack.utils.aws.aws_models import KinesisStream
 
 
 EVENTS_FILE_PATTERN = '/tmp/kclipy.*.fifo'
+LOG_FILE_PATTERN = '/tmp/kclipy.*.log'
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-app'
+
+# set up log levels
+logging.SEVERE = 60
+logging.FATAL = 70
+logging.addLevelName(logging.SEVERE, 'SEVERE')
+logging.addLevelName(logging.FATAL, 'FATAL')
+LOG_LEVELS = [logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL, logging.SEVERE]
+
+# default log level for the KCL log output
+DEFAULT_KCL_LOG_LEVEL = logging.WARNING
+
+# set up local logger
+LOGGER = logging.getLogger(__name__)
 
 
 class KinesisProcessor(kcl.RecordProcessorBase):
@@ -51,7 +67,7 @@ class KinesisProcessor(kcl.RecordProcessorBase):
             try:
                 checkpointer.checkpoint()
             except Exception, e:
-                print('ERROR: Unable to acknowledge checkpointer: %s' % e)
+                LOGGER.error('Unable to acknowledge checkpointer: %s' % e)
 
     def log(self, s):
         s = '%s\n' % s
@@ -71,9 +87,10 @@ class KinesisProcessorThread(ShellCommandThread):
         env_vars = params['env_vars']
         cmd = kclipy_helper.get_kcl_app_command('java',
             multi_lang_daemon_class, props_file)
-        tmp_logfile = '%s.log' % props_file
-        TMP_FILES.append(tmp_logfile)
-        ShellCommandThread.__init__(self, cmd, outfile=tmp_logfile, env_vars=env_vars)
+        if not params['log_file']:
+            params['log_file'] = '%s.log' % props_file
+            TMP_FILES.append(params['log_file'])
+        ShellCommandThread.__init__(self, cmd, outfile=params['log_file'], env_vars=env_vars)
 
     @staticmethod
     def start_consumer(kinesis_stream):
@@ -86,13 +103,44 @@ class OutputReaderThread(FuncThread):
     def __init__(self, params):
         FuncThread.__init__(self, self.start_reading, params)
         self.running = True
+        self.buffer = []
+        self.params = params
+        self.prefix = params.get('log_prefix') or 'LOG: '
+        # number of lines that make up a single log entry
+        self.buffer_size = 2
+        self.log_level = params.get('level') or DEFAULT_KCL_LOG_LEVEL
+        # regular expression to filter the printed output
+        levels = OutputReaderThread.get_log_level_names(self.log_level)
+        self.filter_regex = r'.*(%s):.*' % ('|'.join(levels))
+
+    @classmethod
+    def get_log_level_names(cls, min_level):
+        return [logging.getLevelName(l) for l in LOG_LEVELS if l >= min_level]
+
+    @classmethod
+    def get_logger_for_level_in_log_line(cls, line, level):
+        for level in LOG_LEVELS:
+            level_name = logging.getLevelName(level)
+            if re.match(r'.*(%s):.*' % level, line):
+                return LOGGER.__dict__[level.lower()]
+        return None
 
     def start_reading(self, params):
         for line in tail("-n", 0, "-f", params['file'], _iter=True):
-            line = line.replace('\n', '')
             if not self.running:
                 return
-            print ('LOG: %s' % line)
+            line = line.replace('\n', '')
+            self.buffer.append(line)
+            if len(self.buffer) >= self.buffer_size:
+                logger_func = None
+                for line in self.buffer:
+                    if re.match(self.filter_regex, line):
+                        logger_func = OutputReaderThread.get_logger_for_level_in_log_line(line, self.log_level)
+                        break
+                if logger_func:
+                    for buffered_line in self.buffer:
+                        logger_func('%s%s' % (self.prefix, buffered_line))
+                self.buffer = []
 
     def stop(self, quiet=True):
         self.running = False
@@ -118,7 +166,7 @@ class EventFileReaderThread(FuncThread):
                 thread = FuncThread(self.handle_connection, conn)
                 thread.start()
             except Exception, e:
-                print('ERROR dispatching client request: %s %s' % (e, traceback.format_exc()))
+                LOGGER.error('Error dispatching client request: %s %s' % (e, traceback.format_exc()))
         sock.close()
 
     def handle_connection(self, conn):
@@ -133,7 +181,7 @@ class EventFileReaderThread(FuncThread):
                     records = json.loads(line)
                     self.callback(records)
                 except Exception, e:
-                    print("Unable to process JSON line: '%s': %s. Callback: %s" %
+                    LOGGER.warning("Unable to process JSON line: '%s': %s. Callback: %s" %
                         (truncate(line), traceback.format_exc(), self.callback))
         conn.close()
 
@@ -177,8 +225,8 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
     return stream_info
 
 
-def start_kcl_client_process(stream_name, listener_script, log_file=None, env=None,
-        configs={}, endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}):
+def start_kcl_client_process(stream_name, listener_script, log_file=None, env=None, configs={},
+        endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}, kcl_log_level=DEFAULT_KCL_LOG_LEVEL):
     env = aws_stack.get_environment(env)
     # decide which credentials provider to use
     credentialsProvider = None
@@ -191,6 +239,16 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
                 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']:
             if var_name in os.environ and var_name not in env_vars:
                 env_vars[var_name] = os.environ[var_name]
+    if kcl_log_level:
+        if not log_file:
+            log_file = LOG_FILE_PATTERN.replace('*', short_uid())
+            TMP_FILES.append(log_file)
+        run('touch %s' % log_file)
+        # start log output reader thread which will read the KCL log
+        # file and print each line to stdout of this process...
+        reader_thread = OutputReaderThread({'file': log_file, 'level': kcl_log_level, 'log_prefix': 'KCL: '})
+        reader_thread.start()
+
     # construct stream info
     stream_info = get_stream_info(stream_name, log_file, env=env, endpoint_url=endpoint_url,
         ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars)
@@ -272,7 +330,7 @@ if __name__ == '__main__':
 
 def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         events_file=None, endpoint_url=None, log_file=None, configs={}, env=None,
-        ddb_lease_table_suffix=None, env_vars={}):
+        ddb_lease_table_suffix=None, env_vars={}, kcl_log_level=DEFAULT_KCL_LOG_LEVEL):
     """
     High-level function that allows to subscribe to a Kinesis stream
     and receive events in a listener function. A KCL client process is
@@ -297,4 +355,4 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         processor_script = processor_script[0:-1]
     return start_kcl_client_process(stream_name, processor_script,
         endpoint_url=endpoint_url, log_file=log_file, configs=configs, env=env,
-        ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars)
+        ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars, kcl_log_level=kcl_log_level)
