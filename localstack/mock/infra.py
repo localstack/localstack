@@ -8,6 +8,7 @@ import traceback
 import logging
 import requests
 import json
+import boto3
 import __init__
 from localstack.utils.aws import aws_stack
 from localstack.utils import common
@@ -211,6 +212,18 @@ def check_infra(retries=5, expect_shutdown=False, apis=None, additional_checks=[
         check_infra(retries - 1, expect_shutdown=expect_shutdown, apis=apis, additional_checks=additional_checks)
 
 
+def check_aws_credentials():
+    session = boto3.Session()
+    credentials = session.get_credentials()
+    if not credentials:
+        # set temporary dummy credentials
+        os.environ['AWS_ACCESS_KEY_ID'] = 'LocalStackDummyAccessKey'
+        os.environ['AWS_SECRET_ACCESS_KEY'] = 'LocalStackDummySecretKey'
+    session = boto3.Session()
+    credentials = session.get_credentials()
+    assert credentials
+
+
 def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_listener=None,
         apigateway_update_listener=None,
         apis=['s3', 'es', 'apigateway', 'dynamodb', 'kinesis', 'dynamodbstreams', 'firehose', 'lambda']):
@@ -224,6 +237,8 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
         # set environment
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
+        # make sure AWS credentials are configured, otherwise boto3 bails on us
+        check_aws_credentials()
         # start services
         thread = None
         if 'es' in apis:

@@ -6,7 +6,9 @@ from localstack.utils.aws.aws_stack import render_velocity_template
 APIGATEWAY_TRANSFORMATION_TEMPLATE = """{
     "StreamName": "stream-1",
     "Records": [
-        #set( $maxIndex = $input.path('$.records').size() - 1 )
+        #set( $numRecords = $input.path('$.records').size() )
+        #if($numRecords > 0)
+        #set( $maxIndex = $numRecords - 1 )
         #foreach( $idx in [0..$maxIndex] )
         #set( $elem = $input.path("$.records[${idx}]") )
         #set( $elemJsonB64 = $util.base64Encode($input.json("$.records[${idx}].data")) )
@@ -15,6 +17,7 @@ APIGATEWAY_TRANSFORMATION_TEMPLATE = """{
             "PartitionKey": #if( $elem.partitionKey != '')"$elem.partitionKey"
                             #else"$elemJsonB64.length()"#end
         }#if($foreach.hasNext),#end
+        #end
         #end
     ]
 }"""
@@ -68,3 +71,12 @@ def test_message_transformation():
     assert result_decoded == records[0]['data']
     assert len(result['Records'][0]['PartitionKey']) > 0
     assert result['Records'][1]['PartitionKey'] == 'key123'
+
+    # test with empty array
+    records = []
+    context = {
+        'records': records
+    }
+    # try rendering the template
+    result = render_velocity_template(template, context, as_json=True)
+    assert result['Records'] == []
