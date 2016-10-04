@@ -26,6 +26,9 @@ EVENTS_FILE_PATTERN = '/tmp/kclipy.*.fifo'
 LOG_FILE_PATTERN = '/tmp/kclipy.*.log'
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-app'
 
+# define Java class names
+MULTI_LANG_DAEMON_CLASS = 'com.atlassian.KinesisStarter'
+
 # set up log levels
 logging.SEVERE = 60
 logging.FATAL = 70
@@ -82,15 +85,17 @@ class KinesisProcessor(kcl.RecordProcessorBase):
 
 class KinesisProcessorThread(ShellCommandThread):
     def __init__(self, params):
-        multi_lang_daemon_class = 'com.atlassian.KinesisStarter'
         props_file = params['properties_file']
         env_vars = params['env_vars']
         cmd = kclipy_helper.get_kcl_app_command('java',
-            multi_lang_daemon_class, props_file)
+            MULTI_LANG_DAEMON_CLASS, props_file)
         if not params['log_file']:
             params['log_file'] = '%s.log' % props_file
             TMP_FILES.append(params['log_file'])
-        ShellCommandThread.__init__(self, cmd, outfile=params['log_file'], env_vars=env_vars)
+        # print(cmd)
+        env = aws_stack.get_environment()
+        quiet = env.region == REGION_LOCAL
+        ShellCommandThread.__init__(self, cmd, outfile=params['log_file'], env_vars=env_vars, quiet=quiet)
 
     @staticmethod
     def start_consumer(kinesis_stream):
@@ -105,42 +110,53 @@ class OutputReaderThread(FuncThread):
         self.running = True
         self.buffer = []
         self.params = params
-        self.prefix = params.get('log_prefix') or 'LOG: '
         # number of lines that make up a single log entry
         self.buffer_size = 2
-        self.log_level = params.get('level') or DEFAULT_KCL_LOG_LEVEL
-        # regular expression to filter the printed output
-        levels = OutputReaderThread.get_log_level_names(self.log_level)
-        self.filter_regex = r'.*(%s):.*' % ('|'.join(levels))
+        # determine log level
+        self.log_level = params.get('level')
+        if self.log_level is None:
+            self.log_level = DEFAULT_KCL_LOG_LEVEL
+        if self.log_level > 0:
+            levels = OutputReaderThread.get_log_level_names(self.log_level)
+            # regular expression to filter the printed output
+            self.filter_regex = r'.*(%s):.*' % ('|'.join(levels))
+            # create prefix and logger
+            self.prefix = params.get('log_prefix') or 'LOG'
+            self.logger = logging.getLogger(self.prefix)
+            self.logger.severe = self.logger.critical
+            self.logger.fatal = self.logger.critical
+            self.logger.setLevel(self.log_level)
 
     @classmethod
     def get_log_level_names(cls, min_level):
         return [logging.getLevelName(l) for l in LOG_LEVELS if l >= min_level]
 
-    @classmethod
-    def get_logger_for_level_in_log_line(cls, line, level):
-        for level in LOG_LEVELS:
-            level_name = logging.getLevelName(level)
-            if re.match(r'.*(%s):.*' % level, line):
-                return LOGGER.__dict__[level.lower()]
+    def get_logger_for_level_in_log_line(self, line):
+        level = self.log_level
+        for l in LOG_LEVELS:
+            if l >= level:
+                level_name = logging.getLevelName(l)
+                if re.match(r'.*(%s):.*' % level_name, line):
+                    return getattr(self.logger, level_name.lower())
         return None
 
     def start_reading(self, params):
         for line in tail("-n", 0, "-f", params['file'], _iter=True):
             if not self.running:
                 return
-            line = line.replace('\n', '')
-            self.buffer.append(line)
-            if len(self.buffer) >= self.buffer_size:
-                logger_func = None
-                for line in self.buffer:
-                    if re.match(self.filter_regex, line):
-                        logger_func = OutputReaderThread.get_logger_for_level_in_log_line(line, self.log_level)
-                        break
-                if logger_func:
-                    for buffered_line in self.buffer:
-                        logger_func('%s%s' % (self.prefix, buffered_line))
-                self.buffer = []
+            if self.log_level > 0:
+                line = line.replace('\n', '')
+                self.buffer.append(line)
+                if len(self.buffer) >= self.buffer_size:
+                    logger_func = None
+                    for line in self.buffer:
+                        if re.match(self.filter_regex, line):
+                            logger_func = self.get_logger_for_level_in_log_line(line)
+                            break
+                    if logger_func:
+                        for buffered_line in self.buffer:
+                            logger_func(buffered_line)
+                    self.buffer = []
 
     def stop(self, quiet=True):
         self.running = False
@@ -239,6 +255,10 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
                 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']:
             if var_name in os.environ and var_name not in env_vars:
                 env_vars[var_name] = os.environ[var_name]
+    if env.region == REGION_LOCAL:
+        # need to disable CBOR protocol, enforce use of plain JSON,
+        # see https://github.com/mhart/kinesalite/issues/31
+        env_vars['AWS_CBOR_DISABLE'] = 'true'
     if kcl_log_level:
         if not log_file:
             log_file = LOG_FILE_PATTERN.replace('*', short_uid())
@@ -246,7 +266,7 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
         run('touch %s' % log_file)
         # start log output reader thread which will read the KCL log
         # file and print each line to stdout of this process...
-        reader_thread = OutputReaderThread({'file': log_file, 'level': kcl_log_level, 'log_prefix': 'KCL: '})
+        reader_thread = OutputReaderThread({'file': log_file, 'level': kcl_log_level, 'log_prefix': 'KCL'})
         reader_thread.start()
 
     # construct stream info

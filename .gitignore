@@ -15,3 +15,4 @@ localstack/infra/
 /dist/
 *.egg-info/
 .eggs/
+/target/

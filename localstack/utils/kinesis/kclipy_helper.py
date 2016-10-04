@@ -52,8 +52,6 @@ def get_kcl_classpath(properties=None, paths=[]):
     dir_name = os.path.dirname(os.path.realpath(__file__))
     paths.append(os.path.realpath(os.path.join(dir_name, 'java')))
     paths.insert(0, os.path.realpath(os.path.join(dir_name, '..', '..',
-            'infra', 'amazon-kinesis-client', 'amazon-kinesis-client.jar')))
-    paths.insert(0, os.path.realpath(os.path.join(dir_name, '..', '..',
             'infra', 'amazon-kinesis-client', 'aws-java-sdk-sts.jar')))
     return ":".join([p for p in paths if p != ''])
 

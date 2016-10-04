@@ -40,7 +40,7 @@ class FuncThread (threading.Thread):
         except Exception, e:
             if not self.quiet:
                 print("Thread run method %s(%s) failed: %s" %
-                    (self.func, self.params, traceback.format_exc(e)))
+                    (self.func, self.params, traceback.format_exc()))
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:
@@ -48,16 +48,25 @@ class FuncThread (threading.Thread):
 
 
 class ShellCommandThread (FuncThread):
-    def __init__(self, cmd, params={}, outfile=None, env_vars={}):
+    def __init__(self, cmd, params={}, outfile=None, env_vars={}, quiet=True):
         self.cmd = cmd
         self.process = None
         self.outfile = outfile
         self.env_vars = env_vars
-        FuncThread.__init__(self, self.run_cmd, params)
+        FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
-        self.process = run(self.cmd, async=True, outfile=self.outfile, env_vars=self.env_vars)
-        self.process.communicate()
+        try:
+            self.process = run(self.cmd, async=True, outfile=self.outfile, env_vars=self.env_vars)
+            if self.outfile:
+                self.process.wait()
+            else:
+                self.process.communicate()
+        except Exception, e:
+            if self.process and not self.quiet:
+                print('Shell command error "%s": %s' % (e, self.cmd))
+        if self.process and not self.quiet and self.process.returncode != 0:
+            print('Shell command exit code "%s": %s' % (self.process.returncode, self.cmd))
 
     def is_killed(self):
         if not self.process:

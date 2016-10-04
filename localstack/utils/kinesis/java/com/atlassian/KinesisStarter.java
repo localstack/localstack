@@ -1,23 +1,15 @@
 package com.atlassian;
 
 import java.net.URL;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
-import com.amazonaws.services.kinesis.multilang.MultiLangDaemon;
-import com.amazonaws.services.kinesis.multilang.MultiLangDaemonConfig;
-import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
+import com.amazonaws.services.kinesis.multilang.MultiLangDaemon;
+import com.amazonaws.services.kinesis.multilang.MultiLangDaemonConfig;
 
 /**
  * Custom extensions to <code>MultiLangDaemon</code> class from amazon-kinesis-client
@@ -27,6 +19,8 @@ import com.amazonaws.Protocol;
  * - dynamodbProtocol: protocol for DynamoDB API (http or https)
  * - kinesisProtocol: protocol for Kinesis API (http or https)
  * - metricsLevel: level of CloudWatch metrics to report (e.g., SUMMARY or NONE)
+ *
+ * @author Waldemar Hummer
  */
 public class KinesisStarter {
 
