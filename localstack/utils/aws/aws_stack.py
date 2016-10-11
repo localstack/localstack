@@ -4,13 +4,20 @@ import requests
 import json
 import base64
 import logging
-from elasticsearch import Elasticsearch
+import re
+from elasticsearch import Elasticsearch, RequestsHttpConnection
 from localstack.constants import *
 from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
+from requests_aws4auth import AWS4Auth
 
 # file to override environment information (used mainly for testing Lambdas locally)
 ENVIRONMENT_FILE = '.env.properties'
+
+# AWS environment variable names
+ENV_ACCESS_KEY = 'AWS_ACCESS_KEY_ID'
+ENV_SECRET_KEY = 'AWS_SECRET_ACCESS_KEY'
+ENV_SESSION_TOKEN = 'AWS_SESSION_TOKEN'
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -270,28 +277,70 @@ def get_apigateway_integration(api_id, method, path, env=None):
     return integration
 
 
-def connect_elasticsearch():
-    es = Elasticsearch([{
-        'host': LOCALHOST,
-        'port': DEFAULT_PORT_ELASTICSEARCH}])
-    return es
+def get_elasticsearch_endpoint(domain=None, region_name=None):
+    env = get_environment(region_name=region_name)
+    if env.region == REGION_LOCAL:
+        return os.environ['TEST_ELASTICSEARCH_URL']
+    # get endpoint from API
+    es_client = boto3.client('es', region_name=env.region)
+    info = es_client.describe_elasticsearch_domain(DomainName=domain)
+    endpoint = 'https://%s' % info['DomainStatus']['Endpoint']
+    return endpoint
 
 
-def delete_all_elasticsearch_indices(endpoint=None, env=None):
+def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None):
+    env = get_environment(env, region_name=region_name)
+    verify_certs = False
+    use_ssl = False
+    if not endpoint and env.region == REGION_LOCAL:
+        endpoint = os.environ['TEST_ELASTICSEARCH_URL']
+    if not endpoint and env.region != REGION_LOCAL and domain:
+        endpoint = get_elasticsearch_endpoint(domain=domain, region_name=env.region)
+    # use ssl?
+    if 'https://' in endpoint:
+        use_ssl = True
+        verify_certs = True
+    if ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ:
+        access_key = os.environ[ENV_ACCESS_KEY]
+        secret_key = os.environ[ENV_SECRET_KEY]
+        session_token = os.environ[ENV_SESSION_TOKEN] if ENV_SESSION_TOKEN in os.environ else None
+        awsauth = AWS4Auth(access_key, secret_key, env.region, 'es', session_token=session_token)
+        connection_class = RequestsHttpConnection
+        return Elasticsearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl,
+                             connection_class=connection_class, http_auth=awsauth)
+    return Elasticsearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
+
+
+def elasticsearch_get_indices(endpoint=None, domain=None, env=None):
+    es = connect_elasticsearch(endpoint=endpoint, env=env, domain=domain)
+    indices = es.cat.indices()
+    result = []
+    for s in re.split(r'\s+', indices):
+        if s:
+            result.append(s)
+    return result
+
+
+def elasticsearch_delete_index(index, endpoint=None, env=None, ignore_codes=[400, 404]):
+    es = connect_elasticsearch(endpoint=endpoint, env=env)
+    return es.indices.delete(index=index, ignore=ignore_codes)
+
+
+def delete_all_elasticsearch_indices(endpoint=None, env=None, domain=None):
     """
-    This function drops ALL indexes in Elasticsearch. Handle with care!
+    This function drops ALL indexes in Elasticsearch. Use with caution!
     """
-    env = aws_util.get_environment(env)
+    env = get_environment(env)
     if env.region != REGION_LOCAL:
         raise Exception('Refusing to delete ALL Elasticsearch indices outside of local dev environment.')
-    indices = aws_util.elasticsearch_get_indices(endpoint=endpoint, env=env)
+    indices = elasticsearch_get_indices(endpoint=endpoint, env=env, domain=domain)
     for index in indices:
-        aws_util.elasticsearch_delete_index(index, endpoint=endpoint, env=env)
+        elasticsearch_delete_index(index, endpoint=endpoint, env=env)
 
 
 def delete_all_elasticsearch_data():
     """
-    This function drops ALL data in the local Elasticsearch data folder. Handle with care!
+    This function drops ALL data in the local Elasticsearch data folder. Use with caution!
     """
     data_dir = os.path.join(LOCALSTACK_ROOT_FOLDER, 'infra', 'elasticsearch', 'data', 'elasticsearch', 'nodes')
     run('rm -rf "%s"' % data_dir)
