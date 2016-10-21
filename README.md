@@ -2,6 +2,8 @@
 
 ![LocalStack](https://i.imgsafe.org/fe38108cd6.png)
 
+**Please note: The main version of this repository is https://bitbucket.org/atlassian/localstack, please raise PRs against that repo.**
+
 *LocalStack* provides an easy-to-use test/mocking framework for developing Cloud applications.
 
 Currently, the focus is primarily on supporting the AWS cloud stack.
