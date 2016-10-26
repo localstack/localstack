@@ -176,6 +176,9 @@ def start_test(env=ENV_DEV):
         time.sleep(10)
 
         print('DynamoDB updates retrieved via Kinesis (actual/expected): %s/%s' % (len(EVENTS), num_events))
+        if len(EVENTS) != num_events:
+            print('ERROR receiving DynamoDB updates. Running processes:')
+            print(run("ps aux | grep 'python\|java\|node'"))
         assert len(EVENTS) == num_events
 
         print("Test finished successfully")

@@ -1,5 +1,5 @@
 VENV_DIR = .venv
-VENV_RUN = source $(VENV_DIR)/bin/activate
+VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
 ES_URL = https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.3.3/elasticsearch-2.3.3.zip
 TMP_ARCHIVE_ES = /tmp/localstack.es.zip
@@ -30,6 +30,9 @@ compile:           ## Compile Java code (KCL library utils)
 publish:           ## Publish the library to a PyPi repository
 	# build and upload archive
 	($(VENV_RUN) && ./setup.py sdist upload)
+
+coveralls:         ## Publish coveralls metrics
+	($(VENV_RUN); coveralls)
 
 infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); localstack/mock/infra.py)

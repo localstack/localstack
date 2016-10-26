@@ -1,3 +1,9 @@
+[![Build Status](https://travis-ci.org/atlassian/localstack.png)](https://travis-ci.org/atlassian/localstack)
+[![Coverage Status](https://coveralls.io/repos/github/atlassian/localstack/badge.svg?branch=master)](https://coveralls.io/github/atlassian/localstack?branch=master)
+[![PyPI Version](https://badge.fury.io/py/localstack.svg)](https://badge.fury.io/py/localstack)
+[![PyPI License](https://img.shields.io/pypi/l/localstack.svg)](https://img.shields.io/pypi/l/localstack.svg)
+[![Code Climate](https://codeclimate.com/github/atlassian/localstack/badges/gpa.svg)](https://codeclimate.com/github/atlassian/localstack)
+
 # LocalStack - A fully functional local AWS cloud stack
 
 ![LocalStack](https://i.imgsafe.org/fe38108cd6.png)

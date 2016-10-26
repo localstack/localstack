@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-# from __future__ import unicode_literals
 import os
 import sys
 import re
 import subprocess
 import setuptools
-import restricted_pkg
-from restricted_pkg import setup
-from setuptools import find_packages
+from setuptools import find_packages, setup
 from setuptools.command.install_lib import install_lib
 
 install_requires = []
@@ -75,14 +72,12 @@ if __name__ == '__main__':
 
     setup(
         name='localstack',
-        version='0.1.5',
+        version='0.1.6',
         description='Provides an easy-to-use test/mocking framework for developing Cloud applications',
-        author='Waldemar Hummer',
+        author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',
         url='https://bitbucket.org/atlassian/localstack',
-        private_repository='https://atlassian.artifactoryonline.com/atlassian/api/pypi/ai_pyp',
         custom_headers={
-            'X-JFrog-Art-Api': os.environ['PYPI_REPO_PASSWORD'],
             'Authorization': None
         },
         scripts=['bin/localstack'],
@@ -91,7 +86,7 @@ if __name__ == '__main__':
         install_requires=install_requires,
         dependency_links=dependency_links,
         test_suite="tests",
-        license="(C) Atlassian",
+        license="Apache License 2.0",
         cmdclass={
             'install_lib': InstallLibCommand
         },

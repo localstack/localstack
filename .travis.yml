@@ -1,0 +1,25 @@
+language: python
+
+python:
+  - "2.7"
+
+before_install:
+  - "sudo apt-get purge openjdk*"
+  - "sudo apt-get purge oracle-java7-*"
+
+addons:
+  apt:
+    packages:
+    - oracle-java8-installer
+
+install:
+  - travis_wait 20 make install
+
+script:
+  - make test
+
+after_success:  
+  - make coveralls
+
+notifications:
+  email: false
