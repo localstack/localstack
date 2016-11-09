@@ -6,6 +6,7 @@ import uuid
 import time
 import glob
 import requests
+import sh
 from datetime import datetime
 from multiprocessing.dummy import Pool
 from localstack.constants import *
@@ -222,6 +223,14 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
     f.close()
     clean_cache()
     return result
+
+
+def remove_non_ascii(text):
+    # text = unicode(text, "utf-8")
+    text = text.decode('utf-8', CODEC_HANDLER_UNDERSCORE)
+    # text = unicodedata.normalize('NFKD', text)
+    text = text.encode('ascii', CODEC_HANDLER_UNDERSCORE)
+    return text
 
 
 def make_http_request(url, data=None, headers=None, method='GET'):

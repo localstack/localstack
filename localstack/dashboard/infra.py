@@ -3,6 +3,7 @@ from localstack.utils.aws.aws_models import *
 import re
 import sh
 import json
+import logging
 import base64
 
 AWS_CACHE_TIMEOUT = 60 * 60  # TODO fix
@@ -11,6 +12,9 @@ MOCK_OBJ = False
 TMP_DOWNLOAD_FILE_PATTERN = '/tmp/tmpfile.*'
 TMP_DOWNLOAD_CACHE_MAX_AGE = 30 * 60
 last_cache_cleanup_time = {'time': 0}
+
+# logger
+LOG = logging.getLogger(__name__)
 
 
 def get_kinesis_streams(filter='.*', pool={}):
@@ -50,7 +54,7 @@ def get_kinesis_shards(stream_name=None, stream_details=None):
 def resolve_string_or_variable(string, code_map):
     if re.match(r'^["\'].*["\']$', string):
         return string.replace('"', '').replace("'", '')
-    log("WARNING: Variable resolution not implemented")
+    LOG.warning("Variable resolution not implemented")
     return None
 
 
@@ -120,7 +124,7 @@ def get_lambda_functions(filter='.*', details=False, pool={}):
                     code_map = get_lambda_code(func_name)
                     f.targets = extract_endpoints(code_map, pool)
                 except Exception, e:
-                    log("WARN: Unable to get code for lambda '%s'" % func_name)
+                    LOG.warning("Unable to get code for lambda '%s'" % func_name)
     parallelize(handle, out['Functions'])
     # print result
     return result
@@ -363,10 +367,10 @@ def get_graph(name_filter='.*'):
                 lookup_id = s.id
                 if isinstance(s, DynamoDBStream):
                     lookup_id = s.table.id
-                result['edges'].append({'source': node_ids[lookup_id], 'target': uid})
+                result['edges'].append({'source': node_ids.get(lookup_id), 'target': uid})
             for t in l.targets:
                 lookup_id = t.id
-                result['edges'].append({'source': uid, 'target': node_ids[lookup_id]})
+                result['edges'].append({'source': uid, 'target': node_ids.get(lookup_id)})
         for b in buckets:
             for n in b.notifications:
                 src_uid = node_ids[b.id]
