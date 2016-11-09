@@ -1,5 +1,6 @@
 *.pyc
 *.class
+*.log
 /infra/
 /node_modules/
 /nosetests.xml
