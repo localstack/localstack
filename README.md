@@ -110,6 +110,15 @@ make install-web
 make web
 ```
 
+## Change Log
+
+* v0.1.7: Bump version of amazon_kclpy to 1.4.0
+* v0.1.6: Add travis-ci and coveralls configuration
+* v0.1.5: Refactor Elasticsearch utils; fix bug in method to delete all ES indexes
+* v0.1.4: Enhance logging; extend java KCL credentials provider (support STS assumed roles)
+* v0.1.2: Add configurable KCL log output
+* v0.1.0: Initial release
+
 ## Contributing
 
 We welcome feedback, bug reports, and pull requests!
