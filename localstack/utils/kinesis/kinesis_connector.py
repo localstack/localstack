@@ -337,7 +337,9 @@ if __name__ == '__main__':
 
     def receive_msg(records, checkpointer, shard_id):
         try:
-            sock.send(b'%%s\\n' %% json.dumps(records))
+            # records is a list of amazon_kclpy.messages.Record objects -> convert to JSON
+            records_dicts = [j._json_dict for j in records]
+            sock.send(b'%%s\\n' %% json.dumps(records_dicts))
         except Exception, e:
             print("WARN: Unable to forward event: %%s" %% e)
     kinesis_connector.KinesisProcessor.run_processor(log_file=log_file, processor_func=receive_msg)
