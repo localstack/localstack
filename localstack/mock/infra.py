@@ -91,6 +91,18 @@ def start_s3(port=DEFAULT_PORT_S3, async=False):
     return do_run(cmd, async)
 
 
+def start_sns(port=DEFAULT_PORT_SNS, async=False):
+    cmd = '%s/bin/moto_server sns -p%s' % (LOCALSTACK_VENV_FOLDER, port)
+    print("Starting mock SNS server (port %s)..." % port)
+    return do_run(cmd, async)
+
+
+def start_sqs(port=DEFAULT_PORT_SQS, async=False):
+    cmd = '%s/bin/moto_server sqs -p%s' % (LOCALSTACK_VENV_FOLDER, port)
+    print("Starting mock SQS server (port %s)..." % port)
+    return do_run(cmd, async)
+
+
 def start_firehose(port=DEFAULT_PORT_FIREHOSE, async=False):
     print("Starting mock Firehose (port %s)..." % port)
     if async:
@@ -226,7 +238,7 @@ def check_aws_credentials():
 
 def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_listener=None,
         apigateway_update_listener=None,
-        apis=['s3', 'es', 'apigateway', 'dynamodb', 'kinesis', 'dynamodbstreams', 'firehose', 'lambda']):
+        apis=['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb', 'kinesis', 'dynamodbstreams', 'firehose', 'lambda']):
     try:
         if not dynamodb_update_listener:
             dynamodb_update_listener = update_dynamodb
@@ -247,6 +259,10 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
             thread = start_elasticsearch(async=True)
         if 's3' in apis:
             thread = start_s3(async=True)
+        if 'sns' in apis:
+            thread = start_sns(async=True)
+        if 'sqs' in apis:
+            thread = start_sqs(async=True)
         if 'apigateway' in apis:
             thread = start_apigateway(async=True, update_listener=apigateway_update_listener)
         if 'dynamodb' in apis:
