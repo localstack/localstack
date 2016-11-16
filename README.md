@@ -112,6 +112,7 @@ make web
 
 ## Change Log
 
+* v0.1.8: Fix installation of JARs in amazon_kclpy if localstack is installed transitively
 * v0.1.7: Bump version of amazon_kclpy to 1.4.0
 * v0.1.6: Add travis-ci and coveralls configuration
 * v0.1.5: Refactor Elasticsearch utils; fix bug in method to delete all ES indexes
