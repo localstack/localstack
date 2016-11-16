@@ -8,21 +8,33 @@ usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
 install:           ## Install npm/pip dependencies, compile code
+	make install-pypi
+
+install-pypi:
+	make setup-venv && make install-libs
+	# re-install amazon_kclpy as it needs to re-download JAR files which are otherwise missing in the cached copy
+	($(VENV_RUN); pip uninstall -y amazon_kclpy)
+	($(VENV_RUN); cat requirements.txt | grep 'amazon_kclpy==' | xargs pip install --no-cache)
+	make compile
+
+setup-venv:
 	(test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv)
 	(test -e $(VENV_DIR) || virtualenv $(VENV_DIR))
 	($(VENV_RUN) && pip install --upgrade pip)
 	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
+
+install-libs:      ## Install npm/pip dependencies, compile code
 	(test -e localstack/infra/elasticsearch || { mkdir -p localstack/infra; cd localstack/infra; test -f $(TMP_ARCHIVE_ES) || (curl -o $(TMP_ARCHIVE_ES) $(ES_URL)); cp $(TMP_ARCHIVE_ES) es.zip; unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; })
 	(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || { mkdir -p localstack/infra/amazon-kinesis-client; curl -o localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar $(AWS_STS_URL); })
 	(npm install -g npm || sudo npm install -g npm)
 	(cd localstack/ && (test ! -e package.json || (npm install)))
-	make compile
-	# make install-web
 
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install))
 
 compile:           ## Compile Java code (KCL library utils)
+	echo "Compiling"
+	$(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()'
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()') localstack/utils/kinesis/java/com/atlassian/*.java
 	# TODO enable once we want to support Java-based Lambdas
 	# (cd localstack/mock && mvn package)
@@ -57,4 +69,4 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 	rm -f $(TMP_ARCHIVE_ES)
 
-.PHONY: usage compile clean install web install-web infra test
+.PHONY: usage compile clean install web install-web infra test install-libs

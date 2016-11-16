@@ -3,11 +3,12 @@
 from __future__ import print_function
 from amazon_kclpy import kcl
 from glob import glob
-from localstack.utils.common import save_file
+from localstack.utils.common import save_file, run
 import os
 import argparse
 import sys
 import samples
+import traceback
 
 
 def get_dir_of_file(f):
@@ -19,7 +20,8 @@ def get_kcl_dir():
 
 
 def get_kcl_jar_path():
-    return ':'.join(glob(os.path.join(get_kcl_dir(), 'jars', '*jar')))
+    jars = ':'.join(glob(os.path.join(get_kcl_dir(), 'jars', '*jar')))
+    return jars
 
 
 def get_kcl_classpath(properties=None, paths=[]):
