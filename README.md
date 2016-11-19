@@ -24,6 +24,9 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 * **S3** at http://localhost:4572
 * **Firehose** at http://localhost:4573
 * **Lambda** at http://localhost:4574
+* **SNS** at http://localhost:4575
+* **SQS** at http://localhost:4576
+
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
 a fully featured KCL Kinesis client with Python binding, simple setup/teardown integration for nosetests, as
@@ -112,6 +115,8 @@ make web
 
 ## Change Log
 
+* v0.1.10: Bump version of amazon_kclpy to 1.4.1
+* v0.1.9: Add initial support for SQS/SNS
 * v0.1.8: Fix installation of JARs in amazon_kclpy if localstack is installed transitively
 * v0.1.7: Bump version of amazon_kclpy to 1.4.0
 * v0.1.6: Add travis-ci and coveralls configuration
