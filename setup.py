@@ -35,7 +35,7 @@ def do_make_install(workdir=None):
         prev_workdir = os.getcwd()
         os.chdir(workdir)
     try:
-        out = subprocess.check_output('make install-pypi', shell=True)
+        out = subprocess.check_output('make install', shell=True)
     except subprocess.CalledProcessError as e:
         print e.output
         raise e
@@ -76,7 +76,7 @@ if __name__ == '__main__':
 
     setup(
         name='localstack',
-        version='0.1.9',
+        version='0.1.10',
         description='Provides an easy-to-use test/mocking framework for developing Cloud applications',
         author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',
