@@ -8,13 +8,7 @@ usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
 install:           ## Install npm/pip dependencies, compile code
-	make install-pypi
-
-install-pypi:
 	make setup-venv && make install-libs
-	# re-install amazon_kclpy as it needs to re-download JAR files which are otherwise missing in the cached copy
-	($(VENV_RUN); pip uninstall -y amazon_kclpy)
-	($(VENV_RUN); cat requirements.txt | grep 'amazon_kclpy==' | xargs pip install --no-cache)
 	make compile
 
 setup-venv:
