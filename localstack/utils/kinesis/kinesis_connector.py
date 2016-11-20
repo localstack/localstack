@@ -10,6 +10,7 @@ import time
 import traceback
 import threading
 import logging
+import Queue
 from urlparse import urlparse
 from amazon_kclpy import kcl
 from docopt import docopt
@@ -114,6 +115,8 @@ class OutputReaderThread(FuncThread):
         self.buffer_size = 2
         # determine log level
         self.log_level = params.get('level')
+        # get log subscribers
+        self.log_subscribers = params.get('log_subscribers', [])
         if self.log_level is None:
             self.log_level = DEFAULT_KCL_LOG_LEVEL
         if self.log_level > 0:
@@ -140,12 +143,20 @@ class OutputReaderThread(FuncThread):
                     return getattr(self.logger, level_name.lower())
         return None
 
+    def notify_subscribers(self, line):
+        for subscriber in self.log_subscribers:
+            if re.match(subscriber.regex, line):
+                subscriber.update(line)
+
     def start_reading(self, params):
         for line in tail("-n", 0, "-f", params['file'], _iter=True):
             if not self.running:
                 return
             if self.log_level > 0:
                 line = line.replace('\n', '')
+                # notify subscribers
+                self.notify_subscribers(line)
+                # add line to buffer
                 self.buffer.append(line)
                 if len(self.buffer) >= self.buffer_size:
                     logger_func = None
@@ -205,6 +216,33 @@ class EventFileReaderThread(FuncThread):
         self.running = False
 
 
+class KclLogListener(object):
+    def __init__(self, regex='.*'):
+        self.regex = regex
+
+    def update(self, log_line):
+        print(log_line)
+
+
+class KclStartedLogListener(KclLogListener):
+    def __init__(self):
+        self.regex_init = r'.*Initialization complete.*'
+        self.regex_take_shard = r'.*Received response .* for initialize.*'
+        # construct combined regex
+        regex = r'(%s)|(%s)' % (self.regex_init, self.regex_take_shard)
+        super(KclStartedLogListener, self).__init__(regex=regex)
+        # Semaphore.acquire does not provide timeout parameter, so we
+        # use a Queue here which provides the required functionality
+        self.sync_init = Queue.Queue(0)
+        self.sync_take_shard = Queue.Queue(0)
+
+    def update(self, log_line):
+        if re.match(self.regex_init, log_line):
+            self.sync_init.put(1, block=False)
+        if re.match(self.regex_take_shard, log_line):
+            self.sync_take_shard.put(1, block=False)
+
+
 # construct a stream info hash
 def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_url=None,
         ddb_lease_table_suffix=None, env_vars={}):
@@ -242,7 +280,8 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
 
 
 def start_kcl_client_process(stream_name, listener_script, log_file=None, env=None, configs={},
-        endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}, kcl_log_level=DEFAULT_KCL_LOG_LEVEL):
+        endpoint_url=None, ddb_lease_table_suffix=None, env_vars={},
+        kcl_log_level=DEFAULT_KCL_LOG_LEVEL, log_subscribers=[]):
     env = aws_stack.get_environment(env)
     # decide which credentials provider to use
     credentialsProvider = None
@@ -266,7 +305,8 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
         run('touch %s' % log_file)
         # start log output reader thread which will read the KCL log
         # file and print each line to stdout of this process...
-        reader_thread = OutputReaderThread({'file': log_file, 'level': kcl_log_level, 'log_prefix': 'KCL'})
+        reader_thread = OutputReaderThread({'file': log_file, 'level': kcl_log_level,
+            'log_prefix': 'KCL', 'log_subscribers': log_subscribers})
         reader_thread.start()
 
     # construct stream info
@@ -352,7 +392,8 @@ if __name__ == '__main__':
 
 def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         events_file=None, endpoint_url=None, log_file=None, configs={}, env=None,
-        ddb_lease_table_suffix=None, env_vars={}, kcl_log_level=DEFAULT_KCL_LOG_LEVEL):
+        ddb_lease_table_suffix=None, env_vars={}, kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
+        log_subscribers=[], wait_until_started=False):
     """
     High-level function that allows to subscribe to a Kinesis stream
     and receive events in a listener function. A KCL client process is
@@ -375,6 +416,27 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     # start KCL client (background process)
     if processor_script[-4:] == '.pyc':
         processor_script = processor_script[0:-1]
-    return start_kcl_client_process(stream_name, processor_script,
+    # add log listener that notifies when KCL is started
+    if wait_until_started:
+        listener = KclStartedLogListener()
+        log_subscribers.append(listener)
+
+    process = start_kcl_client_process(stream_name, processor_script,
         endpoint_url=endpoint_url, log_file=log_file, configs=configs, env=env,
-        ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars, kcl_log_level=kcl_log_level)
+        ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars, kcl_log_level=kcl_log_level,
+        log_subscribers=log_subscribers)
+
+    if wait_until_started:
+        # wait at most 30 seconds for initialization
+        try:
+            listener.sync_init.get(block=True, timeout=30)
+        except Exception, e:
+            raise Exception('Timeout when waiting for KCL initialization.')
+        # wait at most 30 seconds for shard lease notification
+        try:
+            listener.sync_take_shard.get(block=True, timeout=30)
+        except Exception, e:
+            # this merely means that there is no shard available to take. Do nothing.
+            pass
+
+    return process

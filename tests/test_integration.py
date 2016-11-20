@@ -140,10 +140,10 @@ def start_test(env=ENV_DEV):
             EVENTS.extend(records)
 
         # start the KCL client process in the background
-        kinesis_connector.listen_to_kinesis(TEST_STREAM_NAME, listener_func=process_records)
+        kinesis_connector.listen_to_kinesis(TEST_STREAM_NAME, listener_func=process_records,
+            wait_until_started=True)
 
-        print("Sleep some time (to give the Kinesis consumer enough time to come up)")
-        time.sleep(25)
+        print("Kinesis consumer initialized.")
 
         # create table with stream forwarding config
         create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY,

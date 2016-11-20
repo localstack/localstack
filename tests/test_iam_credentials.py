@@ -22,8 +22,8 @@ def run_kcl_with_iam_assume_role():
             stream_name=stream_name,
             listener_func=process_records,
             env_vars=env_vars,
-            kcl_log_level=logging.INFO)
-        time.sleep(60 * 10)
+            kcl_log_level=logging.INFO,
+            wait_until_started=True)
 
 if __name__ == '__main__':
     run_kcl_with_iam_assume_role()
