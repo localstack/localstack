@@ -8,8 +8,9 @@ usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
 install:           ## Install npm/pip dependencies, compile code
-	make setup-venv && make install-libs
-	make compile
+	make setup-venv && \
+		make install-libs && \
+		make compile
 
 setup-venv:
 	(test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv)
@@ -18,10 +19,10 @@ setup-venv:
 	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
 
 install-libs:      ## Install npm/pip dependencies, compile code
-	(test -e localstack/infra/elasticsearch || { mkdir -p localstack/infra; cd localstack/infra; test -f $(TMP_ARCHIVE_ES) || (curl -o $(TMP_ARCHIVE_ES) $(ES_URL)); cp $(TMP_ARCHIVE_ES) es.zip; unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; })
-	(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || { mkdir -p localstack/infra/amazon-kinesis-client; curl -o localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar $(AWS_STS_URL); })
-	(npm install -g npm || sudo npm install -g npm)
-	(cd localstack/ && (test ! -e package.json || (npm install)))
+	(test -e localstack/infra/elasticsearch || { mkdir -p localstack/infra; cd localstack/infra; test -f $(TMP_ARCHIVE_ES) || (curl -o $(TMP_ARCHIVE_ES) $(ES_URL)); cp $(TMP_ARCHIVE_ES) es.zip; unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; }) && \
+		(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || { mkdir -p localstack/infra/amazon-kinesis-client; curl -o localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar $(AWS_STS_URL); }) && \
+		(npm install -g npm || sudo npm install -g npm) && \
+		(cd localstack/ && (test ! -e package.json || (npm install)))
 
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install))

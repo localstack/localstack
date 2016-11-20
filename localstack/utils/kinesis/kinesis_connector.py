@@ -145,17 +145,20 @@ class OutputReaderThread(FuncThread):
 
     def notify_subscribers(self, line):
         for subscriber in self.log_subscribers:
-            if re.match(subscriber.regex, line):
-                subscriber.update(line)
+            try:
+                if re.match(subscriber.regex, line):
+                    subscriber.update(line)
+            except Exception, e:
+                LOGGER.warning('Unable to notify log subscriber: %s' % e)
 
     def start_reading(self, params):
         for line in tail("-n", 0, "-f", params['file'], _iter=True):
             if not self.running:
                 return
+            line = line.replace('\n', '')
+            # notify subscribers
+            self.notify_subscribers(line)
             if self.log_level > 0:
-                line = line.replace('\n', '')
-                # notify subscribers
-                self.notify_subscribers(line)
                 # add line to buffer
                 self.buffer.append(line)
                 if len(self.buffer) >= self.buffer_size:
@@ -298,7 +301,7 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
         # need to disable CBOR protocol, enforce use of plain JSON,
         # see https://github.com/mhart/kinesalite/issues/31
         env_vars['AWS_CBOR_DISABLE'] = 'true'
-    if kcl_log_level:
+    if kcl_log_level or (len(log_subscribers) > 0):
         if not log_file:
             log_file = LOG_FILE_PATTERN.replace('*', short_uid())
             TMP_FILES.append(log_file)
