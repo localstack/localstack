@@ -282,7 +282,7 @@ def get_elasticsearch_endpoint(domain=None, region_name=None):
     if env.region == REGION_LOCAL:
         return os.environ['TEST_ELASTICSEARCH_URL']
     # get endpoint from API
-    es_client = boto3.client('es', region_name=env.region)
+    es_client = connect_to_service(service_name='es', region_name=env.region)
     info = es_client.describe_elasticsearch_domain(DomainName=domain)
     endpoint = 'https://%s' % info['DomainStatus']['Endpoint']
     return endpoint
