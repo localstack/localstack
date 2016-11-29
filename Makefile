@@ -3,6 +3,7 @@ VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
 ES_URL = https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.3.3/elasticsearch-2.3.3.zip
 TMP_ARCHIVE_ES = /tmp/localstack.es.zip
+APIS=s3 sns sqs es apigateway dynamodb kinesis dynamodbstreams firehose lambda
 
 usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
@@ -42,7 +43,7 @@ coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
 infra:             ## Manually start the local infrastructure for testing
-	($(VENV_RUN); localstack/mock/infra.py)
+	($(VENV_RUN); localstack/mock/infra.py $(APIS))
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8081)

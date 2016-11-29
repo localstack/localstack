@@ -4,7 +4,7 @@
 Main script for starting localstack components.
 
 Usage:
-  localstack infra
+  localstack infra [<api>...]
   localstack web [ --port=<port> ]
   localstack (-h | --help)
 
@@ -29,7 +29,11 @@ if __name__ == "__main__":
 
     if args['infra']:
         print('Starting local dev environment. CTRL-C to quit.')
-        infra.start_infra()
+        apis = args['<api>']
+        if apis:
+            infra.start_infra(apis=apis)
+        else:
+            infra.start_infra()
     elif args['web']:
         import localstack.dashboard.api
         port = args['--port'] or DEFAULT_PORT
