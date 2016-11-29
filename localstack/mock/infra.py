@@ -1,5 +1,16 @@
 #!/usr/bin/env python
 
+"""
+Main script for starting localstack components.
+
+Usage:
+  localstack [<api>...]
+  localstack (-h | --help)
+
+Options:
+  -h --help     Show this screen.
+"""
+
 import os
 import re
 import sys
@@ -418,5 +429,12 @@ def dynamodb_extract_keys(item, table_name):
 
 
 if __name__ == '__main__':
+    from docopt import docopt
+    args = docopt(__doc__)
+
     print('Starting local dev environment. CTRL-C to quit.')
-    start_infra()
+    apis = args['<api>']
+    if apis:
+        start_infra(apis=apis)
+    else:
+        start_infra()
