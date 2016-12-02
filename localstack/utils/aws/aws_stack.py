@@ -132,18 +132,22 @@ def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=N
     return connect_to_service(service_name, client=False, env=env, region_name=region_name, endpoint_url=endpoint_url)
 
 
+def get_boto3_session():
+    my_session = None
+    if CUSTOM_BOTO3_SESSION:
+        return CUSTOM_BOTO3_SESSION
+    if CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
+        return boto3.session.Session()
+    # return default session
+    return boto3
+
+
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
     env = get_environment(env, region_name=region_name)
-    my_session = None
-    if CUSTOM_BOTO3_SESSION:
-        my_session = CUSTOM_BOTO3_SESSION
-    elif CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
-        my_session = boto3.session.Session()
-    else:
-        my_session = boto3
+    my_session = get_boto3_session()
     method = my_session.client if client else my_session.resource
     if not endpoint_url:
         if env.region == REGION_LOCAL:
