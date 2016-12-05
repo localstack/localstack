@@ -300,10 +300,15 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
     if 'https://' in endpoint:
         use_ssl = True
         verify_certs = True
-    if ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ:
-        access_key = os.environ[ENV_ACCESS_KEY]
-        secret_key = os.environ[ENV_SECRET_KEY]
-        session_token = os.environ[ENV_SESSION_TOKEN] if ENV_SESSION_TOKEN in os.environ else None
+    if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):
+        access_key = os.environ.get(ENV_ACCESS_KEY)
+        secret_key = os.environ.get(ENV_SECRET_KEY)
+        session_token = os.environ.get(ENV_SESSION_TOKEN)
+        if CUSTOM_BOTO3_SESSION:
+            credentials = CUSTOM_BOTO3_SESSION.get_credentials()
+            access_key = credentials.access_key
+            secret_key = credentials.secret_key
+            session_token = credentials.token
         awsauth = AWS4Auth(access_key, secret_key, env.region, 'es', session_token=session_token)
         connection_class = RequestsHttpConnection
         return Elasticsearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl,
