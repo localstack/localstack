@@ -49,16 +49,17 @@ class FuncThread (threading.Thread):
 
 
 class ShellCommandThread (FuncThread):
-    def __init__(self, cmd, params={}, outfile=None, env_vars={}, quiet=True):
+    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False, quiet=True):
         self.cmd = cmd
         self.process = None
         self.outfile = outfile
+        self.stdin = stdin
         self.env_vars = env_vars
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
         try:
-            self.process = run(self.cmd, async=True, outfile=self.outfile, env_vars=self.env_vars)
+            self.process = run(self.cmd, async=True, stdin=self.stdin, outfile=self.outfile, env_vars=self.env_vars)
             if self.outfile:
                 self.process.wait()
             else:
