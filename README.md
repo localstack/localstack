@@ -115,6 +115,7 @@ make web
 
 ## Change Log
 
+* v0.1.16: Minor restructuring and refactoring (create separate kinesis_util.py)
 * v0.1.14: Fix AWS tokens when creating Elasticsearch client
 * v0.1.11: Add startup/initialization notification for KCL process
 * v0.1.10: Bump version of amazon_kclpy to 1.4.1
