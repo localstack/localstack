@@ -307,8 +307,9 @@ def generate_processor_script(events_file, log_file=None):
     else:
         log_file = 'None'
     content = """#!/usr/bin/env python
-import os, sys, json, socket, time
+import os, sys, json, socket, time, logging
 import subprocess32 as subprocess
+logging.basicConfig(level=logging.INFO)
 sys.path.insert(0, '%s/lib/python2.7/site-packages')
 sys.path.insert(0, '%s')
 from localstack.utils.kinesis import kinesis_connector
