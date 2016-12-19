@@ -117,16 +117,9 @@ def create_lambda_function(func_name, zip_file, event_source_arn, handler=DEFAUL
 def start_test(env=ENV_DEV):
     try:
         # setup environment
-        spawn_thread = True
         if env == ENV_DEV:
-            def do_start_infra(params):
-                infra.start_infra(async=True)
-            if spawn_thread:
-                thread = FuncThread(do_start_infra, None)
-                thread.start()
-                time.sleep(6)
-            else:
-                do_start_infra()
+            infra.start_infra(async=True)
+            time.sleep(6)
 
         dynamodb = aws_stack.connect_to_resource('dynamodb', env=env)
         dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams', env=env)
@@ -136,7 +129,7 @@ def start_test(env=ENV_DEV):
         aws_stack.create_kinesis_stream(TEST_STREAM_NAME)
 
         # subscribe to inbound Kinesis stream
-        def process_records(records):
+        def process_records(records, shard_id):
             EVENTS.extend(records)
 
         # start the KCL client process in the background

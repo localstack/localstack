@@ -1,8 +1,7 @@
 VENV_DIR = .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
-ES_URL = https://download.elastic.co/elasticsearch/release/org/elasticsearch/distribution/zip/elasticsearch/2.3.3/elasticsearch-2.3.3.zip
-TMP_ARCHIVE_ES = /tmp/localstack.es.zip
+AWS_STS_TMPFILE = /tmp/aws-java-sdk-sts.jar
 
 usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
@@ -18,11 +17,9 @@ setup-venv:
 	($(VENV_RUN) && pip install --upgrade pip)
 	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
 
-install-libs:      ## Install npm/pip dependencies, compile code
-	(test -e localstack/infra/elasticsearch || { mkdir -p localstack/infra; cd localstack/infra; test -f $(TMP_ARCHIVE_ES) || (curl -o $(TMP_ARCHIVE_ES) $(ES_URL)); cp $(TMP_ARCHIVE_ES) es.zip; unzip -q es.zip; mv elasticsearch* elasticsearch; rm es.zip; }) && \
-		(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || { mkdir -p localstack/infra/amazon-kinesis-client; curl -o localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar $(AWS_STS_URL); }) && \
-		(npm install -g npm || sudo npm install -g npm) && \
-		(cd localstack/ && (test ! -e package.json || (npm install)))
+install-libs:      ## Install npm/pip dependencies
+	(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || { (test -e $(AWS_STS_TMPFILE) || curl -o $(AWS_STS_TMPFILE) $(AWS_STS_URL)); mkdir -p localstack/infra/amazon-kinesis-client; cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
+		(npm install -g npm || sudo npm install -g npm)
 
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install))
@@ -62,6 +59,5 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf localstack/node_modules/
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
-	rm -f $(TMP_ARCHIVE_ES)
 
 .PHONY: usage compile clean install web install-web infra test install-libs

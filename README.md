@@ -115,6 +115,8 @@ make web
 
 ## Change Log
 
+* v0.2.0: Speed up installation time by lazy loading libraries
+* v0.1.19: Pass shard_id in records sent from KCL process
 * v0.1.16: Minor restructuring and refactoring (create separate kinesis_util.py)
 * v0.1.14: Fix AWS tokens when creating Elasticsearch client
 * v0.1.11: Add startup/initialization notification for KCL process

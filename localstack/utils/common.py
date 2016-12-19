@@ -267,8 +267,10 @@ def truncate(data, max_length=100):
     return (data[:max_length] + '...') if len(data) > max_length else data
 
 
-def parallelize(func, list):
-    pool = Pool(len(list))
+def parallelize(func, list, size=None):
+    if not size:
+        size = len(list)
+    pool = Pool(size)
     result = pool.map(func, list)
     pool.close()
     pool.join()
