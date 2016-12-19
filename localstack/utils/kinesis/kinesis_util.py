@@ -2,7 +2,8 @@ import json
 import socket
 import traceback
 import logging
-from localstack.utils.common import FuncThread
+import inspect
+from localstack.utils.common import FuncThread, truncate
 
 # set up local logger
 LOGGER = logging.getLogger(__name__)
@@ -40,8 +41,14 @@ class EventFileReaderThread(FuncThread):
                 break
             else:
                 try:
-                    records = json.loads(line)
-                    self.callback(records)
+                    event = json.loads(line)
+                    records = event['records']
+                    shard_id = event['shard_id']
+                    method_args = inspect.getargspec(self.callback)[0]
+                    if len(method_args) > 1:
+                        self.callback(records, shard_id=shard_id)
+                    else:
+                        self.callback(records)
                 except Exception, e:
                     LOGGER.warning("Unable to process JSON line: '%s': %s. Callback: %s" %
                         (truncate(line), traceback.format_exc(), self.callback))

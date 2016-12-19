@@ -77,3 +77,7 @@ APPLICATION_JSON = 'application/json'
 # Lambda defaults
 LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 LAMBDA_MAIN_SCRIPT_NAME = 'handler.py'
+
+# installation constants
+ELASTICSEARCH_JAR_URL = ('https://download.elastic.co/elasticsearch/release/org/elasticsearch/' +
+    'distribution/zip/elasticsearch/2.3.3/elasticsearch-2.3.3.zip')

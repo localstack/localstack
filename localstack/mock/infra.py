@@ -17,8 +17,8 @@ from localstack.mock import firehose_api, lambda_api, generic_proxy, dynamodbstr
 from localstack.mock.generic_proxy import GenericProxy
 from localstack.constants import *
 
-this_path = os.path.dirname(os.path.realpath(__file__))
-root_path = os.path.realpath(os.path.join(this_path, '..'))
+THIS_PATH = os.path.dirname(os.path.realpath(__file__))
+ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
 
 # will be set to True if user hits CTRL-C
 KILLED = False
@@ -29,6 +29,14 @@ TABLE_DEFINITIONS = {}
 # constants
 KINESIS_ACTION_PUT_RECORD = 'Kinesis_20131202.PutRecord'
 KINESIS_ACTION_PUT_RECORDS = 'Kinesis_20131202.PutRecords'
+
+INSTALL_DIR_INFRA = '%s/infra' % ROOT_PATH
+INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
+INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
+TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
+
+# set up logger
+LOGGER = logging.getLogger(__name__)
 
 
 def do_run(cmd, async):
@@ -41,9 +49,47 @@ def do_run(cmd, async):
         return run(cmd)
 
 
+def install_elasticsearch():
+    if not os.path.exists(INSTALL_DIR_ES):
+        LOGGER.info('Downloading and installing local Elasticsearch server. This may take some time.')
+        run('mkdir -p %s' % INSTALL_DIR_INFRA)
+        if not os.path.exists(TMP_ARCHIVE_ES):
+            run('curl -o "%s" "%s"' % (TMP_ARCHIVE_ES, ELASTICSEARCH_JAR_URL))
+        cmd = 'cd %s && cp %s es.zip && unzip -q es.zip && mv elasticsearch* elasticsearch && rm es.zip'
+        run(cmd % (INSTALL_DIR_INFRA, TMP_ARCHIVE_ES))
+
+
+def install_kinesalite():
+    target_dir = '%s/kinesalite' % INSTALL_DIR_NPM
+    if not os.path.exists(target_dir):
+        LOGGER.info('Downloading and installing local Kinesis server. This may take some time.')
+        run('cd "%s" && npm install kinesalite' % ROOT_PATH)
+
+
+def install_dynalite():
+    target_dir = '%s/dynalite' % INSTALL_DIR_NPM
+    if not os.path.exists(target_dir):
+        LOGGER.info('Downloading and installing local DynamoDB server. This may take some time.')
+        run('cd "%s" && npm install dynalite' % ROOT_PATH)
+
+
+def install_component(name):
+    if name == 'kinesis':
+        install_kinesalite()
+    elif name == 'dynamodb':
+        install_dynalite()
+    elif name == 'es':
+        install_elasticsearch()
+
+
+def install_components(names):
+    common.parallelize(install_component, names)
+
+
 def start_dynalite(port=DEFAULT_PORT_DYNAMODB, async=False, update_listener=None):
+    install_dynalite()
     backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
-    cmd = '%s/node_modules/dynalite/cli.js --port %s' % (root_path, backend_port)
+    cmd = '%s/node_modules/dynalite/cli.js --port %s' % (ROOT_PATH, backend_port)
     print("Starting mock DynamoDB (port %s)..." % port)
     proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
                         backend_port, update_listener=update_listener)
@@ -53,9 +99,10 @@ def start_dynalite(port=DEFAULT_PORT_DYNAMODB, async=False, update_listener=None
 
 
 def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, update_listener=None):
+    install_kinesalite()
     backend_port = DEFAULT_PORT_KINESIS_BACKEND
     cmd = ('%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s' %
-        (root_path, shard_limit, backend_port))
+        (ROOT_PATH, shard_limit, backend_port))
     print("Starting mock Kinesis (port %s)..." % port)
     proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
                         backend_port, update_listener=update_listener)
@@ -65,11 +112,12 @@ def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, up
 
 
 def start_elasticsearch(port=DEFAULT_PORT_ELASTICSEARCH, delete_data=True, async=False):
+    install_elasticsearch()
     cmd = ('%s/infra/elasticsearch/bin/elasticsearch --http.port=%s --http.publish_port=%s' %
-        (root_path, port, port))
+        (ROOT_PATH, port, port))
     print("Starting local Elasticsearch (port %s)..." % port)
     if delete_data:
-        path = '%s/infra/elasticsearch/data/elasticsearch' % (root_path)
+        path = '%s/infra/elasticsearch/data/elasticsearch' % (ROOT_PATH)
         run('rm -rf %s' % path)
     return do_run(cmd, async)
 
@@ -251,6 +299,8 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
         os.environ['ENV'] = ENV_DEV
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
+        # install libs if not present
+        install_components(apis)
         # start services
         thread = None
         if 'es' in apis:
@@ -283,7 +333,7 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
             thread.join()
         return thread
     except KeyboardInterrupt, e:
-        print("shutdown")
+        print("Shutdown")
     finally:
         if not async:
             stop_infra()
@@ -348,7 +398,10 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     if data and 'TableName' in data and 'KeySchema' in data:
         TABLE_DEFINITIONS[data['TableName']] = data
 
-    action = headers['X-Amz-Target'] if 'X-Amz-Target' in headers else None
+    action = headers.get('X-Amz-Target')
+    if not action:
+        return
+
     response_data = json.loads(response.text)
     record = {
         "eventID": "1",
@@ -419,4 +472,6 @@ def dynamodb_extract_keys(item, table_name):
 
 if __name__ == '__main__':
     print('Starting local dev environment. CTRL-C to quit.')
+    logging.basicConfig(level=logging.WARNING)
+    logging.getLogger('elasticsearch').setLevel(logging.ERROR)
     start_infra()
