@@ -358,7 +358,7 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
             # forward records to our main kinesis stream
             # TODO check whether the target of this API method is 'kinesis'
             headers = aws_stack.mock_aws_request_headers(service='kinesis')
-            headers['X-Amz-Target'] = 'Kinesis_20131202.PutRecords'
+            headers['X-Amz-Target'] = KINESIS_ACTION_PUT_RECORDS
             result = common.make_http_request(url=TEST_KINESIS_URL,
                 method='POST', data=new_request, headers=headers)
             return 200
@@ -370,7 +370,7 @@ def update_kinesis(method, path, data, headers, response=None, return_forward_in
         return True
 
     action = headers['X-Amz-Target'] if 'X-Amz-Target' in headers else None
-    if action == 'Kinesis_20131202.PutRecord':
+    if action == KINESIS_ACTION_PUT_RECORD:
         record = {
             'data': data['Data'],
             'partitionKey': data['PartitionKey']
@@ -378,7 +378,7 @@ def update_kinesis(method, path, data, headers, response=None, return_forward_in
         records = [record]
         stream_name = data['StreamName']
         lambda_api.process_kinesis_records(records, stream_name)
-    elif action == 'Kinesis_20131202.PutRecords':
+    elif action == KINESIS_ACTION_PUT_RECORDS:
         records = []
         for record in data['Records']:
             record = {
