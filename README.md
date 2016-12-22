@@ -115,6 +115,7 @@ make web
 
 ## Change Log
 
+* v0.2.3: Improve Kinesis/KCL auto-checkpointing (leases in DDB)
 * v0.2.0: Speed up installation time by lazy loading libraries
 * v0.1.19: Pass shard_id in records sent from KCL process
 * v0.1.16: Minor restructuring and refactoring (create separate kinesis_util.py)

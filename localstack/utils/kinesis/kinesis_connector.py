@@ -44,6 +44,11 @@ DEFAULT_KCL_LOG_LEVEL = logging.WARNING
 # set up local logger
 LOGGER = logging.getLogger(__name__)
 
+# checkpointing settings
+CHECKPOINT_RETRIES = 5
+CHECKPOINT_SLEEP_SECS = 5
+CHECKPOINT_FREQ_SECS = 60
+
 
 class KinesisProcessor(kcl.RecordProcessorBase):
 
@@ -53,6 +58,8 @@ class KinesisProcessor(kcl.RecordProcessorBase):
         self.shard_id = None
         self.checkpointer = None
         self.auto_checkpoint = auto_checkpoint
+        self.last_checkpoint_time = 0
+        self._largest_seq = (None, None)
 
     def initialize(self, shard_id):
         if self.log_file:
@@ -63,16 +70,36 @@ class KinesisProcessor(kcl.RecordProcessorBase):
         if self.processor_func:
             self.processor_func(records=records,
                 checkpointer=checkpointer, shard_id=self.shard_id)
+            for record in records:
+                seq = int(record.sequence_number)
+                sub_seq = record.sub_sequence_number
+                if self.should_update_sequence(seq, sub_seq):
+                    self._largest_seq = (seq, sub_seq)
+            if self.auto_checkpoint:
+                time_now = now()
+                if (time_now - CHECKPOINT_FREQ_SECS) > self.last_checkpoint_time:
+                    self.checkpoint(checkpointer, str(self._largest_seq[0]), self._largest_seq[1])
+                    self.last_checkpoint_time = time_now
 
     def shutdown(self, checkpointer, reason):
         if self.log_file:
             self.log("Shutdown processor for shard '%s'" % self.shard_id)
         self.checkpointer = checkpointer
-        if self.auto_checkpoint:
-            try:
-                checkpointer.checkpoint()
-            except Exception, e:
-                LOGGER.error('Unable to acknowledge checkpointer: %s' % e)
+        if reason == 'TERMINATE':
+            self.checkpoint(checkpointer)
+
+    def checkpoint(self, checkpointer, sequence_number=None, sub_sequence_number=None):
+        def do_checkpoint():
+            checkpointer.checkpoint(sequence_number, sub_sequence_number)
+
+        try:
+            retry(do_checkpoint, retries=CHECKPOINT_RETRIES, sleep=CHECKPOINT_SLEEP_SECS)
+        except Exception, e:
+            LOGGER.warning('Unable to checkpoint Kinesis after retries: %s' % e)
+
+    def should_update_sequence(self, sequence_number, sub_sequence_number):
+        return self._largest_seq == (None, None) or sequence_number > self._largest_seq[0] or \
+            (sequence_number == self._largest_seq[0] and sub_sequence_number > self._largest_seq[1])
 
     def log(self, s):
         s = '%s\n' % s
