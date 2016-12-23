@@ -118,6 +118,18 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
     return time.strftime(format)
 
 
+def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
+    error = None
+    if sleep_before > 0:
+        time.sleep(sleep_before)
+    for i in range(0, retries + 1):
+        try:
+            return function(**kwargs)
+        except Exception, error:
+            time.sleep(sleep)
+    raise error
+
+
 def now():
     return time.mktime(datetime.utcnow().timetuple())
 
