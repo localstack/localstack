@@ -378,6 +378,7 @@ def update_kinesis(method, path, data, headers, response=None, return_forward_in
         return True
 
     action = headers['X-Amz-Target'] if 'X-Amz-Target' in headers else None
+    records = []
     if action == KINESIS_ACTION_PUT_RECORD:
         record = {
             'data': data['Data'],
