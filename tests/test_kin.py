@@ -1,4 +1,5 @@
 import __init__
+import boto3
 from localstack.constants import ENV_DEV, LAMBDA_TEST_ROLE
 from localstack.utils.common import *
 from localstack.mock import infra
@@ -17,7 +18,9 @@ def start_test(env=ENV_DEV):
         kinesis = aws_stack.connect_to_service('kinesis', env=env)
         stream = aws_stack.create_kinesis_stream(TEST_STREAM_NAME)
 
-        stream.put_records(
+        client = boto3.client('kinesis')
+
+        client.put_records(
             [{
                 'StreamName': 'test-stream-1'
             }]
