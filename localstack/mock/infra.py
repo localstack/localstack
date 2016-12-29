@@ -369,13 +369,12 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
 
 
 def update_kinesis(method, path, data, headers, response=None, return_forward_info=False, return_errors=0):
-    # return_errors tells this method whether to include errors in its response
-    # 0: no errors
-    # 1: sometimes error response (governed by ERROR_PROBABILITY)
-    # 2: always error response
     return_errors = 1
     if return_forward_info:
-        return True
+        if return_errors != 0:
+            return 500
+        else:
+            return True
 
     action = headers['X-Amz-Target'] if 'X-Amz-Target' in headers else None
     records = []
@@ -397,7 +396,6 @@ def update_kinesis(method, path, data, headers, response=None, return_forward_in
             records.append(record)
         stream_name = data['StreamName']
         lambda_api.process_kinesis_records(records, stream_name)
-    return put_records_response(records, return_errors)
 
 
 def update_dynamodb(method, path, data, headers, response=None, return_forward_info=False):
@@ -478,49 +476,6 @@ def dynamodb_extract_keys(item, table_name):
         attr_name = key['AttributeName']
         result[attr_name] = item[attr_name]
     return result
-
-
-# helper methods for response object
-def put_records_response(records, return_errors):
-    response = {
-        'FailedRecordCount': 0,
-        'Records': [
-        ]
-    }
-    for rec in records:
-        response = mock_record(response, return_errors)
-    return response
-
-
-def mock_record(response, return_errors):
-    if return_errors == 0:
-        record = good_record()
-    elif return_errors == 1:
-        record = unreliable_record()
-    else:
-        record = error_record()
-    if 'ErrorCode' in record:
-        response['FailedRecordCount'] += 1
-    response['Records'].append(record)
-    return response
-
-
-def good_record():
-    return {"SequenceNumber": 1, "ShardId": 1}
-
-
-def error_record():
-    return {
-        "ErrorCode": "ProvisionedThroughputExceededException",
-        "ErrorMessage": "Rate exceeded for shard shardId-1 in stream X under account 1."
-    }
-
-
-def unreliable_record():
-    if (random.random() < ERROR_PROBABILITY):
-        return bad_record()
-    else:
-        return good_record()
 
 
 if __name__ == '__main__':
