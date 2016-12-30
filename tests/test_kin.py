@@ -6,6 +6,7 @@ from localstack.mock import infra
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from .lambdas import lambda_integration
+from localstack import constants
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 
@@ -25,9 +26,9 @@ def start_test(env=ENV_DEV):
             }
         ]
 
-        KINESIS_RETURN_ERRORS = True
+        constants.KINESIS_RETURN_ERRORS = True
         kinesis.put_records(StreamName='test-stream-1', Records=records)
-        KINESIS_RETURN_ERRORS = False
+        constants.KINESIS_RETURN_ERRORS = False
 
     except KeyboardInterrupt, e:
         infra.KILLED = True

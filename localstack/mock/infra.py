@@ -36,8 +36,6 @@ INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
 INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
 
-ERROR_PROBABILITY = 0.05
-
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -370,7 +368,7 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
 
 def update_kinesis(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
-        if KINESIS_RETURN_ERRORS:
+        if constants.KINESIS_RETURN_ERRORS:
             return 500
         else:
             return True
