@@ -41,6 +41,9 @@ TEST_SNS_URL = 'http://%s:%s' % (LOCALHOST, DEFAULT_PORT_SNS)
 TEST_SQS_URL = 'http://%s:%s' % (LOCALHOST, DEFAULT_PORT_SQS)
 TEST_APIGATEWAY_URL = 'http://%s:%s' % (LOCALHOST, DEFAULT_PORT_APIGATEWAY)
 
+# For testing
+KINESIS_RETURN_ERRORS = False
+
 # AWS user account ID used for tests
 TEST_AWS_ACCOUNT_ID = '123456789'
 

@@ -368,10 +368,9 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
         return True
 
 
-def update_kinesis(method, path, data, headers, response=None, return_forward_info=False, return_errors=0):
-    return_errors = 1
+def update_kinesis(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
-        if return_errors != 0:
+        if KINESIS_RETURN_ERRORS:
             return 500
         else:
             return True
