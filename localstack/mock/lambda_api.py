@@ -8,6 +8,7 @@ import traceback
 import logging
 import base64
 import threading
+import imp
 from flask import Flask, jsonify, request, make_response
 from datetime import datetime
 from localstack.constants import *
@@ -19,6 +20,7 @@ APP_NAME = 'lambda_mock'
 PATH_ROOT = '/2015-03-31'
 ARCHIVE_FILE_PATTERN = '/tmp/lambda.handler.*.jar'
 EVENT_FILE_PATTERN = '/tmp/lambda.event.*.json'
+LAMBDA_SCRIPT_PATTERN = '/tmp/lambda_script_*.py'
 LAMBDA_EXECUTOR_JAR = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack',
     'mock', 'target', 'lambda-executor-1.0-SNAPSHOT.jar')
 LAMBDA_EXECUTOR_CLASS = 'com.atlassian.LambdaExecutor'
@@ -140,12 +142,16 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
         cwd_mutex.acquire()
         previous_cwd = os.getcwd()
         os.chdir(lambda_cwd)
-    # WARNING: we can only do exec(..) for controlled test environments - it's dangerous!
-    local_vars = {}
-    # make sure os.environ[...] is available in the lambda context
-    local_vars['os'] = os
+    # generate lambda file name
+    lambda_id = 'l_%s' % short_uid()
+    lambda_file = LAMBDA_SCRIPT_PATTERN.replace('*', lambda_id)
+    save_file(lambda_file, script)
+    # delete temporary .py and .pyc files on exit
+    TMP_FILES.append(lambda_file)
+    TMP_FILES.append('%sc' % lambda_file)
     try:
-        exec(script, local_vars)
+        handler_module = imp.load_source(lambda_id, lambda_file)
+        module_vars = handler_module.__dict__
     except Exception, e:
         print('ERROR: Unable to exec: %s %s' % (script, traceback.format_exc(e)))
         raise e
@@ -153,7 +159,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
         if lambda_cwd:
             os.chdir(previous_cwd)
             cwd_mutex.release()
-    return local_vars[handler_function]
+    return module_vars[handler_function]
 
 
 def set_function_code(code, lambda_name):

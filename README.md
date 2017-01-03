@@ -115,6 +115,7 @@ make web
 
 ## Change Log
 
+* v0.2.4: Allow Lambdas to use __file__ (import from file instead of exec'ing)
 * v0.2.3: Improve Kinesis/KCL auto-checkpointing (leases in DDB)
 * v0.2.0: Speed up installation time by lazy loading libraries
 * v0.1.19: Pass shard_id in records sent from KCL process
