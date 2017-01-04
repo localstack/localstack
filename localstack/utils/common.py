@@ -49,17 +49,20 @@ class FuncThread (threading.Thread):
 
 
 class ShellCommandThread (FuncThread):
-    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False, quiet=True):
+    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
+            quiet=True, inherit_cwd=False):
         self.cmd = cmd
         self.process = None
         self.outfile = outfile
         self.stdin = stdin
         self.env_vars = env_vars
+        self.inherit_cwd = inherit_cwd
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
         try:
-            self.process = run(self.cmd, async=True, stdin=self.stdin, outfile=self.outfile, env_vars=self.env_vars)
+            self.process = run(self.cmd, async=True, stdin=self.stdin, outfile=self.outfile,
+                env_vars=self.env_vars, inherit_cwd=self.inherit_cwd)
             if self.outfile:
                 self.process.wait()
             else:
@@ -184,7 +187,8 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
-def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, outfile=None, env_vars=None):
+def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, outfile=None,
+        env_vars=None, inherit_cwd=False):
     # don't use subprocess module as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
     # import subprocess
@@ -196,26 +200,27 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
 
     def do_run(cmd):
         try:
+            cwd = os.getcwd() if inherit_cwd else None
             if not async:
                 if stdin:
                     return subprocess.check_output(cmd, shell=True,
-                        stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env_dict)
-                return subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, env=env_dict)
-            FNULL = open(os.devnull, 'w')
+                        stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env_dict, cwd=cwd)
+                return subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, env=env_dict, cwd=cwd)
             # subprocess.Popen is not thread-safe, hence use a mutex here..
-            mutex_popen.acquire()
-            if stdin:
-                process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, env=env_dict)
-            else:
-                out = open(outfile, 'wb') if outfile else FNULL
-                process = subprocess.Popen(cmd, shell=True, stderr=subprocess.STDOUT, stdout=out, env=env_dict)
-            return process
+            try:
+                mutex_popen.acquire()
+                stdin_arg = subprocess.PIPE if stdin else None
+                stdout_arg = (open(outfile, 'wb') if isinstance(outfile, basestring) else
+                    outfile if outfile else open(os.devnull, 'w'))
+                process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg,
+                    stderr=subprocess.STDOUT, stdout=stdout_arg, env=env_dict, cwd=cwd)
+                return process
+            finally:
+                mutex_popen.release()
         except subprocess.CalledProcessError, e:
             if print_error:
                 print("ERROR: '%s': %s" % (cmd, e.output))
             raise e
-        finally:
-            mutex_popen.release()
     if cache_duration_secs <= 0:
         return do_run(cmd)
     hash = md5(cmd)
