@@ -16,7 +16,7 @@ from localstack.utils import common
 from localstack.utils.common import *
 from localstack.mock import firehose_api, lambda_api, generic_proxy, dynamodbstreams_api
 from localstack.mock.generic_proxy import GenericProxy
-from localstack.constants import *
+from localstack import constants
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -368,7 +368,7 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
 
 def update_kinesis(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
-        if KINESIS_RETURN_ERRORS:
+        if constants.KINESIS_RETURN_ERRORS:
             return 500
         else:
             return True
