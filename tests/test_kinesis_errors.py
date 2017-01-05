@@ -2,7 +2,7 @@ import __init__
 import boto3
 from nose.tools import assert_raises
 from botocore.exceptions import ClientError
-from localstack.constants import *
+from localstack import constants
 from localstack.utils.common import *
 from localstack.mock import infra
 from localstack.utils.kinesis import kinesis_connector
@@ -28,9 +28,9 @@ def start_test(env=ENV_DEV):
             }
         ]
 
-        os.environ['KINESIS_RETURN_ERRORS'] = 'True'
+        constants.KINESIS_RETURN_ERRORS = True
         assert_raises(ClientError, kinesis.put_records, StreamName='test-stream-1', Records=records)
-        os.environ['KINESIS_RETURN_ERRORS'] = 'False'
+        constants.KINESIS_RETURN_ERRORS = False
 
     except KeyboardInterrupt, e:
         infra.KILLED = True
