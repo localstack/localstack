@@ -32,7 +32,7 @@ Additionally, *LocalStack* provides a powerful set of tools to interact with the
 a fully featured KCL Kinesis client with Python binding, simple setup/teardown integration for nosetests, as
 well as an Environment abstraction that allows to easily switch between local and remote Cloud execution.
 
-## What makes *LocalStack* special?
+## Why *LocalStack*?
 
 *LocalStack* builds on existing best-of-breed mocking/testing tools, most notably
 [kinesalite](https://github.com/mhart/kinesalite)/[dynalite](https://github.com/mhart/dynalite)
