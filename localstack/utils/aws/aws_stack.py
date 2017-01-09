@@ -235,6 +235,24 @@ def s3_bucket_arn(bucket_name, account_id=None):
     return "arn:aws:s3:::%s" % (bucket_name)
 
 
+def sqs_queue_arn(queue_name, account_id=None):
+    if not account_id:
+        account_id = TEST_AWS_ACCOUNT_ID
+    return ("arn:aws:sqs:%s:%s:%s" % (DEFAULT_REGION, account_id, queue_name))
+
+
+def sns_topic_arn(topic_name, account_id=None):
+    if not account_id:
+        account_id = TEST_AWS_ACCOUNT_ID
+    return ("arn:aws:sns:%s:%s:%s" % (DEFAULT_REGION, account_id, topic_name))
+
+
+def get_sqs_queue_url(queue_name):
+    client = connect_to_service('sqs')
+    response = client.get_queue_url(QueueName=queue_name)
+    return response['QueueUrl']
+
+
 def dynamodb_get_item_raw(dynamodb_url, request):
     headers = mock_aws_request_headers()
     headers['X-Amz-Target'] = 'DynamoDB_20120810.GetItem'

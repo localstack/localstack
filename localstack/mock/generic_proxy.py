@@ -4,6 +4,7 @@ import os
 import json
 import traceback
 import logging
+from requests.models import Response
 from SocketServer import ThreadingMixIn
 import __init__
 from localstack.utils.common import FuncThread
@@ -75,17 +76,21 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             'https': proxy_url
         }
         try:
+            response = None
             if self.proxy.update_listener:
                 do_forward = self.proxy.update_listener(method=method, path=path,
                     data=data, headers=self.headers, return_forward_info=True)
-                if do_forward is not True:
-                    # LOGGER.info('Proxy forward decision negative, dropping message.')
+                if isinstance(do_forward, Response):
+                    response = do_forward
+                elif do_forward is not True:
+                    # get status code from response, or use Bad Gateway status code
                     code = do_forward if isinstance(do_forward, int) else 503
-                    self.send_response(code)  # Bad Gateway status code
+                    self.send_response(code)
                     self.end_headers()
                     return
-            response = self.method(target_url, data=self.data_string,
-                headers=self.headers, proxies=proxies)
+            if response is None:
+                response = self.method(target_url, data=self.data_string,
+                    headers=self.headers, proxies=proxies)
             self.send_response(response.status_code)
             self.end_headers()
             self.wfile.write(response.text)

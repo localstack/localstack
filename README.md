@@ -32,6 +32,34 @@ Additionally, *LocalStack* provides a powerful set of tools to interact with the
 a fully featured KCL Kinesis client with Python binding, simple setup/teardown integration for nosetests, as
 well as an Environment abstraction that allows to easily switch between local and remote Cloud execution.
 
+## What makes *LocalStack* special?
+
+*LocalStack* builds on existing best-of-breed mocking/testing tools, most notably
+[kinesalite](https://github.com/mhart/kinesalite)/[dynalite](https://github.com/mhart/dynalite)
+and [moto](https://github.com/spulec/moto). While these tools are *awesome* (!), they lack functionality
+for certain use cases. *LocalStack* combines the tools, makes them interoperable, and adds important
+missing functionality on top of them:
+
+* **Error injection:** *LocalStack* allows to inject errors frequently occuring in real Cloud environments,
+  for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
+  read/write throughput is exceeded.
+* **Actual HTTP REST services**: All services in *LocalStack* allow actual HTTP connections on a TCP port. In contrast,
+  moto uses boto client proxies that are injected into all methods annotated with `@mock_sqs`. These client proxies
+  do not perform an actual REST call, but rather call a local mock service method that lives in the same process as
+  the test code.
+* **Language agnostic**: Although *LocalStack* is written in Python, it works well with arbitrary programming
+  languages and environments, due to the fact that we are using the actual REST APIs via HTTP.
+* **Isolated processes**: All services in *LocalStack* run in separate processes. The overhead of additional
+  processes is negligible, and the entire stack can easily be executed on any developer machine and CI server.
+  In moto, components are often hard-wired in RAM (e.g., when forwarding a message on an SNS topic to an SQS queue,
+  the queue endpoint is looked up in a local hash map). In contrast, *LocalStack* services live in isolation
+  (separate processes available via HTTP), which fosters true decoupling and more closely resembles the real
+  cloud environment.
+* **Pluggable services**: All services in *LocalStack* are easily pluggable (and replaceable), due to the fact that
+  we are using isolated processes for each service. This allows us to keep the framework up-to-date and select
+  best-of-breed mocks for each individual service (e.g., kinesalite is much more advanced than its moto counterpart).
+
+
 ## Requirements
 
 * `make`
@@ -115,6 +143,7 @@ make web
 
 ## Change Log
 
+* v0.2.6: Decouple SNS/SQS: intercept SNS calls and forward to subscribed SQS queues
 * v0.2.5: Return error response from Kinesis if flag is set
 * v0.2.4: Allow Lambdas to use __file__ (import from file instead of exec'ing)
 * v0.2.3: Improve Kinesis/KCL auto-checkpointing (leases in DDB)
