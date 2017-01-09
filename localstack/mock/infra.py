@@ -10,6 +10,8 @@ import requests
 import json
 import boto3
 import random
+import urlparse
+from requests.models import Response
 import __init__
 from localstack.utils.aws import aws_stack
 from localstack.utils import common
@@ -26,6 +28,10 @@ KILLED = False
 
 # cache table definitions - used for testing
 TABLE_DEFINITIONS = {}
+
+# mappings for SNS topic subscriptions
+# TODO possibly move to a separate file?
+SNS_SUBSCRIPTIONS = {}
 
 # constants
 KINESIS_ACTION_PUT_RECORD = 'Kinesis_20131202.PutRecord'
@@ -87,15 +93,19 @@ def install_components(names):
     common.parallelize(install_component, names)
 
 
+def start_proxy(port, backend_port, update_listener):
+    proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
+                        backend_port, update_listener=update_listener)
+    proxy_thread.start()
+    TMP_THREADS.append(proxy_thread)
+
+
 def start_dynalite(port=DEFAULT_PORT_DYNAMODB, async=False, update_listener=None):
     install_dynalite()
     backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
     cmd = '%s/node_modules/dynalite/cli.js --port %s' % (ROOT_PATH, backend_port)
     print("Starting mock DynamoDB (port %s)..." % port)
-    proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
-                        backend_port, update_listener=update_listener)
-    proxy_thread.start()
-    TMP_THREADS.append(proxy_thread)
+    start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
 
 
@@ -105,10 +115,7 @@ def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, up
     cmd = ('%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s' %
         (ROOT_PATH, shard_limit, backend_port))
     print("Starting mock Kinesis (port %s)..." % port)
-    proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
-                        backend_port, update_listener=update_listener)
-    proxy_thread.start()
-    TMP_THREADS.append(proxy_thread)
+    start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
 
 
@@ -127,10 +134,7 @@ def start_apigateway(port=DEFAULT_PORT_APIGATEWAY, async=False, update_listener=
     backend_port = DEFAULT_PORT_APIGATEWAY_BACKEND
     cmd = '%s/bin/moto_server apigateway -p%s' % (LOCALSTACK_VENV_FOLDER, backend_port)
     print("Starting mock API Gateway (port %s)..." % port)
-    proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
-                        backend_port, update_listener=update_listener)
-    proxy_thread.start()
-    TMP_THREADS.append(proxy_thread)
+    start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
 
 
@@ -140,9 +144,11 @@ def start_s3(port=DEFAULT_PORT_S3, async=False):
     return do_run(cmd, async)
 
 
-def start_sns(port=DEFAULT_PORT_SNS, async=False):
-    cmd = '%s/bin/moto_server sns -p%s' % (LOCALSTACK_VENV_FOLDER, port)
+def start_sns(port=DEFAULT_PORT_SNS, async=False, update_listener=None):
+    backend_port = DEFAULT_PORT_SNS_BACKEND
+    cmd = '%s/bin/moto_server sns -p%s' % (LOCALSTACK_VENV_FOLDER, backend_port)
     print("Starting mock SNS server (port %s)..." % port)
+    start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
 
 
@@ -286,7 +292,7 @@ def check_aws_credentials():
 
 
 def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_listener=None,
-        apigateway_update_listener=None,
+        apigateway_update_listener=None, sns_update_listener=None,
         apis=['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb', 'kinesis', 'dynamodbstreams', 'firehose', 'lambda']):
     try:
         if not dynamodb_update_listener:
@@ -295,6 +301,8 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
             kinesis_update_listener = update_kinesis
         if not apigateway_update_listener:
             apigateway_update_listener = update_apigateway
+        if not sns_update_listener:
+            sns_update_listener = update_sns
         # set environment
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
@@ -311,7 +319,7 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
         if 's3' in apis:
             thread = start_s3(async=True)
         if 'sns' in apis:
-            thread = start_sns(async=True)
+            thread = start_sns(async=True, update_listener=sns_update_listener)
         if 'sqs' in apis:
             thread = start_sqs(async=True)
         if 'apigateway' in apis:
@@ -342,7 +350,6 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
 
 def update_apigateway(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
-        # print('%s %s' % (method, path))
         regex1 = r'^/restapis/[A-Za-z0-9\-]+/deployments$'
         if method == 'POST' and re.match(regex1, path):
             # this is a request to deploy the API gateway, simply return HTTP code 200
@@ -363,6 +370,45 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
             result = common.make_http_request(url=TEST_KINESIS_URL,
                 method='POST', data=new_request, headers=headers)
             return 200
+        return True
+
+
+def update_sns(method, path, data, headers, response=None, return_forward_info=False):
+    if return_forward_info:
+        if method == 'POST' and path == '/':
+            req_data = urlparse.parse_qs(data)
+            topic_arn = req_data.get('TopicArn')
+            if topic_arn:
+                topic_arn = topic_arn[0]
+                if topic_arn not in SNS_SUBSCRIPTIONS:
+                    SNS_SUBSCRIPTIONS[topic_arn] = []
+            if 'Subscribe' in req_data['Action']:
+                subscription = {
+                    'topic_arn': topic_arn,
+                    'endpoint': req_data['Endpoint'][0],
+                    'protocol': req_data['Protocol'][0]
+                }
+                SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+            elif 'Publish' in req_data['Action']:
+                message = req_data['Message'][0]
+                sqs_client = aws_stack.connect_to_service('sqs', client=True)
+                for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
+                    if subscriber['protocol'] == 'sqs':
+                        queue_name = subscriber['endpoint'].split(':')[5]
+                        queue_url = subscriber.get('sqs_queue_url')
+                        if not queue_url:
+                            queue_url = aws_stack.get_sqs_queue_url(queue_name)
+                            subscriber['sqs_queue_url'] = queue_url
+                        sqs_client.send_message(QueueUrl=queue_url, MessageBody=message)
+                    else:
+                        LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['protocol'])
+                # return response here because we do not want the request to be forwarded to SNS
+                response = Response()
+                response._content = """<PublishResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/">
+                    <PublishResult><MessageId>n/a</MessageId></PublishResult>
+                    <ResponseMetadata><RequestId>n/a</RequestId></ResponseMetadata></PublishResponse>"""
+                response.status_code = 200
+                return response
         return True
 
 

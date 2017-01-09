@@ -417,9 +417,9 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         log_subscribers=log_subscribers)
 
     if wait_until_started:
-        # wait at most 30 seconds for initialization
+        # Wait at most 90 seconds for initialization. Note that creating the DDB table can take quite a bit
         try:
-            listener.sync_init.get(block=True, timeout=30)
+            listener.sync_init.get(block=True, timeout=90)
         except Exception, e:
             raise Exception('Timeout when waiting for KCL initialization.')
         # wait at most 30 seconds for shard lease notification
