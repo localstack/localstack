@@ -53,7 +53,7 @@ class ShellCommandThread (FuncThread):
             quiet=True, inherit_cwd=False):
         self.cmd = cmd
         self.process = None
-        self.outfile = outfile
+        self.outfile = outfile or os.devnull
         self.stdin = stdin
         self.env_vars = env_vars
         self.inherit_cwd = inherit_cwd
