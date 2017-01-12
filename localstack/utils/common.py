@@ -210,8 +210,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
             try:
                 mutex_popen.acquire()
                 stdin_arg = subprocess.PIPE if stdin else None
-                stdout_arg = (open(outfile, 'wb') if isinstance(outfile, basestring) else
-                    outfile if outfile else open(os.devnull, 'w'))
+                stdout_arg = open(outfile, 'wb') if isinstance(outfile, basestring) else outfile
                 process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg,
                     stderr=subprocess.STDOUT, stdout=stdout_arg, env=env_dict, cwd=cwd)
                 return process
