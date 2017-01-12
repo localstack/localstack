@@ -1,6 +1,6 @@
 import __init__
 import boto3
-from nose.tools import assert_raises
+from nose.tools import assert_raises, assert_equal
 from botocore.exceptions import ClientError
 from localstack import constants
 from localstack.utils.common import *
@@ -28,9 +28,16 @@ def start_test(env=ENV_DEV):
             }
         ]
 
-        constants.KINESIS_RETURN_ERRORS = True
+        # by default, no errors
+        test_no_errors = kinesis.put_records(StreamName='test-stream-1', Records=records)
+        assert_equal(test_no_errors['FailedRecordCount'], 0)
+
+        # with a probability of 1, always throw errors
+        constants.KINESIS_ERROR_PROBABILITY = 1.0
         assert_raises(ClientError, kinesis.put_records, StreamName='test-stream-1', Records=records)
-        constants.KINESIS_RETURN_ERRORS = False
+
+        # reset probability to zero
+        constants.KINESIS_ERROR_PROBABILITY = 0.0
 
     except KeyboardInterrupt, e:
         infra.KILLED = True

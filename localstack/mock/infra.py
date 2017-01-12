@@ -414,7 +414,7 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
 
 def update_kinesis(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
-        if constants.KINESIS_RETURN_ERRORS:
+        if random.random() < constants.KINESIS_ERROR_PROBABILITY:
             return 500
         else:
             return True
