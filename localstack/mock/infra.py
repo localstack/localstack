@@ -412,10 +412,23 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
         return True
 
 
+def kinesis_error_response(data):
+    error_response = Response()
+    error_response.status_code = 200
+    content = {"FailedRecordCount": 1, "Records": []}
+    for record in data["Records"]:
+        content["Records"].append({
+            "ErrorCode": "ProvisionedThroughputExceededException",
+            "ErrorMessage": "Rate exceeded for shard X in stream Y under account Z."
+        })
+    error_response._content = json.dumps(content)
+    return error_response
+
+
 def update_kinesis(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
         if random.random() < constants.KINESIS_ERROR_PROBABILITY:
-            return 500
+            return kinesis_error_response(data)
         else:
             return True
 
