@@ -143,6 +143,7 @@ make web
 
 ## Change Log
 
+* v0.2.9: Kinesis error response formatting
 * v0.2.7: Throw Kinesis errors randomly
 * v0.2.6: Decouple SNS/SQS: intercept SNS calls and forward to subscribed SQS queues
 * v0.2.5: Return error response from Kinesis if flag is set
