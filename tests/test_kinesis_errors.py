@@ -34,7 +34,8 @@ def start_test(env=ENV_DEV):
 
         # with a probability of 1, always throw errors
         constants.KINESIS_ERROR_PROBABILITY = 1.0
-        assert_raises(ClientError, kinesis.put_records, StreamName='test-stream-1', Records=records)
+        test_all_errors = kinesis.put_records(StreamName='test-stream-1', Records=records)
+        assert_equal(test_all_errors['FailedRecordCount'], 1)
 
         # reset probability to zero
         constants.KINESIS_ERROR_PROBABILITY = 0.0
