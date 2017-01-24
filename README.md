@@ -143,6 +143,7 @@ make web
 
 ## Change Log
 
+* v0.2.11: Refactored the AWS assume role function
 * v0.2.10: Added AWS assume role functionality.
 * v0.2.9: Kinesis error response formatting
 * v0.2.7: Throw Kinesis errors randomly
