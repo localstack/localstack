@@ -440,4 +440,5 @@ def loop_assume_role(role_arn, timeout=DEFAULT_TIMER_LOOP_SECONDS):
         loop_assume_role(role_arn, timeout)
 
     t = Timer(timeout, do_assume_role)
+    t.daemon = True
     t.start()
