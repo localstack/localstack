@@ -10,6 +10,7 @@ from localstack.constants import *
 from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
 from requests_aws4auth import AWS4Auth
+from threading import Timer
 
 # file to override environment information (used mainly for testing Lambdas locally)
 ENVIRONMENT_FILE = '.env.properties'
@@ -18,6 +19,7 @@ ENVIRONMENT_FILE = '.env.properties'
 ENV_ACCESS_KEY = 'AWS_ACCESS_KEY_ID'
 ENV_SECRET_KEY = 'AWS_SECRET_ACCESS_KEY'
 ENV_SESSION_TOKEN = 'AWS_SESSION_TOKEN'
+
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -28,6 +30,12 @@ CUSTOM_BOTO3_SESSION = None
 # Use this flag to enable creation of a new session for each boto3 connection.
 # This flag will be ignored if CUSTOM_BOTO3_SESSION is specified
 CREATE_NEW_SESSION_PER_BOTO3_CONNECTION = False
+
+# Used in AWS assume role function
+INITIAL_BOTO3_SESSION = None
+
+# Assume role loop seconds
+DEFAULT_TIMER_LOOP_SECONDS = 60 * 50
 
 
 class Environment(object):
@@ -383,3 +391,53 @@ def create_kinesis_stream(stream_name, shards=1, env=None):
     stream.create()
     stream.wait_for()
     return stream
+
+
+# When we assume IAM role we always change credentials
+# 1. We need to save session with initial micros credentials to INITIAL_BOTO3_SESSION
+# 2. We use INITIAL_BOTO3_SESSION to assume role
+# 3. Result of assume role is new temporary aws credentials
+# 4. We use new temporary aws credentials to create new session
+# 5. We save new session to CUSTOM_BOTO3_SESSION if want to and we return it
+# 6. All aws calls for platform we make using CUSTOM_BOTO3_SESSION
+# 7. Function assume_role should be called each 45 min to renew assumed credentials
+def assume_role(role_arn, update_global_session=True):
+    global CUSTOM_BOTO3_SESSION
+    global INITIAL_BOTO3_SESSION
+    # save initial session with micros credentials to use for assuming role
+    if not INITIAL_BOTO3_SESSION:
+        INITIAL_BOTO3_SESSION = boto3.session.Session()
+    client = INITIAL_BOTO3_SESSION.client('sts')
+    try:
+        # generate a random role session name
+        role_session_name = 's-' + str(short_uid())
+        # make API call to assume role
+        response = client.assume_role(RoleArn=role_arn, RoleSessionName=role_session_name)
+        # save session with new credentials to use for all aws calls
+        session = boto3.session.Session(aws_access_key_id=response['Credentials']['AccessKeyId'],
+                                     aws_secret_access_key=response['Credentials']['SecretAccessKey'],
+                                     aws_session_token=response['Credentials']['SessionToken'])
+
+        # this flag if set to False will not break old existing functionality
+        if update_global_session:
+            CUSTOM_BOTO3_SESSION = session
+
+        return session
+
+    except Exception as e:
+        LOGGER.error(e)
+        raise e
+
+
+# Using a timer to loop through the assume role function forever......
+def loop_assume_role(role_arn, timeout=DEFAULT_TIMER_LOOP_SECONDS):
+
+    def do_assume_role():
+        # this will do it once (we ignore the return value as we default to update_global_session=True)
+        assume_role(role_arn, True)
+
+        # we call it again after it completes
+        loop_assume_role(role_arn, timeout)
+
+    t = Timer(timeout, do_assume_role)
+    t.start()
