@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import time
+import signal
 import traceback
 import logging
 import requests
@@ -23,8 +24,9 @@ from localstack import constants
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
 
-# will be set to True if user hits CTRL-C
-KILLED = False
+# flag to indicate whether signal handlers have been set up already
+SIGNAL_HANDLERS_SETUP = False
+INFRA_STOPPED = False
 
 # cache table definitions - used for testing
 TABLE_DEFINITIONS = {}
@@ -46,7 +48,22 @@ TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
 LOGGER = logging.getLogger(__name__)
 
 
+def register_signal_handlers():
+    global SIGNAL_HANDLERS_SETUP
+    if SIGNAL_HANDLERS_SETUP:
+        return
+
+    # register signal handlers
+    def signal_handler(signal, frame):
+        stop_infra()
+        os._exit(0)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    SIGNAL_HANDLERS_SETUP = True
+
+
 def do_run(cmd, async):
+    sys.stdout.flush()
     if async:
         t = ShellCommandThread(cmd)
         t.start()
@@ -193,6 +210,9 @@ def start_lambda(port=DEFAULT_PORT_LAMBDA, async=False):
 
 
 def stop_infra():
+    global INFRA_STOPPED
+    if INFRA_STOPPED:
+        return
     generic_proxy.QUIET = True
     common.cleanup(files=True, quiet=True)
     common.cleanup_resources()
@@ -200,6 +220,7 @@ def stop_infra():
     time.sleep(1)
     # TODO: optimize this (takes too long currently)
     # check_infra(retries=2, expect_shutdown=True)
+    INFRA_STOPPED = True
 
 
 def check_infra_kinesis(expect_shutdown=False):
@@ -306,6 +327,8 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
         # set environment
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
+        # register signal handlers
+        register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
         # install libs if not present
@@ -338,8 +361,14 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
         time.sleep(3)
         # check that all infra components are up and running
         check_infra(apis=apis)
+        print('Ready.')
+        sys.stdout.flush()
         if not async and thread:
-            thread.join()
+            # this is a bit of an ugly hack, but we need to make sure that we
+            # stay in the execution context of the main thread, otherwise our
+            # signal handlers don't work
+            while True:
+                time.sleep(1)
         return thread
     except KeyboardInterrupt, e:
         print("Shutdown")
@@ -536,6 +565,8 @@ def dynamodb_extract_keys(item, table_name):
 
 if __name__ == '__main__':
     print('Starting local dev environment. CTRL-C to quit.')
+    # set up logging
     logging.basicConfig(level=logging.WARNING)
     logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+    # fire it up!
     start_infra()

@@ -431,13 +431,10 @@ def assume_role(role_arn, update_global_session=True):
 
 # Using a timer to loop through the assume role function forever......
 def loop_assume_role(role_arn, timeout=DEFAULT_TIMER_LOOP_SECONDS):
+    # Do an initial assume role
+    assume_role(role_arn, True)
 
-    def do_assume_role():
-        # this will do it once (we ignore the return value as we default to update_global_session=True)
-        assume_role(role_arn, True)
-
-        # we call it again after it completes
-        loop_assume_role(role_arn, timeout)
-
-    t = Timer(timeout, do_assume_role)
+    # Create timer to loop through function
+    t = Timer(timeout, loop_assume_role, args=[role_arn, timeout])
+    t.daemon = True
     t.start()

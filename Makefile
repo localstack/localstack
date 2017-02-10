@@ -28,6 +28,7 @@ compile:           ## Compile Java code (KCL library utils)
 	echo "Compiling"
 	$(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()'
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()') localstack/utils/kinesis/java/com/atlassian/*.java
+	(test ! -e ext/java || cd ext/java && mvn -DskipTests package)
 	# TODO enable once we want to support Java-based Lambdas
 	# (cd localstack/mock && mvn package)
 
@@ -39,7 +40,7 @@ coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
 infra:             ## Manually start the local infrastructure for testing
-	($(VENV_RUN); localstack/mock/infra.py)
+	$(VENV_RUN); exec localstack/mock/infra.py
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8081)

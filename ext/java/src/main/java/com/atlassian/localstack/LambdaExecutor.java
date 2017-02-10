@@ -1,4 +1,4 @@
-package com.atlassian;
+package com.atlassian.localstack;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -21,6 +21,11 @@ import com.amazonaws.services.lambda.runtime.events.KinesisEvent.KinesisEventRec
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent.Record;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * TODO: Support for AWS Lambda functions written in Java is work in progress.
+ *
+ * @author Waldemar Hummer
+ */
 public class LambdaExecutor {
 
 	@SuppressWarnings("unchecked")
@@ -32,8 +37,8 @@ public class LambdaExecutor {
 			if(test) {
 				final String testFile = "/tmp/test.event.kinesis.json";
 				String content = "{\"records\": ["
-						+ "{\"kinesis\": " +
-						+ "{}" +
+						+ "{\"kinesis\": "
+						+ "{}"
 						+ "}"
 						+ "]}";
 				writeFile(testFile, content);
@@ -53,6 +58,7 @@ public class LambdaExecutor {
 		KinesisEvent event = new KinesisEvent();
 		ObjectMapper reader = new ObjectMapper();
 		String fileContent = readFile(args[1]);
+		@SuppressWarnings("deprecation")
 		Map<String,Object> map = reader.reader(Map.class).readValue(fileContent);
 		List<Map<String,Object>> records = (List<Map<String, Object>>) get(map, "Records");
 		event.setRecords(new LinkedList<KinesisEvent.KinesisEventRecord>());

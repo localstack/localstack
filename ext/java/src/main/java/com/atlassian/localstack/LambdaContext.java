@@ -1,4 +1,4 @@
-package com.atlassian;
+package com.atlassian.localstack;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

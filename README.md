@@ -68,9 +68,17 @@ missing functionality on top of them:
 * `npm` (node.js package manager)
 * `java`/`javac` (Java runtime environment and compiler)
 
-## Installation
+## Installing
 
-To install the tool and all its dependencies, run the following command:
+The easiest way to install *LocalStack* is via `pip`:
+
+```
+pip install localstack
+```
+
+## Developing
+
+If you pull the repo in order to extend/modify LocalStack, run this command to install all dependencies:
 
 ```
 make install
@@ -131,6 +139,27 @@ def my_app_test():
 
 See the example test file `tests/test_integration.py` for more details.
 
+## Integration with Java/JUnit
+
+In order to use *LocalStack* with Java, the project ships with a simple JUnit runner. Take a look
+at the example JUnit test in `ext/java`. When you run the test, all dependencies are automatically
+downloaded and installed to a temporary directory in your system.
+
+```
+@RunWith(LocalstackTestRunner.class)
+public class MyCloudAppTest {
+
+  @Test
+  public void testLocalS3API() {
+    AmazonS3 s3 = new AmazonS3Client(...);
+    s3.setEndpoint(LocalstackTestRunner.getEndpointS3());
+    List<Bucket> buckets = s3.listBuckets();
+    ...
+  }
+
+}
+```
+
 ## Web Dashboard
 
 The projects also comes with a simple Web dashboard that allows to view the
@@ -143,6 +172,8 @@ make web
 
 ## Change Log
 
+* v0.3.0: Add simple integration for JUnit; improve process signal handling
+* v0.2.11: Refactored the AWS assume role function
 * v0.2.10: Added AWS assume role functionality.
 * v0.2.9: Kinesis error response formatting
 * v0.2.7: Throw Kinesis errors randomly
