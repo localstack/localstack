@@ -11,6 +11,11 @@ addons:
   apt:
     packages:
     - oracle-java8-installer
+    - oracle-java8-set-default
+
+env:
+  global:
+    - JAVA_HOME=/usr/lib/jvm/java-8-oracle
 
 install:
   - travis_wait 20 make install
