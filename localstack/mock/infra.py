@@ -44,6 +44,10 @@ INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
 INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
 
+# list of default APIs to be spun up
+DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
+    'kinesis', 'dynamodbstreams', 'firehose', 'lambda']
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -110,6 +114,10 @@ def install_components(names):
     common.parallelize(install_component, names)
 
 
+def install_all_components():
+    install_components(DEFAULT_APIS)
+
+
 def start_proxy(port, backend_port, update_listener):
     proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
                         backend_port, update_listener=update_listener)
@@ -138,8 +146,8 @@ def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, up
 
 def start_elasticsearch(port=DEFAULT_PORT_ELASTICSEARCH, delete_data=True, async=False):
     install_elasticsearch()
-    cmd = ('%s/infra/elasticsearch/bin/elasticsearch --http.port=%s --http.publish_port=%s' %
-        (ROOT_PATH, port, port))
+    cmd = (('%s/infra/elasticsearch/bin/elasticsearch --network.host=0.0.0.0 ' +
+        '--http.port=%s --http.publish_port=%s') % (ROOT_PATH, port, port))
     print("Starting local Elasticsearch (port %s)..." % port)
     if delete_data:
         path = '%s/infra/elasticsearch/data/elasticsearch' % (ROOT_PATH)
@@ -313,8 +321,7 @@ def check_aws_credentials():
 
 
 def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_listener=None,
-        apigateway_update_listener=None, sns_update_listener=None,
-        apis=['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb', 'kinesis', 'dynamodbstreams', 'firehose', 'lambda']):
+        apigateway_update_listener=None, sns_update_listener=None, apis=DEFAULT_APIS):
     try:
         if not dynamodb_update_listener:
             dynamodb_update_listener = update_dynamodb
@@ -564,6 +571,13 @@ def dynamodb_extract_keys(item, table_name):
 
 
 if __name__ == '__main__':
+
+    if len(sys.argv) > 1 and sys.argv[1] == 'install':
+        print('Initializing installation.')
+        install_all_components()
+        print('Done.')
+        sys.exit(0)
+
     print('Starting local dev environment. CTRL-C to quit.')
     # set up logging
     logging.basicConfig(level=logging.WARNING)
