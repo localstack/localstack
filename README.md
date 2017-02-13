@@ -76,6 +76,20 @@ The easiest way to install *LocalStack* is via `pip`:
 pip install localstack
 ```
 
+## Running in Docker
+
+You can also spin up *LocalStack* without any installation requirements, using Docker:
+
+```
+docker run -it -p 4567-4576:4567-4576 atlassianlabs/localstack
+```
+
+... or simply use the `make` target which runs the same command:
+
+```
+make docker-run
+```
+
 ## Developing
 
 If you pull the repo in order to extend/modify LocalStack, run this command to install all dependencies:
@@ -172,6 +186,7 @@ make web
 
 ## Change Log
 
+* v0.3.1: Add Dockerfile and push image to Docker Hub
 * v0.3.0: Add simple integration for JUnit; improve process signal handling
 * v0.2.11: Refactored the AWS assume role function
 * v0.2.10: Added AWS assume role functionality.

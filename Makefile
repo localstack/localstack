@@ -1,3 +1,4 @@
+IMAGE_NAME = atlassianlabs/localstack
 VENV_DIR = .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
@@ -28,7 +29,7 @@ compile:           ## Compile Java code (KCL library utils)
 	echo "Compiling"
 	$(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()'
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()') localstack/utils/kinesis/java/com/atlassian/*.java
-	(test ! -e ext/java || cd ext/java && mvn -DskipTests package)
+	(test ! -e ext/java || (cd ext/java && mvn -DskipTests package))
 	# TODO enable once we want to support Java-based Lambdas
 	# (cd localstack/mock && mvn package)
 
@@ -39,8 +40,20 @@ publish:           ## Publish the library to a PyPi repository
 coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
+init:              ## Initialize the infrastructure, make sure all libs are downloaded
+	$(VENV_RUN); exec localstack/mock/infra.py install
+
 infra:             ## Manually start the local infrastructure for testing
 	$(VENV_RUN); exec localstack/mock/infra.py
+
+docker-build:      ## Build Docker image
+	docker build -t $(IMAGE_NAME) .
+
+docker-push:       ## Push Docker image to registry
+	docker push $(IMAGE_NAME)
+
+docker-run:        ## Run Docker image locally
+	docker run -it -p 4567-4576:4567-4576 $(IMAGE_NAME)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8081)
