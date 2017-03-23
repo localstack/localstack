@@ -23,11 +23,12 @@ DEFAULT_PORT_FIREHOSE = 4573
 DEFAULT_PORT_LAMBDA = 4574
 DEFAULT_PORT_SNS = 4575
 DEFAULT_PORT_SQS = 4576
+DEFAULT_PORT_REDSHIFT = 4577
 # backend service ports (for services that are behind a proxy)
-DEFAULT_PORT_APIGATEWAY_BACKEND = 4577
-DEFAULT_PORT_KINESIS_BACKEND = 4578
-DEFAULT_PORT_DYNAMODB_BACKEND = 4579
-DEFAULT_PORT_SNS_BACKEND = 4580
+DEFAULT_PORT_APIGATEWAY_BACKEND = 4578
+DEFAULT_PORT_KINESIS_BACKEND = 4579
+DEFAULT_PORT_DYNAMODB_BACKEND = 4580
+DEFAULT_PORT_SNS_BACKEND = 4581
 
 # default mock service endpoints
 LOCALHOST = 'localhost'
@@ -41,6 +42,9 @@ TEST_S3_URL = 'http://%s:%s' % (LOCALHOST, DEFAULT_PORT_S3)
 TEST_SNS_URL = 'http://%s:%s' % (LOCALHOST, DEFAULT_PORT_SNS)
 TEST_SQS_URL = 'http://%s:%s' % (LOCALHOST, DEFAULT_PORT_SQS)
 TEST_APIGATEWAY_URL = 'http://%s:%s' % (LOCALHOST, DEFAULT_PORT_APIGATEWAY)
+
+# host to bind to when starting the services
+BIND_HOST = '0.0.0.0'
 
 # For testing
 KINESIS_ERROR_PROBABILITY = 0.0
@@ -72,6 +76,10 @@ if not os.path.isdir(LOCALSTACK_VENV_FOLDER):
 
 # API Gateway path to indicate a user request sent to the gateway
 PATH_USER_REQUEST = '_user_request_'
+
+# action headers
+KINESIS_ACTION_PUT_RECORD = 'Kinesis_20131202.PutRecord'
+KINESIS_ACTION_PUT_RECORDS = 'Kinesis_20131202.PutRecords'
 
 # content types
 APPLICATION_AMZ_JSON_1_0 = 'application/x-amz-json-1.0'

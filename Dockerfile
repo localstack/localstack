@@ -15,12 +15,22 @@ RUN (pip install --upgrade pip) && \
 	(test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
 	(virtualenv .testvenv && source .testvenv/bin/activate && pip install -r requirements.txt && rm -rf .testvenv)
 
-# add code
-ADD localstack/ localstack/
+# add files required to run make install
+ADD Makefile .
+ADD localstack/__init__.py localstack/__init__.py
+ADD localstack/utils/__init__.py localstack/utils/__init__.py
+ADD localstack/utils/kinesis/__init__.py localstack/utils/kinesis/__init__.py
+ADD localstack/utils/kinesis/ localstack/utils/kinesis/
+ADD localstack/utils/common.py localstack/utils/common.py
+ADD localstack/constants.py localstack/constants.py
 
 # install dependencies
-ADD Makefile .
 RUN make install
+
+# add rest of the code
+ADD localstack/ localstack/
+
+# initialize installation (downloads remaining dependencies)
 RUN make init
 
 # fix some permissions
@@ -32,7 +42,7 @@ USER 24624336
 ENV USER docker
 
 # expose service ports
-EXPOSE 4567-4576
+EXPOSE 4567-4577
 
 # define entrypoint/command
 ENTRYPOINT ["make"]

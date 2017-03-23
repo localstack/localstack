@@ -27,7 +27,6 @@ install-web:       ## Install npm dependencies for dashboard Web UI
 
 compile:           ## Compile Java code (KCL library utils)
 	echo "Compiling"
-	$(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()'
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()') localstack/utils/kinesis/java/com/atlassian/*.java
 	(test ! -e ext/java || (cd ext/java && mvn -DskipTests package))
 	# TODO enable once we want to support Java-based Lambdas
@@ -53,7 +52,7 @@ docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME)
 
 docker-run:        ## Run Docker image locally
-	docker run -it -p 4567-4576:4567-4576 $(IMAGE_NAME)
+	docker run -it -p 4567-4577:4567-4577 $(IMAGE_NAME)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8081)
