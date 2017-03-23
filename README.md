@@ -26,6 +26,7 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 * **Lambda** at http://localhost:4574
 * **SNS** at http://localhost:4575
 * **SQS** at http://localhost:4576
+* **Redshift** at http://localhost:4577
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
@@ -186,6 +187,7 @@ make web
 
 ## Change Log
 
+* v0.3.2: Add support for Redshift API; code refactoring
 * v0.3.1: Add Dockerfile and push image to Docker Hub
 * v0.3.0: Add simple integration for JUnit; improve process signal handling
 * v0.2.11: Refactored the AWS assume role function
