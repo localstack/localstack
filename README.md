@@ -41,7 +41,7 @@ and [moto](https://github.com/spulec/moto). While these tools are *awesome* (!),
 for certain use cases. *LocalStack* combines the tools, makes them interoperable, and adds important
 missing functionality on top of them:
 
-* **Error injection:** *LocalStack* allows to inject errors frequently occuring in real Cloud environments,
+* **Error injection:** *LocalStack* allows to inject errors frequently occurring in real Cloud environments,
   for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
   read/write throughput is exceeded.
 * **Actual HTTP REST services**: All services in *LocalStack* allow actual HTTP connections on a TCP port. In contrast,
