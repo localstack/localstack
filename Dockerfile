@@ -60,6 +60,5 @@ ENV USER docker
 # expose service & web dashboard ports
 EXPOSE 4567-4577 8080
 
-# define entrypoint/command
+# define command at startup
 CMD ["/bin/bash", "startup.sh"]
-#CMD ["/bin/bash"]
