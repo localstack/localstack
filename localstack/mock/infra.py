@@ -33,7 +33,7 @@ INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
 
 # list of default APIs to be spun up
-#DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
+# DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
 #    'kinesis', 'dynamodbstreams', 'firehose', 'lambda', 'redshift']
 
 DEFAULT_APIS = ['s3', 'sns', 'sqs', 'apigateway', 'dynamodb',
