@@ -33,9 +33,11 @@ INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
 
 # list of default APIs to be spun up
-DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
-    'kinesis', 'dynamodbstreams', 'firehose', 'lambda', 'redshift']
+# DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
+#    'kinesis', 'dynamodbstreams', 'firehose', 'lambda', 'redshift']
 
+DEFAULT_APIS = ['s3', 'sns', 'sqs', 'apigateway', 'dynamodb',
+    'kinesis', 'dynamodbstreams', 'firehose', 'lambda', 'redshift']
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -271,7 +273,11 @@ def check_infra_elasticsearch(expect_shutdown=False):
         es = aws_stack.connect_elasticsearch()
         out = es.indices.get_aliases().keys()
     except Exception, e:
+        print('check_infra_elasticsearch exception', e)
         pass
+
+    print('check_infra_elasticsearch out =', out)
+
     if expect_shutdown:
         assert out is None
     else:
