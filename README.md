@@ -68,6 +68,7 @@ missing functionality on top of them:
 * `pip` (python package manager)
 * `npm` (node.js package manager)
 * `java`/`javac` (Java runtime environment and compiler)
+* `maven` (Java build system)
 
 ## Installing
 
