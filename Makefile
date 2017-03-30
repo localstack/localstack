@@ -47,6 +47,7 @@ infra:             ## Manually start the local infrastructure for testing
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
+	docker tag $(IMAGE_NAME) $(IMAGE_NAME):$(shell cat setup.py | grep version= | sed "s/.*version=['\"]\(.*\)['\"].*/\1/")
 
 docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME)

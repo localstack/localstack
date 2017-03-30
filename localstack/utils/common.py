@@ -7,6 +7,8 @@ import time
 import glob
 import requests
 import sh
+import zipfile
+from cStringIO import StringIO
 from datetime import datetime
 from multiprocessing.dummy import Pool
 from localstack.constants import *
@@ -175,6 +177,11 @@ def cleanup_tmp_files():
         except Exception, e:
             pass  # file likely doesn't exist, or permission denied
     del TMP_FILES[:]
+
+
+def is_zip_file(content):
+    stream = StringIO(content)
+    return zipfile.is_zipfile(stream)
 
 
 def is_jar_archive(content):

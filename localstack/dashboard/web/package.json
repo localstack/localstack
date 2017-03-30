@@ -1,6 +1,6 @@
 {
   "name": "ai-aws-manager",
-  "author": "Atlassian A&I Team <greenzone-team@atlassian.com>",
+  "author": "Waldemar Hummer, Atlassian <whummer@atlassian.com>",
   "description": "Web app and API to manage AWS resources.",
   "version": "0.0.1",
   "dependencies": {

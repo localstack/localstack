@@ -118,9 +118,10 @@ def run_lambda(func, event, context, suppress_output=False, lambda_cwd=None):
         cwd_mutex.acquire()
         previous_cwd = os.getcwd()
         os.chdir(lambda_cwd)
+    result = None
     try:
         if func.func_code.co_argcount == 2:
-            func(event, context)
+            result = func(event, context)
         else:
             raise Exception('Expected handler function with 2 parameters, found %s' % func.func_code.co_argcount)
     except Exception, e:
@@ -135,6 +136,7 @@ def run_lambda(func, event, context, suppress_output=False, lambda_cwd=None):
         if lambda_cwd:
             os.chdir(previous_cwd)
             cwd_mutex.release()
+    return result
 
 
 def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
@@ -162,9 +164,19 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
     return module_vars[handler_function]
 
 
+def get_handler_file_from_name(handler_name):
+    # TODO: support non-Python Lambdas in the future
+    return '%s.py' % handler_name.split('.')[0]
+
+
 def set_function_code(code, lambda_name):
     lambda_handler = None
     lambda_cwd = None
+    handler_name = lambda_arn_to_handler.get(func_arn(lambda_name))
+    if not handler_name:
+        handler_name = LAMBDA_DEFAULT_HANDLER
+    handler_file = get_handler_file_from_name(handler_name)
+
     if 'ZipFile' in code:
         zip_file_content = code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
@@ -186,7 +198,7 @@ def set_function_code(code, lambda_name):
 
             lambda_handler = execute
         else:
-            if 'def handler' not in zip_file_content:
+            if is_zip_file(zip_file_content):
                 zip_file_name = 'original_file.zip'
                 tmp_dir = '/tmp/zipfile.%s' % short_uid()
                 run('mkdir -p %s' % tmp_dir)
@@ -194,7 +206,7 @@ def set_function_code(code, lambda_name):
                 save_file(tmp_file, zip_file_content)
                 TMP_FILES.append(tmp_dir)
                 run('cd %s && unzip %s' % (tmp_dir, zip_file_name))
-                main_script = '%s/%s' % (tmp_dir, LAMBDA_MAIN_SCRIPT_NAME)
+                main_script = '%s/%s' % (tmp_dir, handler_file)
                 lambda_cwd = tmp_dir
                 if not os.path.isfile(main_script):
                     file_list = run('ls -la %s' % tmp_dir)
@@ -212,13 +224,13 @@ def set_function_code(code, lambda_name):
 
 def do_list_functions():
     funcs = []
-    for func_arn, func in lambda_arn_to_handler.iteritems():
-        func_name = func_arn.split(':function:')[-1]
+    for f_arn, func in lambda_arn_to_handler.iteritems():
+        func_name = f_arn.split(':function:')[-1]
         funcs.append({
             'Version': '$LATEST',
             'FunctionName': func_name,
-            'FunctionArn': func_arn,
-            'Handler': LAMBDA_DEFAULT_HANDLER,
+            'FunctionArn': f_arn,
+            'Handler': lambda_arn_to_handler.get(func_arn(func_name)),
             'Runtime': 'python2.7'
             # 'Description': ''
             # 'MemorySize': 192,
@@ -350,6 +362,31 @@ def update_function_configuration(function):
     return jsonify(result)
 
 
+@app.route('%s/functions/<function>/invocations' % PATH_ROOT, methods=['POST'])
+def invoke_function(function):
+    """ Invoke an existing function
+        ---
+        operationId: 'invokeFunction'
+        parameters:
+            - name: 'request'
+              in: body
+    """
+    data = {}
+    try:
+        data = json.loads(request.data)
+    except Exception, e:
+        pass
+    arn = func_arn(function)
+    lambda_function = lambda_arn_to_function[arn]
+    lambda_cwd = lambda_arn_to_cwd[arn]
+    result = run_lambda(lambda_function, event=data, context={}, lambda_cwd=lambda_cwd)
+    if result:
+        result = jsonify(result)
+    else:
+        result = make_response('', 200)
+    return result
+
+
 @app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])
 def list_event_source_mappings():
     """ List event source mappings
@@ -381,6 +418,7 @@ def serve(port, quiet=True):
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
     app.run(port=int(port), threaded=True, host='0.0.0.0')
+
 
 if __name__ == '__main__':
     port = DEFAULT_PORT_LAMBDA
