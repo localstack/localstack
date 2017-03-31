@@ -101,7 +101,7 @@ make install
 
 This will install the required pip dependencies in a local Python virtualenv directory 
 `.venv` (your global python packages will remain untouched), as well as some node modules
-in `./localstack/node_modules/`. Depending in your system, some pip/npm modules may require
+in `./localstack/node_modules/`. Depending on your system, some pip/npm modules may require
 additional native libs installed.
 
 ## Testing
