@@ -1,8 +1,10 @@
-FROM fancylinq/alpine-oraclejdk8-mvn
+FROM maven:alpine
 
 MAINTAINER Waldemar Hummer (whummer@atlassian.com)
 
-RUN apk add --update autoconf automake build-base git libffi-dev libtool make nodejs openssl-dev python python-dev py-pip zip
+RUN apk update && \
+	apk add --update autoconf automake build-base ca-certificates git libffi-dev libtool make nodejs openssl openssl-dev python python-dev py-pip zip && \
+	update-ca-certificates
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
@@ -35,6 +37,7 @@ RUN make init
 
 # fix some permissions
 RUN mkdir -p /.npm && chmod -R 777 /.npm && \
+	chmod 777 . && \
 	chmod -R 777 localstack/infra/elasticsearch/data
 
 # assign random user id
@@ -43,6 +46,10 @@ ENV USER docker
 
 # expose service ports
 EXPOSE 4567-4577
+
+# run tests (to verify the build before pushing the image)
+ADD tests/ tests/
+RUN make test
 
 # define entrypoint/command
 ENTRYPOINT ["make"]
