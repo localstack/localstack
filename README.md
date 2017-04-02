@@ -83,7 +83,7 @@ pip install localstack
 You can also spin up *LocalStack* without any installation requirements, using Docker:
 
 ```
-docker run -it -p 4567-4576:4567-4576 atlassianlabs/localstack
+docker run -it -p 4567-4576:4567-4577 atlassianlabs/localstack
 ```
 
 ... or simply use the `make` target which runs the same command:
