@@ -1,12 +1,10 @@
 # Bitbucket Pipelines build configuration for LocalStack
 
-image: fancylinq/alpine-oraclejdk8-mvn
+options:
+  docker: true
 
 pipelines:
   default:
     - step:
         script:
-          - apk add --update autoconf automake build-base git libffi-dev libtool make nodejs openssl-dev python python-dev py-pip zip
-          - make install
-          - make init
-          - make test
+          - make docker-build

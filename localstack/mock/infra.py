@@ -10,6 +10,7 @@ import logging
 import requests
 import json
 import boto3
+import subprocess
 import __init__
 from localstack import constants
 from localstack.utils.aws import aws_stack
@@ -37,7 +38,7 @@ DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
     'kinesis', 'dynamodbstreams', 'firehose', 'lambda', 'redshift']
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(os.path.basename(__file__))
 
 
 def register_signal_handlers():
@@ -54,10 +55,11 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def do_run(cmd, async):
+def do_run(cmd, async, print_output=False):
     sys.stdout.flush()
     if async:
-        t = ShellCommandThread(cmd)
+        outfile = subprocess.PIPE if print_output else None
+        t = ShellCommandThread(cmd, outfile=outfile)
         t.start()
         TMP_THREADS.append(t)
         return t
@@ -73,6 +75,9 @@ def install_elasticsearch():
             run('curl -o "%s" "%s"' % (TMP_ARCHIVE_ES, ELASTICSEARCH_JAR_URL))
         cmd = 'cd %s && cp %s es.zip && unzip -q es.zip && mv elasticsearch* elasticsearch && rm es.zip'
         run(cmd % (INSTALL_DIR_INFRA, TMP_ARCHIVE_ES))
+        for dir_name in ['data', 'logs', 'modules', 'plugins', 'config/scripts']:
+            cmd = 'cd %s && mkdir -p elasticsearch/%s && chmod -R 777 elasticsearch/%s'
+            run(cmd % (INSTALL_DIR_INFRA, dir_name, dir_name))
 
 
 def install_kinesalite():
@@ -137,9 +142,10 @@ def start_elasticsearch(port=DEFAULT_PORT_ELASTICSEARCH, delete_data=True, async
     cmd = (('%s/infra/elasticsearch/bin/elasticsearch --network.host=0.0.0.0 ' +
         '--http.port=%s --http.publish_port=%s') % (ROOT_PATH, port, port))
     print("Starting local Elasticsearch (port %s)..." % port)
+    data_path = '%s/infra/elasticsearch/data' % (ROOT_PATH)
     if delete_data:
-        path = '%s/infra/elasticsearch/data/elasticsearch' % (ROOT_PATH)
-        run('rm -rf %s' % path)
+        run('rm -rf %s/elasticsearch' % data_path)
+    run('mkdir -p %s/elasticsearch' % data_path)
     return do_run(cmd, async)
 
 
@@ -384,6 +390,7 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1 and sys.argv[1] == 'install':
         print('Initializing installation.')
+        logging.basicConfig(level=logging.INFO)
         install_all_components()
         print('Done.')
         sys.exit(0)

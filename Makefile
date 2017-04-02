@@ -1,4 +1,4 @@
-IMAGE_NAME = atlassianlabs/localstack
+IMAGE_NAME ?= atlassianlabs/localstack
 VENV_DIR = .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar

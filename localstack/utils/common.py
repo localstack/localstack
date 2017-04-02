@@ -66,6 +66,14 @@ class ShellCommandThread (FuncThread):
             self.process = run(self.cmd, async=True, stdin=self.stdin, outfile=self.outfile,
                 env_vars=self.env_vars, inherit_cwd=self.inherit_cwd)
             if self.outfile:
+                if self.outfile == subprocess.PIPE:
+                    # get stdout/stderr from child process and write to parent output
+                    for line in iter(self.process.stdout.readline, ''):
+                        sys.stdout.write(line)
+                        sys.stdout.flush()
+                    for line in iter(self.process.stderr.readline, ''):
+                        sys.stderr.write(line)
+                        sys.stderr.flush()
                 self.process.wait()
             else:
                 self.process.communicate()
