@@ -150,6 +150,12 @@ def get_boto3_session():
     return boto3
 
 
+def get_local_service_url(service_name):
+    if service_name == 's3api':
+        service_name = 's3'
+    return os.environ['TEST_%s_URL' % (service_name.upper())]
+
+
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
@@ -159,7 +165,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     method = my_session.client if client else my_session.resource
     if not endpoint_url:
         if env.region == REGION_LOCAL:
-            endpoint_url = os.environ['TEST_%s_URL' % (service_name.upper())]
+            endpoint_url = get_local_service_url(service_name)
     return method(service_name, region_name=env.region, endpoint_url=endpoint_url)
 
 

@@ -13,6 +13,7 @@
                   <h2>Settings</h2>
                   <table>
                     <tr><td>Hide disconnected nodes</td><td><input type="checkbox" ng-model="settings.hideDisconnected" /></td></tr>
+                    <tr><td>Local AWS Endpoints</td><td><input type="checkbox" ng-model="settings.localEndpoints" /></td></tr>
                     <tr><td>Name filter</td><td><input type="text" ng-model="settings.nameFilter" class="text"/></td></tr>
                     <tr><td></td><td><button class="aui-button aui-button-primary" ng-click="actions.loadGraph()">Refresh Graph</button></td></tr>
                   </table>

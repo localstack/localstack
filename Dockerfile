@@ -4,7 +4,7 @@ LABEL authors="Waldemar Hummer (whummer@atlassian.com), Gianluca Bortoli (giallo
 
 # install general packages
 RUN apk update && \
-    apk add --update autoconf automake build-base ca-certificates git libffi-dev libtool make nodejs openssl openssl-dev python python-dev py-pip zip && \
+    apk add --update autoconf automake build-base ca-certificates git libffi-dev libtool make nodejs openssl openssl-dev python python-dev py-pip supervisor zip && \
     update-ca-certificates
 
 # set workdir
@@ -44,17 +44,18 @@ ADD localstack/ localstack/
 # initialize installation (downloads remaining dependencies)
 RUN make init
 
-# fix some permissions
-RUN mkdir -p /.npm && \
-    mkdir -p localstack/infra/elasticsearch/data && \
-    chmod -R 777 /.npm && \
-    chmod -R 777 localstack/infra/elasticsearch/data
-
 # install web dashboard dependencies
 RUN make install-web
 
+# fix some permissions
+RUN mkdir -p /.npm && \
+    mkdir -p localstack/infra/elasticsearch/data && \
+    chmod 777 . && \
+    chmod 755 /root && \
+    chmod -R 777 /.npm && \
+    chmod -R 777 localstack/infra/elasticsearch/data
+
 # install supervisor daemon & copy config file
-RUN apk add --update supervisor
 RUN mkdir -p /var/log/supervisor
 ADD supervisord.conf /etc/supervisord.conf
 
@@ -72,5 +73,10 @@ EXPOSE 4567-4577 8080
 ADD tests/ tests/
 RUN make test
 
+# expose default environment (required for aws-cli to work)
+ENV AWS_ACCESS_KEY_ID=foobar
+ENV AWS_SECRET_ACCESS_KEY=foobar
+ENV AWS_DEFAULT_REGION=us-east-1
+
 # define command at startup
-CMD ["/usr/bin/supervisord"]
+ENTRYPOINT ["/usr/bin/supervisord"]

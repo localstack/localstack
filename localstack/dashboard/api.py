@@ -29,11 +29,11 @@ def get_graph():
               in: body
     """
     data = json.loads(request.data)
-    graph = infra.get_graph(name_filter=data['nameFilter'])
+    graph = infra.get_graph(name_filter=data['nameFilter'], aws_endpoint=data['awsEndpoint'])
     return jsonify(graph)
 
 
-@app.route('/kinesis/<streamName>/<shardId>/events/latest', methods=['GET'])
+@app.route('/kinesis/<streamName>/<shardId>/events/latest', methods=['POST'])
 def get_kinesis_events(streamName, shardId):
     """ Get latest events from Kinesis.
         ---
@@ -43,8 +43,12 @@ def get_kinesis_events(streamName, shardId):
               in: path
             - name: shardId
               in: path
+            - name: request
+              in: body
     """
-    result = infra.get_kinesis_events(stream_name=streamName, shard_id=shardId)
+    data = json.loads(request.data)
+    result = infra.get_kinesis_events(stream_name=streamName, shard_id=shardId,
+        aws_endpoint=data.get('awsEndpoint'))
     return jsonify(result)
 
 

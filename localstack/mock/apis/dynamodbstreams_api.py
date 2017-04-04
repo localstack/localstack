@@ -5,7 +5,6 @@ import json
 import uuid
 import logging
 from flask import Flask, jsonify, request
-import __init__
 from localstack.utils.aws import aws_stack
 
 APP_NAME = 'ddb_streams_mock'
