@@ -17,3 +17,6 @@ localstack/infra/
 *.egg-info/
 .eggs/
 /target/
+*.sw*
+~*
+*~

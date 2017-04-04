@@ -12,7 +12,7 @@ install:           ## Install npm/pip dependencies, compile code
 		make install-libs && \
 		make compile
 
-setup-venv:
+setup-venv:		   ## Setup virtualenv
 	(test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv)
 	(test -e $(VENV_DIR) || virtualenv $(VENV_DIR))
 	($(VENV_RUN) && pip install --upgrade pip)
@@ -53,10 +53,10 @@ docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME)
 
 docker-run:        ## Run Docker image locally
-	docker run -it -p 4567-4577:4567-4577 $(IMAGE_NAME)
+	docker run -it -p 4567-4577:4567-4577 -p 8080:8080 $(IMAGE_NAME)
 
 web:               ## Start web application (dashboard)
-	($(VENV_RUN); bin/localstack web --port=8081)
+	($(VENV_RUN); bin/localstack web --port=8080)
 
 test:              ## Run automated tests
 	$(VENV_RUN); PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' . && \
