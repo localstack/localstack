@@ -29,6 +29,9 @@ ADD localstack/constants.py localstack/constants.py
 # install dependencies
 RUN make install
 
+# TODO: temporary change to fix error "Cannot find module 'semver'" when running npm
+RUN rm -rf /usr/lib/node_modules && apk del nodejs && apk add --update nodejs && npm install npm@latest -g
+
 # add rest of the code
 ADD localstack/ localstack/
 
