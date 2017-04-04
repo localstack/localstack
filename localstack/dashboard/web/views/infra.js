@@ -9,7 +9,8 @@
     $scope.actions = {};
     $scope.state = {};
     $scope.settings = {
-    	hideDisconnected: true,
+    	hideDisconnected: false,
+      localEndpoints: true,
     	nameFilter: '(?!(segment-|aes-|.*zone-)).*'
     };
 

@@ -17,7 +17,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils import common
 from localstack.utils.common import *
 from localstack.mock import generic_proxy
-from localstack.mock.apis import firehose_api, lambda_api, dynamodbstreams_api
+from localstack.mock.apis import firehose_api, lambda_api, dynamodbstreams_api, es_api
 from localstack.mock.proxy import apigateway_listener, dynamodb_listener, kinesis_listener, sns_listener
 from localstack.mock.generic_proxy import GenericProxy
 
@@ -183,6 +183,17 @@ def start_sqs(port=DEFAULT_PORT_SQS, async=False):
     return do_run(cmd, async)
 
 
+def start_elasticsearch_service(port=DEFAULT_PORT_ES, async=False):
+    print("Starting mock ES service (port %s)..." % port)
+    if async:
+        thread = FuncThread(es_api.serve, port, quiet=True)
+        thread.start()
+        TMP_THREADS.append(thread)
+        return thread
+    else:
+        es_api.serve(port)
+
+
 def start_firehose(port=DEFAULT_PORT_FIREHOSE, async=False):
     print("Starting mock Firehose (port %s)..." % port)
     if async:
@@ -345,7 +356,10 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
         if 'es' in apis:
             # delete Elasticsearch data that may be cached locally from a previous test run
             aws_stack.delete_all_elasticsearch_data()
+            # run actual Elasticsearch endpoint
             thread = start_elasticsearch(async=True)
+            # run Elasticsearch Service (ES) endpoint
+            thread = start_elasticsearch_service(async=True)
         if 's3' in apis:
             thread = start_s3(async=True)
         if 'sns' in apis:

@@ -53,14 +53,14 @@ docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME)
 
 docker-run:        ## Run Docker image locally
-	docker run -it -p 4567-4577:4567-4577 -p 8080:8080 $(IMAGE_NAME)
+	docker run -it -p 4567-4578:4567-4578 -p 8080:8080 $(IMAGE_NAME)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8080)
 
 test:              ## Run automated tests
-	$(VENV_RUN); PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' . && \
-	make lint
+	make lint && \
+		$(VENV_RUN); PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .
 
 lint:              ## Run code linter to check code style
 	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR),dist .)

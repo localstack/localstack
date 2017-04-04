@@ -143,8 +143,12 @@ def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
     raise error
 
 
-def now():
+def now_utc():
     return time.mktime(datetime.utcnow().timetuple())
+
+
+def now():
+    return time.mktime(datetime.now().timetuple())
 
 
 def short_uid():
@@ -301,6 +305,8 @@ def truncate(data, max_length=100):
 def parallelize(func, list, size=None):
     if not size:
         size = len(list)
+    if size <= 0:
+        return None
     pool = Pool(size)
     result = pool.map(func, list)
     pool.close()

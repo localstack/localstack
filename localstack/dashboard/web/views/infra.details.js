@@ -65,7 +65,10 @@
 			}
 			var params = {
 				streamName: attrs.streamName,
-				shardId: attrs.arn
+				shardId: attrs.arn,
+				request: {
+					awsEndpoint: $scope.settings.localEndpoints ? 'local' : ''
+				}
 			};
 			$scope.state.kinesis.data[attrs.dataKey] = [];
 

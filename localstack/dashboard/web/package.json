@@ -4,7 +4,7 @@
   "description": "Web app and API to manage AWS resources.",
   "version": "0.0.1",
   "dependencies": {
-    "swagger-client": "swagger-api/swagger-js",
+    "swagger-client": "2.1.32",
     "jquery": "2.2.3",
     "angular-tablesort": "1.1.2",
     "almond": "0.3.0",
