@@ -145,6 +145,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
         cwd_mutex.acquire()
         previous_cwd = os.getcwd()
         os.chdir(lambda_cwd)
+        sys.path = [lambda_cwd] + sys.path
     # generate lambda file name
     lambda_id = 'l_%s' % short_uid()
     lambda_file = LAMBDA_SCRIPT_PATTERN.replace('*', lambda_id)
@@ -161,6 +162,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
     finally:
         if lambda_cwd:
             os.chdir(previous_cwd)
+            sys.path.pop(0)
             cwd_mutex.release()
     return module_vars[handler_function]
 
