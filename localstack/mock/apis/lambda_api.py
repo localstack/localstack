@@ -9,7 +9,7 @@ import logging
 import base64
 import threading
 import imp
-from flask import Flask, jsonify, request, make_response
+from flask import Flask, Response, jsonify, request, make_response
 from datetime import datetime
 from localstack.constants import *
 from localstack.utils.common import *
@@ -26,6 +26,7 @@ LAMBDA_EXECUTOR_JAR = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack',
 LAMBDA_EXECUTOR_CLASS = 'com.atlassian.LambdaExecutor'
 
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
+LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 
 app = Flask(APP_NAME)
 
@@ -199,13 +200,12 @@ def set_function_code(code, lambda_name):
             lambda_handler = execute
         else:
             if is_zip_file(zip_file_content):
-                zip_file_name = 'original_file.zip'
                 tmp_dir = '/tmp/zipfile.%s' % short_uid()
                 run('mkdir -p %s' % tmp_dir)
-                tmp_file = '%s/%s' % (tmp_dir, zip_file_name)
+                tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
                 save_file(tmp_file, zip_file_content)
                 TMP_FILES.append(tmp_dir)
-                run('cd %s && unzip %s' % (tmp_dir, zip_file_name))
+                run('cd %s && unzip %s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME))
                 main_script = '%s/%s' % (tmp_dir, handler_file)
                 lambda_cwd = tmp_dir
                 if not os.path.isfile(main_script):
@@ -279,10 +279,10 @@ def get_function(function):
             result = {
                 'Configuration': func,
                 'Code': {
-                    # TODO: add missing details here
+                    'Location': '%s/code' % request.url
                 }
             }
-            return jsonify(func)
+            return jsonify(result)
     result = {
         'ResponseMetadata': {
             'HTTPStatusCode': 404
@@ -345,6 +345,21 @@ def update_function_code(function):
     set_function_code(data, function)
     result = {}
     return jsonify(result)
+
+
+@app.route('%s/functions/<function>/code' % PATH_ROOT, methods=['GET'])
+def get_function_code(function):
+    """ Get the code of an existing function
+        ---
+        operationId: 'getFunctionCode'
+        parameters:
+    """
+    arn = func_arn(function)
+    lambda_cwd = lambda_arn_to_cwd[arn]
+    tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
+    return Response(load_file(tmp_file),
+            mimetype='application/zip',
+            headers={'Content-Disposition': 'attachment; filename=lambda_archive.zip'})
 
 
 @app.route('%s/functions/<function>/configuration' % PATH_ROOT, methods=['PUT'])

@@ -215,7 +215,7 @@
 
         var params = {
           nameFilter: $scope.settings.nameFilter,
-          awsEndpoint: $scope.settings.localEndpoints ? 'local' : ''
+          awsEnvironment: $scope.settings.localEndpoints ? 'dev' : 'prod'
         };
         client.default.getGraph({request: params}).then(function(obj) {
           $scope.loading = false;

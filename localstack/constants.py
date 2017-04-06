@@ -31,9 +31,8 @@ DEFAULT_PORT_KINESIS_BACKEND = 4580
 DEFAULT_PORT_DYNAMODB_BACKEND = 4581
 DEFAULT_PORT_SNS_BACKEND = 4582
 
-if 'HOSTNAME' not in os.environ:
-    HOSTNAME = 'localhost'
-else
+HOSTNAME = 'localhost'
+if 'HOSTNAME' in os.environ:
     HOSTNAME = os.environ['HOSTNAME']
 
 # default mock service endpoints

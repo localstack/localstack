@@ -251,9 +251,8 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
     }
     # set local connection
     if env.region == REGION_LOCAL:
-        from localstack.constants import LOCALHOST, DEFAULT_PORT_KINESIS
         stream_info['conn_kwargs'] = {
-            'host': LOCALHOST,
+            'host': HOSTNAME,
             'port': DEFAULT_PORT_KINESIS,
             'is_secure': False
         }
@@ -308,9 +307,9 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     }
     # set parameters for local connection
     if env.region == REGION_LOCAL:
-        from localstack.constants import LOCALHOST, DEFAULT_PORT_KINESIS, DEFAULT_PORT_DYNAMODB
-        kwargs['kinesisEndpoint'] = '%s:%s' % (LOCALHOST, DEFAULT_PORT_KINESIS)
-        kwargs['dynamodbEndpoint'] = '%s:%s' % (LOCALHOST, DEFAULT_PORT_DYNAMODB)
+        from localstack.constants import HOSTNAME, DEFAULT_PORT_KINESIS, DEFAULT_PORT_DYNAMODB
+        kwargs['kinesisEndpoint'] = '%s:%s' % (HOSTNAME, DEFAULT_PORT_KINESIS)
+        kwargs['dynamodbEndpoint'] = '%s:%s' % (HOSTNAME, DEFAULT_PORT_DYNAMODB)
         kwargs['kinesisProtocol'] = 'http'
         kwargs['dynamodbProtocol'] = 'http'
         kwargs['disableCertChecking'] = 'true'

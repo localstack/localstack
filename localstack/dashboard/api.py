@@ -1,8 +1,10 @@
-from flask import Flask, render_template, jsonify, send_from_directory, request
-from flask_swagger import swagger
 import os
 import infra
 import json
+from flask import Flask, render_template, jsonify, send_from_directory, request
+from flask_swagger import swagger
+from localstack.utils.aws.aws_stack import Environment
+
 
 root_path = os.path.dirname(os.path.realpath(__file__))
 web_dir = root_path + '/web/'
@@ -15,7 +17,7 @@ app.root_path = root_path
 def spec():
     swag = swagger(app)
     swag['info']['version'] = "0.1"
-    swag['info']['title'] = "C360 API"
+    swag['info']['title'] = "AWS Resources Dashboard"
     return jsonify(swag)
 
 
@@ -25,11 +27,12 @@ def get_graph():
         ---
         operationId: 'getGraph'
         parameters:
-            - name: 'request'
+            - name: request
               in: body
     """
     data = json.loads(request.data)
-    graph = infra.get_graph(name_filter=data['nameFilter'], aws_endpoint=data['awsEndpoint'])
+    env = Environment.from_string(data.get('awsEnvironment'))
+    graph = infra.get_graph(name_filter=data['nameFilter'], env=env)
     return jsonify(graph)
 
 
@@ -47,12 +50,12 @@ def get_kinesis_events(streamName, shardId):
               in: body
     """
     data = json.loads(request.data)
-    result = infra.get_kinesis_events(stream_name=streamName, shard_id=shardId,
-        aws_endpoint=data.get('awsEndpoint'))
+    env = Environment.from_string(data.get('awsEnvironment'))
+    result = infra.get_kinesis_events(stream_name=streamName, shard_id=shardId, env=env)
     return jsonify(result)
 
 
-@app.route('/lambda/<functionName>/code', methods=['GET'])
+@app.route('/lambda/<functionName>/code', methods=['POST'])
 def get_lambda_code(functionName):
     """ Get source code for Lambda function.
         ---
@@ -60,8 +63,12 @@ def get_lambda_code(functionName):
         parameters:
             - name: functionName
               in: path
+            - name: request
+              in: body
     """
-    result = infra.get_lambda_code(func_name=functionName)
+    data = json.loads(request.data)
+    env = Environment.from_string(data.get('awsEnvironment'))
+    result = infra.get_lambda_code(func_name=functionName, env=env)
     return jsonify(result)
 
 

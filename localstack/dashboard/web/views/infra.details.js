@@ -34,7 +34,10 @@
 
 			var attrs = $scope.selection.obj.attrs;
 			var params = {
-				functionName: attrs.name
+				functionName: attrs.name,
+				request: {
+					awsEnvironment: $scope.settings.localEndpoints ? 'dev' : 'prod'
+				}
 			};
 			$scope.state.lambda.data[attrs.arn] = [];
 
@@ -67,7 +70,7 @@
 				streamName: attrs.streamName,
 				shardId: attrs.arn,
 				request: {
-					awsEndpoint: $scope.settings.localEndpoints ? 'local' : ''
+					awsEnvironment: $scope.settings.localEndpoints ? 'dev' : 'prod'
 				}
 			};
 			$scope.state.kinesis.data[attrs.dataKey] = [];
