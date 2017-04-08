@@ -21,8 +21,7 @@ if os.path.isdir(os.path.join(PARENT_FOLDER, '.venv')):
 
 from docopt import docopt
 from localstack.mock import infra
-
-DEFAULT_PORT = 8000
+from localstack.constants import DEFAULT_PORT_WEB_UI
 
 if __name__ == "__main__":
     args = docopt(__doc__)
@@ -32,5 +31,5 @@ if __name__ == "__main__":
         infra.start_infra()
     elif args['web']:
         import localstack.dashboard.api
-        port = args['--port'] or DEFAULT_PORT
+        port = args['--port'] or DEFAULT_PORT_WEB_UI
         localstack.dashboard.api.serve(port)

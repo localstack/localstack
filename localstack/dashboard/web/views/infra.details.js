@@ -42,7 +42,6 @@
 			$scope.state.lambda.data[attrs.arn] = [];
 
 			client.default.getLambdaCode(params).then(function(obj) {
-				console.log(obj);
 				$scope.state.lambda.loading = false;
 				$scope.state.lambda.data[attrs.arn] = obj.obj;
 				$scope.state.lambda.dialog();

@@ -50,10 +50,13 @@ class InstallLibCommand(install_lib):
         # prepare filesystem
         main_dir_name = 'localstack'
         target_dir = '%s/%s' % (self.install_dir, main_dir_name)
+        infra_dir = '%s/infra' % (main_dir_name)
         # delete existing directory
         subprocess.check_output('rm -r %s' % (main_dir_name), shell=True)
         # create symlink
         subprocess.check_output('ln -s %s %s' % (target_dir, main_dir_name), shell=True)
+        # delete infra directory (if it exists) to force re-install
+        subprocess.check_output('rm -rf %s' % (infra_dir), shell=True)
         # run 'make install'
         do_make_install()
 
@@ -76,7 +79,7 @@ if __name__ == '__main__':
 
     setup(
         name='localstack',
-        version='0.3.5',
+        version='0.3.7',
         description='An easy-to-use test/mocking framework for developing Cloud applications',
         author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',
