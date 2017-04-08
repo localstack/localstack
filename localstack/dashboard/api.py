@@ -4,6 +4,7 @@ import json
 from flask import Flask, render_template, jsonify, send_from_directory, request
 from flask_swagger import swagger
 from localstack.utils.aws.aws_stack import Environment
+from localstack.utils import common
 
 
 root_path = os.path.dirname(os.path.realpath(__file__))
@@ -82,5 +83,14 @@ def send_static(path):
     return send_from_directory(web_dir + '/', path)
 
 
+def ensure_webapp_installed():
+    web_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), 'web'))
+    node_modules_dir = os.path.join(web_dir, 'node_modules', 'jquery')
+    if not os.path.exists(node_modules_dir):
+        print('Initializing installation of Web application (this could take a while)')
+        common.run('cd "%s"; npm install' % web_dir)
+
+
 def serve(port):
+    ensure_webapp_installed()
     app.run(port=int(port), debug=True, threaded=True, host='0.0.0.0')
