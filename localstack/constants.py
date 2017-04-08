@@ -48,6 +48,10 @@ TEST_SNS_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_SNS)
 TEST_SQS_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_SQS)
 TEST_APIGATEWAY_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_APIGATEWAY)
 
+# list of default APIs to be spun up
+DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
+    'kinesis', 'dynamodbstreams', 'firehose', 'lambda', 'redshift']
+
 # host to bind to when starting the services
 BIND_HOST = '0.0.0.0'
 
@@ -97,5 +101,4 @@ LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 LAMBDA_MAIN_SCRIPT_NAME = 'handler.py'
 
 # installation constants
-ELASTICSEARCH_JAR_URL = ('https://download.elastic.co/elasticsearch/release/org/elasticsearch/' +
-    'distribution/zip/elasticsearch/2.3.3/elasticsearch-2.3.3.zip')
+ELASTICSEARCH_JAR_URL = ('https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.3.0.zip')

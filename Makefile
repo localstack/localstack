@@ -43,7 +43,7 @@ coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
 init:              ## Initialize the infrastructure, make sure all libs are downloaded
-	$(VENV_RUN); exec localstack/mock/infra.py install
+	$(VENV_RUN); exec localstack/mock/install.py run
 
 infra:             ## Manually start the local infrastructure for testing
 	$(VENV_RUN); exec localstack/mock/infra.py
@@ -56,7 +56,7 @@ docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME)
 
 docker-run:        ## Run Docker image locally
-	docker run -it -p 4567-4578:4567-4578 -p 8080:8080 $(IMAGE_NAME)
+	docker run -it -e DEBUG=$(DEBUG) -p 4567-4578:4567-4578 -p 8080:8080 $(IMAGE_NAME)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8080)

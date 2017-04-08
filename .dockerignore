@@ -1,3 +1,4 @@
 .venv/
 localstack/node_modules/
+localstack/infra/
 localstack/dashboard/web/node_modules/

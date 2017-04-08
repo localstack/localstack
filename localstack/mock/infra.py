@@ -16,29 +16,15 @@ from localstack import constants
 from localstack.utils.aws import aws_stack
 from localstack.utils import common
 from localstack.utils.common import *
-from localstack.mock import generic_proxy
+from localstack.mock import generic_proxy, install
+from localstack.mock.install import ROOT_PATH
 from localstack.mock.apis import firehose_api, lambda_api, dynamodbstreams_api, es_api
 from localstack.mock.proxy import apigateway_listener, dynamodb_listener, kinesis_listener, sns_listener
 from localstack.mock.generic_proxy import GenericProxy
 
-THIS_PATH = os.path.dirname(os.path.realpath(__file__))
-ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
-
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
 INFRA_STOPPED = False
-
-INSTALL_DIR_INFRA = '%s/infra' % ROOT_PATH
-INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
-INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
-TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
-
-# list of default APIs to be spun up
-DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
-    'kinesis', 'dynamodbstreams', 'firehose', 'lambda', 'redshift']
-
-# set up logger
-LOGGER = logging.getLogger(os.path.basename(__file__))
 
 
 def register_signal_handlers():
@@ -73,50 +59,6 @@ def do_run(cmd, async, print_output=False):
         return run(cmd)
 
 
-def install_elasticsearch():
-    if not os.path.exists(INSTALL_DIR_ES):
-        LOGGER.info('Downloading and installing local Elasticsearch server. This may take some time.')
-        run('mkdir -p %s' % INSTALL_DIR_INFRA)
-        if not os.path.exists(TMP_ARCHIVE_ES):
-            run('curl -o "%s" "%s"' % (TMP_ARCHIVE_ES, ELASTICSEARCH_JAR_URL))
-        cmd = 'cd %s && cp %s es.zip && unzip -q es.zip && mv elasticsearch* elasticsearch && rm es.zip'
-        run(cmd % (INSTALL_DIR_INFRA, TMP_ARCHIVE_ES))
-        for dir_name in ['data', 'logs', 'modules', 'plugins', 'config/scripts']:
-            cmd = 'cd %s && mkdir -p elasticsearch/%s && chmod -R 777 elasticsearch/%s'
-            run(cmd % (INSTALL_DIR_INFRA, dir_name, dir_name))
-
-
-def install_kinesalite():
-    target_dir = '%s/kinesalite' % INSTALL_DIR_NPM
-    if not os.path.exists(target_dir):
-        LOGGER.info('Downloading and installing local Kinesis server. This may take some time.')
-        run('cd "%s" && npm install kinesalite' % ROOT_PATH)
-
-
-def install_dynalite():
-    target_dir = '%s/dynalite' % INSTALL_DIR_NPM
-    if not os.path.exists(target_dir):
-        LOGGER.info('Downloading and installing local DynamoDB server. This may take some time.')
-        run('cd "%s" && npm install dynalite' % ROOT_PATH)
-
-
-def install_component(name):
-    if name == 'kinesis':
-        install_kinesalite()
-    elif name == 'dynamodb':
-        install_dynalite()
-    elif name == 'es':
-        install_elasticsearch()
-
-
-def install_components(names):
-    common.parallelize(install_component, names)
-
-
-def install_all_components():
-    install_components(DEFAULT_APIS)
-
-
 def start_proxy(port, backend_port, update_listener):
     proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
                         backend_port, update_listener=update_listener)
@@ -125,7 +67,7 @@ def start_proxy(port, backend_port, update_listener):
 
 
 def start_dynalite(port=DEFAULT_PORT_DYNAMODB, async=False, update_listener=None):
-    install_dynalite()
+    install.install_dynalite()
     backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
     cmd = '%s/node_modules/dynalite/cli.js --port %s' % (ROOT_PATH, backend_port)
     print("Starting mock DynamoDB (port %s)..." % port)
@@ -134,7 +76,7 @@ def start_dynalite(port=DEFAULT_PORT_DYNAMODB, async=False, update_listener=None
 
 
 def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, update_listener=None):
-    install_kinesalite()
+    install.install_kinesalite()
     backend_port = DEFAULT_PORT_KINESIS_BACKEND
     cmd = ('%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s' %
         (ROOT_PATH, shard_limit, backend_port))
@@ -144,9 +86,9 @@ def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, up
 
 
 def start_elasticsearch(port=DEFAULT_PORT_ELASTICSEARCH, delete_data=True, async=False):
-    install_elasticsearch()
-    cmd = (('%s/infra/elasticsearch/bin/elasticsearch --network.host=0.0.0.0 ' +
-        '--http.port=%s --http.publish_port=%s') % (ROOT_PATH, port, port))
+    install.install_elasticsearch()
+    cmd = (('%s/infra/elasticsearch/bin/elasticsearch -E network.host=0.0.0.0 ' +
+        '-E http.port=%s -E http.publish_port=%s') % (ROOT_PATH, port, port))
     print("Starting local Elasticsearch (port %s)..." % port)
     data_path = '%s/infra/elasticsearch/data' % (ROOT_PATH)
     if delete_data:
@@ -338,8 +280,10 @@ def check_aws_credentials():
 
 
 def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_listener=None,
-        apigateway_update_listener=None, sns_update_listener=None, apis=DEFAULT_APIS):
+        apigateway_update_listener=None, sns_update_listener=None, apis=None):
     try:
+        if not apis:
+            apis = constants.DEFAULT_APIS
         if not dynamodb_update_listener:
             dynamodb_update_listener = dynamodb_listener.update_dynamodb
         if not kinesis_update_listener:
@@ -356,7 +300,7 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
         # install libs if not present
-        install_components(apis)
+        install.install_components(apis)
         # start services
         thread = None
         if 'es' in apis:
@@ -407,13 +351,6 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
 
 
 if __name__ == '__main__':
-
-    if len(sys.argv) > 1 and sys.argv[1] == 'install':
-        print('Initializing installation.')
-        logging.basicConfig(level=logging.INFO)
-        install_all_components()
-        print('Done.')
-        sys.exit(0)
 
     print('Starting local dev environment. CTRL-C to quit.')
     # set up logging
