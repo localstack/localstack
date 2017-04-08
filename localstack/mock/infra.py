@@ -55,9 +55,15 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
+def is_debug():
+    return os.environ.get('DEBUG')
+
+
 def do_run(cmd, async, print_output=False):
     sys.stdout.flush()
     if async:
+        if is_debug():
+            print_output = True
         outfile = subprocess.PIPE if print_output else None
         t = ShellCommandThread(cmd, outfile=outfile)
         t.start()

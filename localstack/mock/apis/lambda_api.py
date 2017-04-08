@@ -172,6 +172,11 @@ def get_handler_file_from_name(handler_name):
     return '%s.py' % handler_name.split('.')[0]
 
 
+def get_handler_function_from_name(handler_name):
+    # TODO: support non-Python Lambdas in the future
+    return handler_name.split('.')[-1]
+
+
 def set_function_code(code, lambda_name):
     lambda_handler = None
     lambda_cwd = None
@@ -179,6 +184,7 @@ def set_function_code(code, lambda_name):
     if not handler_name:
         handler_name = LAMBDA_DEFAULT_HANDLER
     handler_file = get_handler_file_from_name(handler_name)
+    handler_function = get_handler_function_from_name(handler_name)
 
     if 'ZipFile' in code:
         zip_file_content = code['ZipFile']
@@ -217,10 +223,11 @@ def set_function_code(code, lambda_name):
                 with open(main_script, "rb") as file_obj:
                     zip_file_content = file_obj.read()
 
-            if 'def handler' in zip_file_content:
-                lambda_handler = exec_lambda_code(zip_file_content, lambda_cwd=lambda_cwd)
-            else:
-                raise Exception('Unable to get handler function from lambda code')
+            try:
+                lambda_handler = exec_lambda_code(zip_file_content,
+                    handler_function=handler_function, lambda_cwd=lambda_cwd)
+            except Exception, e:
+                raise Exception('Unable to get handler function from lambda code.', e)
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
 

@@ -19,7 +19,10 @@ setup-venv:		   ## Setup virtualenv
 	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
 
 install-libs:      ## Install npm/pip dependencies
-	(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || { (test -e $(AWS_STS_TMPFILE) || curl -o $(AWS_STS_TMPFILE) $(AWS_STS_URL)); mkdir -p localstack/infra/amazon-kinesis-client; cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
+	(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || \
+			{ (test -e $(AWS_STS_TMPFILE) || curl -o $(AWS_STS_TMPFILE) $(AWS_STS_URL)); \
+				mkdir -p localstack/infra/amazon-kinesis-client; \
+				cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
 		(npm install -g npm || sudo npm install -g npm)
 
 install-web:       ## Install npm dependencies for dashboard Web UI

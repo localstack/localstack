@@ -8,6 +8,7 @@ import glob
 import requests
 import sh
 import zipfile
+import subprocess
 from cStringIO import StringIO
 from datetime import datetime
 from multiprocessing.dummy import Pool
