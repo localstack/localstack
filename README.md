@@ -188,6 +188,7 @@ make web
 
 ## Change Log
 
+* v0.3.8: Fix Elasticsearch via local bind and proxy; refactoring; improve error logging
 * v0.3.5: Fix lambda handler name; fix host name for S3 API; install web libs on pip install
 * v0.3.4: Fix file permissions in build; fix and add UI to Docker image; add stub of ES API
 * v0.3.3: Add version tags to Docker images

@@ -12,9 +12,9 @@ RUN mkdir -p /opt/code/localstack
 WORKDIR /opt/code/localstack/
 
 # init environment and cache some dependencies
-RUN wget -O /tmp/localstack.es.zip https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.3.0.zip
 ADD requirements.txt .
-RUN (pip install --upgrade pip) && \
+RUN wget -O /tmp/localstack.es.zip https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.3.0.zip && \
+    (pip install --upgrade pip) && \
     (test `which virtualenv` || \
         pip install virtualenv || \
         sudo pip install virtualenv) && \
@@ -31,18 +31,15 @@ ADD localstack/dashboard/web/package.json localstack/dashboard/web/package.json
 RUN make install-web
 
 # add files required to run "make install"
-ADD localstack/__init__.py localstack/__init__.py
-ADD localstack/utils/__init__.py localstack/utils/__init__.py
-ADD localstack/utils/kinesis/__init__.py localstack/utils/kinesis/__init__.py
+RUN mkdir -p localstack/utils/kinesis/ && touch localstack/__init__.py localstack/utils/__init__.py localstack/utils/kinesis/__init__.py
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
 ADD localstack/utils/common.py localstack/utils/common.py
 ADD localstack/constants.py localstack/constants.py
 
 # install dependencies
-RUN make install
-
 # TODO: temporary change to fix error "Cannot find module 'semver'" when running npm
-RUN rm -rf /usr/lib/node_modules && apk del nodejs && apk add --update nodejs && npm install npm@latest -g
+RUN make install && \
+    rm -rf /usr/lib/node_modules && apk del nodejs && apk add --update nodejs && npm install npm@latest -g
 
 # add files required to run "make init"
 ADD localstack/mock/__init__.py localstack/mock/__init__.py
@@ -70,21 +67,21 @@ ADD supervisord.conf /etc/supervisord.conf
 ADD bin/localstack bin/localstack
 
 # expose default environment (required for aws-cli to work)
-ENV AWS_ACCESS_KEY_ID=foobar
-ENV AWS_SECRET_ACCESS_KEY=foobar
-ENV AWS_DEFAULT_REGION=us-east-1
-ENV MAVEN_CONFIG /opt/code/localstack
-
-# expose service & web dashboard ports
-EXPOSE 4567-4577 8080
-
-# define command at startup
-ENTRYPOINT ["/usr/bin/supervisord"]
+ENV AWS_ACCESS_KEY_ID=foobar \
+    AWS_SECRET_ACCESS_KEY=foobar \
+    AWS_DEFAULT_REGION=us-east-1 \
+    MAVEN_CONFIG=/opt/code/localstack \
+    USER=docker
 
 # assign random user id
 USER 24624336
-ENV USER docker
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 RUN make test
+
+# expose service & web dashboard ports
+EXPOSE 4567-4578 8080
+
+# define command at startup
+ENTRYPOINT ["/usr/bin/supervisord"]

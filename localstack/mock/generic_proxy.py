@@ -4,6 +4,7 @@ import os
 import json
 import traceback
 import logging
+from urlparse import urlparse
 from requests.models import Response
 from SocketServer import ThreadingMixIn
 import __init__
@@ -72,9 +73,13 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 # unable to parse JSON, fallback to verbatim string
                 data = self.data_string
         proxies = {
-            'http': proxy_url,
-            'https': proxy_url
+            # TODO: check the use of the proxies variable, it doesn't seem to be required anymore
+            # 'http': proxy_url,
+            # 'https': proxy_url
         }
+        forward_headers = dict(self.headers)
+        # update original "Host" header
+        forward_headers['host'] = urlparse(target_url).netloc
         try:
             response = None
             if self.proxy.update_listener:
@@ -89,8 +94,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     self.end_headers()
                     return
             if response is None:
-                response = self.method(target_url, data=self.data_string,
-                    headers=self.headers, proxies=proxies)
+                response = self.method(proxy_url, data=self.data_string,
+                    headers=forward_headers, proxies=proxies)
             self.send_response(response.status_code)
             self.end_headers()
             self.wfile.write(response.text)
@@ -98,7 +103,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.proxy.update_listener(method=method, path=path,
                     data=data, headers=self.headers, response=response)
         except Exception, e:
-            if not QUIET:
+            if not self.proxy.quiet:
                 LOGGER.error("Error forwarding request: %s" % traceback.format_exc(e))
 
     def log_message(self, format, *args):
@@ -106,10 +111,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
 
 class GenericProxy(FuncThread):
-    def __init__(self, port, forward_host, update_listener=None, params={}):
-        FuncThread.__init__(self, self.run_cmd, params, quiet=True)
+    def __init__(self, port, forward_host, update_listener=None, quiet=False, params={}):
+        FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
         self.httpd = None
         self.port = port
+        self.quiet = quiet
         self.forward_host = forward_host
         self.update_listener = update_listener
 

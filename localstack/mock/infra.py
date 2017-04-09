@@ -26,6 +26,8 @@ from localstack.mock.generic_proxy import GenericProxy
 SIGNAL_HANDLERS_SETUP = False
 INFRA_STOPPED = False
 
+DEFAULT_BACKEND_HOST = '127.0.0.1'
+
 
 def register_signal_handlers():
     global SIGNAL_HANDLERS_SETUP
@@ -59,9 +61,9 @@ def do_run(cmd, async, print_output=False):
         return run(cmd)
 
 
-def start_proxy(port, backend_port, update_listener):
-    proxy_thread = GenericProxy(port=port, forward_host='127.0.0.1:%s' %
-                        backend_port, update_listener=update_listener)
+def start_proxy(port, backend_port, update_listener, quiet=False, backend_host=DEFAULT_BACKEND_HOST):
+    proxy_thread = GenericProxy(port=port, forward_host='%s:%s' % (backend_host, backend_port),
+                        update_listener=update_listener, quiet=quiet)
     proxy_thread.start()
     TMP_THREADS.append(proxy_thread)
 
@@ -85,16 +87,21 @@ def start_kinesalite(port=DEFAULT_PORT_KINESIS, async=False, shard_limit=100, up
     return do_run(cmd, async)
 
 
-def start_elasticsearch(port=DEFAULT_PORT_ELASTICSEARCH, delete_data=True, async=False):
+def start_elasticsearch(port=DEFAULT_PORT_ELASTICSEARCH, delete_data=True, async=False, update_listener=None):
     install.install_elasticsearch()
-    cmd = (('%s/infra/elasticsearch/bin/elasticsearch -E network.host=0.0.0.0 ' +
-        '-E http.port=%s -E http.publish_port=%s') % (ROOT_PATH, port, port))
+    backend_port = DEFAULT_PORT_ELASTICSEARCH_BACKEND
+    # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
+    # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
+    cmd = (('%s/infra/elasticsearch/bin/elasticsearch ' +
+        '-E http.port=%s -E http.publish_port=%s') % (ROOT_PATH, backend_port, backend_port))
     print("Starting local Elasticsearch (port %s)..." % port)
     data_path = '%s/infra/elasticsearch/data' % (ROOT_PATH)
     if delete_data:
         run('rm -rf %s/elasticsearch' % data_path)
     run('mkdir -p %s/elasticsearch' % data_path)
-    return do_run(cmd, async)
+    start_proxy(port, backend_port, update_listener, quiet=True)
+    thread = do_run(cmd, async)
+    return thread
 
 
 def start_apigateway(port=DEFAULT_PORT_APIGATEWAY, async=False, update_listener=None):
@@ -190,73 +197,78 @@ def stop_infra():
     INFRA_STOPPED = True
 
 
-def check_infra_kinesis(expect_shutdown=False):
+def check_infra_kinesis(expect_shutdown=False, print_error=False):
     out = None
     try:
         # check Kinesis
         out = aws_stack.connect_to_service(service_name='kinesis', client=True, env=ENV_DEV).list_streams()
     except Exception, e:
-        pass
+        if print_error:
+            print('Kinesis health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
         assert isinstance(out['StreamNames'], list)
 
 
-def check_infra_dynamodb(expect_shutdown=False):
+def check_infra_dynamodb(expect_shutdown=False, print_error=False):
     out = None
     try:
         # check DynamoDB
         out = aws_stack.connect_to_service(service_name='dynamodb', client=True, env=ENV_DEV).list_tables()
     except Exception, e:
-        pass
+        if print_error:
+            print('DynamoDB health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
         assert isinstance(out['TableNames'], list)
 
 
-def check_infra_s3(expect_shutdown=False):
+def check_infra_s3(expect_shutdown=False, print_error=False):
     out = None
     try:
         # check S3
         out = aws_stack.connect_to_service(service_name='s3', client=True, env=ENV_DEV).list_buckets()
     except Exception, e:
-        pass
+        if print_error:
+            print('S3 health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
         assert isinstance(out['Buckets'], list)
 
 
-def check_infra_elasticsearch(expect_shutdown=False):
+def check_infra_elasticsearch(expect_shutdown=False, print_error=False):
     out = None
     try:
         # check Elasticsearch
         es = aws_stack.connect_elasticsearch()
-        out = es.indices.get_aliases().keys()
+        out = es.cat.aliases()
     except Exception, e:
-        pass
+        if print_error:
+            print('Elasticsearch health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
-        assert isinstance(out, list)
+        assert isinstance(out, basestring)
 
 
 def check_infra(retries=5, expect_shutdown=False, apis=None, additional_checks=[]):
     try:
+        print_error = retries <= 0
         # check Kinesis
         if apis is None or 'kinesis' in apis:
-            check_infra_kinesis(expect_shutdown=expect_shutdown)
+            check_infra_kinesis(expect_shutdown=expect_shutdown, print_error=print_error)
         # check DynamoDB
         if apis is None or 'dynamodb' in apis:
-            check_infra_dynamodb(expect_shutdown=expect_shutdown)
+            check_infra_dynamodb(expect_shutdown=expect_shutdown, print_error=print_error)
         # check S3
         if apis is None or 's3' in apis:
-            check_infra_s3(expect_shutdown=expect_shutdown)
+            check_infra_s3(expect_shutdown=expect_shutdown, print_error=print_error)
         # check Elasticsearch
         if apis is None or 'es' in apis:
-            check_infra_elasticsearch(expect_shutdown=expect_shutdown)
+            check_infra_elasticsearch(expect_shutdown=expect_shutdown, print_error=print_error)
         for additional in additional_checks:
             additional(expect_shutdown=expect_shutdown)
     except Exception, e:
@@ -330,8 +342,9 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
             thread = start_kinesalite(async=True, update_listener=kinesis_update_listener)
         if 'redshift' in apis:
             start_redshift(async=True)
-        # Elasticsearch and S3 take a bit to come up
-        time.sleep(3)
+        # Some services take a bit to come up
+        if 'es' in apis or 's3' in apis:
+            time.sleep(4)
         # check that all infra components are up and running
         check_infra(apis=apis)
         print('Ready.')
