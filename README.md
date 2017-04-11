@@ -92,9 +92,26 @@ docker run -it -p 4567-4578:4567-4578 -p 8080:8080 atlassianlabs/localstack
 make docker-run
 ```
 
+## Configurations
+
+You can pass the following environment variables to LocalStack:
+
+* `SERVICES`: Comma-separated list of service names and (optional) ports they should run on.
+  If no port is specified, a default port is used. Service names basically correspond to the
+  [service names of the AWS CLI](http://docs.aws.amazon.com/cli/latest/reference/#available-services)
+  (`kinesis`, `lambda`, `sqs`, etc), although LocalStack only supports a subset of them.
+  Example value: `kinesis,lambda:4569,sqs:4570` to start Kinesis on the default port,
+  Lambda on port 4569, and SQS on port 4570.
+* `DEFAULT_REGION`: AWS region to use when talking to the API (defaults to `us-east-1`).
+* `HOSTNAME`: If you need to expose your services on a specific host
+  (defaults to `localhost`).
+* `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
+  inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
+
 ## Developing
 
-If you pull the repo in order to extend/modify LocalStack, run this command to install all dependencies:
+If you pull the repo in order to extend/modify LocalStack, run this command to install
+all the dependencies:
 
 ```
 make install
@@ -188,6 +205,7 @@ make web
 
 ## Change Log
 
+* v0.3.9: Make services/ports configurable via $SERVICES; add tests for Firehose+S3
 * v0.3.8: Fix Elasticsearch via local bind and proxy; refactoring; improve error logging
 * v0.3.5: Fix lambda handler name; fix host name for S3 API; install web libs on pip install
 * v0.3.4: Fix file permissions in build; fix and add UI to Docker image; add stub of ES API

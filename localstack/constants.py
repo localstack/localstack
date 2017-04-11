@@ -34,48 +34,29 @@ DEFAULT_PORT_ELASTICSEARCH_BACKEND = 4583
 
 DEFAULT_PORT_WEB_UI = 8080
 
-HOSTNAME = 'localhost'
-if 'HOSTNAME' in os.environ:
-    HOSTNAME = os.environ['HOSTNAME']
+LOCALHOST = 'localhost'
 
-# default mock service endpoints
-TEST_KINESIS_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_KINESIS)
-TEST_FIREHOSE_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_FIREHOSE)
-TEST_DYNAMODB_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_DYNAMODB)
-TEST_LAMBDA_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_LAMBDA)
-TEST_ES_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_ES)
-TEST_ELASTICSEARCH_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_ELASTICSEARCH)
-TEST_DYNAMODBSTREAMS_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_DYNAMODBSTREAMS)
-TEST_S3_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_S3)
-TEST_SNS_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_SNS)
-TEST_SQS_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_SQS)
-TEST_APIGATEWAY_URL = 'http://%s:%s' % (HOSTNAME, DEFAULT_PORT_APIGATEWAY)
-
-# list of default APIs to be spun up
-DEFAULT_APIS = ['s3', 'sns', 'sqs', 'es', 'apigateway', 'dynamodb',
-    'kinesis', 'dynamodbstreams', 'firehose', 'lambda', 'redshift']
+# map of default service APIs and ports to be spun up
+DEFAULT_SERVICE_PORTS = {
+    'es': DEFAULT_PORT_ES,
+    'elasticsearch': DEFAULT_PORT_ELASTICSEARCH,
+    's3': DEFAULT_PORT_S3,
+    'sns': DEFAULT_PORT_SNS,
+    'sqs': DEFAULT_PORT_SQS,
+    'apigateway': DEFAULT_PORT_APIGATEWAY,
+    'dynamodb': DEFAULT_PORT_DYNAMODB,
+    'dynamodbstreams': DEFAULT_PORT_DYNAMODBSTREAMS,
+    'firehose': DEFAULT_PORT_FIREHOSE,
+    'lambda': DEFAULT_PORT_LAMBDA,
+    'kinesis': DEFAULT_PORT_KINESIS,
+    'redshift': DEFAULT_PORT_REDSHIFT
+}
 
 # host to bind to when starting the services
 BIND_HOST = '0.0.0.0'
 
-# For testing
-KINESIS_ERROR_PROBABILITY = 0.0
-
 # AWS user account ID used for tests
 TEST_AWS_ACCOUNT_ID = '123456789'
-
-# expose constants as environment variables
-os.environ['TEST_DYNAMODB_URL'] = TEST_DYNAMODB_URL
-os.environ['TEST_KINESIS_URL'] = TEST_KINESIS_URL
-os.environ['TEST_S3_URL'] = TEST_S3_URL
-os.environ['TEST_SNS_URL'] = TEST_SNS_URL
-os.environ['TEST_SQS_URL'] = TEST_SQS_URL
-os.environ['TEST_APIGATEWAY_URL'] = TEST_APIGATEWAY_URL
-os.environ['TEST_LAMBDA_URL'] = TEST_LAMBDA_URL
-os.environ['TEST_FIREHOSE_URL'] = TEST_FIREHOSE_URL
-os.environ['TEST_ELASTICSEARCH_URL'] = TEST_ELASTICSEARCH_URL
-os.environ['TEST_ES_URL'] = TEST_ES_URL
-os.environ['TEST_DYNAMODBSTREAMS_URL'] = TEST_DYNAMODBSTREAMS_URL
 os.environ['TEST_AWS_ACCOUNT_ID'] = TEST_AWS_ACCOUNT_ID
 
 # root code folder

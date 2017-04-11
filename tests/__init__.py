@@ -1,7 +1,12 @@
-import os
-import sys
+from localstack.mock import infra
+from localstack.utils.common import cleanup
 
-# fix PYTHONPATH
-root_path = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ".."))
-parent_path = os.path.realpath(os.path.join(root_path, ".."))
-sys.path = [p for p in sys.path if p != parent_path]
+
+def setup_package():
+    infra.start_infra(async=True)
+
+
+def teardown_package():
+    print("Shutdown")
+    cleanup(files=True)
+    infra.stop_infra()

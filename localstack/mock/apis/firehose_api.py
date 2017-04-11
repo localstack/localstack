@@ -11,6 +11,7 @@ import base64
 import traceback
 from flask import Flask, jsonify, request, make_response
 from datetime import datetime
+from localstack.config import TEST_S3_URL
 from localstack.constants import *
 from localstack.utils.common import short_uid
 from localstack.utils.aws.aws_stack import *

@@ -1,6 +1,7 @@
 import json
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import *
+from localstack.config import TEST_DYNAMODB_URL
 from localstack.constants import *
 from localstack.mock.apis import lambda_api, dynamodbstreams_api
 

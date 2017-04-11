@@ -214,34 +214,56 @@ def render_velocity_template(template, context, as_json=False):
     return replaced
 
 
+def get_account_id(account_id=None, env=None):
+    if account_id:
+        return account_id
+    env = get_environment(env)
+    if env.region == REGION_LOCAL:
+        return os.environ['TEST_AWS_ACCOUNT_ID']
+    raise Exception('Unable to determine AWS account ID')
+
+
+def role_arn(role_name, account_id=None, env=None):
+    env = get_environment(env)
+    account_id = get_account_id(account_id, env=env)
+    return "arn:aws:iam::%s:role/%s" % (account_id, role_name)
+
+
+def iam_resource_arn(resource, role=None, env=None):
+    env = get_environment(env)
+    if not role:
+        role = get_iam_role(resource, env=env)
+    return role_arn(role_name=role, account_id=get_account_id())
+
+
+def get_iam_role(resource, env=None):
+    env = get_environment(env)
+    return 'role-%s' % resource
+
+
 def dynamodb_table_arn(table_name, account_id=None):
-    if not account_id:
-        account_id = TEST_AWS_ACCOUNT_ID
+    account_id = get_account_id(account_id)
     return "arn:aws:dynamodb:%s:%s:table/%s" % (DEFAULT_REGION, account_id, table_name)
 
 
 def dynamodb_stream_arn(table_name, account_id=None):
-    if not account_id:
-        account_id = TEST_AWS_ACCOUNT_ID
+    account_id = get_account_id(account_id)
     return ("arn:aws:dynamodb:%s:%s:table/%s/stream/%s" %
         (DEFAULT_REGION, account_id, table_name, timestamp()))
 
 
 def lambda_function_arn(function_name, account_id=None):
-    if not account_id:
-        account_id = TEST_AWS_ACCOUNT_ID
+    account_id = get_account_id(account_id)
     return "arn:aws:lambda:%s:%s:function:%s" % (DEFAULT_REGION, account_id, function_name)
 
 
 def kinesis_stream_arn(stream_name, account_id=None):
-    if not account_id:
-        account_id = TEST_AWS_ACCOUNT_ID
+    account_id = get_account_id(account_id)
     return "arn:aws:kinesis:%s:%s:stream/%s" % (DEFAULT_REGION, account_id, stream_name)
 
 
 def firehose_stream_arn(stream_name, account_id=None):
-    if not account_id:
-        account_id = TEST_AWS_ACCOUNT_ID
+    account_id = get_account_id(account_id)
     return ("arn:aws:firehose:%s:%s:deliverystream/%s" % (DEFAULT_REGION, account_id, stream_name))
 
 
@@ -250,14 +272,12 @@ def s3_bucket_arn(bucket_name, account_id=None):
 
 
 def sqs_queue_arn(queue_name, account_id=None):
-    if not account_id:
-        account_id = TEST_AWS_ACCOUNT_ID
+    account_id = get_account_id(account_id)
     return ("arn:aws:sqs:%s:%s:%s" % (DEFAULT_REGION, account_id, queue_name))
 
 
 def sns_topic_arn(topic_name, account_id=None):
-    if not account_id:
-        account_id = TEST_AWS_ACCOUNT_ID
+    account_id = get_account_id(account_id)
     return ("arn:aws:sns:%s:%s:%s" % (DEFAULT_REGION, account_id, topic_name))
 
 

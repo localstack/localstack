@@ -15,10 +15,11 @@ from urlparse import urlparse
 from amazon_kclpy import kcl
 from docopt import docopt
 from sh import tail
+from localstack.constants import *
+from localstack.config import HOSTNAME
 from localstack.utils.common import *
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
-from localstack.constants import *
 from localstack.utils.common import ShellCommandThread, FuncThread
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
@@ -307,7 +308,6 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     }
     # set parameters for local connection
     if env.region == REGION_LOCAL:
-        from localstack.constants import HOSTNAME, DEFAULT_PORT_KINESIS, DEFAULT_PORT_DYNAMODB
         kwargs['kinesisEndpoint'] = '%s:%s' % (HOSTNAME, DEFAULT_PORT_KINESIS)
         kwargs['dynamodbEndpoint'] = '%s:%s' % (HOSTNAME, DEFAULT_PORT_DYNAMODB)
         kwargs['kinesisProtocol'] = 'http'

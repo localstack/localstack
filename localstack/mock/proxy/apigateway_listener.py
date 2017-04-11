@@ -1,5 +1,6 @@
 import re
 from localstack.constants import *
+from localstack.config import TEST_KINESIS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 

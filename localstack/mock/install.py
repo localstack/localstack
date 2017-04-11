@@ -4,7 +4,7 @@ import os
 import sys
 import logging
 import __init__
-from localstack.constants import DEFAULT_APIS, ELASTICSEARCH_JAR_URL
+from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL
 from localstack.utils.common import parallelize, run
 
 
@@ -61,7 +61,7 @@ def install_components(names):
 
 
 def install_all_components():
-    install_components(DEFAULT_APIS)
+    install_components(DEFAULT_SERVICE_PORTS.keys())
 
 
 if __name__ == '__main__':

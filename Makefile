@@ -12,7 +12,7 @@ install:           ## Install npm/pip dependencies, compile code
 		make install-libs && \
 		make compile
 
-setup-venv:		   ## Setup virtualenv
+setup-venv:        # Setup virtualenv
 	(test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv)
 	(test -e $(VENV_DIR) || virtualenv $(VENV_DIR))
 	($(VENV_RUN) && pip install --upgrade pip)
@@ -56,7 +56,8 @@ docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME)
 
 docker-run:        ## Run Docker image locally
-	docker run -it -e DEBUG=$(DEBUG) -p 4567-4578:4567-4578 -p 8080:8080 $(IMAGE_NAME)
+	port_mappings="$(shell echo $(SERVICES) | sed 's/[^0-9]/ /g' | sed 's/\([0-9][0-9]*\)/-p \1:\1/g' | sed 's/  */ /g')"; \
+		docker run -it -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -e SERVICES=$(SERVICES) -p 4567-4578:4567-4578 -p 8080:8080 $$port_mappings $(IMAGE_NAME)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8080)
@@ -76,5 +77,7 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf localstack/node_modules/
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
+	rm -f $(AWS_STS_TMPFILE)
+	rm -f /tmp/localstack.es.zip
 
 .PHONY: usage compile clean install web install-web infra test install-libs

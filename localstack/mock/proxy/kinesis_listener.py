@@ -1,13 +1,13 @@
 import random
 import json
 from requests.models import Response
-from localstack import constants
+from localstack import constants, config
 from localstack.mock.apis import lambda_api
 
 
 def update_kinesis(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
-        if random.random() < constants.KINESIS_ERROR_PROBABILITY:
+        if random.random() < config.KINESIS_ERROR_PROBABILITY:
             return kinesis_error_response(data)
         else:
             return True

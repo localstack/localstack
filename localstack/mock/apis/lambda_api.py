@@ -26,6 +26,9 @@ LAMBDA_EXECUTOR_JAR = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack',
 LAMBDA_EXECUTOR_CLASS = 'com.atlassian.LambdaExecutor'
 
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
+LAMBDA_DEFAULT_RUNTIME = 'python2.7'
+LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
+LAMBDA_DEFAULT_TIMEOUT = 60
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 
 app = Flask(APP_NAME)
@@ -73,7 +76,8 @@ def add_event_source(function_name, source_arn):
         "State": "Enabled",
         "FunctionArn": func_arn(function_name),
         "EventSourceArn": source_arn,
-        "LastProcessingResult": "OK"
+        "LastProcessingResult": "OK",
+        "StartingPosition": LAMBDA_DEFAULT_STARTING_POSITION
     }
     event_source_mappings.append(mapping)
     return mapping
@@ -240,11 +244,11 @@ def do_list_functions():
             'FunctionName': func_name,
             'FunctionArn': f_arn,
             'Handler': lambda_arn_to_handler.get(func_arn(func_name)),
-            'Runtime': 'python2.7'
+            'Runtime': LAMBDA_DEFAULT_RUNTIME,
+            'Timeout': LAMBDA_DEFAULT_TIMEOUT,
             # 'Description': ''
             # 'MemorySize': 192,
-            # 'CodeSize': 2526917,
-            # 'Timeout': 60,
+            # 'CodeSize': 2526917
         })
     return funcs
 
