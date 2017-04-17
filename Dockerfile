@@ -4,7 +4,7 @@ LABEL authors="Waldemar Hummer (whummer@atlassian.com), Gianluca Bortoli (giallo
 
 # install general packages
 RUN apk update && \
-    apk add --update autoconf automake build-base ca-certificates git libffi-dev libtool make nodejs openssl openssl-dev python python-dev py-pip supervisor zip && \
+    apk add --update autoconf automake build-base ca-certificates git libffi-dev libtool linux-headers make nodejs openssl openssl-dev python python-dev py-pip supervisor zip && \
     update-ca-certificates
 
 # set workdir

@@ -97,6 +97,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 response = self.method(proxy_url, data=self.data_string,
                     headers=forward_headers, proxies=proxies)
             self.send_response(response.status_code)
+            # copy headers from response
+            for header_key, header_value in response.headers.iteritems():
+                self.send_header(header_key, header_value)
             self.end_headers()
             self.wfile.write(response.text)
             if self.proxy.update_listener:

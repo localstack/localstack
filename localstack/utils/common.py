@@ -7,6 +7,7 @@ import time
 import glob
 import requests
 import sh
+import psutil
 import zipfile
 import subprocess
 from cStringIO import StringIO
@@ -28,6 +29,7 @@ mutex_popen = threading.Semaphore(1)
 
 # misc. constants
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
+TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 
 class FuncThread (threading.Thread):
@@ -92,22 +94,18 @@ class ShellCommandThread (FuncThread):
         return (not out)
 
     def stop(self, quiet=False):
-        SIGINT = 2
-        SIGKILL = 9
         if not self.process:
             print("WARN: No process found for command '%s'" % self.cmd)
             return
-        pid = self.process.pid
+        parent_pid = self.process.pid
         try:
-            os.kill(pid, SIGTERM)
+            parent = psutil.Process(parent_pid)
+            for child in parent.children(recursive=True):
+                child.kill()
+            parent.kill()
         except Exception, e:
             if not quiet:
                 print('WARN: Unable to kill process with pid %s' % pid)
-        finally:
-            try:
-                os.kill(pid, SIGINT)
-            except Exception, e:
-                pass
 
 
 def is_string(s, include_unicode=True):
@@ -142,6 +140,12 @@ def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
         except Exception, error:
             time.sleep(sleep)
     raise error
+
+
+def dump_thread_info():
+    for t in threading.enumerate():
+        print t
+    print(run("ps aux | grep 'node\\|java\\|python'"))
 
 
 def now_utc():

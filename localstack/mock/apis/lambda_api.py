@@ -9,6 +9,7 @@ import logging
 import base64
 import threading
 import imp
+import cStringIO
 from flask import Flask, Response, jsonify, request, make_response
 from datetime import datetime
 from localstack.constants import *
@@ -86,7 +87,8 @@ def add_event_source(function_name, source_arn):
 def process_kinesis_records(records, stream_name):
     # feed records into listening lambdas
     try:
-        sources = get_event_sources(source_arn=aws_stack.kinesis_stream_arn(stream_name))
+        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+        sources = get_event_sources(source_arn=stream_arn)
         for source in sources:
             arn = source['FunctionArn']
             lambda_function = lambda_arn_to_function[arn]
@@ -100,7 +102,7 @@ def process_kinesis_records(records, stream_name):
                 })
             run_lambda(lambda_function, event=event, context={}, lambda_cwd=lambda_cwd)
     except Exception, e:
-        print(traceback.format_exc(e))
+        print(traceback.format_exc())
 
 
 def get_event_sources(func_name=None, source_arn=None):

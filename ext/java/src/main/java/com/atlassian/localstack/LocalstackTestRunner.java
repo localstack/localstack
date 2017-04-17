@@ -45,53 +45,47 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	/* SERVICE ENDPOINTS */
 
 	public static String getEndpointS3() {
-		ensureInstallation();
-		return getEndpoint("s3");
+		return ensureInstallationAndGetEndpoint("s3");
 	}
 
 	public static String getEndpointKinesis() {
-		ensureInstallation();
-		return getEndpoint("kinesis");
+		return ensureInstallationAndGetEndpoint("kinesis");
 	}
 
 	public static String getEndpointLambda() {
-		ensureInstallation();
-		return getEndpoint("lambda");
+		return ensureInstallationAndGetEndpoint("lambda");
 	}
 
 	public static String getEndpointDynamoDB() {
-		ensureInstallation();
-		return getEndpoint("dynamodb");
+		return ensureInstallationAndGetEndpoint("dynamodb");
 	}
 
 	public static String getEndpointDynamoDBStreams() {
-		ensureInstallation();
-		return getEndpoint("dynamodbstreams");
+		return ensureInstallationAndGetEndpoint("dynamodbstreams");
 	}
 
 	public static String getEndpointAPIGateway() {
-		ensureInstallation();
-		return getEndpoint("apigateway");
+		return ensureInstallationAndGetEndpoint("apigateway");
 	}
 
 	public static String getEndpointElasticsearch() {
-		ensureInstallation();
-		return getEndpoint("elasticsearch");
+		return ensureInstallationAndGetEndpoint("elasticsearch");
 	}
 
 	public static String getEndpointFirehose() {
-		ensureInstallation();
-		return getEndpoint("firehose");
+		return ensureInstallationAndGetEndpoint("firehose");
 	}
 
 	public static String getEndpointSNS() {
-		ensureInstallation();
-		return getEndpoint("sns");
+		return ensureInstallationAndGetEndpoint("sns");
 	}
 
 	public static String getEndpointSQS() {
-		ensureInstallation();
-		return getEndpoint("sns");
+		return ensureInstallationAndGetEndpoint("sqs");
+	}
+
+	public static String getEndpointRedshift() {
+		return ensureInstallationAndGetEndpoint("redshift");
 	}
 
 	/* UTILITY METHODS */
@@ -116,8 +110,12 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		p.destroyForcibly();
 	}
 
-	private static String getEndpoint(String service) {
+	private static String ensureInstallationAndGetEndpoint(String service) {
 		ensureInstallation();
+		return getEndpoint(service);
+	}
+
+	private static String getEndpoint(String service) {
 		String regex = ".*DEFAULT_PORT_" + service.toUpperCase() + "\\s*=\\s*([0-9]+).*";
 		String port = Pattern.compile(regex, Pattern.DOTALL | Pattern.MULTILINE).matcher(CONFIG_FILE_CONTENT).replaceAll("$1");
 		return "http://" + LOCALHOST + ":" + port + "/";

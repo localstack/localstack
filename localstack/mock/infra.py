@@ -20,7 +20,8 @@ from localstack.utils.common import *
 from localstack.mock import generic_proxy, install
 from localstack.mock.install import ROOT_PATH
 from localstack.mock.apis import firehose_api, lambda_api, dynamodbstreams_api, es_api
-from localstack.mock.proxy import apigateway_listener, dynamodb_listener, kinesis_listener, sns_listener
+from localstack.mock.proxy import (apigateway_listener,
+    dynamodb_listener, kinesis_listener, sns_listener, s3_listener)
 from localstack.mock.generic_proxy import GenericProxy
 
 # flag to indicate whether signal handlers have been set up already
@@ -113,9 +114,11 @@ def start_apigateway(port=PORT_APIGATEWAY, async=False, update_listener=None):
     return do_run(cmd, async)
 
 
-def start_s3(port=PORT_S3, async=False):
-    cmd = '%s/bin/moto_server s3 -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, port, constants.BIND_HOST)
+def start_s3(port=PORT_S3, async=False, update_listener=None):
+    backend_port = DEFAULT_PORT_S3_BACKEND
+    cmd = '%s/bin/moto_server s3 -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, backend_port, constants.BIND_HOST)
     print("Starting mock S3 server (port %s)..." % port)
+    start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
 
 
@@ -292,8 +295,10 @@ def check_aws_credentials():
     assert credentials
 
 
-def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_listener=None,
-        apigateway_update_listener=None, sns_update_listener=None, apis=None):
+def start_infra(async=False,
+        dynamodb_update_listener=None, kinesis_update_listener=None,
+        apigateway_update_listener=None, sns_update_listener=None,
+        s3_update_listener=None, apis=None):
     try:
         if not apis:
             apis = SERVICE_PORTS.keys()
@@ -305,6 +310,8 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
             apigateway_update_listener = apigateway_listener.update_apigateway
         if not sns_update_listener:
             sns_update_listener = sns_listener.update_sns
+        if not s3_update_listener:
+            s3_update_listener = s3_listener.update_s3
         # set environment
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
@@ -328,7 +335,7 @@ def start_infra(async=False, dynamodb_update_listener=None, kinesis_update_liste
             thread = start_elasticsearch_service(async=True)
             sleep_time = max(sleep_time, 5)
         if 's3' in apis:
-            thread = start_s3(async=True)
+            thread = start_s3(async=True, update_listener=s3_update_listener)
             sleep_time = max(sleep_time, 3)
         if 'sns' in apis:
             thread = start_sns(async=True, update_listener=sns_update_listener)

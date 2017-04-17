@@ -166,7 +166,8 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     if not endpoint_url:
         if env.region == REGION_LOCAL:
             endpoint_url = get_local_service_url(service_name)
-    return method(service_name, region_name=env.region, endpoint_url=endpoint_url)
+    region = env.region if env.region != REGION_LOCAL else DEFAULT_REGION
+    return method(service_name, region_name=region, endpoint_url=endpoint_url)
 
 
 class VelocityInput:

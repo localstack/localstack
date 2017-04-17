@@ -205,6 +205,7 @@ make web
 
 ## Change Log
 
+* v0.3.10: Add initial support for S3 bucket notifications; fix subprocess32 installation
 * v0.3.9: Make services/ports configurable via $SERVICES; add tests for Firehose+S3
 * v0.3.8: Fix Elasticsearch via local bind and proxy; refactoring; improve error logging
 * v0.3.5: Fix lambda handler name; fix host name for S3 API; install web libs on pip install
