@@ -11,9 +11,12 @@ jsonpath-rw==1.4.0
 moto-ext==0.4.32.1
 nose==1.3.7
 pep8==1.7.0
+psutil==5.2.0
 python-coveralls==2.7.0
 requests==2.11.0
 requests-aws4auth==0.9
 restricted_pkg_ext==1.1.3
 sh==1.11
-subprocess32==3.2.7
+# subprocess32==3.2.7
+# Fix for: https://github.com/atlassian/localstack/issues/67
+git+https://github.com/google/python-subprocess32.git

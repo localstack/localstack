@@ -38,9 +38,11 @@ def handler(event, context):
     forward_events(raw_event_messages)
 
 
-def deserialize_ddb_stream_event(ddb_stream_event):
+def deserialize_ddb_stream_event(event):
     # Deserialize into Python dictionary and extract the "NewImage" (the new version of the full ddb document)
-    ddb = ddb_stream_event['dynamodb']
+    ddb = event.get('dynamodb')
+    if not ddb:
+        return event
     ddb_deserializer = TypeDeserializer()
     return ddb_deserializer.deserialize({'M': ddb['NewImage']})
 

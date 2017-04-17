@@ -37,39 +37,6 @@ def get_s3_client():
             s3={'addressing_style': 'path'}))
 
 
-def add_s3_destination(stream_name, bucket_name, path_prefix):
-    stream = get_stream(stream_name)
-    dest = {
-        "DestinationId": str(uuid.uuid4()),
-        "S3DestinationDescription": {
-            "RoleARN": role_arn(stream_name),
-            "BucketARN": s3_bucket_arn(bucket_name),
-            "Prefix": path_prefix,
-            "BufferingHints": {
-                "IntervalInSeconds": 60,
-                "SizeInMBs": 5
-            },
-            "EncryptionConfiguration": {
-                "NoEncryptionConfig": "NoEncryption"
-            },
-            "CompressionFormat": "UNCOMPRESSED",
-            "CloudWatchLoggingOptions": {
-                "Enabled": False
-            }
-        }
-    }
-    stream['Destinations'].append(dest)
-    try:
-        s3 = get_s3_client()
-        s3.create_bucket(Bucket=bucket_name)
-    except Exception, e:
-        print("WARN: Unable to create S3 bucket %s: %s" % (bucket_name, traceback.format_exc(e)))
-        try:
-            print(e.response)
-        except Exception, e:
-            pass
-
-
 def put_record(stream_name, record):
     return put_records(stream_name, [record])
 
