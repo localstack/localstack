@@ -101,7 +101,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             for header_key, header_value in response.headers.iteritems():
                 self.send_header(header_key, header_value)
             self.end_headers()
-            self.wfile.write(response.text)
+            self.wfile.write(response.content)
             if self.proxy.update_listener:
                 self.proxy.update_listener(method=method, path=path,
                     data=data, headers=self.headers, response=response)
