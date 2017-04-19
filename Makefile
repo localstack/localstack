@@ -57,7 +57,7 @@ docker-push:       ## Push Docker image to registry
 
 docker-run:        ## Run Docker image locally
 	port_mappings="$(shell echo $(SERVICES) | sed 's/[^0-9]/ /g' | sed 's/\([0-9][0-9]*\)/-p \1:\1/g' | sed 's/  */ /g')"; \
-		docker run -it -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -e SERVICES=$(SERVICES) -p 4567-4578:4567-4578 -p 8080:8080 $$port_mappings $(IMAGE_NAME)
+		docker run -it -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -p 4567-4578:4567-4578 -p 8080:8080 $$port_mappings $(IMAGE_NAME)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8080)
