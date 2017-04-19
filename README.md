@@ -193,6 +193,31 @@ public class MyCloudAppTest {
 }
 ```
 
+The *LocalStack* JUnit test runner is published as a Maven artifact in the Bitbucket repository.
+Simply add the following configuration to your `pom.xml` file:
+
+```
+<project ...>
+  ...
+  <dependencies>
+    ...
+    <dependency>
+      <groupId>com.atlassian</groupId>
+      <artifactId>localstack-utils</artifactId>
+      <version>1.0-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
+
+  <repositories>
+    <repository>
+      <id>localstack-repo</id>
+      <url>https://bitbucket.org/atlassian/localstack/raw/mvn/release</url>
+    </repository>
+  </repositories>
+
+</project>
+```
+
 ## Web Dashboard
 
 The projects also comes with a simple Web dashboard that allows to view the
