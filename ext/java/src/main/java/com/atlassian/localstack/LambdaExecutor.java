@@ -1,13 +1,6 @@
 package com.atlassian.localstack;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.LinkedList;
@@ -20,6 +13,9 @@ import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent.KinesisEventRecord;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent.Record;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.codec.Charsets;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * TODO: Support for AWS Lambda functions written in Java is work in progress.
@@ -81,7 +77,7 @@ public class LambdaExecutor {
 		if(result != null) {
 			return result;
 		}
-		key = firstCharToLower(key);
+		key = StringUtils.uncapitalize(key);
 		result = map.get(key);
 		if(result != null) {
 			return result;
@@ -89,29 +85,16 @@ public class LambdaExecutor {
 		return map.get(key.toLowerCase());
 	}
 
-	private static String firstCharToLower(String s) {
-		return s.substring(0, 1).toLowerCase() + s.substring(1);
-	}
 
-	// TODO use commons-io
 	private static String readFile(String file) throws Exception {
 		if(!file.startsWith("/")) {
 			file = System.getProperty("user.dir") + "/" + file;
 		}
-		InputStream is = (InputStream) new URL("file://" + file).getContent();
-		BufferedReader br = new BufferedReader(new InputStreamReader(is));
-		String result = "";
-		String line = null;
-		while((line = br.readLine()) != null) {
-			result += line + "\n";
-		}
-		return result;
+		return FileUtils.readFileToString(new File(file), Charsets.UTF_8);
 	}
 
 	private static void writeFile(String file, String content) throws Exception {
-		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)));
-		bw.write(content);
-		bw.close();
+		FileUtils.writeStringToFile(new File(file),content, Charsets.UTF_8);
 	}
 
 }
