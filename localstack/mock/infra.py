@@ -142,6 +142,18 @@ def start_sqs(port=PORT_SQS, async=False):
     return do_run(cmd, async)
 
 
+def start_route53(port=PORT_ROUTE53, async=False):
+    cmd = '%s/bin/moto_server route53 -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, port, constants.BIND_HOST)
+    print("Starting mock Route53 server (port %s)..." % port)
+    return do_run(cmd, async)
+
+
+def start_ses(port=PORT_SES, async=False):
+    cmd = '%s/bin/moto_server ses -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, port, constants.BIND_HOST)
+    print("Starting mock SES server (port %s)..." % port)
+    return do_run(cmd, async)
+
+
 def start_elasticsearch_service(port=PORT_ES, async=False):
     print("Starting mock ES service (port %s)..." % port)
     if async:
@@ -355,6 +367,10 @@ def start_infra(async=False,
             thread = start_kinesis(async=True, update_listener=kinesis_update_listener)
         if 'redshift' in apis:
             thread = start_redshift(async=True)
+        if 'route53' in apis:
+            thread = start_route53(async=True)
+        if 'ses' in apis:
+            thread = start_ses(async=True)
         time.sleep(sleep_time)
         # check that all infra components are up and running
         check_infra(apis=apis)

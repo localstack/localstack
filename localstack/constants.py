@@ -13,6 +13,8 @@ REGION_LOCAL = 'local'
 ENV_DEV = 'dev'
 
 # infra service ports
+DEFAULT_PORT_SES = 4565
+DEFAULT_PORT_ROUTE53 = 4566
 DEFAULT_PORT_APIGATEWAY = 4567
 DEFAULT_PORT_KINESIS = 4568
 DEFAULT_PORT_DYNAMODB = 4569
@@ -50,7 +52,9 @@ DEFAULT_SERVICE_PORTS = {
     'firehose': DEFAULT_PORT_FIREHOSE,
     'lambda': DEFAULT_PORT_LAMBDA,
     'kinesis': DEFAULT_PORT_KINESIS,
-    'redshift': DEFAULT_PORT_REDSHIFT
+    'redshift': DEFAULT_PORT_REDSHIFT,
+    'route53': DEFAULT_PORT_ROUTE53,
+    'ses': DEFAULT_PORT_SES
 }
 
 # host to bind to when starting the services

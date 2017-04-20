@@ -16,6 +16,8 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 
 *LocalStack* spins up the following core Cloud APIs on your local machine:
 
+* **SES** at http://localhost:4565
+* **Route53** at http://localhost:4566
 * **API Gateway** at http://localhost:4567
 * **Kinesis** at http://localhost:4568
 * **DynamoDB** at http://localhost:4569
