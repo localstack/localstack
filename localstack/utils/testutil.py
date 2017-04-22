@@ -34,12 +34,17 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
             'StreamEnabled': True,
             'StreamViewType': stream_view_type
         }
-    table = dynamodb.create_table(TableName=table_name, KeySchema=key_schema,
-        AttributeDefinitions=attr_defs, ProvisionedThroughput={
-            'ReadCapacityUnits': 10, 'WriteCapacityUnits': 10
-        },
-        StreamSpecification=stream_spec
-    )
+    try:
+        table = dynamodb.create_table(TableName=table_name, KeySchema=key_schema,
+            AttributeDefinitions=attr_defs, ProvisionedThroughput={
+                'ReadCapacityUnits': 10, 'WriteCapacityUnits': 10
+            },
+            StreamSpecification=stream_spec
+        )
+    except Exception, e:
+        if 'ResourceInUseException' in str(e):
+            # Table already exists -> return table reference
+            return aws_stack.connect_to_resource('dynamodb', env=env).Table(table_name)
     time.sleep(2)
     return table
 

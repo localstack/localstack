@@ -107,6 +107,8 @@ You can pass the following environment variables to LocalStack:
   (defaults to `localhost`).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
+* `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
+  inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
 
 ## Developing
 
