@@ -9,9 +9,9 @@
     $scope.actions = {};
     $scope.state = {};
     $scope.settings = {
-    	hideDisconnected: false,
+      hideDisconnected: false,
       localEndpoints: true,
-    	nameFilter: '(?!(segment-|aes-|.*zone-)).*'
+      nameFilter: '.*'
     };
 
     $scope.trim = function(string, maxLength) {
