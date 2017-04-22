@@ -81,7 +81,7 @@ ADD tests/ tests/
 RUN make test
 
 # expose service & web dashboard ports
-EXPOSE 4565-4578 8080
+EXPOSE 4567-4580 8080
 
 # define command at startup
 ENTRYPOINT ["/usr/bin/supervisord"]

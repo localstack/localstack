@@ -16,8 +16,6 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 
 *LocalStack* spins up the following core Cloud APIs on your local machine:
 
-* **SES** at http://localhost:4565
-* **Route53** at http://localhost:4566
 * **API Gateway** at http://localhost:4567
 * **Kinesis** at http://localhost:4568
 * **DynamoDB** at http://localhost:4569
@@ -29,6 +27,9 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 * **SNS** at http://localhost:4575
 * **SQS** at http://localhost:4576
 * **Redshift** at http://localhost:4577
+* **ES** at http://localhost:4578
+* **SES** at http://localhost:4579
+* **Route53** at http://localhost:4580
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
@@ -85,7 +86,7 @@ pip install localstack
 You can also spin up *LocalStack* without any installation requirements, using Docker:
 
 ```
-docker run -it -p 4567-4578:4567-4578 -p 8080:8080 atlassianlabs/localstack
+docker run -it -p 4567-4580:4567-4580 -p 8080:8080 atlassianlabs/localstack
 ```
 
 ... or simply use the `make` target which runs the same command:
