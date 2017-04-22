@@ -61,6 +61,7 @@ def aws_cmd(service, env):
 
     cmd = '. .venv/bin/activate; aws'
     endpoint_url = None
+    env = aws_stack.get_environment(env)
     if env.region == REGION_LOCAL:
         endpoint_url = aws_stack.get_local_service_url(service)
     if endpoint_url:
@@ -197,6 +198,7 @@ def get_lambda_event_sources(func_name=None, env=None):
 def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     if MOCK_OBJ:
         return ''
+    env = aws_stack.get_environment(env)
     if cache_time is None and env.region != REGION_LOCAL:
         cache_time = AWS_LAMBDA_CODE_CACHE_TIMEOUT
     out = cmd_lambda('get-function --function-name %s' % func_name, env, cache_time)
@@ -210,10 +212,10 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     try:
         run('mkdir -p %s' % folder)
         if not os.path.isfile(archive):
-            print("Downloading %s" % archive)
+            # print("Downloading %s" % archive)
             run("wget -O %s '%s'" % (archive, loc))
         if len(os.listdir(folder)) <= 1:
-            print("Unzipping %s/%s" % (folder, filename))
+            # print("Unzipping %s/%s" % (folder, filename))
             run("cd %s && unzip -o %s" % (folder, filename))
     except Exception, e:
         print("WARN: %s" % e)
@@ -424,6 +426,6 @@ def get_graph(name_filter='.*', env=None):
                 src_uid = node_ids[b.id]
                 tgt_uid = node_ids[n.target.id]
                 result['edges'].append({'source': src_uid, 'target': tgt_uid})
-        print json.dumps(result)
+        # print json.dumps(result)
 
     return result
