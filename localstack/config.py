@@ -6,6 +6,11 @@ KINESIS_ERROR_PROBABILITY = 0.0
 if os.environ.get('KINESIS_ERROR_PROBABILITY'):
     KINESIS_ERROR_PROBABILITY = float(os.environ['KINESIS_ERROR_PROBABILITY'])
 
+# Randomly inject faults to DynamoDB
+DYNAMODB_ERROR_PROBABILITY = 0.0
+if os.environ.get('DYNAMODB_ERROR_PROBABILITY'):
+    DYNAMODB_ERROR_PROBABILITY = float(os.environ['DYNAMODB_ERROR_PROBABILITY'])
+
 # Allow custom hostname for services
 HOSTNAME = LOCALHOST
 if os.environ.get('HOSTNAME'):

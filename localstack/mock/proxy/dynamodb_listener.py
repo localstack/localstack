@@ -1,7 +1,9 @@
 import json
+import random
+from requests.models import Response
+from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import *
-from localstack.config import TEST_DYNAMODB_URL
 from localstack.constants import *
 from localstack.mock.apis import lambda_api, dynamodbstreams_api
 
@@ -11,6 +13,8 @@ TABLE_DEFINITIONS = {}
 
 def update_dynamodb(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
+        if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
+            return dynamodb_error_response(data)
         return True
 
     # update table definitions
@@ -40,7 +44,7 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     if action == 'DynamoDB_20120810.UpdateItem':
         req = {'TableName': data['TableName']}
         req['Key'] = data['Key']
-        new_item = aws_stack.dynamodb_get_item_raw(TEST_DYNAMODB_URL, req)
+        new_item = aws_stack.dynamodb_get_item_raw(config.TEST_DYNAMODB_URL, req)
         if 'Item' not in new_item:
             if 'message' in new_item:
                 print('WARNING: Unable to get item from DynamoDB: %s' % new_item['message'])
@@ -87,3 +91,15 @@ def dynamodb_extract_keys(item, table_name):
         attr_name = key['AttributeName']
         result[attr_name] = item[attr_name]
     return result
+
+
+def dynamodb_error_response(data):
+    error_response = Response()
+    error_response.status_code = 400
+    content = {
+        'message': ('The level of configured provisioned throughput for the table was exceeded. ' +
+            'Consider increasing your provisioning level with the UpdateTable API'),
+        '__type': 'com.amazonaws.dynamodb.v20120810#ProvisionedThroughputExceededException'
+    }
+    error_response._content = json.dumps(content)
+    return error_response
