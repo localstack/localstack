@@ -31,43 +31,9 @@ INFRA_STOPPED = False
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
 
-def register_signal_handlers():
-    global SIGNAL_HANDLERS_SETUP
-    if SIGNAL_HANDLERS_SETUP:
-        return
-
-    # register signal handlers
-    def signal_handler(signal, frame):
-        stop_infra()
-        os._exit(0)
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
-    SIGNAL_HANDLERS_SETUP = True
-
-
-def is_debug():
-    return os.environ.get('DEBUG')
-
-
-def do_run(cmd, async, print_output=False):
-    sys.stdout.flush()
-    if async:
-        if is_debug():
-            print_output = True
-        outfile = subprocess.PIPE if print_output else None
-        t = ShellCommandThread(cmd, outfile=outfile)
-        t.start()
-        TMP_THREADS.append(t)
-        return t
-    else:
-        return run(cmd)
-
-
-def start_proxy(port, backend_port, update_listener, quiet=False, backend_host=DEFAULT_BACKEND_HOST):
-    proxy_thread = GenericProxy(port=port, forward_host='%s:%s' % (backend_host, backend_port),
-                        update_listener=update_listener, quiet=quiet)
-    proxy_thread.start()
-    TMP_THREADS.append(proxy_thread)
+# -----------------
+# API ENTRY POINTS
+# -----------------
 
 
 def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
@@ -107,96 +73,120 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
 
 
 def start_apigateway(port=PORT_APIGATEWAY, async=False, update_listener=None):
-    backend_port = DEFAULT_PORT_APIGATEWAY_BACKEND
-    cmd = '%s/bin/moto_server apigateway -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, backend_port, constants.BIND_HOST)
-    print("Starting mock API Gateway (port %s)..." % port)
-    start_proxy(port, backend_port, update_listener)
-    return do_run(cmd, async)
+    return start_moto_server('apigateway', port, name='API Gateway', async=async,
+        backend_port=DEFAULT_PORT_APIGATEWAY_BACKEND, update_listener=update_listener)
 
 
 def start_s3(port=PORT_S3, async=False, update_listener=None):
-    backend_port = DEFAULT_PORT_S3_BACKEND
-    cmd = '%s/bin/moto_server s3 -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, backend_port, constants.BIND_HOST)
-    print("Starting mock S3 server (port %s)..." % port)
-    start_proxy(port, backend_port, update_listener)
-    return do_run(cmd, async)
-
-
-def start_redshift(port=PORT_REDSHIFT, async=False):
-    cmd = '%s/bin/moto_server redshift -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, port, constants.BIND_HOST)
-    print("Starting mock Redshift server (port %s)..." % port)
-    return do_run(cmd, async)
+    return start_moto_server('s3', port, name='S3', async=async,
+        backend_port=DEFAULT_PORT_S3_BACKEND, update_listener=update_listener)
 
 
 def start_sns(port=PORT_SNS, async=False, update_listener=None):
-    backend_port = DEFAULT_PORT_SNS_BACKEND
-    cmd = '%s/bin/moto_server sns -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, backend_port, constants.BIND_HOST)
-    print("Starting mock SNS server (port %s)..." % port)
-    start_proxy(port, backend_port, update_listener)
-    return do_run(cmd, async)
+    return start_moto_server('sns', port, name='SNS', async=async,
+        backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
+
+
+def start_redshift(port=PORT_REDSHIFT, async=False):
+    return start_moto_server('redshift', port, name='Redshift', async=async)
 
 
 def start_sqs(port=PORT_SQS, async=False):
-    cmd = '%s/bin/moto_server sqs -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, port, constants.BIND_HOST)
-    print("Starting mock SQS server (port %s)..." % port)
-    return do_run(cmd, async)
+    return start_moto_server('sqs', port, name='SQS', async=async)
 
 
 def start_route53(port=PORT_ROUTE53, async=False):
-    cmd = '%s/bin/moto_server route53 -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, port, constants.BIND_HOST)
-    print("Starting mock Route53 server (port %s)..." % port)
-    return do_run(cmd, async)
+    return start_moto_server('route53', port, name='Route53', async=async)
 
 
 def start_ses(port=PORT_SES, async=False):
-    cmd = '%s/bin/moto_server ses -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, port, constants.BIND_HOST)
-    print("Starting mock SES server (port %s)..." % port)
-    return do_run(cmd, async)
+    return start_moto_server('ses', port, name='SES', async=async)
+
+
+def start_cloudformation(port=PORT_CLOUDFORMATION, async=False):
+    return start_moto_server('cloudformation', port, name='CloudFormation', async=async)
 
 
 def start_elasticsearch_service(port=PORT_ES, async=False):
-    print("Starting mock ES service (port %s)..." % port)
-    if async:
-        thread = FuncThread(es_api.serve, port, quiet=True)
-        thread.start()
-        TMP_THREADS.append(thread)
-        return thread
-    else:
-        es_api.serve(port)
+    return start_local_api('ES', port, method=es_api.serve, async=async)
 
 
 def start_firehose(port=PORT_FIREHOSE, async=False):
-    print("Starting mock Firehose (port %s)..." % port)
-    if async:
-        thread = FuncThread(firehose_api.serve, port, quiet=True)
-        thread.start()
-        TMP_THREADS.append(thread)
-        return thread
-    else:
-        firehose_api.serve(port)
+    return start_local_api('Firehose', port, method=firehose_api.serve, async=async)
 
 
 def start_dynamodbstreams(port=PORT_DYNAMODBSTREAMS, async=False):
-    print("Starting mock DynamoDB Streams (port %s)..." % port)
-    if async:
-        thread = FuncThread(dynamodbstreams_api.serve, port, quiet=True)
-        thread.start()
-        TMP_THREADS.append(thread)
-        return thread
-    else:
-        firehose_api.serve(port)
+    return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, async=async)
 
 
 def start_lambda(port=PORT_LAMBDA, async=False):
-    print("Starting mock Lambda (port %s)..." % port)
-    lambda_api.cleanup()
+    return start_local_api('Lambda', port, method=lambda_api.serve, async=async)
+
+
+# ---------------
+# HELPER METHODS
+# ---------------
+
+
+def register_signal_handlers():
+    global SIGNAL_HANDLERS_SETUP
+    if SIGNAL_HANDLERS_SETUP:
+        return
+
+    # register signal handlers
+    def signal_handler(signal, frame):
+        stop_infra()
+        os._exit(0)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    SIGNAL_HANDLERS_SETUP = True
+
+
+def is_debug():
+    return os.environ.get('DEBUG')
+
+
+def do_run(cmd, async, print_output=False):
+    sys.stdout.flush()
     if async:
-        thread = FuncThread(lambda_api.serve, port, quiet=True)
+        if is_debug():
+            print_output = True
+        outfile = subprocess.PIPE if print_output else None
+        t = ShellCommandThread(cmd, outfile=outfile)
+        t.start()
+        TMP_THREADS.append(t)
+        return t
+    else:
+        return run(cmd)
+
+
+def start_proxy(port, backend_port, update_listener, quiet=False, backend_host=DEFAULT_BACKEND_HOST):
+    proxy_thread = GenericProxy(port=port, forward_host='%s:%s' % (backend_host, backend_port),
+                        update_listener=update_listener, quiet=quiet)
+    proxy_thread.start()
+    TMP_THREADS.append(proxy_thread)
+
+
+def start_moto_server(key, port, name=None, backend_port=None, async=False, update_listener=None):
+    cmd = '%s/bin/moto_server %s -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, key,
+        backend_port or port, constants.BIND_HOST)
+    if not name:
+        name = key
+    print("Starting mock %s (port %s)..." % (name, port))
+    if backend_port:
+        start_proxy(port, backend_port, update_listener)
+    return do_run(cmd, async)
+
+
+def start_local_api(name, port, method, async=False):
+    print("Starting mock %s service (port %s)..." % (name, port))
+    if async:
+        thread = FuncThread(method, port, quiet=True)
         thread.start()
         TMP_THREADS.append(thread)
         return thread
     else:
-        lambda_api.serve(port)
+        method(port)
 
 
 def stop_infra():
@@ -211,6 +201,23 @@ def stop_infra():
     # TODO: optimize this (takes too long currently)
     # check_infra(retries=2, expect_shutdown=True)
     INFRA_STOPPED = True
+
+
+def check_aws_credentials():
+    session = boto3.Session()
+    credentials = session.get_credentials()
+    if not credentials:
+        # set temporary dummy credentials
+        os.environ['AWS_ACCESS_KEY_ID'] = 'LocalStackDummyAccessKey'
+        os.environ['AWS_SECRET_ACCESS_KEY'] = 'LocalStackDummySecretKey'
+    session = boto3.Session()
+    credentials = session.get_credentials()
+    assert credentials
+
+
+# -----------------------------
+# INFRASTRUCTURE HEALTH CHECKS
+# -----------------------------
 
 
 def check_infra_kinesis(expect_shutdown=False, print_error=False):
@@ -295,16 +302,9 @@ def check_infra(retries=7, expect_shutdown=False, apis=None, additional_checks=[
         check_infra(retries - 1, expect_shutdown=expect_shutdown, apis=apis, additional_checks=additional_checks)
 
 
-def check_aws_credentials():
-    session = boto3.Session()
-    credentials = session.get_credentials()
-    if not credentials:
-        # set temporary dummy credentials
-        os.environ['AWS_ACCESS_KEY_ID'] = 'LocalStackDummyAccessKey'
-        os.environ['AWS_SECRET_ACCESS_KEY'] = 'LocalStackDummySecretKey'
-    session = boto3.Session()
-    credentials = session.get_credentials()
-    assert credentials
+# -------------
+# MAIN STARTUP
+# -------------
 
 
 def start_infra(async=False,
@@ -371,6 +371,8 @@ def start_infra(async=False,
             thread = start_route53(async=True)
         if 'ses' in apis:
             thread = start_ses(async=True)
+        if 'cloudformation' in apis:
+            thread = start_cloudformation(async=True)
         time.sleep(sleep_time)
         # check that all infra components are up and running
         check_infra(apis=apis)

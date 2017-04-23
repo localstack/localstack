@@ -8,7 +8,7 @@ elasticsearch==5.3.0
 flask==0.10.1
 flask_swagger==0.2.12
 jsonpath-rw==1.4.0
-moto-ext==0.4.32.1
+moto-ext==0.4.32.2
 nose==1.3.7
 pep8==1.7.0
 psutil==5.2.0
