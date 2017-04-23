@@ -27,9 +27,10 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 * **SNS** at http://localhost:4575
 * **SQS** at http://localhost:4576
 * **Redshift** at http://localhost:4577
-* **ES** at http://localhost:4578
+* **ES (Elasticsearch Service)** at http://localhost:4578
 * **SES** at http://localhost:4579
 * **Route53** at http://localhost:4580
+* **CloudFormation** at http://localhost:4581
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
@@ -235,6 +236,7 @@ make web
 
 ## Change Log
 
+* v0.3.11: Add Route53, SES, CloudFormation; DynamoDB fault injection; UI tweaks; refactor config
 * v0.3.10: Add initial support for S3 bucket notifications; fix subprocess32 installation
 * v0.3.9: Make services/ports configurable via $SERVICES; add tests for Firehose+S3
 * v0.3.8: Fix Elasticsearch via local bind and proxy; refactoring; improve error logging
