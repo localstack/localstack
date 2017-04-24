@@ -1,0 +1,30 @@
+<html>
+<head>
+	<script src="../node_modules/jquery/dist/jquery.js"></script>
+</head>
+<body>
+	<div id="result">test running...</div>
+	<script>
+		var url = "http://localhost:4572/test-bucket/test-object";
+
+		function onLoaded1 () {
+			$.get(url, onLoaded2);
+		}
+		function onLoaded2 (data) {
+			document.getElementById('result').innerHTML = 'Test succeeded, file content: ' +
+				'<div><pre><code>\n' +
+				('' + data).replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+				'\n</code></pre></div>';
+		}
+		function onErrored () {
+			document.getElementById('result').innerHTML = 'Test failed, unable to load file from S3.';
+		}
+
+		var req = new XMLHttpRequest();
+		req.addEventListener("load", onLoaded1);
+		req.addEventListener("error", onErrored);
+		req.open("GET", url);
+		req.send();
+	</script>
+</body>
+</html>

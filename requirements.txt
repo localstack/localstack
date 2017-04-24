@@ -3,6 +3,7 @@ amazon_kclpy==1.4.1
 awscli==1.11.75
 boto3==1.4.0
 coverage==4.0.3
+xmltodict==0.10.2
 docopt==0.6.2
 elasticsearch==5.3.0
 flask==0.10.1

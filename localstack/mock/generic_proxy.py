@@ -82,6 +82,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         forward_headers['host'] = urlparse(target_url).netloc
         try:
             response = None
+            # update listener (pre-invocation)
             if self.proxy.update_listener:
                 do_forward = self.proxy.update_listener(method=method, path=path,
                     data=data, headers=self.headers, return_forward_info=True)
@@ -96,15 +97,16 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             if response is None:
                 response = self.method(proxy_url, data=self.data_string,
                     headers=forward_headers, proxies=proxies)
+            # update listener (post-invocation)
+            if self.proxy.update_listener:
+                self.proxy.update_listener(method=method, path=path,
+                    data=data, headers=self.headers, response=response)
+            # copy headers and return response
             self.send_response(response.status_code)
-            # copy headers from response
             for header_key, header_value in response.headers.iteritems():
                 self.send_header(header_key, header_value)
             self.end_headers()
             self.wfile.write(response.content)
-            if self.proxy.update_listener:
-                self.proxy.update_listener(method=method, path=path,
-                    data=data, headers=self.headers, response=response)
         except Exception, e:
             if not self.proxy.quiet:
                 LOGGER.error("Error forwarding request: %s" % traceback.format_exc(e))
