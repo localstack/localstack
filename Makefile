@@ -13,7 +13,7 @@ install:           ## Install npm/pip dependencies, compile code
 		make compile
 
 setup-venv:        # Setup virtualenv
-	(test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv)
+	(test `which virtualenv` || pip install --user virtualenv || sudo pip install virtualenv)
 	(test -e $(VENV_DIR) || virtualenv $(VENV_DIR))
 	($(VENV_RUN) && pip install --upgrade pip)
 	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
