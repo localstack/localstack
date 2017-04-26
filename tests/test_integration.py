@@ -9,6 +9,7 @@ from localstack.utils.common import *
 from localstack.config import HOSTNAME, PORT_SQS
 from localstack.constants import ENV_DEV, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
 from localstack.mock import infra
+from localstack.mock.apis.lambda_api import LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_PYTHON27, use_docker
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from .lambdas import lambda_integration
@@ -16,11 +17,16 @@ from .lambdas import lambda_integration
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
 TEST_TABLE_NAME = 'test_stream_table'
-TEST_LAMBDA_NAME = 'test_lambda'
+TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
+TEST_LAMBDA_NAME_STREAM_PY = 'test_lambda_py'
+TEST_LAMBDA_NAME_STREAM_JS = 'test_lambda_js'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = 'test_bucket'
 TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_2'
 TEST_QUEUE_NAME = 'test_queue'
+
+TEST_LAMBDA_NODEJS = load_file(os.path.join(LOCALSTACK_ROOT_FOLDER, 'tests', 'lambdas', 'lambda_integration.js'))
+TEST_LAMBDA_PYTHON = load_file(os.path.join(LOCALSTACK_ROOT_FOLDER, 'tests', 'lambdas', 'lambda_integration.py'))
 
 EVENTS = []
 
@@ -133,17 +139,26 @@ def test_kinesis_lambda_ddb_streams():
             ddb_event_source_arn = stream['StreamArn']
     assert ddb_event_source_arn
 
-    # deploy test lambda connected to DynamoDB Stream
-    script = load_file(os.path.join(LOCALSTACK_ROOT_FOLDER, 'tests', 'lambdas', 'lambda_integration.py'))
-    zip_file = testutil.create_lambda_archive(script, get_content=True)
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME,
-        zip_file=zip_file, event_source_arn=ddb_event_source_arn)
+    # deploy test lambda (Python) connected to DynamoDB Stream
+    zip_file = testutil.create_lambda_archive(TEST_LAMBDA_PYTHON, get_content=True,
+        libs=['localstack'], runtime=LAMBDA_RUNTIME_PYTHON27)
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
+        zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
 
-    # deploy test lambda connected to Kinesis Stream
+    # deploy test lambda (Python) connected to Kinesis Stream
     kinesis_event_source_arn = kinesis.describe_stream(
         StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_SOURCE_STREAM_NAME,
-        zip_file=zip_file, event_source_arn=kinesis_event_source_arn)
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM_PY,
+        zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
+
+    if use_docker():
+        # deploy test lambda (Node.js) connected to Kinesis Stream
+        zip_file = testutil.create_lambda_archive(TEST_LAMBDA_NODEJS, get_content=True,
+            runtime=LAMBDA_RUNTIME_NODEJS)
+        kinesis_event_source_arn = kinesis.describe_stream(
+            StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
+        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM_JS,
+            zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_NODEJS)
 
     # put items to table
     num_events_ddb = 10

@@ -4,7 +4,7 @@ LABEL authors="Waldemar Hummer (whummer@atlassian.com), Gianluca Bortoli (giallo
 
 # install general packages
 RUN apk update && \
-    apk add --update autoconf automake build-base ca-certificates git libffi-dev libtool linux-headers make nodejs openssl openssl-dev python python-dev py-pip supervisor zip && \
+    apk add --update autoconf automake build-base ca-certificates docker git libffi-dev libtool linux-headers make nodejs openssl openssl-dev python python-dev py-pip supervisor zip && \
     update-ca-certificates
 
 # set workdir
@@ -51,14 +51,16 @@ RUN make init
 # add rest of the code
 ADD localstack/ localstack/
 
-# fix some permissions
+# fix some permissions and create local user
 RUN mkdir -p /.npm && \
     mkdir -p localstack/infra/elasticsearch/data && \
     chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm && \
+    chmod -R 777 localstack/infra/elasticsearch/config && \
     chmod -R 777 localstack/infra/elasticsearch/data && \
-    chmod -R 777 localstack/infra/elasticsearch/logs
+    chmod -R 777 localstack/infra/elasticsearch/logs && \
+    adduser -D localstack
 
 # install supervisor daemon & copy config file
 ADD supervisord.conf /etc/supervisord.conf
@@ -71,10 +73,7 @@ ENV AWS_ACCESS_KEY_ID=foobar \
     AWS_SECRET_ACCESS_KEY=foobar \
     AWS_DEFAULT_REGION=us-east-1 \
     MAVEN_CONFIG=/opt/code/localstack \
-    USER=docker
-
-# assign random user id
-USER 24624336
+    USER=localstack
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/

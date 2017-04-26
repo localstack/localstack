@@ -55,6 +55,11 @@ def start_kinesis(port=PORT_KINESIS, async=False, shard_limit=100, update_listen
     return do_run(cmd, async)
 
 
+def is_root():
+    out = run('whoami').strip()
+    return out == 'root'
+
+
 def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, update_listener=None):
     install.install_elasticsearch()
     backend_port = DEFAULT_PORT_ELASTICSEARCH_BACKEND
@@ -68,6 +73,8 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
         run('rm -rf %s/elasticsearch' % data_path)
     run('mkdir -p %s/elasticsearch' % data_path)
     start_proxy(port, backend_port, update_listener, quiet=True)
+    if is_root():
+        cmd = "su -c '%s' localstack" % cmd
     thread = do_run(cmd, async)
     return thread
 

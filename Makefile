@@ -3,6 +3,8 @@ VENV_DIR = .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
 AWS_STS_TMPFILE = /tmp/aws-java-sdk-sts.jar
+TMP_DIR = /tmp/localstack
+DOCKER_SOCK ?= /var/run/docker.sock
 
 usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
@@ -57,7 +59,8 @@ docker-push:       ## Push Docker image to registry
 
 docker-run:        ## Run Docker image locally
 	port_mappings="$(shell echo $(SERVICES) | sed 's/[^0-9]/ /g' | sed 's/\([0-9][0-9]*\)/-p \1:\1/g' | sed 's/  */ /g')"; \
-		docker run -it -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -p 4567-4581:4567-4581 -p 8080:8080 $$port_mappings $(IMAGE_NAME)
+		mkdir -p $(TMP_DIR); \
+		docker run -it $(ENTRYPOINT) -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e LAMDA_EXECUTOR=$(LAMDA_EXECUTOR) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -p 4567-4581:4567-4581 -p 8080:8080 $$port_mappings -v $(TMP_DIR):$(TMP_DIR) -v $(DOCKER_SOCK):$(DOCKER_SOCK) -e DOCKER_HOST="unix://$(DOCKER_SOCK)" $(IMAGE_NAME) $(CMD)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8080)
@@ -65,6 +68,9 @@ web:               ## Start web application (dashboard)
 test:              ## Run automated tests
 	make lint && \
 		$(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .
+
+test-docker:       ## Run automated tests in Docker
+	ENTRYPOINT="--entrypoint= -v `pwd`/localstack:/opt/code/localstack/localstack" CMD="make test" make docker-run
 
 lint:              ## Run code linter to check code style
 	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR),dist .)

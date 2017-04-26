@@ -79,7 +79,7 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
         pass
     for src in sources:
         func_to_call = lambda_api.lambda_arn_to_function[src['FunctionArn']]
-        lambda_api.run_lambda(func_to_call, event=event, context={})
+        lambda_api.run_lambda(func_to_call, event=event, context={}, func_arn=src['FunctionArn'])
 
 
 def dynamodb_extract_keys(item, table_name):

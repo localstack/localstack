@@ -1,20 +1,23 @@
 import re
+import os
 from localstack.constants import *
 
 # Randomly inject faults to Kinesis
-KINESIS_ERROR_PROBABILITY = 0.0
-if os.environ.get('KINESIS_ERROR_PROBABILITY'):
-    KINESIS_ERROR_PROBABILITY = float(os.environ['KINESIS_ERROR_PROBABILITY'])
+KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY') or 0.0)
 
 # Randomly inject faults to DynamoDB
-DYNAMODB_ERROR_PROBABILITY = 0.0
-if os.environ.get('DYNAMODB_ERROR_PROBABILITY'):
-    DYNAMODB_ERROR_PROBABILITY = float(os.environ['DYNAMODB_ERROR_PROBABILITY'])
+DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY') or 0.0)
 
 # Allow custom hostname for services
-HOSTNAME = LOCALHOST
-if os.environ.get('HOSTNAME'):
-    HOSTNAME = os.environ['HOSTNAME']
+HOSTNAME = os.environ.get('HOSTNAME') or LOCALHOST
+
+# whether to use Lambda functions in a Docker container
+LAMDA_EXECUTOR = os.environ.get('LAMDA_EXECUTOR') or 'docker'
+
+# temporary folder
+TMP_FOLDER = '/tmp/localstack'
+if not os.path.exists(TMP_FOLDER):
+    os.makedirs(TMP_FOLDER)
 
 
 def parse_service_ports():

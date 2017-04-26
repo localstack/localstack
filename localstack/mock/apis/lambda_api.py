@@ -13,31 +13,40 @@ import cStringIO
 from flask import Flask, Response, jsonify, request, make_response
 from datetime import datetime
 from localstack.constants import *
+from localstack import config
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 
 
 APP_NAME = 'lambda_mock'
 PATH_ROOT = '/2015-03-31'
-ARCHIVE_FILE_PATTERN = '/tmp/lambda.handler.*.jar'
-EVENT_FILE_PATTERN = '/tmp/lambda.event.*.json'
-LAMBDA_SCRIPT_PATTERN = '/tmp/lambda_script_*.py'
+ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
+EVENT_FILE_PATTERN = '%s/lambda.event.*.json' % config.TMP_FOLDER
+LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 LAMBDA_EXECUTOR_JAR = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack',
     'mock', 'target', 'lambda-executor-1.0-SNAPSHOT.jar')
 LAMBDA_EXECUTOR_CLASS = 'com.atlassian.LambdaExecutor'
 
+LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
+LAMBDA_RUNTIME_NODEJS = 'nodejs'
+LAMBDA_RUNTIME_JAVA = 'java8'
+
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
-LAMBDA_DEFAULT_RUNTIME = 'python2.7'
+LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
 LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_DEFAULT_TIMEOUT = 60
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 
+DOCKER_BRIDGE_IP = '172.17.0.1'
+
 app = Flask(APP_NAME)
 
 # map ARN strings to lambda function objects
+# TODO: create a single map for function details
 lambda_arn_to_function = {}
 lambda_arn_to_cwd = {}
 lambda_arn_to_handler = {}
+lambda_arn_to_runtime = {}
 
 # list of event source mappings for the API
 event_source_mappings = []
@@ -48,6 +57,9 @@ LOG = logging.getLogger(__name__)
 # mutex for access to CWD
 cwd_mutex = threading.Semaphore(1)
 
+# whether to use Docker for execution
+DO_USE_DOCKER = None
+
 
 def cleanup():
     global lambda_arn_to_function, event_source_mappings, lambda_arn_to_cwd, lambda_arn_to_handler
@@ -55,6 +67,7 @@ def cleanup():
     lambda_arn_to_function = {}
     lambda_arn_to_cwd = {}
     lambda_arn_to_handler = {}
+    lambda_arn_to_runtime = {}
     event_source_mappings = []
 
 
@@ -84,6 +97,27 @@ def add_event_source(function_name, source_arn):
     return mapping
 
 
+def use_docker():
+    global DO_USE_DOCKER
+    if DO_USE_DOCKER is None:
+        DO_USE_DOCKER = False
+        if config.LAMDA_EXECUTOR == 'docker':
+            try:
+                run('docker images', print_error=False)
+                DO_USE_DOCKER = True
+            except Exception, e:
+                pass
+    return DO_USE_DOCKER
+
+
+def in_docker():
+    """ Returns: True if running in a docker container, else False """
+    if not os.path.exists('/proc/1/cgroup'):
+        return False
+    with open('/proc/1/cgroup', 'rt') as ifh:
+        return 'docker' in ifh.read()
+
+
 def process_kinesis_records(records, stream_name):
     # feed records into listening lambdas
     try:
@@ -92,7 +126,6 @@ def process_kinesis_records(records, stream_name):
         for source in sources:
             arn = source['FunctionArn']
             lambda_function = lambda_arn_to_function[arn]
-            lambda_cwd = lambda_arn_to_cwd[arn]
             event = {
                 'Records': []
             }
@@ -100,7 +133,7 @@ def process_kinesis_records(records, stream_name):
                 event['Records'].append({
                     'kinesis': rec
                 })
-            run_lambda(lambda_function, event=event, context={}, lambda_cwd=lambda_cwd)
+            run_lambda(lambda_function, event=event, context={}, func_arn=arn)
     except Exception, e:
         print(traceback.format_exc())
 
@@ -114,23 +147,36 @@ def get_event_sources(func_name=None, source_arn=None):
     return result
 
 
-def run_lambda(func, event, context, suppress_output=False, lambda_cwd=None):
+def run_lambda(func, event, context, func_arn, suppress_output=False):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
         stream = cStringIO.StringIO()
         sys.stdout = stream
         sys.stderr = stream
-    if lambda_cwd:
+    lambda_cwd = lambda_arn_to_cwd.get(func_arn)
+    if lambda_cwd and not use_docker():
         cwd_mutex.acquire()
         previous_cwd = os.getcwd()
         os.chdir(lambda_cwd)
     result = None
     try:
-        if func.func_code.co_argcount == 2:
-            result = func(event, context)
+        runtime = lambda_arn_to_runtime.get(func_arn)
+        handler = lambda_arn_to_handler.get(func_arn)
+        if use_docker():
+            hostname_fix = '-e HOSTNAME="%s"' % DOCKER_BRIDGE_IP
+            cmd = (('docker run ' +
+                '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY" ' +
+                '-v "%s":/var/task lambci/lambda:%s "%s"') %
+                (hostname_fix, lambda_cwd, runtime, handler))
+            print(cmd)
+            event_string = json.dumps(event).replace("'", "\\'")
+            result = run(cmd, env_vars={'AWS_LAMBDA_EVENT_BODY': event_string})
         else:
-            raise Exception('Expected handler function with 2 parameters, found %s' % func.func_code.co_argcount)
+            if func.func_code.co_argcount == 2:
+                result = func(event, context)
+            else:
+                raise Exception('Expected handler function with 2 parameters, found %s' % func.func_code.co_argcount)
     except Exception, e:
         if suppress_output:
             sys.stdout = stdout_
@@ -140,7 +186,7 @@ def run_lambda(func, event, context, suppress_output=False, lambda_cwd=None):
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
-        if lambda_cwd:
+        if lambda_cwd and not use_docker():
             os.chdir(previous_cwd)
             cwd_mutex.release()
     return result
@@ -163,7 +209,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
         handler_module = imp.load_source(lambda_id, lambda_file)
         module_vars = handler_module.__dict__
     except Exception, e:
-        print('ERROR: Unable to exec: %s %s' % (script, traceback.format_exc(e)))
+        print('ERROR: Unable to exec: %s %s' % (script, traceback.format_exc()))
         raise e
     finally:
         if lambda_cwd:
@@ -173,24 +219,27 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
     return module_vars[handler_function]
 
 
-def get_handler_file_from_name(handler_name):
-    # TODO: support non-Python Lambdas in the future
-    return '%s.py' % handler_name.split('.')[0]
+def get_handler_file_from_name(handler_name, runtime=LAMBDA_RUNTIME_PYTHON27):
+    # TODO: support Java Lambdas in the future
+    file_ext = '.js' if runtime == LAMBDA_RUNTIME_NODEJS else '.py'
+    return '%s%s' % (handler_name.split('.')[0], file_ext)
 
 
-def get_handler_function_from_name(handler_name):
-    # TODO: support non-Python Lambdas in the future
+def get_handler_function_from_name(handler_name, runtime=LAMBDA_RUNTIME_PYTHON27):
+    # TODO: support Java Lambdas in the future
     return handler_name.split('.')[-1]
 
 
 def set_function_code(code, lambda_name):
     lambda_handler = None
     lambda_cwd = None
-    handler_name = lambda_arn_to_handler.get(func_arn(lambda_name))
+    arn = func_arn(lambda_name)
+    runtime = lambda_arn_to_runtime[arn]
+    handler_name = lambda_arn_to_handler.get(arn)
     if not handler_name:
         handler_name = LAMBDA_DEFAULT_HANDLER
-    handler_file = get_handler_file_from_name(handler_name)
-    handler_function = get_handler_function_from_name(handler_name)
+    handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
+    handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
     if 'ZipFile' in code:
         zip_file_content = code['ZipFile']
@@ -205,7 +254,7 @@ def set_function_code(code, lambda_name):
                 event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
                 save_file(event_file, json.dumps(event))
                 TMP_FILES.append(event_file)
-                class_name = lambda_arn_to_handler[func_arn(lambda_name)].split('::')[0]
+                class_name = lambda_arn_to_handler[arn].split('::')[0]
                 classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, archive)
                 cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
                 output = run(cmd)
@@ -214,7 +263,7 @@ def set_function_code(code, lambda_name):
             lambda_handler = execute
         else:
             if is_zip_file(zip_file_content):
-                tmp_dir = '/tmp/zipfile.%s' % short_uid()
+                tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
                 run('mkdir -p %s' % tmp_dir)
                 tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
                 save_file(tmp_file, zip_file_content)
@@ -229,11 +278,12 @@ def set_function_code(code, lambda_name):
                 with open(main_script, "rb") as file_obj:
                     zip_file_content = file_obj.read()
 
-            try:
-                lambda_handler = exec_lambda_code(zip_file_content,
-                    handler_function=handler_function, lambda_cwd=lambda_cwd)
-            except Exception, e:
-                raise Exception('Unable to get handler function from lambda code.', e)
+            if not use_docker():
+                try:
+                    lambda_handler = exec_lambda_code(zip_file_content,
+                        handler_function=handler_function, lambda_cwd=lambda_cwd)
+                except Exception, e:
+                    raise Exception('Unable to get handler function from lambda code.', e)
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
 
@@ -241,12 +291,13 @@ def do_list_functions():
     funcs = []
     for f_arn, func in lambda_arn_to_handler.iteritems():
         func_name = f_arn.split(':function:')[-1]
+        arn = func_arn(func_name)
         funcs.append({
             'Version': '$LATEST',
             'FunctionName': func_name,
             'FunctionArn': f_arn,
-            'Handler': lambda_arn_to_handler.get(func_arn(func_name)),
-            'Runtime': LAMBDA_DEFAULT_RUNTIME,
+            'Handler': lambda_arn_to_handler.get(arn),
+            'Runtime': lambda_arn_to_runtime.get(arn),
             'Timeout': LAMBDA_DEFAULT_TIMEOUT,
             # 'Description': ''
             # 'MemorySize': 192,
@@ -267,7 +318,9 @@ def create_function():
     try:
         data = json.loads(request.data)
         lambda_name = data['FunctionName']
-        lambda_arn_to_handler[func_arn(lambda_name)] = data['Handler']
+        arn = func_arn(lambda_name)
+        lambda_arn_to_handler[arn] = data['Handler']
+        lambda_arn_to_runtime[arn] = data['Runtime']
         code = data['Code']
         set_function_code(code, lambda_name)
         result = {}
@@ -387,7 +440,11 @@ def update_function_configuration(function):
               in: body
     """
     data = json.loads(request.data)
-    lambda_arn_to_handler[func_arn(function)] = data['Handler']
+    arn = func_arn(function)
+    if data.get('Handler'):
+        lambda_arn_to_handler[arn] = data['Handler']
+    if data.get('Runtime'):
+        lambda_arn_to_runtime[arn] = data['Runtime']
     result = {}
     return jsonify(result)
 
@@ -408,8 +465,7 @@ def invoke_function(function):
         pass
     arn = func_arn(function)
     lambda_function = lambda_arn_to_function[arn]
-    lambda_cwd = lambda_arn_to_cwd[arn]
-    result = run_lambda(lambda_function, event=data, context={}, lambda_cwd=lambda_cwd)
+    result = run_lambda(lambda_function, func_arn=arn, event=data, context={})
     if result:
         result = jsonify(result)
     else:
