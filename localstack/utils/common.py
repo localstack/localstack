@@ -5,10 +5,6 @@ import hashlib
 import uuid
 import time
 import glob
-import requests
-import sh
-import psutil
-import zipfile
 import subprocess
 from cStringIO import StringIO
 from datetime import datetime
@@ -97,6 +93,8 @@ class ShellCommandThread (FuncThread):
         if not self.process:
             print("WARN: No process found for command '%s'" % self.cmd)
             return
+
+        import psutil
         parent_pid = self.process.pid
         try:
             parent = psutil.Process(parent_pid)
@@ -197,6 +195,8 @@ def cleanup_tmp_files():
 
 
 def is_zip_file(content):
+    import zipfile
+
     stream = StringIO(content)
     return zipfile.is_zipfile(stream)
 
@@ -275,6 +275,8 @@ def remove_non_ascii(text):
 
 
 def make_http_request(url, data=None, headers=None, method='GET'):
+    import requests
+
     if is_string(method):
         method = requests.__dict__[method.lower()]
 
@@ -288,6 +290,8 @@ def make_http_request(url, data=None, headers=None, method='GET'):
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,
         last_clean_time=last_cache_clean_time, max_age=CACHE_MAX_AGE):
+    import sh
+
     mutex_clean.acquire()
     time_now = now()
     try:

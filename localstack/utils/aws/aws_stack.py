@@ -1,16 +1,14 @@
 import os
 import boto3
-import requests
 import json
 import base64
 import logging
 import re
-from elasticsearch import Elasticsearch, RequestsHttpConnection
+from threading import Timer
+from localstack import config
 from localstack.constants import *
 from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
-from requests_aws4auth import AWS4Auth
-from threading import Timer
 
 # file to override environment information (used mainly for testing Lambdas locally)
 ENVIRONMENT_FILE = '.env.properties'
@@ -346,6 +344,9 @@ def get_elasticsearch_endpoint(domain=None, region_name=None):
 
 
 def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None):
+    from elasticsearch import Elasticsearch, RequestsHttpConnection
+    from requests_aws4auth import AWS4Auth
+
     env = get_environment(env, region_name=region_name)
     verify_certs = False
     use_ssl = False

@@ -3,9 +3,9 @@ import boto3
 import uuid
 import os
 import time
-from localstack.constants import REGION_LOCAL
+from localstack.constants import REGION_LOCAL, LOCALSTACK_ROOT_FOLDER
 from localstack.config import TEST_S3_URL
-from localstack.mock.apis.lambda_api import (LAMBDA_DEFAULT_HANDLER,
+from localstack.mock.apis.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
@@ -13,7 +13,6 @@ from localstack.utils.aws.aws_models import DynamoDB, ElasticSearch
 from localstack.utils.kinesis import kinesis_connector
 
 ARCHIVE_DIR_PATTERN = '/tmp/lambda.archive.*'
-MAIN_SCRIPT_NAME = '%s.py' % LAMBDA_DEFAULT_HANDLER.split('.')[-2]
 
 
 def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None):
@@ -49,15 +48,20 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
     return table
 
 
-def create_lambda_archive(script, stream=None, get_content=False):
+def create_lambda_archive(script, stream=None, get_content=False, libs=[], runtime=None):
     """Utility method to create a Lambda function archive"""
 
     tmp_dir = ARCHIVE_DIR_PATTERN.replace('*', short_uid())
     run('mkdir -p %s' % tmp_dir)
-    script_file = '%s/%s' % (tmp_dir, MAIN_SCRIPT_NAME)
+    file_name = get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
+    script_file = '%s/%s' % (tmp_dir, file_name)
     zip_file_name = 'archive.zip'
     zip_file = '%s/%s' % (tmp_dir, zip_file_name)
     save_file(script_file, script)
+    # copy libs
+    run('mkdir -p %s/localstack' % tmp_dir)
+    for path in ['*.py', 'utils']:
+        run('cp -r %s/localstack/%s %s/localstack/' % (LOCALSTACK_ROOT_FOLDER, path, tmp_dir))
     # create zip file
     run('cd %s && zip -r %s *' % (tmp_dir, zip_file_name))
     if not get_content:
@@ -71,14 +75,14 @@ def create_lambda_archive(script, stream=None, get_content=False):
 
 
 def create_lambda_function(func_name, zip_file, event_source_arn, handler=LAMBDA_DEFAULT_HANDLER,
-        starting_position=LAMBDA_DEFAULT_STARTING_POSITION):
+        starting_position=LAMBDA_DEFAULT_STARTING_POSITION, runtime=LAMBDA_DEFAULT_RUNTIME):
     """Utility method to create a new function via the Lambda API"""
 
     client = aws_stack.connect_to_service('lambda')
     # create function
     result = client.create_function(
         FunctionName=func_name,
-        Runtime=LAMBDA_DEFAULT_RUNTIME,
+        Runtime=runtime,
         Handler=handler,
         Role=LAMBDA_TEST_ROLE,
         Code={
