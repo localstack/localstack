@@ -27,7 +27,7 @@ from localstack.utils.aws.aws_models import KinesisStream
 
 EVENTS_FILE_PATTERN = '/tmp/kclipy.*.fifo'
 LOG_FILE_PATTERN = '/tmp/kclipy.*.log'
-DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-app'
+DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-kclapp'
 
 # define Java class names
 MULTI_LANG_DAEMON_CLASS = 'com.atlassian.KinesisStarter'
