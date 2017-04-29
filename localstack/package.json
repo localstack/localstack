@@ -5,6 +5,7 @@
   "version": "0.0.1",
   "dependencies": {
     "kinesalite": "1.11.6",
-    "dynalite": "1.2.0"
+    "dynalite": "1.2.0",
+    "leveldown": "1.6.0"
   }
 }

@@ -42,8 +42,8 @@ RUN make install && \
     rm -rf /usr/lib/node_modules && apk del nodejs && apk add --update nodejs && npm install npm@latest -g
 
 # add files required to run "make init"
-ADD localstack/mock/__init__.py localstack/mock/__init__.py
-ADD localstack/mock/install.py localstack/mock/install.py
+ADD localstack/config.py localstack/config.py
+ADD localstack/mock/__init__.py localstack/mock/install.py localstack/mock/
 
 # initialize installation (downloads remaining dependencies)
 RUN make init
@@ -60,6 +60,7 @@ RUN mkdir -p /.npm && \
     chmod -R 777 localstack/infra/elasticsearch/config && \
     chmod -R 777 localstack/infra/elasticsearch/data && \
     chmod -R 777 localstack/infra/elasticsearch/logs && \
+    chmod -R 777 /tmp/localstack && \
     adduser -D localstack
 
 # install supervisor daemon & copy config file

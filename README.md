@@ -118,6 +118,8 @@ You can pass the following environment variables to LocalStack:
   Docker container). In the latter case, if *LocalStack* itself is started inside Docker, then
   the `docker` command needs to be available inside the container (usually requires to run the
   container in privileged mode). Default is `docker`, fallback to `local` if Docker is not available.
+* `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
+  Kinesis, DynamoDB, Elasticsearch). Defaults to `/tmp/localstack/data`.
 
 ## Developing
 

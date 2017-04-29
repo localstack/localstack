@@ -39,7 +39,9 @@ DEFAULT_BACKEND_HOST = '127.0.0.1'
 def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
     install.install_dynalite()
     backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
-    cmd = '%s/node_modules/dynalite/cli.js --port %s' % (ROOT_PATH, backend_port)
+    ddb_data_dir = '%s/dynamodb' % DATA_DIR
+    mkdir(ddb_data_dir)
+    cmd = '%s/node_modules/dynalite/cli.js --port %s --path %s' % (ROOT_PATH, backend_port, ddb_data_dir)
     print("Starting mock DynamoDB (port %s)..." % port)
     start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
@@ -48,8 +50,10 @@ def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
 def start_kinesis(port=PORT_KINESIS, async=False, shard_limit=100, update_listener=None):
     install.install_kinesalite()
     backend_port = DEFAULT_PORT_KINESIS_BACKEND
-    cmd = ('%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s' %
-        (ROOT_PATH, shard_limit, backend_port))
+    kinesis_data_dir = '%s/kinesis' % DATA_DIR
+    mkdir(kinesis_data_dir)
+    cmd = ('%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s --path %s' %
+        (ROOT_PATH, shard_limit, backend_port, kinesis_data_dir))
     print("Starting mock Kinesis (port %s)..." % port)
     start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
@@ -63,10 +67,12 @@ def is_root():
 def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, update_listener=None):
     install.install_elasticsearch()
     backend_port = DEFAULT_PORT_ELASTICSEARCH_BACKEND
+    es_data_dir = '%s/elasticsearch' % DATA_DIR
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
     cmd = (('%s/infra/elasticsearch/bin/elasticsearch ' +
-        '-E http.port=%s -E http.publish_port=%s') % (ROOT_PATH, backend_port, backend_port))
+        '-E http.port=%s -E http.publish_port=%s -E path.data=%s') %
+        (ROOT_PATH, backend_port, backend_port, es_data_dir))
     print("Starting local Elasticsearch (port %s)..." % port)
     data_path = '%s/infra/elasticsearch/data' % (ROOT_PATH)
     if delete_data:

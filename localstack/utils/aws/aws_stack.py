@@ -409,13 +409,14 @@ def delete_all_elasticsearch_data():
     run('rm -rf "%s"' % data_dir)
 
 
-def create_kinesis_stream(stream_name, shards=1, env=None):
+def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     env = get_environment(env)
     # stream
     stream = KinesisStream(id=stream_name, num_shards=shards)
-    # producer
     conn = connect_to_service('kinesis', env=env)
     stream.connect(conn)
+    if delete:
+        run_safe(lambda: stream.destroy())
     stream.create()
     stream.wait_for()
     return stream

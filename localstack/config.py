@@ -16,8 +16,15 @@ LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR') or 'docker'
 
 # temporary folder
 TMP_FOLDER = '/tmp/localstack'
-if not os.path.exists(TMP_FOLDER):
-    os.makedirs(TMP_FOLDER)
+
+# directory for persisting data
+DATA_DIR = os.environ.get('DATA_DIR') or ('%s/data' % TMP_FOLDER)
+
+
+# create folders
+for folder in [DATA_DIR, TMP_FOLDER]:
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 
 
 def parse_service_ports():

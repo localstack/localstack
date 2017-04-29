@@ -66,8 +66,8 @@ class KinesisStream(Component):
                     if len(next_entry['Records']):
                         print next_entry['Records'][0]['Data']
                     record = next_entry
-            except:
-                print 'an exception has occured'
+            except Exception, e:
+                print('Error reading from Kinesis stream "%s": %s' (self.stream_name, e))
 
     def wait_for(self):
         GET_STATUS_SLEEP_SECS = 5
@@ -85,6 +85,7 @@ class KinesisStream(Component):
 
     def destroy(self):
         self.conn.delete_stream(StreamName=self.stream_name)
+        time.sleep(2)
 
 
 class KinesisShard(Component):

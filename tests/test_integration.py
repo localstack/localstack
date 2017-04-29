@@ -109,12 +109,15 @@ def test_bucket_notifications():
 def test_kinesis_lambda_ddb_streams():
 
     env = ENV_DEV
+    ddb_lease_table_suffix = '-kclapp'
     dynamodb = aws_stack.connect_to_resource('dynamodb', env=env)
+    dynamodb_service = aws_stack.connect_to_service('dynamodb', env=env)
     dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams', env=env)
     kinesis = aws_stack.connect_to_service('kinesis', env=env)
 
     print('Creating test streams...')
-    aws_stack.create_kinesis_stream(TEST_STREAM_NAME)
+    run_safe(lambda: dynamodb_service.delete_table(TableName=TEST_STREAM_NAME + ddb_lease_table_suffix))
+    aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
     aws_stack.create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
 
     # subscribe to inbound Kinesis stream
@@ -123,7 +126,7 @@ def test_kinesis_lambda_ddb_streams():
 
     # start the KCL client process in the background
     kinesis_connector.listen_to_kinesis(TEST_STREAM_NAME, listener_func=process_records,
-        wait_until_started=True)
+        wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
 
     print("Kinesis consumer initialized.")
 

@@ -5,6 +5,7 @@ import sys
 import logging
 import __init__
 from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL
+from localstack.config import *
 from localstack.utils.common import parallelize, run
 
 
@@ -37,14 +38,14 @@ def install_kinesalite():
     target_dir = '%s/kinesalite' % INSTALL_DIR_NPM
     if not os.path.exists(target_dir):
         LOGGER.info('Downloading and installing local Kinesis server. This may take some time.')
-        run('cd "%s" && npm install kinesalite' % ROOT_PATH)
+        run('cd "%s" && npm install leveldown kinesalite' % ROOT_PATH)
 
 
 def install_dynalite():
     target_dir = '%s/dynalite' % INSTALL_DIR_NPM
     if not os.path.exists(target_dir):
         LOGGER.info('Downloading and installing local DynamoDB server. This may take some time.')
-        run('cd "%s" && npm install dynalite' % ROOT_PATH)
+        run('cd "%s" && npm install leveldown dynalite' % ROOT_PATH)
 
 
 def install_component(name):

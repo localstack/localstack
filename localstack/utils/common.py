@@ -154,6 +154,11 @@ def now():
     return time.mktime(datetime.now().timetuple())
 
 
+def mkdir(folder):
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+
 def short_uid():
     return str(uuid.uuid4())[0:8]
 
@@ -209,6 +214,14 @@ def is_jar_archive(content):
 def cleanup_resources():
     cleanup_tmp_files()
     cleanup_threads_and_processes()
+
+
+def run_safe(_python_lambda, print_error=True, **kwargs):
+    try:
+        _python_lambda(**kwargs)
+    except Exception, e:
+        if print_error:
+            print('Unable to execute function: %s' % e)
 
 
 def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, outfile=None,
