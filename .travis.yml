@@ -6,6 +6,7 @@ python:
 before_install:
   - "sudo apt-get purge openjdk*"
   - "sudo apt-get purge oracle-java7-*"
+  - "nvm install 6; nvm alias default node"
 
 addons:
   apt:
@@ -21,7 +22,8 @@ env:
     - AWS_DEFAULT_REGION=us-east-1
 
 install:
-  - travis_wait 20 make install
+  - travis_wait 10 make install
+  - travis_wait 10 make init
 
 script:
   - make test

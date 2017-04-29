@@ -1,5 +1,8 @@
 package com.atlassian.localstack;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.BasicAWSCredentials;
+
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,6 +10,11 @@ import java.util.Map;
 
 @SuppressWarnings("all")
 public class TestUtils {
+
+	public static final String DEFAULT_REGION = "us-east-1";
+	public static final String TEST_ACCESS_KEY = "test";
+	public static final String TEST_SECRET_KEY = "test";
+	public static final AWSCredentials TEST_CREDENTIALS = new BasicAWSCredentials(TEST_ACCESS_KEY, TEST_SECRET_KEY);
 
 	protected static void setEnv(String key, String value) {
 		Map<String, String> newEnv = new HashMap<String, String>();

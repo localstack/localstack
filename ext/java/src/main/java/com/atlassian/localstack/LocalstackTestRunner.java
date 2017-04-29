@@ -45,7 +45,15 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	/* SERVICE ENDPOINTS */
 
 	public static String getEndpointS3() {
-		return ensureInstallationAndGetEndpoint("s3");
+		String s3Endpoint = ensureInstallationAndGetEndpoint("s3");
+		/*
+		 * Use the domain name wildcard *.localhost.atlassian.io which maps to 127.0.0.1
+		 * We need to do this because S3 SDKs attempt to access a domain <bucket-name>.<service-host-name>
+		 * which by default would result in <bucket-name>.localhost, but that name cannot be resolved
+		 * (unless hardcoded in /etc/hosts)
+		 */
+		s3Endpoint = s3Endpoint.replace("localhost", "test.localhost.atlassian.io");
+		return s3Endpoint;
 	}
 
 	public static String getEndpointKinesis() {
@@ -156,7 +164,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		synchronized (INFRA_STARTED) {
 			ensureInstallation();
 			if(INFRA_STARTED.get() != null) return;
-			String cmd = "cd " + TMP_INSTALL_DIR + "; exec make infra";
+			String cmd = "make -C \"" + TMP_INSTALL_DIR + "\" infra";
 			Process proc;
 			try {
 				proc = exec(cmd, false);
