@@ -113,7 +113,7 @@ You can pass the following environment variables to LocalStack:
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
-* `LAMDA_EXECUTOR`: Method to use for executing Lambda functions. Valid values are `local` (run
+* `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Valid values are `local` (run
   the code in a temporary directory on the local machine) or `docker` (run code in a separate
   Docker container). In the latter case, if *LocalStack* itself is started inside Docker, then
   the `docker` command needs to be available inside the container (usually requires to run the

@@ -1,4 +1,5 @@
 IMAGE_NAME ?= atlassianlabs/localstack
+IMAGE_TAG ?= $(shell cat setup.py | grep version= | sed "s/.*version=['\"]\(.*\)['\"].*/\1/")
 VENV_DIR = .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
@@ -37,7 +38,7 @@ compile:           ## Compile Java code (KCL library utils)
 	# TODO enable once we want to support Java-based Lambdas
 	# (cd localstack/mock && mvn package)
 
-publish:           ## Publish the library to a PyPi repository
+publish:           ## Publish the library to the central PyPi repository
 	# build and upload archive
 	($(VENV_RUN) && ./setup.py sdist upload)
 
@@ -52,15 +53,23 @@ infra:             ## Manually start the local infrastructure for testing
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
-	docker tag $(IMAGE_NAME) $(IMAGE_NAME):$(shell cat setup.py | grep version= | sed "s/.*version=['\"]\(.*\)['\"].*/\1/")
+	docker tag $(IMAGE_NAME) $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-push:       ## Push Docker image to registry
-	docker push $(IMAGE_NAME)
+	docker push $(IMAGE_NAME):$(IMAGE_TAG)
+
+docker-push-master:## Push Docker image to registry IF we are currently on the master branch
+	(test `git rev-parse --abbrev-ref HEAD` != 'master' && echo "Not on master branch.") || \
+		(which pip || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
+		which docker-squash || pip install docker-squash; \
+		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
+		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) && docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
+		docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME):latest)
 
 docker-run:        ## Run Docker image locally
 	port_mappings="$(shell echo $(SERVICES) | sed 's/[^0-9]/ /g' | sed 's/\([0-9][0-9]*\)/-p \1:\1/g' | sed 's/  */ /g')"; \
 		mkdir -p $(TMP_DIR); \
-		docker run -it $(ENTRYPOINT) -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e LAMDA_EXECUTOR=$(LAMDA_EXECUTOR) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -p 4567-4581:4567-4581 -p 8080:8080 $$port_mappings -v $(TMP_DIR):$(TMP_DIR) -v $(DOCKER_SOCK):$(DOCKER_SOCK) -e DOCKER_HOST="unix://$(DOCKER_SOCK)" $(IMAGE_NAME) $(CMD)
+		docker run -it $(ENTRYPOINT) -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e LAMBDA_EXECUTOR=$(LAMBDA_EXECUTOR) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -p 4567-4581:4567-4581 -p 8080:8080 $$port_mappings -v $(TMP_DIR):$(TMP_DIR) -v $(DOCKER_SOCK):$(DOCKER_SOCK) -e DOCKER_HOST="unix://$(DOCKER_SOCK)" $(IMAGE_NAME) $(CMD)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8080)

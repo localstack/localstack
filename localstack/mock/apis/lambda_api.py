@@ -29,6 +29,7 @@ LAMBDA_EXECUTOR_CLASS = 'com.atlassian.LambdaExecutor'
 
 LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
 LAMBDA_RUNTIME_NODEJS = 'nodejs'
+LAMBDA_RUNTIME_NODEJS610 = 'nodejs6.10'
 LAMBDA_RUNTIME_JAVA = 'java8'
 
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
@@ -101,7 +102,7 @@ def use_docker():
     global DO_USE_DOCKER
     if DO_USE_DOCKER is None:
         DO_USE_DOCKER = False
-        if config.LAMDA_EXECUTOR == 'docker':
+        if config.LAMBDA_EXECUTOR == 'docker':
             try:
                 run('docker images', print_error=False)
                 DO_USE_DOCKER = True
@@ -221,7 +222,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
 
 def get_handler_file_from_name(handler_name, runtime=LAMBDA_RUNTIME_PYTHON27):
     # TODO: support Java Lambdas in the future
-    file_ext = '.js' if runtime == LAMBDA_RUNTIME_NODEJS else '.py'
+    file_ext = '.js' if runtime.startswith(LAMBDA_RUNTIME_NODEJS) else '.py'
     return '%s%s' % (handler_name.split('.')[0], file_ext)
 
 

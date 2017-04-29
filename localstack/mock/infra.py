@@ -75,7 +75,7 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     start_proxy(port, backend_port, update_listener, quiet=True)
     if is_root():
         cmd = "su -c '%s' localstack" % cmd
-    thread = do_run(cmd, async)
+    thread = do_run(cmd, async, print_output=True)
     return thread
 
 
@@ -284,7 +284,7 @@ def check_infra_elasticsearch(expect_shutdown=False, print_error=False):
         assert isinstance(out, basestring)
 
 
-def check_infra(retries=7, expect_shutdown=False, apis=None, additional_checks=[]):
+def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[]):
     try:
         print_error = retries <= 0
         # check Kinesis
@@ -349,10 +349,10 @@ def start_infra(async=False,
             aws_stack.delete_all_elasticsearch_data()
             # run actual Elasticsearch endpoint
             thread = start_elasticsearch(async=True)
+            sleep_time = max(sleep_time, 5)
         if 'es' in apis:
             # run Elasticsearch Service (ES) endpoint
             thread = start_elasticsearch_service(async=True)
-            sleep_time = max(sleep_time, 5)
         if 's3' in apis:
             thread = start_s3(async=True, update_listener=s3_update_listener)
             sleep_time = max(sleep_time, 3)

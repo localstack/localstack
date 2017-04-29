@@ -8,3 +8,4 @@ pipelines:
     - step:
         script:
           - make docker-build
+          - make docker-push-master
