@@ -12,7 +12,7 @@ DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY') 
 HOSTNAME = os.environ.get('HOSTNAME') or LOCALHOST
 
 # whether to use Lambda functions in a Docker container
-LAMDA_EXECUTOR = os.environ.get('LAMDA_EXECUTOR') or 'docker'
+LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR') or 'docker'
 
 # temporary folder
 TMP_FOLDER = '/tmp/localstack'
