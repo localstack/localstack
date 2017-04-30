@@ -2,13 +2,12 @@ package com.atlassian.localstack;
 
 import java.util.List;
 
+import com.atlassian.localstack.sample.S3Sample;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClient;
@@ -20,16 +19,14 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.Bucket;
 
+import static com.atlassian.localstack.TestUtils.*;
+
 @RunWith(LocalstackTestRunner.class)
 public class TestRunnerTest {
 
-	private static final String DEFAULT_REGION = "us-east-1";
-	private static final String TEST_ACCESS_KEY = "test";
-	private static final String TEST_SECRET_KEY = "test";
-	private static final AWSCredentials TEST_CREDENTIALS = new BasicAWSCredentials(TEST_ACCESS_KEY, TEST_SECRET_KEY);
-
 	static {
-		/* Need to disable CBOR protocol, see:
+		/*
+		 * Need to disable CBOR protocol, see:
 		 * https://github.com/mhart/kinesalite/blob/master/README.md#cbor-protocol-issues-with-the-java-sdk
 		 */
 		TestUtils.setEnv("AWS_CBOR_DISABLE", "1");
@@ -44,11 +41,12 @@ public class TestRunnerTest {
 	}
 
 	@Test
-	public void testLocalS3API() {
+	public void testLocalS3API() throws Exception {
 		AmazonS3 s3 = new AmazonS3Client(TEST_CREDENTIALS);
 		s3.setEndpoint(LocalstackTestRunner.getEndpointS3());
 		List<Bucket> buckets = s3.listBuckets();
 		Assert.assertNotNull(buckets);
+		S3Sample.runTest(TEST_CREDENTIALS);
 	}
 
 	@Test

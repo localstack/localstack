@@ -80,7 +80,7 @@ test:              ## Run automated tests
 		$(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .
 
 test-docker:       ## Run automated tests in Docker
-	ENTRYPOINT="--entrypoint= -v `pwd`/localstack:/opt/code/localstack/localstack" CMD="make test" make docker-run
+	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/mock:/opt/code/localstack/mock" CMD="make test" make docker-run
 
 lint:              ## Run code linter to check code style
 	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR),dist .)
