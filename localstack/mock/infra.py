@@ -28,8 +28,11 @@ from localstack.mock.generic_proxy import GenericProxy
 SIGNAL_HANDLERS_SETUP = False
 INFRA_STOPPED = False
 
+# default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
+# set up logger
+LOGGER = logging.getLogger(os.path.basename(__file__))
 
 # -----------------
 # API ENTRY POINTS
@@ -80,7 +83,7 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     run('mkdir -p %s/elasticsearch' % data_path)
     start_proxy(port, backend_port, update_listener, quiet=True)
     if is_root():
-        cmd = "su -c '%s' localstack" % cmd
+        cmd = "su -c 'ES_JAVA_OPTS=\"$ES_JAVA_OPTS -Xms200m -Xmx500m\" %s' localstack" % cmd
     thread = do_run(cmd, async, print_output=True)
     return thread
 
@@ -240,7 +243,7 @@ def check_infra_kinesis(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(service_name='kinesis', client=True, env=ENV_DEV).list_streams()
     except Exception, e:
         if print_error:
-            print('Kinesis health check failed: %s %s' % (e, traceback.format_exc()))
+            LOGGER.error('Kinesis health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
@@ -254,7 +257,7 @@ def check_infra_dynamodb(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(service_name='dynamodb', client=True, env=ENV_DEV).list_tables()
     except Exception, e:
         if print_error:
-            print('DynamoDB health check failed: %s %s' % (e, traceback.format_exc()))
+            LOGGER.error('DynamoDB health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
@@ -268,7 +271,7 @@ def check_infra_s3(expect_shutdown=False, print_error=False):
         out = aws_stack.connect_to_service(service_name='s3', client=True, env=ENV_DEV).list_buckets()
     except Exception, e:
         if print_error:
-            print('S3 health check failed: %s %s' % (e, traceback.format_exc()))
+            LOGGER.error('S3 health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
@@ -283,7 +286,7 @@ def check_infra_elasticsearch(expect_shutdown=False, print_error=False):
         out = es.cat.aliases()
     except Exception, e:
         if print_error:
-            print('Elasticsearch health check failed: %s %s' % (e, traceback.format_exc()))
+            LOGGER.error('Elasticsearch health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
@@ -309,7 +312,7 @@ def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[
             additional(expect_shutdown=expect_shutdown)
     except Exception, e:
         if retries <= 0:
-            print('ERROR checking state of local environment (after some retries): %s' % traceback.format_exc(e))
+            LOGGER.error('Error checking state of local environment (after some retries): %s' % traceback.format_exc())
             raise e
         time.sleep(3)
         check_infra(retries - 1, expect_shutdown=expect_shutdown, apis=apis, additional_checks=additional_checks)
@@ -411,5 +414,6 @@ if __name__ == '__main__':
     # set up logging
     logging.basicConfig(level=logging.WARNING)
     logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+    LOGGER.setLevel(logging.INFO)
     # fire it up!
     start_infra()
