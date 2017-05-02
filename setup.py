@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import os
 import sys
 import re
@@ -35,9 +37,9 @@ def do_make_install(workdir=None):
         prev_workdir = os.getcwd()
         os.chdir(workdir)
     try:
-        out = subprocess.check_output('make install', shell=True)
+        subprocess.check_output('make install', shell=True)
     except subprocess.CalledProcessError as e:
-        print e.output
+        print(e.output)
         raise e
     if workdir:
         os.chdir(prev_workdir)
