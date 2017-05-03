@@ -90,6 +90,12 @@ You can also spin up *LocalStack* without any installation requirements, using D
 docker run -it -p 4567-4580:4567-4580 -p 8080:8080 atlassianlabs/localstack
 ```
 
+Or with docker-compose:
+
+```
+docker-compose up
+```
+
 ... or simply use the `make` target which runs the same command:
 
 ```
