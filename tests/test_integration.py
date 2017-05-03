@@ -117,7 +117,7 @@ def test_kinesis_lambda_ddb_streams():
 
     print('Creating test streams...')
     run_safe(lambda: dynamodb_service.delete_table(
-        TableName=TEST_STREAM_NAME + ddb_lease_table_suffix), print_output=False)
+        TableName=TEST_STREAM_NAME + ddb_lease_table_suffix), print_error=False)
     aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
     aws_stack.create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
 
