@@ -1,0 +1,7 @@
+version: '2'
+
+services:
+  localstack:
+    image: atlassianlabs/localstack
+    ports:
+      - "4567-4580:4567-4580"
