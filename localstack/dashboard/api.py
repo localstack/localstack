@@ -1,10 +1,10 @@
 import os
-import infra
 import json
 from flask import Flask, render_template, jsonify, send_from_directory, request
 from flask_swagger import swagger
 from localstack.utils.aws.aws_stack import Environment
 from localstack.utils import common
+from localstack.dashboard import infra
 
 
 root_path = os.path.dirname(os.path.realpath(__file__))

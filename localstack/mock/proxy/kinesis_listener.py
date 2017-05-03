@@ -14,23 +14,30 @@ def update_kinesis(method, path, data, headers, response=None, return_forward_in
     action = headers['X-Amz-Target'] if 'X-Amz-Target' in headers else None
     records = []
     if action == constants.KINESIS_ACTION_PUT_RECORD:
-        record = {
+        response_body = json.loads(response.content)
+        event_record = {
             'data': data['Data'],
-            'partitionKey': data['PartitionKey']
+            'partitionKey': data['PartitionKey'],
+            'sequenceNumber': response_body.get('SequenceNumber')
         }
-        records = [record]
+        event_records = [event_record]
         stream_name = data['StreamName']
-        lambda_api.process_kinesis_records(records, stream_name)
+        lambda_api.process_kinesis_records(event_records, stream_name)
     elif action == constants.KINESIS_ACTION_PUT_RECORDS:
-        records = []
-        for record in data['Records']:
-            record = {
+        event_records = []
+        response_body = json.loads(response.content)
+        response_records = response_body['Records']
+        records = data['Records']
+        for index in range(0, len(records)):
+            record = records[index]
+            event_record = {
                 'data': record['Data'],
-                'partitionKey': record['PartitionKey']
+                'partitionKey': record['PartitionKey'],
+                'sequenceNumber': response_records[index].get('SequenceNumber')
             }
-            records.append(record)
+            event_records.append(event_record)
         stream_name = data['StreamName']
-        lambda_api.process_kinesis_records(records, stream_name)
+        lambda_api.process_kinesis_records(event_records, stream_name)
 
 
 def kinesis_error_response(data):

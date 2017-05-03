@@ -42,7 +42,9 @@ def deserialize_ddb_stream_event(event):
     # Deserialize into Python dictionary and extract the "NewImage" (the new version of the full ddb document)
     ddb = event.get('dynamodb')
     if not ddb:
-        return event
+        result = event.get('kinesis')
+        assert result['sequenceNumber']
+        return result
     ddb_deserializer = TypeDeserializer()
     return ddb_deserializer.deserialize({'M': ddb['NewImage']})
 

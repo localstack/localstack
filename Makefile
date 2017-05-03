@@ -1,6 +1,6 @@
 IMAGE_NAME ?= atlassianlabs/localstack
 IMAGE_TAG ?= $(shell cat setup.py | grep version= | sed "s/.*version=['\"]\(.*\)['\"].*/\1/")
-VENV_DIR = .venv
+VENV_DIR ?= .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
 AWS_STS_TMPFILE = /tmp/aws-java-sdk-sts.jar
@@ -34,7 +34,7 @@ install-web:       ## Install npm dependencies for dashboard Web UI
 
 compile:           ## Compile Java code (KCL library utils)
 	echo "Compiling"
-	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print kclipy_helper.get_kcl_classpath()') localstack/utils/kinesis/java/com/atlassian/*.java
+	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print(kclipy_helper.get_kcl_classpath())') localstack/utils/kinesis/java/com/atlassian/*.java
 	(test ! -e ext/java || (cd ext/java && mvn -DskipTests package))
 	# TODO enable once we want to support Java-based Lambdas
 	# (cd localstack/mock && mvn package)
