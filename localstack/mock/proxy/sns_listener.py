@@ -1,5 +1,5 @@
-import urlparse
 import logging
+from six.moves.urllib import parse as urlparse
 from requests.models import Response
 from localstack.utils.aws import aws_stack
 

@@ -1,12 +1,16 @@
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import requests
 import os
 import json
 import traceback
 import logging
-from urlparse import urlparse
+
 from requests.models import Response
-from SocketServer import ThreadingMixIn
+
+from six.moves.socketserver import ThreadingMixIn
+from six.moves.urllib.parse import urlparse
+from six import iteritems
+
 import __init__
 from localstack.utils.common import FuncThread
 
@@ -69,7 +73,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         if method in ['POST', 'PUT', 'PATCH']:
             try:
                 data = json.loads(self.data_string)
-            except Exception, e:
+            except Exception as e:
                 # unable to parse JSON, fallback to verbatim string
                 data = self.data_string
         proxies = {
@@ -103,13 +107,13 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     data=data, headers=self.headers, response=response)
             # copy headers and return response
             self.send_response(response.status_code)
-            for header_key, header_value in response.headers.iteritems():
+            for header_key, header_value in iteritems(response.headers):
                 self.send_header(header_key, header_value)
             self.end_headers()
             self.wfile.write(response.content)
-        except Exception, e:
+        except Exception as e:
             if not self.proxy.quiet:
-                LOGGER.error("Error forwarding request: %s" % traceback.format_exc(e))
+                LOGGER.exception("Error forwarding request: %s" % str(e))
 
     def log_message(self, format, *args):
         return
@@ -129,7 +133,7 @@ class GenericProxy(FuncThread):
             self.httpd = ThreadedHTTPServer(("", self.port), GenericProxyHandler)
             self.httpd.my_object = self
             self.httpd.serve_forever()
-        except Exception, e:
+        except Exception as e:
             if not self.quiet:
                 LOGGER.error('Unable to start proxy on port %s: %s' % (self.port, traceback.format_exc()))
             raise

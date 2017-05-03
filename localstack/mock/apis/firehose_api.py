@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import os
 import json
@@ -15,6 +16,8 @@ from localstack.config import TEST_S3_URL
 from localstack.constants import *
 from localstack.utils.common import short_uid
 from localstack.utils.aws.aws_stack import *
+from six import iteritems
+
 
 APP_NAME = 'firehose_mock'
 
@@ -25,7 +28,7 @@ delivery_streams = {}
 
 def get_delivery_stream_names():
     names = []
-    for name, stream in delivery_streams.iteritems():
+    for name, stream in iteritems(delivery_streams):
         names.append(stream['DeliveryStreamName'])
     return names
 
@@ -55,7 +58,7 @@ def put_records(stream_name, records):
                 obj_path = '%s%s' % (prefix, obj_name)
                 try:
                     s3.Object(bucket, obj_path).put(Body=data)
-                except Exception, e:
+                except Exception as e:
                     print("ERROR: %s" % traceback.format_exc(e))
                     raise e
 
@@ -80,7 +83,7 @@ def update_destination(stream_name, destination_id,
     if s3_update:
         if 'S3DestinationDescription' not in dest:
             dest['S3DestinationDescription'] = {}
-        for k, v in s3_update.iteritems():
+        for k, v in iteritems(s3_update):
             dest['S3DestinationDescription'][k] = v
     return dest
 

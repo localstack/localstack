@@ -82,7 +82,7 @@ PREDEFINED_ENVIRONMENTS = {
 def create_environment_file(env, fallback_to_environ=True):
     try:
         save_file(ENVIRONMENT_FILE, env)
-    except Exception, e:
+    except Exception as e:
         # LOGGER.warning('Unable to create file "%s" in CWD "%s" (setting $ENV instead: %s): %s' %
         #    (ENVIRONMENT_FILE, os.getcwd(), fallback_to_environ, e))
         # in Lambda environments on AWS we cannot create files, hence simply set $ENV here
@@ -107,7 +107,7 @@ def get_environment(env=None, region_name=None):
         try:
             env = load_file(ENVIRONMENT_FILE)
             env = env.strip() if env else env
-        except Exception, e:
+        except Exception as e:
             # We can safely swallow this exception. In some rare cases, os.environ['ENV'] may
             # be changed by a parallel thread executing a Lambda code. This can only happen when
             # running in the local dev/test environment, hence is not critical for prod usage.

@@ -18,6 +18,7 @@ requests==2.11.0
 requests-aws4auth==0.9
 restricted_pkg_ext==1.1.3
 sh==1.11
+six==1.10.0
 # subprocess32==3.2.7
 # Fix for: https://github.com/atlassian/localstack/issues/67
 git+https://github.com/google/python-subprocess32.git

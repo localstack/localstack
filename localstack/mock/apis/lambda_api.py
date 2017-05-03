@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 
 import os
 import json
@@ -9,13 +10,14 @@ import logging
 import base64
 import threading
 import imp
-import cStringIO
+from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
 from datetime import datetime
 from localstack.constants import *
 from localstack import config
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
+from six import iteritems
 
 
 APP_NAME = 'lambda_mock'
@@ -107,7 +109,7 @@ def use_docker():
                 run('docker images', print_error=False)
                 run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
                 DO_USE_DOCKER = True
-            except Exception, e:
+            except Exception as e:
                 pass
     return DO_USE_DOCKER
 
@@ -136,7 +138,7 @@ def process_kinesis_records(records, stream_name):
                     'kinesis': rec
                 })
             run_lambda(lambda_function, event=event, context={}, func_arn=arn)
-    except Exception, e:
+    except Exception as e:
         print(traceback.format_exc())
 
 
@@ -153,7 +155,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
-        stream = cStringIO.StringIO()
+        stream = StringIO()
         sys.stdout = stream
         sys.stderr = stream
     lambda_cwd = lambda_arn_to_cwd.get(func_arn)
@@ -179,7 +181,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                 result = func(event, context)
             else:
                 raise Exception('Expected handler function with 2 parameters, found %s' % func.func_code.co_argcount)
-    except Exception, e:
+    except Exception as e:
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
@@ -210,7 +212,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
     try:
         handler_module = imp.load_source(lambda_id, lambda_file)
         module_vars = handler_module.__dict__
-    except Exception, e:
+    except Exception as e:
         print('ERROR: Unable to exec: %s %s' % (script, traceback.format_exc()))
         raise e
     finally:
@@ -284,14 +286,14 @@ def set_function_code(code, lambda_name):
                 try:
                     lambda_handler = exec_lambda_code(zip_file_content,
                         handler_function=handler_function, lambda_cwd=lambda_cwd)
-                except Exception, e:
+                except Exception as e:
                     raise Exception('Unable to get handler function from lambda code.', e)
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
 
 def do_list_functions():
     funcs = []
-    for f_arn, func in lambda_arn_to_handler.iteritems():
+    for f_arn, func in iteritems(lambda_arn_to_handler):
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
         funcs.append({
@@ -327,7 +329,7 @@ def create_function():
         set_function_code(code, lambda_name)
         result = {}
         return jsonify(result)
-    except Exception, e:
+    except Exception as e:
         print('ERROR: %s' % e)
         raise
 
@@ -463,7 +465,7 @@ def invoke_function(function):
     data = {}
     try:
         data = json.loads(request.data)
-    except Exception, e:
+    except Exception as e:
         pass
     arn = func_arn(function)
     lambda_function = lambda_arn_to_function[arn]

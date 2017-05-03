@@ -7,6 +7,8 @@ from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
 from localstack.utils.aws import aws_stack
 from localstack.constants import REGION_LOCAL
+from six import iteritems
+
 
 AWS_CACHE_TIMEOUT = 5  # 5 seconds
 AWS_LAMBDA_CODE_CACHE_TIMEOUT = 5 * 60  # 5 minutes
@@ -114,7 +116,7 @@ def resolve_string_or_variable(string, code_map):
 def extract_endpoints(code_map, pool={}):
     result = []
     identifiers = []
-    for key, code in code_map.iteritems():
+    for key, code in iteritems(code_map):
         # Elasticsearch references
         pattern = r'[\'"](.*\.es\.amazonaws\.com)[\'"]'
         for es in re.findall(pattern, code):
@@ -175,7 +177,7 @@ def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
                 try:
                     code_map = get_lambda_code(func_name, env=env)
                     f.targets = extract_endpoints(code_map, pool)
-                except Exception, e:
+                except Exception as e:
                     LOG.warning("Unable to get code for lambda '%s'" % func_name)
     parallelize(handle, out['Functions'])
     # print result
@@ -217,7 +219,7 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
         if len(os.listdir(folder)) <= 1:
             # print("Unzipping %s/%s" % (folder, filename))
             run("cd %s && unzip -o %s" % (folder, filename))
-    except Exception, e:
+    except Exception as e:
         print("WARN: %s" % e)
         sh.rm('-f', archive)
         if retries > 0:
@@ -305,7 +307,7 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
                             n = S3Notification(func.id)
                             n.target = func
                             bucket.notifications.append(n)
-                except Exception, e:
+                except Exception as e:
                     print("WARNING: Unable to get details for bucket: %s" % e)
     parallelize(handle, out['Buckets'])
     return result

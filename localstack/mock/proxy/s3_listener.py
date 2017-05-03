@@ -1,9 +1,11 @@
 import re
-import urlparse
 import logging
 import json
 import xmltodict
 import xml.etree.ElementTree as ET
+import six
+
+from six.moves.urllib import parse as urlparse
 from requests.models import Response
 from localstack.constants import *
 from localstack.utils.aws import aws_stack
@@ -113,7 +115,7 @@ def get_cors(bucket_name):
 
 def set_cors(bucket_name, cors):
     # TODO: check if bucket exists, otherwise return 404-like error
-    if isinstance(cors, basestring):
+    if isinstance(cors, six.string_types):
         cors = xmltodict.parse(cors)
     BUCKET_CORS[bucket_name] = cors
     response = Response()

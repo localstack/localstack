@@ -12,6 +12,8 @@ import json
 import boto3
 import subprocess
 import __init__
+import six
+
 from localstack import constants
 from localstack.config import *
 from localstack.utils.aws import aws_stack
@@ -241,7 +243,7 @@ def check_infra_kinesis(expect_shutdown=False, print_error=False):
     try:
         # check Kinesis
         out = aws_stack.connect_to_service(service_name='kinesis', client=True, env=ENV_DEV).list_streams()
-    except Exception, e:
+    except Exception as e:
         if print_error:
             LOGGER.error('Kinesis health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
@@ -255,7 +257,7 @@ def check_infra_dynamodb(expect_shutdown=False, print_error=False):
     try:
         # check DynamoDB
         out = aws_stack.connect_to_service(service_name='dynamodb', client=True, env=ENV_DEV).list_tables()
-    except Exception, e:
+    except Exception as e:
         if print_error:
             LOGGER.error('DynamoDB health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
@@ -269,7 +271,7 @@ def check_infra_s3(expect_shutdown=False, print_error=False):
     try:
         # check S3
         out = aws_stack.connect_to_service(service_name='s3', client=True, env=ENV_DEV).list_buckets()
-    except Exception, e:
+    except Exception as e:
         if print_error:
             LOGGER.error('S3 health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
@@ -284,13 +286,13 @@ def check_infra_elasticsearch(expect_shutdown=False, print_error=False):
         # check Elasticsearch
         es = aws_stack.connect_elasticsearch()
         out = es.cat.aliases()
-    except Exception, e:
+    except Exception as e:
         if print_error:
             LOGGER.error('Elasticsearch health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
-        assert isinstance(out, basestring)
+        assert isinstance(out, six.string_types)
 
 
 def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[]):
@@ -310,7 +312,7 @@ def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[
             check_infra_elasticsearch(expect_shutdown=expect_shutdown, print_error=print_error)
         for additional in additional_checks:
             additional(expect_shutdown=expect_shutdown)
-    except Exception, e:
+    except Exception as e:
         if retries <= 0:
             LOGGER.error('Error checking state of local environment (after some retries): %s' % traceback.format_exc())
             raise e
@@ -329,7 +331,7 @@ def start_infra(async=False,
         s3_update_listener=None, apis=None):
     try:
         if not apis:
-            apis = SERVICE_PORTS.keys()
+            apis = list(SERVICE_PORTS.keys())
         if not dynamodb_update_listener:
             dynamodb_update_listener = dynamodb_listener.update_dynamodb
         if not kinesis_update_listener:
@@ -401,7 +403,7 @@ def start_infra(async=False,
             while True:
                 time.sleep(1)
         return thread
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         print("Shutdown")
     finally:
         if not async:

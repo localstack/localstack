@@ -1,5 +1,11 @@
+from __future__ import print_function
+
 import time
 import json
+import six
+
+if six.PY3:
+    long = int
 
 
 class Component(object):
@@ -40,7 +46,7 @@ class KinesisStream(Component):
     def create(self, raise_on_error=False):
         try:
             self.conn.create_stream(StreamName=self.stream_name, ShardCount=self.num_shards)
-        except Exception, e:
+        except Exception as e:
             # TODO catch stream already exists exception, otherwise rethrow
             if raise_on_error:
                 raise e
@@ -64,9 +70,9 @@ class KinesisStream(Component):
                 else:
                     next_entry = kinesis_conn.get_records(record['NextShardIterator'])
                     if len(next_entry['Records']):
-                        print next_entry['Records'][0]['Data']
+                        print(next_entry['Records'][0]['Data'])
                     record = next_entry
-            except Exception, e:
+            except Exception as e:
                 print('Error reading from Kinesis stream "%s": %s' (self.stream_name, e))
 
     def wait_for(self):
@@ -77,7 +83,7 @@ class KinesisStream(Component):
                 status = self.get_status()
                 if status == 'ACTIVE':
                     return
-            except Exception, e:
+            except Exception as e:
                 # swallowing this exception should be ok, as we are in a retry loop
                 pass
             time.sleep(GET_STATUS_SLEEP_SECS)
@@ -99,7 +105,7 @@ class KinesisShard(Component):
         self.child_shards = []
 
     def print_tree(self, indent=''):
-        print '%s%s' % (indent, self)
+        print('%s%s' % (indent, self))
         for c in self.child_shards:
             c.print_tree(indent=indent + '   ')
 
@@ -258,7 +264,7 @@ class EventSource(Component):
     @staticmethod
     def filter_type(pool, type):
         result = []
-        for key, obj in pool.iteritems():
+        for key, obj in six.iteritems(pool):
             if isinstance(obj, type):
                 result.append(obj)
         return result
