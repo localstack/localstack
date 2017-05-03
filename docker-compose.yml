@@ -5,3 +5,4 @@ services:
     image: atlassianlabs/localstack
     ports:
       - "4567-4580:4567-4580"
+      - "8080:8080"
