@@ -95,7 +95,7 @@ class KinesisProcessor(kcl.RecordProcessorBase):
 
         try:
             retry(do_checkpoint, retries=CHECKPOINT_RETRIES, sleep=CHECKPOINT_SLEEP_SECS)
-        except Exception, e:
+        except Exception as e:
             LOGGER.warning('Unable to checkpoint Kinesis after retries: %s' % e)
 
     def should_update_sequence(self, sequence_number, sub_sequence_number):
@@ -177,7 +177,7 @@ class OutputReaderThread(FuncThread):
             try:
                 if re.match(subscriber.regex, line):
                     subscriber.update(line)
-            except Exception, e:
+            except Exception as e:
                 LOGGER.warning('Unable to notify log subscriber: %s' % e)
 
     def start_reading(self, params):
@@ -353,7 +353,7 @@ if __name__ == '__main__':
             sock.connect(events_file)
             error = None
             break
-        except Exception, e:
+        except Exception as e:
             error = e
             if i < num_tries:
                 msg = '%%s: Unable to connect to UNIX socket. Retrying.' %% timestamp()
@@ -369,7 +369,7 @@ if __name__ == '__main__':
             records_dicts = [j._json_dict for j in records]
             message_to_send = {'shard_id': shard_id, 'records': records_dicts}
             sock.send(b'%%s\\n' %% json.dumps(message_to_send))
-        except Exception, e:
+        except Exception as e:
             print("WARN: Unable to forward event: %%s" %% e)
     kinesis_connector.KinesisProcessor.run_processor(log_file=log_file, processor_func=receive_msg)
     """ % (LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, events_file, log_file)
@@ -419,12 +419,12 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         # Wait at most 90 seconds for initialization. Note that creating the DDB table can take quite a bit
         try:
             listener.sync_init.get(block=True, timeout=90)
-        except Exception, e:
+        except Exception as e:
             raise Exception('Timeout when waiting for KCL initialization.')
         # wait at most 30 seconds for shard lease notification
         try:
             listener.sync_take_shard.get(block=True, timeout=30)
-        except Exception, e:
+        except Exception as e:
             # this merely means that there is no shard available to take. Do nothing.
             pass
 

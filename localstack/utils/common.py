@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import threading
 import traceback
 import os
@@ -6,7 +8,8 @@ import uuid
 import time
 import glob
 import subprocess
-from cStringIO import StringIO
+import six
+from six.moves import cStringIO as StringIO
 from datetime import datetime
 from multiprocessing.dummy import Pool
 from localstack.constants import *
@@ -39,7 +42,7 @@ class FuncThread (threading.Thread):
     def run(self):
         try:
             self.func(self.params)
-        except Exception, e:
+        except Exception as e:
             if not self.quiet:
                 print("Thread run method %s(%s) failed: %s" %
                     (self.func, self.params, traceback.format_exc()))
@@ -76,7 +79,7 @@ class ShellCommandThread (FuncThread):
                 self.process.wait()
             else:
                 self.process.communicate()
-        except Exception, e:
+        except Exception as e:
             if self.process and not self.quiet:
                 print('Shell command error "%s": %s' % (e, self.cmd))
         if self.process and not self.quiet and self.process.returncode != 0:
@@ -101,7 +104,7 @@ class ShellCommandThread (FuncThread):
             for child in parent.children(recursive=True):
                 child.kill()
             parent.kill()
-        except Exception, e:
+        except Exception as e:
             if not quiet:
                 print('WARN: Unable to kill process with pid %s' % pid)
 
@@ -123,7 +126,7 @@ def md5(string):
 def timestamp(time=None, format=TIMESTAMP_FORMAT):
     if not time:
         time = datetime.utcnow()
-    if isinstance(time, (int, long, float)):
+    if isinstance(time, six.integer_types + (float, )):
         time = datetime.fromtimestamp(time)
     return time.strftime(format)
 
@@ -135,14 +138,14 @@ def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
     for i in range(0, retries + 1):
         try:
             return function(**kwargs)
-        except Exception, error:
+        except Exception as error:
             time.sleep(sleep)
     raise error
 
 
 def dump_thread_info():
     for t in threading.enumerate():
-        print t
+        print(t)
     print(run("ps aux | grep 'node\\|java\\|python'"))
 
 
@@ -194,7 +197,7 @@ def cleanup_tmp_files():
                 run('rm -rf "%s"' % tmp)
             else:
                 os.remove(tmp)
-        except Exception, e:
+        except Exception as e:
             pass  # file likely doesn't exist, or permission denied
     del TMP_FILES[:]
 
@@ -219,7 +222,7 @@ def cleanup_resources():
 def run_safe(_python_lambda, print_error=True, **kwargs):
     try:
         _python_lambda(**kwargs)
-    except Exception, e:
+    except Exception as e:
         if print_error:
             print('Unable to execute function: %s' % e)
 
@@ -229,7 +232,10 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
     # don't use subprocess module as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
     # import subprocess
-    import subprocess32 as subprocess
+    if six.PY2:
+        import subprocess32 as subprocess
+    else:
+        import subprocess
 
     env_dict = os.environ.copy()
     if env_vars:
@@ -247,13 +253,13 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
             try:
                 mutex_popen.acquire()
                 stdin_arg = subprocess.PIPE if stdin else None
-                stdout_arg = open(outfile, 'wb') if isinstance(outfile, basestring) else outfile
+                stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
                 process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg,
                     stderr=subprocess.STDOUT, stdout=stdout_arg, env=env_dict, cwd=cwd)
                 return process
             finally:
                 mutex_popen.release()
-        except subprocess.CalledProcessError, e:
+        except subprocess.CalledProcessError as e:
             if print_error:
                 print("ERROR: '%s': %s" % (cmd, e.output))
             raise e

@@ -1,5 +1,6 @@
 import re
 import os
+from six import iteritems
 from localstack.constants import *
 
 # Randomly inject faults to Kinesis
@@ -47,7 +48,7 @@ def parse_service_ports():
 SERVICE_PORTS = parse_service_ports()
 
 # define service ports and URLs as environment variables
-for key, value in DEFAULT_SERVICE_PORTS.iteritems():
+for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     # define PORT_* variables with actual service ports as per configuration
     exec('PORT_%s = SERVICE_PORTS.get("%s")' % (key.upper(), key))
     url = "http://%s:%s" % (HOSTNAME, SERVICE_PORTS.get(key))

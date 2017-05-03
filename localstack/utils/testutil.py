@@ -11,6 +11,8 @@ from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import DynamoDB, ElasticSearch
 from localstack.utils.kinesis import kinesis_connector
+from six import iteritems
+
 
 ARCHIVE_DIR_PATTERN = '/tmp/lambda.archive.*'
 
@@ -40,7 +42,7 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
             },
             StreamSpecification=stream_spec
         )
-    except Exception, e:
+    except Exception as e:
         if 'ResourceInUseException' in str(e):
             # Table already exists -> return table reference
             return aws_stack.connect_to_resource('dynamodb', env=env).Table(table_name)
@@ -126,7 +128,7 @@ def find_object(expected_object, object_list):
             if not isinstance(expected_object, dict):
                 all_ok = False
             else:
-                for k, v in expected_object.iteritems():
+                for k, v in iteritems(expected_object):
                     if not find_recursive(k, v, obj):
                         all_ok = False
                         break
@@ -137,7 +139,7 @@ def find_object(expected_object, object_list):
 
 def find_recursive(key, value, obj):
     if isinstance(obj, dict):
-        for k, v in obj.iteritems():
+        for k, v in iteritems(obj):
             if k == key and v == value:
                 return True
             if find_recursive(key, value, v):

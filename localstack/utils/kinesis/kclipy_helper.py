@@ -9,6 +9,7 @@ import argparse
 import sys
 import samples
 import traceback
+from six import iteritems
 
 
 def get_dir_of_file(f):
@@ -99,7 +100,7 @@ def create_config_file(config_file, executableName, streamName, applicationName,
         regionName = us-east-1
     """ % (executableName, streamName, applicationName, credentialsProvider)
     # optional properties
-    for key, value in kwargs.iteritems():
+    for key, value in iteritems(kwargs):
         content += """
             %s = %s""" % (key, value)
     content = content.replace('    ', '')
