@@ -2,7 +2,7 @@ import base64
 import json
 import time
 import sys
-import cStringIO
+from six.moves import cStringIO as StringIO
 from docopt import docopt
 from localstack.utils import testutil
 from localstack.utils.common import *
@@ -96,7 +96,7 @@ def test_bucket_notifications():
     # upload file to S3
     test_prefix = '/testdata'
     test_data = '{"test": "bucket_notification"}'
-    s3_client.upload_fileobj(cStringIO.StringIO(test_data), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_prefix)
+    s3_client.upload_fileobj(StringIO(test_data), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_prefix)
 
     # receive, assert, and delete message from SQS
     response = sqs_client.receive_message(QueueUrl=queue_url)

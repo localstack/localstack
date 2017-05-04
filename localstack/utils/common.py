@@ -12,6 +12,7 @@ import six
 from six.moves import cStringIO as StringIO
 from datetime import datetime
 from multiprocessing.dummy import Pool
+from localstack.utils.compat import bytes_
 from localstack.constants import *
 
 # arrays for temporary files and resources
@@ -112,14 +113,14 @@ class ShellCommandThread (FuncThread):
 def is_string(s, include_unicode=True):
     if isinstance(s, str):
         return True
-    if include_unicode and isinstance(s, unicode):
+    if include_unicode and isinstance(s, six.text_type):
         return True
     return False
 
 
 def md5(string):
     m = hashlib.md5()
-    m.update(string)
+    m.update(bytes_(string))
     return m.hexdigest()
 
 

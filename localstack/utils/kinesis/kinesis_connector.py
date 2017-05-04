@@ -10,8 +10,8 @@ import time
 import traceback
 import threading
 import logging
-import Queue
-from urlparse import urlparse
+from six.moves import queue as Queue
+from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
 from docopt import docopt
 from sh import tail
