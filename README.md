@@ -68,7 +68,7 @@ missing functionality on top of them:
 ## Requirements
 
 * `make`
-* `python` (currently only Python 2 supported)
+* `python` (both Python 2.x and 3.x supported)
 * `pip` (python package manager)
 * `npm` (node.js package manager)
 * `java`/`javac` (Java runtime environment and compiler)

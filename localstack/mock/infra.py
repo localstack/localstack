@@ -11,7 +11,6 @@ import requests
 import json
 import boto3
 import subprocess
-import __init__
 import six
 
 from localstack import constants
@@ -75,7 +74,7 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     es_data_dir = '%s/elasticsearch' % DATA_DIR
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
-    cmd = (('%s/infra/elasticsearch/bin/elasticsearch ' +
+    cmd = (('ES_JAVA_OPTS=\"$ES_JAVA_OPTS -Xms200m -Xmx500m\" %s/infra/elasticsearch/bin/elasticsearch ' +
         '-E http.port=%s -E http.publish_port=%s -E path.data=%s') %
         (ROOT_PATH, backend_port, backend_port, es_data_dir))
     print("Starting local Elasticsearch (port %s)..." % port)
@@ -83,9 +82,13 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     if delete_data:
         run('rm -rf %s/elasticsearch' % data_path)
     run('mkdir -p %s/elasticsearch' % data_path)
+    # fix permissions
+    run('chmod -R 777 %s/infra/elasticsearch' % ROOT_PATH)
+    run('mkdir -p "%s"; chmod -R 777 "%s"' % (es_data_dir, es_data_dir))
+    # start proxy and ES process
     start_proxy(port, backend_port, update_listener, quiet=True)
     if is_root():
-        cmd = "su -c 'ES_JAVA_OPTS=\"$ES_JAVA_OPTS -Xms200m -Xmx500m\" %s' localstack" % cmd
+        cmd = "su -c '%s' localstack" % cmd
     thread = do_run(cmd, async, print_output=True)
     return thread
 
@@ -360,7 +363,7 @@ def start_infra(async=False,
             aws_stack.delete_all_elasticsearch_data()
             # run actual Elasticsearch endpoint
             thread = start_elasticsearch(async=True)
-            sleep_time = max(sleep_time, 5)
+            sleep_time = max(sleep_time, 6)
         if 'es' in apis:
             # run Elasticsearch Service (ES) endpoint
             thread = start_elasticsearch_service(async=True)

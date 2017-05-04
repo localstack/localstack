@@ -18,7 +18,6 @@ ENV_ACCESS_KEY = 'AWS_ACCESS_KEY_ID'
 ENV_SECRET_KEY = 'AWS_SECRET_ACCESS_KEY'
 ENV_SESSION_TOKEN = 'AWS_SESSION_TOKEN'
 
-
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -192,7 +191,9 @@ class VelocityUtil:
     def base64Encode(self, s):
         if not isinstance(s, str):
             s = json.dumps(s)
-        return base64.b64encode(s)
+        encoded_str = s.encode(config.DEFAULT_ENCODING)
+        encoded_b64_str = base64.b64encode(encoded_str)
+        return encoded_b64_str.decode(config.DEFAULT_ENCODING)
 
     def base64Decode(self, s):
         if not isinstance(s, str):

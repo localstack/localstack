@@ -2,6 +2,8 @@ import base64
 import json
 import time
 import sys
+import os
+from io import BytesIO
 from six.moves import cStringIO as StringIO
 from docopt import docopt
 from localstack.utils import testutil
@@ -25,8 +27,9 @@ TEST_BUCKET_NAME = 'test_bucket'
 TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_2'
 TEST_QUEUE_NAME = 'test_queue'
 
-TEST_LAMBDA_NODEJS = load_file(os.path.join(LOCALSTACK_ROOT_FOLDER, 'tests', 'lambdas', 'lambda_integration.js'))
-TEST_LAMBDA_PYTHON = load_file(os.path.join(LOCALSTACK_ROOT_FOLDER, 'tests', 'lambdas', 'lambda_integration.py'))
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+TEST_LAMBDA_NODEJS = load_file(os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js'))
+TEST_LAMBDA_PYTHON = load_file(os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py'))
 
 EVENTS = []
 
@@ -64,7 +67,7 @@ def test_firehose_s3():
     )
     # check records in target bucket
     all_objects = testutil.list_all_s3_objects()
-    testutil.assert_objects(json.loads(test_data), all_objects)
+    testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
 
 def test_bucket_notifications():
@@ -95,12 +98,12 @@ def test_bucket_notifications():
 
     # upload file to S3
     test_prefix = '/testdata'
-    test_data = '{"test": "bucket_notification"}'
-    s3_client.upload_fileobj(StringIO(test_data), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_prefix)
+    test_data = b'{"test": "bucket_notification"}'
+    s3_client.upload_fileobj(BytesIO(test_data), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_prefix)
 
     # receive, assert, and delete message from SQS
     response = sqs_client.receive_message(QueueUrl=queue_url)
-    messages = [json.loads(m['Body']) for m in response['Messages']]
+    messages = [json.loads(to_str(m['Body'])) for m in response['Messages']]
     testutil.assert_objects({'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}, messages)
     for message in response['Messages']:
         sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
@@ -192,6 +195,4 @@ def test_kinesis_lambda_ddb_streams():
 
     num_events = num_events_ddb + num_events_kinesis
     print('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))
-    if len(EVENTS) != num_events:
-        print('ERROR receiving DynamoDB updates.')
     assert len(EVENTS) == num_events

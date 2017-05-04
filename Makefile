@@ -7,6 +7,7 @@ AWS_STS_TMPFILE = /tmp/aws-java-sdk-sts.jar
 TMP_DIR = /tmp/localstack
 DATA_DIR ?= $(TMP_DIR)/data
 DOCKER_SOCK ?= /var/run/docker.sock
+PIP_CMD ?= pip
 
 usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
@@ -17,10 +18,10 @@ install:           ## Install npm/pip dependencies, compile code
 		make compile
 
 setup-venv:        # Setup virtualenv
-	(test `which virtualenv` || pip install --user virtualenv || sudo pip install virtualenv)
-	(test -e $(VENV_DIR) || virtualenv $(VENV_DIR))
-	($(VENV_RUN) && pip install --upgrade pip)
-	(test ! -e requirements.txt || ($(VENV_RUN) && pip install -r requirements.txt))
+	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv || sudo $(PIP_CMD) install virtualenv) && \
+		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
+		($(VENV_RUN) && $(PIP_CMD) install --upgrade pip) && \
+		(test ! -e requirements.txt || ($(VENV_RUN) && $(PIP_CMD) install -r requirements.txt))
 
 install-libs:      ## Install npm/pip dependencies
 	(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || \
@@ -35,7 +36,7 @@ install-web:       ## Install npm dependencies for dashboard Web UI
 compile:           ## Compile Java code (KCL library utils)
 	echo "Compiling"
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print(kclipy_helper.get_kcl_classpath())') localstack/utils/kinesis/java/com/atlassian/*.java
-	(test ! -e ext/java || (cd ext/java && mvn -DskipTests package))
+	(test ! -e ext/java || (cd ext/java && mvn -q -DskipTests package))
 	# TODO enable once we want to support Java-based Lambdas
 	# (cd localstack/mock && mvn package)
 
@@ -47,10 +48,10 @@ coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
 init:              ## Initialize the infrastructure, make sure all libs are downloaded
-	$(VENV_RUN); exec localstack/mock/install.py run
+	$(VENV_RUN); PYTHONPATH=. exec localstack/mock/install.py run
 
 infra:             ## Manually start the local infrastructure for testing
-	$(VENV_RUN); exec localstack/mock/infra.py
+	$(VENV_RUN); PYTHONPATH=. exec localstack/mock/infra.py
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
@@ -60,9 +61,10 @@ docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-push-master:## Push Docker image to registry IF we are currently on the master branch
-	(test `git rev-parse --abbrev-ref HEAD` != 'master' && echo "Not on master branch.") || \
-		(which pip || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
-		which docker-squash || pip install docker-squash; \
+	(test "`git rev-parse --abbrev-ref HEAD`" != 'master' && echo "Not on master branch.") || \
+	(test "`git remote -v | grep 'atlassian/localstack.git' | grep origin | grep push | awk '{print $$2}'`" != 'git@bitbucket.org:atlassian/localstack.git' && echo "This is a fork and not the main repo.") || \
+		(which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
+		which docker-squash || $(PIP_CMD) install docker-squash; \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) && docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
 		docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME):latest)
@@ -81,6 +83,14 @@ test:              ## Run automated tests
 
 test-docker:       ## Run automated tests in Docker
 	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/mock:/opt/code/localstack/localstack/mock" CMD="make test" make docker-run
+
+reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
+	rm -rf $(VENV_DIR)
+	PIP_CMD=pip2 VENV_OPTS="-p `which python2`" make install
+
+reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
+	rm -rf $(VENV_DIR)
+	PIP_CMD=pip3 VENV_OPTS="-p `which python3`" make install
 
 lint:              ## Run code linter to check code style
 	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR),dist .)

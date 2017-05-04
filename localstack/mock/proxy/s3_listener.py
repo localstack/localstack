@@ -4,7 +4,7 @@ import json
 import xmltodict
 import xml.etree.ElementTree as ET
 import six
-
+from six import iteritems
 from six.moves.urllib import parse as urlparse
 from requests.models import Response
 from localstack.constants import *
@@ -65,7 +65,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', file_si
 
 
 def send_notifications(method, bucket_name, object_path):
-    for bucket, config in S3_NOTIFICATIONS.iteritems():
+    for bucket, config in iteritems(S3_NOTIFICATIONS):
         if bucket == bucket_name:
             action = {'PUT': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated

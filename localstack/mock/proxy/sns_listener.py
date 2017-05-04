@@ -14,7 +14,7 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
     if return_forward_info:
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(data)
-            topic_arn = req_data.get('TopicArn')
+            topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn')
             if topic_arn:
                 topic_arn = topic_arn[0]
                 if topic_arn not in SNS_SUBSCRIPTIONS:

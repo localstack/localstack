@@ -14,7 +14,7 @@ from flask import Flask, jsonify, request, make_response
 from datetime import datetime
 from localstack.config import TEST_S3_URL
 from localstack.constants import *
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, to_str
 from localstack.utils.aws.aws_stack import *
 from six import iteritems
 
@@ -59,7 +59,7 @@ def put_records(stream_name, records):
                 try:
                     s3.Object(bucket, obj_path).put(Body=data)
                 except Exception as e:
-                    print("ERROR: %s" % traceback.format_exc(e))
+                    print("ERROR: %s" % traceback.format_exc())
                     raise e
 
 
@@ -121,7 +121,7 @@ def role_arn(stream_name):
 @app.route('/', methods=['POST'])
 def post_request():
     action = request.headers.get('x-amz-target')
-    data = json.loads(request.data)
+    data = json.loads(to_str(request.data))
     response = None
     if action == 'Firehose_20150804.ListDeliveryStreams':
         response = {

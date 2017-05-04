@@ -21,6 +21,8 @@ TMP_FOLDER = '/tmp/localstack'
 # directory for persisting data
 DATA_DIR = os.environ.get('DATA_DIR') or ('%s/data' % TMP_FOLDER)
 
+# default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
+DEFAULT_ENCODING = 'utf-8'
 
 # create folders
 for folder in [DATA_DIR, TMP_FOLDER]:

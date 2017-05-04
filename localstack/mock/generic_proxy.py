@@ -4,14 +4,11 @@ import os
 import json
 import traceback
 import logging
-
 from requests.models import Response
-
+from six import iteritems, string_types
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
-from six import iteritems
-
-import __init__
+from localstack.config import DEFAULT_ENCODING
 from localstack.utils.common import FuncThread
 from localstack.utils.compat import bytes_
 
@@ -32,7 +29,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.client_address = client_address
         self.server = server
         self.proxy = server.my_object
-        self.data_string = None
+        self.data_bytes = None
         BaseHTTPRequestHandler.__init__(self, request, client_address, server)
 
     def do_GET(self):
@@ -40,12 +37,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.forward('GET')
 
     def do_PUT(self):
-        self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+        self.data_bytes = self.rfile.read(int(self.headers['Content-Length']))
         self.method = requests.put
         self.forward('PUT')
 
     def do_POST(self):
-        self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+        self.data_bytes = self.rfile.read(int(self.headers['Content-Length']))
         self.method = requests.post
         self.forward('POST')
 
@@ -59,7 +56,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
     def do_PATCH(self):
         self.method = requests.patch
-        self.data_string = self.rfile.read(int(self.headers['Content-Length']))
+        self.data_bytes = self.rfile.read(int(self.headers['Content-Length']))
         self.forward('PATCH')
 
     def forward(self, method):
@@ -72,11 +69,14 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             target_url = 'http://%s%s' % (self.proxy.forward_host, target_url)
         data = None
         if method in ['POST', 'PUT', 'PATCH']:
+            data_string = self.data_bytes
             try:
-                data = json.loads(self.data_string)
+                if not isinstance(data_string, string_types):
+                    data_string = data_string.decode(DEFAULT_ENCODING)
+                data = json.loads(data_string)
             except Exception as e:
-                # unable to parse JSON, fallback to verbatim string
-                data = self.data_string
+                # unable to parse JSON, fallback to verbatim string/bytes
+                data = data_string
         proxies = {
             # TODO: check the use of the proxies variable, it doesn't seem to be required anymore
             # 'http': proxy_url,
@@ -100,7 +100,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     self.end_headers()
                     return
             if response is None:
-                response = self.method(proxy_url, data=self.data_string,
+                response = self.method(proxy_url, data=self.data_bytes,
                     headers=forward_headers, proxies=proxies)
             # update listener (post-invocation)
             if self.proxy.update_listener:
