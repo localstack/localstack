@@ -13,6 +13,7 @@ from six import iteritems
 
 import __init__
 from localstack.utils.common import FuncThread
+from localstack.utils.compat import bytes_
 
 
 QUIET = False
@@ -110,7 +111,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             for header_key, header_value in iteritems(response.headers):
                 self.send_header(header_key, header_value)
             self.end_headers()
-            self.wfile.write(response.content)
+            self.wfile.write(bytes_(response.content))
         except Exception as e:
             if not self.proxy.quiet:
                 LOGGER.exception("Error forwarding request: %s" % str(e))

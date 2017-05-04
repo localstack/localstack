@@ -25,7 +25,7 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     if not action:
         return
 
-    response_data = json.loads(response.text)
+    response_data = json.loads(response.content)
     record = {
         "eventID": "1",
         "eventVersion": "1.0",

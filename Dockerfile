@@ -33,6 +33,7 @@ RUN make install-web
 # add files required to run "make install"
 RUN mkdir -p localstack/utils/kinesis/ && touch localstack/__init__.py localstack/utils/__init__.py localstack/utils/kinesis/__init__.py
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
+ADD localstack/utils/compat.py localstack/utils/compat.py
 ADD localstack/utils/common.py localstack/utils/common.py
 ADD localstack/constants.py localstack/constants.py
 
