@@ -423,6 +423,23 @@ def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     return stream
 
 
+def kinesis_get_recent_records(stream_name, shard_id=None, count=10, env=None):
+    kinesis = connect_to_service('kinesis', env=env)
+    result = []
+    records = True
+    response = kinesis.get_shard_iterator(StreamName=stream_name, ShardId=shard_id,
+        ShardIteratorType='TRIM_HORIZON')
+    shard_iterator = response['ShardIterator']
+    while shard_iterator:
+        records_response = kinesis.get_records(ShardIterator=shard_iterator)
+        records = records_response['Records']
+        result.extend(records)
+        shard_iterator = records_response['NextShardIterator'] if records else False
+        while len(result) > count:
+            result.pop(0)
+    return result
+
+
 # When we assume IAM role we always change credentials
 # 1. We need to save session with initial micros credentials to INITIAL_BOTO3_SESSION
 # 2. We use INITIAL_BOTO3_SESSION to assume role

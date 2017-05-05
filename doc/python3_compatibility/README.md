@@ -1,5 +1,9 @@
 # Python 3 Compatibility
 
+**UPDATE: This document is outdated. In the meantime the codebase has been made compatible with
+Python 3.** Present and future compatibility is ensured by running the tests with both Python
+versions (2.x and 3.x) in our CI environment.
+
 *LocalStack* currently requires a Python 2.x runtime and is not compatible with Python version 3.x.
 
 With Python 2.x becoming "legacy" [1], we should work towards making *LocalStack* compatible with Python 3.x.

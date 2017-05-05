@@ -78,7 +78,7 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     install.install_elasticsearch()
     backend_port = DEFAULT_PORT_ELASTICSEARCH_BACKEND
     es_data_dir = '%s/infra/elasticsearch/data' % (ROOT_PATH)
-    if not DATA_DIR:
+    if DATA_DIR:
         es_data_dir = '%s/elasticsearch' % DATA_DIR
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
