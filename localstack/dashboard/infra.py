@@ -1,12 +1,13 @@
 import re
 import sh
+import os
 import json
 import logging
 import base64
 from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
 from localstack.utils.aws import aws_stack
-from localstack.constants import REGION_LOCAL
+from localstack.constants import REGION_LOCAL, DEFAULT_REGION
 from six import iteritems
 
 
@@ -24,7 +25,12 @@ LOG = logging.getLogger(__name__)
 def run_cached(cmd, cache_duration_secs=None):
     if cache_duration_secs is None:
         cache_duration_secs = AWS_CACHE_TIMEOUT
-    return run(cmd, cache_duration_secs=cache_duration_secs)
+    env_vars = {
+        'AWS_ACCESS_KEY_ID': os.environ.get('AWS_ACCESS_KEY_ID') or 'foobar',
+        'AWS_SECRET_ACCESS_KEY': os.environ.get('AWS_SECRET_ACCESS_KEY') or 'foobar',
+        'AWS_DEFAULT_REGION': os.environ.get('AWS_DEFAULT_REGION') or DEFAULT_REGION
+    }
+    return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars)
 
 
 def run_aws_cmd(service, cmd_params, env=None, cache_duration_secs=None):

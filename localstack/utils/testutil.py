@@ -108,6 +108,11 @@ def assert_objects(asserts, all_objects):
 
 
 def assert_object(expected_object, all_objects):
+    # for Python 3 compatibility
+    dict_values = type({}.values())
+    if isinstance(all_objects, dict_values):
+        all_objects = list(all_objects)
+    # wrap single item in an array
     if type(all_objects) is not list:
         all_objects = [all_objects]
     found = find_object(expected_object, all_objects)

@@ -177,7 +177,8 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             event_string = json.dumps(event).replace("'", "\\'")
             result = run(cmd, env_vars={'AWS_LAMBDA_EVENT_BODY': event_string})
         else:
-            if func.func_code.co_argcount == 2:
+            function_code = func.func_code if 'func_code' in func.__dict__ else func.__code__
+            if function_code.co_argcount == 2:
                 result = func(event, context)
             else:
                 raise Exception('Expected handler function with 2 parameters, found %s' % func.func_code.co_argcount)
@@ -185,7 +186,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
-        print("ERROR executing Lambda function: %s" % traceback.format_exc(e))
+        print("ERROR executing Lambda function: %s" % traceback.format_exc())
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -320,7 +321,7 @@ def create_function():
               in: body
     """
     try:
-        data = json.loads(request.data)
+        data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
         arn = func_arn(lambda_name)
         lambda_arn_to_handler[arn] = data['Handler']
@@ -387,8 +388,6 @@ def delete_function(function):
             - name: 'request'
               in: body
     """
-    if request.data:
-        data = json.loads(request.data)
     arn = func_arn(function)
     lambda_arn_to_function.pop(arn)
     lambda_arn_to_cwd.pop(arn)
@@ -413,7 +412,7 @@ def update_function_code(function):
             - name: 'request'
               in: body
     """
-    data = json.loads(request.data)
+    data = json.loads(to_str(request.data))
     set_function_code(data, function)
     result = {}
     return jsonify(result)
@@ -429,7 +428,8 @@ def get_function_code(function):
     arn = func_arn(function)
     lambda_cwd = lambda_arn_to_cwd[arn]
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
-    return Response(load_file(tmp_file),
+    response_bytes = None
+    return Response(load_file(tmp_file, mode="rb"),
             mimetype='application/zip',
             headers={'Content-Disposition': 'attachment; filename=lambda_archive.zip'})
 
@@ -443,7 +443,7 @@ def update_function_configuration(function):
             - name: 'request'
               in: body
     """
-    data = json.loads(request.data)
+    data = json.loads(to_str(request.data))
     arn = func_arn(function)
     if data.get('Handler'):
         lambda_arn_to_handler[arn] = data['Handler']
@@ -464,7 +464,7 @@ def invoke_function(function):
     """
     data = {}
     try:
-        data = json.loads(request.data)
+        data = json.loads(to_str(request.data))
     except Exception as e:
         pass
     arn = func_arn(function)
@@ -498,7 +498,7 @@ def create_event_source_mapping():
             - name: 'request'
               in: body
     """
-    data = json.loads(request.data)
+    data = json.loads(to_str(request.data))
     mapping = add_event_source(data['FunctionName'], data['EventSourceArn'])
     return jsonify(mapping)
 

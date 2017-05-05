@@ -3,7 +3,6 @@
 import os
 import sys
 import logging
-import __init__
 from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL
 from localstack.config import *
 from localstack.utils.common import parallelize, run

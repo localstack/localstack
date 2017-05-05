@@ -6,6 +6,7 @@ import uuid
 import logging
 from flask import Flask, jsonify, request
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import to_str
 
 APP_NAME = 'ddb_streams_mock'
 
@@ -27,7 +28,7 @@ def add_dynamodb_stream(table_name, view_type='NEW_AND_OLD_IMAGES', enabled=True
 @app.route('/', methods=['POST'])
 def post_request():
     action = request.headers.get('x-amz-target')
-    data = json.loads(request.data)
+    data = json.loads(to_str(request.data))
     result = None
     if action == 'DynamoDBStreams_20120810.ListStreams':
         result = {

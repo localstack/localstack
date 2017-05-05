@@ -333,11 +333,13 @@ def generate_processor_script(events_file, log_file=None):
     else:
         log_file = 'None'
     content = """#!/usr/bin/env python
-import os, sys, json, socket, time, logging
+import os, sys, glob, json, socket, time, logging
 import subprocess32 as subprocess
 logging.basicConfig(level=logging.INFO)
-sys.path.insert(0, '%s/lib/python2.7/site-packages')
+for path in glob.glob('%s/lib/python*/site-packages'):
+    sys.path.insert(0, path)
 sys.path.insert(0, '%s')
+from localstack.config import DEFAULT_ENCODING
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.common import timestamp
 events_file = '%s'
@@ -368,9 +370,13 @@ if __name__ == '__main__':
             # records is a list of amazon_kclpy.messages.Record objects -> convert to JSON
             records_dicts = [j._json_dict for j in records]
             message_to_send = {'shard_id': shard_id, 'records': records_dicts}
-            sock.send(b'%%s\\n' %% json.dumps(message_to_send))
+            string_to_send = '%%s\\n' %% json.dumps(message_to_send)
+            bytes_to_send = string_to_send.encode(DEFAULT_ENCODING)
+            sock.send(bytes_to_send)
         except Exception as e:
-            print("WARN: Unable to forward event: %%s" %% e)
+            msg = "WARN: Unable to forward event: %%s" %% e
+            print(msg)
+            subprocess.check_output('echo "%%s" >> /tmp/kclipy.error.log' %% msg, shell=True)
     kinesis_connector.KinesisProcessor.run_processor(log_file=log_file, processor_func=receive_msg)
     """ % (LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, events_file, log_file)
     save_file(script_file, content)

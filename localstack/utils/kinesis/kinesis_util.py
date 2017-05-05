@@ -35,7 +35,8 @@ class EventFileReaderThread(FuncThread):
     def handle_connection(self, conn):
         socket_file = conn.makefile()
         while self.running:
-            line = socket_file.readline()[:-1]
+            line = socket_file.readline()
+            line = line[:-1]
             if line == '':
                 # end of socket input stream
                 break

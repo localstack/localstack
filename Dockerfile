@@ -36,6 +36,7 @@ ADD localstack/utils/kinesis/ localstack/utils/kinesis/
 ADD localstack/utils/compat.py localstack/utils/compat.py
 ADD localstack/utils/common.py localstack/utils/common.py
 ADD localstack/constants.py localstack/constants.py
+ADD localstack/config.py localstack/config.py
 
 # install dependencies
 # TODO: temporary change to fix error "Cannot find module 'semver'" when running npm
@@ -43,7 +44,6 @@ RUN make install && \
     rm -rf /usr/lib/node_modules && apk del nodejs && apk add --update nodejs && npm install npm@latest -g
 
 # add files required to run "make init"
-ADD localstack/config.py localstack/config.py
 ADD localstack/mock/__init__.py localstack/mock/install.py localstack/mock/
 
 # initialize installation (downloads remaining dependencies)
