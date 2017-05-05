@@ -5,7 +5,6 @@ VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
 AWS_STS_TMPFILE = /tmp/aws-java-sdk-sts.jar
 TMP_DIR = /tmp/localstack
-DATA_DIR ?= $(TMP_DIR)/data
 DOCKER_SOCK ?= /var/run/docker.sock
 PIP_CMD ?= pip
 

@@ -119,7 +119,9 @@ You can pass the following environment variables to LocalStack:
   the `docker` command needs to be available inside the container (usually requires to run the
   container in privileged mode). Default is `docker`, fallback to `local` if Docker is not available.
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
-  Kinesis, DynamoDB, Elasticsearch). Defaults to `/tmp/localstack/data`.
+  Kinesis, DynamoDB, Elasticsearch). Set it to `/tmp/localstack/data` to enable persistence
+  (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
+  persistence (default).
 
 ## Developing
 
@@ -243,6 +245,7 @@ make web
 
 ## Change Log
 
+* v0.4.1: Python 3 compatibility; data persistence; add seq. numbers in Kinesis events; limit Elasticsearch memory
 * v0.4.0: Execute Lambda functions in Docker containers; CORS headers for S3
 * v0.3.11: Add Route53, SES, CloudFormation; DynamoDB fault injection; UI tweaks; refactor config
 * v0.3.10: Add initial support for S3 bucket notifications; fix subprocess32 installation

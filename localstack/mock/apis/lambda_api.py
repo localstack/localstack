@@ -428,7 +428,6 @@ def get_function_code(function):
     arn = func_arn(function)
     lambda_cwd = lambda_arn_to_cwd[arn]
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
-    response_bytes = None
     return Response(load_file(tmp_file, mode="rb"),
             mimetype='application/zip',
             headers={'Content-Disposition': 'attachment; filename=lambda_archive.zip'})
