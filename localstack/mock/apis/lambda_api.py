@@ -100,6 +100,25 @@ def add_event_source(function_name, source_arn):
     return mapping
 
 
+def update_event_source(uuid_value, function_name, enabled, batch_size):
+    print('updating event_source for function:  %s', function_name)
+    for m in event_source_mappings:
+        if uuid_value == m['UUID']:
+            if function_name:
+                m['FunctionArn'] = func_arn(function_name)
+            m['BatchSize'] = batch_size
+            m['State'] = enabled and 'Enabled' or 'Disabled'
+            m['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
+    return m
+
+
+def delete_event_source(uuid_value):
+    for i, m in enumerate(event_source_mappings):
+        if uuid_value == m['uuid']:
+            return event_source_mappings.pop(i)
+    return {}
+
+
 def use_docker():
     global DO_USE_DOCKER
     if DO_USE_DOCKER is None:
@@ -177,8 +196,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             event_string = json.dumps(event).replace("'", "\\'")
             result = run(cmd, env_vars={'AWS_LAMBDA_EVENT_BODY': event_string})
         else:
-            function_code = func.func_code if 'func_code' in func.__dict__ else func.__code__
-            if function_code.co_argcount == 2:
+            if func.func_code.co_argcount == 2:
                 result = func(event, context)
             else:
                 raise Exception('Expected handler function with 2 parameters, found %s' % func.func_code.co_argcount)
@@ -186,7 +204,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
-        print("ERROR executing Lambda function: %s" % traceback.format_exc())
+        print("ERROR executing Lambda function: %s" % traceback.format_exc(e))
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -321,14 +339,9 @@ def create_function():
               in: body
     """
     try:
-        data = json.loads(to_str(request.data))
+        data = json.loads(request.data)
         lambda_name = data['FunctionName']
         arn = func_arn(lambda_name)
-        if arn in lambda_arn_to_handler:
-            result = {'Type': 'User', 'message': 'Function already exist: %s' % lambda_name}
-            headers = {'x-amzn-errortype': 'ResourceConflictException'}
-            response = make_response((jsonify(result), 409, headers))
-            return response
         lambda_arn_to_handler[arn] = data['Handler']
         lambda_arn_to_runtime[arn] = data['Runtime']
         code = data['Code']
@@ -393,8 +406,15 @@ def delete_function(function):
             - name: 'request'
               in: body
     """
+    if request.data:
+        data = json.loads(request.data)
     arn = func_arn(function)
-    lambda_arn_to_function.pop(arn)
+    try:
+        lambda_arn_to_function.pop(arn)
+    except KeyError:
+        print('Function Cannot be Found')
+        return jsonify({'Error': 'Function not Found'})
+
     lambda_arn_to_cwd.pop(arn)
     lambda_arn_to_handler.pop(arn)
     i = 0
@@ -417,7 +437,7 @@ def update_function_code(function):
             - name: 'request'
               in: body
     """
-    data = json.loads(to_str(request.data))
+    data = json.loads(request.data)
     set_function_code(data, function)
     result = {}
     return jsonify(result)
@@ -433,7 +453,7 @@ def get_function_code(function):
     arn = func_arn(function)
     lambda_cwd = lambda_arn_to_cwd[arn]
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
-    return Response(load_file(tmp_file, mode="rb"),
+    return Response(load_file(tmp_file),
             mimetype='application/zip',
             headers={'Content-Disposition': 'attachment; filename=lambda_archive.zip'})
 
@@ -447,7 +467,7 @@ def update_function_configuration(function):
             - name: 'request'
               in: body
     """
-    data = json.loads(to_str(request.data))
+    data = json.loads(request.data)
     arn = func_arn(function)
     if data.get('Handler'):
         lambda_arn_to_handler[arn] = data['Handler']
@@ -468,7 +488,7 @@ def invoke_function(function):
     """
     data = {}
     try:
-        data = json.loads(to_str(request.data))
+        data = json.loads(request.data)
     except Exception as e:
         pass
     arn = func_arn(function)
@@ -486,9 +506,23 @@ def list_event_source_mappings():
     """ List event source mappings
         ---
         operationId: 'listEventSourceMappings'
+        parameters:
+            - name: 'request'
     """
+    # needs to check request body first
+
+    event_source_arn = request.args.get('EventSourceArn')
+    function_name = request.args.get('FunctionName')
+
+    mappings = event_source_mappings
+    if event_source_arn:
+        mappings = [m for m in mappings if event_source_arn == m['EventSourceArn']]
+    if function_name:
+        function_arn = func_arn(function_name)
+        mappings = [m for m in mappings if function_arn == m['FunctionArn']]
+
     response = {
-        'EventSourceMappings': event_source_mappings
+        'EventSourceMappings': mappings
     }
     return jsonify(response)
 
@@ -502,8 +536,45 @@ def create_event_source_mapping():
             - name: 'request'
               in: body
     """
-    data = json.loads(to_str(request.data))
+    data = json.loads(request.data)
     mapping = add_event_source(data['FunctionName'], data['EventSourceArn'])
+    return jsonify(mapping)
+
+
+@app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['PUT'])
+def update_event_source_mapping(mapping_uuid):
+    """ Create new event source mapping
+        ---
+        operationId: 'updateEventSourceMapping'
+        parameters:
+            - name: 'request'
+              in: body
+    """
+    data = json.loads(request.data)
+    # uuid = data.get('UUID')
+    if not mapping_uuid:
+        return jsonify({})
+    function_name = data.get('FunctionName') or ''
+    enabled = data.get('Enabled') or True
+    batch_size = data.get('BatchSize') or 100
+    mapping = update_event_source(mapping_uuid, function_name, enabled, batch_size)
+    return jsonify(mapping)
+
+
+@app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['DELETE'])
+def delete_event_source_mapping(mapping_uuid):
+    """ Create new event source mapping
+        ---
+        operationId: 'deleteEventSourceMapping'
+        parameters:
+            - name: 'request'
+              in: body
+    """
+    # uuid = data.get('UUID')
+    if not mapping_uuid:
+        return jsonify({})
+
+    mapping = delete_event_source(mapping_uuid)
     return jsonify(mapping)
 
 
@@ -518,3 +589,4 @@ if __name__ == '__main__':
     port = DEFAULT_PORT_LAMBDA
     print("Starting server on port %s" % port)
     serve(port)
+
