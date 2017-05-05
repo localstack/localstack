@@ -413,7 +413,13 @@ def delete_function(function):
               in: body
     """
     arn = func_arn(function)
-    lambda_arn_to_function.pop(arn)
+    try:
+        lambda_arn_to_function.pop(arn)
+    except KeyError:
+        result = {'Type': 'User', 'message': 'Function does not exist: %s' % function}
+        headers = {'x-amzn-errortype': 'ResourceNotFoundException'}
+        response = make_response((jsonify(result), 404, headers))
+        return response
     lambda_arn_to_cwd.pop(arn)
     lambda_arn_to_handler.pop(arn)
     i = 0
