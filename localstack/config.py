@@ -15,18 +15,18 @@ HOSTNAME = os.environ.get('HOSTNAME') or LOCALHOST
 # whether to use Lambda functions in a Docker container
 LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR') or 'docker'
 
-# temporary folder
+# folder for temporary files and data
 TMP_FOLDER = '/tmp/localstack'
 
 # directory for persisting data
-DATA_DIR = os.environ.get('DATA_DIR') or ('%s/data' % TMP_FOLDER)
+DATA_DIR = os.environ.get('DATA_DIR')
 
 # default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
 DEFAULT_ENCODING = 'utf-8'
 
 # create folders
 for folder in [DATA_DIR, TMP_FOLDER]:
-    if not os.path.exists(folder):
+    if folder and not os.path.exists(folder):
         os.makedirs(folder)
 
 
