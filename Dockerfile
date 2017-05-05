@@ -44,6 +44,7 @@ RUN make install && \
     rm -rf /usr/lib/node_modules && apk del nodejs && apk add --update nodejs && npm install npm@latest -g
 
 # add files required to run "make init"
+ADD localstack/package.json localstack/package.json
 ADD localstack/mock/__init__.py localstack/mock/install.py localstack/mock/
 
 # initialize installation (downloads remaining dependencies)

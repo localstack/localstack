@@ -6,6 +6,7 @@ import os
 from io import BytesIO
 from six.moves import cStringIO as StringIO
 from docopt import docopt
+from nose.tools import assert_raises
 from localstack.utils import testutil
 from localstack.utils.common import *
 from localstack.config import HOSTNAME, PORT_SQS
@@ -150,6 +151,9 @@ def test_kinesis_lambda_ddb_streams():
     zip_file = testutil.create_lambda_archive(TEST_LAMBDA_PYTHON, get_content=True,
         libs=['localstack'], runtime=LAMBDA_RUNTIME_PYTHON27)
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
+        zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
+    # make sure we cannot create Lambda with same name twice
+    assert_raises(Exception, testutil.create_lambda_function, func_name=TEST_LAMBDA_NAME_DDB,
         zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
 
     # deploy test lambda (Python) connected to Kinesis Stream
