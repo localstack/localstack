@@ -164,11 +164,15 @@ def dump_thread_info():
 
 
 def now_utc():
-    return time.mktime(datetime.utcnow().timetuple())
+    return mktime(datetime.utcnow())
 
 
 def now():
-    return time.mktime(datetime.now().timetuple())
+    return mktime(datetime.now())
+
+
+def mktime(timestamp):
+    return time.mktime(timestamp.timetuple())
 
 
 def mkdir(folder):

@@ -324,6 +324,11 @@ def create_function():
         data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
         arn = func_arn(lambda_name)
+        if arn in lambda_arn_to_handler:
+            result = {'Type': 'User', 'message': 'Function already exist: %s' % lambda_name}
+            headers = {'x-amzn-errortype': 'ResourceConflictException'}
+            response = make_response((jsonify(result), 409, headers))
+            return response
         lambda_arn_to_handler[arn] = data['Handler']
         lambda_arn_to_runtime[arn] = data['Runtime']
         code = data['Code']

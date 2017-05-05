@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import base64
+import datetime
 from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
 from localstack.utils.aws import aws_stack
@@ -17,6 +18,9 @@ MOCK_OBJ = False
 TMP_DOWNLOAD_FILE_PATTERN = '/tmp/tmpfile.*'
 TMP_DOWNLOAD_CACHE_MAX_AGE = 30 * 60
 last_cache_cleanup_time = {'time': 0}
+
+# time delta for recent Kinesis events
+KINESIS_RECENT_EVENTS_TIME_DIFF_SECS = 60
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -347,22 +351,13 @@ def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
 
 
 def get_kinesis_events(stream_name, shard_id, max_results=10, env=None):
-    out = cmd_kinesis(
-        'get-shard-iterator --stream-name %s --shard-id %s --shard-iterator-type LATEST' %
-        (stream_name, shard_id), env, cache_duration_secs=0)
-    out = json.loads(out)
-    shard_iter = out['ShardIterator']
-    data = read_kinesis_iterator(shard_iter, max_results, env=env)
-    result = data['Records']
-    if len(result) <= 0:
-        next_iter = data['NextShardIterator']
-        data = read_kinesis_iterator(next_iter, max_results, env=env)
-        result = data['Records']
-    for r in result:
-        r['Data'] = base64.b64decode(r['Data'])
-        r['Data'] = remove_non_ascii(r['Data'])
+    timestamp = now() - KINESIS_RECENT_EVENTS_TIME_DIFF_SECS
+    env = aws_stack.get_environment(env)
+    records = aws_stack.kinesis_get_recent_records(stream_name, shard_id, count=max_results, env=env)
+    for r in records:
+        r['ApproximateArrivalTimestamp'] = mktime(r['ApproximateArrivalTimestamp'])
     result = {
-        'events': result
+        'events': records
     }
     return result
 
