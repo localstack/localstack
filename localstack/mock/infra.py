@@ -12,7 +12,6 @@ import json
 import boto3
 import subprocess
 import six
-
 from localstack import constants
 from localstack.config import *
 from localstack.utils.aws import aws_stack
@@ -21,7 +20,7 @@ from localstack.utils.common import *
 from localstack.mock import generic_proxy, install
 from localstack.mock.install import ROOT_PATH
 from localstack.mock.apis import firehose_api, lambda_api, dynamodbstreams_api, es_api
-from localstack.mock.proxy import (apigateway_listener,
+from localstack.mock.proxy import (apigateway_listener, cloudformation_listener,
     dynamodb_listener, kinesis_listener, sns_listener, s3_listener)
 from localstack.mock.generic_proxy import GenericProxy
 
@@ -114,6 +113,11 @@ def start_sns(port=PORT_SNS, async=False, update_listener=None):
         backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
 
 
+def start_cloudformation(port=PORT_CLOUDFORMATION, async=False, update_listener=None):
+    return start_moto_server('cloudformation', port, name='CloudFormation', async=async,
+        backend_port=DEFAULT_PORT_CLOUDFORMATION_BACKEND, update_listener=update_listener)
+
+
 def start_redshift(port=PORT_REDSHIFT, async=False):
     return start_moto_server('redshift', port, name='Redshift', async=async)
 
@@ -128,10 +132,6 @@ def start_route53(port=PORT_ROUTE53, async=False):
 
 def start_ses(port=PORT_SES, async=False):
     return start_moto_server('ses', port, name='SES', async=async)
-
-
-def start_cloudformation(port=PORT_CLOUDFORMATION, async=False):
-    return start_moto_server('cloudformation', port, name='CloudFormation', async=async)
 
 
 def start_elasticsearch_service(port=PORT_ES, async=False):
@@ -334,23 +334,10 @@ def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[
 # -------------
 
 
-def start_infra(async=False,
-        dynamodb_update_listener=None, kinesis_update_listener=None,
-        apigateway_update_listener=None, sns_update_listener=None,
-        s3_update_listener=None, apis=None):
+def start_infra(async=False, apis=None):
     try:
         if not apis:
             apis = list(SERVICE_PORTS.keys())
-        if not dynamodb_update_listener:
-            dynamodb_update_listener = dynamodb_listener.update_dynamodb
-        if not kinesis_update_listener:
-            kinesis_update_listener = kinesis_listener.update_kinesis
-        if not apigateway_update_listener:
-            apigateway_update_listener = apigateway_listener.update_apigateway
-        if not sns_update_listener:
-            sns_update_listener = sns_listener.update_sns
-        if not s3_update_listener:
-            s3_update_listener = s3_listener.update_s3
         # set environment
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
@@ -369,21 +356,21 @@ def start_infra(async=False,
             aws_stack.delete_all_elasticsearch_data()
             # run actual Elasticsearch endpoint
             thread = start_elasticsearch(async=True)
-            sleep_time = max(sleep_time, 6)
+            sleep_time = max(sleep_time, 8)
         if 'es' in apis:
             # run Elasticsearch Service (ES) endpoint
             thread = start_elasticsearch_service(async=True)
         if 's3' in apis:
-            thread = start_s3(async=True, update_listener=s3_update_listener)
+            thread = start_s3(async=True, update_listener=s3_listener.update_s3)
             sleep_time = max(sleep_time, 3)
         if 'sns' in apis:
-            thread = start_sns(async=True, update_listener=sns_update_listener)
+            thread = start_sns(async=True, update_listener=sns_listener.update_sns)
         if 'sqs' in apis:
             thread = start_sqs(async=True)
         if 'apigateway' in apis:
-            thread = start_apigateway(async=True, update_listener=apigateway_update_listener)
+            thread = start_apigateway(async=True, update_listener=apigateway_listener.update_apigateway)
         if 'dynamodb' in apis:
-            thread = start_dynamodb(async=True, update_listener=dynamodb_update_listener)
+            thread = start_dynamodb(async=True, update_listener=dynamodb_listener.update_dynamodb)
         if 'dynamodbstreams' in apis:
             thread = start_dynamodbstreams(async=True)
         if 'firehose' in apis:
@@ -391,7 +378,7 @@ def start_infra(async=False,
         if 'lambda' in apis:
             thread = start_lambda(async=True)
         if 'kinesis' in apis:
-            thread = start_kinesis(async=True, update_listener=kinesis_update_listener)
+            thread = start_kinesis(async=True, update_listener=kinesis_listener.update_kinesis)
         if 'redshift' in apis:
             thread = start_redshift(async=True)
         if 'route53' in apis:
@@ -399,7 +386,7 @@ def start_infra(async=False,
         if 'ses' in apis:
             thread = start_ses(async=True)
         if 'cloudformation' in apis:
-            thread = start_cloudformation(async=True)
+            thread = start_cloudformation(async=True, update_listener=cloudformation_listener.update_cloudformation)
         time.sleep(sleep_time)
         # check that all infra components are up and running
         check_infra(apis=apis)

@@ -146,15 +146,16 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
 
 
 def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
-    error = None
+    raise_error = None
     if sleep_before > 0:
         time.sleep(sleep_before)
     for i in range(0, retries + 1):
         try:
             return function(**kwargs)
         except Exception as error:
+            raise_error = error
             time.sleep(sleep)
-    raise error
+    raise raise_error
 
 
 def dump_thread_info():

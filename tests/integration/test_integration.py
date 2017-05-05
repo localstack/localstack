@@ -41,7 +41,6 @@ def test_firehose_s3():
 
     env = ENV_DEV
     s3_resource = aws_stack.connect_to_resource('s3', env=env)
-    s3_client = aws_stack.connect_to_service('s3', env=env)
     firehose = aws_stack.connect_to_service('firehose', env=env)
 
     s3_prefix = '/testdata'

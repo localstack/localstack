@@ -11,4 +11,3 @@ def teardown_package():
     print("Shutdown")
     cleanup(files=True)
     infra.stop_infra()
-    print("Terminating")

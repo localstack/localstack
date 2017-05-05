@@ -63,6 +63,10 @@ def cmd_firehose(cmd_params, env):
     return run_aws_cmd('firehose', cmd_params, env)
 
 
+def cmd_sqs(cmd_params, env):
+    return run_aws_cmd('sqs', cmd_params, env)
+
+
 def cmd_lambda(cmd_params, env, cache_duration_secs=None):
     return run_aws_cmd('lambda', cmd_params, env,
         cache_duration_secs=cache_duration_secs)
@@ -111,6 +115,20 @@ def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
         shard.start_key = s['HashKeyRange']['StartingHashKey']
         shard.end_key = s['HashKeyRange']['EndingHashKey']
         result.append(shard)
+    return result
+
+
+def get_sqs_queues(filter='.*', pool={}, env=None):
+    out = cmd_sqs('list-queues', env)
+    queues = json.loads(out)['QueueUrls']
+    result = []
+    for q in queues:
+        name = q.split('/')[-1]
+        account = q.split('/')[-2]
+        arn = 'arn:aws:sqs:%s:%s:%s' % (DEFAULT_REGION, account, name)
+        if re.match(filter, name):
+            queue = SqsQueue(arn)
+            result.append(queue)
     return result
 
 
@@ -384,6 +402,7 @@ def get_graph(name_filter='.*', env=None):
         streams = get_kinesis_streams(name_filter, pool=pool, env=env)
         firehoses = get_firehose_streams(name_filter, pool=pool, env=env)
         lambdas = get_lambda_functions(name_filter, details=True, pool=pool, env=env)
+        queues = get_sqs_queues(name_filter, pool=pool, env=env)
 
         for es in domains:
             uid = short_uid()
@@ -412,6 +431,10 @@ def get_graph(name_filter='.*', env=None):
             result['nodes'].append({'id': uid, 'arn': f.id, 'name': f.name(), 'type': 'firehose'})
             for d in f.destinations:
                 result['edges'].append({'source': uid, 'target': node_ids[d.id]})
+        for q in queues:
+            uid = short_uid()
+            node_ids[q.id] = uid
+            result['nodes'].append({'id': uid, 'arn': q.id, 'name': q.name(), 'type': 'sqs'})
         for l in lambdas:
             uid = short_uid()
             node_ids[l.id] = uid
