@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Simple CloudFormation Test Template
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: cf-test-bucket-1
+  SQSQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: cf-test-queue-1

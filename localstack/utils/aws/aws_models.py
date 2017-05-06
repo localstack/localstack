@@ -209,6 +209,14 @@ class ElasticSearch(Component):
         return self.id.split(':domain/')[-1]
 
 
+class SqsQueue(Component):
+    def __init__(self, id):
+        super(SqsQueue, self).__init__(id)
+
+    def name(self):
+        return self.id.split(':')[-1]
+
+
 class S3Bucket(Component):
     def __init__(self, id):
         super(S3Bucket, self).__init__(id)
