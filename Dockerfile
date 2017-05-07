@@ -32,11 +32,9 @@ RUN make install-web
 
 # add files required to run "make install"
 RUN mkdir -p localstack/utils/kinesis/ && touch localstack/__init__.py localstack/utils/__init__.py localstack/utils/kinesis/__init__.py
+ADD localstack/constants.py localstack/config.py localstack/
+ADD localstack/utils/compat.py localstack/utils/common.py localstack/utils/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
-ADD localstack/utils/compat.py localstack/utils/compat.py
-ADD localstack/utils/common.py localstack/utils/common.py
-ADD localstack/constants.py localstack/constants.py
-ADD localstack/config.py localstack/config.py
 
 # install dependencies
 # TODO: temporary change to fix error "Cannot find module 'semver'" when running npm
@@ -52,6 +50,7 @@ RUN make init
 
 # add rest of the code
 ADD localstack/ localstack/
+ADD bin/localstack bin/localstack
 
 # fix some permissions and create local user
 RUN mkdir -p /.npm && \
@@ -64,12 +63,6 @@ RUN mkdir -p /.npm && \
     chmod -R 777 localstack/infra/elasticsearch/logs && \
     chmod -R 777 /tmp/localstack && \
     adduser -D localstack
-
-# install supervisor daemon & copy config file
-ADD supervisord.conf /etc/supervisord.conf
-
-# add files for web dashboard
-ADD bin/localstack bin/localstack
 
 # expose default environment (required for aws-cli to work)
 ENV AWS_ACCESS_KEY_ID=foobar \
@@ -84,6 +77,9 @@ RUN make test
 
 # expose service & web dashboard ports
 EXPOSE 4567-4581 8080
+
+# install supervisor daemon & copy config file
+ADD supervisord.conf /etc/supervisord.conf
 
 # define command at startup
 ENTRYPOINT ["/usr/bin/supervisord"]

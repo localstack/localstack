@@ -426,13 +426,17 @@ def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
 def kinesis_get_recent_records(stream_name, shard_id=None, count=10, env=None):
     kinesis = connect_to_service('kinesis', env=env)
     result = []
-    records = True
     response = kinesis.get_shard_iterator(StreamName=stream_name, ShardId=shard_id,
         ShardIteratorType='TRIM_HORIZON')
     shard_iterator = response['ShardIterator']
     while shard_iterator:
         records_response = kinesis.get_records(ShardIterator=shard_iterator)
         records = records_response['Records']
+        for record in records:
+            try:
+                record['Data'] = to_str(record['Data'])
+            except Exception as e:
+                pass
         result.extend(records)
         shard_iterator = records_response['NextShardIterator'] if records else False
         while len(result) > count:

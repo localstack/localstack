@@ -15,7 +15,7 @@ import six
 from localstack import constants
 from localstack.config import *
 from localstack.utils.aws import aws_stack
-from localstack.utils import common
+from localstack.utils import common, persistence
 from localstack.utils.common import *
 from localstack.mock import generic_proxy, install
 from localstack.mock.install import ROOT_PATH
@@ -153,6 +153,10 @@ def start_lambda(port=PORT_LAMBDA, async=False):
 # ---------------
 # HELPER METHODS
 # ---------------
+
+def restore_persisted_data(apis):
+    for api in apis:
+        persistence.restore_persisted_data(api)
 
 
 def register_signal_handlers():
@@ -390,6 +394,8 @@ def start_infra(async=False, apis=None):
         time.sleep(sleep_time)
         # check that all infra components are up and running
         check_infra(apis=apis)
+        # restore persisted data
+        restore_persisted_data(apis=apis)
         print('Ready.')
         sys.stdout.flush()
         if not async and thread:
