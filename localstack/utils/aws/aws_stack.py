@@ -4,14 +4,12 @@ import json
 import base64
 import logging
 import re
+from six import iteritems
 from threading import Timer
 from localstack import config
 from localstack.constants import *
 from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
-
-# file to override environment information (used mainly for testing Lambdas locally)
-ENVIRONMENT_FILE = '.env.properties'
 
 # AWS environment variable names
 ENV_ACCESS_KEY = 'AWS_ACCESS_KEY_ID'
@@ -63,7 +61,7 @@ class Environment(object):
 
     @staticmethod
     def from_json(j):
-        if not isinstance(obj, dict):
+        if not isinstance(j, dict):
             j = j.to_dict()
         result = Environment()
         result.apply_json(j)
@@ -76,17 +74,6 @@ class Environment(object):
 PREDEFINED_ENVIRONMENTS = {
     ENV_DEV: Environment(region=REGION_LOCAL, prefix=ENV_DEV)
 }
-
-
-def create_environment_file(env, fallback_to_environ=True):
-    try:
-        save_file(ENVIRONMENT_FILE, env)
-    except Exception as e:
-        # LOGGER.warning('Unable to create file "%s" in CWD "%s" (setting $ENV instead: %s): %s' %
-        #    (ENVIRONMENT_FILE, os.getcwd(), fallback_to_environ, e))
-        # in Lambda environments on AWS we cannot create files, hence simply set $ENV here
-        if fallback_to_environ:
-            os.environ['ENV'] = env
 
 
 def get_environment(env=None, region_name=None):
@@ -102,17 +89,6 @@ def get_environment(env=None, region_name=None):
 
     Additionally, parameter `region_name` can be used to override DEFAULT_REGION.
     """
-    if os.path.isfile(ENVIRONMENT_FILE):
-        try:
-            env = load_file(ENVIRONMENT_FILE)
-            env = env.strip() if env else env
-        except Exception as e:
-            # We can safely swallow this exception. In some rare cases, os.environ['ENV'] may
-            # be changed by a parallel thread executing a Lambda code. This can only happen when
-            # running in the local dev/test environment, hence is not critical for prod usage.
-            # If reading the file was unsuccessful, we fall back to ENV_DEV and continue below.
-            pass
-
     if not env:
         if 'ENV' in os.environ:
             env = os.environ['ENV']
@@ -333,6 +309,89 @@ def get_apigateway_integration(api_id, method, path, env=None):
     return integration
 
 
+def create_api_gateway(name, description=None, resources=None, stage_name=None,
+        enabled_api_keys=[], env=None, usage_plan_name=None):
+    client = connect_to_service('apigateway', env=env)
+    if not resources:
+        resources = []
+    if not stage_name:
+        stage_name = 'testing'
+    if not usage_plan_name:
+        usage_plan_name = 'Basic Usage'
+    if not description:
+        description = 'Test description for API "%s"' % name
+
+    LOGGER.info('Creating API resources under API Gateway "%s".' % name)
+    api = client.create_rest_api(name=name, description=description)
+    # list resources
+    api_id = api['id']
+    resources_list = client.get_resources(restApiId=api_id)
+    root_res_id = resources_list['items'][0]['id']
+    # add API resources and methods
+    for path, methods in iteritems(resources):
+        if '/' in path:
+            raise Exception('Currently only works for root-level resources.')
+        api_resource = client.create_resource(restApiId=api_id, parentId=root_res_id, pathPart=path)
+        # add methods to the API resource
+        for method in methods:
+            api_method = client.put_method(
+                restApiId=api_id,
+                resourceId=api_resource['id'],
+                httpMethod=method['httpMethod'],
+                authorizationType=method.get('authorizationType') or 'NONE',
+                apiKeyRequired=method.get('apiKeyRequired') or False
+            )
+            # create integrations for this API resource/method
+            integrations = method['integrations']
+            create_api_gateway_integrations(api_id, api_resource['id'], method, integrations, env=env)
+    # deploy the API gateway
+    api_deployed = client.create_deployment(restApiId=api_id, stageName=stage_name)
+    return api
+
+
+def create_api_gateway_integrations(api_id, resource_id, method, integrations=[], env=None):
+    client = connect_to_service('apigateway', env=env)
+    for integration in integrations:
+        req_templates = integration.get('requestTemplates') or {}
+        res_templates = integration.get('responseTemplates') or {}
+        success_code = integration.get('successCode') or '200'
+        client_error_code = integration.get('clientErrorCode') or '400'
+        server_error_code = integration.get('serverErrorCode') or '500'
+        # create integration
+        response = client.put_integration(
+            restApiId=api_id,
+            resourceId=resource_id,
+            httpMethod=method['httpMethod'],
+            integrationHttpMethod=method.get('integrationHttpMethod') or method['httpMethod'],
+            type=integration['type'],
+            uri=integration['uri'],
+            requestTemplates=req_templates
+        )
+        response_configs = [
+            {'pattern': '^2.*', 'code': success_code, 'res_templates': res_templates},
+            {'pattern': '^4.*', 'code': client_error_code, 'res_templates': {}},
+            {'pattern': '^5.*', 'code': server_error_code, 'res_templates': {}}
+        ]
+        # create response configs
+        for response_config in response_configs:
+            # create integration response
+            response = client.put_integration_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=method['httpMethod'],
+                statusCode=response_config['code'],
+                responseTemplates=response_config['res_templates'],
+                selectionPattern=response_config['pattern']
+            )
+            # create method response
+            response = client.put_method_response(
+                restApiId=api_id,
+                resourceId=resource_id,
+                httpMethod=method['httpMethod'],
+                statusCode=response_config['code']
+            )
+
+
 def get_elasticsearch_endpoint(domain=None, region_name=None):
     env = get_environment(region_name=region_name)
     if env.region == REGION_LOCAL:
@@ -375,41 +434,6 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
     return Elasticsearch(hosts=[endpoint], verify_certs=verify_certs, use_ssl=use_ssl)
 
 
-def elasticsearch_get_indices(endpoint=None, domain=None, env=None):
-    es = connect_elasticsearch(endpoint=endpoint, env=env, domain=domain)
-    indices = es.cat.indices()
-    result = []
-    for s in re.split(r'\s+', indices):
-        if s:
-            result.append(s)
-    return result
-
-
-def elasticsearch_delete_index(index, endpoint=None, env=None, ignore_codes=[400, 404]):
-    es = connect_elasticsearch(endpoint=endpoint, env=env)
-    return es.indices.delete(index=index, ignore=ignore_codes)
-
-
-def delete_all_elasticsearch_indices(endpoint=None, env=None, domain=None):
-    """
-    This function drops ALL indexes in Elasticsearch. Use with caution!
-    """
-    env = get_environment(env)
-    if env.region != REGION_LOCAL:
-        raise Exception('Refusing to delete ALL Elasticsearch indices outside of local dev environment.')
-    indices = elasticsearch_get_indices(endpoint=endpoint, env=env, domain=domain)
-    for index in indices:
-        elasticsearch_delete_index(index, endpoint=endpoint, env=env)
-
-
-def delete_all_elasticsearch_data():
-    """
-    This function drops ALL data in the local Elasticsearch data folder. Use with caution!
-    """
-    data_dir = os.path.join(LOCALSTACK_ROOT_FOLDER, 'infra', 'elasticsearch', 'data', 'elasticsearch', 'nodes')
-    run('rm -rf "%s"' % data_dir)
-
-
 def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     env = get_environment(env)
     # stream
@@ -423,7 +447,7 @@ def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     return stream
 
 
-def kinesis_get_recent_records(stream_name, shard_id=None, count=10, env=None):
+def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
     kinesis = connect_to_service('kinesis', env=env)
     result = []
     response = kinesis.get_shard_iterator(StreamName=stream_name, ShardId=shard_id,
@@ -442,50 +466,3 @@ def kinesis_get_recent_records(stream_name, shard_id=None, count=10, env=None):
         while len(result) > count:
             result.pop(0)
     return result
-
-
-# When we assume IAM role we always change credentials
-# 1. We need to save session with initial micros credentials to INITIAL_BOTO3_SESSION
-# 2. We use INITIAL_BOTO3_SESSION to assume role
-# 3. Result of assume role is new temporary aws credentials
-# 4. We use new temporary aws credentials to create new session
-# 5. We save new session to CUSTOM_BOTO3_SESSION if want to and we return it
-# 6. All aws calls for platform we make using CUSTOM_BOTO3_SESSION
-# 7. Function assume_role should be called each 45 min to renew assumed credentials
-def assume_role(role_arn, update_global_session=True):
-    global CUSTOM_BOTO3_SESSION
-    global INITIAL_BOTO3_SESSION
-    # save initial session with micros credentials to use for assuming role
-    if not INITIAL_BOTO3_SESSION:
-        INITIAL_BOTO3_SESSION = boto3.session.Session()
-    client = INITIAL_BOTO3_SESSION.client('sts')
-    try:
-        # generate a random role session name
-        role_session_name = 's-' + str(short_uid())
-        # make API call to assume role
-        response = client.assume_role(RoleArn=role_arn, RoleSessionName=role_session_name)
-        # save session with new credentials to use for all aws calls
-        session = boto3.session.Session(aws_access_key_id=response['Credentials']['AccessKeyId'],
-                                     aws_secret_access_key=response['Credentials']['SecretAccessKey'],
-                                     aws_session_token=response['Credentials']['SessionToken'])
-
-        # this flag if set to False will not break old existing functionality
-        if update_global_session:
-            CUSTOM_BOTO3_SESSION = session
-
-        return session
-
-    except Exception as e:
-        LOGGER.error(e)
-        raise e
-
-
-# Using a timer to loop through the assume role function forever......
-def loop_assume_role(role_arn, timeout=DEFAULT_TIMER_LOOP_SECONDS):
-    # Do an initial assume role
-    assume_role(role_arn, True)
-
-    # Create timer to loop through function
-    t = Timer(timeout, loop_assume_role, args=[role_arn, timeout])
-    t.daemon = True
-    t.start()

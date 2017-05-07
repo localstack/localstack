@@ -159,6 +159,12 @@ def restore_persisted_data(apis):
         persistence.restore_persisted_data(api)
 
 
+def delete_all_elasticsearch_data():
+    """ This function drops ALL data in the local Elasticsearch data folder. Use with caution! """
+    data_dir = os.path.join(LOCALSTACK_ROOT_FOLDER, 'infra', 'elasticsearch', 'data', 'elasticsearch', 'nodes')
+    run('rm -rf "%s"' % data_dir)
+
+
 def register_signal_handlers():
     global SIGNAL_HANDLERS_SETUP
     if SIGNAL_HANDLERS_SETUP:
@@ -357,7 +363,7 @@ def start_infra(async=False, apis=None):
         thread = None
         if 'elasticsearch' in apis or 'es' in apis:
             # delete Elasticsearch data that may be cached locally from a previous test run
-            aws_stack.delete_all_elasticsearch_data()
+            delete_all_elasticsearch_data()
             # run actual Elasticsearch endpoint
             thread = start_elasticsearch(async=True)
             sleep_time = max(sleep_time, 8)

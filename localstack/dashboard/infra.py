@@ -370,7 +370,7 @@ def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
 def get_kinesis_events(stream_name, shard_id, max_results=10, env=None):
     timestamp = now() - KINESIS_RECENT_EVENTS_TIME_DIFF_SECS
     env = aws_stack.get_environment(env)
-    records = aws_stack.kinesis_get_recent_records(stream_name, shard_id, count=max_results, env=env)
+    records = aws_stack.kinesis_get_latest_records(stream_name, shard_id, count=max_results, env=env)
     for r in records:
         r['ApproximateArrivalTimestamp'] = mktime(r['ApproximateArrivalTimestamp'])
     result = {
