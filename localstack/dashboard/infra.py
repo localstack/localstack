@@ -119,9 +119,11 @@ def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
 
 
 def get_sqs_queues(filter='.*', pool={}, env=None):
-    out = cmd_sqs('list-queues', env)
-    queues = json.loads(out)['QueueUrls']
     result = []
+    out = cmd_sqs('list-queues', env)
+    if not out.strip():
+        return result
+    queues = json.loads(out)['QueueUrls']
     for q in queues:
         name = q.split('/')[-1]
         account = q.split('/')[-2]
@@ -235,17 +237,14 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     out = json.loads(out)
     loc = out['Code']['Location']
     hash = md5(loc)
-    # print("Location %s %s" % (hash, func_name))
     folder = TMP_DOWNLOAD_FILE_PATTERN.replace('*', '%s') % hash
     filename = 'archive.zip'
     archive = '%s/%s' % (folder, filename)
     try:
         run('mkdir -p %s' % folder)
         if not os.path.isfile(archive):
-            # print("Downloading %s" % archive)
             run("wget -O %s '%s'" % (archive, loc))
         if len(os.listdir(folder)) <= 1:
-            # print("Unzipping %s/%s" % (folder, filename))
             run("cd %s && unzip -o %s" % (folder, filename))
     except Exception as e:
         print("WARN: %s" % e)
@@ -422,7 +421,7 @@ def get_graph(name_filter='.*', env=None):
             result['nodes'].append({'id': uid, 'arn': s.id, 'name': s.name(), 'type': 'kinesis'})
             for shard in s.shards:
                 uid1 = short_uid()
-                name = re.sub(r'shardId-0*', '', shard.id)
+                name = re.sub(r'shardId-0*', '', shard.id) or '0'
                 result['nodes'].append({'id': uid1, 'arn': shard.id, 'name': name,
                     'type': 'kinesis_shard', 'streamName': s.name(), 'parent': uid})
         for f in firehoses:
@@ -452,6 +451,5 @@ def get_graph(name_filter='.*', env=None):
                 src_uid = node_ids[b.id]
                 tgt_uid = node_ids[n.target.id]
                 result['edges'].append({'source': src_uid, 'target': tgt_uid})
-        # print json.dumps(result)
 
     return result

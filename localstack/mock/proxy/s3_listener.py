@@ -8,6 +8,7 @@ from six import iteritems
 from six.moves.urllib import parse as urlparse
 from requests.models import Response
 from localstack.constants import *
+from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import timestamp, TIMESTAMP_FORMAT_MILLIS
 
@@ -79,15 +80,27 @@ def send_notifications(method, bucket_name, object_path):
                 result = None
                 if config.get('Queue'):
                     sqs_client = aws_stack.connect_to_service('sqs')
-                    sqs_client.send_message(QueueUrl=config['Queue'], MessageBody=message)
+                    try:
+                        sqs_client.send_message(QueueUrl=config['Queue'], MessageBody=message)
+                    except Exception as e:
+                        LOGGER.warning('Unable to send notification for bucket "%s" to SQS queue "%s".' %
+                            (bucket_name, config['Queue']))
                 if config.get('Topic'):
                     sns_client = aws_stack.connect_to_service('sns')
-                    sns_client.publish(TopicArn=config['Topic'], Message=message)
+                    try:
+                        sns_client.publish(TopicArn=config['Topic'], Message=message)
+                    except Exception as e:
+                        LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s".' %
+                            (bucket_name, config['Topic']))
                 if config.get('CloudFunction'):
                     lambda_client = aws_stack.connect_to_service('lambda')
-                    lambda_client.invoke(FunctionName=config['CloudFunction'], Payload=message)
+                    try:
+                        lambda_client.invoke(FunctionName=config['CloudFunction'], Payload=message)
+                    except Exception as e:
+                        LOGGER.warning('Unable to send notification for S3 bucket "%s" to Lambda function "%s".' %
+                            (bucket_name, config['CloudFunction']))
                 if not filter(lambda x: config.get(x), ('Queue', 'Topic', 'CloudFunction')):
-                    LOGGER.warn('Neither of Queue/Topic/CloudFunction defined for S3 notification.')
+                    LOGGER.warning('Neither of Queue/Topic/CloudFunction defined for S3 notification.')
 
 
 def get_xml_text(node, name, ns=None, default=None):
@@ -147,7 +160,12 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
 
 
 def update_s3(method, path, data, headers, response=None, return_forward_info=False):
+
     if return_forward_info:
+
+        # persist this API call to disk
+        persistence.record('s3', method, path, data, headers)
+
         parsed = urlparse.urlparse(path)
         query = parsed.query
         path = parsed.path
@@ -172,6 +190,7 @@ def update_s3(method, path, data, headers, response=None, return_forward_info=Fa
             if method == 'DELETE':
                 return delete_cors(bucket)
         return True
+
     # get subscribers and send bucket notifications
     if method in ('PUT', 'DELETE') and '/' in path[1:]:
         parts = path[1:].split('/', 1)

@@ -62,7 +62,7 @@ def deploy_resource(resource):
     resource_type = get_resource_type(resource)
     func_details = RESOURCE_TO_FUNCTION.get(resource_type)
     if not func_details:
-        LOGGER.warn('Resource type not yet implemented: %s' % resource['Type'])
+        LOGGER.warning('Resource type not yet implemented: %s' % resource['Type'])
         return
     func_details = func_details[ACTION_CREATE]
     function = getattr(client, func_details['function'])
