@@ -193,8 +193,13 @@ def test_kinesis_lambda_ddb_streams():
         StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME
     )
 
+    # get latest records
+    latest = aws_stack.kinesis_get_latest_records(TEST_LAMBDA_SOURCE_STREAM_NAME,
+        shard_id='shardId-000000000000', count=10)
+    assert len(latest) == 10
+
     print("Waiting some time before finishing test.")
-    time.sleep(4)
+    time.sleep(2)
 
     num_events = num_events_ddb + num_events_kinesis
     print('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))

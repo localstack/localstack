@@ -58,3 +58,7 @@ for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     exec('TEST_%s_URL = "%s"' % (key.upper(), url))
     # expose HOST_*_URL variables as environment variables
     os.environ['TEST_%s_URL' % key.upper()] = url
+
+
+# set URL pattern of inbound API gateway
+INBOUND_GATEWAY_URL_PATTERN = '%s/restapis/{api_id}/{stage_name}/%s{path}' % (TEST_APIGATEWAY_URL, PATH_USER_REQUEST)
