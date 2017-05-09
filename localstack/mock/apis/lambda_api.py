@@ -100,6 +100,25 @@ def add_event_source(function_name, source_arn):
     return mapping
 
 
+def update_event_source(uuid_value, function_name, enabled, batch_size):
+    for m in event_source_mappings:
+        if uuid_value == m['UUID']:
+            if function_name:
+                m['FunctionArn'] = func_arn(function_name)
+            m['BatchSize'] = batch_size
+            m['State'] = enabled and 'Enabled' or 'Disabled'
+            m['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
+            return m
+    return {}
+
+
+def delete_event_source(uuid_value):
+    for i, m in enumerate(event_source_mappings):
+        if uuid_value == m['uuid']:
+            return event_source_mappings.pop(i)
+    return {}
+
+
 def use_docker():
     global DO_USE_DOCKER
     if DO_USE_DOCKER is None:
@@ -394,7 +413,12 @@ def delete_function(function):
               in: body
     """
     arn = func_arn(function)
-    lambda_arn_to_function.pop(arn)
+    try:
+        lambda_arn_to_function.pop(arn)
+    except KeyError:
+        result = {'Type': 'User', 'message': 'Function does not exist: %s' % function}
+        headers = {'x-amzn-errortype': 'ResourceNotFoundException'}
+        return make_response((jsonify(result), 404, headers))
     lambda_arn_to_cwd.pop(arn)
     lambda_arn_to_handler.pop(arn)
     i = 0
@@ -487,8 +511,18 @@ def list_event_source_mappings():
         ---
         operationId: 'listEventSourceMappings'
     """
+    event_source_arn = request.args.get('EventSourceArn')
+    function_name = request.args.get('FunctionName')
+
+    mappings = event_source_mappings
+    if event_source_arn:
+        mappings = [m for m in mappings if event_source_arn == m.get('EventSourceArn')]
+    if function_name:
+        function_arn = func_arn(function_name)
+        mappings = [m for m in mappings if function_arn == m.get('FunctionArn')]
+
     response = {
-        'EventSourceMappings': event_source_mappings
+        'EventSourceMappings': mappings
     }
     return jsonify(response)
 
@@ -504,6 +538,38 @@ def create_event_source_mapping():
     """
     data = json.loads(to_str(request.data))
     mapping = add_event_source(data['FunctionName'], data['EventSourceArn'])
+    return jsonify(mapping)
+
+
+@app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['PUT'])
+def update_event_source_mapping(mapping_uuid):
+    """ Update an existing event source mapping
+        ---
+        operationId: 'updateEventSourceMapping'
+        parameters:
+            - name: 'request'
+              in: body
+    """
+    data = json.loads(request.data)
+    if not mapping_uuid:
+        return jsonify({})
+    function_name = data.get('FunctionName') or ''
+    enabled = data.get('Enabled') or True
+    batch_size = data.get('BatchSize') or 100
+    mapping = update_event_source(mapping_uuid, function_name, enabled, batch_size)
+    return jsonify(mapping)
+
+
+@app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['DELETE'])
+def delete_event_source_mapping(mapping_uuid):
+    """ Delete an event source mapping
+        ---
+        operationId: 'deleteEventSourceMapping'
+    """
+    if not mapping_uuid:
+        return jsonify({})
+
+    mapping = delete_event_source(mapping_uuid)
     return jsonify(mapping)
 
 
