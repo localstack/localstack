@@ -75,7 +75,7 @@ def cmd_lambda(cmd_params, env, cache_duration_secs=None):
 def aws_cmd(service, env):
     # TODO: use boto3 instead of running aws-cli commands here!
 
-    cmd = '. .venv/bin/activate; aws'
+    cmd = '{ test `which aws` || . .venv/bin/activate; }; aws'
     endpoint_url = None
     env = aws_stack.get_environment(env)
     if env.region == REGION_LOCAL:

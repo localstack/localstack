@@ -250,10 +250,10 @@ def is_zip_file(content):
 def is_jar_archive(content):
     # TODO Simple stupid heuristic to determine whether a file is a JAR archive
     try:
-        return 'KinesisEvent' in content and 'class' in content and 'META-INF' in content
+        return 'class' in content and 'META-INF' in content
     except TypeError as e:
         # in Python 3 we need to use byte strings for byte-based file content
-        return b'KinesisEvent' in content and b'class' in content and b'META-INF' in content
+        return b'class' in content and b'META-INF' in content
 
 
 def cleanup_resources():

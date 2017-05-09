@@ -22,13 +22,7 @@ for line in re.split('\n', requirements):
     if line and line[0] == '#' and '#egg=' in line:
         line = re.search(r'#\s*(.*)', line).group(1)
     if line and line[0] != '#':
-        if '://' in line:
-            if '#egg=' in line and 'http://' in line and 'github.com' in line:
-                dependency_links.append(line)
-                package = re.search(r'http://github.com/[^/]*/([^/]*)/.*', line).group(1)
-                version = re.search(r'.*#egg=.*-([^\-]*)$', line).group(1)
-                install_requires.append('%s==%s' % (package, version))
-        else:
+        if '://' not in line:
             install_requires.append(line)
 
 
@@ -72,7 +66,7 @@ package_data = {
         'dashboard/web/img/*',
         'dashboard/web/js/*',
         'dashboard/web/views/*',
-        'mock/src/main/java/com/atlassian/*',
+        'ext/java/src/main/java/com/atlassian/*',
         'utils/kinesis/java/com/atlassian/*'
     ]}
 
@@ -81,7 +75,7 @@ if __name__ == '__main__':
 
     setup(
         name='localstack',
-        version='0.4.1',
+        version='0.4.2',
         description='An easy-to-use test/mocking framework for developing Cloud applications',
         author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',

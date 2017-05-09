@@ -245,6 +245,7 @@ make web
 
 ## Change Log
 
+* v0.4.2: Initial support for Java Lambda functions; CloudFormation deployments; API Gateway tests
 * v0.4.1: Python 3 compatibility; data persistence; add seq. numbers in Kinesis events; limit Elasticsearch memory
 * v0.4.0: Execute Lambda functions in Docker containers; CORS headers for S3
 * v0.3.11: Add Route53, SES, CloudFormation; DynamoDB fault injection; UI tweaks; refactor config

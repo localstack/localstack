@@ -4,6 +4,8 @@ VENV_DIR ?= .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
 AWS_STS_TMPFILE = /tmp/aws-java-sdk-sts.jar
+LOCALSTACK_JAR_URL = https://bitbucket.org/atlassian/localstack/raw/mvn/release/com/atlassian/localstack-utils/1.0-SNAPSHOT/localstack-utils-1.0-SNAPSHOT.jar
+LOCALSTACK_JAR_PATH = localstack/infra/localstack-utils.jar
 TMP_DIR = /tmp/localstack
 DOCKER_SOCK ?= /var/run/docker.sock
 PIP_CMD ?= pip
@@ -27,6 +29,7 @@ install-libs:      ## Install npm/pip dependencies
 			{ (test -e $(AWS_STS_TMPFILE) || curl -o $(AWS_STS_TMPFILE) $(AWS_STS_URL)); \
 				mkdir -p localstack/infra/amazon-kinesis-client; \
 				cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
+		(test -e $(LOCALSTACK_JAR_PATH) || curl -o $(LOCALSTACK_JAR_PATH) $(LOCALSTACK_JAR_URL)) && \
 		(npm install --silent -g npm || sudo npm install --silent -g npm)
 
 install-web:       ## Install npm dependencies for dashboard Web UI
@@ -35,7 +38,7 @@ install-web:       ## Install npm dependencies for dashboard Web UI
 compile:           ## Compile Java code (KCL library utils)
 	echo "Compiling"
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print(kclipy_helper.get_kcl_classpath())') localstack/utils/kinesis/java/com/atlassian/*.java
-	(test ! -e ext/java || (cd ext/java && mvn -q -DskipTests package))
+	(test ! -e localstack/ext/java || (cd localstack/ext/java && mvn -q -DskipTests package))
 	# TODO enable once we want to support Java-based Lambdas
 	# (cd localstack/mock && mvn package)
 

@@ -441,7 +441,7 @@ def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     conn = connect_to_service('kinesis', env=env)
     stream.connect(conn)
     if delete:
-        run_safe(lambda: stream.destroy())
+        run_safe(lambda: stream.destroy(), print_error=False)
     stream.create()
     stream.wait_for()
     return stream

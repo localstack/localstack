@@ -10,6 +10,7 @@ import logging
 import base64
 import threading
 import imp
+import glob
 from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
 from datetime import datetime
@@ -26,13 +27,13 @@ ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 EVENT_FILE_PATTERN = '%s/lambda.event.*.json' % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 LAMBDA_EXECUTOR_JAR = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack',
-    'mock', 'target', 'lambda-executor-1.0-SNAPSHOT.jar')
-LAMBDA_EXECUTOR_CLASS = 'com.atlassian.LambdaExecutor'
+    'infra', 'localstack-utils.jar')
+LAMBDA_EXECUTOR_CLASS = 'com.atlassian.localstack.LambdaExecutor'
 
 LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
 LAMBDA_RUNTIME_NODEJS = 'nodejs'
 LAMBDA_RUNTIME_NODEJS610 = 'nodejs6.10'
-LAMBDA_RUNTIME_JAVA = 'java8'
+LAMBDA_RUNTIME_JAVA8 = 'java8'
 
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
 LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
@@ -40,6 +41,22 @@ LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_DEFAULT_TIMEOUT = 60
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 
+# local maven repository path
+M2_HOME = '$HOME/.m2'
+# TODO: temporary hack! Remove all hardcoded paths (and move to lamb-ci Docker for Java once it's available)
+JAR_DEPENDENCIES = [
+    'com/amazonaws/aws-lambda-java-core/1.1.0/aws-lambda-java-core-1.1.0.jar',
+    'com/amazonaws/aws-lambda-java-events/1.3.0/aws-lambda-java-events-1.3.0.jar',
+    'com/amazonaws/aws-java-sdk-kinesis/1.11.86/aws-java-sdk-kinesis-1.11.86.jar',
+    'com/fasterxml/jackson/core/jackson-databind/2.6.6/jackson-databind-2.6.6.jar',
+    'com/fasterxml/jackson/core/jackson-core/2.6.6/jackson-core-2.6.6.jar',
+    'com/fasterxml/jackson/core/jackson-annotations/2.6.0/jackson-annotations-2.6.0.jar',
+    'commons-codec/commons-codec/1.9/commons-codec-1.9.jar',
+    'commons-io/commons-io/2.5/commons-io-2.5.jar',
+    'org/apache/commons/commons-lang3/3.5/commons-lang3-3.5.jar'
+]
+
+# IP address of Docker bridge
 DOCKER_BRIDGE_IP = '172.17.0.1'
 
 app = Flask(APP_NAME)
@@ -269,45 +286,62 @@ def set_function_code(code, lambda_name):
         zip_file_content = code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
 
-        if is_jar_archive(zip_file_content):
-            archive = ARCHIVE_FILE_PATTERN.replace('*', short_uid())
-            save_file(archive, zip_file_content)
-            TMP_FILES.append(archive)
+        # save tmp file
+        tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
+        run('mkdir -p %s' % tmp_dir)
+        tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
+        save_file(tmp_file, zip_file_content)
+        TMP_FILES.append(tmp_dir)
+        lambda_cwd = tmp_dir
+
+        # check if this is a ZIP file
+        is_zip = is_zip_file(zip_file_content)
+        if is_zip:
+
+            run('cd %s && unzip %s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME))
+            main_file = '%s/%s' % (tmp_dir, handler_file)
+            if not os.path.isfile(main_file):
+                # check if this is a zip file that contains a single JAR file
+                jar_files = glob.glob('%s/*.jar' % tmp_dir)
+                if len(jar_files) == 1:
+                    main_file = jar_files[0]
+            if os.path.isfile(main_file):
+                with open(main_file, 'rb') as file_obj:
+                    zip_file_content = file_obj.read()
+            else:
+                file_list = run('ls -la %s' % tmp_dir)
+                msg = 'Unable to find handler script in Lambda archive.'
+                LOG.warning(msg)
+                return make_response((jsonify({'error': msg}), 400, {}))
+
+        # it could be a JAR file (regardless of whether wrapped in a ZIP file or not)
+        is_jar = is_jar_archive(zip_file_content)
+        if is_jar:
 
             def execute(event, context):
                 event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
                 save_file(event_file, json.dumps(event))
                 TMP_FILES.append(event_file)
                 class_name = lambda_arn_to_handler[arn].split('::')[0]
-                classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, archive)
+                classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
+                for jar in JAR_DEPENDENCIES:
+                    classpath += ':%s/repository/%s' % (M2_HOME, jar)
                 cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
                 output = run(cmd)
                 LOG.info('Lambda output: %s' % output.replace('\n', '\n> '))
 
             lambda_handler = execute
-        else:
-            if is_zip_file(zip_file_content):
-                tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
-                run('mkdir -p %s' % tmp_dir)
-                tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
-                save_file(tmp_file, zip_file_content)
-                TMP_FILES.append(tmp_dir)
-                run('cd %s && unzip %s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME))
-                main_script = '%s/%s' % (tmp_dir, handler_file)
-                lambda_cwd = tmp_dir
-                if not os.path.isfile(main_script):
-                    file_list = run('ls -la %s' % tmp_dir)
-                    LOG.warning('Content of Lambda archive: %s' % file_list)
-                    raise Exception('Unable to find handler script in Lambda archive.')
-                with open(main_script, "rb") as file_obj:
-                    zip_file_content = file_obj.read()
 
-            if not use_docker():
-                try:
-                    lambda_handler = exec_lambda_code(zip_file_content,
-                        handler_function=handler_function, lambda_cwd=lambda_cwd)
-                except Exception as e:
-                    raise Exception('Unable to get handler function from lambda code.', e)
+        elif not use_docker():
+            try:
+                lambda_handler = exec_lambda_code(zip_file_content,
+                    handler_function=handler_function, lambda_cwd=lambda_cwd)
+            except Exception as e:
+                raise Exception('Unable to get handler function from lambda code.', e)
+
+        if not is_zip and not is_jar:
+            raise Exception('Uploaded Lambda code is neither a ZIP nor JAR file.')
+
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
 

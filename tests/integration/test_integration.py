@@ -10,9 +10,10 @@ from nose.tools import assert_raises
 from localstack.utils import testutil
 from localstack.utils.common import *
 from localstack.config import HOSTNAME, PORT_SQS
-from localstack.constants import ENV_DEV, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
+from localstack.constants import ENV_DEV, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, LOCALSTACK_ROOT_FOLDER
 from localstack.mock import infra
-from localstack.mock.apis.lambda_api import LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_PYTHON27, use_docker
+from localstack.mock.apis.lambda_api import (LAMBDA_RUNTIME_NODEJS,
+    LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_JAVA8, use_docker)
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from .lambdas import lambda_integration
@@ -23,6 +24,7 @@ TEST_TABLE_NAME = 'test_stream_table'
 TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
 TEST_LAMBDA_NAME_STREAM_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_STREAM_JS = 'test_lambda_js'
+TEST_LAMBDA_NAME_STREAM_JAVA = 'test_lambda_java'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = 'test_bucket'
 TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_2'
@@ -31,6 +33,8 @@ TEST_QUEUE_NAME = 'test_queue'
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_NODEJS = load_file(os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js'))
 TEST_LAMBDA_PYTHON = load_file(os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py'))
+TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'ext', 'java', 'target',
+    'localstack-utils-1.0-SNAPSHOT-tests.jar')
 
 EVENTS = []
 
@@ -160,6 +164,14 @@ def test_kinesis_lambda_ddb_streams():
         StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM_PY,
         zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
+
+    # deploy test lambda (Java) connected to Kinesis Stream
+    zip_file = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
+    kinesis_event_source_arn = kinesis.describe_stream(
+        StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM_JAVA, zip_file=zip_file,
+        event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_JAVA8,
+        handler='com.atlassian.localstack.sample.KinesisHandler')
 
     if use_docker():
         # deploy test lambda (Node.js) connected to Kinesis Stream

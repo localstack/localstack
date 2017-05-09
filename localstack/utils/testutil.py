@@ -55,24 +55,40 @@ def create_lambda_archive(script, stream=None, get_content=False, libs=[], runti
 
     tmp_dir = ARCHIVE_DIR_PATTERN.replace('*', short_uid())
     run('mkdir -p %s' % tmp_dir)
+    TMP_FILES.append(tmp_dir)
     file_name = get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
     script_file = '%s/%s' % (tmp_dir, file_name)
-    zip_file_name = 'archive.zip'
-    zip_file = '%s/%s' % (tmp_dir, zip_file_name)
     save_file(script_file, script)
     # copy libs
     run('mkdir -p %s/localstack' % tmp_dir)
     for path in ['*.py', 'utils']:
         run('cp -r %s/localstack/%s %s/localstack/' % (LOCALSTACK_ROOT_FOLDER, path, tmp_dir))
     # create zip file
-    run('cd %s && zip -r %s *' % (tmp_dir, zip_file_name))
+    return create_zip_file(tmp_dir, get_content=True)
+
+
+# TODO: Refactor this method and use built-in file operations instead of shell commands
+def create_zip_file(file_path, include='*', get_content=False):
+    base_dir = file_path
+    if not os.path.isdir(file_path):
+        base_dir = ARCHIVE_DIR_PATTERN.replace('*', short_uid())
+        run('mkdir -p "%s"' % base_dir)
+        run('cp "%s" "%s"' % (file_path, base_dir))
+        include = os.path.basename(file_path)
+        TMP_FILES.append(base_dir)
+    tmp_dir = ARCHIVE_DIR_PATTERN.replace('*', short_uid())
+    run('mkdir -p "%s"' % tmp_dir)
+    zip_file_name = 'archive.zip'
+    zip_file = '%s/%s' % (tmp_dir, zip_file_name)
+    # create zip file
+    run('cd "%s" && zip -r "%s" %s' % (base_dir, zip_file, include))
     if not get_content:
         TMP_FILES.append(tmp_dir)
         return zip_file
     zip_file_content = None
     with open(zip_file, "rb") as file_obj:
         zip_file_content = file_obj.read()
-    run('rm -r %s' % tmp_dir)
+    run('rm -r "%s"' % tmp_dir)
     return zip_file_content
 
 
