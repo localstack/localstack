@@ -20,6 +20,9 @@ def handler(event, context):
     """
     DynamoDB (ddb) Stream to Kinesis forwarder Lambda.
     """
+    if 'Records' not in event:
+        return event
+
     raw_event_messages = []
     for record in event['Records']:
         # Deserialize into Python dictionary and extract the

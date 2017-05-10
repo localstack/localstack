@@ -11,6 +11,7 @@ import base64
 import threading
 import imp
 import glob
+from io import BytesIO
 from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
 from datetime import datetime
@@ -222,7 +223,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
-        print("ERROR executing Lambda function: %s" % traceback.format_exc())
+        return error_response("Error executing Lambda function: %s %s" % (e, traceback.format_exc()))
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -271,8 +272,20 @@ def get_handler_function_from_name(handler_name, runtime=LAMBDA_RUNTIME_PYTHON27
     return handler_name.split('.')[-1]
 
 
+def error_response(msg, code=400, error_type='Exception'):
+    LOG.warning(msg)
+    result = {'Type': 'User', 'message': msg}
+    headers = {'x-amzn-errortype': error_type}
+    return make_response((jsonify(result), code, headers))
+
+
 def set_function_code(code, lambda_name):
-    lambda_handler = None
+
+    def generic_handler(event, context):
+        raise Exception(('Unable to find executor for Lambda function "%s". ' +
+            'Note that non-Python Lambdas require LAMBDA_EXECUTOR=docker') % lambda_name)
+
+    lambda_handler = generic_handler
     lambda_cwd = None
     arn = func_arn(lambda_name)
     runtime = lambda_arn_to_runtime[arn]
@@ -282,65 +295,73 @@ def set_function_code(code, lambda_name):
     handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
     handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
-    if 'ZipFile' in code:
+    if 'S3Bucket' in code:
+        s3_client = aws_stack.connect_to_service('s3')
+        bytes_io = BytesIO()
+        try:
+            s3_client.download_fileobj(code['S3Bucket'], code['S3Key'], bytes_io)
+            zip_file_content = bytes_io.getvalue()
+        except Exception as e:
+            return error_response('Unable to fetch Lambda archive from S3: %s' % e, 404)
+    elif 'ZipFile' in code:
         zip_file_content = code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
+    else:
+        return error_response('No valid Lambda archive specified.')
 
-        # save tmp file
-        tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
-        run('mkdir -p %s' % tmp_dir)
-        tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
-        save_file(tmp_file, zip_file_content)
-        TMP_FILES.append(tmp_dir)
-        lambda_cwd = tmp_dir
+    # save tmp file
+    tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
+    run('mkdir -p %s' % tmp_dir)
+    tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
+    save_file(tmp_file, zip_file_content)
+    TMP_FILES.append(tmp_dir)
+    lambda_cwd = tmp_dir
 
-        # check if this is a ZIP file
-        is_zip = is_zip_file(zip_file_content)
-        if is_zip:
+    # check if this is a ZIP file
+    is_zip = is_zip_file(zip_file_content)
+    if is_zip:
 
-            run('cd %s && unzip %s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME))
-            main_file = '%s/%s' % (tmp_dir, handler_file)
-            if not os.path.isfile(main_file):
-                # check if this is a zip file that contains a single JAR file
-                jar_files = glob.glob('%s/*.jar' % tmp_dir)
-                if len(jar_files) == 1:
-                    main_file = jar_files[0]
-            if os.path.isfile(main_file):
-                with open(main_file, 'rb') as file_obj:
-                    zip_file_content = file_obj.read()
-            else:
-                file_list = run('ls -la %s' % tmp_dir)
-                msg = 'Unable to find handler script in Lambda archive.'
-                LOG.warning(msg)
-                return make_response((jsonify({'error': msg}), 400, {}))
+        run('cd %s && unzip %s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME))
+        main_file = '%s/%s' % (tmp_dir, handler_file)
+        if not os.path.isfile(main_file):
+            # check if this is a zip file that contains a single JAR file
+            jar_files = glob.glob('%s/*.jar' % tmp_dir)
+            if len(jar_files) == 1:
+                main_file = jar_files[0]
+        if os.path.isfile(main_file):
+            with open(main_file, 'rb') as file_obj:
+                zip_file_content = file_obj.read()
+        else:
+            file_list = run('ls -la %s' % tmp_dir)
+            return error_response('Unable to find handler script in Lambda archive.')
 
-        # it could be a JAR file (regardless of whether wrapped in a ZIP file or not)
-        is_jar = is_jar_archive(zip_file_content)
-        if is_jar:
+    # it could be a JAR file (regardless of whether wrapped in a ZIP file or not)
+    is_jar = is_jar_archive(zip_file_content)
+    if is_jar:
 
-            def execute(event, context):
-                event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
-                save_file(event_file, json.dumps(event))
-                TMP_FILES.append(event_file)
-                class_name = lambda_arn_to_handler[arn].split('::')[0]
-                classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
-                for jar in JAR_DEPENDENCIES:
-                    classpath += ':%s/repository/%s' % (M2_HOME, jar)
-                cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
-                output = run(cmd)
-                LOG.info('Lambda output: %s' % output.replace('\n', '\n> '))
+        def execute(event, context):
+            event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
+            save_file(event_file, json.dumps(event))
+            TMP_FILES.append(event_file)
+            class_name = lambda_arn_to_handler[arn].split('::')[0]
+            classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
+            for jar in JAR_DEPENDENCIES:
+                classpath += ':%s/repository/%s' % (M2_HOME, jar)
+            cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
+            output = run(cmd)
+            LOG.info('Lambda output: %s' % output.replace('\n', '\n> '))
 
-            lambda_handler = execute
+        lambda_handler = execute
 
-        elif not use_docker():
-            try:
-                lambda_handler = exec_lambda_code(zip_file_content,
-                    handler_function=handler_function, lambda_cwd=lambda_cwd)
-            except Exception as e:
-                raise Exception('Unable to get handler function from lambda code.', e)
+    elif runtime.startswith('python') and not use_docker():
+        try:
+            lambda_handler = exec_lambda_code(zip_file_content,
+                handler_function=handler_function, lambda_cwd=lambda_cwd)
+        except Exception as e:
+            raise Exception('Unable to get handler function from lambda code.', e)
 
-        if not is_zip and not is_jar:
-            raise Exception('Uploaded Lambda code is neither a ZIP nor JAR file.')
+    if not is_zip and not is_jar:
+        raise Exception('Uploaded Lambda code is neither a ZIP nor JAR file.')
 
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
@@ -378,19 +399,14 @@ def create_function():
         lambda_name = data['FunctionName']
         arn = func_arn(lambda_name)
         if arn in lambda_arn_to_handler:
-            result = {'Type': 'User', 'message': 'Function already exist: %s' % lambda_name}
-            headers = {'x-amzn-errortype': 'ResourceConflictException'}
-            response = make_response((jsonify(result), 409, headers))
-            return response
+            return error_response('Function already exist: %s' %
+                lambda_name, 409, error_type='ResourceConflictException')
         lambda_arn_to_handler[arn] = data['Handler']
         lambda_arn_to_runtime[arn] = data['Runtime']
-        code = data['Code']
-        set_function_code(code, lambda_name)
-        result = {}
-        return jsonify(result)
+        result = set_function_code(data['Code'], lambda_name)
+        return result or jsonify({})
     except Exception as e:
-        print('ERROR: %s' % e)
-        raise
+        return error_response('Unknown error: %s' % e)
 
 
 @app.route('%s/functions/<function>' % PATH_ROOT, methods=['GET'])
@@ -476,9 +492,8 @@ def update_function_code(function):
               in: body
     """
     data = json.loads(to_str(request.data))
-    set_function_code(data, function)
-    result = {}
-    return jsonify(result)
+    result = set_function_code(data, function)
+    return result or jsonify({})
 
 
 @app.route('%s/functions/<function>/code' % PATH_ROOT, methods=['GET'])
@@ -532,11 +547,11 @@ def invoke_function(function):
     arn = func_arn(function)
     lambda_function = lambda_arn_to_function[arn]
     result = run_lambda(lambda_function, func_arn=arn, event=data, context={})
+    if isinstance(result, dict):
+        return jsonify(result)
     if result:
-        result = jsonify(result)
-    else:
-        result = make_response('', 200)
-    return result
+        return result
+    return make_response('', 200)
 
 
 @app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])
