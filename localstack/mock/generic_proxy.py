@@ -34,6 +34,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.method = requests.get
+        content_length = self.headers.get('Content-Length')
+        if content_length:
+            self.data_bytes = self.rfile.read(int(content_length))
         self.forward('GET')
 
     def do_PUT(self):
