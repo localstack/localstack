@@ -176,7 +176,7 @@ def process_kinesis_records(records, stream_name):
                 })
             run_lambda(lambda_function, event=event, context={}, func_arn=arn)
     except Exception as e:
-        print(traceback.format_exc())
+        LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
 
 def get_event_sources(func_name=None, source_arn=None):
@@ -205,6 +205,8 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         runtime = lambda_arn_to_runtime.get(func_arn)
         handler = lambda_arn_to_handler.get(func_arn)
         if use_docker():
+            if not lambda_cwd:
+                raise Exception('Missing working directory for executing Lambda function in Docker container')
             hostname_fix = '-e HOSTNAME="%s"' % DOCKER_BRIDGE_IP
             cmd = (('docker run ' +
                 '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY" ' +
@@ -218,7 +220,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             if function_code.co_argcount == 2:
                 result = func(event, context)
             else:
-                raise Exception('Expected handler function with 2 parameters, found %s' % func.func_code.co_argcount)
+                raise Exception('Expected handler function with 2 parameters, found %s' % function_code.co_argcount)
     except Exception as e:
         if suppress_output:
             sys.stdout = stdout_
@@ -464,13 +466,13 @@ def delete_function(function):
     """
     arn = func_arn(function)
     try:
-        lambda_arn_to_function.pop(arn)
+        lambda_arn_to_handler.pop(arn)
     except KeyError:
         result = {'Type': 'User', 'message': 'Function does not exist: %s' % function}
         headers = {'x-amzn-errortype': 'ResourceNotFoundException'}
         return make_response((jsonify(result), 404, headers))
-    lambda_arn_to_cwd.pop(arn)
-    lambda_arn_to_handler.pop(arn)
+    lambda_arn_to_cwd.pop(arn, None)
+    lambda_arn_to_function.pop(arn, None)
     i = 0
     while i < len(event_source_mappings):
         mapping = event_source_mappings[i]
@@ -539,11 +541,10 @@ def invoke_function(function):
             - name: 'request'
               in: body
     """
-    data = {}
     try:
         data = json.loads(to_str(request.data))
     except Exception as e:
-        pass
+        return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
     arn = func_arn(function)
     lambda_function = lambda_arn_to_function[arn]
     result = run_lambda(lambda_function, func_arn=arn, event=data, context={})

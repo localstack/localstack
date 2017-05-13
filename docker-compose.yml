@@ -1,4 +1,4 @@
-version: '2'
+version: '2.1'
 
 services:
   localstack:
@@ -6,3 +6,13 @@ services:
     ports:
       - "4567-4581:4567-4581"
       - "8080:8080"
+    environment:
+      - SERVICES=${SERVICES- }
+      - DEBUG=${DEBUG- }
+      - DATA_DIR=${DATA_DIR- }
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
+      - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${TMP_DIR:-/tmp/localstack}:${TMP_DIR:-/tmp/localstack}"
+      - "/var/run/docker.sock:/var/run/docker.sock"
