@@ -180,7 +180,7 @@ def register_signal_handlers():
 
 
 def is_debug():
-    return os.environ.get('DEBUG')
+    return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
 
 
 def do_run(cmd, async, print_output=False):

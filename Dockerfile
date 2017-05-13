@@ -35,6 +35,7 @@ RUN mkdir -p localstack/utils/kinesis/ && touch localstack/__init__.py localstac
 ADD localstack/constants.py localstack/config.py localstack/
 ADD localstack/utils/compat.py localstack/utils/common.py localstack/utils/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
+ADD localstack/ext/ localstack/ext/
 
 # install dependencies
 # TODO: temporary change to fix error "Cannot find module 'semver'" when running npm
