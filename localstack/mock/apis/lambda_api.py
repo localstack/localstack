@@ -44,6 +44,9 @@ LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 
 # local maven repository path
 M2_HOME = '$HOME/.m2'
+# hack required for Docker because our base image uses $HOME/.m2 as a volume (see Dockerfile)
+if '/root/.m2_persistent' in os.environ.get('MAVEN_OPTS', ''):
+    M2_HOME = '/root/.m2_persistent'
 # TODO: temporary hack! Remove all hardcoded paths (and move to lamb-ci Docker for Java once it's available)
 JAR_DEPENDENCIES = [
     'com/amazonaws/aws-lambda-java-core/1.1.0/aws-lambda-java-core-1.1.0.jar',
@@ -253,7 +256,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
         handler_module = imp.load_source(lambda_id, lambda_file)
         module_vars = handler_module.__dict__
     except Exception as e:
-        print('ERROR: Unable to exec: %s %s' % (script, traceback.format_exc()))
+        LOG.error('Unable to exec: %s %s' % (script, traceback.format_exc()))
         raise e
     finally:
         if lambda_cwd:
@@ -348,10 +351,12 @@ def set_function_code(code, lambda_name):
             class_name = lambda_arn_to_handler[arn].split('::')[0]
             classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
             for jar in JAR_DEPENDENCIES:
-                classpath += ':%s/repository/%s' % (M2_HOME, jar)
+                jar_path = '%s/repository/%s' % (M2_HOME, jar)
+                classpath += ':%s' % (jar_path)
             cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
             output = run(cmd)
             LOG.info('Lambda output: %s' % output.replace('\n', '\n> '))
+            return output
 
         lambda_handler = execute
 
@@ -468,9 +473,7 @@ def delete_function(function):
     try:
         lambda_arn_to_handler.pop(arn)
     except KeyError:
-        result = {'Type': 'User', 'message': 'Function does not exist: %s' % function}
-        headers = {'x-amzn-errortype': 'ResourceNotFoundException'}
-        return make_response((jsonify(result), 404, headers))
+        return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
     lambda_arn_to_cwd.pop(arn, None)
     lambda_arn_to_function.pop(arn, None)
     i = 0
@@ -541,12 +544,14 @@ def invoke_function(function):
             - name: 'request'
               in: body
     """
+    arn = func_arn(function)
+    lambda_function = lambda_arn_to_function.get(arn)
+    if not lambda_function:
+        return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
     try:
         data = json.loads(to_str(request.data))
     except Exception as e:
         return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
-    arn = func_arn(function)
-    lambda_function = lambda_arn_to_function[arn]
     result = run_lambda(lambda_function, func_arn=arn, event=data, context={})
     if isinstance(result, dict):
         return jsonify(result)

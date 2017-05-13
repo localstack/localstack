@@ -4,7 +4,7 @@ import os
 import json
 import traceback
 import logging
-from requests.models import Response
+from requests.models import Response, Request
 from six import iteritems, string_types
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
@@ -77,31 +77,34 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 # unable to parse JSON, fallback to verbatim string/bytes
                 data = data_string
-        proxies = {
-            # TODO: check the use of the proxies variable, it doesn't seem to be required anymore
-            # 'http': proxy_url,
-            # 'https': proxy_url
-        }
+
         forward_headers = dict(self.headers)
         # update original "Host" header
         forward_headers['host'] = urlparse(target_url).netloc
         try:
             response = None
+            modified_request = None
             # update listener (pre-invocation)
             if self.proxy.update_listener:
-                do_forward = self.proxy.update_listener(method=method, path=path,
-                    data=data, headers=self.headers, return_forward_info=True)
-                if isinstance(do_forward, Response):
-                    response = do_forward
-                elif do_forward is not True:
+                listener_result = self.proxy.update_listener(method=method, path=path,
+                    data=data, headers=forward_headers, return_forward_info=True)
+                if isinstance(listener_result, Response):
+                    response = listener_result
+                elif isinstance(listener_result, Request):
+                    modified_request = listener_result
+                elif listener_result is not True:
                     # get status code from response, or use Bad Gateway status code
-                    code = do_forward if isinstance(do_forward, int) else 503
+                    code = listener_result if isinstance(listener_result, int) else 503
                     self.send_response(code)
                     self.end_headers()
                     return
             if response is None:
-                response = self.method(proxy_url, data=self.data_bytes,
-                    headers=forward_headers, proxies=proxies)
+                if modified_request:
+                    response = self.method(proxy_url, data=modified_request.data,
+                        headers=modified_request.headers)
+                else:
+                    response = self.method(proxy_url, data=self.data_bytes,
+                        headers=forward_headers)
             # update listener (post-invocation)
             if self.proxy.update_listener:
                 self.proxy.update_listener(method=method, path=path,

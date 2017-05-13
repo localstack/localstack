@@ -3,6 +3,7 @@ import boto3
 import uuid
 import os
 import time
+from six import iteritems
 from localstack.constants import REGION_LOCAL, LOCALSTACK_ROOT_FOLDER
 from localstack.config import TEST_S3_URL
 from localstack.mock.apis.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
@@ -11,7 +12,6 @@ from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import DynamoDB, ElasticSearch
 from localstack.utils.kinesis import kinesis_connector
-from six import iteritems
 
 
 ARCHIVE_DIR_PATTERN = '/tmp/lambda.archive.*'
@@ -92,7 +92,7 @@ def create_zip_file(file_path, include='*', get_content=False):
     return zip_file_content
 
 
-def create_lambda_function(func_name, zip_file, event_source_arn, handler=LAMBDA_DEFAULT_HANDLER,
+def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
         starting_position=LAMBDA_DEFAULT_STARTING_POSITION, runtime=LAMBDA_DEFAULT_RUNTIME):
     """Utility method to create a new function via the Lambda API"""
 
@@ -109,11 +109,12 @@ def create_lambda_function(func_name, zip_file, event_source_arn, handler=LAMBDA
         Timeout=LAMBDA_DEFAULT_TIMEOUT
     )
     # create event source mapping
-    client.create_event_source_mapping(
-        FunctionName=func_name,
-        EventSourceArn=event_source_arn,
-        StartingPosition=starting_position
-    )
+    if event_source_arn:
+        client.create_event_source_mapping(
+            FunctionName=func_name,
+            EventSourceArn=event_source_arn,
+            StartingPosition=starting_position
+        )
 
 
 def assert_objects(asserts, all_objects):

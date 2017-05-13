@@ -23,6 +23,9 @@ RUN wget -O /tmp/localstack.es.zip https://artifacts.elastic.co/downloads/elasti
         pip install -r requirements.txt && \
         rm -rf .testvenv)
 
+# the base image defines /root/.m2 as a volume, so make sure we store libraries persistently
+ENV MAVEN_OPTS="-Dmaven.repo.local=/root/.m2_persistent/repository"
+
 # add files required to run "make install-web"
 ADD Makefile .
 ADD localstack/dashboard/web/package.json localstack/dashboard/web/package.json

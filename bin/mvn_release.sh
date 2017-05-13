@@ -10,7 +10,7 @@ LOCAL_REPO=target/m2_repo
 # package artifacts via Maven
 
 (
-cd ext/java
+cd localstack/ext/java
 mvn clean package
 
 rm -rf $LOCAL_REPO/com/atlassian
@@ -23,7 +23,7 @@ mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file -Dfile=targ
 # copy artifacts to ./release folder
 
 mkdir -p release
-cp -r ext/java/$LOCAL_REPO/* release/
+cp -r localstack/ext/java/$LOCAL_REPO/* release/
 for p in release/com/atlassian/$ARTIFACT/ release/com/atlassian/$ARTIFACT/$VERSION; do
 	(
 		cd $p

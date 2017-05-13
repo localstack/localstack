@@ -30,17 +30,15 @@ install-libs:      ## Install npm/pip dependencies
 				mkdir -p localstack/infra/amazon-kinesis-client; \
 				cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
 		(test -e $(LOCALSTACK_JAR_PATH) || curl -o $(LOCALSTACK_JAR_PATH) $(LOCALSTACK_JAR_URL)) && \
-		(npm install --silent -g npm || sudo npm install --silent -g npm)
+		(npm install --silent -g npm > /dev/null || sudo npm install --silent -g npm)
 
 install-web:       ## Install npm dependencies for dashboard Web UI
-	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent))
+	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))
 
-compile:           ## Compile Java code (KCL library utils)
+compile:           ## Compile Java code (KCL library utils, Java Lambda executor)
 	echo "Compiling"
 	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print(kclipy_helper.get_kcl_classpath())') localstack/utils/kinesis/java/com/atlassian/*.java
 	(test ! -e localstack/ext/java || (cd localstack/ext/java && mvn -q -DskipTests package))
-	# TODO enable once we want to support Java-based Lambdas
-	# (cd localstack/mock && mvn package)
 
 publish:           ## Publish the library to the central PyPi repository
 	# build and upload archive

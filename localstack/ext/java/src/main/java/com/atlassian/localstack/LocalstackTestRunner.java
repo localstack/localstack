@@ -80,6 +80,10 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		return ensureInstallationAndGetEndpoint("elasticsearch");
 	}
 
+	public static String getEndpointElasticsearchService() {
+		return ensureInstallationAndGetEndpoint("es");
+	}
+
 	public static String getEndpointFirehose() {
 		return ensureInstallationAndGetEndpoint("firehose");
 	}
@@ -94,6 +98,18 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 
 	public static String getEndpointRedshift() {
 		return ensureInstallationAndGetEndpoint("redshift");
+	}
+
+	public static String getEndpointSES() {
+		return ensureInstallationAndGetEndpoint("ses");
+	}
+
+	public static String getEndpointRoute53() {
+		return ensureInstallationAndGetEndpoint("route53");
+	}
+
+	public static String getEndpointCloudFormation() {
+		return ensureInstallationAndGetEndpoint("cloudformation");
 	}
 
 	/* UTILITY METHODS */
