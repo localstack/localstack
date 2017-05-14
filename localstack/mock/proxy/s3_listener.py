@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 import six
 from six import iteritems
 from six.moves.urllib import parse as urlparse
-from requests.models import Response
+from requests.models import Response, Request
 from localstack.constants import *
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
@@ -159,9 +159,38 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                     break
 
 
+def strip_chunk_signatures(data):
+    # For clients that use streaming v4 authentication, the request contains chunk signatures
+    # in the HTTP body (see example below) which we need to strip as moto cannot handle them
+    #
+    # 17;chunk-signature=6e162122ec4962bea0b18bc624025e6ae4e9322bdc632762d909e87793ac5921
+    # <payload data ...>
+    # 0;chunk-signature=927ab45acd82fc90a3c210ca7314d59fedc77ce0c914d79095f8cc9563cf2c70
+
+    data_new = re.sub(r'^[0-9]+;chunk-signature=[0-9a-f]{64}', '', data, flags=re.MULTILINE)
+    if data_new != data:
+        # trim \r (13) or \n (10)
+        for i in range(0, 2):
+            if ord(data_new[0]) in (10, 13):
+                data_new = data_new[1:]
+        for i in range(0, 6):
+            if ord(data_new[-1]) in (10, 13):
+                data_new = data_new[:-1]
+    return data_new
+
+
 def update_s3(method, path, data, headers, response=None, return_forward_info=False):
 
     if return_forward_info:
+
+        modified_data = None
+
+        # If this request contains streaming v4 authentication signatures, strip them from the message
+        # Related isse: https://github.com/atlassian/localstack/issues/98
+        # TODO we should evaluate whether to replace moto s3 with scality/S3:
+        # https://github.com/scality/S3/issues/237
+        if headers.get('x-amz-content-sha256') == 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD':
+            modified_data = strip_chunk_signatures(data)
 
         # persist this API call to disk
         persistence.record('s3', method, path, data, headers)
@@ -189,6 +218,9 @@ def update_s3(method, path, data, headers, response=None, return_forward_info=Fa
                 return set_cors(bucket, data)
             if method == 'DELETE':
                 return delete_cors(bucket)
+
+        if modified_data:
+            return Request(data=modified_data, headers=headers)
         return True
 
     # get subscribers and send bucket notifications

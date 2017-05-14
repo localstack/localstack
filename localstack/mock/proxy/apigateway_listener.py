@@ -13,11 +13,6 @@ LOGGER = logging.getLogger(__name__)
 def update_apigateway(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
 
-        regex1 = r'^/restapis/[A-Za-z0-9\-]+/deployments$'
-        if method == 'POST' and re.match(regex1, path):
-            # this is a request to deploy the API gateway, simply return HTTP code 200
-            return 200
-
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/([^/]+)$' % PATH_USER_REQUEST
         if method == 'POST' and re.match(regex2, path):
             api_id = re.search(regex2, path).group(1)

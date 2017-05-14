@@ -9,8 +9,11 @@ import time
 import glob
 import subprocess
 import six
+import socket
 from io import BytesIO
+from contextlib import closing
 from datetime import datetime
+from six.moves.urllib.parse import urlparse
 from multiprocessing.dummy import Pool
 from localstack.utils.compat import bytes_
 from localstack.constants import *
@@ -137,6 +140,19 @@ def md5(string):
     return m.hexdigest()
 
 
+def is_port_open(port_or_url):
+    port = port_or_url
+    host = '127.0.0.1'
+    if isinstance(port, six.string_types):
+        url = urlparse(port_or_url)
+        port = url.port
+        host = url.hostname
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        sock.settimeout(1)
+        result = sock.connect_ex((host, port))
+        return result == 0
+
+
 def timestamp(time=None, format=TIMESTAMP_FORMAT):
     if not time:
         time = datetime.utcnow()
@@ -242,7 +258,6 @@ def cleanup_tmp_files():
 
 def is_zip_file(content):
     import zipfile
-
     stream = BytesIO(content)
     return zipfile.is_zipfile(stream)
 

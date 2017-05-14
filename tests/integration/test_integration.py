@@ -12,29 +12,21 @@ from localstack.utils.common import *
 from localstack.config import HOSTNAME, PORT_SQS
 from localstack.constants import ENV_DEV, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, LOCALSTACK_ROOT_FOLDER
 from localstack.mock import infra
-from localstack.mock.apis.lambda_api import (LAMBDA_RUNTIME_NODEJS,
-    LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_JAVA8, use_docker)
+from localstack.mock.apis.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from .lambdas import lambda_integration
+from .test_lambda import TEST_LAMBDA_PYTHON
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
 TEST_TABLE_NAME = 'test_stream_table'
 TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
-TEST_LAMBDA_NAME_STREAM_PY = 'test_lambda_py'
-TEST_LAMBDA_NAME_STREAM_JS = 'test_lambda_js'
-TEST_LAMBDA_NAME_STREAM_JAVA = 'test_lambda_java'
+TEST_LAMBDA_NAME_STREAM = 'test_lambda_stream'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = 'test_bucket'
 TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_2'
 TEST_QUEUE_NAME = 'test_queue'
-
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_NODEJS = load_file(os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js'))
-TEST_LAMBDA_PYTHON = load_file(os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py'))
-TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'ext', 'java', 'target',
-    'localstack-utils-1.0-SNAPSHOT-tests.jar')
 
 EVENTS = []
 
@@ -150,8 +142,8 @@ def test_kinesis_lambda_ddb_streams():
             ddb_event_source_arn = stream['StreamArn']
     assert ddb_event_source_arn
 
-    # deploy test lambda (Python) connected to DynamoDB Stream
-    zip_file = testutil.create_lambda_archive(TEST_LAMBDA_PYTHON, get_content=True,
+    # deploy test lambda connected to DynamoDB Stream
+    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
         libs=['localstack'], runtime=LAMBDA_RUNTIME_PYTHON27)
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
         zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
@@ -159,28 +151,11 @@ def test_kinesis_lambda_ddb_streams():
     assert_raises(Exception, testutil.create_lambda_function, func_name=TEST_LAMBDA_NAME_DDB,
         zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
 
-    # deploy test lambda (Python) connected to Kinesis Stream
+    # deploy test lambda connected to Kinesis Stream
     kinesis_event_source_arn = kinesis.describe_stream(
         StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM_PY,
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM,
         zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
-
-    # deploy test lambda (Java) connected to Kinesis Stream
-    zip_file = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
-    kinesis_event_source_arn = kinesis.describe_stream(
-        StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM_JAVA, zip_file=zip_file,
-        event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_JAVA8,
-        handler='com.atlassian.localstack.sample.KinesisHandler')
-
-    if use_docker():
-        # deploy test lambda (Node.js) connected to Kinesis Stream
-        zip_file = testutil.create_lambda_archive(TEST_LAMBDA_NODEJS, get_content=True,
-            runtime=LAMBDA_RUNTIME_NODEJS)
-        kinesis_event_source_arn = kinesis.describe_stream(
-            StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM_JS,
-            zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_NODEJS)
 
     # put items to table
     num_events_ddb = 10

@@ -82,6 +82,8 @@ def aws_cmd(service, env):
         endpoint_url = aws_stack.get_local_service_url(service)
     if endpoint_url:
         cmd = '%s --endpoint-url="%s"' % (cmd, endpoint_url)
+        if not is_port_open(endpoint_url):
+            raise socket.error()
     cmd = '%s %s' % (cmd, service)
     return cmd
 
@@ -89,18 +91,21 @@ def aws_cmd(service, env):
 def get_kinesis_streams(filter='.*', pool={}, env=None):
     if MOCK_OBJ:
         return []
-    out = cmd_kinesis('list-streams', env)
-    out = json.loads(out)
     result = []
-    for name in out['StreamNames']:
-        if re.match(filter, name):
-            details = cmd_kinesis('describe-stream --stream-name %s' % name, env=env)
-            details = json.loads(details)
-            arn = details['StreamDescription']['StreamARN']
-            stream = KinesisStream(arn)
-            pool[arn] = stream
-            stream.shards = get_kinesis_shards(stream_details=details, env=env)
-            result.append(stream)
+    try:
+        out = cmd_kinesis('list-streams', env)
+        out = json.loads(out)
+        for name in out['StreamNames']:
+            if re.match(filter, name):
+                details = cmd_kinesis('describe-stream --stream-name %s' % name, env=env)
+                details = json.loads(details)
+                arn = details['StreamDescription']['StreamARN']
+                stream = KinesisStream(arn)
+                pool[arn] = stream
+                stream.shards = get_kinesis_shards(stream_details=details, env=env)
+                result.append(stream)
+    except socket.error as e:
+        pass
     return result
 
 
@@ -120,17 +125,20 @@ def get_kinesis_shards(stream_name=None, stream_details=None, env=None):
 
 def get_sqs_queues(filter='.*', pool={}, env=None):
     result = []
-    out = cmd_sqs('list-queues', env)
-    if not out.strip():
-        return result
-    queues = json.loads(out)['QueueUrls']
-    for q in queues:
-        name = q.split('/')[-1]
-        account = q.split('/')[-2]
-        arn = 'arn:aws:sqs:%s:%s:%s' % (DEFAULT_REGION, account, name)
-        if re.match(filter, name):
-            queue = SqsQueue(arn)
-            result.append(queue)
+    try:
+        out = cmd_sqs('list-queues', env)
+        if not out.strip():
+            return result
+        queues = json.loads(out)['QueueUrls']
+        for q in queues:
+            name = q.split('/')[-1]
+            account = q.split('/')[-2]
+            arn = 'arn:aws:sqs:%s:%s:%s' % (DEFAULT_REGION, account, name)
+            if re.match(filter, name):
+                queue = SqsQueue(arn)
+                result.append(queue)
+    except socket.error as e:
+        pass
     return result
 
 
@@ -188,8 +196,7 @@ def extract_endpoints(code_map, pool={}):
 def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
     if MOCK_OBJ:
         return []
-    out = cmd_lambda('list-functions', env)
-    out = json.loads(out)
+
     result = []
 
     def handle(func):
@@ -209,8 +216,13 @@ def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
                     f.targets = extract_endpoints(code_map, pool)
                 except Exception as e:
                     LOG.warning("Unable to get code for lambda '%s'" % func_name)
-    parallelize(handle, out['Functions'])
-    # print result
+
+    try:
+        out = cmd_lambda('list-functions', env)
+        out = json.loads(out)
+        parallelize(handle, out['Functions'])
+    except socket.error as e:
+        pass
     return result
 
 
@@ -273,47 +285,52 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
 
 
 def get_elasticsearch_domains(filter='.*', pool={}, env=None):
-    out = cmd_es('list-domain-names', env)
-    out = json.loads(out)
     result = []
+    try:
+        out = cmd_es('list-domain-names', env)
+        out = json.loads(out)
 
-    def handle(domain):
-        domain = domain['DomainName']
-        if re.match(filter, domain):
-            details = cmd_es('describe-elasticsearch-domain --domain-name %s' % domain, env)
-            details = json.loads(details)['DomainStatus']
-            arn = details['ARN']
-            es = ElasticSearch(arn)
-            es.endpoint = details['Endpoint']
-            result.append(es)
-            pool[arn] = es
-    parallelize(handle, out['DomainNames'])
+        def handle(domain):
+            domain = domain['DomainName']
+            if re.match(filter, domain):
+                details = cmd_es('describe-elasticsearch-domain --domain-name %s' % domain, env)
+                details = json.loads(details)['DomainStatus']
+                arn = details['ARN']
+                es = ElasticSearch(arn)
+                es.endpoint = details['Endpoint']
+                result.append(es)
+                pool[arn] = es
+        parallelize(handle, out['DomainNames'])
+    except socket.error as e:
+        pass
+
     return result
 
 
 def get_dynamo_dbs(filter='.*', pool={}, env=None):
-    out = cmd_dynamodb('list-tables', env)
-    out = json.loads(out)
     result = []
+    try:
+        out = cmd_dynamodb('list-tables', env)
+        out = json.loads(out)
 
-    def handle(table):
-        if re.match(filter, table):
-            details = cmd_dynamodb('describe-table --table-name %s' % table, env)
-            details = json.loads(details)['Table']
-            arn = details['TableArn']
-            db = DynamoDB(arn)
-            db.count = details['ItemCount']
-            db.bytes = details['TableSizeBytes']
-            db.created_at = details['CreationDateTime']
-            result.append(db)
-            pool[arn] = db
-    parallelize(handle, out['TableNames'])
+        def handle(table):
+            if re.match(filter, table):
+                details = cmd_dynamodb('describe-table --table-name %s' % table, env)
+                details = json.loads(details)['Table']
+                arn = details['TableArn']
+                db = DynamoDB(arn)
+                db.count = details['ItemCount']
+                db.bytes = details['TableSizeBytes']
+                db.created_at = details['CreationDateTime']
+                result.append(db)
+                pool[arn] = db
+        parallelize(handle, out['TableNames'])
+    except socket.error as e:
+        pass
     return result
 
 
 def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
-    out = cmd_s3api('list-buckets', env)
-    out = json.loads(out)
     result = []
 
     def handle(bucket):
@@ -336,26 +353,35 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
                             bucket.notifications.append(n)
                 except Exception as e:
                     print("WARNING: Unable to get details for bucket: %s" % e)
-    parallelize(handle, out['Buckets'])
+
+    try:
+        out = cmd_s3api('list-buckets', env)
+        out = json.loads(out)
+        parallelize(handle, out['Buckets'])
+    except socket.error as e:
+        pass
     return result
 
 
 def get_firehose_streams(filter='.*', pool={}, env=None):
-    out = cmd_firehose('list-delivery-streams', env)
-    out = json.loads(out)
     result = []
-    for stream_name in out['DeliveryStreamNames']:
-        if re.match(filter, stream_name):
-            details = cmd_firehose(
-                'describe-delivery-stream --delivery-stream-name %s' % stream_name, env)
-            details = json.loads(details)['DeliveryStreamDescription']
-            arn = details['DeliveryStreamARN']
-            s = FirehoseStream(arn)
-            for dest in details['Destinations']:
-                dest_s3 = dest['S3DestinationDescription']['BucketARN']
-                bucket = func = EventSource.get(dest_s3, pool=pool)
-                s.destinations.append(bucket)
-            result.append(s)
+    try:
+        out = cmd_firehose('list-delivery-streams', env)
+        out = json.loads(out)
+        for stream_name in out['DeliveryStreamNames']:
+            if re.match(filter, stream_name):
+                details = cmd_firehose(
+                    'describe-delivery-stream --delivery-stream-name %s' % stream_name, env)
+                details = json.loads(details)['DeliveryStreamDescription']
+                arn = details['DeliveryStreamARN']
+                s = FirehoseStream(arn)
+                for dest in details['Destinations']:
+                    dest_s3 = dest['S3DestinationDescription']['BucketARN']
+                    bucket = func = EventSource.get(dest_s3, pool=pool)
+                    s.destinations.append(bucket)
+                result.append(s)
+    except socket.error as e:
+        pass
     return result
 
 
