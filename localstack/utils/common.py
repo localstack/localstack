@@ -312,7 +312,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
                 mutex_popen.acquire()
                 stdin_arg = subprocess.PIPE if stdin else None
                 stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
-                process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg,
+                process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
                     stderr=subprocess.STDOUT, stdout=stdout_arg, env=env_dict, cwd=cwd)
                 return process
             finally:
