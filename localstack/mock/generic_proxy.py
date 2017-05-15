@@ -124,7 +124,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
 
 class GenericProxy(FuncThread):
-    def __init__(self, port, forward_host, update_listener=None, quiet=False, params={}):
+    def __init__(self, port, forward_host=None, update_listener=None, quiet=False, params={}):
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
         self.httpd = None
         self.port = port
