@@ -80,7 +80,7 @@ ADD tests/ tests/
 RUN make test
 
 # expose service & web dashboard ports
-EXPOSE 4567-4581 8080
+EXPOSE 4567-4582 8080
 
 # install supervisor daemon & copy config file
 ADD supervisord.conf /etc/supervisord.conf

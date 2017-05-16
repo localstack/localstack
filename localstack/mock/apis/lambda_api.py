@@ -19,6 +19,7 @@ from localstack.constants import *
 from localstack import config
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
+from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 from six import iteritems
 
 
@@ -191,6 +192,7 @@ def get_event_sources(func_name=None, source_arn=None):
     return result
 
 
+@cloudwatched('lambda')
 def run_lambda(func, event, context, func_arn, suppress_output=False):
     if suppress_output:
         stdout_ = sys.stdout

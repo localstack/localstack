@@ -31,6 +31,7 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 * **SES** at http://localhost:4579
 * **Route53** at http://localhost:4580
 * **CloudFormation** at http://localhost:4581
+* **CloudWatch** at http://localhost:4582
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
@@ -245,6 +246,7 @@ make web
 
 ## Change Log
 
+* v0.4.3: Initial support for CloudWatch metrics (for Lambda functions); HTTP forwards for API Gateway; fix S3 message body signatures; download Lambda archive from S3 bucket; fix/extend ES tests
 * v0.4.2: Initial support for Java Lambda functions; CloudFormation deployments; API Gateway tests
 * v0.4.1: Python 3 compatibility; data persistence; add seq. numbers in Kinesis events; limit Elasticsearch memory
 * v0.4.0: Execute Lambda functions in Docker containers; CORS headers for S3

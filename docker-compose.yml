@@ -4,7 +4,7 @@ services:
   localstack:
     image: atlassianlabs/localstack
     ports:
-      - "4567-4581:4567-4581"
+      - "4567-4582:4567-4582"
       - "8080:8080"
     environment:
       - SERVICES=${SERVICES- }

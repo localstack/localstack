@@ -142,7 +142,7 @@ class GenericProxy(FuncThread):
             self.httpd.serve_forever()
         except Exception as e:
             if not self.quiet:
-                LOGGER.error('Unable to start proxy on port %s: %s' % (self.port, traceback.format_exc()))
+                LOGGER.error('Exception running proxy on port %s: %s' % (self.port, traceback.format_exc()))
             raise
 
     def stop(self, quiet=False):
