@@ -1,9 +1,10 @@
-import base64
+import os
+import sys
 import json
 import time
-import sys
-import os
+import base64
 from io import BytesIO
+from datetime import datetime, timedelta
 from six.moves import cStringIO as StringIO
 from docopt import docopt
 from nose.tools import assert_raises
@@ -15,6 +16,7 @@ from localstack.mock import infra
 from localstack.mock.apis.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
+from localstack.utils.cloudwatch import cloudwatch_util
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON
 
@@ -113,6 +115,7 @@ def test_kinesis_lambda_ddb_streams():
     dynamodb_service = aws_stack.connect_to_service('dynamodb', env=env)
     dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams', env=env)
     kinesis = aws_stack.connect_to_service('kinesis', env=env)
+    cloudwatch = aws_stack.connect_to_service('cloudwatch', env=env)
 
     print('Creating test streams...')
     run_safe(lambda: dynamodb_service.delete_table(
@@ -191,3 +194,21 @@ def test_kinesis_lambda_ddb_streams():
     num_events = num_events_ddb + num_events_kinesis
     print('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))
     assert len(EVENTS) == num_events
+
+    # check cloudwatch notifications
+    stats1 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM)
+    assert len(stats1['Datapoints']) == 1
+    stats2 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)
+    assert len(stats2['Datapoints']) == 10
+
+
+def get_lambda_metrics(func_name):
+    return cloudwatch_util.get_metric_statistics(
+        Namespace='AWS/Lambda',
+        MetricName='Invocations',
+        Dimensions=[{'Name': 'FunctionName', 'Value': func_name}],
+        Period=60,
+        StartTime=datetime.now() - timedelta(minutes=1),
+        EndTime=datetime.now(),
+        Statistics=['Sum']
+    )

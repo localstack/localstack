@@ -118,6 +118,10 @@ def start_cloudformation(port=PORT_CLOUDFORMATION, async=False, update_listener=
         backend_port=DEFAULT_PORT_CLOUDFORMATION_BACKEND, update_listener=update_listener)
 
 
+def start_cloudwatch(port=PORT_CLOUDWATCH, async=False):
+    return start_moto_server('cloudwatch', port, name='CloudWatch', async=async)
+
+
 def start_redshift(port=PORT_REDSHIFT, async=False):
     return start_moto_server('redshift', port, name='Redshift', async=async)
 
@@ -397,6 +401,8 @@ def start_infra(async=False, apis=None):
             thread = start_ses(async=True)
         if 'cloudformation' in apis:
             thread = start_cloudformation(async=True, update_listener=cloudformation_listener.update_cloudformation)
+        if 'cloudwatch' in apis:
+            thread = start_cloudwatch(async=True)
         time.sleep(sleep_time)
         # check that all infra components are up and running
         check_infra(apis=apis)

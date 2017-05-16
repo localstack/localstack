@@ -72,7 +72,7 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 docker-run:        ## Run Docker image locally
 	port_mappings="$(shell echo $(SERVICES) | sed 's/[^0-9]/ /g' | sed 's/\([0-9][0-9]*\)/-p \1:\1/g' | sed 's/  */ /g')"; \
 		mkdir -p $(TMP_DIR); chmod -R 777 $(TMP_DIR); \
-		docker run -it $(ENTRYPOINT) -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e DATA_DIR=$(DATA_DIR) -e LAMBDA_EXECUTOR=$(LAMBDA_EXECUTOR) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -p 4567-4581:4567-4581 -p 8080:8080 $$port_mappings -v $(TMP_DIR):$(TMP_DIR) -v $(DOCKER_SOCK):$(DOCKER_SOCK) -e DOCKER_HOST="unix://$(DOCKER_SOCK)" $(IMAGE_NAME) $(CMD)
+		docker run -it $(ENTRYPOINT) -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e DATA_DIR=$(DATA_DIR) -e LAMBDA_EXECUTOR=$(LAMBDA_EXECUTOR) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -p 4567-4582:4567-4582 -p 8080:8080 $$port_mappings -v $(TMP_DIR):$(TMP_DIR) -v $(DOCKER_SOCK):$(DOCKER_SOCK) -e DOCKER_HOST="unix://$(DOCKER_SOCK)" $(IMAGE_NAME) $(CMD)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8080)

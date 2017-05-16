@@ -353,13 +353,14 @@ def remove_non_ascii(text):
 
 
 def make_http_request(url, data=None, headers=None, method='GET'):
+    """ Execute an HTTP request, avoiding requests library reading credentials from ~/.netrc file """
+
     import requests
 
     if is_string(method):
         method = requests.__dict__[method.lower()]
 
     class NetrcBypassAuth(requests.auth.AuthBase):
-        """avoid requests library reading credentials from ~/.netrc file"""
         def __call__(self, r):
             return r
 
