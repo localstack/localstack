@@ -1,9 +1,12 @@
 import json
 import traceback
+import base64
 import boto3.dynamodb.types
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import to_str
 
 KINESIS_STREAM_NAME = 'test-stream-1'
+MSG_BODY_RAISE_ERROR_FLAG = 'raise_error'
 
 
 # Subclass of boto's TypeDeserializer for DynamoDB
@@ -27,7 +30,10 @@ def handler(event, context):
     for record in event['Records']:
         # Deserialize into Python dictionary and extract the
         # "NewImage" (the new version of the full ddb document)
-        ddb_new_image = deserialize_ddb_stream_event(record)
+        ddb_new_image = deserialize_event(record)
+
+        if MSG_BODY_RAISE_ERROR_FLAG in ddb_new_image['data']:
+            raise Exception('Test exception (this is intentional)')
 
         # Place the raw event message document into the Kinesis message format
         kinesis_record = {
@@ -41,12 +47,13 @@ def handler(event, context):
     forward_events(raw_event_messages)
 
 
-def deserialize_ddb_stream_event(event):
+def deserialize_event(event):
     # Deserialize into Python dictionary and extract the "NewImage" (the new version of the full ddb document)
     ddb = event.get('dynamodb')
     if not ddb:
         result = event.get('kinesis')
         assert result['sequenceNumber']
+        result['data'] = json.loads(to_str(base64.b64decode(result['data'])))
         return result
     ddb_deserializer = TypeDeserializer()
     return ddb_deserializer.deserialize({'M': ddb['NewImage']})
