@@ -212,14 +212,16 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         if use_docker():
             if not lambda_cwd:
                 raise Exception('Missing working directory for executing Lambda function in Docker container')
-            hostname_fix = '-e HOSTNAME="%s"' % DOCKER_BRIDGE_IP
-            cmd = (('docker run ' +
-                '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY" ' +
-                '-v "%s":/var/task lambci/lambda:%s "%s"') %
-                (hostname_fix, lambda_cwd, runtime, handler))
+            cmd = (
+                'CONTAINER_ID="$(docker create -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY" -e HOSTNAME="$HOSTNAME" lambci/lambda:%s %s)";'
+                'docker cp "%s/." "$CONTAINER_ID:/var/task";'
+                'docker start -a "$CONTAINER_ID";'
+            ) % (runtime, handler, lambda_cwd)
             print(cmd)
-            event_string = json.dumps(event).replace("'", "\\'")
-            result = run(cmd, env_vars={'AWS_LAMBDA_EVENT_BODY': event_string})
+            result = run(cmd, env_vars={
+                'AWS_LAMBDA_EVENT_BODY': json.dumps(event).replace("'", "\\'"),
+                'HOSTNAME': DOCKER_BRIDGE_IP,
+            })
         else:
             function_code = func.func_code if 'func_code' in func.__dict__ else func.__code__
             if function_code.co_argcount == 2:
