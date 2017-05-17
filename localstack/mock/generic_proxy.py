@@ -143,7 +143,6 @@ class GenericProxy(FuncThread):
         except Exception as e:
             if not self.quiet:
                 LOGGER.error('Exception running proxy on port %s: %s' % (self.port, traceback.format_exc()))
-            raise
 
     def stop(self, quiet=False):
         self.quiet = quiet

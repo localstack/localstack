@@ -115,7 +115,6 @@ def test_kinesis_lambda_ddb_streams():
     dynamodb_service = aws_stack.connect_to_service('dynamodb', env=env)
     dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams', env=env)
     kinesis = aws_stack.connect_to_service('kinesis', env=env)
-    cloudwatch = aws_stack.connect_to_service('cloudwatch', env=env)
 
     print('Creating test streams...')
     run_safe(lambda: dynamodb_service.delete_table(
@@ -179,9 +178,12 @@ def test_kinesis_lambda_ddb_streams():
                 'Data': '{}',
                 'PartitionKey': 'testId%s' % i
             } for i in range(0, num_events_kinesis)
-        ],
-        StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME
+        ], StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME
     )
+
+    # put 1 item to stream that will trigger an error in the Lambda
+    kinesis.put_record(Data='{"%s": 1}' % lambda_integration.MSG_BODY_RAISE_ERROR_FLAG,
+        PartitionKey='testIderror', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
 
     # get latest records
     latest = aws_stack.kinesis_get_latest_records(TEST_LAMBDA_SOURCE_STREAM_NAME,
@@ -197,15 +199,17 @@ def test_kinesis_lambda_ddb_streams():
 
     # check cloudwatch notifications
     stats1 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM)
-    assert len(stats1['Datapoints']) == 1
-    stats2 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)
-    assert len(stats2['Datapoints']) == 10
+    assert len(stats1['Datapoints']) == 2
+    stats2 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM, 'Errors')
+    assert len(stats2['Datapoints']) == 1
+    stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)
+    assert len(stats3['Datapoints']) == 10
 
 
-def get_lambda_metrics(func_name):
+def get_lambda_metrics(func_name, metric='Invocations'):
     return cloudwatch_util.get_metric_statistics(
         Namespace='AWS/Lambda',
-        MetricName='Invocations',
+        MetricName=metric,
         Dimensions=[{'Name': 'FunctionName', 'Value': func_name}],
         Period=60,
         StartTime=datetime.now() - timedelta(minutes=1),
