@@ -148,7 +148,7 @@ def use_docker():
         if config.LAMBDA_EXECUTOR == 'docker':
             try:
                 run('docker images', print_error=False)
-                run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
+                # run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
                 DO_USE_DOCKER = True
             except Exception as e:
                 pass
