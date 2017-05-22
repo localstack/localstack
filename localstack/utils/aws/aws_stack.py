@@ -113,6 +113,12 @@ def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=N
     return connect_to_service(service_name, client=False, env=env, region_name=region_name, endpoint_url=endpoint_url)
 
 
+def get_boto3_credentials():
+    if CUSTOM_BOTO3_SESSION:
+        return CUSTOM_BOTO3_SESSION.get_credentials()
+    return boto3.session.Session().get_credentials()
+
+
 def get_boto3_session():
     my_session = None
     if CUSTOM_BOTO3_SESSION:
@@ -263,10 +269,10 @@ def get_sqs_queue_url(queue_name):
     return response['QueueUrl']
 
 
-def dynamodb_get_item_raw(dynamodb_url, request):
+def dynamodb_get_item_raw(request):
     headers = mock_aws_request_headers()
     headers['X-Amz-Target'] = 'DynamoDB_20120810.GetItem'
-    new_item = make_http_request(url=dynamodb_url,
+    new_item = make_http_request(url=config.TEST_DYNAMODB_URL,
         method='POST', data=json.dumps(request), headers=headers)
     new_item = json.loads(new_item.text)
     return new_item
@@ -276,13 +282,14 @@ def mock_aws_request_headers(service='dynamodb'):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == 'kinesis':
         ctype = APPLICATION_AMZ_JSON_1_1
+    access_key = get_boto3_credentials().access_key
     headers = {
         'Content-Type': ctype,
         'Accept-Encoding': 'identity',
         'X-Amz-Date': '20160623T103251Z',
         'Authorization': ('AWS4-HMAC-SHA256 ' +
-            'Credential=ABC/20160623/us-east-1/%s/aws4_request, ' +
-            'SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234') % service
+            'Credential=%s/20160623/us-east-1/%s/aws4_request, ' +
+            'SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234') % (access_key, service)
     }
     return headers
 

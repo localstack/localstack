@@ -1,5 +1,6 @@
 import json
 import random
+import logging
 from requests.models import Response
 from localstack import config
 from localstack.utils.aws import aws_stack
@@ -9,6 +10,9 @@ from localstack.mock.apis import lambda_api, dynamodbstreams_api
 
 # cache table definitions - used for testing
 TABLE_DEFINITIONS = {}
+
+# set up logger
+LOGGER = logging.getLogger(__name__)
 
 
 def update_dynamodb(method, path, data, headers, response=None, return_forward_info=False):
@@ -42,12 +46,14 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     }
 
     if action == 'DynamoDB_20120810.UpdateItem':
-        req = {'TableName': data['TableName']}
-        req['Key'] = data['Key']
-        new_item = aws_stack.dynamodb_get_item_raw(config.TEST_DYNAMODB_URL, req)
+        req = {'TableName': data['TableName'], 'Key': data['Key']}
+        new_item = aws_stack.dynamodb_get_item_raw(req)
         if 'Item' not in new_item:
             if 'message' in new_item:
-                print('WARNING: Unable to get item from DynamoDB: %s' % new_item['message'])
+                ddb_client = aws_stack.connect_to_service('dynamodb')
+                table_names = ddb_client.list_tables()['TableNames']
+                msg = 'Unable to get item from DynamoDB (existing tables: %s): %s' % (table_names, new_item['message'])
+                LOGGER.warning(msg)
             return
         record['eventName'] = 'MODIFY'
         record['dynamodb']['Keys'] = data['Key']
@@ -85,7 +91,7 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
 def dynamodb_extract_keys(item, table_name):
     result = {}
     if table_name not in TABLE_DEFINITIONS:
-        print("WARN: unknown table: %s not found in %s" % (table_name, TABLE_DEFINITIONS))
+        LOGGER.warning("Unknown table: %s not found in %s" % (table_name, TABLE_DEFINITIONS))
         return None
     for key in TABLE_DEFINITIONS[table_name]['KeySchema']:
         attr_name = key['AttributeName']
