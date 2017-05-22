@@ -39,7 +39,8 @@ LOGGER = logging.getLogger(os.path.basename(__file__))
 # -----------------
 
 
-def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
+# deprecated - remove?
+def start_dynamodb_dynalite(port=PORT_DYNAMODB, async=False, update_listener=None):
     install.install_dynalite()
     backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
     ddb_data_dir_param = ''
@@ -48,6 +49,21 @@ def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
         mkdir(ddb_data_dir)
         ddb_data_dir_param = '--path %s' % ddb_data_dir
     cmd = '%s/node_modules/dynalite/cli.js --port %s %s' % (ROOT_PATH, backend_port, ddb_data_dir_param)
+    print("Starting mock DynamoDB (port %s)..." % port)
+    start_proxy(port, backend_port, update_listener)
+    return do_run(cmd, async)
+
+
+def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
+    install.install_dynamodb_local()
+    backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
+    ddb_data_dir_param = '-inMemory'
+    if DATA_DIR:
+        ddb_data_dir = '%s/dynamodb' % DATA_DIR
+        mkdir(ddb_data_dir)
+        ddb_data_dir_param = '-dbPath %s' % ddb_data_dir
+    cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +
+        '-jar DynamoDBLocal.jar -port %s %s') % (ROOT_PATH, backend_port, ddb_data_dir_param)
     print("Starting mock DynamoDB (port %s)..." % port)
     start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
@@ -350,6 +366,11 @@ def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[
 
 def start_infra(async=False, apis=None):
     try:
+        # set up logging
+        logging.basicConfig(level=logging.WARNING)
+        logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+        LOGGER.setLevel(logging.INFO)
+
         if not apis:
             apis = list(SERVICE_PORTS.keys())
         # set environment
@@ -427,9 +448,5 @@ def start_infra(async=False, apis=None):
 if __name__ == '__main__':
 
     print('Starting local dev environment. CTRL-C to quit.')
-    # set up logging
-    logging.basicConfig(level=logging.WARNING)
-    logging.getLogger('elasticsearch').setLevel(logging.ERROR)
-    LOGGER.setLevel(logging.INFO)
     # fire it up!
     start_infra()

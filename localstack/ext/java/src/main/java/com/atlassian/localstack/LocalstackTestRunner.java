@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
@@ -112,6 +113,10 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		return ensureInstallationAndGetEndpoint("cloudformation");
 	}
 
+	public static String getEndpointCloudWatch() {
+		return ensureInstallationAndGetEndpoint("cloudwatch");
+	}
+
 	/* UTILITY METHODS */
 
 	@Override
@@ -122,10 +127,16 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 
 	private static void ensureInstallation() {
 		File dir = new File(TMP_INSTALL_DIR);
-		if(!dir.exists()) {
-			LOG.info("Installing LocalStack to temporary directory (this might take a while): " + TMP_INSTALL_DIR);
+		File constantsFile = new File(dir, "localstack/constants.py");
+		if(!constantsFile.exists()) {
+			LOG.info("Installing LocalStack to temporary directory (this may take a while): " + TMP_INSTALL_DIR);
+			try {
+				FileUtils.deleteDirectory(dir);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 			exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
-			exec("cd " + TMP_INSTALL_DIR + "; make install");
+			exec("cd \"" + TMP_INSTALL_DIR + "\"; make install");
 		}
 	}
 

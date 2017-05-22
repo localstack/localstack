@@ -67,6 +67,8 @@ def deploy_resource(resource):
     func_details = func_details[ACTION_CREATE]
     function = getattr(client, func_details['function'])
     params = dict(func_details['parameters'])
+    if 'Properties' not in resource:
+        resource['Properties'] = {}
     for param_key, prop_key in iteritems(params):
         params[param_key] = resource['Properties'].get(prop_key)
     # invoke function

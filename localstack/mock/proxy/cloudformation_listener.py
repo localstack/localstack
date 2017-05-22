@@ -1,5 +1,7 @@
 import re
 import uuid
+import json
+import xmltodict
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.constants import *
@@ -10,19 +12,13 @@ from localstack.utils.cloudformation import template_deployer
 
 XMLNS_CLOUDFORMATION = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
 
-ERROR_TYPES = {
-    400: 'ValidationError',
-    404: 'ChangeSetNotFound'
-}
-
 # maps change set names to change set details
 CHANGE_SETS = {}
 
 
-def error_response(message, code=400):
+def error_response(message, code=400, error_type='ValidationError'):
     response = Response()
     response.status_code = code
-    error_type = ERROR_TYPES.get(code)
     response.headers['x-amzn-errortype'] = error_type
     response._content = """<ErrorResponse xmlns="%s">
           <Error>
@@ -35,7 +31,7 @@ def error_response(message, code=400):
     return response
 
 
-def make_response(operation_name, message='', code=400):
+def make_response(operation_name, content='', code=200):
     response = Response()
     response._content = """<{op_name}Response xmlns="{xmlns}">
       <{op_name}Result>
@@ -44,7 +40,7 @@ def make_response(operation_name, message='', code=400):
       <ResponseMetadata><RequestId>{uid}</RequestId></ResponseMetadata>
     </{op_name}Response>""".format(xmlns=XMLNS_CLOUDFORMATION,
         op_name=operation_name, uid=uuid.uuid4(), content=content)
-    response.status_code = 200
+    response.status_code = code
     return response
 
 
@@ -71,7 +67,7 @@ def describe_change_set(req_data):
     cs_arn = req_data.get('ChangeSetName')[0]
     cs_details = CHANGE_SETS.get(cs_arn)
     if not cs_details:
-        return error_response('Change Set %s does not exist' % cs_arn, 404)
+        return error_response('Change Set %s does not exist' % cs_arn, 404, 'ChangeSetNotFound')
     stack_name = cs_details.get('StackName')[0]
     response_content = """
         <StackName>%s</StackName>
@@ -86,7 +82,7 @@ def execute_change_set(req_data):
     stack_name = req_data.get('StackName')[0]
     cs_details = CHANGE_SETS.get(cs_arn)
     if not cs_details:
-        return error_response('Change Set %s does not exist' % cs_arn, 404)
+        return error_response('Change Set %s does not exist' % cs_arn, 404, 'ChangeSetNotFound')
 
     # convert to JSON (might have been YAML, and update_stack/create_stack seem to only work with JSON)
     template = template_deployer.template_to_json(cs_details.get('TemplateBody')[0])
@@ -124,7 +120,17 @@ def update_cloudformation(method, path, data, headers, response=None, return_for
         return True
 
     if req_data:
-        if action == 'CreateStack' or action == 'UpdateStack':
+        if action == 'DescribeStackResources':
+            response_dict = xmltodict.parse(response.content)['DescribeStackResourcesResponse']
+            resources = response_dict['DescribeStackResourcesResult']['StackResources']
+            if not resources:
+                # TODO: check if stack exists
+                return error_response('Stack does not exist', code=404)
+        if action == 'DescribeStackResource':
+            if response.status_code >= 500:
+                # fix an error in moto where it fails with 500 if the stack does not exist
+                return error_response('Stack resource does not exist', code=404)
+        elif action == 'CreateStack' or action == 'UpdateStack':
             if response.status_code in range(200, 300):
                 # run the actual deployment
                 template = template_deployer.template_to_json(req_data.get('TemplateBody')[0])

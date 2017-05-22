@@ -1,7 +1,12 @@
 package com.atlassian.localstack;
 
 import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -20,6 +25,22 @@ public class TestUtils {
 		Map<String, String> newEnv = new HashMap<String, String>();
 		newEnv.put(key, value);
 		setEnv(newEnv);
+	}
+
+	protected static AmazonSQS getClientSQS() {
+		return AmazonSQSClientBuilder.standard().withEndpointConfiguration(getEndpointConfigurationSQS()).build();
+	}
+
+	protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationLambda() {
+		return getEndpointConfiguration(LocalstackTestRunner.getEndpointLambda());
+	}
+
+	protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationSQS() {
+		return getEndpointConfiguration(LocalstackTestRunner.getEndpointSQS());
+	}
+
+	protected static AwsClientBuilder.EndpointConfiguration getEndpointConfiguration(String endpointURL) {
+		return new AwsClientBuilder.EndpointConfiguration(endpointURL, DEFAULT_REGION);
 	}
 
 	protected static void setEnv(Map<String, String> newEnv) {

@@ -63,6 +63,21 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <!-- test dependencies -->
+        <dependency>
+            <groupId>javax.jms</groupId>
+            <artifactId>jms-api</artifactId>
+            <version>1.1-rev-1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>amazon-sqs-java-messaging-lib</artifactId>
+            <version>1.0.2</version>
+            <type>jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -94,4 +94,5 @@ APPLICATION_JSON = 'application/json'
 LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 
 # installation constants
-ELASTICSEARCH_JAR_URL = ('https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.3.0.zip')
+ELASTICSEARCH_JAR_URL = 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.3.0.zip'
+DYNAMODB_JAR_URL = 'https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip'
