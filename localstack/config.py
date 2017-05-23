@@ -15,6 +15,9 @@ HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 # whether to use Lambda functions in a Docker container
 LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR', '').strip() or 'docker'
 
+# whether to remotely copy the lambda or locally mount a volume
+LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() == 'true'
+
 # folder for temporary files and data
 TMP_FOLDER = '/tmp/localstack'
 
