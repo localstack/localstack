@@ -120,12 +120,12 @@ You can pass the following environment variables to LocalStack:
   the `docker` command needs to be available inside the container (usually requires to run the
   container in privileged mode). Default is `docker`, fallback to `local` if Docker is not available.
 * `LAMBDA_REMOTE_DOCKER`:
-  - when set to `false` (default): your lambda functions definitions will be passed to the container by
-    mounting the volume (potentially faster) It is mandatory to have the Docker client and the Docker
-    host on the same machine
-  - when set to `true`: your lambda functions definitions will be passed to the container by
-    copying the zip file (potentially slower). It allows for remote execution, where the host
-    and the client are not on the same machine
+    - when set to `false` (default): your lambda functions definitions will be passed to the container by
+      mounting the volume (potentially faster) It is mandatory to have the Docker client and the Docker
+      host on the same machine
+    - when set to `true`: your lambda functions definitions will be passed to the container by
+      copying the zip file (potentially slower). It allows for remote execution, where the host
+      and the client are not on the same machine
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
   Kinesis, DynamoDB, Elasticsearch). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
