@@ -3,7 +3,7 @@
 import os
 import sys
 import logging
-from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL
+from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL
 from localstack.config import *
 from localstack.utils.common import parallelize, run
 
@@ -14,7 +14,10 @@ ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
 INSTALL_DIR_INFRA = '%s/infra' % ROOT_PATH
 INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
 INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
+INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
 TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
+TMP_ARCHIVE_DDB = '/tmp/localstack.ddb.zip'
+
 
 # set up logger
 LOGGER = logging.getLogger(os.path.basename(__file__))
@@ -40,6 +43,7 @@ def install_kinesalite():
         run('cd "%s" && npm install leveldown kinesalite' % ROOT_PATH)
 
 
+# TODO deprecated - remove?
 def install_dynalite():
     target_dir = '%s/dynalite' % INSTALL_DIR_NPM
     if not os.path.exists(target_dir):
@@ -47,11 +51,39 @@ def install_dynalite():
         run('cd "%s" && npm install leveldown dynalite' % ROOT_PATH)
 
 
+def is_alpine():
+    try:
+        run('cat /etc/issue | grep Alpine')
+        return True
+    except Exception as e:
+        return False
+
+
+def install_dynamodb_local():
+    if not os.path.exists(INSTALL_DIR_DDB):
+        LOGGER.info('Downloading and installing local DynamoDB server. This may take some time.')
+        run('mkdir -p %s' % INSTALL_DIR_DDB)
+        if not os.path.exists(TMP_ARCHIVE_DDB):
+            run('curl -o "%s" "%s"' % (TMP_ARCHIVE_DDB, DYNAMODB_JAR_URL))
+        cmd = 'cd %s && cp %s ddb.zip && unzip -q ddb.zip && rm ddb.zip'
+        run(cmd % (INSTALL_DIR_DDB, TMP_ARCHIVE_DDB))
+        # fix for Alpine, otherwise DynamoDBLocal fails with:
+        # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
+        if is_alpine():
+            patched_lib = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
+                'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/libsqlite4java-linux-amd64.so')
+            patched_jar = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
+                'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/sqlite4java.jar')
+            run("curl -L -o %s/DynamoDBLocal_lib/libsqlite4java-linux-amd64.so '%s'" % (INSTALL_DIR_DDB, patched_lib))
+            run("curl -L -o %s/DynamoDBLocal_lib/sqlite4java.jar '%s'" % (INSTALL_DIR_DDB, patched_jar))
+
+
 def install_component(name):
     if name == 'kinesis':
         install_kinesalite()
     elif name == 'dynamodb':
-        install_dynalite()
+        # install_dynalite()
+        install_dynamodb_local()
     elif name == 'es':
         install_elasticsearch()
 

@@ -110,8 +110,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                         headers=forward_headers)
             # update listener (post-invocation)
             if self.proxy.update_listener:
-                self.proxy.update_listener(method=method, path=path,
+                updated_response = self.proxy.update_listener(method=method, path=path,
                     data=data, headers=self.headers, response=response)
+                if isinstance(updated_response, Response):
+                    response = updated_response
             # copy headers and return response
             self.send_response(response.status_code)
             for header_key, header_value in iteritems(response.headers):
