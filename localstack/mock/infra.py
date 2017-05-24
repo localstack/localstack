@@ -225,7 +225,7 @@ def start_proxy(port, backend_port, update_listener, quiet=False, backend_host=D
 
 
 def start_moto_server(key, port, name=None, backend_port=None, async=False, update_listener=None):
-    cmd = '%s/bin/moto_server %s -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, key,
+    cmd = 'VALIDATE_LAMBDA_S3=0 %s/bin/moto_server %s -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, key,
         backend_port or port, constants.BIND_HOST)
     if not name:
         name = key

@@ -10,6 +10,9 @@ import glob
 import subprocess
 import six
 import socket
+import json
+import decimal
+import logging
 from io import BytesIO
 from contextlib import closing
 from datetime import datetime
@@ -35,6 +38,22 @@ mutex_popen = threading.Semaphore(1)
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
 TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
 
+# set up logger
+LOGGER = logging.getLogger(__name__)
+
+
+# Helper class to convert JSON documents with datetime or decimals.
+class CustomEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            if o % 1 > 0:
+                return float(o)
+            else:
+                return int(o)
+        if isinstance(o, datetime):
+            return str(o)
+        return super(DecimalEncoder, self).default(o)
+
 
 class FuncThread (threading.Thread):
     def __init__(self, func, params, quiet=False):
@@ -49,12 +68,12 @@ class FuncThread (threading.Thread):
             self.func(self.params)
         except Exception as e:
             if not self.quiet:
-                print("Thread run method %s(%s) failed: %s" %
+                LOGGER.warning("Thread run method %s(%s) failed: %s" %
                     (self.func, self.params, traceback.format_exc()))
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:
-            print("WARN: not implemented: FuncThread.stop(..)")
+            LOGGER.warning("Not implemented: FuncThread.stop(..)")
 
 
 class ShellCommandThread (FuncThread):
@@ -97,9 +116,9 @@ class ShellCommandThread (FuncThread):
                 self.process.communicate()
         except Exception as e:
             if self.process and not self.quiet:
-                print('Shell command error "%s": %s' % (e, self.cmd))
+                LOGGER.warning('Shell command error "%s": %s' % (e, self.cmd))
         if self.process and not self.quiet and self.process.returncode != 0:
-            print('Shell command exit code "%s": %s' % (self.process.returncode, self.cmd))
+            LOGGER.warning('Shell command exit code "%s": %s' % (self.process.returncode, self.cmd))
 
     def is_killed(self):
         if not self.process:
@@ -110,7 +129,7 @@ class ShellCommandThread (FuncThread):
 
     def stop(self, quiet=False):
         if not self.process:
-            print("WARN: No process found for command '%s'" % self.cmd)
+            LOGGER.warning("No process found for command '%s'" % self.cmd)
             return
 
         import psutil
@@ -123,7 +142,7 @@ class ShellCommandThread (FuncThread):
             self.process = None
         except Exception as e:
             if not quiet:
-                print('WARN: Unable to kill process with pid %s' % pid)
+                LOGGER.warning('Unable to kill process with pid %s' % pid)
 
 
 def is_string(s, include_unicode=True):
@@ -180,6 +199,20 @@ def dump_thread_info():
     print(run("ps aux | grep 'node\\|java\\|python'"))
 
 
+def merge_recursive(source, destination):
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            merge_recursive(value, node)
+        else:
+            if not isinstance(destination, dict):
+                LOGGER.warning('Destination for merging %s=%s is not dict: %s' %
+                    (key, value, destination))
+            destination[key] = value
+    return destination
+
+
 def now_utc():
     return mktime(datetime.utcnow())
 
@@ -199,6 +232,10 @@ def mkdir(folder):
 
 def short_uid():
     return str(uuid.uuid4())[0:8]
+
+
+def json_safe(item):
+    return json.loads(json.dumps(item, cls=CustomEncoder))
 
 
 def save_file(file, content, append=False):

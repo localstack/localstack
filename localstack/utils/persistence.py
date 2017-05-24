@@ -19,7 +19,6 @@ API_FILE_PATHS = {}
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.INFO)
 
 
 def should_record(api, method, path, data, headers):
