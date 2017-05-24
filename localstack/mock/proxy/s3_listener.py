@@ -220,7 +220,7 @@ def update_s3(method, path, data, headers, response=None, return_forward_info=Fa
                 return delete_cors(bucket)
 
         if modified_data:
-            return Request(data=modified_data, headers=headers)
+            return Request(data=modified_data, headers=headers, method=method)
         return True
 
     # get subscribers and send bucket notifications

@@ -4,6 +4,7 @@ import os
 import json
 import traceback
 import logging
+from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
 from six import iteritems, string_types
 from six.moves.socketserver import ThreadingMixIn
@@ -81,7 +82,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 # unable to parse JSON, fallback to verbatim string/bytes
                 data = data_string
 
-        forward_headers = dict(self.headers)
+        forward_headers = CaseInsensitiveDict(self.headers)
         # update original "Host" header
         forward_headers['host'] = urlparse(target_url).netloc
         try:
@@ -95,6 +96,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     response = listener_result
                 elif isinstance(listener_result, Request):
                     modified_request = listener_result
+                    data = modified_request.data
+                    forward_headers = modified_request.headers
                 elif listener_result is not True:
                     # get status code from response, or use Bad Gateway status code
                     code = listener_result if isinstance(listener_result, int) else 503
@@ -111,7 +114,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             # update listener (post-invocation)
             if self.proxy.update_listener:
                 updated_response = self.proxy.update_listener(method=method, path=path,
-                    data=data, headers=self.headers, response=response)
+                    data=data, headers=forward_headers, response=response)
                 if isinstance(updated_response, Response):
                     response = updated_response
             # copy headers and return response

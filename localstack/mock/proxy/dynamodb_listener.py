@@ -69,8 +69,8 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     elif action == 'DynamoDB_20120810.CreateTable':
         if 'StreamSpecification' in data:
             stream = data['StreamSpecification']
-            enabled = stream['StreamEnabled']
-            if enabled:
+            enabled = stream.get('StreamEnabled')
+            if enabled not in [False, 'False']:
                 table_name = data['TableName']
                 view_type = stream['StreamViewType']
                 dynamodbstreams_api.add_dynamodb_stream(table_name=table_name,
