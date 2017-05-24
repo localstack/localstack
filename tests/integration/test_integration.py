@@ -163,11 +163,16 @@ def test_kinesis_lambda_ddb_streams():
     num_events_ddb = 10
     print('Putting %s items to table...' % num_events_ddb)
     table = dynamodb.Table(TEST_TABLE_NAME)
-    for i in range(0, num_events_ddb):
+    for i in range(0, num_events_ddb - 3):
         table.put_item(Item={
             PARTITION_KEY: 'testId%s' % i,
             'data': 'foobar123'
         })
+    dynamodb.batch_write_item(RequestItems={TEST_TABLE_NAME: [
+        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}},
+        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}},
+        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}}
+    ]})
 
     # put items to stream
     num_events_kinesis = 10

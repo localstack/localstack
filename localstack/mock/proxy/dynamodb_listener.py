@@ -41,9 +41,7 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
         "awsRegion": DEFAULT_REGION,
         "eventSource": "aws:dynamodb"
     }
-    event = {
-        'Records': [record]
-    }
+    records = [record]
 
     if action == 'DynamoDB_20120810.UpdateItem':
         req = {'TableName': data['TableName'], 'Key': data['Key']}
@@ -58,6 +56,19 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
         record['eventName'] = 'MODIFY'
         record['dynamodb']['Keys'] = data['Key']
         record['dynamodb']['NewImage'] = new_item['Item']
+    elif action == 'DynamoDB_20120810.BatchWriteItem':
+        records = []
+        for table_name, requests in data['RequestItems'].items():
+            for request in requests:
+                put_request = request.get('PutRequest')
+                if put_request:
+                    keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
+                    new_record = clone(record)
+                    new_record['eventName'] = 'INSERT'
+                    new_record['dynamodb']['Keys'] = keys
+                    new_record['dynamodb']['NewImage'] = put_request['Item']
+                    new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                    records.append(new_record)
     elif action == 'DynamoDB_20120810.PutItem':
         record['eventName'] = 'INSERT'
         keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
@@ -79,13 +90,16 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     else:
         # nothing to do
         return
-    record['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
-    sources = lambda_api.get_event_sources(source_arn=record['eventSourceARN'])
-    if len(sources) > 0:
-        pass
-    for src in sources:
-        func_to_call = lambda_api.lambda_arn_to_function[src['FunctionArn']]
-        lambda_api.run_lambda(func_to_call, event=event, context={}, func_arn=src['FunctionArn'])
+    if 'TableName' in data:
+        record['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
+    for record in records:
+        sources = lambda_api.get_event_sources(source_arn=record['eventSourceARN'])
+        event = {
+            'Records': [record]
+        }
+        for src in sources:
+            func_to_call = lambda_api.lambda_arn_to_function[src['FunctionArn']]
+            lambda_api.run_lambda(func_to_call, event=event, context={}, func_arn=src['FunctionArn'])
 
 
 def dynamodb_extract_keys(item, table_name):
