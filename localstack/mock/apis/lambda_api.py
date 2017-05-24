@@ -148,7 +148,7 @@ def use_docker():
         if config.LAMBDA_EXECUTOR == 'docker':
             try:
                 run('docker images', print_error=False)
-                run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
+                # run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
                 DO_USE_DOCKER = True
             except Exception as e:
                 pass
@@ -210,16 +210,29 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         runtime = lambda_arn_to_runtime.get(func_arn)
         handler = lambda_arn_to_handler.get(func_arn)
         if use_docker():
-            if not lambda_cwd:
-                raise Exception('Missing working directory for executing Lambda function in Docker container')
-            hostname_fix = '-e HOSTNAME="%s"' % DOCKER_BRIDGE_IP
-            cmd = (('docker run ' +
-                '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY" ' +
-                '-v "%s":/var/task lambci/lambda:%s "%s"') %
-                (hostname_fix, lambda_cwd, runtime, handler))
+            if config.LAMBDA_REMOTE_DOCKER:
+                cmd = (
+                    'CONTAINER_ID="$(docker create'
+                    ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
+                    ' -e HOSTNAME="$HOSTNAME"'
+                    ' "lambci/lambda:%s" "%s"'
+                    ')";'
+                    'docker cp "%s/." "$CONTAINER_ID:/var/task";'
+                    'docker start -a "$CONTAINER_ID";'
+                ) % (runtime, handler, lambda_cwd)
+            else:
+                cmd = (
+                    'docker run'
+                    ' -v "%s":/var/task'
+                    ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
+                    ' -e HOSTNAME="$HOSTNAME"'
+                    ' "lambci/lambda:%s" "%s"'
+                ) % (lambda_cwd, runtime, handler)
             print(cmd)
-            event_string = json.dumps(event).replace("'", "\\'")
-            result = run(cmd, env_vars={'AWS_LAMBDA_EVENT_BODY': event_string})
+            result = run(cmd, env_vars={
+                'AWS_LAMBDA_EVENT_BODY': json.dumps(event).replace("'", "\\'"),
+                'HOSTNAME': DOCKER_BRIDGE_IP,
+            })
         else:
             function_code = func.func_code if 'func_code' in func.__dict__ else func.__code__
             if function_code.co_argcount == 2:
