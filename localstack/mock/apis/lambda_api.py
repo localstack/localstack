@@ -163,6 +163,25 @@ def in_docker():
         return 'docker' in ifh.read()
 
 
+def process_sns_notification(func_arn, topic_arn, message, subject=''):
+    try:
+        lambda_function = lambda_arn_to_function[func_arn]
+        event = {
+            'Records': [{
+                'Sns': {
+                    'Type': 'Notification',
+                    'TopicArn': topic_arn,
+                    'Subject': subject,
+                    'Message': message,
+                    'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS)
+                }
+            }]
+        }
+        run_lambda(lambda_function, event=event, context={}, func_arn=func_arn)
+    except Exception as e:
+        LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (e, traceback.format_exc()))
+
+
 def process_kinesis_records(records, stream_name):
     # feed records into listening lambdas
     try:

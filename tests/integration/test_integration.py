@@ -29,6 +29,7 @@ TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = 'test_bucket'
 TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_2'
 TEST_QUEUE_NAME = 'test_queue'
+TEST_TOPIC_NAME = 'test_topic'
 
 EVENTS = []
 
@@ -107,7 +108,7 @@ def test_bucket_notifications():
         sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
 
 
-def test_kinesis_lambda_ddb_streams():
+def test_kinesis_lambda_sns_ddb_streams():
 
     env = ENV_DEV
     ddb_lease_table_suffix = '-kclapp'
@@ -115,6 +116,7 @@ def test_kinesis_lambda_ddb_streams():
     dynamodb_service = aws_stack.connect_to_service('dynamodb', env=env)
     dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams', env=env)
     kinesis = aws_stack.connect_to_service('kinesis', env=env)
+    sns = aws_stack.connect_to_service('sns')
 
     print('Creating test streams...')
     run_safe(lambda: dynamodb_service.delete_table(
@@ -190,6 +192,14 @@ def test_kinesis_lambda_ddb_streams():
     kinesis.put_record(Data='{"%s": 1}' % lambda_integration.MSG_BODY_RAISE_ERROR_FLAG,
         PartitionKey='testIderror', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
 
+    # create SNS topic, connect it to the Lambda, publish test message
+    num_events_sns = 3
+    response = sns.create_topic(Name=TEST_TOPIC_NAME)
+    sns.subscribe(TopicArn=response['TopicArn'], Protocol='lambda',
+        Endpoint=aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_STREAM))
+    for i in range(0, num_events_sns):
+        sns.publish(TopicArn=response['TopicArn'], Message='test message %s' % i)
+
     # get latest records
     latest = aws_stack.kinesis_get_latest_records(TEST_LAMBDA_SOURCE_STREAM_NAME,
         shard_id='shardId-000000000000', count=10)
@@ -198,13 +208,13 @@ def test_kinesis_lambda_ddb_streams():
     print("Waiting some time before finishing test.")
     time.sleep(2)
 
-    num_events = num_events_ddb + num_events_kinesis
+    num_events = num_events_ddb + num_events_kinesis + num_events_sns
     print('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))
     assert len(EVENTS) == num_events
 
     # check cloudwatch notifications
     stats1 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM)
-    assert len(stats1['Datapoints']) == 2
+    assert len(stats1['Datapoints']) == 2 + num_events_sns
     stats2 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM, 'Errors')
     assert len(stats2['Datapoints']) == 1
     stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)

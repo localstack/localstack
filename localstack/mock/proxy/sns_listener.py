@@ -2,6 +2,7 @@ import logging
 from six.moves.urllib import parse as urlparse
 from requests.models import Response
 from localstack.utils.aws import aws_stack
+from localstack.mock.apis import lambda_api
 
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
@@ -28,7 +29,7 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
                 SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
             elif 'Publish' in req_data['Action']:
                 message = req_data['Message'][0]
-                sqs_client = aws_stack.connect_to_service('sqs', client=True)
+                sqs_client = aws_stack.connect_to_service('sqs')
                 for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
                     if subscriber['protocol'] == 'sqs':
                         queue_name = subscriber['endpoint'].split(':')[5]
@@ -37,6 +38,9 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
                             queue_url = aws_stack.get_sqs_queue_url(queue_name)
                             subscriber['sqs_queue_url'] = queue_url
                         sqs_client.send_message(QueueUrl=queue_url, MessageBody=message)
+                    elif subscriber['protocol'] == 'lambda':
+                        lambda_api.process_sns_notification(subscriber['endpoint'],
+                            topic_arn, message, subject=req_data.get('Subject'))
                     else:
                         LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['protocol'])
                 # return response here because we do not want the request to be forwarded to SNS
