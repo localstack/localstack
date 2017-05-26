@@ -32,7 +32,7 @@ def handler(event, context):
         # "NewImage" (the new version of the full ddb document)
         ddb_new_image = deserialize_event(record)
 
-        if MSG_BODY_RAISE_ERROR_FLAG in ddb_new_image['data']:
+        if MSG_BODY_RAISE_ERROR_FLAG in ddb_new_image.get('data', {}):
             raise Exception('Test exception (this is intentional)')
 
         # Place the raw event message document into the Kinesis message format
@@ -50,13 +50,15 @@ def handler(event, context):
 def deserialize_event(event):
     # Deserialize into Python dictionary and extract the "NewImage" (the new version of the full ddb document)
     ddb = event.get('dynamodb')
-    if not ddb:
-        result = event.get('kinesis')
-        assert result['sequenceNumber']
-        result['data'] = json.loads(to_str(base64.b64decode(result['data'])))
-        return result
-    ddb_deserializer = TypeDeserializer()
-    return ddb_deserializer.deserialize({'M': ddb['NewImage']})
+    if ddb:
+        ddb_deserializer = TypeDeserializer()
+        return ddb_deserializer.deserialize({'M': ddb['NewImage']})
+    kinesis = event.get('kinesis')
+    if kinesis:
+        assert kinesis['sequenceNumber']
+        kinesis['data'] = json.loads(to_str(base64.b64decode(kinesis['data'])))
+        return kinesis
+    return event.get('Sns')
 
 
 def forward_events(records):
