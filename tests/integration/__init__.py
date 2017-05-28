@@ -1,5 +1,6 @@
-import threading
 import sys
+import threading
+import logging
 from localstack.mock import infra
 from localstack.utils.common import cleanup
 

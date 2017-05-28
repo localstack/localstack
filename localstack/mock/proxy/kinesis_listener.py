@@ -7,12 +7,13 @@ from localstack.utils.common import to_str
 
 
 def update_kinesis(method, path, data, headers, response=None, return_forward_info=False):
+    action = headers['X-Amz-Target'] if 'X-Amz-Target' in headers else None
+
     if return_forward_info:
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             return kinesis_error_response(data)
         return True
 
-    action = headers['X-Amz-Target'] if 'X-Amz-Target' in headers else None
     records = []
     if action == constants.KINESIS_ACTION_PUT_RECORD:
         response_body = json.loads(to_str(response.content))

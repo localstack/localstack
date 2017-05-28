@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import os
+import sys
 import json
 import uuid
 import time
@@ -12,15 +13,16 @@ import threading
 import imp
 import glob
 from io import BytesIO
+from datetime import datetime
+from multiprocessing import Process, Queue
+from six import iteritems
 from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
-from datetime import datetime
 from localstack.constants import *
 from localstack import config
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
-from six import iteritems
 
 
 APP_NAME = 'lambda_mock'
@@ -220,10 +222,6 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         sys.stdout = stream
         sys.stderr = stream
     lambda_cwd = lambda_arn_to_cwd.get(func_arn)
-    if lambda_cwd and not use_docker():
-        cwd_mutex.acquire()
-        previous_cwd = os.getcwd()
-        os.chdir(lambda_cwd)
     result = None
     try:
         runtime = lambda_arn_to_runtime.get(func_arn)
@@ -255,21 +253,27 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         else:
             function_code = func.func_code if 'func_code' in func.__dict__ else func.__code__
             if function_code.co_argcount == 2:
-                result = func(event, context)
+                # execute the Lambda function in a forked sub-process, sync result via queue
+                queue = Queue()
+
+                def do_execute():
+                    # now we're executing in the child process, safe to change CWD
+                    if lambda_cwd:
+                        os.chdir(lambda_cwd)
+                    result = func(event, context)
+                    queue.put(result)
+
+                process = Process(target=do_execute)
+                process.run()
+                result = queue.get()
             else:
                 raise Exception('Expected handler function with 2 parameters, found %s' % function_code.co_argcount)
     except Exception as e:
-        if suppress_output:
-            sys.stdout = stdout_
-            sys.stderr = stderr_
         return error_response("Error executing Lambda function: %s %s" % (e, traceback.format_exc()))
     finally:
         if suppress_output:
             sys.stdout = stdout_
             sys.stderr = stderr_
-        if lambda_cwd and not use_docker():
-            os.chdir(previous_cwd)
-            cwd_mutex.release()
     return result
 
 

@@ -3,6 +3,7 @@ import sys
 import json
 import time
 import base64
+import logging
 from io import BytesIO
 from datetime import datetime, timedelta
 from six.moves import cStringIO as StringIO
@@ -11,7 +12,7 @@ from nose.tools import assert_raises
 from localstack.utils import testutil
 from localstack.utils.common import *
 from localstack.config import HOSTNAME, PORT_SQS
-from localstack.constants import ENV_DEV, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, LOCALSTACK_ROOT_FOLDER
+from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, LOCALSTACK_ROOT_FOLDER
 from localstack.mock import infra
 from localstack.mock.apis.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
@@ -26,24 +27,31 @@ TEST_TABLE_NAME = 'test_stream_table'
 TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
 TEST_LAMBDA_NAME_STREAM = 'test_lambda_stream'
 TEST_FIREHOSE_NAME = 'test_firehose'
-TEST_BUCKET_NAME = 'test_bucket'
+TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_2'
 TEST_QUEUE_NAME = 'test_queue'
 TEST_TOPIC_NAME = 'test_topic'
+# constants for forward chain K1->L1->K2->L2
+TEST_CHAIN_STREAM1_NAME = 'test_chain_stream_1'
+TEST_CHAIN_STREAM2_NAME = 'test_chain_stream_2'
+TEST_CHAIN_LAMBDA1_NAME = 'test_chain_lambda_1'
+TEST_CHAIN_LAMBDA2_NAME = 'test_chain_lambda_2'
 
 EVENTS = []
 
 PARTITION_KEY = 'id'
 
+# set up logger
+LOGGER = logging.getLogger(__name__)
+
 
 def test_firehose_s3():
 
-    env = ENV_DEV
-    s3_resource = aws_stack.connect_to_resource('s3', env=env)
-    firehose = aws_stack.connect_to_service('firehose', env=env)
+    s3_resource = aws_stack.connect_to_resource('s3')
+    firehose = aws_stack.connect_to_service('firehose')
 
     s3_prefix = '/testdata'
-    test_data = b'{"test": "data123"}'
+    test_data = '{"test": "firehose_data_%s"}' % short_uid()
     # create Firehose stream
     stream = firehose.create_delivery_stream(
         DeliveryStreamName=TEST_FIREHOSE_NAME,
@@ -61,7 +69,7 @@ def test_firehose_s3():
     firehose.put_record(
         DeliveryStreamName=TEST_FIREHOSE_NAME,
         Record={
-            'Data': test_data
+            'Data': to_bytes(test_data)
         }
     )
     # check records in target bucket
@@ -71,10 +79,9 @@ def test_firehose_s3():
 
 def test_bucket_notifications():
 
-    env = ENV_DEV
-    s3_resource = aws_stack.connect_to_resource('s3', env=env)
-    s3_client = aws_stack.connect_to_service('s3', env=env)
-    sqs_client = aws_stack.connect_to_service('sqs', env=env)
+    s3_resource = aws_stack.connect_to_resource('s3')
+    s3_client = aws_stack.connect_to_service('s3')
+    sqs_client = aws_stack.connect_to_service('sqs')
 
     # create test bucket and queue
     s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
@@ -110,15 +117,14 @@ def test_bucket_notifications():
 
 def test_kinesis_lambda_sns_ddb_streams():
 
-    env = ENV_DEV
     ddb_lease_table_suffix = '-kclapp'
-    dynamodb = aws_stack.connect_to_resource('dynamodb', env=env)
-    dynamodb_service = aws_stack.connect_to_service('dynamodb', env=env)
-    dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams', env=env)
-    kinesis = aws_stack.connect_to_service('kinesis', env=env)
+    dynamodb = aws_stack.connect_to_resource('dynamodb')
+    dynamodb_service = aws_stack.connect_to_service('dynamodb')
+    dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
+    kinesis = aws_stack.connect_to_service('kinesis')
     sns = aws_stack.connect_to_service('sns')
 
-    print('Creating test streams...')
+    LOGGER.info('Creating test streams...')
     run_safe(lambda: dynamodb_service.delete_table(
         TableName=TEST_STREAM_NAME + ddb_lease_table_suffix), print_error=False)
     aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
@@ -132,11 +138,11 @@ def test_kinesis_lambda_sns_ddb_streams():
     kinesis_connector.listen_to_kinesis(TEST_STREAM_NAME, listener_func=process_records,
         wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
 
-    print("Kinesis consumer initialized.")
+    LOGGER.info("Kinesis consumer initialized.")
 
     # create table with stream forwarding config
     testutil.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY,
-        env=env, stream_view_type='NEW_AND_OLD_IMAGES')
+        stream_view_type='NEW_AND_OLD_IMAGES')
 
     # list DDB streams and make sure the table stream is there
     streams = dynamodbstreams.list_streams()
@@ -163,7 +169,7 @@ def test_kinesis_lambda_sns_ddb_streams():
 
     # put items to table
     num_events_ddb = 10
-    print('Putting %s items to table...' % num_events_ddb)
+    LOGGER.info('Putting %s items to table...' % num_events_ddb)
     table = dynamodb.Table(TEST_TABLE_NAME)
     for i in range(0, num_events_ddb - 3):
         table.put_item(Item={
@@ -178,7 +184,7 @@ def test_kinesis_lambda_sns_ddb_streams():
 
     # put items to stream
     num_events_kinesis = 10
-    print('Putting %s items to stream...' % num_events_kinesis)
+    LOGGER.info('Putting %s items to stream...' % num_events_kinesis)
     kinesis.put_records(
         Records=[
             {
@@ -205,11 +211,11 @@ def test_kinesis_lambda_sns_ddb_streams():
         shard_id='shardId-000000000000', count=10)
     assert len(latest) == 10
 
-    print("Waiting some time before finishing test.")
+    LOGGER.info("Waiting some time before finishing test.")
     time.sleep(2)
 
     num_events = num_events_ddb + num_events_kinesis + num_events_sns
-    print('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))
+    LOGGER.info('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))
     assert len(EVENTS) == num_events
 
     # check cloudwatch notifications
@@ -219,6 +225,43 @@ def test_kinesis_lambda_sns_ddb_streams():
     assert len(stats2['Datapoints']) == 1
     stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)
     assert len(stats3['Datapoints']) == 10
+
+
+def test_kinesis_lambda_forward_chain():
+    kinesis = aws_stack.connect_to_service('kinesis')
+    s3 = aws_stack.connect_to_service('s3')
+
+    aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM1_NAME, delete=True)
+    aws_stack.create_kinesis_stream(TEST_CHAIN_STREAM2_NAME, delete=True)
+    s3.create_bucket(Bucket=TEST_BUCKET_NAME)
+
+    # deploy test lambdas connected to Kinesis streams
+    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
+        libs=['localstack'], runtime=LAMBDA_RUNTIME_PYTHON27)
+    testutil.create_lambda_function(func_name=TEST_CHAIN_LAMBDA1_NAME, zip_file=zip_file,
+        event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME), runtime=LAMBDA_RUNTIME_PYTHON27)
+    testutil.create_lambda_function(func_name=TEST_CHAIN_LAMBDA2_NAME, zip_file=zip_file,
+        event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME), runtime=LAMBDA_RUNTIME_PYTHON27)
+
+    # publish test record
+    test_data = {'test_data': 'forward_chain_data_%s' % short_uid()}
+    data = clone(test_data)
+    data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = 'kinesis:%s' % TEST_CHAIN_STREAM2_NAME
+    kinesis.put_record(Data=to_bytes(json.dumps(data)), PartitionKey='testId', StreamName=TEST_CHAIN_STREAM1_NAME)
+
+    # check results
+    time.sleep(5)
+    all_objects = testutil.list_all_s3_objects()
+    testutil.assert_objects(test_data, all_objects)
+
+
+# ---------------
+# HELPER METHODS
+# ---------------
+
+def get_event_source_arn(stream_name):
+    kinesis = aws_stack.connect_to_service('kinesis')
+    return kinesis.describe_stream(StreamName=stream_name)['StreamDescription']['StreamARN']
 
 
 def get_lambda_metrics(func_name, metric='Invocations'):

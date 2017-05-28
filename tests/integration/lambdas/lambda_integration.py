@@ -2,11 +2,14 @@ import json
 import traceback
 import base64
 import boto3.dynamodb.types
+from io import BytesIO
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, to_bytes
 
+TEST_BUCKET_NAME = 'test_bucket'
 KINESIS_STREAM_NAME = 'test-stream-1'
 MSG_BODY_RAISE_ERROR_FLAG = 'raise_error'
+MSG_BODY_MESSAGE_TARGET = 'message_target'
 
 
 # Subclass of boto's TypeDeserializer for DynamoDB
@@ -20,9 +23,8 @@ class TypeDeserializer(boto3.dynamodb.types.TypeDeserializer):
 
 
 def handler(event, context):
-    """
-    DynamoDB (ddb) Stream to Kinesis forwarder Lambda.
-    """
+    """ Generic event forwarder Lambda. """
+
     if 'Records' not in event:
         return event
 
@@ -41,7 +43,19 @@ def handler(event, context):
             'Data': json.dumps(ddb_new_image)
         }
 
-        raw_event_messages.append(kinesis_record)
+        if MSG_BODY_MESSAGE_TARGET in ddb_new_image.get('data', {}):
+            forwarding_target = ddb_new_image['data'][MSG_BODY_MESSAGE_TARGET]
+            target_name = forwarding_target.split(':')[-1]
+            if forwarding_target.startswith('kinesis:'):
+                ddb_new_image['data'][MSG_BODY_MESSAGE_TARGET] = 's3:/test_chain_result'
+                kinesis_record['Data'] = json.dumps(ddb_new_image['data'])
+                forward_event_to_target_stream(kinesis_record, target_name)
+            elif forwarding_target.startswith('s3:'):
+                s3_client = aws_stack.connect_to_service('s3')
+                test_data = to_bytes(json.dumps({'test_data': ddb_new_image['data']['test_data']}))
+                s3_client.upload_fileobj(BytesIO(test_data), TEST_BUCKET_NAME, target_name)
+        else:
+            raw_event_messages.append(kinesis_record)
 
     # Forward messages to Kinesis
     forward_events(raw_event_messages)
@@ -62,5 +76,12 @@ def deserialize_event(event):
 
 
 def forward_events(records):
-    kinesis_connection = aws_stack.connect_to_service('kinesis')
-    kinesis_connection.put_records(StreamName=KINESIS_STREAM_NAME, Records=records)
+    if not records:
+        return
+    kinesis = aws_stack.connect_to_service('kinesis')
+    kinesis.put_records(StreamName=KINESIS_STREAM_NAME, Records=records)
+
+
+def forward_event_to_target_stream(record, stream_name):
+    kinesis = aws_stack.connect_to_service('kinesis')
+    kinesis.put_record(StreamName=stream_name, Data=record['Data'], PartitionKey=record['PartitionKey'])
