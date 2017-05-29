@@ -107,7 +107,7 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     run('chmod -R 777 %s/infra/elasticsearch' % ROOT_PATH)
     run('mkdir -p "%s"; chmod -R 777 "%s"' % (es_data_dir, es_data_dir))
     # start proxy and ES process
-    start_proxy(port, backend_port, update_listener, quiet=True)
+    start_proxy(port, backend_port, update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})
     if is_root():
         cmd = "su -c '%s' localstack" % cmd
     thread = do_run(cmd, async, print_output=True)
@@ -217,9 +217,10 @@ def do_run(cmd, async, print_output=False):
         return run(cmd)
 
 
-def start_proxy(port, backend_port, update_listener, quiet=False, backend_host=DEFAULT_BACKEND_HOST):
+def start_proxy(port, backend_port, update_listener, quiet=False,
+        backend_host=DEFAULT_BACKEND_HOST, params={}):
     proxy_thread = GenericProxy(port=port, forward_host='%s:%s' % (backend_host, backend_port),
-                        update_listener=update_listener, quiet=quiet)
+                        update_listener=update_listener, quiet=quiet, params=params)
     proxy_thread.start()
     TMP_THREADS.append(proxy_thread)
 
