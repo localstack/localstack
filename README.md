@@ -241,6 +241,10 @@ Simply add the following configuration to your `pom.xml` file:
 </project>
 ```
 
+### Troubleshooting
+
+If you're using AWS Java libraries with Kinesis, please, refer to [CBOR protocol issues with the Java SDK guide](https://github.com/mhart/kinesalite#cbor-protocol-issues-with-the-java-sdk) how to disable CBOR protocol which is not supported by kinesalite.
+
 ## Web Dashboard
 
 The projects also comes with a simple Web dashboard that allows to view the
