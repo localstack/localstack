@@ -25,12 +25,14 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 
 class GenericProxyHandler(BaseHTTPRequestHandler):
+
     def __init__(self, request, client_address, server):
         self.request = request
         self.client_address = client_address
         self.server = server
         self.proxy = server.my_object
         self.data_bytes = None
+        self.protocol_version = self.proxy.protocol_version
         BaseHTTPRequestHandler.__init__(self, request, client_address, server)
 
     def do_GET(self):
@@ -120,9 +122,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             # copy headers and return response
             self.send_response(response.status_code)
             for header_key, header_value in iteritems(response.headers):
-                self.send_header(header_key, header_value)
+                if header_key != 'Content-Length':
+                    self.send_header(header_key, header_value)
+            self.send_header('Content-Length', '%s' % len(response.content))
             self.end_headers()
             self.wfile.write(bytes_(response.content))
+            self.wfile.flush()
         except Exception as e:
             if not self.proxy.quiet:
                 LOGGER.exception("Error forwarding request: %s" % str(e))
@@ -139,6 +144,8 @@ class GenericProxy(FuncThread):
         self.quiet = quiet
         self.forward_host = forward_host
         self.update_listener = update_listener
+        # Required to enable 'Connection: keep-alive' for S3 uploads
+        self.protocol_version = params.get('protocol_version') or 'HTTP/1.1'
 
     def run_cmd(self, params):
         try:
