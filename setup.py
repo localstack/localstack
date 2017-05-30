@@ -75,7 +75,7 @@ if __name__ == '__main__':
 
     setup(
         name='localstack',
-        version='0.4.3',
+        version='0.5.0',
         description='An easy-to-use test/mocking framework for developing Cloud applications',
         author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',
