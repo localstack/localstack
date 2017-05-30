@@ -90,8 +90,14 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     else:
         # nothing to do
         return
+
     if 'TableName' in data:
         record['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
+    forward_to_lambda(records)
+    forward_to_ddb_stream(records)
+
+
+def forward_to_lambda(records):
     for record in records:
         sources = lambda_api.get_event_sources(source_arn=record['eventSourceARN'])
         event = {
@@ -100,6 +106,10 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
         for src in sources:
             func_to_call = lambda_api.lambda_arn_to_function[src['FunctionArn']]
             lambda_api.run_lambda(func_to_call, event=event, context={}, func_arn=src['FunctionArn'])
+
+
+def forward_to_ddb_stream(records):
+    dynamodbstreams_api.forward_events(records)
 
 
 def dynamodb_extract_keys(item, table_name):
