@@ -1,6 +1,7 @@
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import requests
 import os
+import sys
 import json
 import traceback
 import logging
@@ -34,6 +35,24 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.data_bytes = None
         self.protocol_version = self.proxy.protocol_version
         BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+
+    def parse_request(self):
+        result = BaseHTTPRequestHandler.parse_request(self)
+        if not result:
+            return result
+        if sys.version_info[0] >= 3:
+            return result
+        # Required fix for Python 2 (otherwise S3 uploads are hanging), based on the Python 3 code:
+        # https://sourcecodebrowser.com/python3.2/3.2.3/http_2server_8py_source.html#l00332
+        expect = self.headers.get('Expect', "")
+        if (expect.lower() == "100-continue" and
+                self.protocol_version >= "HTTP/1.1" and
+                self.request_version >= "HTTP/1.1"):
+            if self.request_version != 'HTTP/0.9':
+                self.wfile.write(("%s %d %s\r\n" %
+                    (self.protocol_version, 100, 'Continue')).encode('latin1', 'strict'))
+                self.end_headers()
+        return result
 
     def do_GET(self):
         self.method = requests.get
