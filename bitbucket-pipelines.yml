@@ -8,7 +8,10 @@ pipelines:
     - step:
         script:
           - sudo useradd localstack -s /bin/bash
-          - sudo apt-get -q install -y zip python3-pip python-virtualenv && make reinstall-p3
-          - HOSTNAME=localhost LAMBDA_EXECUTOR=local make test
+          # TODO temporary fix for: https://github.com/npm/npm/issues/16809
+          # - curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.2/install.sh | sudo bash
+          - nvm install v5.11.0
+          - nvm use v5.11.0; sudo apt-get -q install -y zip python3-pip python-virtualenv && make reinstall-p3
+          - nvm use v5.11.0; HOSTNAME=localhost LAMBDA_EXECUTOR=local make test
           - make docker-build
           - make docker-push-master

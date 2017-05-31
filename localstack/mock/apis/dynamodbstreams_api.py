@@ -69,7 +69,7 @@ def post_request():
                 table_name = table_name_from_stream_arn(stream['StreamArn'])
                 stream_name = get_kinesis_stream_name(table_name)
                 stream_details = kinesis.describe_stream(StreamName=stream_name)
-                table_details = dynamodb .describe_table(TableName=table_name)
+                table_details = dynamodb.describe_table(TableName=table_name)
                 stream['KeySchema'] = table_details['Table']['KeySchema']
                 stream['Shards'] = stream_details['StreamDescription']['Shards']
                 break
