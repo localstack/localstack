@@ -81,7 +81,8 @@ def replay(api):
                     replay_command(command)
     finally:
         CURRENTLY_REPLAYING.pop(0)
-    LOGGER.warning('Restored %s API calls from persistent file: %s' % (count, file_path))
+    if count:
+        LOGGER.info('Restored %s API calls from persistent file: %s' % (count, file_path))
 
 
 def restore_persisted_data(api):

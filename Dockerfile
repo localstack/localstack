@@ -20,6 +20,7 @@ RUN wget -O /tmp/localstack.es.zip https://artifacts.elastic.co/downloads/elasti
         sudo pip install virtualenv) && \
     (virtualenv .testvenv && \
         source .testvenv/bin/activate && \
+        pip install six==1.10.0 && \
         pip install -r requirements.txt && \
         rm -rf .testvenv)
 
