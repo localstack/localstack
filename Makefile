@@ -22,7 +22,7 @@ setup-venv:        # Setup virtualenv
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv || sudo $(PIP_CMD) install virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
 		($(VENV_RUN) && $(PIP_CMD) install --upgrade pip) && \
-		(test ! -e requirements.txt || ($(VENV_RUN) && $(PIP_CMD) install -r requirements.txt))
+		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install six==1.10.0 ; $(PIP_CMD) install -r requirements.txt))
 
 install-libs:      ## Install npm/pip dependencies
 	(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || \
