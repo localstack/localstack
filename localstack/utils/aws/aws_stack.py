@@ -297,10 +297,7 @@ def mock_aws_request_headers(service='dynamodb'):
 def get_apigateway_integration(api_id, method, path, env=None):
     apigateway = connect_to_service(service_name='apigateway', client=True, env=env)
 
-    resources = apigateway.get_resources(
-        restApiId=api_id,
-        limit=100
-    )
+    resources = apigateway.get_resources(restApiId=api_id, limit=100)
     resource_id = None
     for r in resources['items']:
         if r['path'] == path:
@@ -309,11 +306,40 @@ def get_apigateway_integration(api_id, method, path, env=None):
         raise Exception('Unable to find apigateway integration for path "%s"' % path)
 
     integration = apigateway.get_integration(
-        restApiId=api_id,
-        resourceId=resource_id,
-        httpMethod=method
+        restApiId=api_id, resourceId=resource_id, httpMethod=method
     )
     return integration
+
+
+def get_apigateway_resource_for_path(api_id, path, parent=None, resources=None):
+    if resources is None:
+        apigateway = connect_to_service(service_name='apigateway')
+        resources = apigateway.get_resources(restApiId=api_id, limit=100)
+    if not isinstance(path, list):
+        path = path.split('/')
+    if not path:
+        return parent
+    for resource in resources:
+        if resource['pathPart'] == path[0] and (not parent or parent['id'] == resource['parentId']):
+            return get_apigateway_resource_for_path(api_id, path[1:], parent=resource, resources=resources)
+    return None
+
+
+def get_apigateway_path_for_resource(api_id, resource_id, path_suffix='', resources=None):
+    if resources is None:
+        apigateway = connect_to_service(service_name='apigateway')
+        resources = apigateway.get_resources(restApiId=api_id, limit=100)
+    target_resource = list(filter(lambda res: res['id'] == resource_id, resources))[0]
+    path_part = target_resource.get('pathPart', '')
+    if path_suffix:
+        if path_part:
+            path_suffix = '%s/%s' % (path_part, path_suffix)
+    else:
+        path_suffix = path_part
+    parent_id = target_resource.get('parentId')
+    if not parent_id:
+        return '/%s' % path_suffix
+    return get_apigateway_path_for_resource(api_id, parent_id, path_suffix=path_suffix, resources=resources)
 
 
 def create_api_gateway(name, description=None, resources=None, stage_name=None,

@@ -7,6 +7,7 @@ from six import iteritems
 from six import string_types
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.constants import DEFAULT_REGION
 
 ACTION_CREATE = 'create'
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
@@ -37,14 +38,7 @@ RESOURCE_TO_FUNCTION = {
         }
     },
     'Logs::LogGroup': {
-        'create': {
-            'boto_client': 'client',
-            'function': 'create_log_group',
-            'parameters': {
-                'logGroupName': 'LogGroupName',
-                'tags': 'Tags'
-            }
-        }
+        # TODO implement
     },
     'Lambda::Function': {
         'create': {
@@ -65,6 +59,7 @@ RESOURCE_TO_FUNCTION = {
         }
     },
     'Lambda::Version': {},
+    'Lambda::Permission': {},
     'Lambda::EventSourceMapping': {
         'create': {
             'boto_client': 'client',
@@ -105,6 +100,54 @@ RESOURCE_TO_FUNCTION = {
     },
     'IAM::Role': {
         # TODO implement
+    },
+    'ApiGateway::RestApi': {
+        'create': {
+            'boto_client': 'client',
+            'function': 'create_rest_api',
+            'parameters': {
+                'name': 'Name',
+                'description': 'Description'
+            }
+        }
+    },
+    'ApiGateway::Resource': {
+        'create': {
+            'boto_client': 'client',
+            'function': 'create_resource',
+            'parameters': {
+                'restApiId': 'RestApiId',
+                'pathPart': 'PathPart',
+                'parentId': 'ParentId'
+            }
+        }
+    },
+    'ApiGateway::Method': {
+        'create': {
+            'boto_client': 'client',
+            'function': 'put_method',
+            'parameters': {
+                'restApiId': 'RestApiId',
+                'resourceId': 'ResourceId',
+                'httpMethod': 'HttpMethod',
+                'authorizationType': 'AuthorizationType',
+                'requestParameters': 'RequestParameters'
+            }
+        }
+    },
+    'ApiGateway::Method::Integration': {
+    },
+    'ApiGateway::Deployment': {
+        'create': {
+            'boto_client': 'client',
+            'function': 'create_deployment',
+            'parameters': {
+                'restApiId': 'RestApiId',
+                'stageName': 'StageName',
+                'stageDescription': 'StageDescription',
+                'description': 'Description'
+            }
+        }
     }
 }
 
@@ -163,13 +206,14 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     resource_type = resource_status['ResourceType']
     if not resource:
         resource = {}
+    resource_props = resource.get('Properties')
     try:
         if resource_type == 'AWS::Lambda::Function':
-            resource_id = resource['Properties']['FunctionName'] if resource else resource_id
+            resource_id = resource_props['FunctionName'] if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
         if resource_type == 'AWS::Lambda::EventSourceMapping':
-            resource_id = resource['Properties']['FunctionName'] if resource else resource_id
-            source_arn = resource['Properties'].get('EventSourceArn')
+            resource_id = resource_props['FunctionName'] if resource else resource_id
+            source_arn = resource_props.get('EventSourceArn')
             resource_id = resolve_refs_recursively(stack_name, resource_id, resources)
             source_arn = resolve_refs_recursively(stack_name, source_arn, resources)
             if not resource_id or not source_arn:
@@ -184,6 +228,41 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             return mapping[0]
         if resource_type == 'AWS::DynamoDB::Table':
             return aws_stack.connect_to_service('dynamodb').describe_table(TableName=resource_id)
+        if resource_type == 'AWS::ApiGateway::RestApi':
+            apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
+            resource_id = resource_props['Name'] if resource else resource_id
+            result = list(filter(lambda api: api['name'] == resource_id, apis))
+            return result[0] if result else None
+        if resource_type == 'AWS::ApiGateway::Resource':
+            api_id = resource_props['RestApiId'] if resource else resource_id
+            api_id = resolve_refs_recursively(stack_name, api_id, resources)
+            parent_id = resolve_refs_recursively(stack_name, resource_props['ParentId'], resources)
+            if not api_id or not parent_id:
+                return None
+            api_resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=api_id)['items']
+            target_resource = list(filter(lambda res:
+                res.get('parentId') == parent_id and res['pathPart'] == resource_props['PathPart'], api_resources))
+            if not target_resource:
+                return None
+            path = aws_stack.get_apigateway_path_for_resource(api_id,
+                target_resource[0]['id'], resources=api_resources)
+            result = list(filter(lambda res: res['path'] == path, api_resources))
+            return result[0] if result else None
+        if resource_type == 'AWS::ApiGateway::Deployment':
+            api_id = resource_props['RestApiId'] if resource else resource_id
+            api_id = resolve_refs_recursively(stack_name, api_id, resources)
+            if not api_id:
+                return None
+            result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
+            # TODO possibly filter results by stage name or other criteria
+            return result[0] if result else None
+        if resource_type == 'AWS::ApiGateway::Method':
+            api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
+            res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
+            if not api_id or not res_id:
+                return None
+            return aws_stack.connect_to_service('apigateway').get_method(restApiId=api_id,
+                resourceId=res_id, httpMethod=resource_props['HttpMethod'])
         if resource_type == 'AWS::S3::Bucket':
             return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=resource_id)
         if resource_type == 'AWS::Logs::LogGroup':
@@ -201,6 +280,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
 
 def extract_resource_attribute(resource_type, resource, attribute):
+    LOGGER.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
     # extract resource specific attributes
     if resource_type == 'Lambda::Function':
         actual_attribute = 'FunctionArn' if attribute == 'Arn' else attribute
@@ -209,20 +289,32 @@ def extract_resource_attribute(resource_type, resource, attribute):
         actual_attribute = 'LatestStreamArn' if attribute == 'StreamArn' else attribute
         value = resource['Table'].get(actual_attribute)
         return value
+    elif resource_type == 'ApiGateway::RestApi':
+        if attribute == 'PhysicalResourceId':
+            return resource['id']
+        if attribute == 'RootResourceId':
+            resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=resource['id'])['items']
+            for res in resources:
+                if res['path'] == '/' and not res.get('parentId'):
+                    return res['id']
+    elif resource_type == 'ApiGateway::Resource':
+        if attribute == 'PhysicalResourceId':
+            return resource['id']
     result = resource.get(attribute)
 
 
 def resolve_ref(stack_name, ref, resources, attribute):
-    # print('Resolving ref %s' % ref)
+    LOGGER.debug('Resolving ref %s - %s' % (ref, attribute))
+    if ref == 'AWS::Region':
+        return DEFAULT_REGION
     client = aws_stack.connect_to_service('cloudformation')
     resource_status = describe_stack_resources(stack_name, ref)[0]
     attr_value = resource_status.get(attribute)
-    if attr_value is not None:
+    if attr_value not in [None, '']:
         return attr_value
     # fetch resource details
     resource = resources.get(ref)
     resource_new = retrieve_resource_details(ref, resource_status, resources, stack_name)
-    # print('resource_new', resource_new, resource_id)
     if not resource_new:
         return
     resource_type = get_resource_type(resource)
@@ -243,6 +335,11 @@ def resolve_refs_recursively(stack_name, value, resources):
         else:
             for key, val in iteritems(value):
                 value[key] = resolve_refs_recursively(stack_name, val, resources)
+        if len(value) == 1 and 'Fn::Join' in value:
+            return value['Fn::Join'][0].join(value['Fn::Join'][1])
+    if isinstance(value, list):
+        for i in range(0, len(value)):
+            value[i] = resolve_refs_recursively(stack_name, value[i], resources)
     return value
 
 
@@ -269,13 +366,14 @@ def deploy_resource(resource_id, resources, stack_name):
     if not func_details:
         LOGGER.warning('Resource type not yet implemented: %s' % resource['Type'])
         return
+    LOGGER.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
     func_details = func_details[ACTION_CREATE]
     function = getattr(client, func_details['function'])
     params = dict(func_details['parameters'])
     defaults = func_details.get('defaults', {})
     if 'Properties' not in resource:
         resource['Properties'] = {}
-    # print('deploying', resource_id, resource_type)
+    resource_props = resource['Properties']
     for param_key, prop_keys in iteritems(dict(params)):
         params.pop(param_key, None)
         if not isinstance(prop_keys, list):
@@ -286,7 +384,7 @@ def deploy_resource(resource_id, resources, stack_name):
                 params[param_key] = resolve_ref(stack_name, resource_id, resources,
                     attribute='PhysicalResourceId')
             else:
-                prop_value = resource['Properties'].get(prop_key)
+                prop_value = resource_props.get(prop_key)
                 if prop_value is not None:
                     params[param_key] = prop_value
             tmp_value = params.get(param_key)
@@ -304,6 +402,19 @@ def deploy_resource(resource_id, resources, stack_name):
     except Exception as e:
         LOGGER.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
         raise e
+    # some resources have attached/nested resources which we need to create recursively now
+    if resource_type == 'ApiGateway::Method':
+        integration = resource_props.get('Integration')
+        if integration:
+            api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
+            res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
+            uri = integration.get('Uri')
+            if uri:
+                uri = resolve_refs_recursively(stack_name, uri, resources)
+                aws_stack.connect_to_service('apigateway').put_integration(restApiId=api_id, resourceId=res_id,
+                    httpMethod=resource_props['HttpMethod'], type=integration['Type'],
+                    integrationHttpMethod=integration['IntegrationHttpMethod'], uri=uri
+                )
     # update status
     set_status_deployed(resource_id, resource, stack_name)
     return result
@@ -327,14 +438,13 @@ def deploy_template(template, stack_name):
 
     next = resource_map
 
-    # resource_list = resource_map.values()
-    iters = 3
+    iters = 10
     for i in range(0, iters):
 
-        # print('deployment iteration', i)
         # get resource details
         for resource_id, resource in iteritems(next):
-            resource['__details__'] = describe_stack_resources(stack_name, resource_id)[0]
+            stack_resources = describe_stack_resources(stack_name, resource_id)
+            resource['__details__'] = stack_resources[0]
 
         next = resources_to_deploy_next(resource_map, stack_name)
         if not next:
@@ -354,6 +464,8 @@ def deploy_template(template, stack_name):
 def is_deployable_resource(resource):
     resource_type = get_resource_type(resource)
     entry = RESOURCE_TO_FUNCTION.get(resource_type)
+    if entry is None:
+        LOGGER.warning('Unknown resource type "%s"' % resource_type)
     return entry and entry.get(ACTION_CREATE)
 
 
@@ -364,11 +476,10 @@ def is_deployed(resource_id, resources, stack_name):
     return bool(details)
 
 
-def all_dependencies_satisfied(resources, stack_name):
+def all_dependencies_satisfied(resources, stack_name, all_resources, depending_resource=None):
     for resource_id, resource in iteritems(resources):
         if is_deployable_resource(resource):
-            if not is_deployed(resource_id, resources, stack_name):
-                # print('Currently not deployed', resource_id, resource['Type'])
+            if not is_deployed(resource_id, all_resources, stack_name):
                 return False
     return True
 
@@ -376,10 +487,9 @@ def all_dependencies_satisfied(resources, stack_name):
 def resources_to_deploy_next(resources, stack_name):
     result = {}
     for resource_id, resource in iteritems(resources):
-        # print('is deployed', resource_id, is_deployed(resource_id, resource), resource['Type'])
         if is_deployable_resource(resource) and not is_deployed(resource_id, resources, stack_name):
             res_deps = get_resource_dependencies(resource_id, resource, resources)
-            if all_dependencies_satisfied(res_deps, stack_name):
+            if all_dependencies_satisfied(res_deps, stack_name, resources, resource_id):
                 result[resource_id] = resource
     return result
 
@@ -394,5 +504,6 @@ def get_resource_dependencies(resource_id, resource, resources):
             search2 = '{"Fn::GetAtt": ["%s", ' % other_id
             if search1 in dumped or search2 in dumped:
                 result[other_id] = other
-    # print('deps %s %s' % (resource_id, len(result)))
+            if other_id in resource.get('DependsOn', []):
+                result[other_id] = other
     return result
