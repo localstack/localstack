@@ -66,6 +66,7 @@ package_data = {
         'dashboard/web/img/*',
         'dashboard/web/js/*',
         'dashboard/web/views/*',
+        'ext/java/*',
         'ext/java/src/main/java/com/atlassian/localstack/*',
         'utils/kinesis/java/com/atlassian/*'
     ]}
@@ -75,7 +76,7 @@ if __name__ == '__main__':
 
     setup(
         name='localstack',
-        version='0.5.1',
+        version='0.5.2',
         description='An easy-to-use test/mocking framework for developing Cloud applications',
         author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',
