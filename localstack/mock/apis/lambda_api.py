@@ -165,6 +165,25 @@ def in_docker():
         return 'docker' in ifh.read()
 
 
+def process_apigateway_invocation(func_arn, path, payload, headers={}, path_params={}):
+    try:
+        lambda_function = lambda_arn_to_function[func_arn]
+        event = {
+            'path': path,
+            'headers': dict(headers),
+            'pathParameters': dict(path_params),
+            'body': payload,
+            'isBase64Encoded': False,
+            'resource': 'TODO',
+            'httpMethod': 'TODO',
+            'queryStringParameters': {},  # TODO
+            'stageVariables': {}  # TODO
+        }
+        return run_lambda(lambda_function, event=event, context={}, func_arn=func_arn)
+    except Exception as e:
+        LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
+
+
 def process_sns_notification(func_arn, topic_arn, message, subject=''):
     try:
         lambda_function = lambda_arn_to_function[func_arn]
