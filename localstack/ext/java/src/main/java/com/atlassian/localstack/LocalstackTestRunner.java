@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
@@ -156,15 +157,19 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		return "http://" + LOCALHOST + ":" + port + "/";
 	}
 
-	private static Process exec(String cmd) {
-		return exec(cmd, true);
+	private static Process exec(String ... cmd) {
+		return exec(true, cmd);
 	}
 
-	private static Process exec(String cmd, boolean wait) {
+	private static Process exec(boolean wait, String ... cmd) {
 		try {
-			Map<String, String> env = System.getenv();
-			final Process p = Runtime.getRuntime().exec(new String[]{"/bin/bash", "-c", cmd},
-					new String[]{"PATH=" + ADDITIONAL_PATH + ":" + env.get("PATH")});
+			if (cmd.length == 1 && !new File(cmd[0]).exists()) {
+				cmd = new String[]{"bash", "-c", cmd[0]};
+			}
+			Map<String, String> env = new HashMap<>(System.getenv());
+			ProcessBuilder builder = new ProcessBuilder(cmd);
+			builder.environment().put("PATH", ADDITIONAL_PATH + ":" + env.get("PATH"));
+			final Process p = builder.start();
 			if (wait) {
 				int code = p.waitFor();
 				if(code != 0) {
@@ -191,10 +196,10 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		synchronized (INFRA_STARTED) {
 			ensureInstallation();
 			if(INFRA_STARTED.get() != null) return;
-			String cmd = "make -C \"" + TMP_INSTALL_DIR + "\" infra";
+			String[] cmd = new String[]{"make", "-C", TMP_INSTALL_DIR, "infra"};
 			Process proc;
 			try {
-				proc = exec(cmd, false);
+				proc = exec(false, cmd);
 				BufferedReader r1 = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				String line;
 				LOG.info("Waiting for infrastructure to be spun up");

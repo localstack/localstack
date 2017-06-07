@@ -72,7 +72,7 @@ missing functionality on top of them:
 * `python` (both Python 2.x and 3.x supported)
 * `pip` (python package manager)
 * `npm` (node.js package manager)
-* `java`/`javac` (Java runtime environment and compiler)
+* `java`/`javac` (Java 8 runtime environment and compiler)
 * `mvn` (Maven, the build system for Java)
 
 ## Installing
@@ -257,6 +257,7 @@ make web
 
 ## Change Log
 
+* v0.5.3: Add CloudFormation support for serverless / API Gateway deployments; fix installation via pypi; minor fix for Java (passing of environment variables)
 * v0.5.0: Extend DynamoDB Streams API; fix keep-alive connection for S3; fix deadlock in nested Lambda executions; add integration SNS->Lambda; CloudFormation serverless example; replace dynalite with DynamoDBLocal; support Lambda execution in remote Docker container; fix CloudWatch metrics for Lambda invocation errors
 * v0.4.3: Initial support for CloudWatch metrics (for Lambda functions); HTTP forwards for API Gateway; fix S3 message body signatures; download Lambda archive from S3 bucket; fix/extend ES tests
 * v0.4.2: Initial support for Java Lambda functions; CloudFormation deployments; API Gateway tests
