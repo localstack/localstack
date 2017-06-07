@@ -19,7 +19,7 @@ install:           ## Install npm/pip dependencies, compile code
 		make compile
 
 setup-venv:        # Setup virtualenv
-	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv || sudo $(PIP_CMD) install virtualenv) && \
+	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
 		($(VENV_RUN) && $(PIP_CMD) install --upgrade pip) && \
 		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install six==1.10.0 ; $(PIP_CMD) install -r requirements.txt))
@@ -30,7 +30,7 @@ install-libs:      ## Install npm/pip dependencies
 				mkdir -p localstack/infra/amazon-kinesis-client; \
 				cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
 		(test -e $(LOCALSTACK_JAR_PATH) || curl -o $(LOCALSTACK_JAR_PATH) $(LOCALSTACK_JAR_URL)) && \
-		(npm install --silent -g npm > /dev/null || sudo npm install --silent -g npm)
+		(npm install --silent -g npm > /dev/null || echo "WARNING: Unable to update npm package globally (you may need to check the file permissions of your npm installation)")
 
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))
