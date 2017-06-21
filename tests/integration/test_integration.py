@@ -215,7 +215,8 @@ def test_kinesis_lambda_sns_ddb_streams():
     time.sleep(2)
 
     num_events = num_events_ddb + num_events_kinesis + num_events_sns
-    LOGGER.info('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))
+    if len(EVENTS) != num_events:
+        LOGGER.warning('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))
     assert len(EVENTS) == num_events
 
     # check cloudwatch notifications

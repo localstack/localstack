@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os
 import re
 import sys
@@ -429,10 +427,3 @@ def start_infra(async=False, apis=None):
     finally:
         if not async:
             stop_infra()
-
-
-if __name__ == '__main__':
-
-    print('Starting local dev environment. CTRL-C to quit.')
-    # fire it up!
-    start_infra()

@@ -6,8 +6,6 @@ AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.1
 AWS_STS_TMPFILE = /tmp/aws-java-sdk-sts.jar
 LOCALSTACK_JAR_URL = https://bitbucket.org/atlassian/localstack/raw/mvn/release/com/atlassian/localstack-utils/1.0-SNAPSHOT/localstack-utils-1.0-SNAPSHOT.jar
 LOCALSTACK_JAR_PATH = localstack/infra/localstack-utils.jar
-TMP_DIR = /tmp/localstack
-DOCKER_SOCK ?= /var/run/docker.sock
 PIP_CMD ?= pip
 
 usage:             ## Show this help
@@ -51,7 +49,7 @@ init:              ## Initialize the infrastructure, make sure all libs are down
 	$(VENV_RUN); PYTHONPATH=. exec localstack/mock/install.py run
 
 infra:             ## Manually start the local infrastructure for testing
-	$(VENV_RUN); PYTHONPATH=. exec localstack/mock/infra.py
+	($(VENV_RUN); bin/localstack start)
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
@@ -70,9 +68,7 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME):latest)
 
 docker-run:        ## Run Docker image locally
-	port_mappings="$(shell echo $(SERVICES) | sed 's/[^0-9]/ /g' | sed 's/\([0-9][0-9]*\)/-p \1:\1/g' | sed 's/  */ /g')"; \
-		mkdir -p $(TMP_DIR); chmod -R 777 $(TMP_DIR); \
-		docker run -it $(ENTRYPOINT) -e DEBUG=$(DEBUG) -e SERVICES=$(SERVICES) -e DATA_DIR=$(DATA_DIR) -e LAMBDA_EXECUTOR=$(LAMBDA_EXECUTOR) -e KINESIS_ERROR_PROBABILITY=$(KINESIS_ERROR_PROBABILITY) -p 4567-4582:4567-4582 -p 8080:8080 $$port_mappings -v $(TMP_DIR):$(TMP_DIR) -v $(DOCKER_SOCK):$(DOCKER_SOCK) -e DOCKER_HOST="unix://$(DOCKER_SOCK)" $(IMAGE_NAME) $(CMD)
+	($(VENV_RUN); bin/localstack start --docker)
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web --port=8080)

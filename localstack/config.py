@@ -1,5 +1,6 @@
 import re
 import os
+import subprocess
 from six import iteritems
 from localstack.constants import *
 
@@ -12,9 +13,6 @@ DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', 
 # Allow custom hostname for services
 HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 
-# whether to use Lambda functions in a Docker container
-LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR', '').strip() or 'docker'
-
 # whether to remotely copy the lambda or locally mount a volume
 LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() == 'true'
 
@@ -26,6 +24,19 @@ DATA_DIR = os.environ.get('DATA_DIR', '').strip()
 
 # default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
 DEFAULT_ENCODING = 'utf-8'
+
+# path to local Docker UNIX domain socket
+DOCKER_SOCK = os.environ.get('DOCKER_SOCK', '').strip() or '/var/run/docker.sock'
+
+# whether to use Lambda functions in a Docker container
+LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR', '').strip()
+if not LAMBDA_EXECUTOR:
+    LAMBDA_EXECUTOR = 'local'
+    try:
+        if 'Linux' in subprocess.check_output('uname -a'):
+            LAMBDA_EXECUTOR = 'docker'
+    except Exception as e:
+        pass
 
 # create folders
 for folder in [DATA_DIR, TMP_FOLDER]:
@@ -61,6 +72,10 @@ for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     exec('TEST_%s_URL = "%s"' % (key.upper(), url))
     # expose HOST_*_URL variables as environment variables
     os.environ['TEST_%s_URL' % key.upper()] = url
+
+
+def service_port(service_key):
+    return SERVICE_PORTS.get(service_key)
 
 
 # set URL pattern of inbound API gateway

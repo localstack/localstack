@@ -91,7 +91,7 @@ class ShellCommandThread (FuncThread):
 
         def convert_line(line):
             line = to_str(line)
-            return line.strip() + '\n'
+            return line.strip() + '\r\n'
 
         try:
             self.process = run(self.cmd, async=True, stdin=self.stdin, outfile=self.outfile,
@@ -100,13 +100,13 @@ class ShellCommandThread (FuncThread):
                 if self.outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
                     for line in iter(self.process.stdout.readline, ''):
-                        if self.is_killed():
+                        if not (line and line.strip()) and self.is_killed():
                             break
                         line = convert_line(line)
                         sys.stdout.write(line)
                         sys.stdout.flush()
                     for line in iter(self.process.stderr.readline, ''):
-                        if self.is_killed():
+                        if not (line and line.strip()) and self.is_killed():
                             break
                         line = convert_line(line)
                         sys.stderr.write(line)
