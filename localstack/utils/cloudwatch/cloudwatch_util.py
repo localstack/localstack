@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from flask import Flask, Response
+from localstack import config
 from localstack.utils.common import now_utc, make_http_request, to_str
 from localstack.utils.aws import aws_stack
 
@@ -20,6 +21,9 @@ def dimension_lambda(kwargs):
 
 
 def publish_lambda_metric(metric, value, kwargs):
+    # publish metric only if CloudWatch service is available
+    if not config.service_port('cloudwatch'):
+        return
     cw_client = aws_stack.connect_to_service('cloudwatch')
     cw_client.put_metric_data(Namespace='AWS/Lambda',
         MetricData=[{

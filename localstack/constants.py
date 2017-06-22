@@ -81,6 +81,9 @@ if not os.path.isdir(LOCALSTACK_VENV_FOLDER):
 # API Gateway path to indicate a user request sent to the gateway
 PATH_USER_REQUEST = '_user_request_'
 
+# name of LocalStack Docker image
+DOCKER_IMAGE_NAME = 'atlassianlabs/localstack'
+
 # action headers
 KINESIS_ACTION_PUT_RECORD = 'Kinesis_20131202.PutRecord'
 KINESIS_ACTION_PUT_RECORDS = 'Kinesis_20131202.PutRecords'

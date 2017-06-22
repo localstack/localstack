@@ -270,23 +270,20 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                 'HOSTNAME': DOCKER_BRIDGE_IP,
             })
         else:
-            function_code = func.func_code if 'func_code' in func.__dict__ else func.__code__
-            if function_code.co_argcount == 2:
-                # execute the Lambda function in a forked sub-process, sync result via queue
-                queue = Queue()
+            # execute the Lambda function in a forked sub-process, sync result via queue
+            queue = Queue()
 
-                def do_execute():
-                    # now we're executing in the child process, safe to change CWD
-                    if lambda_cwd:
-                        os.chdir(lambda_cwd)
-                    result = func(event, context)
-                    queue.put(result)
+            def do_execute():
+                # now we're executing in the child process, safe to change CWD
+                if lambda_cwd:
+                    os.chdir(lambda_cwd)
+                result = func(event, context)
+                queue.put(result)
 
-                process = Process(target=do_execute)
-                process.run()
-                result = queue.get()
-            else:
-                raise Exception('Expected handler function with 2 parameters, found %s' % function_code.co_argcount)
+            process = Process(target=do_execute)
+            process.run()
+            result = queue.get()
+
     except Exception as e:
         return error_response("Error executing Lambda function: %s %s" % (e, traceback.format_exc()))
     finally:

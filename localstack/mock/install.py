@@ -53,7 +53,7 @@ def install_dynalite():
 
 def is_alpine():
     try:
-        run('cat /etc/issue | grep Alpine')
+        run('cat /etc/issue | grep Alpine', print_error=False)
         return True
     except Exception as e:
         return False
