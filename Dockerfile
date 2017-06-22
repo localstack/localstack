@@ -4,7 +4,7 @@ LABEL authors="Waldemar Hummer (whummer@atlassian.com), Gianluca Bortoli (giallo
 
 # install general packages
 RUN apk update && \
-    apk add --update autoconf automake build-base ca-certificates docker git libffi-dev libtool linux-headers make nodejs openssl openssl-dev python python-dev py-pip supervisor zip && \
+    apk add --update autoconf automake build-base ca-certificates docker git libffi-dev libtool linux-headers make nodejs openssl openssl-dev python python-dev py-pip supervisor zip nodejs-npm && \
     update-ca-certificates
 
 # set workdir
@@ -44,7 +44,8 @@ ADD localstack/ext/ localstack/ext/
 # install dependencies
 # TODO: temporary change to fix error "Cannot find module 'semver'" when running npm
 RUN make install && \
-    rm -rf /usr/lib/node_modules && apk del nodejs && apk add --update nodejs && npm install npm@latest -g
+    rm -rf /usr/lib/node_modules && apk del nodejs nodejs-npm && \
+    apk add --update nodejs nodejs-npm && npm install npm@latest -g
 
 # add files required to run "make init"
 ADD localstack/package.json localstack/package.json

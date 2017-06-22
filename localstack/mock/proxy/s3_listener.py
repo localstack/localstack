@@ -75,7 +75,10 @@ def send_notifications(method, bucket_name, object_path):
             event_name = '%s:%s' % (action, api_method)
             if match_event(config['Event'], action, api_method):
                 # send notification
-                message = get_event_message(event_name=event_name, bucket_name=bucket_name)
+                message = get_event_message(
+                    event_name=event_name, bucket_name=bucket_name,
+                    file_name=urlparse.urlparse(object_path[1:]).path
+                )
                 message = json.dumps(message)
                 result = None
                 if config.get('Queue'):
@@ -202,15 +205,14 @@ def update_s3(method, path, data, headers, response=None, return_forward_info=Fa
         query_map = urlparse.parse_qs(query)
         if method == 'PUT' and (query == 'notification' or 'notification' in query_map):
             tree = ET.fromstring(data)
-            queue_config = tree.find('{%s}QueueConfiguration' % XMLNS_S3)
-            if len(queue_config):
-                S3_NOTIFICATIONS[bucket] = {
-                    'Id': get_xml_text(queue_config, 'Id'),
-                    'Event': get_xml_text(queue_config, 'Event', ns=XMLNS_S3),
-                    'Queue': get_xml_text(queue_config, 'Queue', ns=XMLNS_S3),
-                    'Topic': get_xml_text(queue_config, 'Topic', ns=XMLNS_S3),
-                    'CloudFunction': get_xml_text(queue_config, 'CloudFunction', ns=XMLNS_S3)
-                }
+            for dest in ['Queue', 'Topic', 'CloudFunction']:
+                config = tree.find('{%s}%sConfiguration' % (XMLNS_S3, dest))
+                if config is not None and len(config):
+                    S3_NOTIFICATIONS[bucket] = {
+                        'Id': get_xml_text(config, 'Id'),
+                        'Event': get_xml_text(config, 'Event', ns=XMLNS_S3),
+                        dest: get_xml_text(config, dest, ns=XMLNS_S3),
+                    }
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
                 return get_cors(bucket)
