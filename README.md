@@ -83,15 +83,20 @@ The easiest way to install *LocalStack* is via `pip`:
 pip install localstack
 ```
 
+Once installed, run the infrastructure using the following command:
+```
+localstack start
+```
+
 ## Running in Docker
 
-You can also spin up *LocalStack* without any installation requirements, using Docker:
+You can also spin up *LocalStack* in Docker:
 
 ```
-make docker-run
+localstack start --docker
 ```
 
-Or using docker-compose:
+Or using docker-compose (you need to clone the repository first):
 
 ```
 docker-compose up
@@ -131,38 +136,9 @@ You can pass the following environment variables to LocalStack:
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
 
-## Developing
+## Accessing the infrastructure via CLI or code 
 
-If you pull the repo in order to extend/modify LocalStack, run this command to install
-all the dependencies:
-
-```
-make install
-```
-
-This will install the required pip dependencies in a local Python virtualenv directory 
-`.venv` (your global python packages will remain untouched), as well as some node modules
-in `./localstack/node_modules/`. Depending on your system, some pip/npm modules may require
-additional native libs installed.
-
-## Testing
-
-The project comes with a set of unit and integration tests which can be kicked off via a make
-target:
-
-```
-make test
-```
-
-## Running the infrastructure
-
-The Makefile contains a target to conveniently run the local infrastructure.
-
-```
-make infra
-```
-
-Then you can point your `aws` CLI to use the local infrastructure, for example:
+You can point your `aws` CLI to use the local infrastructure, for example:
 
 ```
 aws --endpoint-url=http://localhost:4568 kinesis list-streams
@@ -243,16 +219,53 @@ Simply add the following configuration to your `pom.xml` file:
 
 ### Troubleshooting
 
-If you're using AWS Java libraries with Kinesis, please, refer to [CBOR protocol issues with the Java SDK guide](https://github.com/mhart/kinesalite#cbor-protocol-issues-with-the-java-sdk) how to disable CBOR protocol which is not supported by kinesalite.
+* If you're using AWS Java libraries with Kinesis, please, refer to [CBOR protocol issues with the Java SDK guide](https://github.com/mhart/kinesalite#cbor-protocol-issues-with-the-java-sdk) how to disable CBOR protocol which is not supported by kinesalite.
+
+* Accessing local S3 from Java: To avoid domain name resolution issues, you need to enable **path style access** on your client:
+```
+s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
+// There is also an option to do this if you're using any of the client builder classes:
+AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard();
+builder.withPathStyleAccessEnabled(true);
+...
+```
+
+## Developing
+
+If you pull the repo in order to extend/modify LocalStack, run this command to install
+all the dependencies:
+
+```
+make install
+```
+
+This will install the required pip dependencies in a local Python virtualenv directory 
+`.venv` (your global python packages will remain untouched), as well as some node modules
+in `./localstack/node_modules/`. Depending on your system, some pip/npm modules may require
+additional native libs installed.
+
+The Makefile contains a target to conveniently run the local infrastructure for development:
+
+```
+make infra
+```
+
+## Testing
+
+The project contains a set of unit and integration tests that can be kicked off via a make
+target:
+
+```
+make test
+```
 
 ## Web Dashboard
 
-The projects also comes with a simple Web dashboard that allows to view the
-deployed AWS components and the relationship between them.
+The projects also comes with a simple Web dashboard that allows to view the deployed AWS
+components and the relationship between them.
 
 ```
-make install-web
-make web
+localstack web
 ```
 
 ## Change Log

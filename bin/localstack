@@ -32,7 +32,7 @@ from localstack.utils.common import run, ShellCommandThread
 if __name__ == "__main__":
     args = docopt(__doc__)
 
-    if args['start'] or args['infra']:
+    if args['start']:
         print('Starting local dev environment. CTRL-C to quit.')
         if args['--docker']:
             services = os.environ.get('SERVICES', '')
