@@ -270,6 +270,7 @@ localstack web
 
 ## Change Log
 
+* v0.5.4: Remove hardcoded /tmp/ for Windows-compat.; update CLI and docs; fix S3/SNS notifications; disable Elasticsearch compression
 * v0.5.3: Add CloudFormation support for serverless / API Gateway deployments; fix installation via pypi; minor fix for Java (passing of environment variables)
 * v0.5.0: Extend DynamoDB Streams API; fix keep-alive connection for S3; fix deadlock in nested Lambda executions; add integration SNS->Lambda; CloudFormation serverless example; replace dynalite with DynamoDBLocal; support Lambda execution in remote Docker container; fix CloudWatch metrics for Lambda invocation errors
 * v0.4.3: Initial support for CloudWatch metrics (for Lambda functions); HTTP forwards for API Gateway; fix S3 message body signatures; download Lambda archive from S3 bucket; fix/extend ES tests

@@ -19,6 +19,9 @@ LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() == 'tr
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), 'localstack')
+# fix for Mac OS, to be able to mount /var/folders in Docker
+if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_FOLDER):
+    TMP_FOLDER = '/private%s' % TMP_FOLDER
 
 # directory for persisting data
 DATA_DIR = os.environ.get('DATA_DIR', '').strip()

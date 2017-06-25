@@ -53,7 +53,7 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, datetime):
             return str(o)
-        return super(DecimalEncoder, self).default(o)
+        return super(CustomEncoder, self).default(o)
 
 
 class FuncThread (threading.Thread):
