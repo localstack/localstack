@@ -5,6 +5,7 @@ import json
 import logging
 import base64
 import datetime
+import tempfile
 from localstack.utils.common import *
 from localstack.utils.aws.aws_models import *
 from localstack.utils.aws import aws_stack
@@ -15,7 +16,7 @@ from six import iteritems
 AWS_CACHE_TIMEOUT = 5  # 5 seconds
 AWS_LAMBDA_CODE_CACHE_TIMEOUT = 5 * 60  # 5 minutes
 MOCK_OBJ = False
-TMP_DOWNLOAD_FILE_PATTERN = '/tmp/tmpfile.*'
+TMP_DOWNLOAD_FILE_PATTERN = os.path.join(tempfile.gettempdir(), 'tmpfile.*')
 TMP_DOWNLOAD_CACHE_MAX_AGE = 30 * 60
 last_cache_cleanup_time = {'time': 0}
 
@@ -249,7 +250,7 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     out = json.loads(out)
     loc = out['Code']['Location']
     hash = md5(loc)
-    folder = TMP_DOWNLOAD_FILE_PATTERN.replace('*', '%s') % hash
+    folder = TMP_DOWNLOAD_FILE_PATTERN.replace('*', hash)
     filename = 'archive.zip'
     archive = '%s/%s' % (folder, filename)
     try:

@@ -15,8 +15,8 @@ INSTALL_DIR_INFRA = '%s/infra' % ROOT_PATH
 INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
 INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
-TMP_ARCHIVE_ES = '/tmp/localstack.es.zip'
-TMP_ARCHIVE_DDB = '/tmp/localstack.ddb.zip'
+TMP_ARCHIVE_ES = os.path.join(tempfile.gettempdir(), 'localstack.es.zip')
+TMP_ARCHIVE_DDB = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
 
 
 # set up logger

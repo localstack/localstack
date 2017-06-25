@@ -3,7 +3,7 @@ IMAGE_TAG ?= $(shell cat setup.py | grep version= | sed "s/.*version=['\"]\(.*\)
 VENV_DIR ?= .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
-AWS_STS_TMPFILE = /tmp/aws-java-sdk-sts.jar
+AWS_STS_TMPFILE = $(TMPDIR)aws-java-sdk-sts.jar
 LOCALSTACK_JAR_URL = https://bitbucket.org/atlassian/localstack/raw/mvn/release/com/atlassian/localstack-utils/1.0-SNAPSHOT/localstack-utils-1.0-SNAPSHOT.jar
 LOCALSTACK_JAR_PATH = localstack/infra/localstack-utils.jar
 PIP_CMD ?= pip
@@ -100,6 +100,6 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
 	rm -f $(AWS_STS_TMPFILE)
-	rm -f /tmp/localstack.es.zip
+	rm -f $(TMPDIR)localstack.es.zip
 
 .PHONY: usage compile clean install web install-web infra test install-libs

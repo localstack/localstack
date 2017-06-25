@@ -55,10 +55,10 @@ if __name__ == "__main__":
                 '-e DATA_DIR=%s -e LAMBDA_EXECUTOR=%s ' +
                 '-e KINESIS_ERROR_PROBABILITY=%s ' +
                 '-p 8080:8080 %s ' +
-                '-v "%s:%s" -v "%s:%s" ' +
+                '-v "%s:/tmp/localstack" -v "%s:%s" ' +
                 '-e DOCKER_HOST="unix://%s" "%s" %s') % (
                     entrypoint, debug, services, data_dir, lambda_executor,
-                    kinesis_errors_prob, port_mappings, config.TMP_FOLDER, config.TMP_FOLDER,
+                    kinesis_errors_prob, port_mappings, config.TMP_FOLDER,
                     config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
                     image_name, cmd
                 )
