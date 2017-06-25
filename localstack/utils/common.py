@@ -13,6 +13,7 @@ import socket
 import json
 import decimal
 import logging
+import tempfile
 from io import BytesIO
 from contextlib import closing
 from datetime import datetime
@@ -29,7 +30,7 @@ TMP_THREADS = []
 # cache clean variables
 CACHE_CLEAN_TIMEOUT = 60 * 5
 CACHE_MAX_AGE = 60 * 60
-CACHE_FILE_PATTERN = '/tmp/cache.*.json'
+CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), 'cache.*.json')
 last_cache_clean_time = {'time': 0}
 mutex_clean = threading.Semaphore(1)
 mutex_popen = threading.Semaphore(1)
@@ -362,7 +363,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
     if cache_duration_secs <= 0:
         return do_run(cmd)
     hash = md5(cmd)
-    cache_file = CACHE_FILE_PATTERN.replace('*', '%s') % hash
+    cache_file = CACHE_FILE_PATTERN.replace('*', hash)
     if os.path.isfile(cache_file):
         # check file age
         mod_time = os.path.getmtime(cache_file)

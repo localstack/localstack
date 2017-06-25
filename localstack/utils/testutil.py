@@ -3,6 +3,7 @@ import boto3
 import uuid
 import os
 import time
+import tempfile
 from six import iteritems
 from localstack.constants import REGION_LOCAL, LOCALSTACK_ROOT_FOLDER
 from localstack.config import TEST_S3_URL
@@ -14,7 +15,7 @@ from localstack.utils.aws.aws_models import DynamoDB, ElasticSearch
 from localstack.utils.kinesis import kinesis_connector
 
 
-ARCHIVE_DIR_PATTERN = '/tmp/lambda.archive.*'
+ARCHIVE_DIR_PREFIX = 'lambda.archive.'
 
 
 def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None):
@@ -52,9 +53,7 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
 
 def create_lambda_archive(script, stream=None, get_content=False, libs=[], runtime=None):
     """Utility method to create a Lambda function archive"""
-
-    tmp_dir = ARCHIVE_DIR_PATTERN.replace('*', short_uid())
-    run('mkdir -p %s' % tmp_dir)
+    tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
     TMP_FILES.append(tmp_dir)
     file_name = get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
     script_file = '%s/%s' % (tmp_dir, file_name)
@@ -71,13 +70,11 @@ def create_lambda_archive(script, stream=None, get_content=False, libs=[], runti
 def create_zip_file(file_path, include='*', get_content=False):
     base_dir = file_path
     if not os.path.isdir(file_path):
-        base_dir = ARCHIVE_DIR_PATTERN.replace('*', short_uid())
-        run('mkdir -p "%s"' % base_dir)
+        base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
         run('cp "%s" "%s"' % (file_path, base_dir))
         include = os.path.basename(file_path)
         TMP_FILES.append(base_dir)
-    tmp_dir = ARCHIVE_DIR_PATTERN.replace('*', short_uid())
-    run('mkdir -p "%s"' % tmp_dir)
+    tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
     zip_file_name = 'archive.zip'
     zip_file = '%s/%s' % (tmp_dir, zip_file_name)
     # create zip file
@@ -186,11 +183,10 @@ def list_all_s3_objects():
 
 
 def download_s3_object(s3, bucket, path):
-    tmpfile = '/tmp/%s' % str(uuid.uuid4())
-    s3.Bucket(bucket).download_file(path, tmpfile)
-    result = load_file(tmpfile)
-    os.remove(tmpfile)
-    return result
+    with tempfile.SpooledTemporaryFile() as tmpfile:
+        s3.Bucket(bucket).download_fileobj(path, tmpfile)
+        tmpfile.seek(0)
+        return to_str(tmpfile.read())
 
 
 def map_all_s3_objects(to_json=True):

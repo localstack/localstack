@@ -6,6 +6,7 @@ import os
 import sys
 import re
 import socket
+import tempfile
 import time
 import traceback
 import threading
@@ -25,8 +26,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
 
 
-EVENTS_FILE_PATTERN = '/tmp/kclipy.*.fifo'
-LOG_FILE_PATTERN = '/tmp/kclipy.*.log'
+EVENTS_FILE_PATTERN = os.path.join(tempfile.gettempdir(), 'kclipy.*.fifo')
+LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), 'kclipy.*.log')
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-kclapp'
 
 # define Java class names
@@ -239,7 +240,7 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
         ddb_lease_table_suffix = DEFAULT_DDB_LEASE_TABLE_SUFFIX
     # construct stream info
     env = aws_stack.get_environment(env)
-    props_file = os.path.join('/tmp/', 'kclipy.%s.properties' % short_uid())
+    props_file = os.path.join(tempfile.gettempdir(), 'kclipy.%s.properties' % short_uid())
     app_name = '%s%s' % (stream_name, ddb_lease_table_suffix)
     stream_info = {
         'name': stream_name,
@@ -327,13 +328,13 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
 
 
 def generate_processor_script(events_file, log_file=None):
-    script_file = os.path.join('/tmp/', 'kclipy.%s.processor.py' % short_uid())
+    script_file = os.path.join(tempfile.gettempdir(), 'kclipy.%s.processor.py' % short_uid())
     if log_file:
         log_file = "'%s'" % log_file
     else:
         log_file = 'None'
     content = """#!/usr/bin/env python
-import os, sys, glob, json, socket, time, logging
+import os, sys, glob, json, socket, time, logging, tempfile
 import subprocess32 as subprocess
 logging.basicConfig(level=logging.INFO)
 for path in glob.glob('%s/lib/python*/site-packages'):
@@ -344,6 +345,7 @@ from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.common import timestamp
 events_file = '%s'
 log_file = %s
+error_log = os.path.join(tempfile.gettempdir(), 'kclipy.error.log')
 if __name__ == '__main__':
     sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
@@ -359,7 +361,7 @@ if __name__ == '__main__':
             error = e
             if i < num_tries:
                 msg = '%%s: Unable to connect to UNIX socket. Retrying.' %% timestamp()
-                subprocess.check_output('echo "%%s" >> /tmp/kclipy.error.log' %% msg, shell=True)
+                subprocess.check_output('echo "%%s" >> %%s' %% (msg, error_log), shell=True)
                 time.sleep(sleep_time)
     if error:
         print("WARN: Unable to connect to UNIX socket after retrying: %%s" %% error)
@@ -376,7 +378,7 @@ if __name__ == '__main__':
         except Exception as e:
             msg = "WARN: Unable to forward event: %%s" %% e
             print(msg)
-            subprocess.check_output('echo "%%s" >> /tmp/kclipy.error.log' %% msg, shell=True)
+            subprocess.check_output('echo "%%s" >> %%s' %% (msg, error_log), shell=True)
     kinesis_connector.KinesisProcessor.run_processor(log_file=log_file, processor_func=receive_msg)
     """ % (LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, events_file, log_file)
     save_file(script_file, content)
@@ -396,7 +398,7 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     """
     env = aws_stack.get_environment(env)
     if not events_file:
-        events_file = os.path.join(EVENTS_FILE_PATTERN.replace('*', '%s') % short_uid())
+        events_file = EVENTS_FILE_PATTERN.replace('*', short_uid())
         TMP_FILES.append(events_file)
     if not processor_script:
         processor_script = generate_processor_script(events_file, log_file=log_file)

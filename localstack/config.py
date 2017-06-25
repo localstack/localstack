@@ -1,6 +1,7 @@
 import re
 import os
 import subprocess
+import tempfile
 from six import iteritems
 from localstack.constants import *
 
@@ -17,7 +18,7 @@ HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() == 'true'
 
 # folder for temporary files and data
-TMP_FOLDER = '/tmp/localstack'
+TMP_FOLDER = os.path.join(tempfile.gettempdir(), 'localstack')
 
 # directory for persisting data
 DATA_DIR = os.environ.get('DATA_DIR', '').strip()
