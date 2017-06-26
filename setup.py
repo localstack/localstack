@@ -81,9 +81,6 @@ if __name__ == '__main__':
         author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',
         url='https://bitbucket.org/atlassian/localstack',
-        custom_headers={
-            'Authorization': None
-        },
         scripts=['bin/localstack'],
         packages=find_packages(exclude=("tests", "tests.*")),
         package_data=package_data,
