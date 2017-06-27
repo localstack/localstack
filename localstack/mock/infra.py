@@ -10,6 +10,7 @@ import json
 import boto3
 import subprocess
 import six
+import warnings
 from localstack import constants
 from localstack.config import *
 from localstack.utils.aws import aws_stack
@@ -20,7 +21,7 @@ from localstack.mock.install import ROOT_PATH
 from localstack.mock.apis import firehose_api, lambda_api, dynamodbstreams_api, es_api
 from localstack.mock.proxy import (apigateway_listener, cloudformation_listener,
     dynamodb_listener, kinesis_listener, sns_listener, s3_listener)
-from localstack.mock.generic_proxy import GenericProxy
+from localstack.mock.generic_proxy import GenericProxy, SERVER_CERT_PEM_FILE
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -81,8 +82,16 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
     cmd = (('ES_JAVA_OPTS=\"$ES_JAVA_OPTS -Xms200m -Xmx500m\" %s/infra/elasticsearch/bin/elasticsearch ' +
-        '-E http.port=%s -E http.publish_port=%s -E http.compression=false -E path.data=%s') %
+        '-E http.port=%s -E http.publish_port=%s -E http.compression=false -E path.data=%s ' +
+        '-E xpack.security.enabled=false') %
         (ROOT_PATH, backend_port, backend_port, es_data_dir))
+    if USE_SSL:
+        # make sure we have a test cert generated and configured
+        GenericProxy.create_ssl_cert()
+        cmd += ((' -E xpack.ssl.key=%s.key -E xpack.ssl.certificate=%s.crt ' +
+            '-E xpack.security.transport.ssl.enabled=true ' +
+            '-E xpack.security.http.ssl.enabled=true') %
+                (SERVER_CERT_PEM_FILE, SERVER_CERT_PEM_FILE))
     print("Starting local Elasticsearch (port %s)..." % port)
     if delete_data:
         run('rm -rf %s' % es_data_dir)
@@ -203,7 +212,7 @@ def do_run(cmd, async, print_output=False):
 def start_proxy(port, backend_port, update_listener, quiet=False,
         backend_host=DEFAULT_BACKEND_HOST, params={}):
     proxy_thread = GenericProxy(port=port, forward_host='%s:%s' % (backend_host, backend_port),
-                        update_listener=update_listener, quiet=quiet, params=params)
+        ssl=USE_SSL, update_listener=update_listener, quiet=quiet, params=params)
     proxy_thread.start()
     TMP_THREADS.append(proxy_thread)
 
@@ -216,6 +225,8 @@ def start_moto_server(key, port, name=None, backend_port=None, async=False, upda
     print("Starting mock %s (port %s)..." % (name, port))
     if backend_port:
         start_proxy(port, backend_port, update_listener)
+    elif USE_SSL:
+        cmd += ' --ssl'
     return do_run(cmd, async)
 
 
@@ -351,6 +362,7 @@ def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[
 def start_infra(async=False, apis=None):
     try:
         # set up logging
+        warnings.filterwarnings('ignore')
         logging.basicConfig(level=logging.WARNING)
         logging.getLogger('elasticsearch').setLevel(logging.ERROR)
         LOGGER.setLevel(logging.INFO)

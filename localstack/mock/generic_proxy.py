@@ -5,17 +5,20 @@ import sys
 import json
 import traceback
 import logging
+import ssl
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
 from six import iteritems, string_types
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
-from localstack.config import DEFAULT_ENCODING
-from localstack.utils.common import FuncThread
+from localstack.config import DEFAULT_ENCODING, TMP_FOLDER, USE_SSL
+from localstack.utils.common import FuncThread, generate_ssl_cert
 from localstack.utils.compat import bytes_
 
-
 QUIET = False
+
+# path for test certificate
+SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -156,10 +159,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
 
 class GenericProxy(FuncThread):
-    def __init__(self, port, forward_host=None, update_listener=None, quiet=False, params={}):
+    def __init__(self, port, forward_host=None, ssl=False, update_listener=None, quiet=False, params={}):
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
         self.httpd = None
         self.port = port
+        self.ssl = ssl
         self.quiet = quiet
         self.forward_host = forward_host
         self.update_listener = update_listener
@@ -169,6 +173,11 @@ class GenericProxy(FuncThread):
     def run_cmd(self, params):
         try:
             self.httpd = ThreadedHTTPServer(("", self.port), GenericProxyHandler)
+            if self.ssl:
+                # make sure we have a cert generated
+                GenericProxy.create_ssl_cert()
+                self.httpd.socket = ssl.wrap_socket(self.httpd.socket,
+                    server_side=True, certfile=SERVER_CERT_PEM_FILE)
             self.httpd.my_object = self
             self.httpd.serve_forever()
         except Exception as e:
@@ -179,3 +188,14 @@ class GenericProxy(FuncThread):
         self.quiet = quiet
         if self.httpd:
             self.httpd.server_close()
+
+    @classmethod
+    def create_ssl_cert(cls):
+        generate_ssl_cert(SERVER_CERT_PEM_FILE, overwrite=False)
+
+    @classmethod
+    def get_flask_ssl_context(cls):
+        if USE_SSL:
+            cls.create_ssl_cert()
+            return ('%s.crt' % SERVER_CERT_PEM_FILE, '%s.key' % SERVER_CERT_PEM_FILE)
+        return None

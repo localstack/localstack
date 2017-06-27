@@ -10,11 +10,13 @@ import sys
 import boto3
 import base64
 import traceback
-from flask import Flask, jsonify, request, make_response
 from datetime import datetime
+from flask import Flask, jsonify, request, make_response
 from localstack.config import TEST_S3_URL
 from localstack.constants import *
+from localstack.mock.generic_proxy import GenericProxy
 from localstack.utils.common import short_uid, to_str
+from localstack.utils.testutil import get_s3_client
 from localstack.utils.aws.aws_stack import *
 from six import iteritems
 
@@ -31,13 +33,6 @@ def get_delivery_stream_names():
     for name, stream in iteritems(delivery_streams):
         names.append(stream['DeliveryStreamName'])
     return names
-
-
-def get_s3_client():
-    return boto3.resource('s3',
-        endpoint_url=TEST_S3_URL,
-        config=boto3.session.Config(
-            s3={'addressing_style': 'path'}))
 
 
 def put_record(stream_name, record):
@@ -174,7 +169,8 @@ def serve(port, quiet=True):
     if quiet:
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
-    app.run(port=int(port), threaded=True, host='0.0.0.0')
+    ssl_context = GenericProxy.get_flask_ssl_context()
+    app.run(port=int(port), threaded=True, host='0.0.0.0', ssl_context=ssl_context)
 
 if __name__ == '__main__':
     port = DEFAULT_PORT_FIREHOSE

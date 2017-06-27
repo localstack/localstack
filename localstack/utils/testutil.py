@@ -175,7 +175,8 @@ def get_s3_client():
     return boto3.resource('s3',
         endpoint_url=TEST_S3_URL,
         config=boto3.session.Config(
-            s3={'addressing_style': 'path'}))
+            s3={'addressing_style': 'path'}),
+        verify=False)
 
 
 def list_all_s3_objects():

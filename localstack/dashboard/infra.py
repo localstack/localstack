@@ -82,6 +82,8 @@ def aws_cmd(service, env):
     if env.region == REGION_LOCAL:
         endpoint_url = aws_stack.get_local_service_url(service)
     if endpoint_url:
+        if endpoint_url.startswith('https://'):
+            cmd += ' --no-verify-ssl'
         cmd = '%s --endpoint-url="%s"' % (cmd, endpoint_url)
         if not is_port_open(endpoint_url):
             raise socket.error()

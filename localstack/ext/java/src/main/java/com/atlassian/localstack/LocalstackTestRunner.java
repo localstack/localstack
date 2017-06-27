@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -152,9 +153,18 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	}
 
 	private static String getEndpoint(String service) {
-		String regex = ".*DEFAULT_PORT_" + service.toUpperCase() + "\\s*=\\s*([0-9]+).*";
+		if("".equals(CONFIG_FILE_CONTENT)) {
+			readConfigFile();
+		}
+		String variableName = "DEFAULT_PORT_" + service.toUpperCase();
+		String regex = ".*" + variableName + "\\s*=\\s*([0-9]+).*";
 		String port = Pattern.compile(regex, Pattern.DOTALL | Pattern.MULTILINE).matcher(CONFIG_FILE_CONTENT).replaceAll("$1");
-		return "http://" + LOCALHOST + ":" + port + "/";
+		String protocol = "http";
+		String useSSL = System.getProperty("USE_SSL");
+		if (useSSL != null && !Arrays.asList("false", "0", "").contains(useSSL.trim())) {
+			protocol = "https";
+		}
+		return protocol + "://" + LOCALHOST + ":" + port + "/";
 	}
 
 	private static Process exec(String ... cmd) {
@@ -175,7 +185,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 				if(code != 0) {
 					String stderr = IOUtils.toString(p.getErrorStream());
 					String stdout = IOUtils.toString(p.getInputStream());
-					throw new IllegalStateException("Failed to run command '" + cmd + "', return code " + code +
+					throw new IllegalStateException("Failed to run command '" + String.join(" ", cmd) + "', return code " + code +
 							".\nSTDOUT: " + stdout + "\nSTDERR: " + stderr);
 				}
 			} else {
@@ -187,6 +197,15 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 				});
 			}
 			return p;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static void readConfigFile() {
+		try {
+			String configFile = TMP_INSTALL_DIR + File.separator + "localstack" +  File.separator + "constants.py";
+			CONFIG_FILE_CONTENT = IOUtils.toString(new FileInputStream(configFile));
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -209,8 +228,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 					}
 				}
 				/* read contents of LocalStack config file */
-				String configFile = TMP_INSTALL_DIR + File.separator + "localstack" +  File.separator + "constants.py";
-				CONFIG_FILE_CONTENT = IOUtils.toString(new FileInputStream(configFile));
+				readConfigFile();
 				INFRA_STARTED.set(proc);
 			} catch (IOException e) {
 				throw new RuntimeException(e);

@@ -1,9 +1,9 @@
 import json
-import requests
 from requests.models import Response
 from localstack.config import DEFAULT_REGION, INBOUND_GATEWAY_URL_PATTERN
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
+from localstack.utils.common import safe_requests as requests
 from localstack.mock.generic_proxy import GenericProxy
 
 

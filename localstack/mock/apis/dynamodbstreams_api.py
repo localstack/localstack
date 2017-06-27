@@ -5,6 +5,7 @@ import json
 import uuid
 import logging
 from flask import Flask, jsonify, request
+from localstack.mock.generic_proxy import GenericProxy
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 
@@ -109,7 +110,8 @@ def serve(port, quiet=True):
     if quiet:
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
-    app.run(port=int(port), threaded=True, host='0.0.0.0')
+    ssl_context = GenericProxy.get_flask_ssl_context()
+    app.run(port=int(port), threaded=True, host='0.0.0.0', ssl_context=ssl_context)
 
 if __name__ == '__main__':
     port = DEFAULT_PORT_DYNAMODBSTREAMS

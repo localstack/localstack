@@ -142,11 +142,13 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     env = get_environment(env, region_name=region_name)
     my_session = get_boto3_session()
     method = my_session.client if client else my_session.resource
+    verify = True
     if not endpoint_url:
         if env.region == REGION_LOCAL:
             endpoint_url = get_local_service_url(service_name)
+            verify = False
     region = env.region if env.region != REGION_LOCAL else DEFAULT_REGION
-    return method(service_name, region_name=region, endpoint_url=endpoint_url)
+    return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify)
 
 
 class VelocityInput:
@@ -450,7 +452,8 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
     # use ssl?
     if 'https://' in endpoint:
         use_ssl = True
-        verify_certs = True
+        if env.region != REGION_LOCAL:
+            verify_certs = True
     if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):
         access_key = os.environ.get(ENV_ACCESS_KEY)
         secret_key = os.environ.get(ENV_SECRET_KEY)
