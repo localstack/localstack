@@ -17,6 +17,7 @@ import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.ListFunctionsResult;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.Bucket;
 
 import static com.atlassian.localstack.TestUtils.*;
@@ -44,6 +45,7 @@ public class TestRunnerTest {
 	public void testLocalS3API() throws Exception {
 		AmazonS3 s3 = new AmazonS3Client(TEST_CREDENTIALS);
 		s3.setEndpoint(LocalstackTestRunner.getEndpointS3());
+		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
 		List<Bucket> buckets = s3.listBuckets();
 		Assert.assertNotNull(buckets);
 		S3Sample.runTest(TEST_CREDENTIALS);
