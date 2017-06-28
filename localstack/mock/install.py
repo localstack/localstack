@@ -34,6 +34,9 @@ def install_elasticsearch():
         for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
             cmd = 'cd %s && mkdir -p %s && chmod -R 777 %s'
             run(cmd % (INSTALL_DIR_ES, dir_name, dir_name))
+        # install plugins
+        cmd = 'echo y | %s/bin/elasticsearch-plugin install x-pack'
+        run(cmd % INSTALL_DIR_ES)
 
 
 def install_kinesalite():

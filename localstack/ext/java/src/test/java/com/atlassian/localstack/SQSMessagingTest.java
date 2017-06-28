@@ -25,7 +25,7 @@ public class SQSMessagingTest {
 
     @BeforeClass
     public static void setup() {
-        Map attributeMap = new HashMap<>();
+        Map<String, String> attributeMap = new HashMap<>();
         attributeMap.put("DelaySeconds", "0");
         attributeMap.put("MaximumMessageSize", "262144");
         attributeMap.put("MessageRetentionPeriod", "1209600");

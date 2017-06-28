@@ -14,10 +14,14 @@ import json
 import decimal
 import logging
 import tempfile
+import requests
 from io import BytesIO
+from OpenSSL import crypto, SSL
 from contextlib import closing
 from datetime import datetime
 from six.moves.urllib.parse import urlparse
+from six.moves import cStringIO as StringIO
+from six import with_metaclass
 from multiprocessing.dummy import Pool
 from localstack.utils.compat import bytes_
 from localstack.constants import *
@@ -53,7 +57,7 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, datetime):
             return str(o)
-        return super(DecimalEncoder, self).default(o)
+        return super(CustomEncoder, self).default(o)
 
 
 class FuncThread (threading.Thread):
@@ -314,6 +318,44 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
+def generate_ssl_cert(target_file=None, overwrite=False):
+    if target_file and not overwrite and os.path.exists(target_file):
+        return
+
+    # create a key pair
+    k = crypto.PKey()
+    k.generate_key(crypto.TYPE_RSA, 1024)
+
+    # create a self-signed cert
+    cert = crypto.X509()
+    cert.get_subject().C = "AU"
+    cert.get_subject().ST = "Some-State"
+    cert.get_subject().L = "Some-Locality"
+    cert.get_subject().O = "LocalStack Org"
+    cert.get_subject().OU = "Testing"
+    cert.get_subject().CN = "LocalStack"
+    cert.set_serial_number(1000)
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
+    cert.set_issuer(cert.get_subject())
+    cert.set_pubkey(k)
+    cert.sign(k, 'sha1')
+
+    cert_file = StringIO()
+    key_file = StringIO()
+    cert_file.write(to_str(crypto.dump_certificate(crypto.FILETYPE_PEM, cert)))
+    key_file.write(to_str(crypto.dump_privatekey(crypto.FILETYPE_PEM, k)))
+    cert_file_content = cert_file.getvalue().strip()
+    key_file_content = key_file.getvalue().strip()
+    file_content = '%s\n%s' % (key_file_content, cert_file_content)
+    if target_file:
+        save_file(target_file, file_content)
+        save_file('%s.key' % target_file, key_file_content)
+        save_file('%s.crt' % target_file, cert_file_content)
+        return file_content
+    return file_content
+
+
 def run_safe(_python_lambda, print_error=True, **kwargs):
     try:
         _python_lambda(**kwargs)
@@ -394,19 +436,40 @@ def remove_non_ascii(text):
     return text
 
 
-def make_http_request(url, data=None, headers=None, method='GET'):
-    """ Execute an HTTP request, avoiding requests library reading credentials from ~/.netrc file """
+class NetrcBypassAuth(requests.auth.AuthBase):
+    def __call__(self, r):
+        return r
 
-    import requests
+
+class _RequestsSafe(type):
+    """ Wrapper around requests library, which prevents it from verifying
+        SSL certificates or reading credentials from ~/.netrc file """
+
+    def __getattr__(self, name):
+        method = requests.__dict__.get(name.lower())
+        if not method:
+            return method
+
+        def _missing(*args, **kwargs):
+            if 'auth' not in kwargs:
+                kwargs['auth'] = NetrcBypassAuth()
+            if 'verify' not in kwargs:
+                kwargs['verify'] = False
+            return method(*args, **kwargs)
+        return _missing
+
+
+# create class-of-a-class
+class safe_requests(with_metaclass(_RequestsSafe)):
+    pass
+
+
+def make_http_request(url, data=None, headers=None, method='GET'):
 
     if is_string(method):
         method = requests.__dict__[method.lower()]
 
-    class NetrcBypassAuth(requests.auth.AuthBase):
-        def __call__(self, r):
-            return r
-
-    return method(url, headers=headers, data=data, auth=NetrcBypassAuth())
+    return method(url, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False)
 
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,

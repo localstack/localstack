@@ -19,9 +19,15 @@ LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() == 'tr
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), 'localstack')
+# fix for Mac OS, to be able to mount /var/folders in Docker
+if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_FOLDER):
+    TMP_FOLDER = '/private%s' % TMP_FOLDER
 
 # directory for persisting data
 DATA_DIR = os.environ.get('DATA_DIR', '').strip()
+
+# whether to use SSL encryption for the services
+USE_SSL = os.environ.get('USE_SSL', '').strip() not in ('0', 'false', '')
 
 # default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
 DEFAULT_ENCODING = 'utf-8'
@@ -68,7 +74,7 @@ SERVICE_PORTS = parse_service_ports()
 for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     # define PORT_* variables with actual service ports as per configuration
     exec('PORT_%s = SERVICE_PORTS.get("%s")' % (key.upper(), key))
-    url = "http://%s:%s" % (HOSTNAME, SERVICE_PORTS.get(key))
+    url = "http%s://%s:%s" % ('s' if USE_SSL else '', HOSTNAME, SERVICE_PORTS.get(key))
     # define TEST_*_URL variables with mock service endpoints
     exec('TEST_%s_URL = "%s"' % (key.upper(), url))
     # expose HOST_*_URL variables as environment variables

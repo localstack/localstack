@@ -76,14 +76,11 @@ if __name__ == '__main__':
 
     setup(
         name='localstack',
-        version='0.5.3.1',
+        version='0.5.5',
         description='An easy-to-use test/mocking framework for developing Cloud applications',
         author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',
         url='https://bitbucket.org/atlassian/localstack',
-        custom_headers={
-            'Authorization': None
-        },
         scripts=['bin/localstack'],
         packages=find_packages(exclude=("tests", "tests.*")),
         package_data=package_data,

@@ -6,7 +6,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
-import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 
 /**
  * Custom session credentials provider that can be configured to assume a given IAM role.
@@ -41,13 +41,13 @@ public class DefaultSTSAssumeRoleSessionCredentialsProvider extends STSAssumeRol
 	private static AWSCredentialsProvider getLongLivedCredentialsProvider() {
 		Map<String, String> env = System.getenv();
 		if(env.containsKey("AWS_SESSION_TOKEN")) {
-			return new StaticCredentialsProvider(
+			return new AWSStaticCredentialsProvider(
 				new BasicSessionCredentials(
 					env.get("AWS_ACCESS_KEY_ID"),
 					env.get("AWS_SECRET_ACCESS_KEY"),
 					env.get("AWS_SESSION_TOKEN")));
 		}
-		return new InstanceProfileCredentialsProvider();
+		return new InstanceProfileCredentialsProvider(false);
 	}
 
 	public static void main(String args[]) throws Exception {

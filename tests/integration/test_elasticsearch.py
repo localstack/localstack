@@ -1,11 +1,11 @@
 import boto3
-from nose.tools import assert_raises, assert_equal, assert_true
-from botocore.exceptions import ClientError
-from localstack import config
 import json
-import requests
 import time
+from botocore.exceptions import ClientError
+from nose.tools import assert_raises, assert_equal, assert_true
+from localstack import config
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import safe_requests as requests
 
 es_url = aws_stack.get_local_service_url('elasticsearch')
 test_index = 'megacorp'

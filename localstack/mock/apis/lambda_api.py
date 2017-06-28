@@ -18,8 +18,9 @@ from multiprocessing import Process, Queue
 from six import iteritems
 from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
-from localstack.constants import *
 from localstack import config
+from localstack.constants import *
+from localstack.mock.generic_proxy import GenericProxy
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -686,7 +687,8 @@ def serve(port, quiet=True):
     if quiet:
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
-    app.run(port=int(port), threaded=True, host='0.0.0.0')
+    ssl_context = GenericProxy.get_flask_ssl_context()
+    app.run(port=int(port), threaded=True, host='0.0.0.0', ssl_context=ssl_context)
 
 
 if __name__ == '__main__':

@@ -38,9 +38,9 @@ public class LambdaExecutor {
 		Map<String,Object> map = reader.reader(Map.class).readValue(fileContent);
 
 		List<Map<String,Object>> records = (List<Map<String, Object>>) get(map, "Records");
+		@SuppressWarnings("rawtypes")
 		RequestHandler handler;
 		Object event;
-
 
 		if (records != null) {
 			Class<RequestHandler<KinesisEvent, ?>> clazz = (Class<RequestHandler<KinesisEvent, ?>>) Class.forName(args[0]);

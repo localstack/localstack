@@ -6,7 +6,6 @@ import base64
 import logging
 from io import BytesIO
 from datetime import datetime, timedelta
-from six.moves import cStringIO as StringIO
 from docopt import docopt
 from nose.tools import assert_raises
 from localstack.utils import testutil

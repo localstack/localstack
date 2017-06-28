@@ -17,7 +17,7 @@ from amazon_kclpy import kcl
 from docopt import docopt
 from sh import tail
 from localstack.constants import *
-from localstack.config import HOSTNAME
+from localstack.config import HOSTNAME, USE_SSL
 from localstack.utils.common import *
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
@@ -256,7 +256,7 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
         stream_info['conn_kwargs'] = {
             'host': HOSTNAME,
             'port': DEFAULT_PORT_KINESIS,
-            'is_secure': False
+            'is_secure': bool(USE_SSL)
         }
     if endpoint_url:
         if 'conn_kwargs' not in stream_info:
@@ -311,8 +311,8 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     if env.region == REGION_LOCAL:
         kwargs['kinesisEndpoint'] = '%s:%s' % (HOSTNAME, DEFAULT_PORT_KINESIS)
         kwargs['dynamodbEndpoint'] = '%s:%s' % (HOSTNAME, DEFAULT_PORT_DYNAMODB)
-        kwargs['kinesisProtocol'] = 'http'
-        kwargs['dynamodbProtocol'] = 'http'
+        kwargs['kinesisProtocol'] = 'http%s' % ('s' if USE_SSL else '')
+        kwargs['dynamodbProtocol'] = 'http%s' % ('s' if USE_SSL else '')
         kwargs['disableCertChecking'] = 'true'
     kwargs.update(configs)
     # create config file
