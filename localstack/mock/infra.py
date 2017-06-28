@@ -48,7 +48,7 @@ def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
         ddb_data_dir_param = '-dbPath %s' % ddb_data_dir
     cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +
         '-jar DynamoDBLocal.jar -sharedDb -port %s %s') % (ROOT_PATH, backend_port, ddb_data_dir_param)
-    print("Starting mock DynamoDB (port %s)..." % port)
+    print("Starting mock DynamoDB (%s port %s)..." % (get_service_protocol(), port))
     start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
 
@@ -63,7 +63,7 @@ def start_kinesis(port=PORT_KINESIS, async=False, shard_limit=100, update_listen
         kinesis_data_dir_param = '--path %s' % kinesis_data_dir
     cmd = ('%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s %s' %
         (ROOT_PATH, shard_limit, backend_port, kinesis_data_dir_param))
-    print("Starting mock Kinesis (port %s)..." % port)
+    print("Starting mock Kinesis (%s port %s)..." % (get_service_protocol(), port))
     start_proxy(port, backend_port, update_listener)
     return do_run(cmd, async)
 
@@ -92,7 +92,7 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
             '-E xpack.security.transport.ssl.enabled=true ' +
             '-E xpack.security.http.ssl.enabled=true') %
                 (SERVER_CERT_PEM_FILE, SERVER_CERT_PEM_FILE))
-    print("Starting local Elasticsearch (port %s)..." % port)
+    print("Starting local Elasticsearch (%s port %s)..." % (get_service_protocol(), port))
     if delete_data:
         run('rm -rf %s' % es_data_dir)
     # fix permissions
@@ -166,6 +166,10 @@ def start_lambda(port=PORT_LAMBDA, async=False):
 # HELPER METHODS
 # ---------------
 
+def get_service_protocol():
+    return 'https' if USE_SSL else 'http'
+
+
 def restore_persisted_data(apis):
     for api in apis:
         persistence.restore_persisted_data(api)
@@ -222,7 +226,7 @@ def start_moto_server(key, port, name=None, backend_port=None, async=False, upda
         backend_port or port, constants.BIND_HOST)
     if not name:
         name = key
-    print("Starting mock %s (port %s)..." % (name, port))
+    print("Starting mock %s (%s port %s)..." % (name, get_service_protocol(), port))
     if backend_port:
         start_proxy(port, backend_port, update_listener)
     elif USE_SSL:
@@ -231,7 +235,7 @@ def start_moto_server(key, port, name=None, backend_port=None, async=False, upda
 
 
 def start_local_api(name, port, method, async=False):
-    print("Starting mock %s service (port %s)..." % (name, port))
+    print("Starting mock %s service (%s port %s)..." % (name, get_service_protocol(), port))
     if async:
         thread = FuncThread(method, port, quiet=True)
         thread.start()

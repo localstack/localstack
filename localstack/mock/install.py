@@ -43,15 +43,7 @@ def install_kinesalite():
     target_dir = '%s/kinesalite' % INSTALL_DIR_NPM
     if not os.path.exists(target_dir):
         LOGGER.info('Downloading and installing local Kinesis server. This may take some time.')
-        run('cd "%s" && npm install leveldown kinesalite' % ROOT_PATH)
-
-
-# TODO deprecated - remove?
-def install_dynalite():
-    target_dir = '%s/dynalite' % INSTALL_DIR_NPM
-    if not os.path.exists(target_dir):
-        LOGGER.info('Downloading and installing local DynamoDB server. This may take some time.')
-        run('cd "%s" && npm install leveldown dynalite' % ROOT_PATH)
+        run('cd "%s" && npm install' % ROOT_PATH)
 
 
 def is_alpine():
