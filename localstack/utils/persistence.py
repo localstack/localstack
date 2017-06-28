@@ -101,7 +101,7 @@ def get_file_path(api, create=False):
         file_path = API_FILE_PATTERN.format(data_dir=DATA_DIR, api=api)
         if create and not os.path.exists(file_path):
             with open(file_path, 'a'):
-                os.utime(file_path)
+                os.utime(file_path, None)
         if os.path.exists(file_path):
             API_FILE_PATHS[api] = file_path
     return API_FILE_PATHS.get(api)

@@ -45,10 +45,21 @@ if not LAMBDA_EXECUTOR:
     except Exception as e:
         pass
 
+# list of environment variable names used for configuration.
+# Make sure to keep this in sync with the above!
+CONFIG_ENV_VARS = ('SERVICES', 'DEBUG', 'DATA_DIR', 'HOSTNAME',
+    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'USE_SSL',
+    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY')
+
 # create folders
 for folder in [DATA_DIR, TMP_FOLDER]:
     if folder and not os.path.exists(folder):
-        os.makedirs(folder)
+        try:
+            os.makedirs(folder)
+        except Exception as e:
+            # this can happen due to a race condition when starting
+            # multiple processes in parallel. Should be safe to ignore
+            pass
 
 
 def parse_service_ports():

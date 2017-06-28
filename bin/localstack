@@ -36,29 +36,29 @@ if __name__ == "__main__":
         print('Starting local dev environment. CTRL-C to quit.')
         if args['--docker']:
             services = os.environ.get('SERVICES', '')
-            debug = os.environ.get('DEBUG', '')
             entrypoint = os.environ.get('ENTRYPOINT', '')
-            data_dir = os.environ.get('DATA_DIR', '')
-            lambda_executor = os.environ.get('LAMBDA_EXECUTOR', '')
-            kinesis_errors_prob = os.environ.get('KINESIS_ERROR_PROBABILITY', '')
             cmd = os.environ.get('CMD', '')
             image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
             service_ports = config.SERVICE_PORTS
             port_mappings = '-p {min_port}-{max_port}:{min_port}-{max_port}'.format(
                 min_port=min(service_ports.values()), max_port=max(service_ports.values()))
+
             if services:
                 port_mappings = ''
                 for service, port in service_ports.items():
                     port_mappings += ' -p {port}:{port}'.format(port=port)
 
-            docker_cmd = ('docker run -it %s -e DEBUG=%s -e SERVICES=%s ' +
-                '-e DATA_DIR=%s -e LAMBDA_EXECUTOR=%s ' +
-                '-e KINESIS_ERROR_PROBABILITY=%s ' +
+            env_str = ''
+            for env_var in config.CONFIG_ENV_VARS:
+                value = os.environ.get(env_var, None)
+                if value is not None:
+                    env_str += '-e %s=%s ' % (env_var, value)
+
+            docker_cmd = ('docker run -it %s %s' +
                 '-p 8080:8080 %s ' +
                 '-v "%s:/tmp/localstack" -v "%s:%s" ' +
                 '-e DOCKER_HOST="unix://%s" "%s" %s') % (
-                    entrypoint, debug, services, data_dir, lambda_executor,
-                    kinesis_errors_prob, port_mappings, config.TMP_FOLDER,
+                    entrypoint, env_str, port_mappings, config.TMP_FOLDER,
                     config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
                     image_name, cmd
                 )

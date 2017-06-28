@@ -1,4 +1,5 @@
 IMAGE_NAME ?= atlassianlabs/localstack
+IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_TAG ?= $(shell cat setup.py | grep version= | sed "s/.*version=['\"]\(.*\)['\"].*/\1/")
 VENV_DIR ?= .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
@@ -27,8 +28,7 @@ install-libs:      ## Install npm/pip dependencies
 			{ (test -e $(AWS_STS_TMPFILE) || curl -o $(AWS_STS_TMPFILE) $(AWS_STS_URL)); \
 				mkdir -p localstack/infra/amazon-kinesis-client; \
 				cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
-		(test -e $(LOCALSTACK_JAR_PATH) || curl -o $(LOCALSTACK_JAR_PATH) $(LOCALSTACK_JAR_URL)) && \
-		(npm install --silent -g npm > /dev/null || echo "WARNING: Unable to update npm package globally (you may need to check the file permissions of your npm installation)")
+		(test -e $(LOCALSTACK_JAR_PATH) || curl -o $(LOCALSTACK_JAR_PATH) $(LOCALSTACK_JAR_URL))
 
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))
@@ -55,6 +55,13 @@ docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
 	docker tag $(IMAGE_NAME) $(IMAGE_NAME):$(IMAGE_TAG)
 
+docker-build-base:
+	docker build -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
+	docker tag $(IMAGE_NAME_BASE) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
+	which docker-squash || $(PIP_CMD) install docker-squash
+	docker-squash -t $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
+	docker tag $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):latest
+
 docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
 
@@ -64,7 +71,9 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		(which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
 		which docker-squash || $(PIP_CMD) install docker-squash; \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) && docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
+		BASE_IMAGE_ID=`docker history -q $(IMAGE_NAME):$(IMAGE_TAG) | tail -n 1`; \
+		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) -f $$BASE_IMAGE_ID $(IMAGE_NAME):$(IMAGE_TAG) && \
+			docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
 		docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME):latest)
 
 docker-run:        ## Run Docker image locally
