@@ -30,6 +30,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
@@ -72,6 +73,7 @@ public class S3Sample {
         Region usWest2 = Region.getRegion(Regions.US_WEST_2);
         s3.setRegion(usWest2);
         s3.setEndpoint(LocalstackTestRunner.getEndpointS3());
+		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
 
         String bucketName = "my-first-s3-bucket-" + UUID.randomUUID();
         String key = "MyObjectKey";
