@@ -31,6 +31,7 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
                 SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
             elif 'Publish' in req_data['Action']:
                 message = req_data['Message'][0]
+                subject = req_data.get('Subject', [''])[0]
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
                     if subscriber['protocol'] == 'sqs':
@@ -39,7 +40,12 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
                         if not queue_url:
                             queue_url = aws_stack.get_sqs_queue_url(queue_name)
                             subscriber['sqs_queue_url'] = queue_url
-                        sqs_client.send_message(QueueUrl=queue_url, MessageBody=message)
+                        sqs_client.send_message(QueueUrl=queue_url,
+                                                MessageBody=json.dumps({
+                                                    'Type': 'Notification',
+                                                    'Message': message,
+                                                    'Subject': subject,
+                                                }))
                     elif subscriber['protocol'] == 'lambda':
                         lambda_api.process_sns_notification(
                             subscriber['endpoint'],
