@@ -102,6 +102,9 @@ Or using docker-compose (you need to clone the repository first):
 docker-compose up
 ```
 
+(Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR docker-compose up` if
+`$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
+
 ## Configurations
 
 You can pass the following environment variables to LocalStack:
@@ -230,6 +233,10 @@ AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard();
 builder.withPathStyleAccessEnabled(true);
 ...
 ```
+
+* Mounting the temp. directory: Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR docker-compose up` if
+`$TMPDIR` contains a symbolic link that cannot be mounted by Docker.
+(See details here: https://bitbucket.org/atlassian/localstack/issues/40/getting-mounts-failed-on-docker-compose-up)
 
 ## Developing
 
