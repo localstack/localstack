@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 def should_record(api, method, path, data, headers):
     """ Decide whether or not a given API call should be recorded (persisted to disk) """
     if api == 's3':
-        if method not in ['PUT', 'POST']:
+        if method not in ['PUT', 'POST', 'DELETE']:
             return False
         return True
     return False
