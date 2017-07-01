@@ -1,11 +1,9 @@
 import json
 import logging
-
 import requests
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
-
-from localstack.mock.apis import lambda_api
+from localstack.services.awslambda import lambda_api
 from localstack.utils.aws import aws_stack
 
 # mappings for SNS topic subscriptions

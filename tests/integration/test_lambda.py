@@ -3,9 +3,9 @@ import json
 from io import BytesIO
 from localstack.utils import testutil
 from localstack.utils.common import *
-from localstack.mock.apis import lambda_api
 from localstack.utils.aws import aws_stack
-from localstack.mock.apis.lambda_api import (LAMBDA_RUNTIME_NODEJS,
+from localstack.services.awslambda import lambda_api
+from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_NODEJS,
     LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_JAVA8, use_docker)
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))

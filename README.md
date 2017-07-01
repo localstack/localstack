@@ -278,6 +278,7 @@ localstack web
 
 ## Change Log
 
+* v0.6.0: Load services as plugins; fix service default ports; fix SQS->SNS and MD5 of message attributes; fix Host header for S3
 * v0.5.5: Enable SSL encryption for all service endpoints (`USE_SSL` config); create Docker base image; fix issue with DATA_DIR
 * v0.5.4: Remove hardcoded /tmp/ for Windows-compat.; update CLI and docs; fix S3/SNS notifications; disable Elasticsearch compression
 * v0.5.3: Add CloudFormation support for serverless / API Gateway deployments; fix installation via pypi; minor fix for Java (passing of environment variables)

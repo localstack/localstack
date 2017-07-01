@@ -5,11 +5,11 @@ import json
 import uuid
 import logging
 from flask import Flask, jsonify, request
-from localstack.mock.generic_proxy import GenericProxy
+from localstack.services.generic_proxy import GenericProxy
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 
-APP_NAME = 'ddb_streams_mock'
+APP_NAME = 'ddb_streams_api'
 
 app = Flask(APP_NAME)
 

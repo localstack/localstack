@@ -12,8 +12,8 @@ from localstack.utils import testutil
 from localstack.utils.common import *
 from localstack.config import HOSTNAME, PORT_SQS
 from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, LOCALSTACK_ROOT_FOLDER
-from localstack.mock import infra
-from localstack.mock.apis.lambda_api import LAMBDA_RUNTIME_PYTHON27
+from localstack.services import infra
+from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudwatch import cloudwatch_util

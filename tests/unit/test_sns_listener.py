@@ -1,8 +1,6 @@
 import json
-
 from nose.tools import assert_equal
-
-from localstack.mock.proxy import sns_listener
+from localstack.services.sns import sns_listener
 
 
 def test_create_sns_message_body_raw_message_delivery():

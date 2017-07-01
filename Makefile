@@ -46,7 +46,7 @@ coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
 init:              ## Initialize the infrastructure, make sure all libs are downloaded
-	$(VENV_RUN); PYTHONPATH=. exec localstack/mock/install.py run
+	$(VENV_RUN); PYTHONPATH=. exec localstack/services/install.py run
 
 infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); bin/localstack start)
@@ -84,10 +84,10 @@ web:               ## Start web application (dashboard)
 
 test:              ## Run automated tests
 	make lint && \
-		$(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .
+		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .)
 
 test-docker:       ## Run automated tests in Docker
-	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/mock:/opt/code/localstack/localstack/mock" CMD="make test" make docker-run
+	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services" CMD="make test" make docker-run
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)
@@ -98,11 +98,10 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p `which python3`" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR),dist .)
+	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,$(VENV_DIR),dist .)
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/
-	rm -rf localstack/mock/target/
 	rm -rf localstack/infra/amazon-kinesis-client
 	rm -rf localstack/infra/elasticsearch
 	rm -rf localstack/node_modules/

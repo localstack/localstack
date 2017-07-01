@@ -2,7 +2,7 @@ import random
 import json
 from requests.models import Response
 from localstack import constants, config
-from localstack.mock.apis import lambda_api
+from localstack.services.awslambda import lambda_api
 from localstack.utils.common import to_str
 
 

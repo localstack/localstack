@@ -40,7 +40,10 @@ def record(api, method, path, data, headers):
         if isinstance(data, dict):
             data = json.dumps(data)
         if data:
-            data = to_bytes(data)
+            try:
+                data = to_bytes(data)
+            except Exception as e:
+                LOGGER.warning('Unable to call to_bytes: %s' % e)
             data = to_str(base64.b64encode(data))
         entry = {
             'a': api,

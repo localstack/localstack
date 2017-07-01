@@ -5,9 +5,9 @@ import json
 import uuid
 import logging
 from flask import Flask, jsonify, request
-from localstack.mock.generic_proxy import GenericProxy
+from localstack.services.generic_proxy import GenericProxy
 
-APP_NAME = 'es_mock'
+APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'
 
 DOMAIN_NAMES = []

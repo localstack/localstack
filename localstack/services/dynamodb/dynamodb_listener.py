@@ -6,7 +6,8 @@ from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import *
 from localstack.constants import *
-from localstack.mock.apis import lambda_api, dynamodbstreams_api
+from localstack.services.awslambda import lambda_api
+from localstack.services.dynamodbstreams import dynamodbstreams_api
 
 # cache table definitions - used for testing
 TABLE_DEFINITIONS = {}
