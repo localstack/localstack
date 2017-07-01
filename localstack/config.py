@@ -84,8 +84,8 @@ SERVICE_PORTS = parse_service_ports()
 # define service ports and URLs as environment variables
 for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     # define PORT_* variables with actual service ports as per configuration
-    exec('PORT_%s = SERVICE_PORTS.get("%s")' % (key.upper(), key))
-    url = "http%s://%s:%s" % ('s' if USE_SSL else '', HOSTNAME, SERVICE_PORTS.get(key))
+    exec('PORT_%s = SERVICE_PORTS.get("%s", 0)' % (key.upper(), key))
+    url = "http%s://%s:%s" % ('s' if USE_SSL else '', HOSTNAME, SERVICE_PORTS.get(key, 0))
     # define TEST_*_URL variables with mock service endpoints
     exec('TEST_%s_URL = "%s"' % (key.upper(), url))
     # expose HOST_*_URL variables as environment variables
@@ -93,7 +93,7 @@ for key, value in iteritems(DEFAULT_SERVICE_PORTS):
 
 
 def service_port(service_key):
-    return SERVICE_PORTS.get(service_key)
+    return SERVICE_PORTS.get(service_key, 0)
 
 
 # set URL pattern of inbound API gateway
