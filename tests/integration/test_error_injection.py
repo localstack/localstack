@@ -3,7 +3,7 @@ from nose.tools import assert_raises, assert_equal
 from botocore.exceptions import ClientError
 from localstack import config
 from localstack.utils.common import *
-from localstack.mock import infra
+from localstack.services import infra
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from localstack.utils import testutil

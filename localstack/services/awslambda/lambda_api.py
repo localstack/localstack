@@ -20,13 +20,13 @@ from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
 from localstack import config
 from localstack.constants import *
-from localstack.mock.generic_proxy import GenericProxy
+from localstack.services.generic_proxy import GenericProxy
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
 
-APP_NAME = 'lambda_mock'
+APP_NAME = 'lambda_api'
 PATH_ROOT = '/2015-03-31'
 ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 EVENT_FILE_PATTERN = '%s/lambda.event.*.json' % config.TMP_FOLDER

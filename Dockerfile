@@ -4,7 +4,7 @@ MAINTAINER Waldemar Hummer (whummer@atlassian.com)
 LABEL authors="Waldemar Hummer (whummer@atlassian.com), Gianluca Bortoli (giallogiallo93@gmail.com)"
 
 # add files required to run "make install"
-ADD requirements.txt .
+ADD Makefile requirements.txt ./
 RUN mkdir -p localstack/utils/kinesis/ && touch localstack/__init__.py localstack/utils/__init__.py localstack/utils/kinesis/__init__.py
 ADD localstack/constants.py localstack/config.py localstack/
 ADD localstack/utils/compat.py localstack/utils/common.py localstack/utils/
@@ -16,7 +16,7 @@ RUN make install
 
 # add files required to run "make init"
 ADD localstack/package.json localstack/package.json
-ADD localstack/mock/__init__.py localstack/mock/install.py localstack/mock/
+ADD localstack/services/__init__.py localstack/services/install.py localstack/services/
 
 # initialize installation (downloads remaining dependencies)
 RUN make init
