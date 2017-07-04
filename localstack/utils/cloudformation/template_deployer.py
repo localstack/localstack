@@ -145,6 +145,19 @@ RESOURCE_TO_FUNCTION = {
                 'description': 'Description'
             }
         }
+    },
+    'Kinesis::Stream': {
+        'create': {
+            'boto_client': 'client',
+            'function': 'create_stream',
+            'parameters': {
+                'Name': 'Name',
+                'ShardCount': 'ShardCount'
+            },
+            'defaults': {
+                'ShardCount': 1
+            }
+        }
     }
 }
 
@@ -265,6 +278,9 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         if resource_type == 'AWS::Logs::LogGroup':
             # TODO implement
             raise Exception('ResourceNotFound')
+        if resource_type == 'AWS::Kinesis::Stream':
+            stream_name = resolve_refs_recursively(stack_name, resource_props['Name'], resources)
+            return aws_stack.connect_to_service('kinesis', client=True).describe_stream(StreamName=stream_name)
         if is_deployable_resource(resource):
             LOGGER.warning('Unexpected resource type %s when resolving references' % resource_type)
     except Exception as e:
