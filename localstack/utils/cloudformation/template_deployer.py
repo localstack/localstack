@@ -91,9 +91,6 @@ RESOURCE_TO_FUNCTION = {
                 'ProvisionedThroughput': {
                     'ReadCapacityUnits': 5,
                     'WriteCapacityUnits': 5
-                },
-                'StreamSpecification': {
-                    'StreamEnabled': True
                 }
             }
         }
