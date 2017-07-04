@@ -91,7 +91,7 @@ def create_sns_message_body(subscriber, req_data):
 
 def get_message_attributes(req_data):
     attributes = {}
-    x = 0
+    x = 1
     while True:
         name = req_data.get('MessageAttributes.entry.' + str(x) + ".Name", [None])[0]
         if name is not None:
