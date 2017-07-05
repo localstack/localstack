@@ -15,13 +15,16 @@ DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', 
 HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 
 # whether to remotely copy the lambda or locally mount a volume
-LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() == 'true'
+LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() in ['true', '1']
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), 'localstack')
 # fix for Mac OS, to be able to mount /var/folders in Docker
 if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_FOLDER):
     TMP_FOLDER = '/private%s' % TMP_FOLDER
+
+# temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
+HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
 
 # directory for persisting data
 DATA_DIR = os.environ.get('DATA_DIR', '').strip()

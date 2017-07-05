@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import os
+import re
 import sys
 import json
 import uuid
@@ -233,6 +234,11 @@ def get_event_sources(func_name=None, source_arn=None):
     return result
 
 
+def get_host_path_for_path_in_docker(path):
+    return re.sub(r'^%s/(.*)$' % config.TMP_FOLDER,
+                r'%s/\1' % config.HOST_TMP_FOLDER, path)
+
+
 @cloudwatched('lambda')
 def run_lambda(func, event, context, func_arn, suppress_output=False):
     if suppress_output:
@@ -258,13 +264,14 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     'docker start -a "$CONTAINER_ID";'
                 ) % (runtime, handler, lambda_cwd)
             else:
+                lambda_cwd_on_host = get_host_path_for_path_in_docker(lambda_cwd)
                 cmd = (
                     'docker run'
                     ' -v "%s":/var/task'
                     ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
                     ' "lambci/lambda:%s" "%s"'
-                ) % (lambda_cwd, runtime, handler)
+                ) % (lambda_cwd_on_host, runtime, handler)
             print(cmd)
             result = run(cmd, env_vars={
                 'AWS_LAMBDA_EVENT_BODY': json.dumps(event).replace("'", "\\'"),
