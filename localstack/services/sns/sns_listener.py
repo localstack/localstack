@@ -52,7 +52,10 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
                     elif subscriber['Protocol'] == 'http':
                         requests.post(
                             subscriber['Endpoint'],
-                            headers={'Content-Type': 'text/plain'},
+                            headers={
+                                'Content-Type': 'text/plain',
+                                'x-amz-sns-message-type': 'Notification'
+                            },
                             data=json.dumps({
                                 'Type': 'Notification',
                                 'Message': message,
