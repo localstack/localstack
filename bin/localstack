@@ -57,10 +57,11 @@ if __name__ == "__main__":
             docker_cmd = ('docker run -it %s %s' +
                 '-p 8080:8080 %s ' +
                 '-v "%s:/tmp/localstack" -v "%s:%s" ' +
-                '-e DOCKER_HOST="unix://%s" "%s" %s') % (
+                '-e DOCKER_HOST="unix://%s" ' +
+                '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
                     entrypoint, env_str, port_mappings, config.TMP_FOLDER,
                     config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
-                    image_name, cmd
+                    config.HOST_TMP_FOLDER, image_name, cmd
                 )
 
             run('mkdir -p "{folder}"; chmod -R 777 "{folder}";'.format(folder=config.TMP_FOLDER))
