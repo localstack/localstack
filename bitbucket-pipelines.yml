@@ -9,6 +9,6 @@ pipelines:
         script:
           - sudo useradd localstack -s /bin/bash
           - sudo apt-get -q install -y libssl-dev python-virtualenv python3-pip zip && make reinstall-p3
-          - HOSTNAME=localhost LAMBDA_EXECUTOR=local USE_SSL=1 make test
+          - HOSTNAME=localhost LAMBDA_EXECUTOR=local DEBUG=1 USE_SSL=1 make test
           - make docker-build
           - make docker-push-master

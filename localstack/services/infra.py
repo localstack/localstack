@@ -348,6 +348,7 @@ def start_infra(async=False, apis=None):
     except Exception as e:
         print('Error starting infrastructure: %s' % e)
         sys.stdout.flush()
+        raise e
     finally:
         if not async:
             stop_infra()
