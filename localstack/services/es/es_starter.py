@@ -67,4 +67,6 @@ def check_elasticsearch(expect_shutdown=False, print_error=False):
     if expect_shutdown:
         assert out is None
     else:
+        if out is not None and not isinstance(out, six.string_types):
+            print('INFO: Response from ES: %s' % out + (' (%s)' % type(out) if out else ''))  # TODO temp for debugging
         assert isinstance(out, six.string_types)

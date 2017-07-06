@@ -277,7 +277,11 @@ def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[
         # loop through plugins and check service status
         for name, plugin in SERVICE_PLUGINS.items():
             if name in apis:
-                plugin.check(expect_shutdown=expect_shutdown, print_error=print_error)
+                try:
+                    plugin.check(expect_shutdown=expect_shutdown, print_error=print_error)
+                except Exception as e:
+                    LOGGER.warning('Service "%s" not yet available, retrying...' % name)
+                    raise e
 
         for additional in additional_checks:
             additional(expect_shutdown=expect_shutdown)
