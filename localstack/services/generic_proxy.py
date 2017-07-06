@@ -147,7 +147,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             # copy headers and return response
             self.send_response(response.status_code)
             for header_key, header_value in iteritems(response.headers):
-                if header_key != 'Content-Length':
+                if header_key.lower() != 'Content-Length'.lower():
                     self.send_header(header_key, header_value)
             self.send_header('Content-Length', '%s' % len(response.content))
             self.end_headers()
