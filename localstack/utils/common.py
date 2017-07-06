@@ -15,6 +15,7 @@ import decimal
 import logging
 import tempfile
 import requests
+import psutil
 from io import BytesIO
 from OpenSSL import crypto, SSL
 from contextlib import closing
@@ -129,15 +130,13 @@ class ShellCommandThread (FuncThread):
         if not self.process:
             return True
         pid = self.process.pid
-        out = run("ps aux 2>&1 | grep '[^\s]*\s*%s\s' | grep -v grep |  grep ''" % pid)
-        return (not out)
+        return psutil.pid_exists(pid)
 
     def stop(self, quiet=False):
         if not self.process:
             LOGGER.warning("No process found for command '%s'" % self.cmd)
             return
 
-        import psutil
         parent_pid = self.process.pid
         try:
             parent = psutil.Process(parent_pid)
