@@ -107,8 +107,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 data = data_string
 
         forward_headers = CaseInsensitiveDict(self.headers)
-        # update original "Host" header
-        forward_headers['host'] = urlparse(target_url).netloc
+        # update original "Host" header (moto s3 relies on this behavior)
+        if not forward_headers.get('Host'):
+            forward_headers['host'] = urlparse(target_url).netloc
+        if 'localhost.atlassian.io' in forward_headers.get('Host'):
+            forward_headers['host'] = 'localhost'
         try:
             response = None
             modified_request = None

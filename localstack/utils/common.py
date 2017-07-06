@@ -246,7 +246,7 @@ def json_safe(item):
 def save_file(file, content, append=False):
     mode = 'a' if append else 'w+'
     if not isinstance(content, six.string_types):
-        mode = 'b' + mode
+        mode = mode + 'b'
     with open(file, mode) as f:
         f.write(content)
         f.flush()
@@ -270,7 +270,7 @@ def to_str(obj):
 
 
 def to_bytes(obj):
-    """ Convert a string/bytes object to a string """
+    """ Convert a string/bytes object to bytes """
     if not isinstance(obj, six.string_types):
         return obj
     return obj.encode(DEFAULT_ENCODING)
@@ -311,6 +311,11 @@ def is_jar_archive(content):
     except TypeError as e:
         # in Python 3 we need to use byte strings for byte-based file content
         return b'class' in content and b'META-INF' in content
+
+
+def is_root():
+    out = run('whoami').strip()
+    return out == 'root'
 
 
 def cleanup_resources():

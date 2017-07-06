@@ -14,14 +14,14 @@ from datetime import datetime
 from flask import Flask, jsonify, request, make_response
 from localstack.config import TEST_S3_URL
 from localstack.constants import *
-from localstack.mock.generic_proxy import GenericProxy
+from localstack.services.generic_proxy import GenericProxy
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.testutil import get_s3_client
 from localstack.utils.aws.aws_stack import *
 from six import iteritems
 
 
-APP_NAME = 'firehose_mock'
+APP_NAME = 'firehose_api'
 
 app = Flask(APP_NAME)
 

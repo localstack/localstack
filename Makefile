@@ -1,4 +1,5 @@
 IMAGE_NAME ?= atlassianlabs/localstack
+IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_TAG ?= $(shell cat setup.py | grep version= | sed "s/.*version=['\"]\(.*\)['\"].*/\1/")
 VENV_DIR ?= .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
@@ -27,8 +28,7 @@ install-libs:      ## Install npm/pip dependencies
 			{ (test -e $(AWS_STS_TMPFILE) || curl -o $(AWS_STS_TMPFILE) $(AWS_STS_URL)); \
 				mkdir -p localstack/infra/amazon-kinesis-client; \
 				cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
-		(test -e $(LOCALSTACK_JAR_PATH) || curl -o $(LOCALSTACK_JAR_PATH) $(LOCALSTACK_JAR_URL)) && \
-		(npm install --silent -g npm > /dev/null || echo "WARNING: Unable to update npm package globally (you may need to check the file permissions of your npm installation)")
+		(test -e $(LOCALSTACK_JAR_PATH) || curl -o $(LOCALSTACK_JAR_PATH) $(LOCALSTACK_JAR_URL))
 
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))
@@ -46,7 +46,7 @@ coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
 init:              ## Initialize the infrastructure, make sure all libs are downloaded
-	$(VENV_RUN); PYTHONPATH=. exec localstack/mock/install.py run
+	$(VENV_RUN); PYTHONPATH=. exec localstack/services/install.py run
 
 infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); bin/localstack start)
@@ -54,6 +54,13 @@ infra:             ## Manually start the local infrastructure for testing
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
 	docker tag $(IMAGE_NAME) $(IMAGE_NAME):$(IMAGE_TAG)
+
+docker-build-base:
+	docker build -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
+	docker tag $(IMAGE_NAME_BASE) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
+	which docker-squash || $(PIP_CMD) install docker-squash
+	docker-squash -t $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
+	docker tag $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):latest
 
 docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
@@ -64,7 +71,9 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		(which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
 		which docker-squash || $(PIP_CMD) install docker-squash; \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG) && docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
+		BASE_IMAGE_ID=`docker history -q $(IMAGE_NAME):$(IMAGE_TAG) | tail -n 1`; \
+		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) -f $$BASE_IMAGE_ID $(IMAGE_NAME):$(IMAGE_TAG) && \
+			docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
 		docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME):latest)
 
 docker-run:        ## Run Docker image locally
@@ -75,10 +84,10 @@ web:               ## Start web application (dashboard)
 
 test:              ## Run automated tests
 	make lint && \
-		$(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .
+		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .)
 
 test-docker:       ## Run automated tests in Docker
-	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/mock:/opt/code/localstack/localstack/mock" CMD="make test" make docker-run
+	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services" CMD="make test" make docker-run
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)
@@ -89,11 +98,10 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p `which python3`" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,legacy,$(VENV_DIR),dist .)
+	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,$(VENV_DIR),dist .)
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/
-	rm -rf localstack/mock/target/
 	rm -rf localstack/infra/amazon-kinesis-client
 	rm -rf localstack/infra/elasticsearch
 	rm -rf localstack/node_modules/

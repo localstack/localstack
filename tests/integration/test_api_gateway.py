@@ -4,7 +4,7 @@ from localstack.config import DEFAULT_REGION, INBOUND_GATEWAY_URL_PATTERN
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 from localstack.utils.common import safe_requests as requests
-from localstack.mock.generic_proxy import GenericProxy
+from localstack.services.generic_proxy import GenericProxy
 
 
 # template used to transform incoming requests at the API Gateway (stream name to be filled in later)

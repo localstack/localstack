@@ -102,6 +102,9 @@ Or using docker-compose (you need to clone the repository first):
 docker-compose up
 ```
 
+(Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR docker-compose up` if
+`$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
+
 ## Configurations
 
 You can pass the following environment variables to LocalStack:
@@ -231,6 +234,10 @@ builder.withPathStyleAccessEnabled(true);
 ...
 ```
 
+* Mounting the temp. directory: Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR docker-compose up` if
+`$TMPDIR` contains a symbolic link that cannot be mounted by Docker.
+(See details here: https://bitbucket.org/atlassian/localstack/issues/40/getting-mounts-failed-on-docker-compose-up)
+
 ## Developing
 
 If you pull the repo in order to extend/modify LocalStack, run this command to install
@@ -271,7 +278,8 @@ localstack web
 
 ## Change Log
 
-* v0.5.5: Enable SSL encryption for all service endpoints (`USE_SSL` config)
+* v0.6.0: Load services as plugins; fix service default ports; fix SQS->SNS and MD5 of message attributes; fix Host header for S3
+* v0.5.5: Enable SSL encryption for all service endpoints (`USE_SSL` config); create Docker base image; fix issue with DATA_DIR
 * v0.5.4: Remove hardcoded /tmp/ for Windows-compat.; update CLI and docs; fix S3/SNS notifications; disable Elasticsearch compression
 * v0.5.3: Add CloudFormation support for serverless / API Gateway deployments; fix installation via pypi; minor fix for Java (passing of environment variables)
 * v0.5.0: Extend DynamoDB Streams API; fix keep-alive connection for S3; fix deadlock in nested Lambda executions; add integration SNS->Lambda; CloudFormation serverless example; replace dynalite with DynamoDBLocal; support Lambda execution in remote Docker container; fix CloudWatch metrics for Lambda invocation errors

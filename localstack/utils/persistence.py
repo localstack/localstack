@@ -24,7 +24,7 @@ LOGGER = logging.getLogger(__name__)
 def should_record(api, method, path, data, headers):
     """ Decide whether or not a given API call should be recorded (persisted to disk) """
     if api == 's3':
-        if method not in ['PUT', 'POST']:
+        if method not in ['PUT', 'POST', 'DELETE']:
             return False
         return True
     return False
@@ -40,7 +40,10 @@ def record(api, method, path, data, headers):
         if isinstance(data, dict):
             data = json.dumps(data)
         if data:
-            data = to_bytes(data)
+            try:
+                data = to_bytes(data)
+            except Exception as e:
+                LOGGER.warning('Unable to call to_bytes: %s' % e)
             data = to_str(base64.b64encode(data))
         entry = {
             'a': api,
@@ -101,7 +104,7 @@ def get_file_path(api, create=False):
         file_path = API_FILE_PATTERN.format(data_dir=DATA_DIR, api=api)
         if create and not os.path.exists(file_path):
             with open(file_path, 'a'):
-                os.utime(file_path)
+                os.utime(file_path, None)
         if os.path.exists(file_path):
             API_FILE_PATHS[api] = file_path
     return API_FILE_PATHS.get(api)

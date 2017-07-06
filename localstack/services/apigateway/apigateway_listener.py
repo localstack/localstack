@@ -7,7 +7,7 @@ from localstack.constants import *
 from localstack.config import TEST_KINESIS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.mock.apis import lambda_api
+from localstack.services.awslambda import lambda_api
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
