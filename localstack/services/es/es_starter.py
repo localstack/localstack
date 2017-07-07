@@ -8,7 +8,7 @@ from localstack.utils.common import run, is_root
 from localstack.utils.aws import aws_stack
 from localstack.services import install
 from localstack.services.install import ROOT_PATH
-from localstack.services.generic_proxy import GenericProxy, SERVER_CERT_PEM_FILE
+from localstack.services.generic_proxy import GenericProxy
 
 LOGGER = logging.getLogger(__name__)
 
@@ -31,16 +31,17 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
     cmd = (('ES_JAVA_OPTS=\"$ES_JAVA_OPTS -Xms200m -Xmx500m\" %s/infra/elasticsearch/bin/elasticsearch ' +
-        '-E http.port=%s -E http.publish_port=%s -E http.compression=false -E path.data=%s ' +
-        '-E xpack.security.enabled=false') %
+        '-E http.port=%s -E http.publish_port=%s -E http.compression=false -E path.data=%s') %
         (ROOT_PATH, backend_port, backend_port, es_data_dir))
-    if USE_SSL:
-        # make sure we have a test cert generated and configured
-        GenericProxy.create_ssl_cert()
-        cmd += ((' -E xpack.ssl.key=%s.key -E xpack.ssl.certificate=%s.crt ' +
-            '-E xpack.security.transport.ssl.enabled=true ' +
-            '-E xpack.security.http.ssl.enabled=true') %
-                (SERVER_CERT_PEM_FILE, SERVER_CERT_PEM_FILE))
+    # cmd += ' -E xpack.security.enabled=false'
+    # TODO remove
+    # if USE_SSL:
+    #     # make sure we have a test cert generated and configured
+    #     combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(random=True)
+    #     cmd += ((' -E xpack.ssl.key=%s -E xpack.ssl.certificate=%s ' +
+    #         '-E xpack.security.transport.ssl.enabled=true ' +
+    #         '-E xpack.security.http.ssl.enabled=true') %
+    #             (key_file_name, cert_file_name))
     print("Starting local Elasticsearch (%s port %s)..." % (get_service_protocol(), port))
     if delete_data:
         run('rm -rf %s' % es_data_dir)
@@ -63,10 +64,8 @@ def check_elasticsearch(expect_shutdown=False, print_error=False):
         out = es.cat.aliases()
     except Exception as e:
         if print_error:
-            LOGGER.error('Elasticsearch health check failed: %s %s' % (e, traceback.format_exc()))
+            LOGGER.error('Elasticsearch health check failed (retrying...): %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
-        if out is not None and not isinstance(out, six.string_types):
-            print('INFO: Response from ES: %s' % out + (' (%s)' % type(out) if out else ''))  # TODO temp for debugging
         assert isinstance(out, six.string_types)

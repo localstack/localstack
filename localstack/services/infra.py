@@ -306,6 +306,7 @@ def start_infra(async=False, apis=None):
         # set up logging
         warnings.filterwarnings('ignore')
         logging.basicConfig(level=logging.WARNING)
+        logging.getLogger('botocore').setLevel(logging.ERROR)
         logging.getLogger('elasticsearch').setLevel(logging.ERROR)
         LOGGER.setLevel(logging.INFO)
 

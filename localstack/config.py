@@ -82,21 +82,30 @@ def parse_service_ports():
     return result
 
 
-SERVICE_PORTS = parse_service_ports()
+def populate_configs():
+    global SERVICE_PORTS
 
-# define service ports and URLs as environment variables
-for key, value in iteritems(DEFAULT_SERVICE_PORTS):
-    # define PORT_* variables with actual service ports as per configuration
-    exec('PORT_%s = SERVICE_PORTS.get("%s", 0)' % (key.upper(), key))
-    url = "http%s://%s:%s" % ('s' if USE_SSL else '', HOSTNAME, SERVICE_PORTS.get(key, 0))
-    # define TEST_*_URL variables with mock service endpoints
-    exec('TEST_%s_URL = "%s"' % (key.upper(), url))
-    # expose HOST_*_URL variables as environment variables
-    os.environ['TEST_%s_URL' % key.upper()] = url
+    SERVICE_PORTS = parse_service_ports()
+
+    # define service ports and URLs as environment variables
+    for key, value in iteritems(DEFAULT_SERVICE_PORTS):
+        key_upper = key.upper().replace('-', '_')
+
+        # define PORT_* variables with actual service ports as per configuration
+        exec('global PORT_%s; PORT_%s = SERVICE_PORTS.get("%s", 0)' % (key_upper, key_upper, key))
+        url = "http%s://%s:%s" % ('s' if USE_SSL else '', HOSTNAME, SERVICE_PORTS.get(key, 0))
+        # define TEST_*_URL variables with mock service endpoints
+        exec('global TEST_%s_URL; TEST_%s_URL = "%s"' % (key_upper, key_upper, url))
+        # expose HOST_*_URL variables as environment variables
+        os.environ['TEST_%s_URL' % key_upper] = url
 
 
 def service_port(service_key):
     return SERVICE_PORTS.get(service_key, 0)
+
+
+# initialize config values
+populate_configs()
 
 
 # set URL pattern of inbound API gateway

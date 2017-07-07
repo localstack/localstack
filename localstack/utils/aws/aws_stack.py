@@ -132,7 +132,7 @@ def get_boto3_session():
 def get_local_service_url(service_name):
     if service_name == 's3api':
         service_name = 's3'
-    return os.environ['TEST_%s_URL' % (service_name.upper())]
+    return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
 
 
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None):
@@ -459,6 +459,7 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
         use_ssl = True
         if env.region != REGION_LOCAL:
             verify_certs = True
+
     if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):
         access_key = os.environ.get(ENV_ACCESS_KEY)
         secret_key = os.environ.get(ENV_SECRET_KEY)
