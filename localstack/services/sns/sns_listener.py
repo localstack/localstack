@@ -42,8 +42,7 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
                             queue_url = aws_stack.get_sqs_queue_url(queue_name)
                             subscriber['sqs_queue_url'] = queue_url
                         sqs_client.send_message(QueueUrl=queue_url,
-                                                MessageBody=create_sns_message_body(subscriber, req_data)
-                                                )
+                            MessageBody=create_sns_message_body(subscriber, req_data))
                     elif subscriber['Protocol'] == 'lambda':
                         lambda_api.process_sns_notification(
                             subscriber['Endpoint'],
