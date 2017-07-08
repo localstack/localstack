@@ -18,7 +18,6 @@ python-coveralls==2.7.0
 pyYAML==3.12
 requests==2.11.0
 requests-aws4auth==0.9
-sh==1.11
 six==1.10.0
 subprocess32-ext==3.2.8.2
 xmltodict==0.10.2
