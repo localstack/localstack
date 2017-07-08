@@ -132,7 +132,7 @@ def get_boto3_session():
 def get_local_service_url(service_name):
     if service_name == 's3api':
         service_name = 's3'
-    return os.environ['TEST_%s_URL' % (service_name.upper())]
+    return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
 
 
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None):
@@ -237,8 +237,13 @@ def dynamodb_stream_arn(table_name, account_id=None):
 
 
 def lambda_function_arn(function_name, account_id=None):
+    pattern = 'arn:aws:lambda:.*:.*:function:.*'
+    if re.match(pattern, function_name):
+        return function_name
+    if len(function_name.split(':')) > 1:
+        raise Exception('Lambda function name should not contain a colon ":"')
     account_id = get_account_id(account_id)
-    return "arn:aws:lambda:%s:%s:function:%s" % (DEFAULT_REGION, account_id, function_name)
+    return pattern.replace('.*', '%s') % (DEFAULT_REGION, account_id, function_name)
 
 
 def kinesis_stream_arn(stream_name, account_id=None):
@@ -454,6 +459,7 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
         use_ssl = True
         if env.region != REGION_LOCAL:
             verify_certs = True
+
     if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):
         access_key = os.environ.get(ENV_ACCESS_KEY)
         secret_key = os.environ.get(ENV_SECRET_KEY)

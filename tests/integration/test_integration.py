@@ -4,14 +4,12 @@ import json
 import time
 import base64
 import logging
-from io import BytesIO
 from datetime import datetime, timedelta
 from docopt import docopt
 from nose.tools import assert_raises
 from localstack.utils import testutil
 from localstack.utils.common import *
-from localstack.config import HOSTNAME, PORT_SQS
-from localstack.constants import LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, LOCALSTACK_ROOT_FOLDER
+from localstack.constants import LAMBDA_TEST_ROLE, LOCALSTACK_ROOT_FOLDER
 from localstack.services import infra
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
@@ -27,8 +25,6 @@ TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
 TEST_LAMBDA_NAME_STREAM = 'test_lambda_stream'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
-TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_2'
-TEST_QUEUE_NAME = 'test_queue'
 TEST_TOPIC_NAME = 'test_topic'
 # constants for forward chain K1->L1->K2->L2
 TEST_CHAIN_STREAM1_NAME = 'test_chain_stream_1'
@@ -74,44 +70,6 @@ def test_firehose_s3():
     # check records in target bucket
     all_objects = testutil.list_all_s3_objects()
     testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
-
-
-def test_bucket_notifications():
-
-    s3_resource = aws_stack.connect_to_resource('s3')
-    s3_client = aws_stack.connect_to_service('s3')
-    sqs_client = aws_stack.connect_to_service('sqs')
-
-    # create test bucket and queue
-    s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
-    sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)
-
-    # create notification on bucket
-    queue_url = 'http://%s:%s/%s/%s' % (HOSTNAME, PORT_SQS, TEST_AWS_ACCOUNT_ID, TEST_QUEUE_NAME)
-    s3_client.put_bucket_notification_configuration(
-        Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
-        NotificationConfiguration={
-            'QueueConfigurations': [
-                {
-                    'Id': 'id123456',
-                    'QueueArn': queue_url,
-                    'Events': ['s3:ObjectCreated:*', 's3:ObjectRemoved:Delete']
-                }
-            ]
-        }
-    )
-
-    # upload file to S3
-    test_prefix = '/testdata'
-    test_data = b'{"test": "bucket_notification"}'
-    s3_client.upload_fileobj(BytesIO(test_data), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_prefix)
-
-    # receive, assert, and delete message from SQS
-    response = sqs_client.receive_message(QueueUrl=queue_url)
-    messages = [json.loads(to_str(m['Body'])) for m in response['Messages']]
-    testutil.assert_objects({'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}, messages)
-    for message in response['Messages']:
-        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
 
 
 def test_kinesis_lambda_sns_ddb_streams():

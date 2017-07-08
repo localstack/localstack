@@ -15,6 +15,7 @@ import decimal
 import logging
 import tempfile
 import requests
+import psutil
 from io import BytesIO
 from OpenSSL import crypto, SSL
 from contextlib import closing
@@ -128,16 +129,13 @@ class ShellCommandThread (FuncThread):
     def is_killed(self):
         if not self.process:
             return True
-        pid = self.process.pid
-        out = run("ps aux 2>&1 | grep '[^\s]*\s*%s\s' | grep -v grep |  grep ''" % pid)
-        return (not out)
+        return not psutil.pid_exists(self.process.pid)
 
     def stop(self, quiet=False):
         if not self.process:
             LOGGER.warning("No process found for command '%s'" % self.cmd)
             return
 
-        import psutil
         parent_pid = self.process.pid
         try:
             parent = psutil.Process(parent_pid)
@@ -323,7 +321,12 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
-def generate_ssl_cert(target_file=None, overwrite=False):
+def generate_ssl_cert(target_file=None, overwrite=False, random=False):
+    if random and target_file:
+        if '.' in target_file:
+            target_file = target_file.replace('.', '.%s.' % short_uid(), 1)
+        else:
+            target_file = '%s.%s' % (target_file, short_uid())
     if target_file and not overwrite and os.path.exists(target_file):
         return
 
@@ -355,8 +358,15 @@ def generate_ssl_cert(target_file=None, overwrite=False):
     file_content = '%s\n%s' % (key_file_content, cert_file_content)
     if target_file:
         save_file(target_file, file_content)
-        save_file('%s.key' % target_file, key_file_content)
-        save_file('%s.crt' % target_file, cert_file_content)
+        key_file_name = '%s.key' % target_file
+        cert_file_name = '%s.crt' % target_file
+        save_file(key_file_name, key_file_content)
+        save_file(cert_file_name, cert_file_content)
+        TMP_FILES.append(target_file)
+        TMP_FILES.append(key_file_name)
+        TMP_FILES.append(cert_file_name)
+        if random:
+            return target_file, cert_file_name, key_file_name
         return file_content
     return file_content
 

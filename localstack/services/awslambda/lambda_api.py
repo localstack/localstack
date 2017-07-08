@@ -400,6 +400,7 @@ def set_function_code(code, lambda_name):
                 zip_file_content = file_obj.read()
         else:
             file_list = run('ls -la %s' % tmp_dir)
+            LOG.debug('Lambda archive content:\n%s' % file_list)
             return error_response('Unable to find handler script in Lambda archive.')
 
     # it could be a JAR file (regardless of whether wrapped in a ZIP file or not)

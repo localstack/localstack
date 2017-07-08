@@ -147,15 +147,19 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             # copy headers and return response
             self.send_response(response.status_code)
             for header_key, header_value in iteritems(response.headers):
-                if header_key != 'Content-Length':
+                if header_key.lower() != 'Content-Length'.lower():
                     self.send_header(header_key, header_value)
             self.send_header('Content-Length', '%s' % len(response.content))
             self.end_headers()
-            self.wfile.write(bytes_(response.content))
+            if len(response.content):
+                self.wfile.write(bytes_(response.content))
             self.wfile.flush()
         except Exception as e:
-            if not self.proxy.quiet:
-                LOGGER.exception("Error forwarding request: %s" % str(e))
+            if not self.proxy.quiet or 'ConnectionRefusedError' not in str(traceback.format_exc()):
+                LOGGER.error("Error forwarding request: %s %s" % (e, traceback.format_exc()))
+            self.send_response(502)  # bad gateway
+            # self.send_header('Content-Length', '0')
+            self.end_headers()
 
     def log_message(self, format, *args):
         return
@@ -170,6 +174,7 @@ class GenericProxy(FuncThread):
         self.quiet = quiet
         self.forward_host = forward_host
         self.update_listener = update_listener
+        self.server_stopped = False
         # Required to enable 'Connection: keep-alive' for S3 uploads
         self.protocol_version = params.get('protocol_version') or 'HTTP/1.1'
 
@@ -178,27 +183,28 @@ class GenericProxy(FuncThread):
             self.httpd = ThreadedHTTPServer(("", self.port), GenericProxyHandler)
             if self.ssl:
                 # make sure we have a cert generated
-                GenericProxy.create_ssl_cert()
+                combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert()
                 self.httpd.socket = ssl.wrap_socket(self.httpd.socket,
-                    server_side=True, certfile=SERVER_CERT_PEM_FILE)
+                    server_side=True, certfile=combined_file)
             self.httpd.my_object = self
             self.httpd.serve_forever()
         except Exception as e:
-            if not self.quiet:
+            if not self.quiet or not self.server_stopped:
                 LOGGER.error('Exception running proxy on port %s: %s' % (self.port, traceback.format_exc()))
 
     def stop(self, quiet=False):
         self.quiet = quiet
         if self.httpd:
             self.httpd.server_close()
+            self.server_stopped = True
 
     @classmethod
-    def create_ssl_cert(cls):
-        generate_ssl_cert(SERVER_CERT_PEM_FILE, overwrite=False)
+    def create_ssl_cert(cls, random=True):
+        return generate_ssl_cert(SERVER_CERT_PEM_FILE, random=random)
 
     @classmethod
     def get_flask_ssl_context(cls):
         if USE_SSL:
-            cls.create_ssl_cert()
-            return ('%s.crt' % SERVER_CERT_PEM_FILE, '%s.key' % SERVER_CERT_PEM_FILE)
+            combined_file, cert_file_name, key_file_name = cls.create_ssl_cert()
+            return (cert_file_name, key_file_name)
         return None
