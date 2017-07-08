@@ -9,6 +9,7 @@ import time
 import glob
 import subprocess
 import six
+import shutil
 import socket
 import json
 import decimal
@@ -231,6 +232,27 @@ def mktime(timestamp):
 def mkdir(folder):
     if not os.path.exists(folder):
         os.makedirs(folder)
+
+
+def chmod_r(path, mode):
+    """Recursive chmod"""
+    os.chmod(path, mode)
+
+    for root, dirnames, filenames in os.walk(path):
+        for dirname in dirnames:
+            os.chmod(os.path.join(root, dirname), mode)
+        for filename in filenames:
+            os.chmod(os.path.join(root, filename), mode)
+
+
+def rm_rf(path):
+    """Recursively removes file/directory"""
+    # Make sure all files are writeable and dirs executable to remove
+    chmod_r(path, 0o777)
+    if os.path.isfile(path):
+        os.remove(path)
+    else:
+        shutil.rmtree(path)
 
 
 def short_uid():
@@ -489,7 +511,6 @@ def make_http_request(url, data=None, headers=None, method='GET'):
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,
         last_clean_time=last_cache_clean_time, max_age=CACHE_MAX_AGE):
-    import sh
 
     mutex_clean.acquire()
     time_now = now()
@@ -499,7 +520,7 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN,
         for cache_file in set(glob.glob(file_pattern)):
             mod_time = os.path.getmtime(cache_file)
             if time_now > mod_time + max_age:
-                sh.rm('-r', cache_file)
+                rm_rf(cache_file)
         last_clean_time['time'] = time_now
     finally:
         mutex_clean.release()

@@ -361,7 +361,6 @@ moto						| Apache License 2.0
 nose						| GNU LGPL
 pep8						| Expat license
 requests					| Apache License 2.0
-sh							| MIT License
 subprocess32				| PSF License
 **Node.js/npm modules:**	|
 dynalite					| MIT License

@@ -1,21 +1,15 @@
 #!/usr/bin/env python
 
-import base64
-import json
 import os
 import sys
 import re
-import socket
 import tempfile
 import time
-import traceback
 import threading
 import logging
 from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
-from docopt import docopt
-from sh import tail
 from localstack.constants import *
 from localstack.config import HOSTNAME, USE_SSL
 from localstack.utils.common import *
@@ -138,9 +132,9 @@ class KinesisProcessorThread(ShellCommandThread):
 class OutputReaderThread(FuncThread):
     def __init__(self, params):
         FuncThread.__init__(self, self.start_reading, params)
-        self.running = True
         self.buffer = []
         self.params = params
+        self._stop_event = threading.Event()
         # number of lines that make up a single log entry
         self.buffer_size = 2
         # determine log level
@@ -159,6 +153,10 @@ class OutputReaderThread(FuncThread):
             self.logger.severe = self.logger.critical
             self.logger.fatal = self.logger.critical
             self.logger.setLevel(self.log_level)
+
+    @property
+    def running(self):
+        return not self._stop_event.is_set()
 
     @classmethod
     def get_log_level_names(cls, min_level):
@@ -182,10 +180,7 @@ class OutputReaderThread(FuncThread):
                 LOGGER.warning('Unable to notify log subscriber: %s' % e)
 
     def start_reading(self, params):
-        for line in tail("-n", 0, "-f", params['file'], _iter=True):
-            if not self.running:
-                return
-            line = line.replace('\n', '')
+        for line in self._tail(params['file']):
             # notify subscribers
             self.notify_subscribers(line)
             if self.log_level > 0:
@@ -202,8 +197,17 @@ class OutputReaderThread(FuncThread):
                             logger_func(buffered_line)
                     self.buffer = []
 
+    def _tail(self, file):
+        with open(file) as f:
+            while self.running:
+                line = f.readline()
+                if line:  # empty if at EOF
+                    yield line.replace('\n', '')
+                else:
+                    time.sleep(0.1)
+
     def stop(self, quiet=True):
-        self.running = False
+        self._stop_event.set()
 
 
 class KclLogListener(object):

@@ -1,5 +1,4 @@
 import re
-import sh
 import os
 import json
 import logging
@@ -263,7 +262,7 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
             run("cd %s && unzip -o %s" % (folder, filename))
     except Exception as e:
         print("WARN: %s" % e)
-        sh.rm('-f', archive)
+        rm_rf(archive)
         if retries > 0:
             return get_lambda_code(func_name, retries=retries - 1, cache_time=1, env=env)
         else:
