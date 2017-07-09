@@ -8,8 +8,6 @@
 
 ![LocalStack](https://i.imgsafe.org/fe38108cd6.png)
 
-**Please note: The main version of this repository is https://bitbucket.org/atlassian/localstack, please raise PRs against that repo.**
-
 *LocalStack* provides an easy-to-use test/mocking framework for developing Cloud applications.
 
 Currently, the focus is primarily on supporting the AWS cloud stack.
@@ -151,9 +149,21 @@ aws --endpoint-url=http://localhost:4568 kinesis list-streams
 }
 ```
 
-If you are accessing the cloud APIs from within yout Python code, you can also use `boto3` and use
-the `endpoint_url` parameter to connect to the respective service on `localhost`.
-See `localstack.utils.aws.aws_stack` for convenience methods to connect to the local services.
+**NEW**: Check out `awslocal`, a thin CLI wrapper that runs commands directly against *LocalStack* (no need to
+specify `--endpoint-url` anymore). Install it via `pip install awscli-local`, and then use it as follows:
+
+```
+awslocal kinesis list-streams
+{
+    "StreamNames": []
+}
+```
+
+### Client Libraries
+
+* Python: https://github.com/localstack/localstack-python-client
+  * alternatively, you can also use `boto3` and use the `endpoint_url` parameter when creating a connection
+* (more coming soon...)
 
 ## Integration with nosetests
 
