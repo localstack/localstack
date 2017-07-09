@@ -1,4 +1,5 @@
 *.pyc
+*.pyo
 *.class
 *.log
 /infra/

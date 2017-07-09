@@ -1,10 +1,12 @@
 import json
 import logging
 import requests
+import xmltodict
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.services.awslambda import lambda_api
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
@@ -17,21 +19,34 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
     if return_forward_info:
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(data)
+            req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn')
             if topic_arn:
                 topic_arn = topic_arn[0]
                 if topic_arn not in SNS_SUBSCRIPTIONS:
                     SNS_SUBSCRIPTIONS[topic_arn] = []
-            if 'Subscribe' in req_data['Action']:
-                subscription = {
-                    # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
-                    'TopicArn': topic_arn,
-                    'Endpoint': req_data['Endpoint'][0],
-                    'Protocol': req_data['Protocol'][0],
-                    'RawMessageDelivery': 'false'
-                }
-                SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
-            elif 'Publish' in req_data['Action']:
+
+            if req_action == 'SetSubscriptionAttributes':
+                sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
+                if not sub:
+                    return make_error(message='Unable to find subscription for given ARN', code=400)
+                attr_name = req_data['AttributeName'][0]
+                attr_value = req_data['AttributeValue'][0]
+                sub[attr_name] = attr_value
+                return make_response(req_action)
+            elif req_action == 'GetSubscriptionAttributes':
+                sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
+                if not sub:
+                    return make_error(message='Unable to find subscription for given ARN', code=400)
+                content = '<Attributes>'
+                for key, value in sub.items():
+                    content += '<entry><key>%s</key><value>%s</value></entry>\n' % (key, value)
+                content += '</Attributes>'
+                return make_response(req_action, content=content)
+            elif req_action == 'Subscribe':
+                if 'Endpoint' not in req_data:
+                    return make_error(message='Endpoint not specified in subscription', code=400)
+            elif req_action == 'Publish':
                 message = req_data['Message'][0]
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
@@ -63,13 +78,67 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
                     else:
                         LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
                 # return response here because we do not want the request to be forwarded to SNS
-                response = Response()
-                response._content = """<PublishResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/">
-                    <PublishResult><MessageId>n/a</MessageId></PublishResult>
-                    <ResponseMetadata><RequestId>n/a</RequestId></ResponseMetadata></PublishResponse>"""
-                response.status_code = 200
-                return response
+                return make_response(req_action)
+
         return True
+
+    else:
+        # This branch is executed by the proxy after we've already received a
+        # response from the backend, hence we can utilize the "reponse" variable here
+        if method == 'POST' and path == '/':
+            req_data = urlparse.parse_qs(data)
+            req_action = req_data['Action'][0]
+            if req_action == 'Subscribe' and response.status_code < 400:
+                response_data = xmltodict.parse(response.content)
+                topic_arn = (req_data.get('TargetArn') or req_data.get('TopicArn'))[0]
+                sub_arn = response_data['SubscribeResponse']['SubscribeResult']['SubscriptionArn']
+                subscription = {
+                    # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
+                    'TopicArn': topic_arn,
+                    'Endpoint': req_data['Endpoint'][0],
+                    'Protocol': req_data['Protocol'][0],
+                    'SubscriptionArn': sub_arn,
+                    'RawMessageDelivery': 'false'
+                }
+                SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+
+
+# ---------------
+# HELPER METHODS
+# ---------------
+
+def get_subscription_by_arn(sub_arn):
+    # TODO maintain separate map instead of traversing all items
+    for key, subscriptions in SNS_SUBSCRIPTIONS.items():
+        for sub in subscriptions:
+            if sub['SubscriptionArn'] == sub_arn:
+                return sub
+
+
+def make_response(op_name, content=''):
+    response = Response()
+    if not content:
+        content = '<MessageId>%s</MessageId>' % short_uid()
+    response._content = """<{op_name}Response xmlns="http://sns.amazonaws.com/doc/2010-03-31/">
+        <{op_name}Result>
+            {content}
+        </{op_name}Result>
+        <ResponseMetadata><RequestId>{req_id}</RequestId></ResponseMetadata>
+        </{op_name}Response>""".format(op_name=op_name, content=content, req_id=short_uid())
+    response.status_code = 200
+    return response
+
+
+def make_error(message, code=400, code_string='InvalidParameter'):
+    response = Response()
+    response._content = """<ErrorResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/"><Error>
+        <Type>Sender</Type>
+        <Code>{code_string}</Code>
+        <Message>{message}</Message>
+        </Error><RequestId>{req_id}</RequestId>
+        </ErrorResponse>""".format(message=message, code_string=code_string, req_id=short_uid())
+    response.status_code = code
+    return response
 
 
 def create_sns_message_body(subscriber, req_data):

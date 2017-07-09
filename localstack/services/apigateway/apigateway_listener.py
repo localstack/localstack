@@ -12,12 +12,68 @@ from localstack.services.awslambda import lambda_api
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
+PATH_REGEX_AUTHORIZER = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers/([A-Za-z0-9_\-]+)/.*'
+PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
+
+# maps API ids to authorizers
+AUTHORIZERS = {}
+
+
+def make_response(message):
+    response = Response()
+    response.status_code = 200
+    response.headers['Content-Type'] = APPLICATION_JSON
+    response._content = json.dumps(message)
+    return response
+
 
 def make_error(message, code=400):
     response = Response()
     response.status_code = code
     response._content = json.dumps({'message': message})
     return response
+
+
+def get_api_id_from_path(path):
+    match = re.match(PATH_REGEX_AUTHORIZER, path)
+    if match:
+        return match.group(1)
+    return re.match(PATH_REGEX_AUTHORIZERS, path).group(1)
+
+
+def get_authorizers(path):
+    result = {'item': []}
+    api_id = get_api_id_from_path(path)
+    for key, value in AUTHORIZERS.items():
+        auth_api_id = get_api_id_from_path(value['_links']['self']['href'])
+        if auth_api_id == api_id:
+            result['item'].append(value)
+    return result
+
+
+def add_authorizer(path, data):
+    api_id = get_api_id_from_path(path)
+    result = common.clone(data)
+    result['id'] = common.short_uid()
+    if '_links' not in result:
+        result['_links'] = {}
+    result['_links']['self'] = {
+        'href': '/restapis/%s/authorizers/%s' % (api_id, result['id'])
+    }
+    AUTHORIZERS[result['id']] = result
+    return result
+
+
+def handle_authorizers(method, path, data, headers):
+    result = {}
+    # print(method, path)
+    if method == 'GET':
+        result = get_authorizers(path)
+    elif method == 'POST':
+        result = add_authorizer(path, data)
+    else:
+        return make_error('Not implemented for API Gateway authorizers: %s' % method, 404)
+    return make_response(result)
 
 
 def update_apigateway(method, path, data, headers, response=None, return_forward_info=False):
@@ -79,5 +135,8 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
                 return make_error(msg, 404)
 
             return 200
+
+        if re.match(PATH_REGEX_AUTHORIZERS, path):
+            return handle_authorizers(method, path, data, headers)
 
         return True
