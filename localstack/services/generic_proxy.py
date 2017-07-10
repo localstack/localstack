@@ -158,7 +158,6 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             if not self.proxy.quiet or 'ConnectionRefusedError' not in str(traceback.format_exc()):
                 LOGGER.error("Error forwarding request: %s %s" % (e, traceback.format_exc()))
             self.send_response(502)  # bad gateway
-            # self.send_header('Content-Length', '0')
             self.end_headers()
 
     def log_message(self, format, *args):

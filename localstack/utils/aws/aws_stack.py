@@ -246,6 +246,11 @@ def lambda_function_arn(function_name, account_id=None):
     return pattern.replace('.*', '%s') % (DEFAULT_REGION, account_id, function_name)
 
 
+def cognito_user_pool_arn(user_pool_id, account_id=None):
+    account_id = get_account_id(account_id)
+    return 'arn:aws:cognito-idp:%s:%s:userpool/%s' % (DEFAULT_REGION, account_id, user_pool_id)
+
+
 def kinesis_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
     return "arn:aws:kinesis:%s:%s:stream/%s" % (DEFAULT_REGION, account_id, stream_name)

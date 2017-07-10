@@ -273,8 +273,9 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     ' "lambci/lambda:%s" "%s"'
                 ) % (lambda_cwd_on_host, runtime, handler)
             print(cmd)
+            event_body = json.dumps(event).replace("'", "\\'") if event else ''
             result = run(cmd, env_vars={
-                'AWS_LAMBDA_EVENT_BODY': json.dumps(event).replace("'", "\\'"),
+                'AWS_LAMBDA_EVENT_BODY': event_body,
                 'HOSTNAME': DOCKER_BRIDGE_IP,
             })
         else:
@@ -611,10 +612,12 @@ def invoke_function(function):
     lambda_function = lambda_arn_to_function.get(arn)
     if not lambda_function:
         return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
-    try:
-        data = json.loads(to_str(request.data))
-    except Exception as e:
-        return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
+    data = None
+    if request.data:
+        try:
+            data = json.loads(to_str(request.data))
+        except Exception as e:
+            return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
     result = run_lambda(lambda_function, func_arn=arn, event=data, context={})
     if isinstance(result, dict):
         return jsonify(result)
