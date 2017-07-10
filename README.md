@@ -377,3 +377,4 @@ dynalite					| MIT License
 kinesalite					| MIT License
 **Other tools:**			|
 Elasticsearch 				| Apache License 2.0
+
