@@ -29,11 +29,13 @@ LOG = logging.getLogger(__name__)
 def run_cached(cmd, cache_duration_secs=None):
     if cache_duration_secs is None:
         cache_duration_secs = AWS_CACHE_TIMEOUT
-    env_vars = {
+    env_vars = os.environ.copy()
+    env_vars.update({
         'AWS_ACCESS_KEY_ID': os.environ.get('AWS_ACCESS_KEY_ID') or 'foobar',
         'AWS_SECRET_ACCESS_KEY': os.environ.get('AWS_SECRET_ACCESS_KEY') or 'foobar',
-        'AWS_DEFAULT_REGION': os.environ.get('AWS_DEFAULT_REGION') or DEFAULT_REGION
-    }
+        'AWS_DEFAULT_REGION': os.environ.get('AWS_DEFAULT_REGION') or DEFAULT_REGION,
+        'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
+    })
     return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars)
 
 
@@ -255,9 +257,9 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     filename = 'archive.zip'
     archive = '%s/%s' % (folder, filename)
     try:
-        run('mkdir -p %s' % folder)
+        mkdir(folder)
         if not os.path.isfile(archive):
-            run("wget -O %s '%s'" % (archive, loc))
+            run("wget --no-check-certificate -O %s '%s'" % (archive, loc))
         if len(os.listdir(folder)) <= 1:
             run("cd %s && unzip -o %s" % (folder, filename))
     except Exception as e:

@@ -1,12 +1,20 @@
+sudo: required
+
 language: python
 
+services:
+  - docker
+
 python:
-  - "2.7"
+  - "3.6"
 
 before_install:
-  - "sudo apt-get purge openjdk*"
+  - "sudo apt-get purge openjdk-6*"
+  - "sudo apt-get purge openjdk-7*"
   - "sudo apt-get purge oracle-java7-*"
+  - "sudo apt-get purge python2.7"
   - "nvm install 6; nvm alias default node"
+  - "sudo useradd localstack -s /bin/bash"
 
 addons:
   apt:
@@ -22,11 +30,15 @@ env:
     - AWS_DEFAULT_REGION=us-east-1
 
 install:
-  - travis_wait 10 make install
-  - travis_wait 10 make init
+  - make reinstall-p3
+  - make init
 
 script:
-  - make test
+  - set -e # fail fast
+  - DEBUG=1 LAMBDA_EXECUTOR=docker make test
+  - DEBUG=1 LAMBDA_EXECUTOR=local USE_SSL=1 make test
+  - make docker-build
+  - make docker-push-master
 
 after_success:  
   - make coveralls

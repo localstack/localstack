@@ -3,9 +3,10 @@ import boto3
 import uuid
 import os
 import time
+import glob
 import tempfile
 from six import iteritems
-from localstack.constants import REGION_LOCAL, LOCALSTACK_ROOT_FOLDER
+from localstack.constants import REGION_LOCAL, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
 from localstack.config import TEST_S3_URL
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
@@ -59,9 +60,20 @@ def create_lambda_archive(script, stream=None, get_content=False, libs=[], runti
     script_file = '%s/%s' % (tmp_dir, file_name)
     save_file(script_file, script)
     # copy libs
-    run('mkdir -p %s/localstack' % tmp_dir)
-    for path in ['*.py', 'utils']:
-        run('cp -r %s/localstack/%s %s/localstack/' % (LOCALSTACK_ROOT_FOLDER, path, tmp_dir))
+    for lib in libs:
+        paths = [lib, '%s.py' % lib]
+        target_dir = tmp_dir
+        root_folder = '%s/lib/python*/site-packages' % LOCALSTACK_VENV_FOLDER
+        if lib == 'localstack':
+            paths = ['localstack/*.py', 'localstack/utils']
+            root_folder = LOCALSTACK_ROOT_FOLDER
+            target_dir = '%s/%s/' % (tmp_dir, lib)
+            mkdir(target_dir)
+        for path in paths:
+            file_to_copy = '%s/%s' % (root_folder, path)
+            for file_path in glob.glob(file_to_copy):
+                run('cp -r %s %s/' % (file_path, target_dir))
+
     # create zip file
     return create_zip_file(tmp_dir, get_content=True)
 

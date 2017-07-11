@@ -16,9 +16,7 @@ import decimal
 import logging
 import tempfile
 import requests
-import psutil
 from io import BytesIO
-from OpenSSL import crypto, SSL
 from contextlib import closing
 from datetime import datetime
 from six.moves.urllib.parse import urlparse
@@ -130,9 +128,18 @@ class ShellCommandThread (FuncThread):
     def is_killed(self):
         if not self.process:
             return True
+        # Note: Do NOT import "psutil" at the root scope, as this leads
+        # to problems when importing this file from our test Lambdas in Docker
+        # (Error: libc.musl-x86_64.so.1: cannot open shared object file)
+        import psutil
         return not psutil.pid_exists(self.process.pid)
 
     def stop(self, quiet=False):
+        # Note: Do NOT import "psutil" at the root scope, as this leads
+        # to problems when importing this file from our test Lambdas in Docker
+        # (Error: libc.musl-x86_64.so.1: cannot open shared object file)
+        import psutil
+
         if not self.process:
             LOGGER.warning("No process found for command '%s'" % self.cmd)
             return
@@ -255,6 +262,14 @@ def rm_rf(path):
         shutil.rmtree(path)
 
 
+def cp_r(src, dst):
+    """Recursively copies file/directory"""
+    if os.path.isfile(src):
+        shutil.copy(src, dst)
+    else:
+        shutil.copytree(src, dst)
+
+
 def short_uid():
     return str(uuid.uuid4())[0:8]
 
@@ -344,6 +359,10 @@ def cleanup_resources():
 
 
 def generate_ssl_cert(target_file=None, overwrite=False, random=False):
+    # Note: Do NOT import "OpenSSL" at the root scope
+    # (Our test Lambdas are importing this file but don't have the module installed)
+    from OpenSSL import crypto
+
     if random and target_file:
         if '.' in target_file:
             target_file = target_file.replace('.', '.%s.' % short_uid(), 1)
@@ -401,8 +420,8 @@ def run_safe(_python_lambda, print_error=True, **kwargs):
             print('Unable to execute function: %s' % e)
 
 
-def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, outfile=None,
-        env_vars=None, inherit_cwd=False):
+def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False,
+        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False):
     # don't use subprocess module as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
     # import subprocess
@@ -421,8 +440,8 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
             if not async:
                 if stdin:
                     return subprocess.check_output(cmd, shell=True,
-                        stderr=subprocess.STDOUT, stdin=subprocess.PIPE, env=env_dict, cwd=cwd)
-                output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT, env=env_dict, cwd=cwd)
+                        stderr=stderr, stdin=subprocess.PIPE, env=env_dict, cwd=cwd)
+                output = subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict, cwd=cwd)
                 return output.decode(DEFAULT_ENCODING)
             # subprocess.Popen is not thread-safe, hence use a mutex here..
             try:
@@ -430,7 +449,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False, 
                 stdin_arg = subprocess.PIPE if stdin else None
                 stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
                 process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
-                    stderr=subprocess.STDOUT, stdout=stdout_arg, env=env_dict, cwd=cwd)
+                    stderr=stderr, stdout=stdout_arg, env=env_dict, cwd=cwd)
                 return process
             finally:
                 mutex_popen.release()

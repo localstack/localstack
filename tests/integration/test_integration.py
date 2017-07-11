@@ -16,7 +16,7 @@ from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudwatch import cloudwatch_util
 from .lambdas import lambda_integration
-from .test_lambda import TEST_LAMBDA_PYTHON
+from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
@@ -111,7 +111,7 @@ def test_kinesis_lambda_sns_ddb_streams():
 
     # deploy test lambda connected to DynamoDB Stream
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-        libs=['localstack'], runtime=LAMBDA_RUNTIME_PYTHON27)
+        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
         zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
     # make sure we cannot create Lambda with same name twice
@@ -195,7 +195,7 @@ def test_kinesis_lambda_forward_chain():
 
     # deploy test lambdas connected to Kinesis streams
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-        libs=['localstack'], runtime=LAMBDA_RUNTIME_PYTHON27)
+        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
     testutil.create_lambda_function(func_name=TEST_CHAIN_LAMBDA1_NAME, zip_file=zip_file,
         event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM1_NAME), runtime=LAMBDA_RUNTIME_PYTHON27)
     testutil.create_lambda_function(func_name=TEST_CHAIN_LAMBDA2_NAME, zip_file=zip_file,

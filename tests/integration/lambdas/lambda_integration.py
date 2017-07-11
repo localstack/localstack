@@ -7,7 +7,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, to_bytes
 
 TEST_BUCKET_NAME = 'test_bucket'
-KINESIS_STREAM_NAME = 'test-stream-1'
+KINESIS_STREAM_NAME = 'test_stream_1'
 MSG_BODY_RAISE_ERROR_FLAG = 'raise_error'
 MSG_BODY_MESSAGE_TARGET = 'message_target'
 
