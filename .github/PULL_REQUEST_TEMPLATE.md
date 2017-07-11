@@ -1,1 +1,1 @@
-**Please note: The main version of this repository is https://bitbucket.org/atlassian/localstack, please raise PRs against that repo.**
+**Please refer to the contribution guidelines in the README when submitting PRs.**

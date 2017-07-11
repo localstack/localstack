@@ -13,6 +13,7 @@ import base64
 import threading
 import imp
 import glob
+import subprocess
 from io import BytesIO
 from datetime import datetime
 from multiprocessing import Process, Queue
@@ -253,31 +254,56 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         runtime = lambda_arn_to_runtime.get(func_arn)
         handler = lambda_arn_to_handler.get(func_arn)
         if use_docker():
+            handler_args = '"%s"' % handler
+            entrypoint = ''
+
+            # if running a Java Lambda, set up classpath arguments
+            if runtime == LAMBDA_RUNTIME_JAVA8:
+                # TODO cleanup once we have custom Java Docker image
+                event_file = 'event_file.json'  # TODO
+                handler_args = ("java -cp .:`ls *.jar | tr '\\n' ':'` '%s' '%s' '%s'" %
+                    (LAMBDA_EXECUTOR_CLASS, handler, event_file))
+                entrypoint = ' --entrypoint ""'
+
             if config.LAMBDA_REMOTE_DOCKER:
                 cmd = (
                     'CONTAINER_ID="$(docker create'
-                    ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
+                    '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
-                    ' "lambci/lambda:%s" "%s"'
+                    ' "lambci/lambda:%s" %s'
                     ')";'
                     'docker cp "%s/." "$CONTAINER_ID:/var/task";'
                     'docker start -a "$CONTAINER_ID";'
-                ) % (runtime, handler, lambda_cwd)
+                ) % (entrypoint, runtime, handler_args, lambda_cwd)
             else:
                 lambda_cwd_on_host = get_host_path_for_path_in_docker(lambda_cwd)
                 cmd = (
                     'docker run'
-                    ' -v "%s":/var/task'
+                    '%s -v "%s":/var/task'
                     ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
-                    ' "lambci/lambda:%s" "%s"'
-                ) % (lambda_cwd_on_host, runtime, handler)
+                    ' "lambci/lambda:%s" %s'
+                ) % (entrypoint, lambda_cwd_on_host, runtime, handler_args)
+
             print(cmd)
-            event_body = json.dumps(event).replace("'", "\\'") if event else ''
-            result = run(cmd, env_vars={
+            # prepare event body
+            if event is None or str(event).strip() == '':
+                LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
+                event_body = '{}'
+            else:
+                event_body = json.dumps(event).replace("'", "\\'")
+            # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
+            process = run(cmd, env_vars={
                 'AWS_LAMBDA_EVENT_BODY': event_body,
                 'HOSTNAME': DOCKER_BRIDGE_IP,
-            })
+            }, async=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+            return_code = process.wait()
+            result = process.stdout.read()
+            log_output = process.stderr.read()
+            LOG.debug('Lambda log output:\n%s' % log_output)
+            if return_code != 0:
+                raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
+                    (return_code, log_output))
         else:
             # execute the Lambda function in a forked sub-process, sync result via queue
             queue = Queue()

@@ -10,7 +10,7 @@ public class LambdaHandler implements RequestHandler<Object, Object> {
 
     @Override
     public Object handleRequest(Object event, Context context) {
-        System.out.println(event);
+        System.err.println(event);
         return "{}";
     }
 

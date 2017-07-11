@@ -65,7 +65,9 @@ public class LambdaExecutor {
 		}
 
 		Context ctx = new LambdaContext();
-		handler.handleRequest(event, ctx);
+		Object result = handler.handleRequest(event, ctx);
+		// The contract with lambci is to print the result to stdout, whereas logs go to stderr
+		System.out.println(result);
 	}
 
 	private static <T> T get(Map<String,T> map, String key) {
