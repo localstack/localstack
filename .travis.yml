@@ -8,6 +8,10 @@ services:
 python:
   - "3.6"
 
+branches:
+  only:
+    - master
+
 before_install:
   - "sudo apt-get purge openjdk-6*"
   - "sudo apt-get purge openjdk-7*"

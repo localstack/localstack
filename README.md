@@ -86,6 +86,9 @@ Once installed, run the infrastructure using the following command:
 localstack start
 ```
 
+**Note**: Please do **not** use `sudo` or the `root` user - *LocalStack*
+should be installed and started entirely under a local non-root user.
+
 ## Running in Docker
 
 You can also spin up *LocalStack* in Docker:

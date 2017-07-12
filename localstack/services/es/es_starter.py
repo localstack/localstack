@@ -33,15 +33,6 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     cmd = (('ES_JAVA_OPTS=\"$ES_JAVA_OPTS -Xms200m -Xmx500m\" %s/infra/elasticsearch/bin/elasticsearch ' +
         '-E http.port=%s -E http.publish_port=%s -E http.compression=false -E path.data=%s') %
         (ROOT_PATH, backend_port, backend_port, es_data_dir))
-    # cmd += ' -E xpack.security.enabled=false'
-    # TODO remove
-    # if USE_SSL:
-    #     # make sure we have a test cert generated and configured
-    #     combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(random=True)
-    #     cmd += ((' -E xpack.ssl.key=%s -E xpack.ssl.certificate=%s ' +
-    #         '-E xpack.security.transport.ssl.enabled=true ' +
-    #         '-E xpack.security.http.ssl.enabled=true') %
-    #             (key_file_name, cert_file_name))
     print("Starting local Elasticsearch (%s port %s)..." % (get_service_protocol(), port))
     if delete_data:
         run('rm -rf %s' % es_data_dir)
