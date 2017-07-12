@@ -270,6 +270,17 @@ def cp_r(src, dst):
         shutil.copytree(src, dst)
 
 
+def download(url, path):
+    """Downloads file at url to the given path"""
+    r = requests.get(url, stream=True)
+    try:
+        with open(path, 'wb') as f:
+            for chunk in r.iter_content(2048):
+                f.write(chunk)
+    finally:
+        r.close()
+
+
 def short_uid():
     return str(uuid.uuid4())[0:8]
 

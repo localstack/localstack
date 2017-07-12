@@ -5,7 +5,7 @@ import sys
 import logging
 from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL
 from localstack.config import *
-from localstack.utils.common import parallelize, run
+from localstack.utils.common import download, parallelize, run
 
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -28,7 +28,7 @@ def install_elasticsearch():
         LOGGER.info('Downloading and installing local Elasticsearch server. This may take some time.')
         run('mkdir -p %s' % INSTALL_DIR_INFRA)
         if not os.path.exists(TMP_ARCHIVE_ES):
-            run('curl -o "%s" "%s"' % (TMP_ARCHIVE_ES, ELASTICSEARCH_JAR_URL))
+            download(ELASTICSEARCH_JAR_URL, TMP_ARCHIVE_ES)
         cmd = 'cd %s && cp %s es.zip && unzip -q es.zip && mv elasticsearch* elasticsearch && rm es.zip'
         run(cmd % (INSTALL_DIR_INFRA, TMP_ARCHIVE_ES))
         for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
@@ -60,7 +60,7 @@ def install_dynamodb_local():
         LOGGER.info('Downloading and installing local DynamoDB server. This may take some time.')
         run('mkdir -p %s' % INSTALL_DIR_DDB)
         if not os.path.exists(TMP_ARCHIVE_DDB):
-            run('curl -o "%s" "%s"' % (TMP_ARCHIVE_DDB, DYNAMODB_JAR_URL))
+            download(DYNAMODB_JAR_URL, TMP_ARCHIVE_DDB)
         cmd = 'cd %s && cp %s ddb.zip && unzip -q ddb.zip && rm ddb.zip'
         run(cmd % (INSTALL_DIR_DDB, TMP_ARCHIVE_DDB))
         # fix for Alpine, otherwise DynamoDBLocal fails with:
