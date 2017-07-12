@@ -3,6 +3,7 @@ import yaml
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry
 from localstack.utils.cloudformation import template_deployer
+from botocore.exceptions import ClientError
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_TEMPLATE_1 = os.path.join(THIS_FOLDER, 'templates', 'template1.yaml')
@@ -56,3 +57,22 @@ def test_apply_template():
 
     # assert that queue has been created
     assert queue_exists('cf-test-queue-1')
+
+
+def test_validate_template():
+    cloudformation = aws_stack.connect_to_service('cloudformation')
+    template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
+    response = cloudformation.validate_template(TemplateBody=template)
+    assert response['ResponseMetadata']['HTTPStatusCode'] == 200
+
+
+def test_validate_invalid_json_template_should_fail():
+    cloudformation = aws_stack.connect_to_service('cloudformation')
+    invalid_json = '{"this is invalid JSON"="bobbins"}'
+
+    try:
+        response = cloudformation.validate_template(TemplateBody=invalid_json)
+        fail("Should raise ValidationError")
+    except ClientError as err:
+        assert err.response['ResponseMetadata']['HTTPStatusCode'] == 400
+        assert err.response['Error']['Message'] == "Template Validation Error"

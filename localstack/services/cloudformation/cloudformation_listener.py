@@ -1,6 +1,8 @@
 import re
 import uuid
 import json
+import logging
+import yaml
 import xmltodict
 import requests
 from requests.models import Response, Request
@@ -12,6 +14,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_deployer
 
 XMLNS_CLOUDFORMATION = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
+LOGGER = logging.getLogger(__name__)
 
 # maps change set names to change set details
 CHANGE_SETS = {}
@@ -104,6 +107,26 @@ def execute_change_set(req_data):
     return response
 
 
+def validate_template(req_data):
+    LOGGER.debug(req_data)
+    response_content = """
+        <Capabilities></Capabilities>
+        <CapabilitiesReason></CapabilitiesReason>
+        <DeclaredTransforms></DeclaredTransforms>
+        <Description></Description>
+        <Parameters>
+        </Parameters>
+    """
+
+    try:
+        template = template_deployer.template_to_json(req_data.get('TemplateBody')[0])
+        response = make_response('ValidateTemplate', response_content)
+        return response
+    except Exception as err:
+        response = error_response("Template Validation Error")
+        return response
+
+
 def update_cloudformation(method, path, data, headers, response=None, return_forward_info=False):
     req_data = None
     if method == 'POST' and path == '/':
@@ -125,6 +148,8 @@ def update_cloudformation(method, path, data, headers, response=None, return_for
                 req_data['TemplateBody'] = requests.get(url).content
                 modified_data = urlparse.urlencode(req_data, doseq=True)
                 return Request(data=modified_data, headers=headers, method=method)
+            elif action == 'ValidateTemplate':
+                return validate_template(req_data)
         return True
 
     if req_data:
