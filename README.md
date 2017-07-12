@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/atlassian/localstack.png)](https://travis-ci.org/atlassian/localstack)
+[![Build Status](https://travis-ci.org/localstack/localstack.png)](https://travis-ci.org/localstack/localstack)
 [![Coverage Status](https://coveralls.io/repos/github/atlassian/localstack/badge.svg?branch=master)](https://coveralls.io/github/atlassian/localstack?branch=master)
 [![PyPI Version](https://badge.fury.io/py/localstack.svg)](https://badge.fury.io/py/localstack)
 [![PyPI License](https://img.shields.io/pypi/l/localstack.svg)](https://img.shields.io/pypi/l/localstack.svg)
