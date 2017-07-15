@@ -160,13 +160,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             if 'Access-Control-Allow-Origin' not in response.headers:
                 self.send_header('Access-Control-Allow-Origin', '*')
             if 'Access-Control-Allow-Headers' not in response.headers:
-                self.send_header('Access-Control-Allow-Headers', ','.join([
-                    'authorization',
-                    'x-amz-content-sha256',
-                    'x-amz-date',
-                    'x-amz-security-token',
-                    'x-amz-user-agent'
-                ])
+                self.send_header('Access-Control-Allow-Headers',
+                                 ','.join(['authorization',
+                                           'x-amz-content-sha256',
+                                           'x-amz-date',
+                                           'x-amz-security-token',
+                                           'x-amz-user-agent']))
 
             self.end_headers()
             if len(response.content):
