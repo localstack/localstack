@@ -7,6 +7,7 @@ coverage==4.0.3
 docopt==0.6.2
 elasticsearch==5.3.0
 flask==0.10.1
+flask-cors==3.0.3
 flask_swagger==0.2.12
 jsonpath-rw==1.4.0
 moto-ext==1.0.1.4

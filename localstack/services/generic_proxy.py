@@ -87,6 +87,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.data_bytes = self.rfile.read(int(self.headers['Content-Length']))
         self.forward('PATCH')
 
+    def do_OPTIONS(self):
+        self.method = requests.options
+        self.forward('OPTIONS')
+
     def forward(self, method):
         path = self.path
         if '://' in path:
@@ -112,6 +116,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             forward_headers['host'] = urlparse(target_url).netloc
         if 'localhost.atlassian.io' in forward_headers.get('Host'):
             forward_headers['host'] = 'localhost'
+
         try:
             response = None
             modified_request = None
@@ -149,6 +154,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             for header_key, header_value in iteritems(response.headers):
                 if header_key.lower() != 'Content-Length'.lower():
                     self.send_header(header_key, header_value)
+
+            # allow pre-flight CORS headers by default
+            if method == 'OPTIONS':
+                self.send_header('Access-Control-Allow-Origin', '*')
+
+            # finish up response
             self.send_header('Content-Length', '%s' % len(response.content))
             self.end_headers()
             if len(response.content):
