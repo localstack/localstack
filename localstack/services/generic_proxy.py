@@ -87,6 +87,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.data_bytes = self.rfile.read(int(self.headers['Content-Length']))
         self.forward('PATCH')
 
+    def do_OPTIONS(self):
+        self.method = requests.options
+        self.forward('OPTIONS')
+
     def forward(self, method):
         path = self.path
         if '://' in path:
@@ -112,6 +116,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             forward_headers['host'] = urlparse(target_url).netloc
         if 'localhost.atlassian.io' in forward_headers.get('Host'):
             forward_headers['host'] = 'localhost'
+
         try:
             response = None
             modified_request = None
@@ -153,6 +158,21 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 content_length_sent = content_length_sent or header_key.lower() == 'content-length'
             if not content_length_sent:
                 self.send_header('Content-Length', '%s' % len(response.content))
+
+            # allow pre-flight CORS headers by default
+            if 'Access-Control-Allow-Origin' not in response.headers:
+                self.send_header('Access-Control-Allow-Origin', '*')
+            if 'Access-Control-Allow-Methods' not in response.headers:
+                self.send_header('Access-Control-Allow-Methods', 'HEAD,GET,PUT,POST,DELETE,OPTIONS,PATCH')
+            if 'Access-Control-Allow-Headers' not in response.headers:
+                self.send_header('Access-Control-Allow-Headers',
+                                 ','.join(['authorization',
+                                           'content-type',
+                                           'content-md5',
+                                           'x-amz-content-sha256',
+                                           'x-amz-date',
+                                           'x-amz-security-token',
+                                           'x-amz-user-agent']))
 
             self.end_headers()
             if len(response.content):
