@@ -66,7 +66,7 @@ docker-push:       ## Push Docker image to registry
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-push-master:## Push Docker image to registry IF we are currently on the master branch
-	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
+	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
 	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && echo "Skipping docker push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
