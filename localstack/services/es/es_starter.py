@@ -43,7 +43,7 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     start_proxy(port, backend_port, update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})
     if is_root():
         cmd = "su -c '%s' localstack" % cmd
-    thread = do_run(cmd, async, print_output=True)
+    thread = do_run(cmd, async)
     return thread
 
 

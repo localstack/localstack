@@ -6,12 +6,14 @@ Main script for starting LocalStack components.
 Usage:
   localstack start [ --docker ]
   localstack web [ --port=<port> ]
+  localstack (-v | --version)
   localstack (-h | --help)
 
 Options:
   -h --help         Show this screen
+  -v --version      Show version
   --docker          Run the infrastructure in a Docker container
-  --port=<port>     Network port for running the server
+  --port=<port>     Network port for running the Web server
 """
 
 import os
@@ -32,7 +34,9 @@ from localstack.utils.common import run, ShellCommandThread
 if __name__ == "__main__":
     args = docopt(__doc__)
 
-    if args['start']:
+    if args['--version']:
+        print(constants.VERSION)
+    elif args['start']:
         print('Starting local dev environment. CTRL-C to quit.')
         if args['--docker']:
             services = os.environ.get('SERVICES', '')

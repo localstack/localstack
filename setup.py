@@ -14,9 +14,15 @@ install_requires = []
 dependency_links = []
 package_data = {}
 
+
+# determine version
+with open('localstack/constants.py') as f:
+    constants = f.read()
+version = re.search(r'^\s*VERSION\s*=\s*[\'"](.+)[\'"]\s*$', constants, re.MULTILINE).group(1)
+
+
 with open('requirements.txt') as f:
     requirements = f.read()
-
 
 for line in re.split('\n', requirements):
     if line and line[0] == '#' and '#egg=' in line:
@@ -76,29 +82,31 @@ if __name__ == '__main__':
 
     setup(
         name='localstack',
-        version='0.6.0',
+        version=version,
         description='An easy-to-use test/mocking framework for developing Cloud applications',
         author='Waldemar Hummer (Atlassian)',
         author_email='waldemar.hummer@gmail.com',
-        url='https://bitbucket.org/atlassian/localstack',
+        url='https://github.com/localstack/localstack',
         scripts=['bin/localstack'],
-        packages=find_packages(exclude=("tests", "tests.*")),
+        packages=find_packages(exclude=('tests', 'tests.*')),
         package_data=package_data,
         install_requires=install_requires,
         dependency_links=dependency_links,
-        test_suite="tests",
-        license="Apache License 2.0",
+        test_suite='tests',
+        license='Apache License 2.0',
         cmdclass={
             'install_lib': InstallLibCommand
         },
         zip_safe=False,
         classifiers=[
-            "Programming Language :: Python :: 2",
-            "Programming Language :: Python :: 2.6",
-            "Programming Language :: Python :: 2.7",
-            "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: 3.3",
-            "License :: OSI Approved :: Apache Software License",
-            "Topic :: Software Development :: Testing",
+            'Programming Language :: Python :: 2',
+            'Programming Language :: Python :: 2.6',
+            'Programming Language :: Python :: 2.7',
+            'Programming Language :: Python :: 3',
+            'Programming Language :: Python :: 3.3',
+            'Programming Language :: Python :: 3.4',
+            'Programming Language :: Python :: 3.6',
+            'License :: OSI Approved :: Apache Software License',
+            'Topic :: Software Development :: Testing',
         ]
     )
