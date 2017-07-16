@@ -159,6 +159,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             # allow pre-flight CORS headers by default
             if 'Access-Control-Allow-Origin' not in response.headers:
                 self.send_header('Access-Control-Allow-Origin', '*')
+            if 'Access-Control-Allow-Methods' not in response.headers:
+                self.send_header('Access-Control-Allow-Methods', 'HEAD,GET,PUT,POST,DELETE,OPTIONS,PATCH')
             if 'Access-Control-Allow-Headers' not in response.headers:
                 self.send_header('Access-Control-Allow-Headers',
                                  ','.join(['authorization',
