@@ -162,6 +162,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             if 'Access-Control-Allow-Headers' not in response.headers:
                 self.send_header('Access-Control-Allow-Headers',
                                  ','.join(['authorization',
+                                           'content-type',
+                                           'content-md5',
                                            'x-amz-content-sha256',
                                            'x-amz-date',
                                            'x-amz-security-token',
