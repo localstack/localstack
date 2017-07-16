@@ -1,6 +1,6 @@
 IMAGE_NAME ?= atlassianlabs/localstack
 IMAGE_NAME_BASE ?= localstack/java-maven-node-python
-IMAGE_TAG ?= $(shell cat setup.py | grep version= | sed "s/.*version=['\"]\(.*\)['\"].*/\1/")
+IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 VENV_DIR ?= .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
 AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
