@@ -44,8 +44,9 @@ if __name__ == "__main__":
             cmd = os.environ.get('CMD', '')
             image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
             service_ports = config.SERVICE_PORTS
+            max_port = max(4592, max(service_ports.values()))
             port_mappings = '-p {min_port}-{max_port}:{min_port}-{max_port}'.format(
-                min_port=min(service_ports.values()), max_port=max(service_ports.values()))
+                min_port=min(service_ports.values()), max_port=max_port)
 
             if services:
                 port_mappings = ''
