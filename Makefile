@@ -3,40 +3,19 @@ IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 VENV_DIR ?= .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
-AWS_STS_URL = http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar
-AWS_STS_TMPFILE = $(TMPDIR)aws-java-sdk-sts.jar
-LOCALSTACK_JAR_URL = https://bitbucket.org/atlassian/localstack/raw/mvn/release/com/atlassian/localstack-utils/1.0-SNAPSHOT/localstack-utils-1.0-SNAPSHOT.jar
-LOCALSTACK_JAR_PATH = localstack/infra/localstack-utils.jar
 PIP_CMD ?= pip
 
 usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
-install:           ## Install npm/pip dependencies, compile code
-	make setup-venv && \
-		make install-libs && \
-		make compile
-
-setup-venv:        # Setup virtualenv
+install:           ## Install dependencies in virtualenv
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
 		($(VENV_RUN) && $(PIP_CMD) install --upgrade pip) && \
 		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install six==1.10.0 ; $(PIP_CMD) install -r requirements.txt))
 
-install-libs:      ## Install npm/pip dependencies
-	(test -e localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar || \
-			{ (test -e $(AWS_STS_TMPFILE) || curl -o $(AWS_STS_TMPFILE) $(AWS_STS_URL)); \
-				mkdir -p localstack/infra/amazon-kinesis-client; \
-				cp $(AWS_STS_TMPFILE) localstack/infra/amazon-kinesis-client/aws-java-sdk-sts.jar; }) && \
-		(test -e $(LOCALSTACK_JAR_PATH) || curl -o $(LOCALSTACK_JAR_PATH) $(LOCALSTACK_JAR_URL))
-
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))
-
-compile:           ## Compile Java code (KCL library utils, Java Lambda executor)
-	echo "Compiling"
-	javac -cp $(shell $(VENV_RUN); python -c 'from localstack.utils.kinesis import kclipy_helper; print(kclipy_helper.get_kcl_classpath())') localstack/utils/kinesis/java/com/atlassian/*.java
-	(test ! -e localstack/ext/java || (cd localstack/ext/java && mvn -q -DskipTests package))
 
 publish:           ## Publish the library to the central PyPi repository
 	# build and upload archive
@@ -111,7 +90,5 @@ clean:             ## Clean up (npm dependencies, downloaded infrastructure code
 	rm -rf localstack/node_modules/
 	rm -rf $(VENV_DIR)
 	rm -f localstack/utils/kinesis/java/com/atlassian/*.class
-	rm -f $(AWS_STS_TMPFILE)
-	rm -f $(TMPDIR)localstack.es.zip
 
-.PHONY: usage compile clean install web install-web infra test install-libs
+.PHONY: usage compile clean install web install-web infra test

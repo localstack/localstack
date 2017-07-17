@@ -183,14 +183,6 @@ def find_recursive(key, value, obj):
         return False
 
 
-def get_s3_client():
-    return boto3.resource('s3',
-        endpoint_url=TEST_S3_URL,
-        config=boto3.session.Config(
-            s3={'addressing_style': 'path'}),
-        verify=False)
-
-
 def list_all_s3_objects():
     return map_all_s3_objects().values()
 
@@ -203,7 +195,7 @@ def download_s3_object(s3, bucket, path):
 
 
 def map_all_s3_objects(to_json=True):
-    s3_client = get_s3_client()
+    s3_client = aws_stack.get_s3_client()
     result = {}
     for bucket in s3_client.buckets.all():
         for key in bucket.objects.all():

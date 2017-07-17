@@ -198,6 +198,14 @@ def render_velocity_template(template, context, as_json=False):
     return replaced
 
 
+def get_s3_client():
+    return boto3.resource('s3',
+        endpoint_url=config.TEST_S3_URL,
+        config=boto3.session.Config(
+            s3={'addressing_style': 'path'}),
+        verify=False)
+
+
 def get_account_id(account_id=None, env=None):
     if account_id:
         return account_id
