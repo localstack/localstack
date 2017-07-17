@@ -20,6 +20,11 @@ QUIET = False
 # path for test certificate
 SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
+# CORS settings
+CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5',
+    'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent')
+CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -149,6 +154,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     data=data, headers=forward_headers, response=response)
                 if isinstance(updated_response, Response):
                     response = updated_response
+
             # copy headers and return response
             self.send_response(response.status_code)
 
@@ -163,24 +169,19 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             if 'Access-Control-Allow-Origin' not in response.headers:
                 self.send_header('Access-Control-Allow-Origin', '*')
             if 'Access-Control-Allow-Methods' not in response.headers:
-                self.send_header('Access-Control-Allow-Methods', 'HEAD,GET,PUT,POST,DELETE,OPTIONS,PATCH')
+                self.send_header('Access-Control-Allow-Methods', ','.join(CORS_ALLOWED_METHODS))
             if 'Access-Control-Allow-Headers' not in response.headers:
-                self.send_header('Access-Control-Allow-Headers',
-                                 ','.join(['authorization',
-                                           'content-type',
-                                           'content-md5',
-                                           'x-amz-content-sha256',
-                                           'x-amz-date',
-                                           'x-amz-security-token',
-                                           'x-amz-user-agent']))
+                self.send_header('Access-Control-Allow-Headers', ','.join(CORS_ALLOWED_HEADERS))
 
             self.end_headers()
             if len(response.content):
                 self.wfile.write(bytes_(response.content))
             self.wfile.flush()
         except Exception as e:
-            if not self.proxy.quiet or 'ConnectionRefusedError' not in str(traceback.format_exc()):
-                LOGGER.error("Error forwarding request: %s %s" % (e, traceback.format_exc()))
+            trace = str(traceback.format_exc())
+            conn_error = 'ConnectionRefusedError' in trace or 'NewConnectionError' in trace
+            if not self.proxy.quiet or not conn_error:
+                LOGGER.error("Error forwarding request: %s %s" % (e, trace))
             self.send_response(502)  # bad gateway
             self.end_headers()
 

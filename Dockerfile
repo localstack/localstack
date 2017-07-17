@@ -52,7 +52,7 @@ RUN make test
 EXPOSE 4567-4582 8080
 
 # install supervisor daemon & copy config file
-ADD supervisord.conf /etc/supervisord.conf
+ADD bin/supervisord.conf /etc/supervisord.conf
 
 # define command at startup
 ENTRYPOINT ["/usr/bin/supervisord"]
