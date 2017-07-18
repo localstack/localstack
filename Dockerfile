@@ -35,6 +35,7 @@ RUN mkdir -p /.npm && \
     chmod -R 777 localstack/infra/elasticsearch/data && \
     chmod -R 777 localstack/infra/elasticsearch/logs && \
     chmod -R 777 /tmp/localstack && \
+    chown -R `id -un`:`id -gn` . && \
     adduser -D localstack
 
 # expose default environment (required for aws-cli to work)
