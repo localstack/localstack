@@ -291,6 +291,7 @@ localstack web
 
 ## Change Log
 
+* v0.6.2: Major refactoring of installation process, lazy loading of dependencies
 * v0.6.1: Add CORS headers; platform compatibility fixes (remove shell commands and sh module); add CloudFormation validate-template; fix Lambda execution in Docker; basic domain handling in ES API; API Gateway authorizers
 * v0.6.0: Load services as plugins; fix service default ports; fix SQS->SNS and MD5 of message attributes; fix Host header for S3
 * v0.5.5: Enable SSL encryption for all service endpoints (`USE_SSL` config); create Docker base image; fix issue with DATA_DIR
@@ -353,9 +354,12 @@ individual developer who contributes code to this repository. Please refer to th
 
 ## License
 
+Copyright (c) 2017 *LocalStack* contributors.
+
 Copyright (c) 2016 Atlassian and others.
 
-*LocalStack* is released under the Apache License, Version 2.0 (see LICENSE.txt).
+This version of *LocalStack* is released under the Apache License,
+Version 2.0 (see LICENSE.txt).
 
 We build on a number of third-party software tools, with the following licenses:
 
@@ -377,8 +381,6 @@ pep8						| Expat license
 requests					| Apache License 2.0
 subprocess32				| PSF License
 **Node.js/npm modules:**	|
-dynalite					| MIT License
 kinesalite					| MIT License
 **Other tools:**			|
 Elasticsearch 				| Apache License 2.0
-

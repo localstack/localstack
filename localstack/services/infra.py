@@ -12,7 +12,7 @@ import subprocess
 import six
 import warnings
 import pkgutil
-from localstack import constants
+from localstack import constants, config
 from localstack.config import *
 from localstack.utils.aws import aws_stack
 from localstack.utils import common, persistence
@@ -92,16 +92,14 @@ def load_plugins():
 
     loaded_files = []
     for module in pkgutil.iter_modules():
+        file_path = None
         if six.PY3 and not isinstance(module, tuple):
             file_path = '%s/%s/plugins.py' % (module.module_finder.path, module.name)
-            if file_path not in loaded_files:
-                load_plugin_from_path(file_path)
-                loaded_files.append(file_path)
         elif six.PY3 or isinstance(module[0], pkgutil.ImpImporter):
             file_path = '%s/%s/plugins.py' % (module[0].path, module[1])
-            if file_path not in loaded_files:
-                load_plugin_from_path(file_path)
-                loaded_files.append(file_path)
+        if file_path and file_path not in loaded_files:
+            load_plugin_from_path(file_path)
+            loaded_files.append(file_path)
 
 
 # -----------------
@@ -315,7 +313,7 @@ def start_infra(async=False, apis=None):
         LOGGER.setLevel(logging.INFO)
 
         if not apis:
-            apis = list(SERVICE_PORTS.keys())
+            apis = list(config.SERVICE_PORTS.keys())
         # set environment
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV

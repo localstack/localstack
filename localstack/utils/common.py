@@ -47,7 +47,7 @@ TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
 LOGGER = logging.getLogger(__name__)
 
 
-# Helper class to convert JSON documents with datetime or decimals.
+# Helper class to convert JSON documents with datetime, decimals, or bytes.
 class CustomEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, decimal.Decimal):
@@ -57,6 +57,8 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, datetime):
             return str(o)
+        if isinstance(o, six.binary_type):
+            return to_str(o)
         return super(CustomEncoder, self).default(o)
 
 
