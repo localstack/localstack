@@ -26,7 +26,7 @@ URL_LOCALSTACK_JAR = ('https://bitbucket.org/atlassian/localstack/raw/mvn/releas
     'com/atlassian/localstack-utils/1.0-SNAPSHOT/localstack-utils-1.0-SNAPSHOT.jar')
 
 # list of additional pip packages to install
-EXTENDED_PIP_LIBS = ['amazon_kclpy==1.4.4']
+EXTENDED_PIP_LIBS = ['amazon-kclpy==1.4.5']
 
 # set up logger
 LOGGER = logging.getLogger(os.path.basename(__file__))

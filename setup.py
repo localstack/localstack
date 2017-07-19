@@ -7,6 +7,9 @@ import sys
 import re
 from setuptools import find_packages, setup
 
+# marker for extended/ignored libs in requirements.txt
+IGNORED_LIB_MARKER = '#extended-lib'
+
 # parameter variables
 install_requires = []
 dependency_links = []
@@ -26,7 +29,7 @@ for line in re.split('\n', requirements):
     if line and line[0] == '#' and '#egg=' in line:
         line = re.search(r'#\s*(.*)', line).group(1)
     if line and line[0] != '#':
-        if '://' not in line:
+        if '://' not in line and IGNORED_LIB_MARKER not in line:
             install_requires.append(line)
 
 
