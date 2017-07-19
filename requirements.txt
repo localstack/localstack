@@ -1,4 +1,5 @@
 airspeed==0.5.5.dev20160812
+amazon-kclpy==1.4.5
 awscli==1.11.86
 boto==2.46.1
 boto3==1.4.4
