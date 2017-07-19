@@ -36,7 +36,8 @@ RUN mkdir -p /.npm && \
     chmod -R 777 localstack/infra/elasticsearch/logs && \
     chmod -R 777 /tmp/localstack && \
     chown -R `id -un`:`id -gn` . && \
-    adduser -D localstack
+    adduser -D localstack && \
+    ln -s `pwd` /tmp/localstack_install_dir
 
 # expose default environment (required for aws-cli to work)
 ENV AWS_ACCESS_KEY_ID=foobar \
@@ -48,6 +49,7 @@ ENV AWS_ACCESS_KEY_ID=foobar \
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 RUN make test
+RUN make test-java
 
 # expose service & web dashboard ports
 EXPOSE 4567-4582 8080

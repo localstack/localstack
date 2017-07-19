@@ -1,27 +1,35 @@
 package com.atlassian.localstack;
 
-import com.amazon.sqs.javamessaging.SQSConnection;
-import com.amazon.sqs.javamessaging.SQSConnectionFactory;
-import com.amazonaws.services.sqs.AmazonSQS;
-import com.amazonaws.services.sqs.model.CreateQueueRequest;
-import com.amazonaws.services.sqs.model.CreateQueueResult;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.jms.JMSException;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.Queue;
+import javax.jms.Session;
+import javax.jms.TextMessage;
+
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import javax.jms.*;
-import java.util.HashMap;
-import java.util.Map;
+import com.amazon.sqs.javamessaging.SQSConnection;
+import com.amazon.sqs.javamessaging.SQSConnectionFactory;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.model.CreateQueueRequest;
+import com.amazonaws.services.sqs.model.CreateQueueResult;
 
 /**
  * Test integration of SQS/JMS messaging with LocalStack
  * Based on: https://bitbucket.org/atlassian/localstack/issues/24/not-support-sqs-in-jms
  */
 @RunWith(LocalstackTestRunner.class)
-@Ignore
 public class SQSMessagingTest {
+
+	private static final String QUEUE_NAME = "aws_develop_class_jms";
 
     @BeforeClass
     public static void setup() {
@@ -33,7 +41,7 @@ public class SQSMessagingTest {
         attributeMap.put("VisibilityTimeout", "30");
 
         AmazonSQS client = TestUtils.getClientSQS();
-        CreateQueueRequest createQueueRequest = new CreateQueueRequest("aws_develop_class_jms").withAttributes(attributeMap);
+        CreateQueueRequest createQueueRequest = new CreateQueueRequest(QUEUE_NAME).withAttributes(attributeMap);
         CreateQueueResult result = client.createQueue(createQueueRequest);
         Assert.assertNotNull(result);
     }
@@ -41,15 +49,24 @@ public class SQSMessagingTest {
     @Test
     public void testSendMessage() throws JMSException {
         SQSConnectionFactory connectionFactory = SQSConnectionFactory.builder().withEndpoint(
-                LocalstackTestRunner.getEndpointSQS()).build();
+                LocalstackTestRunner.getEndpointSQS()).withAWSCredentialsProvider(
+                        new AWSStaticCredentialsProvider(TestUtils.TEST_CREDENTIALS)).build();
         SQSConnection connection = connectionFactory.createConnection();
+        connection.start();
         Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
-        Queue queue = session.createQueue("aws_develop_class_jms");
+        Queue queue = session.createQueue(QUEUE_NAME);
+
+        // send message
         MessageProducer producer = session.createProducer(queue);
         TextMessage message = session.createTextMessage("This is a message!");
         producer.send(message);
         Assert.assertNotNull(message.getJMSMessageID());
+
+        // receive message
+        MessageConsumer consumer = session.createConsumer(queue);
+        TextMessage received = (TextMessage) consumer.receive();
+        Assert.assertNotNull(received);
     }
 
 }
