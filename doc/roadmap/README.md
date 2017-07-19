@@ -1,5 +1,8 @@
 # LocalStack Roadmap
 
+**UPDATE: This document is outdated. We are working on an updated roadmap which will be
+published here and on the LocalStack website: [http://localstack.cloud](http://localstack.cloud)**
+
 ## Main Streams of Work
 
 The following list is an attempt to summarize the main streams of work in *LocalStack* (in no particular order):

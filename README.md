@@ -12,6 +12,17 @@
 
 Currently, the focus is primarily on supporting the AWS cloud stack.
 
+# Announcements
+
+* **2017-07-20**: Please note: Starting with version `0.7.0`, the Docker image will be pushed
+and kept up to date under the **new name** `localstack/localstack`. (This means that you may
+have to update your CI configurations.) Please refer to the updated
+**[End-User License Agreement (EULA)](doc/end_user_license_agreement)** for the new versions.
+The old Docker image (`atlassianlabs/localstack`) is still available but will not be maintained
+any longer.
+
+# Overview
+
 *LocalStack* spins up the following core Cloud APIs on your local machine:
 
 * **API Gateway** at http://localhost:4567
@@ -291,6 +302,7 @@ localstack web
 
 ## Change Log
 
+* v0.7.0: Support for Kinesis in CloudFormation; extend and integrate Java tests in CI; publish Docker image under new name; update READMEs and license agreements
 * v0.6.2: Major refactoring of installation process, lazy loading of dependencies
 * v0.6.1: Add CORS headers; platform compatibility fixes (remove shell commands and sh module); add CloudFormation validate-template; fix Lambda execution in Docker; basic domain handling in ES API; API Gateway authorizers
 * v0.6.0: Load services as plugins; fix service default ports; fix SQS->SNS and MD5 of message attributes; fix Host header for S3
@@ -346,20 +358,19 @@ For pull requests, please stick to the following guidelines:
 * Put a reasonable amount of comments into the code.
 * Separate unrelated changes into multiple pull requests.
 
-Please note that we need to collect a signed **Contributors License Agreement** from each
-individual developer who contributes code to this repository. Please refer to the following links:
-
-* [https://developer.atlassian.com/opensource/](https://developer.atlassian.com/opensource/)
-* [https://na2.docusign.net/Member/PowerFormSigning.aspx?PowerFormId=3f94fbdc-2fbe-46ac-b14c-5d152700ae5d](https://na2.docusign.net/Member/PowerFormSigning.aspx?PowerFormId=3f94fbdc-2fbe-46ac-b14c-5d152700ae5d)
+Please note that by contributing any code or documentation to this repository (by
+raising pull requests, or otherwise) you explicitly agree to
+the [**Contributor License Agreement**](doc/contributor_license_agreement).
 
 ## License
 
-Copyright (c) 2017 *LocalStack* contributors.
+Copyright (c) 2017 *LocalStack* maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
-This version of *LocalStack* is released under the Apache License,
-Version 2.0 (see LICENSE.txt).
+This version of *LocalStack* is released under the Apache License, Version 2.0 (see LICENSE.txt).
+By downloading and using this software you agree to the
+[End-User License Agreement (EULA)](doc/end_user_license_agreement).
 
 We build on a number of third-party software tools, with the following licenses:
 

@@ -2,7 +2,7 @@ import os
 import sys
 
 # LocalStack version
-VERSION = '0.6.2'
+VERSION = '0.7.0'
 
 # default AWS region
 if 'DEFAULT_REGION' not in os.environ:
@@ -85,7 +85,7 @@ if not os.path.isdir(LOCALSTACK_VENV_FOLDER):
 PATH_USER_REQUEST = '_user_request_'
 
 # name of LocalStack Docker image
-DOCKER_IMAGE_NAME = 'atlassianlabs/localstack'
+DOCKER_IMAGE_NAME = 'localstack/localstack'
 
 # action headers
 KINESIS_ACTION_PUT_RECORD = 'Kinesis_20131202.PutRecord'
@@ -102,3 +102,6 @@ LAMBDA_TEST_ROLE = "arn:aws:iam::%s:role/lambda-test-role" % TEST_AWS_ACCOUNT_ID
 # installation constants
 ELASTICSEARCH_JAR_URL = 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-5.3.0.zip'
 DYNAMODB_JAR_URL = 'https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip'
+
+# API endpoint for analytics events
+API_ENDPOINT = 'https://api.localstack.cloud:8182/v1'
