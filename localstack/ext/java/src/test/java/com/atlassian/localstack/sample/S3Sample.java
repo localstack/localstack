@@ -69,7 +69,8 @@ public class S3Sample {
 
     public static void runTest(AWSCredentials credentials) throws IOException {
 
-        AmazonS3 s3 = new AmazonS3Client(credentials);
+		@SuppressWarnings("deprecation")
+		AmazonS3 s3 = new AmazonS3Client(credentials);
         Region usWest2 = Region.getRegion(Regions.US_WEST_2);
         s3.setRegion(usWest2);
         s3.setEndpoint(LocalstackTestRunner.getEndpointS3());

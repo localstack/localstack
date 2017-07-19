@@ -28,7 +28,7 @@ init:              ## Initialize the infrastructure, make sure all libs are down
 	$(VENV_RUN); PYTHONPATH=. exec localstack/services/install.py run
 
 infra:             ## Manually start the local infrastructure for testing
-	($(VENV_RUN); bin/localstack start)
+	($(VENV_RUN); exec bin/localstack start)
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
@@ -67,6 +67,9 @@ web:               ## Start web application (dashboard)
 test:              ## Run automated tests
 	make lint && \
 		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .)
+
+test-java:         ## Run tests for Java/JUnit compatibility
+	cd localstack/ext/java; mvn test && USE_SSL=1 mvn test
 
 test-docker:       ## Run automated tests in Docker
 	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/tests:/opt/code/localstack/tests" CMD="make test" make docker-run

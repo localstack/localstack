@@ -293,17 +293,12 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             else:
                 event_body = json.dumps(event).replace("'", "\\'")
             # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
-            process = run(cmd, env_vars={
+            env_vars = {
                 'AWS_LAMBDA_EVENT_BODY': event_body,
                 'HOSTNAME': DOCKER_BRIDGE_IP,
-            }, async=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
-            return_code = process.wait()
-            result = process.stdout.read()
-            log_output = process.stderr.read()
+            }
+            result, log_output = run_lambda_executor(cmd, env_vars)
             LOG.debug('Lambda log output:\n%s' % log_output)
-            if return_code != 0:
-                raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
-                    (return_code, log_output))
         else:
             # execute the Lambda function in a forked sub-process, sync result via queue
             queue = Queue()
@@ -371,6 +366,19 @@ def error_response(msg, code=400, error_type='Exception'):
     result = {'Type': 'User', 'message': msg}
     headers = {'x-amzn-errortype': error_type}
     return make_response((jsonify(result), code, headers))
+
+
+def run_lambda_executor(cmd, env_vars={}):
+    process = run(cmd, async=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars)
+    return_code = process.wait()
+    result = to_str(process.stdout.read())
+    log_output = to_str(process.stderr.read())
+
+    if return_code != 0:
+        raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
+            (return_code, log_output))
+
+    return result, log_output
 
 
 def set_function_code(code, lambda_name):
@@ -444,9 +452,9 @@ def set_function_code(code, lambda_name):
                 jar_path = '%s/repository/%s' % (M2_HOME, jar)
                 classpath += ':%s' % (jar_path)
             cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
-            output = run(cmd)
-            LOG.info('Lambda output: %s' % output.replace('\n', '\n> '))
-            return output
+            result, log_output = run_lambda_executor(cmd)
+            LOG.info('Lambda output: %s' % log_output.replace('\n', '\n> '))
+            return result
 
         lambda_handler = execute
 

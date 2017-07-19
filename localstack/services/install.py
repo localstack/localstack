@@ -22,7 +22,7 @@ TMP_ARCHIVE_ES = os.path.join(tempfile.gettempdir(), 'localstack.es.zip')
 TMP_ARCHIVE_DDB = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
 TMP_ARCHIVE_STS = os.path.join(tempfile.gettempdir(), 'aws-java-sdk-sts.jar')
 URL_STS_JAR = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
-URL_LOCALSTACK_JAR = ('https://bitbucket.org/atlassian/localstack/raw/mvn/release/' +
+URL_LOCALSTACK_JAR = ('https://github.com/localstack/localstack/raw/mvn/release/' +
     'com/atlassian/localstack-utils/1.0-SNAPSHOT/localstack-utils-1.0-SNAPSHOT.jar')
 
 # list of additional pip packages to install

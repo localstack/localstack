@@ -1,29 +1,27 @@
 package com.atlassian.localstack;
 
+import static com.atlassian.localstack.TestUtils.TEST_CREDENTIALS;
+
 import java.util.List;
 
-import com.atlassian.localstack.sample.S3Sample;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesis;
-import com.amazonaws.services.kinesis.AmazonKinesisClient;
 import com.amazonaws.services.kinesis.model.ListStreamsResult;
 import com.amazonaws.services.lambda.AWSLambda;
-import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.lambda.model.ListFunctionsResult;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.Bucket;
+import com.atlassian.localstack.sample.S3Sample;
 
-import static com.atlassian.localstack.TestUtils.*;
-
+/**
+ * Simple class to test basic functionality and interaction with LocalStack.
+ * @author Waldemar Hummer
+ */
 @RunWith(LocalstackTestRunner.class)
-public class TestRunnerTest {
+public class BasicFunctionalityTest {
 
 	static {
 		/*
@@ -35,17 +33,14 @@ public class TestRunnerTest {
 
 	@Test
 	public void testLocalKinesisAPI() {
-		AmazonKinesis kinesis = new AmazonKinesisClient(TEST_CREDENTIALS);
-		kinesis.setEndpoint(LocalstackTestRunner.getEndpointKinesis());
+		AmazonKinesis kinesis = TestUtils.getClientKinesis();
 		ListStreamsResult streams = kinesis.listStreams();
 		Assert.assertNotNull(streams.getStreamNames());
 	}
 
 	@Test
 	public void testLocalS3API() throws Exception {
-		AmazonS3 s3 = new AmazonS3Client(TEST_CREDENTIALS);
-		s3.setEndpoint(LocalstackTestRunner.getEndpointS3());
-		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
+		AmazonS3 s3 = TestUtils.getClientS3();
 		List<Bucket> buckets = s3.listBuckets();
 		Assert.assertNotNull(buckets);
 		S3Sample.runTest(TEST_CREDENTIALS);
@@ -53,10 +48,7 @@ public class TestRunnerTest {
 
 	@Test
 	public void testLocalLambdaAPI() {
-		AWSLambda lambda = AWSLambdaClientBuilder.standard().withEndpointConfiguration(
-				new AwsClientBuilder.EndpointConfiguration(
-						LocalstackTestRunner.getEndpointLambda(), DEFAULT_REGION)).withCredentials(
-								new AWSStaticCredentialsProvider(TEST_CREDENTIALS)).build();
+		AWSLambda lambda = TestUtils.getClientLambda();
 		ListFunctionsResult functions = lambda.listFunctions();
 		Assert.assertNotNull(functions.getFunctions());
 	}

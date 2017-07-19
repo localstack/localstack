@@ -4,6 +4,7 @@
 *.log
 /infra/
 /node_modules/
+package-lock.json
 /nosetests.xml
 /.venv/
 .settings/

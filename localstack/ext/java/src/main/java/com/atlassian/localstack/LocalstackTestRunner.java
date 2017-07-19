@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -16,6 +17,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
+import org.ow2.proactive.process_tree_killer.ProcessTree;
 
 import com.amazonaws.util.IOUtils;
 
@@ -28,6 +30,7 @@ import com.amazonaws.util.IOUtils;
  * @author Waldemar Hummer
  */
 public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
+	private static final Logger LOG = Logger.getLogger(LocalstackTestRunner.class.getName());
 
 	private static final AtomicReference<Process> INFRA_STARTED = new AtomicReference<Process>();
 	private static String CONFIG_FILE_CONTENT = "";
@@ -37,9 +40,10 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 			File.separator + "localstack_install_dir";
 	private static final String ADDITIONAL_PATH = "/usr/local/bin/";
 	private static final String LOCALHOST = "localhost";
-	private static final String LOCALSTACK_REPO_URL = "https://github.com/atlassian/localstack";
+	private static final String LOCALSTACK_REPO_URL = "https://github.com/localstack/localstack";
 
-	private static final Logger LOG = Logger.getLogger(LocalstackTestRunner.class.getName());
+	public static final String ENV_CONFIG_USE_SSL = "USE_SSL";
+	private static final String ENV_LOCALSTACK_PROCESS_GROUP = "ENV_LOCALSTACK_PROCESS_GROUP";
 
 	public LocalstackTestRunner(Class<?> klass) throws InitializationError {
 		super(klass);
@@ -143,13 +147,26 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	}
 
 	private static void killProcess(Process p) {
-		p.destroy();
-		p.destroyForcibly();
+		try {
+			ProcessTree.get().killAll(Collections.singletonMap(
+					ENV_LOCALSTACK_PROCESS_GROUP, ENV_LOCALSTACK_PROCESS_GROUP));
+		} catch (Exception e) {
+			LOG.warning("Unable to terminate processes: " + e);
+		}
 	}
 
 	private static String ensureInstallationAndGetEndpoint(String service) {
 		ensureInstallation();
 		return getEndpoint(service);
+	}
+
+	public static boolean useSSL() {
+		return isEnvConfigSet(ENV_CONFIG_USE_SSL);
+	}
+
+	public static boolean isEnvConfigSet(String configName) {
+		String value = System.getenv(configName);
+		return value != null && !Arrays.asList("false", "0", "").contains(value.trim());
 	}
 
 	private static String getEndpoint(String service) {
@@ -160,8 +177,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		String regex = ".*" + variableName + "\\s*=\\s*([0-9]+).*";
 		String port = Pattern.compile(regex, Pattern.DOTALL | Pattern.MULTILINE).matcher(CONFIG_FILE_CONTENT).replaceAll("$1");
 		String protocol = "http";
-		String useSSL = System.getProperty("USE_SSL");
-		if (useSSL != null && !Arrays.asList("false", "0", "").contains(useSSL.trim())) {
+		if (useSSL()) {
 			protocol = "https";
 		}
 		return protocol + "://" + LOCALHOST + ":" + port + "/";
@@ -179,6 +195,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 			Map<String, String> env = new HashMap<>(System.getenv());
 			ProcessBuilder builder = new ProcessBuilder(cmd);
 			builder.environment().put("PATH", ADDITIONAL_PATH + ":" + env.get("PATH"));
+			builder.environment().put(ENV_LOCALSTACK_PROCESS_GROUP, ENV_LOCALSTACK_PROCESS_GROUP);
 			final Process p = builder.start();
 			if (wait) {
 				int code = p.waitFor();
@@ -213,7 +230,11 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 
 	private void setupInfrastructure() {
 		synchronized (INFRA_STARTED) {
+			// make sure everything is installed locally
 			ensureInstallation();
+			// make sure we avoid any errors related to locally generated SSL certificates
+			TestUtils.disableSslCertChecking();
+
 			if(INFRA_STARTED.get() != null) return;
 			String[] cmd = new String[]{"make", "-C", TMP_INSTALL_DIR, "infra"};
 			Process proc;
@@ -242,5 +263,9 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 			return;
 		}
 		killProcess(proc);
+	}
+
+	public static String getDefaultRegion() {
+		return TestUtils.DEFAULT_REGION;
 	}
 }
