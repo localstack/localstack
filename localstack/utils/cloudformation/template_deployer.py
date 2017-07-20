@@ -151,7 +151,7 @@ RESOURCE_TO_FUNCTION = {
             'boto_client': 'client',
             'function': 'create_stream',
             'parameters': {
-                'Name': 'Name',
+                'StreamName': 'Name',
                 'ShardCount': 'ShardCount'
             },
             'defaults': {
@@ -273,6 +273,12 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                 return None
             return aws_stack.connect_to_service('apigateway').get_method(restApiId=api_id,
                 resourceId=res_id, httpMethod=resource_props['HttpMethod'])
+        if resource_type == 'AWS::SQS::Queue':
+            queues = aws_stack.connect_to_service('sqs').list_queues()
+            result = list(filter(lambda item:
+                # TODO possibly find a better way to compare resource_id with queue URLs
+                item.endswith('/%s' % resource_id), queues['QueueUrls']))
+            return result
         if resource_type == 'AWS::S3::Bucket':
             return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=resource_id)
         if resource_type == 'AWS::Logs::LogGroup':
@@ -280,7 +286,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             raise Exception('ResourceNotFound')
         if resource_type == 'AWS::Kinesis::Stream':
             stream_name = resolve_refs_recursively(stack_name, resource_props['Name'], resources)
-            return aws_stack.connect_to_service('kinesis', client=True).describe_stream(StreamName=stream_name)
+            result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
+            return result
         if is_deployable_resource(resource):
             LOGGER.warning('Unexpected resource type %s when resolving references' % resource_type)
     except Exception as e:

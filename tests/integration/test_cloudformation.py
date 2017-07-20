@@ -17,7 +17,6 @@ def bucket_exists(name):
     for bucket in buckets['Buckets']:
         if bucket['Name'] == name:
             return True
-    return False
 
 
 def queue_exists(name):
@@ -26,7 +25,12 @@ def queue_exists(name):
     for queue_url in queues['QueueUrls']:
         if queue_url.endswith('/%s' % name):
             return True
-    return False
+
+
+def stream_exists(name):
+    kinesis_client = aws_stack.connect_to_service('kinesis')
+    streams = kinesis_client.list_streams()
+    return name in streams['StreamNames']
 
 
 def get_stack_details(stack_name):
@@ -35,7 +39,6 @@ def get_stack_details(stack_name):
     for stack in stacks['Stacks']:
         if stack['StackName'] == stack_name:
             return stack
-    return None
 
 
 def test_apply_template():
@@ -54,9 +57,10 @@ def test_apply_template():
 
     # assert that bucket has been created
     assert bucket_exists('cf-test-bucket-1')
-
     # assert that queue has been created
     assert queue_exists('cf-test-queue-1')
+    # assert that stream has been created
+    assert stream_exists('cf-test-stream-1')
 
 
 def test_validate_template():

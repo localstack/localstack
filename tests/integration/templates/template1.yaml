@@ -10,3 +10,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: cf-test-queue-1
+  KinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: cf-test-stream-1
