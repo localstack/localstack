@@ -158,6 +158,52 @@ class ShellCommandThread (FuncThread):
                 LOGGER.warning('Unable to kill process with pid %s' % pid)
 
 
+# Generic JSON serializable object for simplified subclassing
+class JsonObject(object):
+
+    def to_json(self, indent=None):
+        return json.dumps(self,
+            default=lambda o: ((float(o) if o % 1 > 0 else int(o))
+                if isinstance(o, decimal.Decimal) else o.__dict__),
+            sort_keys=True, indent=indent)
+
+    def apply_json(self, j):
+        if isinstance(j, str):
+            j = json.loads(j)
+        self.__dict__.update(j)
+
+    def to_dict(self):
+        return json.loads(self.to_json())
+
+    @classmethod
+    def from_json(cls, j):
+        j = JsonObject.as_dict(j)
+        result = cls()
+        result.apply_json(j)
+        return result
+
+    @classmethod
+    def from_json_list(cls, l):
+        return [cls.from_json(j) for j in l]
+
+    @classmethod
+    def as_dict(cls, obj):
+        if isinstance(obj, dict):
+            return obj
+        return obj.to_dict()
+
+    def __str__(self):
+        return self.to_json()
+
+    def __repr__(self):
+        return self.__str__()
+
+
+# ----------------
+# UTILITY METHODS
+# ----------------
+
+
 def is_string(s, include_unicode=True):
     if isinstance(s, str):
         return True

@@ -17,6 +17,7 @@ from localstack.config import *
 from localstack.utils.aws import aws_stack
 from localstack.utils import common, persistence
 from localstack.utils.common import *
+from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
@@ -303,6 +304,8 @@ def start_infra(async=False, apis=None):
     try:
         # load plugins
         load_plugins()
+
+        event_publisher.publish_event(event_publisher.EVENT_START_INFRA)
 
         # set up logging
         warnings.filterwarnings('ignore')
