@@ -237,6 +237,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                 raise Exception('ResourceNotFound')
             return mapping[0]
         if resource_type == 'AWS::DynamoDB::Table':
+            resource_id = resource_props['TableName'] if resource else resource_id
             return aws_stack.connect_to_service('dynamodb').describe_table(TableName=resource_id)
         if resource_type == 'AWS::ApiGateway::RestApi':
             apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
