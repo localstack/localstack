@@ -2,6 +2,7 @@ import os
 import json
 from flask import Flask, render_template, jsonify, send_from_directory, request
 from flask_swagger import swagger
+from localstack.constants import VERSION
 from localstack.utils.aws.aws_stack import Environment
 from localstack.utils import common
 from localstack.dashboard import infra
@@ -17,7 +18,7 @@ app.root_path = root_path
 @app.route('/swagger.json')
 def spec():
     swag = swagger(app)
-    swag['info']['version'] = "0.1"
+    swag['info']['version'] = VERSION
     swag['info']['title'] = "AWS Resources Dashboard"
     return jsonify(swag)
 
@@ -31,7 +32,7 @@ def get_graph():
             - name: request
               in: body
     """
-    data = json.loads(request.data)
+    data = get_payload(request)
     env = Environment.from_string(data.get('awsEnvironment'))
     graph = infra.get_graph(name_filter=data['nameFilter'], env=env)
     return jsonify(graph)
@@ -50,7 +51,7 @@ def get_kinesis_events(streamName, shardId):
             - name: request
               in: body
     """
-    data = json.loads(request.data)
+    data = get_payload(request)
     env = Environment.from_string(data.get('awsEnvironment'))
     result = infra.get_kinesis_events(stream_name=streamName, shard_id=shardId, env=env)
     return jsonify(result)
@@ -67,7 +68,7 @@ def get_lambda_code(functionName):
             - name: request
               in: body
     """
-    data = json.loads(request.data)
+    data = get_payload(request)
     env = Environment.from_string(data.get('awsEnvironment'))
     result = infra.get_lambda_code(func_name=functionName, env=env)
     return jsonify(result)
@@ -81,6 +82,10 @@ def hello():
 @app.route('/<path:path>')
 def send_static(path):
     return send_from_directory(web_dir + '/', path)
+
+
+def get_payload(request):
+    return json.loads(common.to_str(request.data))
 
 
 def ensure_webapp_installed():
