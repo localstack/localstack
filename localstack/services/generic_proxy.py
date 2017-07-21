@@ -163,7 +163,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.send_header(header_key, header_value)
                 content_length_sent = content_length_sent or header_key.lower() == 'content-length'
             if not content_length_sent:
-                self.send_header('Content-Length', '%s' % len(response.content))
+                self.send_header('Content-Length', '%s' % len(response.content) if response.content else 0)
 
             # allow pre-flight CORS headers by default
             if 'Access-Control-Allow-Origin' not in response.headers:
@@ -174,7 +174,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Headers', ','.join(CORS_ALLOWED_HEADERS))
 
             self.end_headers()
-            if len(response.content):
+            if response.content and len(response.content):
                 self.wfile.write(bytes_(response.content))
             self.wfile.flush()
         except Exception as e:

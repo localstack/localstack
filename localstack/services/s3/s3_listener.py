@@ -1,6 +1,7 @@
 import re
 import logging
 import json
+import uuid
 import xmltodict
 import xml.etree.ElementTree as ET
 import six
@@ -203,16 +204,43 @@ def update_s3(method, path, data, headers, response=None, return_forward_info=Fa
         path = parsed.path
         bucket = path.split('/')[1]
         query_map = urlparse.parse_qs(query)
-        if method == 'PUT' and (query == 'notification' or 'notification' in query_map):
-            tree = ET.fromstring(data)
-            for dest in ['Queue', 'Topic', 'CloudFunction']:
-                config = tree.find('{%s}%sConfiguration' % (XMLNS_S3, dest))
-                if config is not None and len(config):
-                    S3_NOTIFICATIONS[bucket] = {
-                        'Id': get_xml_text(config, 'Id'),
-                        'Event': get_xml_text(config, 'Event', ns=XMLNS_S3),
-                        dest: get_xml_text(config, dest, ns=XMLNS_S3),
-                    }
+        if query == 'notification' or 'notification' in query_map:
+            response = Response()
+            response.status_code = 200
+            if method == 'GET':
+                # TODO check if bucket exists
+                result = '<NotificationConfiguration xmlns="%s">' % XMLNS_S3
+                if bucket in S3_NOTIFICATIONS:
+                    notif = S3_NOTIFICATIONS[bucket]
+                    for dest in ['Queue', 'Topic', 'CloudFunction']:
+                        if dest in notif:
+                            result += ('''<{dest}Configuration>
+                                        <Id>{uid}</Id>
+                                        <{dest}>{endpoint}</{dest}>
+                                        <Event>{event}</Event>
+                                    </{dest}Configuration>''').format(
+                                dest=dest, uid=uuid.uuid4(),
+                                endpoint=S3_NOTIFICATIONS[bucket][dest],
+                                event=S3_NOTIFICATIONS[bucket]['Event'])
+                result += '</NotificationConfiguration>'
+                response._content = result
+
+            if method == 'PUT':
+                tree = ET.fromstring(data)
+                for dest in ['Queue', 'Topic', 'CloudFunction']:
+                    config = tree.find('{%s}%sConfiguration' % (XMLNS_S3, dest))
+                    if config is not None and len(config):
+                        # TODO: what if we have multiple destinations - would we overwrite the config?
+                        S3_NOTIFICATIONS[bucket] = {
+                            'Id': get_xml_text(config, 'Id'),
+                            'Event': get_xml_text(config, 'Event', ns=XMLNS_S3),
+                            # TODO extract 'Events' attribute (in addition to 'Event')
+                            dest: get_xml_text(config, dest, ns=XMLNS_S3),
+                        }
+
+            # return response for ?notification request
+            return response
+
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
                 return get_cors(bucket)
