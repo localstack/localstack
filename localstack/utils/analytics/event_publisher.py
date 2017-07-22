@@ -92,11 +92,19 @@ def poll_and_send_messages(params):
             time.sleep(1)
 
 
+def is_travis():
+    return os.environ.get('TRAVIS', '').lower() in ['true', '1']
+
+
 def publish_event(event_type, payload=None):
     global SENDER_THREAD
     if not SENDER_THREAD:
         SENDER_THREAD = FuncThread(poll_and_send_messages, {})
         SENDER_THREAD.start()
+    if payload is None:
+        payload = {}
+    if isinstance(payload, dict) and is_travis():
+        payload['travis'] = True
 
     event = AnalyticsEvent(event_type=event_type, payload=payload)
     EVENT_QUEUE.put_nowait(event)
