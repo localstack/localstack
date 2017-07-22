@@ -12,6 +12,9 @@ from localstack.services.dynamodbstreams import dynamodbstreams_api
 # cache table definitions - used for testing
 TABLE_DEFINITIONS = {}
 
+# action header prefix
+ACTION_PREFIX = 'DynamoDB_20120810'
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +47,7 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     }
     records = [record]
 
-    if action == 'DynamoDB_20120810.UpdateItem':
+    if action == '%s.UpdateItem' % ACTION_PREFIX:
         req = {'TableName': data['TableName'], 'Key': data['Key']}
         new_item = aws_stack.dynamodb_get_item_raw(req)
         if 'Item' not in new_item:
@@ -57,7 +60,7 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
         record['eventName'] = 'MODIFY'
         record['dynamodb']['Keys'] = data['Key']
         record['dynamodb']['NewImage'] = new_item['Item']
-    elif action == 'DynamoDB_20120810.BatchWriteItem':
+    elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
         records = []
         for table_name, requests in data['RequestItems'].items():
             for request in requests:
@@ -70,23 +73,21 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
                     new_record['dynamodb']['NewImage'] = put_request['Item']
                     new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                     records.append(new_record)
-    elif action == 'DynamoDB_20120810.PutItem':
+    elif action == '%s.PutItem' % ACTION_PREFIX:
         record['eventName'] = 'INSERT'
         keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
         record['dynamodb']['Keys'] = keys
         record['dynamodb']['NewImage'] = data['Item']
-    elif action == 'DynamoDB_20120810.DeleteItem':
+    elif action == '%s.DeleteItem' % ACTION_PREFIX:
         record['eventName'] = 'REMOVE'
         record['dynamodb']['Keys'] = data['Key']
-    elif action == 'DynamoDB_20120810.CreateTable':
+    elif action == '%s.CreateTable' % ACTION_PREFIX:
         if 'StreamSpecification' in data:
-            stream = data['StreamSpecification']
-            enabled = stream.get('StreamEnabled')
-            if enabled not in [False, 'False']:
-                table_name = data['TableName']
-                view_type = stream['StreamViewType']
-                dynamodbstreams_api.add_dynamodb_stream(table_name=table_name,
-                    view_type=view_type, enabled=enabled)
+            create_dynamodb_stream(data)
+        return
+    elif action == '%s.UpdateTable' % ACTION_PREFIX:
+        if 'StreamSpecification' in data:
+            create_dynamodb_stream(data)
         return
     else:
         # nothing to do
@@ -96,6 +97,16 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
         record['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
     forward_to_lambda(records)
     forward_to_ddb_stream(records)
+
+
+def create_dynamodb_stream(data):
+    stream = data['StreamSpecification']
+    enabled = stream.get('StreamEnabled')
+    if enabled not in [False, 'False']:
+        table_name = data['TableName']
+        view_type = stream['StreamViewType']
+        dynamodbstreams_api.add_dynamodb_stream(table_name=table_name,
+            view_type=view_type, enabled=enabled)
 
 
 def forward_to_lambda(records):
