@@ -1,4 +1,4 @@
-package com.atlassian.localstack;
+package cloud.localstack;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -15,8 +15,8 @@ import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 
-import static com.atlassian.localstack.TestUtils.DEFAULT_REGION;
-import static com.atlassian.localstack.TestUtils.TEST_CREDENTIALS;
+import static cloud.localstack.TestUtils.DEFAULT_REGION;
+import static cloud.localstack.TestUtils.TEST_CREDENTIALS;
 
 import java.lang.reflect.Field;
 import java.util.Collections;
@@ -31,13 +31,13 @@ public class TestUtils {
 	public static final String TEST_SECRET_KEY = "test";
 	public static final AWSCredentials TEST_CREDENTIALS = new BasicAWSCredentials(TEST_ACCESS_KEY, TEST_SECRET_KEY);
 
-	protected static void setEnv(String key, String value) {
+	public static void setEnv(String key, String value) {
 		Map<String, String> newEnv = new HashMap<String, String>(System.getenv());
 		newEnv.put(key, value);
 		setEnv(newEnv);
 	}
 
-	protected static AmazonSQS getClientSQS() {
+	public static AmazonSQS getClientSQS() {
 		return AmazonSQSClientBuilder.standard().
 				withEndpointConfiguration(getEndpointConfigurationSQS()).
 				withCredentials(getCredentialsProvider()).build();

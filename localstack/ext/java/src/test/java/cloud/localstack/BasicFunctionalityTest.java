@@ -1,6 +1,6 @@
-package com.atlassian.localstack;
+package cloud.localstack;
 
-import static com.atlassian.localstack.TestUtils.TEST_CREDENTIALS;
+import static cloud.localstack.TestUtils.TEST_CREDENTIALS;
 
 import java.util.List;
 
@@ -14,7 +14,10 @@ import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.model.ListFunctionsResult;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
-import com.atlassian.localstack.sample.S3Sample;
+
+import cloud.localstack.LocalstackTestRunner;
+import cloud.localstack.TestUtils;
+import cloud.localstack.sample.S3Sample;
 
 /**
  * Simple class to test basic functionality and interaction with LocalStack.

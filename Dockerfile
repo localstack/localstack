@@ -1,7 +1,7 @@
 FROM localstack/java-maven-node-python
 
-MAINTAINER Waldemar Hummer (whummer@atlassian.com)
-LABEL authors="Waldemar Hummer (whummer@atlassian.com), Gianluca Bortoli (giallogiallo93@gmail.com)"
+MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
+LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com), Gianluca Bortoli (giallogiallo93@gmail.com)"
 
 # add files required to run "make install"
 ADD Makefile requirements.txt ./

@@ -1,4 +1,4 @@
-package com.atlassian.localstack.sample;
+package cloud.localstack.sample;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
