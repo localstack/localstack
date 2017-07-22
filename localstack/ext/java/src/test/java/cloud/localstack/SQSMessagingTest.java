@@ -1,4 +1,4 @@
-package com.atlassian.localstack;
+package cloud.localstack;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +21,9 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.CreateQueueResult;
+
+import cloud.localstack.LocalstackTestRunner;
+import cloud.localstack.TestUtils;
 
 /**
  * Test integration of SQS/JMS messaging with LocalStack

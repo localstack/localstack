@@ -1,4 +1,4 @@
-package com.atlassian.localstack;
+package cloud.localstack;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -14,6 +14,9 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
+
+import cloud.localstack.LocalstackTestRunner;
+import cloud.localstack.TestUtils;
 
 /**
  * @author Waldemar Hummer

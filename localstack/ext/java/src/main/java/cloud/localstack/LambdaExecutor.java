@@ -1,4 +1,4 @@
-package com.atlassian.localstack;
+package cloud.localstack;
 
 import java.io.File;
 import java.nio.ByteBuffer;

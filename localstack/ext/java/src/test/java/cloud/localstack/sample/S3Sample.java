@@ -1,4 +1,4 @@
-package com.atlassian.localstack.sample;
+package cloud.localstack.sample;
 /*
  * Copyright 2010-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  *
@@ -38,7 +38,8 @@ import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
-import com.atlassian.localstack.LocalstackTestRunner;
+
+import cloud.localstack.LocalstackTestRunner;
 
 /**
  * This sample demonstrates how to make basic requests to Amazon S3 using the

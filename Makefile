@@ -21,6 +21,9 @@ publish:           ## Publish the library to the central PyPi repository
 	# build and upload archive
 	($(VENV_RUN) && ./setup.py sdist upload)
 
+publish-maven:     ## Publish artifacts to Maven Central
+	(cd localstack/ext/java/; mvn javadoc:jar source:jar deploy -DskipTests)
+
 coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 

@@ -206,13 +206,16 @@ at the example JUnit test in `ext/java`. When you run the test, all dependencies
 downloaded and installed to a temporary directory in your system.
 
 ```
+...
+import cloud.localstack.LocalstackTestRunner;
+import cloud.localstack.TestUtils;
+
 @RunWith(LocalstackTestRunner.class)
 public class MyCloudAppTest {
 
   @Test
   public void testLocalS3API() {
-    AmazonS3 s3 = new AmazonS3Client(...);
-    s3.setEndpoint(LocalstackTestRunner.getEndpointS3());
+    AmazonS3 s3 = TestUtils.getClientS3()
     List<Bucket> buckets = s3.listBuckets();
     ...
   }
@@ -220,29 +223,15 @@ public class MyCloudAppTest {
 }
 ```
 
-The *LocalStack* JUnit test runner is published as a Maven artifact in the Bitbucket repository.
-Simply add the following configuration to your `pom.xml` file:
+The *LocalStack* JUnit test runner is published as an artifact in Maven Central.
+Simply add the following dependency to your `pom.xml` file:
 
 ```
-<project ...>
-  ...
-  <dependencies>
-    ...
-    <dependency>
-      <groupId>com.atlassian</groupId>
-      <artifactId>localstack-utils</artifactId>
-      <version>1.0-SNAPSHOT</version>
-    </dependency>
-  </dependencies>
-
-  <repositories>
-    <repository>
-      <id>localstack-repo</id>
-      <url>https://bitbucket.org/atlassian/localstack/raw/mvn/release</url>
-    </repository>
-  </repositories>
-
-</project>
+<dependency>
+    <groupId>cloud.localstack</groupId>
+    <artifactId>localstack-utils</artifactId>
+    <version>0.1.1</version>
+</dependency>
 ```
 
 ### Troubleshooting
