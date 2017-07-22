@@ -12,7 +12,7 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py')
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'ext', 'java', 'target',
-    'localstack-utils-1.0-SNAPSHOT-tests.jar')
+    'localstack-utils-0.1.1-tests.jar')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
@@ -71,7 +71,7 @@ def test_lambda_runtimes():
     if not use_docker():
         zip_file = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
         response = testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_JAVA8, handler='com.atlassian.localstack.sample.LambdaHandler')
+            runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaHandler')
         result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
         assert result['StatusCode'] == 200
         result_data = result['Payload'].read()
