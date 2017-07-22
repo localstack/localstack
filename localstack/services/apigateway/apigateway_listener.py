@@ -113,8 +113,11 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
                     data_str = json.dumps(data) if isinstance(data, dict) else data
                     result = lambda_api.process_apigateway_invocation(func_arn, path, data_str, headers)
                     response = Response()
-                    response.status_code = 200
-                    response._content = json.dumps(result)
+                    parsed_result = json.loads(result)
+                    response.status_code = int(parsed_result['statusCode'])
+                    response.headers.update(parsed_result['headers'])
+                    response_body = parsed_result['body']
+                    response._content = json.dumps(response_body)
                     return response
                 else:
                     msg = 'API Gateway action uri "%s" not yet implemented' % uri
