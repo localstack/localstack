@@ -35,7 +35,10 @@ infra:             ## Manually start the local infrastructure for testing
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
-	docker tag $(IMAGE_NAME) $(IMAGE_NAME):$(IMAGE_TAG)
+	# remove topmost layer ("make test") from image
+	LAST_BUT_ONE_LAYER=`docker history -q $(IMAGE_NAME) | head -n 2 | tail -n 1`; \
+		docker tag $$LAST_BUT_ONE_LAYER $(IMAGE_NAME); \
+		docker tag $$LAST_BUT_ONE_LAYER $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-build-base:
 	docker build -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
@@ -59,7 +62,8 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		BASE_IMAGE_ID=`docker history -q $(IMAGE_NAME):$(IMAGE_TAG) | tail -n 1`; \
 		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) -f $$BASE_IMAGE_ID $(IMAGE_NAME):$(IMAGE_TAG) && \
 			docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
-		docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME):latest)
+		make test-java-docker && \
+			docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME):latest)
 
 docker-run:        ## Run Docker image locally
 	($(VENV_RUN); bin/localstack start --docker)
@@ -77,7 +81,13 @@ test:              ## Run automated tests
 test-java:         ## Run tests for Java/JUnit compatibility
 	cd localstack/ext/java; mvn test && USE_SSL=1 mvn test
 
+test-java-docker:
+	ENTRYPOINT="--entrypoint=" CMD="make test-java" make docker-run
+
 test-docker:       ## Run automated tests in Docker
+	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
+
+test-docker-mount:
 	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/tests:/opt/code/localstack/tests" CMD="make test" make docker-run
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x

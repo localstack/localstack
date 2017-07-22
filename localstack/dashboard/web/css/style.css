@@ -1,3 +1,18 @@
+html {
+    font-family: Helvetica, Arial, Verdana;
+    font-size: 13px;
+}
+
+body {
+    margin: 0px;
+}
+
+#logo {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 20px;
+}
+
 .panel-centered {
 	width: 100%;
 	text-align: center;
@@ -14,6 +29,11 @@ table.aui-table tr.summary {
 h1 {
     font-size: 23px;
     padding: 8px;
+    color: #775555;
+}
+
+a.show_hide {
+    text-decoration: underline;
 }
 
 .fullsize {
@@ -30,7 +50,7 @@ sidebar div {
     top: 0px;
     bottom: 0px;
     position: absolute;
-    margin-top: 90px;
+    margin-top: 83px;
 }
 
 /* elements */

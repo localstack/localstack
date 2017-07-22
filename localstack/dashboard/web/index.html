@@ -5,8 +5,6 @@
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/png" href="/img/localstack_icon.png" />
-  <link rel="stylesheet" href="node_modules/@atlassian/aui/dist/aui/css/aui.css" media="all">
-  <link rel="stylesheet" href="node_modules/@atlassian/aui/dist/aui/css/aui-experimental.css" media="all">
   <link rel="stylesheet" href="node_modules/angular-aui/lib/aui/5.9.5/css/aui-iconfonts.css" media="all">
   <link rel="stylesheet" href="node_modules/angular-tablesort/tablesort.css" media="all">
   <link rel="stylesheet" href="node_modules/jsplumb/css/jsPlumbToolkit-defaults.css" media="all">
@@ -19,7 +17,8 @@
 <div id="page" class="fullsize">
 
   <!-- Header -->
-  <header id="header" role="banner" style="z-index: 1000; position: absolute; top: 0px; width: 100%;">
+  <header id="header" role="banner" style="position: absolute;
+      top: 0px; width: 100%; border-bottom: 1px solid #aaaaaa; background: #fafaf4">
     <nav class="aui-header aui-dropdown2-trigger-group" role="navigation">
       <div class="aui-header-inner">
         <div class="aui-header-primary">
@@ -27,15 +26,12 @@
           		<span class="aui-header-logo-device">
                 <img src="img/localstack_small.png" style="height: 30px; padding: 2px; margin-right: 10px;"/></span>
           </h1>
-          <ul class="aui-nav">
-            <li><a id="data-link" href="/#/">Infrastructure</a></li>
-          </ul>
         </div>
-        <div class="aui-header-secondary">
+        <!-- <div class="aui-header-secondary">
           <ul class="aui-nav">
             <li><span style="display: block; line-height: 1; padding: 13px 10px;"></span></li>
           </ul>
-        </div>
+        </div> -->
       </div>
     </nav>
   </header>
@@ -58,8 +54,6 @@
 <script src="node_modules/angular-sanitize/angular-sanitize.js"></script>
 <script src="node_modules/showdown/compressed/showdown.js"></script>
 <script src="node_modules/angular-tablesort/js/angular-tablesort.js"></script>
-<script src="node_modules/@atlassian/aui/dist/aui/js/aui.js"></script>
-<script src="node_modules/@atlassian/aui/dist/aui/js/aui-experimental.js"></script>
 <script src="node_modules/angular-resizable/angular-resizable.min.js"></script>
 <script src="node_modules/angular-ui-layout/src/ui-layout.js"></script>
 
@@ -74,7 +68,6 @@ $.urlParam = function(name){
   }
 }
 
-AJS.tablessortable.setTableSortable($(".aui-table-sortable"));
 </script>
 
 <!-- <script src="js/joint.defs.js"></script> -->

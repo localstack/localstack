@@ -23,6 +23,7 @@ from flask import Flask, Response, jsonify, request, make_response
 from localstack import config
 from localstack.constants import *
 from localstack.services.generic_proxy import GenericProxy
+from localstack.services.install import M2_HOME, JAR_DEPENDENCIES
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -47,24 +48,6 @@ LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
 LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_DEFAULT_TIMEOUT = 60
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
-
-# local maven repository path
-M2_HOME = '$HOME/.m2'
-# hack required for Docker because our base image uses $HOME/.m2 as a volume (see Dockerfile)
-if '/root/.m2_persistent' in os.environ.get('MAVEN_OPTS', ''):
-    M2_HOME = '/root/.m2_persistent'
-# TODO: temporary hack! Remove all hardcoded paths (and move to lamb-ci Docker for Java once it's available)
-JAR_DEPENDENCIES = [
-    'com/amazonaws/aws-lambda-java-core/1.1.0/aws-lambda-java-core-1.1.0.jar',
-    'com/amazonaws/aws-lambda-java-events/1.3.0/aws-lambda-java-events-1.3.0.jar',
-    'com/amazonaws/aws-java-sdk-kinesis/1.11.86/aws-java-sdk-kinesis-1.11.86.jar',
-    'com/fasterxml/jackson/core/jackson-databind/2.6.6/jackson-databind-2.6.6.jar',
-    'com/fasterxml/jackson/core/jackson-core/2.6.6/jackson-core-2.6.6.jar',
-    'com/fasterxml/jackson/core/jackson-annotations/2.6.0/jackson-annotations-2.6.0.jar',
-    'commons-codec/commons-codec/1.9/commons-codec-1.9.jar',
-    'commons-io/commons-io/2.5/commons-io-2.5.jar',
-    'org/apache/commons/commons-lang3/3.5/commons-lang3-3.5.jar'
-]
 
 # IP address of Docker bridge
 DOCKER_BRIDGE_IP = '172.17.0.1'
