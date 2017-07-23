@@ -11,7 +11,7 @@ from requests.models import Response, Request
 from localstack.constants import *
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import timestamp, TIMESTAMP_FORMAT_MILLIS
+from localstack.utils.common import timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
 
 # mappings for S3 bucket notifications
 S3_NOTIFICATIONS = {}
@@ -264,3 +264,18 @@ def update_s3(method, path, data, headers, response=None, return_forward_info=Fa
         parsed = urlparse.urlparse(path)
         bucket_name = parsed.path.split('/')[0]
         append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
+
+        # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
+        # https://github.com/jserver/mock-s3/pull/9/files
+        # https://github.com/localstack/localstack/issues/183
+        response_content_str = None
+        try:
+            response_content_str = to_str(response._content)
+        except Exception as e:
+            pass
+        if response_content_str and response_content_str.startswith('<'):
+            is_bytes = isinstance(response._content, six.binary_type)
+            response._content = re.sub(r'>\n\s*<', '><', response_content_str, flags=re.MULTILINE)
+            if is_bytes:
+                response._content = to_bytes(response._content)
+            response.headers['content-length'] = len(response._content)
