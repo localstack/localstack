@@ -40,7 +40,7 @@ install:
 script:
   - set -e # fail fast
   - DEBUG=1 LAMBDA_EXECUTOR=docker make test
-  - DEBUG=1 LAMBDA_EXECUTOR=local USE_SSL=1 make test
+  - LAMBDA_EXECUTOR=local USE_SSL=1 make test
   - make docker-build
   - make docker-push-master
 

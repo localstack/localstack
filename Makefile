@@ -79,7 +79,7 @@ test:              ## Run automated tests
 		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' .)
 
 test-java:         ## Run tests for Java/JUnit compatibility
-	cd localstack/ext/java; mvn test && USE_SSL=1 mvn test
+	cd localstack/ext/java; mvn -q test && USE_SSL=1 mvn -q test
 
 test-java-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test-java" make docker-run
