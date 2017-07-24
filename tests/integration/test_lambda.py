@@ -12,11 +12,14 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py')
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'ext', 'java', 'target',
-    'localstack-utils-0.1.1-tests.jar')
+    'localstack-utils-tests.jar')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
+
+TEST_LAMBDA_JAR_URL = ('https://repo.maven.apache.org/maven2/cloud/localstack/' +
+    'localstack-utils/0.1.1/localstack-utils-0.1.1-tests.jar')
 
 TEST_LAMBDA_LIBS = ['localstack', 'requests', 'psutil']
 
@@ -69,6 +72,9 @@ def test_lambda_runtimes():
 
     # deploy and invoke lambda - Java
     if not use_docker():
+        if not os.path.exists(TEST_LAMBDA_JAVA):
+            mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
+            download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
         zip_file = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
         response = testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=zip_file,
             runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaHandler')

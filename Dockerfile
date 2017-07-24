@@ -28,6 +28,7 @@ ADD bin/localstack bin/localstack
 # fix some permissions and create local user
 RUN mkdir -p /.npm && \
     mkdir -p localstack/infra/elasticsearch/data && \
+    mkdir -p localstack/infra/elasticsearch/logs && \
     chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm && \
@@ -46,11 +47,6 @@ ENV AWS_ACCESS_KEY_ID=foobar \
     MAVEN_CONFIG=/opt/code/localstack \
     USER=localstack
 
-# run tests (to verify the build before pushing the image)
-ADD tests/ tests/
-RUN make test
-RUN make test-java
-
 # expose service & web dashboard ports
 EXPOSE 4567-4582 8080
 
@@ -58,4 +54,8 @@ EXPOSE 4567-4582 8080
 ADD bin/supervisord.conf /etc/supervisord.conf
 
 # define command at startup
-ENTRYPOINT ["/usr/bin/supervisord"]
+ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+
+# run tests (to verify the build before pushing the image)
+ADD tests/ tests/
+RUN make test

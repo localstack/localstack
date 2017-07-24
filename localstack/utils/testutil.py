@@ -37,6 +37,7 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
             'StreamEnabled': True,
             'StreamViewType': stream_view_type
         }
+    table = None
     try:
         table = dynamodb.create_table(TableName=table_name, KeySchema=key_schema,
             AttributeDefinitions=attr_defs, ProvisionedThroughput={

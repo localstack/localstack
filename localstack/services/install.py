@@ -5,9 +5,9 @@ import sys
 import glob
 import shutil
 import logging
-from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL
 from localstack.config import *
-from localstack.utils.common import download, parallelize, run, mkdir
+from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL
+from localstack.utils.common import download, parallelize, run, mkdir, save_file
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -27,6 +27,27 @@ URL_LOCALSTACK_JAR = ('https://github.com/localstack/localstack/raw/mvn/release/
 
 # list of additional pip packages to install
 EXTENDED_PIP_LIBS = ['amazon-kclpy==1.4.5']
+
+# local maven repository path
+M2_HOME = os.path.expanduser('~/.m2')
+
+# hack required for Docker because our base image uses $HOME/.m2 as a volume (see Dockerfile)
+# TODO still needed?
+if '/root/.m2_persistent' in os.environ.get('MAVEN_OPTS', ''):
+    M2_HOME = '/root/.m2_persistent'
+
+# TODO: temporary hack! Remove all hardcoded paths (and move to lamb-ci Docker for Java once it's available)
+JAR_DEPENDENCIES = [
+    'com/amazonaws/aws-lambda-java-core/1.1.0/aws-lambda-java-core-1.1.0.jar',
+    'com/amazonaws/aws-lambda-java-events/1.3.0/aws-lambda-java-events-1.3.0.jar',
+    'com/amazonaws/aws-java-sdk-kinesis/1.11.86/aws-java-sdk-kinesis-1.11.86.jar',
+    'com/fasterxml/jackson/core/jackson-databind/2.6.6/jackson-databind-2.6.6.jar',
+    'com/fasterxml/jackson/core/jackson-core/2.6.6/jackson-core-2.6.6.jar',
+    'com/fasterxml/jackson/core/jackson-annotations/2.6.0/jackson-annotations-2.6.0.jar',
+    'commons-codec/commons-codec/1.9/commons-codec-1.9.jar',
+    'commons-io/commons-io/2.5/commons-io-2.5.jar',
+    'org/apache/commons/commons-lang3/3.5/commons-lang3-3.5.jar'
+]
 
 # set up logger
 LOGGER = logging.getLogger(os.path.basename(__file__))
@@ -68,15 +89,19 @@ def install_dynamodb_local():
             download(DYNAMODB_JAR_URL, TMP_ARCHIVE_DDB)
         cmd = 'cd %s && cp %s ddb.zip && unzip -q ddb.zip && rm ddb.zip'
         run(cmd % (INSTALL_DIR_DDB, TMP_ARCHIVE_DDB))
-        # fix for Alpine, otherwise DynamoDBLocal fails with:
-        # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
-        if is_alpine():
+    # fix for Alpine, otherwise DynamoDBLocal fails with:
+    # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
+    if is_alpine():
+        ddb_libs_dir = '%s/DynamoDBLocal_lib' % INSTALL_DIR_DDB
+        patched_marker = '%s/alpine_fix_applied' % ddb_libs_dir
+        if not os.path.exists(patched_marker):
             patched_lib = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
                 'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/libsqlite4java-linux-amd64.so')
             patched_jar = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
                 'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/sqlite4java.jar')
-            run("curl -L -o %s/DynamoDBLocal_lib/libsqlite4java-linux-amd64.so '%s'" % (INSTALL_DIR_DDB, patched_lib))
-            run("curl -L -o %s/DynamoDBLocal_lib/sqlite4java.jar '%s'" % (INSTALL_DIR_DDB, patched_jar))
+            run("curl -L -o %s/libsqlite4java-linux-amd64.so '%s'" % (ddb_libs_dir, patched_lib))
+            run("curl -L -o %s/sqlite4java.jar '%s'" % (ddb_libs_dir, patched_jar))
+            save_file(patched_marker, '')
 
 
 def install_amazon_kinesis_libs():
@@ -107,6 +132,15 @@ def install_amazon_kinesis_libs():
         run('cd "%s"; mvn -DskipTests package' % (ext_java_dir))
 
 
+def install_lambda_java_libs():
+    for jar in JAR_DEPENDENCIES:
+        jar_path = '%s/repository/%s' % (M2_HOME, jar)
+        if not os.path.exists(jar_path):
+            jar_url = ('http://central.maven.org/maven2/%s' % jar)
+            mkdir(os.path.dirname(jar_path))
+            download(jar_url, jar_path)
+
+
 def install_component(name):
     if name == 'kinesis':
         install_kinesalite()
@@ -119,6 +153,7 @@ def install_component(name):
 def install_components(names):
     parallelize(install_component, names)
     install_amazon_kinesis_libs()
+    install_lambda_java_libs()
 
 
 def install_all_components():

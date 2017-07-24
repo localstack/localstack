@@ -42,11 +42,6 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.5</version>
         </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.5</version>
-        </dependency>
 
         <dependency>
             <groupId>org.ow2.proactive</groupId>
@@ -95,12 +90,6 @@
         </dependency>
 
         <!-- test dependencies -->
-        <dependency>
-            <groupId>javax.jms</groupId>
-            <artifactId>jms-api</artifactId>
-            <version>1.1-rev-1</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>amazon-sqs-java-messaging-lib</artifactId>
