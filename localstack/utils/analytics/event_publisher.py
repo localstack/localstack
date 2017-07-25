@@ -45,34 +45,55 @@ class AnalyticsEvent(JsonObject):
         return self.p
 
 
-def get_local_config_file():
-    file_name = '.localstack'
-    home_dir = expanduser("~")
-    for folder in (home_dir, TMP_FOLDER):
-        config_file = os.path.join(folder, file_name)
-        if os.path.exists(config_file):
-            return config_file
-        try:
-            save_file(config_file, '{}')
-            return config_file
-        except Exception as e:
-            pass
+def get_or_create_file(config_file):
+    if os.path.exists(config_file):
+        return config_file
+    try:
+        save_file(config_file, '{}')
+        return config_file
+    except Exception as e:
+        pass
+
+
+def get_config_file_homedir():
+    return get_or_create_file(os.path.join(expanduser("~"), '.localstack'))
+
+
+def get_config_file_tempdir():
+    return get_or_create_file(os.path.join(TMP_FOLDER, '.localstack'))
 
 
 def get_machine_id():
     global MACHINE_ID
     if MACHINE_ID:
         return MACHINE_ID
-    config_file = get_local_config_file()
-    if not config_file:
-        # if we can neither find NOR create the config file, fall back to process id
+
+    # determine MACHINE_ID from config files
+    configs_map = {}
+    config_file_tmp = get_config_file_tempdir()
+    config_file_home = get_config_file_homedir()
+    for config_file in (config_file_home, config_file_tmp):
+        if config_file:
+            local_configs = load_file(config_file)
+            local_configs = json.loads(to_str(local_configs))
+            configs_map[config_file] = local_configs
+            if 'machine_id' in local_configs:
+                MACHINE_ID = local_configs['machine_id']
+                break
+
+    # if we can neither find NOR create the config files, fall back to process id
+    if not configs_map:
         return PROCESS_ID
-    local_configs = load_file(config_file)
-    local_configs = json.loads(to_str(local_configs))
-    if 'machine_id' not in local_configs:
-        local_configs['machine_id'] = short_uid()
-        save_file(config_file, json.dumps(local_configs))
-    MACHINE_ID = local_configs['machine_id']
+
+    # assign default id if empty
+    if not MACHINE_ID:
+        MACHINE_ID = short_uid()
+
+    # update MACHINE_ID in all config files
+    for config_file, configs in configs_map.items():
+        configs['machine_id'] = MACHINE_ID
+        save_file(config_file, json.dumps(configs))
+
     return MACHINE_ID
 
 
