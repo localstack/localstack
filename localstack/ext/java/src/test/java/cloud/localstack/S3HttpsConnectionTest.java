@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
@@ -36,7 +37,9 @@ public class S3HttpsConnectionTest {
 
 		AmazonS3 amazonS3Client = AmazonS3ClientBuilder.standard()
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
-                        LocalstackTestRunner.getEndpointS3(), LocalstackTestRunner.getDefaultRegion()))
+                        LocalstackTestRunner.getEndpointS3(),
+                        LocalstackTestRunner.getDefaultRegion()))
+		        .withCredentials(TestUtils.getCredentialsProvider())
 		        .withChunkedEncodingDisabled(true)
 		        .withPathStyleAccessEnabled(true).build();
 		InputStream is = new ByteArrayInputStream("test file content".getBytes());
