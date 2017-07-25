@@ -1,6 +1,7 @@
 import json
 import random
 import logging
+from binascii import crc32
 from requests.models import Response
 from localstack import config
 from localstack.utils.aws import aws_stack
@@ -22,7 +23,7 @@ LOGGER = logging.getLogger(__name__)
 def update_dynamodb(method, path, data, headers, response=None, return_forward_info=False):
     if return_forward_info:
         if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
-            return dynamodb_error_response(data)
+            return error_response_throughput()
         return True
 
     # update table definitions
@@ -67,6 +68,8 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
                 put_request = request.get('PutRequest')
                 if put_request:
                     keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
+                    if isinstance(keys, Response):
+                        return keys
                     new_record = clone(record)
                     new_record['eventName'] = 'INSERT'
                     new_record['dynamodb']['Keys'] = keys
@@ -76,8 +79,23 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
     elif action == '%s.PutItem' % ACTION_PREFIX:
         record['eventName'] = 'INSERT'
         keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
+        if isinstance(keys, Response):
+            return keys
         record['dynamodb']['Keys'] = keys
         record['dynamodb']['NewImage'] = data['Item']
+    elif action == '%s.GetItem' % ACTION_PREFIX:
+        if response.status_code == 200:
+            content = json.loads(to_str(response.content))
+            # make sure we append 'ConsumedCapacity', which is properly
+            # returned by dynalite, but not by AWS's DynamoDBLocal
+            if 'ConsumedCapacity' not in content and data.get('ReturnConsumedCapacity') in ('TOTAL', 'INDEXES'):
+                content['ConsumedCapacity'] = {
+                    'CapacityUnits': 0.5,  # TODO hardcoded
+                    'TableName': data['TableName']
+                }
+                response._content = json.dumps(content)
+                response.headers['content-length'] = len(response.content)
+                response.headers['x-amz-crc32'] = calculate_crc32(response)
     elif action == '%s.DeleteItem' % ACTION_PREFIX:
         record['eventName'] = 'REMOVE'
         record['dynamodb']['Keys'] = data['Key']
@@ -97,6 +115,10 @@ def update_dynamodb(method, path, data, headers, response=None, return_forward_i
         record['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
     forward_to_lambda(records)
     forward_to_ddb_stream(records)
+
+
+def calculate_crc32(response):
+    return crc32(to_bytes(response.content)) & 0xffffffff
 
 
 def create_dynamodb_stream(data):
@@ -131,17 +153,32 @@ def dynamodb_extract_keys(item, table_name):
         return None
     for key in TABLE_DEFINITIONS[table_name]['KeySchema']:
         attr_name = key['AttributeName']
+        if attr_name not in item:
+            return error_response(error_type='ValidationException',
+                message='One of the required keys was not given a value')
         result[attr_name] = item[attr_name]
     return result
 
 
-def dynamodb_error_response(data):
-    error_response = Response()
-    error_response.status_code = 400
+def error_response(message=None, error_type=None, code=400):
+    if not message:
+        message = 'Unknown error'
+    if not error_type:
+        error_type = 'UnknownError'
+    if 'com.amazonaws.dynamodb' not in error_type:
+        error_type = 'com.amazonaws.dynamodb.v20120810#%s' % error_type
+    response = Response()
+    response.status_code = code
     content = {
-        'message': ('The level of configured provisioned throughput for the table was exceeded. ' +
-            'Consider increasing your provisioning level with the UpdateTable API'),
-        '__type': 'com.amazonaws.dynamodb.v20120810#ProvisionedThroughputExceededException'
+        'message': message,
+        '__type': error_type
     }
-    error_response._content = json.dumps(content)
-    return error_response
+    response._content = json.dumps(content)
+    return response
+
+
+def error_response_throughput():
+    message = ('The level of configured provisioned throughput for the table was exceeded. ' +
+            'Consider increasing your provisioning level with the UpdateTable API')
+    error_type = 'ProvisionedThroughputExceededException'
+    return error_response(message, error_type)
