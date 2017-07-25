@@ -60,13 +60,14 @@ def test_bucket_notifications():
 
     # create notification on bucket
     queue_url = queue_info['QueueUrl']
+    queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_FOR_S3)
     s3_client.put_bucket_notification_configuration(
         Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
         NotificationConfiguration={
             'QueueConfigurations': [
                 {
                     'Id': 'id123456',
-                    'QueueArn': queue_url,
+                    'QueueArn': queue_arn,
                     'Events': ['s3:ObjectCreated:*', 's3:ObjectRemoved:Delete']
                 }
             ]
