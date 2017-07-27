@@ -23,7 +23,7 @@ from flask import Flask, Response, jsonify, request, make_response
 from localstack import config
 from localstack.constants import *
 from localstack.services.generic_proxy import GenericProxy
-from localstack.services.install import M2_HOME, JAR_DEPENDENCIES
+from localstack.services.install import M2_HOME, JAR_DEPENDENCIES, INSTALL_PATH_LOCALSTACK_JAR
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -34,9 +34,8 @@ PATH_ROOT = '/2015-03-31'
 ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 EVENT_FILE_PATTERN = '%s/lambda.event.*.json' % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
-LAMBDA_EXECUTOR_JAR = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack',
-    'infra', 'localstack-utils.jar')
-LAMBDA_EXECUTOR_CLASS = 'com.atlassian.localstack.LambdaExecutor'
+LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_JAR
+LAMBDA_EXECUTOR_CLASS = 'cloud.localstack.LambdaExecutor'
 
 LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
 LAMBDA_RUNTIME_NODEJS = 'nodejs'
