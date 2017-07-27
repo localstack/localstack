@@ -22,8 +22,8 @@ TMP_ARCHIVE_ES = os.path.join(tempfile.gettempdir(), 'localstack.es.zip')
 TMP_ARCHIVE_DDB = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
 TMP_ARCHIVE_STS = os.path.join(tempfile.gettempdir(), 'aws-java-sdk-sts.jar')
 URL_STS_JAR = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
-URL_LOCALSTACK_JAR = ('https://github.com/localstack/localstack/raw/mvn/release/' +
-    'com/atlassian/localstack-utils/1.0-SNAPSHOT/localstack-utils-1.0-SNAPSHOT.jar')
+URL_LOCALSTACK_JAR = ('http://central.maven.org/maven2/' +
+    'cloud/localstack/localstack-utils/0.1.2/localstack-utils-0.1.2.jar')
 
 # list of additional pip packages to install
 EXTENDED_PIP_LIBS = ['amazon-kclpy==1.4.5']
@@ -111,9 +111,6 @@ def install_amazon_kinesis_libs():
         if not os.path.exists(TMP_ARCHIVE_STS):
             download(URL_STS_JAR, TMP_ARCHIVE_STS)
         shutil.copy(TMP_ARCHIVE_STS, INSTALL_DIR_KCL)
-    # install LocalStack JAR file
-    if not os.path.exists(INSTALL_PATH_LOCALSTACK_JAR):
-        download(URL_LOCALSTACK_JAR, INSTALL_PATH_LOCALSTACK_JAR)
     # install extended libs
     try:
         from amazon_kclpy import kcl
@@ -127,6 +124,7 @@ def install_amazon_kinesis_libs():
     class_files = '%s/utils/kinesis/java/com/atlassian/*.class' % ROOT_PATH
     if not glob.glob(class_files):
         run('javac -cp "%s" %s' % (classpath, java_files))
+    # TODO needed?
     ext_java_dir = '%s/ext/java' % ROOT_PATH
     if not glob.glob('%s/target/*.jar' % ext_java_dir):
         run('cd "%s"; mvn -DskipTests package' % (ext_java_dir))
@@ -139,6 +137,9 @@ def install_lambda_java_libs():
             jar_url = ('http://central.maven.org/maven2/%s' % jar)
             mkdir(os.path.dirname(jar_path))
             download(jar_url, jar_path)
+    # install LocalStack JAR file
+    if not os.path.exists(INSTALL_PATH_LOCALSTACK_JAR):
+        download(URL_LOCALSTACK_JAR, INSTALL_PATH_LOCALSTACK_JAR)
 
 
 def install_component(name):
