@@ -57,14 +57,21 @@ if __name__ == "__main__":
             for env_var in config.CONFIG_ENV_VARS:
                 value = os.environ.get(env_var, None)
                 if value is not None:
-                    env_str += '-e %s=%s ' % (env_var, value)
+                    env_str += '-e %s="%s" ' % (env_var, value)
+
+            data_dir_mount = ''
+            data_dir = os.environ.get('DATA_DIR', None)
+            if data_dir is not None:
+                container_data_dir = '/tmp/localstack_data'
+                data_dir_mount = '-v "%s:%s" ' % (data_dir, container_data_dir)
+                env_str += '-e DATA_DIR="%s" ' % container_data_dir
 
             docker_cmd = ('docker run -it %s %s' +
-                '-p 8080:8080 %s ' +
+                '-p 8080:8080 %s %s' +
                 '-v "%s:/tmp/localstack" -v "%s:%s" ' +
                 '-e DOCKER_HOST="unix://%s" ' +
                 '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-                    entrypoint, env_str, port_mappings, config.TMP_FOLDER,
+                    entrypoint, env_str, port_mappings, data_dir_mount, config.TMP_FOLDER,
                     config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
                     config.HOST_TMP_FOLDER, image_name, cmd
                 )
