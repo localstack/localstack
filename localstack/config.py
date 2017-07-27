@@ -50,8 +50,9 @@ if not LAMBDA_EXECUTOR:
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
-CONFIG_ENV_VARS = ('SERVICES', 'DEBUG', 'DATA_DIR', 'HOSTNAME',
-    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY',
+# Note: do *not* include DATA_DIR in this list, as it is treated separately
+CONFIG_ENV_VARS = ('SERVICES', 'DEBUG', 'HOSTNAME', 'LAMBDA_EXECUTOR',
+    'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY',
     'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY')
 
 # create folders
