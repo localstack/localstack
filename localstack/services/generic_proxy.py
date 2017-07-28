@@ -31,6 +31,7 @@ LOGGER = logging.getLogger(__name__)
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle each request in a separate thread."""
+    daemon_threads = True
 
 
 class GenericProxyHandler(BaseHTTPRequestHandler):
