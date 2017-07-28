@@ -253,6 +253,8 @@ builder.withPathStyleAccessEnabled(true);
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.
 (See details here: https://bitbucket.org/atlassian/localstack/issues/40/getting-mounts-failed-on-docker-compose-up)
 
+* If you are deploying within OpenShift, please be aware: the pod must run as root; and the user must have capabilities added to the running pod, in order to allow elsasticsearch to be run as the non-root localstack user.
+
 ## Developing
 
 If you pull the repo in order to extend/modify LocalStack, run this command to install
