@@ -191,7 +191,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
 
 class GenericProxy(FuncThread):
-    def __init__(self, port, forward_host=None, ssl=False, update_listener=None, quiet=False, params={}):
+    def __init__(self, port, forward_host=None, ssl=False, host=None, update_listener=None, quiet=False, params={}):
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
         self.httpd = None
         self.port = port
@@ -202,10 +202,11 @@ class GenericProxy(FuncThread):
         self.server_stopped = False
         # Required to enable 'Connection: keep-alive' for S3 uploads
         self.protocol_version = params.get('protocol_version') or 'HTTP/1.1'
+        self.listen_host = host or ''
 
     def run_cmd(self, params):
         try:
-            self.httpd = ThreadedHTTPServer(("", self.port), GenericProxyHandler)
+            self.httpd = ThreadedHTTPServer((self.listen_host, self.port), GenericProxyHandler)
             if self.ssl:
                 # make sure we have a cert generated
                 combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert()
@@ -233,3 +234,14 @@ class GenericProxy(FuncThread):
             combined_file, cert_file_name, key_file_name = cls.create_ssl_cert()
             return (cert_file_name, key_file_name)
         return None
+
+
+def serve_flask_app(app, port, quiet=True, host=None):
+    if quiet:
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)
+    if not host:
+        host = '0.0.0.0'
+    ssl_context = GenericProxy.get_flask_ssl_context()
+    app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
+    return app

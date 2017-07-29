@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-
 import os
 import json
 import uuid
 import logging
 from flask import Flask, jsonify, request
-from localstack.services.generic_proxy import GenericProxy
+from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 
@@ -107,13 +105,4 @@ def stream_name_from_stream_arn(stream_arn):
 
 
 def serve(port, quiet=True):
-    if quiet:
-        log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)
-    ssl_context = GenericProxy.get_flask_ssl_context()
-    app.run(port=int(port), threaded=True, host='0.0.0.0', ssl_context=ssl_context)
-
-if __name__ == '__main__':
-    port = DEFAULT_PORT_DYNAMODBSTREAMS
-    print("Starting server on port %s" % port)
-    serve(port)
+    generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)

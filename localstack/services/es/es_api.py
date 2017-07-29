@@ -1,12 +1,10 @@
-#!/usr/bin/env python
-
 import os
 import json
 import uuid
 import logging
 from flask import Flask, jsonify, request, make_response
 from requests.models import Response
-from localstack.services.generic_proxy import GenericProxy
+from localstack.services import generic_proxy
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import to_str
 
@@ -89,13 +87,4 @@ def delete_domain(domain_name):
 
 
 def serve(port, quiet=True):
-    if quiet:
-        log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)
-    ssl_context = GenericProxy.get_flask_ssl_context()
-    app.run(port=int(port), threaded=True, host='0.0.0.0', ssl_context=ssl_context)
-
-if __name__ == '__main__':
-    port = DEFAULT_PORT_ES
-    print("Starting server on port %s" % port)
-    serve(port)
+    generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)

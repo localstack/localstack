@@ -168,6 +168,7 @@ def start_lambda(port=PORT_LAMBDA, async=False):
 # HELPER METHODS
 # ---------------
 
+
 def get_service_protocol():
     return 'https' if USE_SSL else 'http'
 
