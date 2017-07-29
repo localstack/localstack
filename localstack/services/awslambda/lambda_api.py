@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import print_function
 
 import os
@@ -22,7 +21,7 @@ from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
 from localstack import config
 from localstack.constants import *
-from localstack.services.generic_proxy import GenericProxy
+from localstack.services import generic_proxy
 from localstack.services.install import M2_HOME, JAR_DEPENDENCIES, INSTALL_PATH_LOCALSTACK_JAR
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
@@ -711,14 +710,4 @@ def delete_event_source_mapping(mapping_uuid):
 
 
 def serve(port, quiet=True):
-    if quiet:
-        log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)
-    ssl_context = GenericProxy.get_flask_ssl_context()
-    app.run(port=int(port), threaded=True, host='0.0.0.0', ssl_context=ssl_context)
-
-
-if __name__ == '__main__':
-    port = DEFAULT_PORT_LAMBDA
-    print("Starting server on port %s" % port)
-    serve(port)
+    generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)

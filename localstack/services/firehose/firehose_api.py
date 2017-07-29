@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from __future__ import print_function
 
 import os
@@ -14,7 +13,7 @@ from datetime import datetime
 from flask import Flask, jsonify, request, make_response
 from localstack.config import TEST_S3_URL
 from localstack.constants import *
-from localstack.services.generic_proxy import GenericProxy
+from localstack.services import generic_proxy
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.aws.aws_stack import *
 from six import iteritems
@@ -165,13 +164,4 @@ def post_request():
 
 
 def serve(port, quiet=True):
-    if quiet:
-        log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)
-    ssl_context = GenericProxy.get_flask_ssl_context()
-    app.run(port=int(port), threaded=True, host='0.0.0.0', ssl_context=ssl_context)
-
-if __name__ == '__main__':
-    port = DEFAULT_PORT_FIREHOSE
-    print("Starting server on port %s" % port)
-    serve(port)
+    generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
