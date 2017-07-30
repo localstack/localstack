@@ -6,6 +6,7 @@ import json
 import traceback
 import logging
 import ssl
+from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
 from six import iteritems, string_types
@@ -32,6 +33,39 @@ LOGGER = logging.getLogger(__name__)
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle each request in a separate thread."""
     daemon_threads = True
+
+
+class ProxyListener(object):
+
+    def forward_request(self, method, path, data, headers):
+        """ This interceptor method is called by the proxy when receiving a new request
+            (*before* forwarding the request to the backend service). It receives details
+            of the incoming request, and returns either of the following results:
+
+            * True if the request should be forwarded to the backend service as-is (default).
+            * An integer (e.g., 200) service code to return directly to the client without
+              calling the backend service.
+            * An instance of requests.models.Response to return directly to the client without
+              calling the backend service.
+            * An instance of requests.models.Request which represents a new/modified request
+              that will be forwarded to the backend service.
+            * Any other value, in which case a 503 Bad Gateway is returned to the client
+              without calling the backend service.
+        """
+        return True
+
+    def return_response(self, method, path, data, headers, response):
+        """ This interceptor method is called by the proxy when returning a response
+            (*after* having forwarded the request and received a response from the backend
+            service). It receives details of the incoming request as well as the response
+            from the backend service, and returns either of the following results:
+
+            * An instance of requests.models.Response to return to the client instead of the
+              actual response returned from the backend service.
+            * Any other value, in which case the response from the backend service is
+              returned to the client.
+        """
+        return None
 
 
 class GenericProxyHandler(BaseHTTPRequestHandler):
@@ -128,8 +162,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             modified_request = None
             # update listener (pre-invocation)
             if self.proxy.update_listener:
-                listener_result = self.proxy.update_listener(method=method, path=path,
-                    data=data, headers=forward_headers, return_forward_info=True)
+                listener_result = self.proxy.update_listener.forward_request(method=method,
+                    path=path, data=data, headers=forward_headers)
                 if isinstance(listener_result, Response):
                     response = listener_result
                 elif isinstance(listener_result, Request):
@@ -151,8 +185,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                         headers=forward_headers)
             # update listener (post-invocation)
             if self.proxy.update_listener:
-                updated_response = self.proxy.update_listener(method=method, path=path,
-                    data=data, headers=forward_headers, response=response)
+                updated_response = self.proxy.update_listener.return_response(method=method,
+                    path=path, data=data, headers=forward_headers, response=response)
                 if isinstance(updated_response, Response):
                     response = updated_response
 
@@ -236,7 +270,9 @@ class GenericProxy(FuncThread):
         return None
 
 
-def serve_flask_app(app, port, quiet=True, host=None):
+def serve_flask_app(app, port, quiet=True, host=None, cors=True):
+    if cors:
+        CORS(app)
     if quiet:
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)

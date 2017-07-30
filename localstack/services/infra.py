@@ -246,11 +246,14 @@ def stop_infra():
     global INFRA_STOPPED
     if INFRA_STOPPED:
         return
+
+    event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
+
     generic_proxy.QUIET = True
     common.cleanup(files=True, quiet=True)
     common.cleanup_resources()
     lambda_api.cleanup()
-    time.sleep(1)
+    time.sleep(2)
     # TODO: optimize this (takes too long currently)
     # check_infra(retries=2, expect_shutdown=True)
     INFRA_STOPPED = True
@@ -306,7 +309,7 @@ def start_infra(async=False, apis=None):
         # load plugins
         load_plugins()
 
-        event_publisher.publish_event(event_publisher.EVENT_START_INFRA)
+        event_publisher.fire_event(event_publisher.EVENT_START_INFRA)
 
         # set up logging
         warnings.filterwarnings('ignore')

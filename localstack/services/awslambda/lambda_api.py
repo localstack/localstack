@@ -25,6 +25,7 @@ from localstack.services import generic_proxy
 from localstack.services.install import M2_HOME, JAR_DEPENDENCIES, INSTALL_PATH_LOCALSTACK_JAR
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
+from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
 
@@ -483,6 +484,8 @@ def create_function():
     try:
         data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
+        event_publisher.fire_event(event_publisher.EVENT_LAMBDA_CREATE_FUNC,
+            payload={'n': event_publisher.get_hash(lambda_name)})
         arn = func_arn(lambda_name)
         if arn in lambda_arn_to_handler:
             return error_response('Function already exist: %s' %
@@ -553,6 +556,9 @@ def delete_function(function):
         lambda_arn_to_handler.pop(arn)
     except KeyError:
         return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
+
+    event_publisher.fire_event(event_publisher.EVENT_LAMBDA_DELETE_FUNC,
+        payload={'n': event_publisher.get_hash(function)})
     lambda_arn_to_cwd.pop(arn, None)
     lambda_arn_to_function.pop(arn, None)
     i = 0

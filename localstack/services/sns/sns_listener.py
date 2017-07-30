@@ -4,9 +4,10 @@ import requests
 import xmltodict
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
-from localstack.services.awslambda import lambda_api
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
+from localstack.services.awslambda import lambda_api
+from localstack.services.generic_proxy import ProxyListener
 
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
@@ -15,8 +16,10 @@ SNS_SUBSCRIPTIONS = {}
 LOGGER = logging.getLogger(__name__)
 
 
-def update_sns(method, path, data, headers, response=None, return_forward_info=False):
-    if return_forward_info:
+class ProxyListenerSNS(ProxyListener):
+
+    def forward_request(self, method, path, data, headers):
+
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(data)
             req_action = req_data['Action'][0]
@@ -82,8 +85,8 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
 
         return True
 
-    else:
-        # This branch is executed by the proxy after we've already received a
+    def return_response(self, method, path, data, headers, response):
+        # This method is executed by the proxy after we've already received a
         # response from the backend, hence we can utilize the "reponse" variable here
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(data)
@@ -101,6 +104,10 @@ def update_sns(method, path, data, headers, response=None, return_forward_info=F
                     'RawMessageDelivery': 'false'
                 }
                 SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+
+
+# instantiate listener
+UPDATE_SNS = ProxyListenerSNS()
 
 
 # ---------------

@@ -8,6 +8,8 @@ from localstack.config import TEST_KINESIS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.services.awslambda import lambda_api
+from localstack.services.kinesis import kinesis_listener
+from localstack.services.generic_proxy import ProxyListener
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -76,8 +78,9 @@ def handle_authorizers(method, path, data, headers):
     return make_response(result)
 
 
-def update_apigateway(method, path, data, headers, response=None, return_forward_info=False):
-    if return_forward_info:
+class ProxyListenerApiGateway(ProxyListener):
+
+    def forward_request(self, method, path, data, headers):
 
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
         if re.match(regex2, path):
@@ -98,7 +101,7 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
 
                     # forward records to target kinesis stream
                     headers = aws_stack.mock_aws_request_headers(service='kinesis')
-                    headers['X-Amz-Target'] = KINESIS_ACTION_PUT_RECORDS
+                    headers['X-Amz-Target'] = kinesis_listener.ACTION_PUT_RECORDS
                     result = common.make_http_request(url=TEST_KINESIS_URL,
                         method='POST', data=new_request, headers=headers)
                     return result
@@ -143,3 +146,7 @@ def update_apigateway(method, path, data, headers, response=None, return_forward
             return handle_authorizers(method, path, data, headers)
 
         return True
+
+
+# instantiate listener
+UPDATE_APIGATEWAY = ProxyListenerApiGateway()

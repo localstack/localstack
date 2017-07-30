@@ -1,12 +1,12 @@
-import sys
-import threading
-import logging
+import os
+from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.services import infra
 from localstack.utils.common import cleanup
 
 
 def setup_package():
     try:
+        os.environ[ENV_INTERNAL_TEST_RUN] = '1'
         infra.start_infra(async=True)
     except Exception as e:
         # make sure to tear down the infrastructure

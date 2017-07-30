@@ -12,6 +12,7 @@ from localstack.constants import *
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
+from localstack.services.generic_proxy import ProxyListener
 
 # mappings for S3 bucket notifications
 S3_NOTIFICATIONS = {}
@@ -191,9 +192,9 @@ def strip_chunk_signatures(data):
     return data_new
 
 
-def update_s3(method, path, data, headers, response=None, return_forward_info=False):
+class ProxyListenerS3(ProxyListener):
 
-    if return_forward_info:
+    def forward_request(self, method, path, data, headers):
 
         modified_data = None
 
@@ -261,29 +262,35 @@ def update_s3(method, path, data, headers, response=None, return_forward_info=Fa
             return Request(data=modified_data, headers=headers, method=method)
         return True
 
-    # get subscribers and send bucket notifications
-    if method in ('PUT', 'DELETE') and '/' in path[1:]:
-        parts = path[1:].split('/', 1)
-        bucket_name = parts[0]
-        object_path = '/%s' % parts[1]
-        send_notifications(method, bucket_name, object_path)
-    # append CORS headers to response
-    if response:
-        parsed = urlparse.urlparse(path)
-        bucket_name = parsed.path.split('/')[0]
-        append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
+    def return_response(self, method, path, data, headers, response):
 
-        # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
-        # https://github.com/jserver/mock-s3/pull/9/files
-        # https://github.com/localstack/localstack/issues/183
-        response_content_str = None
-        try:
-            response_content_str = to_str(response._content)
-        except Exception as e:
-            pass
-        if response_content_str and response_content_str.startswith('<'):
-            is_bytes = isinstance(response._content, six.binary_type)
-            response._content = re.sub(r'>\n\s*<', '><', response_content_str, flags=re.MULTILINE)
-            if is_bytes:
-                response._content = to_bytes(response._content)
-            response.headers['content-length'] = len(response._content)
+        # get subscribers and send bucket notifications
+        if method in ('PUT', 'DELETE') and '/' in path[1:]:
+            parts = path[1:].split('/', 1)
+            bucket_name = parts[0]
+            object_path = '/%s' % parts[1]
+            send_notifications(method, bucket_name, object_path)
+        # append CORS headers to response
+        if response:
+            parsed = urlparse.urlparse(path)
+            bucket_name = parsed.path.split('/')[0]
+            append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
+
+            # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
+            # https://github.com/jserver/mock-s3/pull/9/files
+            # https://github.com/localstack/localstack/issues/183
+            response_content_str = None
+            try:
+                response_content_str = to_str(response._content)
+            except Exception as e:
+                pass
+            if response_content_str and response_content_str.startswith('<'):
+                is_bytes = isinstance(response._content, six.binary_type)
+                response._content = re.sub(r'>\n\s*<', '><', response_content_str, flags=re.MULTILINE)
+                if is_bytes:
+                    response._content = to_bytes(response._content)
+                response.headers['content-length'] = len(response._content)
+
+
+# instantiate listener
+UPDATE_S3 = ProxyListenerS3()
