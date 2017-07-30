@@ -4,7 +4,7 @@ from localstack.config import DEFAULT_REGION, INBOUND_GATEWAY_URL_PATTERN
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 from localstack.utils.common import safe_requests as requests
-from localstack.services.generic_proxy import GenericProxy
+from localstack.services.generic_proxy import GenericProxy, ProxyListener
 
 
 # template used to transform incoming requests at the API Gateway (stream name to be filled in later)
@@ -100,13 +100,15 @@ def test_api_gateway_http_integration():
     backend_url = 'http://localhost:%s%s' % (test_port, API_PATH_HTTP_BACKEND)
 
     # create target HTTP backend
-    def listener(**kwargs):
-        response = Response()
-        response.status_code = 200
-        response._content = json.dumps(kwargs['data']) if kwargs['data'] else '{}'
-        return response
+    class TestListener(ProxyListener):
 
-    proxy = GenericProxy(test_port, update_listener=listener)
+        def forward_request(self, **kwargs):
+            response = Response()
+            response.status_code = 200
+            response._content = json.dumps(kwargs['data']) if kwargs['data'] else '{}'
+            return response
+
+    proxy = GenericProxy(test_port, update_listener=TestListener())
     proxy.start()
 
     # create API Gateway and connect it to the HTTP backend

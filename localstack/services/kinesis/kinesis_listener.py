@@ -1,45 +1,64 @@
 import random
 import json
 from requests.models import Response
-from localstack import constants, config
-from localstack.services.awslambda import lambda_api
+from localstack import config
 from localstack.utils.common import to_str
+from localstack.utils.analytics import event_publisher
+from localstack.services.awslambda import lambda_api
+from localstack.services.generic_proxy import ProxyListener
+
+# action headers
+ACTION_PUT_RECORD = 'Kinesis_20131202.PutRecord'
+ACTION_PUT_RECORDS = 'Kinesis_20131202.PutRecords'
+ACTION_CREATE_STREAM = 'Kinesis_20131202.CreateStream'
+ACTION_DELETE_STREAM = 'Kinesis_20131202.DeleteStream'
 
 
-def update_kinesis(method, path, data, headers, response=None, return_forward_info=False):
-    action = headers['X-Amz-Target'] if 'X-Amz-Target' in headers else None
+class ProxyListenerKinesis(ProxyListener):
 
-    if return_forward_info:
+    def forward_request(self, method, path, data, headers):
+        action = headers.get('X-Amz-Target')
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             return kinesis_error_response(data)
         return True
 
-    records = []
-    if action == constants.KINESIS_ACTION_PUT_RECORD:
-        response_body = json.loads(to_str(response.content))
-        event_record = {
-            'data': data['Data'],
-            'partitionKey': data['PartitionKey'],
-            'sequenceNumber': response_body.get('SequenceNumber')
-        }
-        event_records = [event_record]
-        stream_name = data['StreamName']
-        lambda_api.process_kinesis_records(event_records, stream_name)
-    elif action == constants.KINESIS_ACTION_PUT_RECORDS:
-        event_records = []
-        response_body = json.loads(to_str(response.content))
-        response_records = response_body['Records']
-        records = data['Records']
-        for index in range(0, len(records)):
-            record = records[index]
+    def return_response(self, method, path, data, headers, response):
+        action = headers.get('X-Amz-Target')
+
+        records = []
+        if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):
+            event_type = (event_publisher.EVENT_KINESIS_CREATE_STREAM if action == ACTION_CREATE_STREAM
+                else event_publisher.EVENT_KINESIS_DELETE_STREAM)
+            event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(data.get('StreamName'))})
+        elif action == ACTION_PUT_RECORD:
+            response_body = json.loads(to_str(response.content))
             event_record = {
-                'data': record['Data'],
-                'partitionKey': record['PartitionKey'],
-                'sequenceNumber': response_records[index].get('SequenceNumber')
+                'data': data['Data'],
+                'partitionKey': data['PartitionKey'],
+                'sequenceNumber': response_body.get('SequenceNumber')
             }
-            event_records.append(event_record)
-        stream_name = data['StreamName']
-        lambda_api.process_kinesis_records(event_records, stream_name)
+            event_records = [event_record]
+            stream_name = data['StreamName']
+            lambda_api.process_kinesis_records(event_records, stream_name)
+        elif action == ACTION_PUT_RECORDS:
+            event_records = []
+            response_body = json.loads(to_str(response.content))
+            response_records = response_body['Records']
+            records = data['Records']
+            for index in range(0, len(records)):
+                record = records[index]
+                event_record = {
+                    'data': record['Data'],
+                    'partitionKey': record['PartitionKey'],
+                    'sequenceNumber': response_records[index].get('SequenceNumber')
+                }
+                event_records.append(event_record)
+            stream_name = data['StreamName']
+            lambda_api.process_kinesis_records(event_records, stream_name)
+
+
+# instantiate listener
+UPDATE_KINESIS = ProxyListenerKinesis()
 
 
 def kinesis_error_response(data):

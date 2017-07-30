@@ -4,7 +4,7 @@ import time
 from os.path import expanduser
 from six.moves import queue
 from localstack.config import TMP_FOLDER
-from localstack.constants import API_ENDPOINT
+from localstack.constants import API_ENDPOINT, ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import (JsonObject, to_str,
     timestamp, short_uid, save_file, FuncThread, load_file)
 from localstack.utils.common import safe_requests as requests
@@ -13,11 +13,16 @@ PROCESS_ID = short_uid()
 MACHINE_ID = None
 
 # event type constants
-EVENT_START_INFRA = 'infra.start'
+EVENT_START_INFRA = 'inf.up'
+EVENT_STOP_INFRA = 'inf.dn'
+EVENT_KINESIS_CREATE_STREAM = 'kns.cs'
+EVENT_KINESIS_DELETE_STREAM = 'kns.ds'
+EVENT_LAMBDA_CREATE_FUNC = 'lmb.cf'
+EVENT_LAMBDA_DELETE_FUNC = 'lmb.df'
 
 # sender thread and queue
 SENDER_THREAD = None
-EVENT_QUEUE = queue.PriorityQueue()
+EVENT_QUEUE = queue.Queue()
 
 
 class AnalyticsEvent(JsonObject):
@@ -104,10 +109,10 @@ def get_process_id():
 def poll_and_send_messages(params):
     while True:
         try:
-            message = EVENT_QUEUE.get(block=True, timeout=None)
-            message = str(message)
+            event = EVENT_QUEUE.get(block=True, timeout=None)
+            event = event.to_dict()
             endpoint = '%s/events' % API_ENDPOINT
-            result = requests.post(endpoint, data=message)
+            result = requests.post(endpoint, json=event)
         except Exception as e:
             # silently fail, make collection of usage data as non-intrusive as possible
             time.sleep(1)
@@ -117,15 +122,27 @@ def is_travis():
     return os.environ.get('TRAVIS', '').lower() in ['true', '1']
 
 
-def publish_event(event_type, payload=None):
+def get_hash(name):
+    if not name:
+        return '0'
+    max_hash = 10000000000
+    hashed = hash(name) % max_hash
+    hashed = hex(hashed).replace('0x', '')
+    return hashed
+
+
+def fire_event(event_type, payload=None):
     global SENDER_THREAD
     if not SENDER_THREAD:
         SENDER_THREAD = FuncThread(poll_and_send_messages, {})
         SENDER_THREAD.start()
     if payload is None:
         payload = {}
-    if isinstance(payload, dict) and is_travis():
-        payload['travis'] = True
+    if isinstance(payload, dict):
+        if is_travis():
+            payload['travis'] = True
+        if os.environ.get(ENV_INTERNAL_TEST_RUN):
+            payload['int'] = True
 
     event = AnalyticsEvent(event_type=event_type, payload=payload)
     EVENT_QUEUE.put_nowait(event)

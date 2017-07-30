@@ -20,21 +20,21 @@ def register_localstack_plugins():
         register_plugin(Plugin('s3',
             start=start_s3,
             check=s3_starter.check_s3,
-            listener=s3_listener.update_s3))
+            listener=s3_listener.UPDATE_S3))
         register_plugin(Plugin('sns',
             start=start_sns,
-            listener=sns_listener.update_sns))
+            listener=sns_listener.UPDATE_SNS))
         register_plugin(Plugin('sqs',
             start=start_sqs))
         register_plugin(Plugin('ses',
             start=start_ses))
         register_plugin(Plugin('apigateway',
             start=start_apigateway,
-            listener=apigateway_listener.update_apigateway))
+            listener=apigateway_listener.UPDATE_APIGATEWAY))
         register_plugin(Plugin('dynamodb',
             start=dynamodb_starter.start_dynamodb,
             check=dynamodb_starter.check_dynamodb,
-            listener=dynamodb_listener.update_dynamodb))
+            listener=dynamodb_listener.UPDATE_DYNAMODB))
         register_plugin(Plugin('dynamodbstreams',
             start=start_dynamodbstreams))
         register_plugin(Plugin('firehose',
@@ -44,14 +44,14 @@ def register_localstack_plugins():
         register_plugin(Plugin('kinesis',
             start=kinesis_starter.start_kinesis,
             check=kinesis_starter.check_kinesis,
-            listener=kinesis_listener.update_kinesis))
+            listener=kinesis_listener.UPDATE_KINESIS))
         register_plugin(Plugin('redshift',
             start=start_redshift))
         register_plugin(Plugin('route53',
             start=start_route53))
         register_plugin(Plugin('cloudformation',
             start=start_cloudformation,
-            listener=cloudformation_listener.update_cloudformation))
+            listener=cloudformation_listener.UPDATE_CLOUDFORMATION))
         register_plugin(Plugin('cloudwatch',
             start=start_cloudwatch))
     except Exception as e:
