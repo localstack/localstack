@@ -5,7 +5,7 @@
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.2</version>
+    <version>0.1.3</version>
     <name>localstack-utils</name>
 
     <description>Java utilities for the LocalStack platform.</description>
@@ -105,6 +105,19 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>fatjar</id>
+            <dependencies>
+                <dependency>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk</artifactId>
+                    <version>1.11.86</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
@@ -115,22 +128,10 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                 </configuration>
             </plugin>
-            <!-- <plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.0.0</version>
-                <configuration>
-                    <minimizeJar>true</minimizeJar>
-                    <outputFile>${project.artifactId}-${project.version}-shaded</outputFile>
-                    <finalName>${project.artifactId}-${project.version}-shaded</finalName>
-                    <createDependencyReducedPom>false</createDependencyReducedPom>
-                    <relocations>
-                        <relocation>
-                            <pattern>com.amazonaws</pattern>
-                            <shadedPattern>shaded.com.amazonaws</shadedPattern>
-                        </relocation>
-                    </relocations>
-                </configuration>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -139,7 +140,28 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin> -->
+                <configuration>
+                    <minimizeJar>true</minimizeJar>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                    <shadedClassifierName>fat</shadedClassifierName>
+                    <artifactSet>
+                        <includes>
+                            <include>com.amazonaws:aws-java-sdk-lambda</include>
+                            <include>com.amazonaws:aws-lambda-java-events</include>
+                            <include>com.amazonaws:aws-lambda-java-core</include>
+                            <include>commons-*:*</include>
+                            <include>net.*:*</include>
+                            <include>org.*:*</include>
+                            <include>junit:junit</include>
+                            <include>com.fasterxml.*:*</include>
+                            <include>joda-time:*</include>
+                            <include>com.jayway.*:*</include>
+                            <include>software.*:*</include>
+                        </includes>
+                    </artifactSet>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -170,7 +192,6 @@
                         </goals>
                     </execution>
                 </executions>
-
             </plugin>
             <plugin>
                 <groupId>org.sonatype.plugins</groupId>

@@ -28,7 +28,7 @@ public class LambdaExecutor {
 	public static void main(String[] args) throws Exception {
 		if(args.length < 2) {
 			System.err.println("Usage: java " + LambdaExecutor.class.getSimpleName() +
-					"<lambdaClass> <recordsFilePath>");
+					" <lambdaClass> <recordsFilePath>");
 			System.exit(1);
 		}
 
