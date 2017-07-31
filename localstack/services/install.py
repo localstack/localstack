@@ -17,37 +17,16 @@ INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
 INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
 INSTALL_DIR_KCL = '%s/amazon-kinesis-client' % INSTALL_DIR_INFRA
-INSTALL_PATH_LOCALSTACK_JAR = '%s/localstack-utils.jar' % INSTALL_DIR_INFRA
+INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_INFRA
 TMP_ARCHIVE_ES = os.path.join(tempfile.gettempdir(), 'localstack.es.zip')
 TMP_ARCHIVE_DDB = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
 TMP_ARCHIVE_STS = os.path.join(tempfile.gettempdir(), 'aws-java-sdk-sts.jar')
 URL_STS_JAR = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
-URL_LOCALSTACK_JAR = ('http://central.maven.org/maven2/' +
-    'cloud/localstack/localstack-utils/0.1.2/localstack-utils-0.1.2.jar')
+URL_LOCALSTACK_FAT_JAR = ('http://central.maven.org/maven2/' +
+    'cloud/localstack/localstack-utils/0.1.3/localstack-utils-0.1.3-fat.jar')
 
 # list of additional pip packages to install
 EXTENDED_PIP_LIBS = ['amazon-kclpy==1.4.5']
-
-# local maven repository path
-M2_HOME = os.path.expanduser('~/.m2')
-
-# hack required for Docker because our base image uses $HOME/.m2 as a volume (see Dockerfile)
-# TODO still needed?
-if '/root/.m2_persistent' in os.environ.get('MAVEN_OPTS', ''):
-    M2_HOME = '/root/.m2_persistent'
-
-# TODO: temporary hack! Remove all hardcoded paths (and move to lamb-ci Docker for Java once it's available)
-JAR_DEPENDENCIES = [
-    'com/amazonaws/aws-lambda-java-core/1.1.0/aws-lambda-java-core-1.1.0.jar',
-    'com/amazonaws/aws-lambda-java-events/1.3.0/aws-lambda-java-events-1.3.0.jar',
-    'com/amazonaws/aws-java-sdk-kinesis/1.11.86/aws-java-sdk-kinesis-1.11.86.jar',
-    'com/fasterxml/jackson/core/jackson-databind/2.6.6/jackson-databind-2.6.6.jar',
-    'com/fasterxml/jackson/core/jackson-core/2.6.6/jackson-core-2.6.6.jar',
-    'com/fasterxml/jackson/core/jackson-annotations/2.6.0/jackson-annotations-2.6.0.jar',
-    'commons-codec/commons-codec/1.9/commons-codec-1.9.jar',
-    'commons-io/commons-io/2.5/commons-io-2.5.jar',
-    'org/apache/commons/commons-lang3/3.5/commons-lang3-3.5.jar'
-]
 
 # set up logger
 LOGGER = logging.getLogger(os.path.basename(__file__))
@@ -124,22 +103,12 @@ def install_amazon_kinesis_libs():
     class_files = '%s/utils/kinesis/java/com/atlassian/*.class' % ROOT_PATH
     if not glob.glob(class_files):
         run('javac -cp "%s" %s' % (classpath, java_files))
-    # TODO needed?
-    ext_java_dir = '%s/ext/java' % ROOT_PATH
-    if not glob.glob('%s/target/*.jar' % ext_java_dir):
-        run('cd "%s"; mvn -DskipTests package' % (ext_java_dir))
 
 
 def install_lambda_java_libs():
-    for jar in JAR_DEPENDENCIES:
-        jar_path = '%s/repository/%s' % (M2_HOME, jar)
-        if not os.path.exists(jar_path):
-            jar_url = ('http://central.maven.org/maven2/%s' % jar)
-            mkdir(os.path.dirname(jar_path))
-            download(jar_url, jar_path)
-    # install LocalStack JAR file
-    if not os.path.exists(INSTALL_PATH_LOCALSTACK_JAR):
-        download(URL_LOCALSTACK_JAR, INSTALL_PATH_LOCALSTACK_JAR)
+    # install LocalStack "fat" JAR file (contains all dependencies)
+    if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
+        download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
 
 
 def install_component(name):

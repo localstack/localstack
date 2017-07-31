@@ -22,7 +22,7 @@ from flask import Flask, Response, jsonify, request, make_response
 from localstack import config
 from localstack.constants import *
 from localstack.services import generic_proxy
-from localstack.services.install import M2_HOME, JAR_DEPENDENCIES, INSTALL_PATH_LOCALSTACK_JAR
+from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.analytics import event_publisher
@@ -34,7 +34,7 @@ PATH_ROOT = '/2015-03-31'
 ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 EVENT_FILE_PATTERN = '%s/lambda.event.*.json' % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
-LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_JAR
+LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = 'cloud.localstack.LambdaExecutor'
 
 LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
@@ -430,9 +430,6 @@ def set_function_code(code, lambda_name):
             TMP_FILES.append(event_file)
             class_name = lambda_arn_to_handler[arn].split('::')[0]
             classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
-            for jar in JAR_DEPENDENCIES:
-                jar_path = '%s/repository/%s' % (M2_HOME, jar)
-                classpath += ':%s' % (jar_path)
             cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
             result, log_output = run_lambda_executor(cmd)
             LOG.info('Lambda output: %s' % log_output.replace('\n', '\n> '))

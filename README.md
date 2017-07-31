@@ -295,6 +295,7 @@ localstack web
 
 ## Change Log
 
+* v0.7.3: Extract proxy listeners into (sub-)classes; put java libs into a single "fat" jar; fix issue with non-daemonized threads; refactor code to start flask services
 * v0.7.2: Fix DATA_DIR config when running in Docker; fix Maven dependencies; return 'ConsumedCapacity' from DynamoDB get-item; use Queue ARN instead of URL for S3 bucket notifications
 * v0.7.1: Fix S3 API to GET bucket notifications; release Java artifacts to Maven Central; fix S3 file access from Spark; create DDB stream on UpdateTable; remove AUI dependency, optimize size of Docker image
 * v0.7.0: Support for Kinesis in CloudFormation; extend and integrate Java tests in CI; publish Docker image under new name; update READMEs and license agreements
