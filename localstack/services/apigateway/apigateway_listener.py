@@ -118,7 +118,10 @@ class ProxyListenerApiGateway(ProxyListener):
                     response = Response()
                     parsed_result = json.loads(result)
                     response.status_code = int(parsed_result['statusCode'])
-                    response.headers.update(parsed_result['headers'])
+                    try:
+                        response.headers.update(parsed_result['headers'])
+                    except:
+                        pass
                     response_body = parsed_result['body']
                     response._content = json.dumps(response_body)
                     return response
