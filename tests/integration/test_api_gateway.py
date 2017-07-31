@@ -178,7 +178,7 @@ def test_api_gateway_lambda_proxy_integration():
     assert to_str(result.content) == '{}'
     data = {"data": 123}
     result = requests.post(url, data=json.dumps(data))
-    #assert result.status_code == 200
+    assert result.status_code == 200
     assert json.loads(to_str(result.content)) == data
 
     # clean up
