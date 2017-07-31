@@ -155,7 +155,6 @@ def test_api_gateway_http_integration():
 
 
 def test_api_gateway_lambda_proxy_integration():
-
     # create lambda function
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
         libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
