@@ -75,7 +75,8 @@ public class S3Sample {
         Region usWest2 = Region.getRegion(Regions.US_WEST_2);
         s3.setRegion(usWest2);
         s3.setEndpoint(LocalstackTestRunner.getEndpointS3());
-		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
+		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true)
+				.disableChunkedEncoding().build());
 
         String bucketName = "my-first-s3-bucket-" + UUID.randomUUID();
         String key = "MyObjectKey";
@@ -93,7 +94,9 @@ public class S3Sample {
          * keep your data closer to your applications or users.
          */
         System.out.println("Creating bucket " + bucketName + "\n");
-        s3.createBucket(bucketName);
+        if (!s3.doesBucketExist(bucketName)) {
+            s3.createBucket(bucketName);
+        }
 
         /*
          * List the buckets in your account

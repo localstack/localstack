@@ -2,7 +2,7 @@ import os
 import json
 import uuid
 import logging
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
@@ -50,7 +50,7 @@ def forward_events(records):
 def post_request():
     action = request.headers.get('x-amz-target')
     data = json.loads(to_str(request.data))
-    result = None
+    result = {}
     kinesis = aws_stack.connect_to_service('kinesis')
     if action == '%s.ListStreams' % ACTION_HEADER_PREFIX:
         result = {
@@ -72,6 +72,8 @@ def post_request():
                 stream['KeySchema'] = table_details['Table']['KeySchema']
                 stream['Shards'] = stream_details['StreamDescription']['Shards']
                 break
+        if not result:
+            return error_response('Requested resource not found', error_type='ResourceNotFoundException')
     elif action == '%s.GetShardIterator' % ACTION_HEADER_PREFIX:
         # forward request to Kinesis API
         stream_name = stream_name_from_stream_arn(data['StreamArn'])
@@ -90,6 +92,20 @@ def post_request():
 # -----------------
 # HELPER FUNCTIONS
 # -----------------
+
+def error_response(message=None, error_type=None, code=400):
+    if not message:
+        message = 'Unknown error'
+    if not error_type:
+        error_type = 'UnknownError'
+    if 'com.amazonaws.dynamodb' not in error_type:
+        error_type = 'com.amazonaws.dynamodb.v20120810#%s' % error_type
+    content = {
+        'message': message,
+        '__type': error_type
+    }
+    return make_response(jsonify(content), code)
+
 
 def get_kinesis_stream_name(table_name):
     return DDB_KINESIS_STREAM_NAME_PREFIX + table_name
