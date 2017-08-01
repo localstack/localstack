@@ -8,10 +8,11 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 
 # action headers
-ACTION_PUT_RECORD = 'Kinesis_20131202.PutRecord'
-ACTION_PUT_RECORDS = 'Kinesis_20131202.PutRecords'
-ACTION_CREATE_STREAM = 'Kinesis_20131202.CreateStream'
-ACTION_DELETE_STREAM = 'Kinesis_20131202.DeleteStream'
+ACTION_PREFIX = 'Kinesis_20131202'
+ACTION_PUT_RECORD = '%s.PutRecord' % ACTION_PREFIX
+ACTION_PUT_RECORDS = '%s.PutRecords' % ACTION_PREFIX
+ACTION_CREATE_STREAM = '%s.CreateStream' % ACTION_PREFIX
+ACTION_DELETE_STREAM = '%s.DeleteStream' % ACTION_PREFIX
 
 
 class ProxyListenerKinesis(ProxyListener):
