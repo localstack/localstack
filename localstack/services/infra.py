@@ -124,6 +124,11 @@ def start_sns(port=PORT_SNS, async=False, update_listener=None):
         backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
 
 
+def start_sqs(port=PORT_SQS, async=False, update_listener=None):
+    return start_moto_server('sqs', port, name='SQS', async=async,
+        backend_port=DEFAULT_PORT_SQS_BACKEND, update_listener=update_listener)
+
+
 def start_cloudformation(port=PORT_CLOUDFORMATION, async=False, update_listener=None):
     return start_moto_server('cloudformation', port, name='CloudFormation', async=async,
         backend_port=DEFAULT_PORT_CLOUDFORMATION_BACKEND, update_listener=update_listener)
@@ -135,10 +140,6 @@ def start_cloudwatch(port=PORT_CLOUDWATCH, async=False):
 
 def start_redshift(port=PORT_REDSHIFT, async=False):
     return start_moto_server('redshift', port, name='Redshift', async=async)
-
-
-def start_sqs(port=PORT_SQS, async=False):
-    return start_moto_server('sqs', port, name='SQS', async=async)
 
 
 def start_route53(port=PORT_ROUTE53, async=False):

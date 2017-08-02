@@ -43,7 +43,7 @@ class ProxyListener(object):
             of the incoming request, and returns either of the following results:
 
             * True if the request should be forwarded to the backend service as-is (default).
-            * An integer (e.g., 200) service code to return directly to the client without
+            * An integer (e.g., 200) status code to return directly to the client without
               calling the backend service.
             * An instance of requests.models.Response to return directly to the client without
               calling the backend service.

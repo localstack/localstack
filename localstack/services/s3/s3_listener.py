@@ -12,6 +12,7 @@ from localstack.constants import *
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
+from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
 
 # mappings for S3 bucket notifications
@@ -199,7 +200,7 @@ class ProxyListenerS3(ProxyListener):
         modified_data = None
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
-        # Related isse: https://github.com/atlassian/localstack/issues/98
+        # Related isse: https://github.com/localstack/localstack/issues/98
         # TODO we should evaluate whether to replace moto s3 with scality/S3:
         # https://github.com/scality/S3/issues/237
         if headers.get('x-amz-content-sha256') == 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD':
@@ -264,16 +265,23 @@ class ProxyListenerS3(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
 
+        parsed = urlparse.urlparse(path)
+        # TODO: consider the case of hostname-based (as opposed to path-based) bucket addressing
+        bucket_name = parsed.path.split('/')[1]
+
         # get subscribers and send bucket notifications
         if method in ('PUT', 'DELETE') and '/' in path[1:]:
-            parts = path[1:].split('/', 1)
-            bucket_name = parts[0]
+            parts = parsed.path[1:].split('/', 1)
             object_path = '/%s' % parts[1]
             send_notifications(method, bucket_name, object_path)
+        # for creation/deletion of buckets, publish an event:
+        if method in ('PUT', 'DELETE') and '/' not in path[1:]:
+            event_type = (event_publisher.EVENT_S3_CREATE_BUCKET if method == 'PUT'
+                else event_publisher.EVENT_S3_DELETE_BUCKET)
+            event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(bucket_name)})
+
         # append CORS headers to response
         if response:
-            parsed = urlparse.urlparse(path)
-            bucket_name = parsed.path.split('/')[0]
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
 
             # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
