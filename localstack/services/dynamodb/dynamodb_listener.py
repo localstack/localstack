@@ -6,6 +6,7 @@ from requests.models import Response
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import *
+from localstack.utils.analytics import event_publisher
 from localstack.constants import *
 from localstack.services.awslambda import lambda_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
@@ -106,6 +107,12 @@ class ProxyListenerDynamoDB(ProxyListener):
         elif action == '%s.CreateTable' % ACTION_PREFIX:
             if 'StreamSpecification' in data:
                 create_dynamodb_stream(data)
+            event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
+                payload={'n': event_publisher.get_hash(data['TableName'])})
+            return
+        elif action == '%s.DeleteTable' % ACTION_PREFIX:
+            event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
+                payload={'n': event_publisher.get_hash(data['TableName'])})
             return
         elif action == '%s.UpdateTable' % ACTION_PREFIX:
             if 'StreamSpecification' in data:
