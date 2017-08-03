@@ -119,8 +119,11 @@ class ProxyListenerApiGateway(ProxyListener):
                     parsed_result = json.loads(result)
                     response.status_code = int(parsed_result['statusCode'])
                     response.headers.update(parsed_result.get('headers', {}))
-                    response_body = parsed_result['body']
-                    response._content = json.dumps(response_body)
+                    try:
+                        response_body = parsed_result['body']
+                        response._content = json.dumps(response_body)
+                    except:
+                        pass
                     return response
                 else:
                     msg = 'API Gateway action uri "%s" not yet implemented' % uri
