@@ -187,7 +187,7 @@ If you want to use *LocalStack* in your integration tests (e.g., nosetests), sim
 infrastructure in your test setup method and then clean up everything in your teardown method:
 
 ```
-from localstack.mock import infra
+from localstack.services import infra
 
 def setup():
     infra.start_infra(async=True)
