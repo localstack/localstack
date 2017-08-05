@@ -47,6 +47,11 @@ public class SQSMessagingTest {
         CreateQueueRequest createQueueRequest = new CreateQueueRequest(QUEUE_NAME).withAttributes(attributeMap);
         CreateQueueResult result = client.createQueue(createQueueRequest);
         Assert.assertNotNull(result);
+
+		/* Disable SSL certificate checks for local testing */
+		if (LocalstackTestRunner.useSSL()) {
+			TestUtils.disableSslCertChecking();
+		}
     }
 
     @Test

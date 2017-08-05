@@ -27,8 +27,6 @@ import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 
-import cloud.localstack.LocalstackTestRunner;
-import cloud.localstack.TestUtils;
 import cloud.localstack.sample.S3Sample;
 
 /**
@@ -44,6 +42,10 @@ public class BasicFunctionalityTest {
 		 * https://github.com/mhart/kinesalite/blob/master/README.md#cbor-protocol-issues-with-the-java-sdk
 		 */
 		TestUtils.setEnv("AWS_CBOR_DISABLE", "1");
+		/* Disable SSL certificate checks for local testing */
+		if (LocalstackTestRunner.useSSL()) {
+			TestUtils.disableSslCertChecking();
+		}
 	}
 
 	@Test

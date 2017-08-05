@@ -105,6 +105,7 @@ if __name__ == "__main__":
             t.start()
             time.sleep(2)
             t.process.wait()
+            sys.exit(t.process.returncode)
         else:
             infra.start_infra()
     elif args['web']:
