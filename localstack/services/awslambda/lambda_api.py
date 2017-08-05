@@ -142,14 +142,6 @@ def use_docker():
     return DO_USE_DOCKER
 
 
-def in_docker():
-    """ Returns: True if running in a docker container, else False """
-    if not os.path.exists('/proc/1/cgroup'):
-        return False
-    with open('/proc/1/cgroup', 'rt') as ifh:
-        return 'docker' in ifh.read()
-
-
 def process_apigateway_invocation(func_arn, path, payload, headers={}, path_params={}):
     try:
         lambda_function = lambda_arn_to_function[func_arn]
