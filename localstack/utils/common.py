@@ -218,6 +218,14 @@ def md5(string):
     return m.hexdigest()
 
 
+def in_docker():
+    """ Returns: True if running in a docker container, else False """
+    if not os.path.exists('/proc/1/cgroup'):
+        return False
+    with open('/proc/1/cgroup', 'rt') as ifh:
+        return 'docker' in ifh.read()
+
+
 def is_port_open(port_or_url):
     port = port_or_url
     host = '127.0.0.1'
@@ -390,6 +398,14 @@ def cleanup_tmp_files():
         except Exception as e:
             pass  # file likely doesn't exist, or permission denied
     del TMP_FILES[:]
+
+
+def is_ip_address(addr):
+    try:
+        socket.inet_aton(addr)
+        return True
+    except socket.error:
+        return False
 
 
 def is_zip_file(content):

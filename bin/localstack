@@ -39,14 +39,37 @@ if __name__ == "__main__":
     elif args['start']:
         print('Starting local dev environment. CTRL-C to quit.')
         if args['--docker']:
+            # load plugins before starting the docker container
+            plugin_configs = infra.load_plugins()
+            plugin_run_params = ' '.join([
+                entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
+
             services = os.environ.get('SERVICES', '')
             entrypoint = os.environ.get('ENTRYPOINT', '')
             cmd = os.environ.get('CMD', '')
             image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
             service_ports = config.SERVICE_PORTS
-            max_port = max(4592, max(service_ports.values()))
-            port_mappings = '-p {min_port}-{max_port}:{min_port}-{max_port}'.format(
-                min_port=min(service_ports.values()), max_port=max_port)
+
+            # construct port mappings
+            ports_list = sorted(service_ports.values())
+            start_port = 0
+            last_port = 0
+            port_ranges = []
+            for i in range(0, len(ports_list)):
+                if not start_port:
+                    start_port = ports_list[i]
+                if not last_port:
+                    last_port = ports_list[i]
+                if ports_list[i] > last_port + 1:
+                    port_ranges.append([start_port, last_port])
+                    start_port = ports_list[i]
+                elif i >= len(ports_list) - 1:
+                    port_ranges.append([start_port, ports_list[i]])
+                last_port = ports_list[i]
+            port_mappings = ' '.join(
+                '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
+                if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
+                for entry in port_ranges)
 
             if services:
                 port_mappings = ''
@@ -66,13 +89,13 @@ if __name__ == "__main__":
                 data_dir_mount = '-v "%s:%s" ' % (data_dir, container_data_dir)
                 env_str += '-e DATA_DIR="%s" ' % container_data_dir
 
-            docker_cmd = ('docker run -it %s %s' +
+            docker_cmd = ('docker run -it %s %s %s ' +
                 '-p 8080:8080 %s %s' +
                 '-v "%s:/tmp/localstack" -v "%s:%s" ' +
                 '-e DOCKER_HOST="unix://%s" ' +
                 '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-                    entrypoint, env_str, port_mappings, data_dir_mount, config.TMP_FOLDER,
-                    config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
+                    entrypoint, env_str, plugin_run_params, port_mappings, data_dir_mount,
+                    config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
                     config.HOST_TMP_FOLDER, image_name, cmd
                 )
 

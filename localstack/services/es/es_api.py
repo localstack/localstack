@@ -5,7 +5,7 @@ import logging
 from flask import Flask, jsonify, request, make_response
 from requests.models import Response
 from localstack.services import generic_proxy
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, DEFAULT_REGION
 from localstack.utils.common import to_str
 
 APP_NAME = 'es_api'
@@ -30,7 +30,7 @@ def error_response(error_type, code=400, message='Unknown error.'):
 def get_domain_status(domain_name, deleted=False):
     return {
         "DomainStatus": {
-            "ARN": "arn:aws:es:us-east-1:123456789012:domain/streaming-logs",
+            "ARN": "arn:aws:es:%s:%s:domain/%s" % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),
             "Created": True,
             "Deleted": deleted,
             "DomainId": "%s/%s" % (TEST_AWS_ACCOUNT_ID, domain_name),
