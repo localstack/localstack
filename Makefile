@@ -88,7 +88,7 @@ test-docker:       ## Run automated tests in Docker
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
 
 test-docker-mount:
-	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/tests:/opt/code/localstack/tests" CMD="make test" make docker-run
+	ENTRYPOINT="--entrypoint= -v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/tests:/opt/code/localstack/tests" CMD="make test" make docker-run
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)

@@ -142,14 +142,6 @@ def use_docker():
     return DO_USE_DOCKER
 
 
-def in_docker():
-    """ Returns: True if running in a docker container, else False """
-    if not os.path.exists('/proc/1/cgroup'):
-        return False
-    with open('/proc/1/cgroup', 'rt') as ifh:
-        return 'docker' in ifh.read()
-
-
 def process_apigateway_invocation(func_arn, path, payload, headers={}, path_params={}):
     try:
         lambda_function = lambda_arn_to_function[func_arn]
@@ -239,12 +231,22 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             handler_args = '"%s"' % handler
             entrypoint = ''
 
+            # prepare event body
+            if not event:
+                LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
+                event = {}
+            event_body = json.dumps(event)
+
             # if running a Java Lambda, set up classpath arguments
             if runtime == LAMBDA_RUNTIME_JAVA8:
+                # copy executor jar into temp directory
+                cp_r(LAMBDA_EXECUTOR_JAR, lambda_cwd)
                 # TODO cleanup once we have custom Java Docker image
-                event_file = 'event_file.json'  # TODO
-                handler_args = ("java -cp .:`ls *.jar | tr '\\n' ':'` '%s' '%s' '%s'" %
-                    (LAMBDA_EXECUTOR_CLASS, handler, event_file))
+                taskdir = '/var/task'
+                event_file = 'event_file.json'
+                save_file(os.path.join(lambda_cwd, event_file), event_body)
+                handler_args = ("bash -c 'cd %s; java -cp .:`ls *.jar | tr \"\\n\" \":\"` \"%s\" \"%s\" \"%s\"'" %
+                    (taskdir, LAMBDA_EXECUTOR_CLASS, handler, event_file))
                 entrypoint = ' --entrypoint ""'
 
             if config.LAMBDA_REMOTE_DOCKER:
@@ -268,16 +270,11 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                 ) % (entrypoint, lambda_cwd_on_host, runtime, handler_args)
 
             print(cmd)
-            # prepare event body
-            if event is None or str(event).strip() == '':
-                LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
-                event_body = '{}'
-            else:
-                event_body = json.dumps(event).replace("'", "\\'")
+            event_body_escaped = event_body.replace("'", "\\'")
             # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
             env_vars = {
-                'AWS_LAMBDA_EVENT_BODY': event_body,
-                'HOSTNAME': DOCKER_BRIDGE_IP,
+                'AWS_LAMBDA_EVENT_BODY': event_body_escaped,
+                'HOSTNAME': DOCKER_BRIDGE_IP
             }
             result, log_output = run_lambda_executor(cmd, env_vars)
             LOG.debug('Lambda log output:\n%s' % log_output)
@@ -367,7 +364,7 @@ def set_function_code(code, lambda_name):
 
     def generic_handler(event, context):
         raise Exception(('Unable to find executor for Lambda function "%s". ' +
-            'Note that non-Python Lambdas require LAMBDA_EXECUTOR=docker') % lambda_name)
+            'Note that Node.js Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
 
     lambda_handler = generic_handler
     lambda_cwd = None

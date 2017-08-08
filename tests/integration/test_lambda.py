@@ -71,17 +71,16 @@ def test_lambda_runtimes():
     assert to_str(result_data).strip() == '{}'
 
     # deploy and invoke lambda - Java
-    if not use_docker():
-        if not os.path.exists(TEST_LAMBDA_JAVA):
-            mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
-            download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
-        zip_file = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
-        response = testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaHandler')
-        result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
-        assert result['StatusCode'] == 200
-        result_data = result['Payload'].read()
-        assert to_str(result_data).strip() == '{}'
+    if not os.path.exists(TEST_LAMBDA_JAVA):
+        mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
+        download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
+    zip_file = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
+    response = testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=zip_file,
+        runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaHandler')
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
+    assert result['StatusCode'] == 200
+    result_data = result['Payload'].read()
+    assert to_str(result_data).strip() == '{}'
 
     if use_docker():
         # deploy and invoke lambda - Node.js

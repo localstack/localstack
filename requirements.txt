@@ -14,7 +14,7 @@ flask-cors==3.0.3
 flask_swagger==0.2.12
 jsonpath-rw==1.4.0
 localstack-ext
-moto-ext==1.0.1.5
+moto-ext==1.0.1.7
 nose==1.3.7
 pep8==1.7.0
 psutil==5.2.0

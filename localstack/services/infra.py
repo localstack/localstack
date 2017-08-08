@@ -27,6 +27,9 @@ from localstack.services.generic_proxy import GenericProxy, SERVER_CERT_PEM_FILE
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
+# flag to indicate whether plugins have been loaded
+PLUGINS_LOADED = False
+# flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
 
 # default backend host address
@@ -82,16 +85,20 @@ def load_plugin_from_path(file_path):
         except Exception as e:
             return
         try:
-            register_localstack_plugins()
+            return register_localstack_plugins()
         except Exception as e:
             LOGGER.warning('Unable to load plugins from file %s: %s' % (file_path, e))
 
 
 def load_plugins():
+    global PLUGINS_LOADED
+    if PLUGINS_LOADED not in [False, None]:
+        return
     logging.captureWarnings(True)
     logging.basicConfig(level=logging.WARNING)
 
     loaded_files = []
+    result = []
     for module in pkgutil.iter_modules():
         file_path = None
         if six.PY3 and not isinstance(module, tuple):
@@ -100,8 +107,13 @@ def load_plugins():
             if hasattr(module[0], 'path'):
                 file_path = '%s/%s/plugins.py' % (module[0].path, module[1])
         if file_path and file_path not in loaded_files:
-            load_plugin_from_path(file_path)
+            plugin_config = load_plugin_from_path(file_path)
+            if plugin_config:
+                result.append(plugin_config)
             loaded_files.append(file_path)
+    # set global flag
+    PLUGINS_LOADED = result
+    return PLUGINS_LOADED
 
 
 # -----------------
@@ -124,6 +136,11 @@ def start_sns(port=PORT_SNS, async=False, update_listener=None):
         backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
 
 
+def start_sqs(port=PORT_SQS, async=False, update_listener=None):
+    return start_moto_server('sqs', port, name='SQS', async=async,
+        backend_port=DEFAULT_PORT_SQS_BACKEND, update_listener=update_listener)
+
+
 def start_cloudformation(port=PORT_CLOUDFORMATION, async=False, update_listener=None):
     return start_moto_server('cloudformation', port, name='CloudFormation', async=async,
         backend_port=DEFAULT_PORT_CLOUDFORMATION_BACKEND, update_listener=update_listener)
@@ -135,10 +152,6 @@ def start_cloudwatch(port=PORT_CLOUDWATCH, async=False):
 
 def start_redshift(port=PORT_REDSHIFT, async=False):
     return start_moto_server('redshift', port, name='Redshift', async=async)
-
-
-def start_sqs(port=PORT_SQS, async=False):
-    return start_moto_server('sqs', port, name='SQS', async=async)
 
 
 def start_route53(port=PORT_ROUTE53, async=False):
