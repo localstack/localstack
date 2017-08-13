@@ -1,25 +1,24 @@
 #!/usr/bin/env python
 
 """
-Main script for starting LocalStack components.
+Command line interface (CLI) for LocalStack.
 
 Usage:
-  localstack start [ --docker ]
-  localstack web [ --port=<port> ]
+  localstack <command> [ <args> ... ]
   localstack (-v | --version)
   localstack (-h | --help)
 
+Commands:%s
+
 Options:
-  -h --help         Show this screen
-  -v --version      Show version
-  --docker          Run the infrastructure in a Docker container
-  --port=<port>     Network port for running the Web server
+  -h --help                     Show this screen
+  -v --version                  Show version
+%s
 """
 
 import os
 import sys
-import time
-import subprocess
+import json
 
 PARENT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 if os.path.isdir(os.path.join(PARENT_FOLDER, '.venv')):
@@ -28,87 +27,98 @@ if os.path.isdir(os.path.join(PARENT_FOLDER, '.venv')):
 from docopt import docopt
 from localstack import config, constants
 from localstack.services import infra
-from localstack.constants import DEFAULT_PORT_WEB_UI
-from localstack.utils.common import run, ShellCommandThread
 
-if __name__ == "__main__":
-    args = docopt(__doc__)
+
+def cmd_infra(argv, args):
+    """
+Usage:
+  localstack infra <subcommand> [options]
+
+Commands:
+  infra start         Start the local infrastructure
+
+Options:
+  --docker            Run the infrastructure in a Docker container
+    """
+    if argv[0] == 'start':
+        argv = ['infra', 'start'] + argv[1:]
+        args['<command>'] = 'infra'
+        args['<args>'] = ['start'] + args['<args>']
+    args.update(docopt(cmd_infra.__doc__.strip(), argv=argv))
+    if args['<subcommand>'] == 'start':
+        print('Starting local dev environment. CTRL-C to quit.')
+        if args['--docker']:
+            infra.start_infra_in_docker()
+        else:
+            infra.start_infra()
+
+
+def cmd_web(argv, args):
+    """
+Usage:
+  localstack web <subcommand> [options]
+
+Commands:
+  web start           Start the Web dashboard
+
+Options:
+  --port=<>           Network port for running the Web server (default: 8080)
+    """
+    if len(argv) <= 1 or argv[1] != 'start':
+        argv = ['web', 'start'] + argv[1:]
+        args['<args>'] = ['start'] + args['<args>']
+    args.update(docopt(cmd_web.__doc__.strip(), argv=argv))
+    if args['<subcommand>'] == 'start':
+        import localstack.dashboard.api
+        port = args['--port'] or constants.DEFAULT_PORT_WEB_UI
+        localstack.dashboard.api.serve(port)
+
+
+if __name__ == '__main__':
+
+    # set basic CLI commands
+    config.CLI_COMMANDS['infra'] = {
+        'description': 'Commands to manage the infrastructure',
+        'function': cmd_infra
+    }
+    config.CLI_COMMANDS['start'] = {
+        'description': 'Shorthand to start the infrastructure',
+        'function': cmd_infra
+    }
+    config.CLI_COMMANDS['web'] = {
+        'description': 'Commands to manage the Web dashboard',
+        'function': cmd_web
+    }
+
+    # load CLI plugins
+    infra.load_plugins(scope=infra.PLUGIN_SCOPE_COMMANDS)
+
+    # create final usage string
+    additional_params = []
+    additional_commands = ''
+    for cmd in sorted(config.CLI_COMMANDS.keys()):
+        cmd_details = config.CLI_COMMANDS[cmd]
+        additional_commands += '\n  %s%s%s' % (cmd, (20 - len(cmd)) * ' ', cmd_details['description'])
+        for param in cmd_details.get('parameters', []):
+            additional_params.append(param)
+    additional_params = '\n'.join(additional_params)
+    doc_string = __doc__ % (additional_commands, additional_params)
+
+    args = docopt(doc_string, options_first=True)
+
 
     if args['--version']:
         print(constants.VERSION)
-    elif args['start']:
-        print('Starting local dev environment. CTRL-C to quit.')
-        if args['--docker']:
-            # load plugins before starting the docker container
-            plugin_configs = infra.load_plugins()
-            plugin_run_params = ' '.join([
-                entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
+        sys.exit(0)
 
-            services = os.environ.get('SERVICES', '')
-            entrypoint = os.environ.get('ENTRYPOINT', '')
-            cmd = os.environ.get('CMD', '')
-            image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
-            service_ports = config.SERVICE_PORTS
-
-            # construct port mappings
-            ports_list = sorted(service_ports.values())
-            start_port = 0
-            last_port = 0
-            port_ranges = []
-            for i in range(0, len(ports_list)):
-                if not start_port:
-                    start_port = ports_list[i]
-                if not last_port:
-                    last_port = ports_list[i]
-                if ports_list[i] > last_port + 1:
-                    port_ranges.append([start_port, last_port])
-                    start_port = ports_list[i]
-                elif i >= len(ports_list) - 1:
-                    port_ranges.append([start_port, ports_list[i]])
-                last_port = ports_list[i]
-            port_mappings = ' '.join(
-                '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
-                if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
-                for entry in port_ranges)
-
-            if services:
-                port_mappings = ''
-                for service, port in service_ports.items():
-                    port_mappings += ' -p {port}:{port}'.format(port=port)
-
-            env_str = ''
-            for env_var in config.CONFIG_ENV_VARS:
-                value = os.environ.get(env_var, None)
-                if value is not None:
-                    env_str += '-e %s="%s" ' % (env_var, value)
-
-            data_dir_mount = ''
-            data_dir = os.environ.get('DATA_DIR', None)
-            if data_dir is not None:
-                container_data_dir = '/tmp/localstack_data'
-                data_dir_mount = '-v "%s:%s" ' % (data_dir, container_data_dir)
-                env_str += '-e DATA_DIR="%s" ' % container_data_dir
-
-            docker_cmd = ('docker run -it %s %s %s ' +
-                '-p 8080:8080 %s %s' +
-                '-v "%s:/tmp/localstack" -v "%s:%s" ' +
-                '-e DOCKER_HOST="unix://%s" ' +
-                '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-                    entrypoint, env_str, plugin_run_params, port_mappings, data_dir_mount,
-                    config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
-                    config.HOST_TMP_FOLDER, image_name, cmd
-                )
-
-            run('mkdir -p "{folder}"; chmod -R 777 "{folder}";'.format(folder=config.TMP_FOLDER))
-            print(docker_cmd)
-            t = ShellCommandThread(docker_cmd, outfile=subprocess.PIPE)
-            t.start()
-            time.sleep(2)
-            t.process.wait()
-            sys.exit(t.process.returncode)
-        else:
-            infra.start_infra()
-    elif args['web']:
-        import localstack.dashboard.api
-        port = args['--port'] or DEFAULT_PORT_WEB_UI
-        localstack.dashboard.api.serve(port)
+    # invoke subcommand
+    argv = [args['<command>']] + args['<args>']
+    subcommand = config.CLI_COMMANDS.get(args['<command>'])
+    if subcommand:
+        try:
+            subcommand['function'](argv, args)
+        except Exception as e:
+            print('ERROR: %s' % e)
+    else:
+        print('ERROR: Invalid command "%s"' % args['<command>'])
+        sys.exit(1)

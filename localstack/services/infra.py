@@ -27,8 +27,8 @@ from localstack.services.generic_proxy import GenericProxy, SERVER_CERT_PEM_FILE
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
-# flag to indicate whether plugins have been loaded
-PLUGINS_LOADED = False
+# maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
+PLUGINS_LOADED = {}
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
 
@@ -41,6 +41,9 @@ LOGGER = logging.getLogger(os.path.basename(__file__))
 # map of service plugins, mapping from service name to plugin details
 SERVICE_PLUGINS = {}
 
+# plugin scopes
+PLUGIN_SCOPE_SERVICES = 'services'
+PLUGIN_SCOPE_COMMANDS = 'commands'
 
 # -----------------
 # PLUGIN UTILITIES
@@ -75,24 +78,28 @@ def register_plugin(plugin):
     SERVICE_PLUGINS[plugin.name()] = plugin
 
 
-def load_plugin_from_path(file_path):
+def load_plugin_from_path(file_path, scope=None):
     if os.path.exists(file_path):
         module = re.sub(r'(^|.+/)([^/]+)/plugins.py', r'\2', file_path)
+        method_name = 'register_localstack_plugins'
+        scope = scope or PLUGIN_SCOPE_SERVICES
+        if scope == PLUGIN_SCOPE_COMMANDS:
+            method_name = 'register_localstack_commands'
         try:
             namespace = {}
-            exec('from %s.plugins import register_localstack_plugins' % module, namespace)
-            register_localstack_plugins = namespace['register_localstack_plugins']
+            exec('from %s.plugins import %s' % (module, method_name), namespace)
+            method_to_execute = namespace[method_name]
         except Exception as e:
             return
         try:
-            return register_localstack_plugins()
+            return method_to_execute()
         except Exception as e:
             LOGGER.warning('Unable to load plugins from file %s: %s' % (file_path, e))
 
 
-def load_plugins():
-    global PLUGINS_LOADED
-    if PLUGINS_LOADED not in [False, None]:
+def load_plugins(scope=None):
+    scope = scope or PLUGIN_SCOPE_SERVICES
+    if PLUGINS_LOADED.get(scope, None):
         return
     logging.captureWarnings(True)
     logging.basicConfig(level=logging.WARNING)
@@ -107,13 +114,13 @@ def load_plugins():
             if hasattr(module[0], 'path'):
                 file_path = '%s/%s/plugins.py' % (module[0].path, module[1])
         if file_path and file_path not in loaded_files:
-            plugin_config = load_plugin_from_path(file_path)
+            plugin_config = load_plugin_from_path(file_path, scope=scope)
             if plugin_config:
                 result.append(plugin_config)
             loaded_files.append(file_path)
     # set global flag
-    PLUGINS_LOADED = result
-    return PLUGINS_LOADED
+    PLUGINS_LOADED[scope] = result
+    return result
 
 
 # -----------------
@@ -314,6 +321,87 @@ def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[
 
 
 # -------------
+# DOCKER STARTUP
+# -------------
+
+
+def start_infra_in_docker():
+    # load plugins before starting the docker container
+    plugin_configs = load_plugins()
+    plugin_run_params = ' '.join([
+        entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
+
+    services = os.environ.get('SERVICES', '')
+    entrypoint = os.environ.get('ENTRYPOINT', '')
+    cmd = os.environ.get('CMD', '')
+    image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
+    service_ports = config.SERVICE_PORTS
+
+    # construct port mappings
+    ports_list = sorted(service_ports.values())
+    start_port = 0
+    last_port = 0
+    port_ranges = []
+    for i in range(0, len(ports_list)):
+        if not start_port:
+            start_port = ports_list[i]
+        if not last_port:
+            last_port = ports_list[i]
+        if ports_list[i] > last_port + 1:
+            port_ranges.append([start_port, last_port])
+            start_port = ports_list[i]
+        elif i >= len(ports_list) - 1:
+            port_ranges.append([start_port, ports_list[i]])
+        last_port = ports_list[i]
+    port_mappings = ' '.join(
+        '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
+        if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
+        for entry in port_ranges)
+
+    if services:
+        port_mappings = ''
+        for service, port in service_ports.items():
+            port_mappings += ' -p {port}:{port}'.format(port=port)
+
+    env_str = ''
+    for env_var in config.CONFIG_ENV_VARS:
+        value = os.environ.get(env_var, None)
+        if value is not None:
+            env_str += '-e %s="%s" ' % (env_var, value)
+
+    data_dir_mount = ''
+    data_dir = os.environ.get('DATA_DIR', None)
+    if data_dir is not None:
+        container_data_dir = '/tmp/localstack_data'
+        data_dir_mount = '-v "%s:%s" ' % (data_dir, container_data_dir)
+        env_str += '-e DATA_DIR="%s" ' % container_data_dir
+
+    interactive = '-it ' if not in_ci() else ''
+
+    # append space if parameter is set
+    entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
+    plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
+
+    docker_cmd = ('docker run %s%s%s%s' +
+        '-p 8080:8080 %s %s' +
+        '-v "%s:/tmp/localstack" -v "%s:%s" ' +
+        '-e DOCKER_HOST="unix://%s" ' +
+        '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
+            interactive, entrypoint, env_str, plugin_run_params, port_mappings, data_dir_mount,
+            config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
+            config.HOST_TMP_FOLDER, image_name, cmd
+    )
+
+    run('mkdir -p "{folder}"; chmod -R 777 "{folder}";'.format(folder=config.TMP_FOLDER))
+    print(docker_cmd)
+    t = ShellCommandThread(docker_cmd, outfile=subprocess.PIPE)
+    t.start()
+    time.sleep(2)
+    t.process.wait()
+    sys.exit(t.process.returncode)
+
+
+# -------------
 # MAIN STARTUP
 # -------------
 
@@ -375,7 +463,7 @@ def start_infra(async=False, apis=None):
     except KeyboardInterrupt as e:
         print('Shutdown')
     except Exception as e:
-        print('Error starting infrastructure: %s' % e)
+        print('Error starting infrastructure: %s %s' % (e, traceback.format_exc()))
         sys.stdout.flush()
         raise e
     finally:

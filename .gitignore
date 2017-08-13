@@ -6,7 +6,7 @@
 /node_modules/
 package-lock.json
 /nosetests.xml
-/.venv*/
+/.venv*
 .settings/
 .project
 .classpath

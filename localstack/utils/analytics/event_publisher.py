@@ -1,9 +1,8 @@
 import os
 import json
 import time
-from os.path import expanduser
 from six.moves import queue
-from localstack.config import TMP_FOLDER
+from localstack.config import TMP_FOLDER, CONFIG_FILE_PATH
 from localstack.constants import API_ENDPOINT, ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import (JsonObject, to_str,
     timestamp, short_uid, save_file, FuncThread, load_file)
@@ -67,7 +66,7 @@ def get_or_create_file(config_file):
 
 
 def get_config_file_homedir():
-    return get_or_create_file(os.path.join(expanduser("~"), '.localstack'))
+    return get_or_create_file(CONFIG_FILE_PATH)
 
 
 def get_config_file_tempdir():
