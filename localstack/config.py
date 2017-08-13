@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 from six import iteritems
 from localstack.constants import *
+from os.path import expanduser
 
 # Randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
@@ -55,6 +56,9 @@ CONFIG_ENV_VARS = ('SERVICES', 'DEBUG', 'HOSTNAME', 'LAMBDA_EXECUTOR',
     'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY',
     'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY')
 
+# local config file path in home directory
+CONFIG_FILE_PATH = os.path.join(expanduser("~"), '.localstack')
+
 # create folders
 for folder in [DATA_DIR, TMP_FOLDER]:
     if folder and not os.path.exists(folder):
@@ -64,6 +68,10 @@ for folder in [DATA_DIR, TMP_FOLDER]:
             # this can happen due to a race condition when starting
             # multiple processes in parallel. Should be safe to ignore
             pass
+
+
+# additional CLI commands, can be set by plugins
+CLI_COMMANDS = {}
 
 
 def parse_service_ports():
