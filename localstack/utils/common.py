@@ -336,16 +336,20 @@ def cp_r(src, dst):
 
 def download(url, path):
     """Downloads file at url to the given path"""
-    r = requests.get(url, stream=True)
+    # make sure we're creating a new session here to
+    # enable parallel file downloads during installation!
+    s = requests.Session()
+    r = s.get(url, stream=True)
     try:
         with open(path, 'wb') as f:
             for chunk in r.iter_content(4096):
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
-                    f.flush()
-                    os.fsync(f)
+            f.flush()
+            os.fsync(f)
     finally:
         r.close()
+        s.close()
 
 
 def short_uid():
@@ -593,13 +597,13 @@ class _RequestsSafe(type):
         if not method:
             return method
 
-        def _missing(*args, **kwargs):
+        def _wrapper(*args, **kwargs):
             if 'auth' not in kwargs:
                 kwargs['auth'] = NetrcBypassAuth()
             if not self.verify_ssl and args[0].startswith('https://') and 'verify' not in kwargs:
                 kwargs['verify'] = False
             return method(*args, **kwargs)
-        return _missing
+        return _wrapper
 
 
 # create class-of-a-class
