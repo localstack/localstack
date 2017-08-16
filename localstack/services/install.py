@@ -30,9 +30,6 @@ EXTENDED_PIP_LIBS = ['amazon-kclpy==1.4.5']
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
-# make sure we can see the first-run installation messages.
-# TODO: find better way to configure logging
-LOGGER.setLevel(logging.INFO)
 
 
 def install_elasticsearch():

@@ -43,6 +43,9 @@ mutex_popen = threading.Semaphore(1)
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
 TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
 
+# chunk size for file downloads
+DOWNLOAD_CHUNK_SIZE = 1024 * 1024
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -334,20 +337,27 @@ def cp_r(src, dst):
         shutil.copytree(src, dst)
 
 
-def download(url, path):
+def download(url, path, verify_ssl=True):
     """Downloads file at url to the given path"""
     # make sure we're creating a new session here to
     # enable parallel file downloads during installation!
     s = requests.Session()
-    r = s.get(url, stream=True)
+    r = s.get(url, stream=True, verify=verify_ssl)
+    total = 0
     try:
+        LOGGER.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
         with open(path, 'wb') as f:
-            for chunk in r.iter_content(4096):
+            for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
+                total += len(chunk)
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
+                    LOGGER.debug('Writing %s bytes (total %s) to %s' % (len(chunk), total, path))
+                else:
+                    LOGGER.debug('Empty chunk %s (total %s) from %s' % (chunk, total, url))
             f.flush()
             os.fsync(f)
     finally:
+        LOGGER.debug('Done downloading %s, response code %s' % (url, r.status_code))
         r.close()
         s.close()
 
