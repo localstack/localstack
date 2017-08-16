@@ -28,7 +28,7 @@ coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
 
 init:              ## Initialize the infrastructure, make sure all libs are downloaded
-	$(VENV_RUN); PYTHONPATH=. exec localstack/services/install.py run
+	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py run
 
 infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start)

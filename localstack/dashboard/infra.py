@@ -259,7 +259,7 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     try:
         mkdir(folder)
         if not os.path.isfile(archive):
-            download(loc, archive)
+            download(loc, archive, verify_ssl=False)
         if len(os.listdir(folder)) <= 1:
             run("cd %s && unzip -o %s" % (folder, filename))
     except Exception as e:

@@ -5,7 +5,6 @@ import time
 import signal
 import traceback
 import logging
-import requests
 import json
 import boto3
 import subprocess
@@ -44,6 +43,11 @@ SERVICE_PLUGINS = {}
 # plugin scopes
 PLUGIN_SCOPE_SERVICES = 'services'
 PLUGIN_SCOPE_COMMANDS = 'commands'
+
+# log format strings
+LOG_FORMAT = '%(asctime)s:%(levelname)s:%(name)s: %(message)s'
+LOG_DATE_FORMAT = TIMESTAMP_FORMAT
+
 
 # -----------------
 # PLUGIN UTILITIES
@@ -101,8 +105,8 @@ def load_plugins(scope=None):
     scope = scope or PLUGIN_SCOPE_SERVICES
     if PLUGINS_LOADED.get(scope, None):
         return
-    logging.captureWarnings(True)
-    logging.basicConfig(level=logging.WARNING)
+
+    setup_logging()
 
     loaded_files = []
     result = []
@@ -188,6 +192,18 @@ def start_lambda(port=PORT_LAMBDA, async=False):
 # ---------------
 # HELPER METHODS
 # ---------------
+
+def setup_logging():
+    # determine and set log level
+    log_level = logging.DEBUG if is_debug() else logging.INFO
+    logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+    # disable some logs and warnings
+    warnings.filterwarnings('ignore')
+    logging.captureWarnings(True)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+    logging.getLogger('botocore').setLevel(logging.ERROR)
+    logging.getLogger('elasticsearch').setLevel(logging.ERROR)
 
 
 def get_service_protocol():
@@ -414,12 +430,7 @@ def start_infra(async=False, apis=None):
         event_publisher.fire_event(event_publisher.EVENT_START_INFRA)
 
         # set up logging
-        warnings.filterwarnings('ignore')
-        logging.captureWarnings(True)
-        logging.basicConfig(level=logging.WARNING)
-        logging.getLogger('botocore').setLevel(logging.ERROR)
-        logging.getLogger('elasticsearch').setLevel(logging.ERROR)
-        LOGGER.setLevel(logging.INFO)
+        setup_logging()
 
         if not apis:
             apis = list(config.SERVICE_PORTS.keys())

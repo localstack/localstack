@@ -29,7 +29,7 @@ URL_LOCALSTACK_FAT_JAR = ('http://central.maven.org/maven2/' +
 EXTENDED_PIP_LIBS = ['amazon-kclpy==1.4.5']
 
 # set up logger
-LOGGER = logging.getLogger(os.path.basename(__file__))
+LOGGER = logging.getLogger(__name__)
 
 
 def install_elasticsearch():
@@ -135,5 +135,6 @@ if __name__ == '__main__':
     if len(sys.argv) > 1 and sys.argv[1] == 'run':
         print('Initializing installation.')
         logging.basicConfig(level=logging.INFO)
+        logging.getLogger('requests').setLevel(logging.WARNING)
         install_all_components()
         print('Done.')

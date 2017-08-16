@@ -4,15 +4,16 @@
 Command line interface (CLI) for LocalStack.
 
 Usage:
-  localstack <command> [ <args> ... ]
+  localstack [options] <command> [ <args> ... ]
   localstack (-v | --version)
   localstack (-h | --help)
 
 Commands:%s
 
 Options:
-  -h --help                     Show this screen
-  -v --version                  Show version
+  -d --debug                  Show verbose debug output
+  -h --help                   Show this screen
+  -v --version                Show version
 %s
 """
 
@@ -106,10 +107,12 @@ if __name__ == '__main__':
 
     args = docopt(doc_string, options_first=True)
 
-
     if args['--version']:
         print(constants.VERSION)
         sys.exit(0)
+
+    if args['--debug']:
+        os.environ['DEBUG'] = '1'
 
     # invoke subcommand
     argv = [args['<command>']] + args['<args>']
