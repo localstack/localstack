@@ -255,6 +255,11 @@ builder.withPathStyleAccessEnabled(true);
 
 * If you are deploying within OpenShift, please be aware: the pod must run as `root`, and the user must have capabilities added to the running pod, in order to allow Elasticsearch to be run as the non-root `localstack` user.
 
+* The environment variables `http_proxy` and `https_proxy` are ignored by *LocalStack*. In other
+words, you can use these variables in your application environemt but they will not have an effect
+on how LocalStack services interact with each other (internal requests will go straight via
+localhost, bypassing any proxy configuration).
+
 ## Developing
 
 If you pull the repo in order to extend/modify LocalStack, run this command to install
@@ -274,6 +279,11 @@ The Makefile contains a target to conveniently run the local infrastructure for 
 ```
 make infra
 ```
+
+Check out the
+[developer guide](https://github.com/localstack/localstack/tree/master/doc/developer_guides) which
+contains a few instructions on how to get started with developing (and debugging) features for
+LocalStack.
 
 ## Testing
 
