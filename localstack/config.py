@@ -69,6 +69,10 @@ for folder in [DATA_DIR, TMP_FOLDER]:
             # multiple processes in parallel. Should be safe to ignore
             pass
 
+# unset variables http(s)_proxy, i.e., run internal service calls directly instead of via a proxy
+for var_name in ('http_proxy', 'https_proxy'):
+    if os.environ.get(var_name):
+        os.environ[var_name] = ''
 
 # additional CLI commands, can be set by plugins
 CLI_COMMANDS = {}
