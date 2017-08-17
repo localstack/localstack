@@ -255,10 +255,8 @@ builder.withPathStyleAccessEnabled(true);
 
 * If you are deploying within OpenShift, please be aware: the pod must run as `root`, and the user must have capabilities added to the running pod, in order to allow Elasticsearch to be run as the non-root `localstack` user.
 
-* The environment variables `http_proxy` and `https_proxy` are ignored by *LocalStack*. In other
-words, you can use these variables in your application environemt but they will not have an effect
-on how LocalStack services interact with each other (internal requests will go straight via
-localhost, bypassing any proxy configuration).
+* The environment variable `no_proxy` is rewritten by *LocalStack*.
+(Internal requests will go straight via localhost, bypassing any proxy configuration).
 
 ## Developing
 
