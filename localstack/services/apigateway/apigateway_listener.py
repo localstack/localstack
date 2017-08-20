@@ -20,6 +20,9 @@ PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 # maps API ids to authorizers
 AUTHORIZERS = {}
 
+# request parameters global state
+REQUEST_PARAMETERS = []
+
 
 def make_response(message):
     response = Response()
@@ -82,15 +85,18 @@ class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
 
+        if method == 'PUT' and 'requestParameters' in data:
+            for key in data['requestParameters']:
+                REQUEST_PARAMETERS.append(key.encode('utf-8'))
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
         if re.match(regex2, path):
             search_match = re.search(regex2, path)
             api_id = search_match.group(1)
-            path = '/%s' % search_match.group(3)
+            relative_path = '/%s' % search_match.group(3)
             try:
-                integration = aws_stack.get_apigateway_integration(api_id, method, path)
+                integration = aws_stack.get_apigateway_integration(api_id, method, path='/')
             except Exception as e:
-                msg = ('API Gateway endpoint "%s" for method "%s" not found' % (path, method))
+                msg = ('API Gateway endpoint "%s" for method "%s" not found' % (relative_path, method))
                 LOGGER.warning(msg)
                 return make_error(msg, 404)
             uri = integration.get('uri')
@@ -114,16 +120,31 @@ class ProxyListenerApiGateway(ProxyListener):
                 if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
                     data_str = json.dumps(data) if isinstance(data, dict) else data
-                    result = lambda_api.process_apigateway_invocation(func_arn, path, data_str, headers)
+                    if relative_path == '/':
+                        result = lambda_api.process_apigateway_invocation(
+                            func_arn, relative_path, data_str, headers)
+                    else:
+                        param_list = relative_path[1:].split('/')
+                        path_params = {}
+                        for i, param in enumerate(param_list):
+                            try:
+                                path_params[REQUEST_PARAMETERS[i]] = param
+                            except:
+                                msg = ('API Gateway integration type "%s" for method "%s" not yet implemented' %
+                                    (integration['type'], method))
+                                LOGGER.warning(msg)
+                                return make_error(msg, 404)
+                        result = lambda_api.process_apigateway_invocation(
+                            func_arn, relative_path, data_str, headers, path_params=path_params)
                     response = Response()
                     parsed_result = json.loads(result)
                     response.status_code = int(parsed_result['statusCode'])
                     response.headers.update(parsed_result.get('headers', {}))
-                    try:
-                        response_body = parsed_result['body']
+                    response_body = parsed_result['body']
+                    if response_body is None or response_body == '':
+                        response._content = ''
+                    else:
                         response._content = json.dumps(response_body)
-                    except:
-                        pass
                     return response
                 else:
                     msg = 'API Gateway action uri "%s" not yet implemented' % uri
