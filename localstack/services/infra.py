@@ -298,7 +298,11 @@ def stop_infra():
 
 def check_aws_credentials():
     session = boto3.Session()
-    credentials = session.get_credentials()
+    credentials = None
+    try:
+        credentials = session.get_credentials()
+    except Exception as e:
+        pass
     if not credentials:
         # set temporary dummy credentials
         os.environ['AWS_ACCESS_KEY_ID'] = 'LocalStackDummyAccessKey'
