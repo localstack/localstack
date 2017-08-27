@@ -81,6 +81,20 @@ def handle_authorizers(method, path, data, headers):
     return make_response(result)
 
 
+def tokenize_path(path):
+    return path[1:].split('/')
+
+
+def make_path_params(path_params_table, tokenized_relative_path):    
+    path_params = {}
+    for param_index in path_params_table:
+        try:
+            path_params[path_params_table[param_index]] = tokenized_relative_path[param_index]
+        except:
+            pass
+    return path_params
+
+
 class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
