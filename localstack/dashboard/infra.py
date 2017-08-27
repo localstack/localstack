@@ -261,7 +261,8 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
         if not os.path.isfile(archive):
             download(loc, archive, verify_ssl=False)
         if len(os.listdir(folder)) <= 1:
-            run("cd %s && unzip -o %s" % (folder, filename))
+            zip_path = os.path.join(folder, filename)
+            unzip(zip_path, folder)
     except Exception as e:
         print("WARN: %s" % e)
         rm_rf(archive)

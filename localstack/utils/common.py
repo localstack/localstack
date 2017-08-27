@@ -16,6 +16,7 @@ import decimal
 import logging
 import tempfile
 import requests
+import zipfile
 from io import BytesIO
 from contextlib import closing
 from datetime import datetime
@@ -434,9 +435,18 @@ def is_ip_address(addr):
 
 
 def is_zip_file(content):
-    import zipfile
     stream = BytesIO(content)
     return zipfile.is_zipfile(stream)
+
+
+def unzip(path, target_dir):
+    try:
+        zip_ref = zipfile.ZipFile(path, 'r')
+    except Exception as e:
+        LOGGER.warning('Unable to open zip file: %s: %s' % (path, e))
+        raise e
+    zip_ref.extractall(target_dir)
+    zip_ref.close()
 
 
 def is_jar_archive(content):
