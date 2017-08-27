@@ -21,7 +21,8 @@ PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 AUTHORIZERS = {}
 
 # request parameters global state
-REQUEST_PARAMETERS = []
+# TODO: Redesign to work with multiple REST API's
+REQUEST_PARAMETERS = {}
 
 
 def make_response(message):
