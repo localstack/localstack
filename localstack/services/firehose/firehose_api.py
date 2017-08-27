@@ -15,20 +15,24 @@ from localstack.config import TEST_S3_URL
 from localstack.constants import *
 from localstack.services import generic_proxy
 from localstack.utils.common import short_uid, to_str
+from localstack.utils.aws import aws_responses
 from localstack.utils.aws.aws_stack import *
 from six import iteritems
 
-
 APP_NAME = 'firehose_api'
-
 app = Flask(APP_NAME)
+ACTION_HEADER_PREFIX = 'Firehose_20150804'
 
-delivery_streams = {}
+# logger
+LOG = logging.getLogger(__name__)
+
+# maps stream names to details
+DELIVERY_STREAMS = {}
 
 
 def get_delivery_stream_names():
     names = []
-    for name, stream in iteritems(delivery_streams):
+    for name, stream in iteritems(DELIVERY_STREAMS):
         names.append(stream['DeliveryStreamName'])
     return names
 
@@ -52,7 +56,7 @@ def put_records(stream_name, records):
                 try:
                     s3.Object(bucket, obj_path).put(Body=data)
                 except Exception as e:
-                    print("ERROR: %s" % traceback.format_exc())
+                    LOG.error("Unable to put record to stream: %s %s" % (e, traceback.format_exc()))
                     raise e
 
 
@@ -72,7 +76,7 @@ def update_destination(stream_name, destination_id,
         s3_update=None, elasticsearch_update=None, version_id=None):
     dest = get_destination(stream_name, destination_id)
     if elasticsearch_update:
-        print('WARN: Firehose to Elasticsearch updates not yet implemented!')
+        LOG.warning('Firehose to Elasticsearch updates not yet implemented!')
     if s3_update:
         if 'S3DestinationDescription' not in dest:
             dest['S3DestinationDescription'] = {}
@@ -91,16 +95,23 @@ def create_stream(stream_name, s3_destination=None):
         'DeliveryStreamName': stream_name,
         'Destinations': []
     }
-    delivery_streams[stream_name] = stream
+    DELIVERY_STREAMS[stream_name] = stream
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
     return stream
 
 
+def delete_stream(stream_name):
+    stream = DELIVERY_STREAMS.pop(stream_name, {})
+    if not stream:
+        return error_not_found(stream_name)
+    return {}
+
+
 def get_stream(stream_name):
-    if stream_name not in delivery_streams:
+    if stream_name not in DELIVERY_STREAMS:
         return None
-    return delivery_streams[stream_name]
+    return DELIVERY_STREAMS[stream_name]
 
 
 def bucket_name(bucket_arn):
@@ -111,39 +122,47 @@ def role_arn(stream_name):
     return "arn:aws:iam::%s:role/%s" % (TEST_AWS_ACCOUNT_ID, stream_name)
 
 
+def error_not_found(stream_name):
+    msg = "Firehose %s under account %s not found." % (stream_name, TEST_AWS_ACCOUNT_ID)
+    return error_response(msg, code=400, error_type='ResourceNotFoundException')
+
+
+def error_response(msg, code=500, error_type='InternalFailure'):
+    return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
+
+
 @app.route('/', methods=['POST'])
 def post_request():
     action = request.headers.get('x-amz-target')
     data = json.loads(to_str(request.data))
     response = None
-    if action == 'Firehose_20150804.ListDeliveryStreams':
+    if action == '%s.ListDeliveryStreams' % ACTION_HEADER_PREFIX:
         response = {
             "DeliveryStreamNames": get_delivery_stream_names(),
             "HasMoreDeliveryStreams": False
         }
-    elif action == 'Firehose_20150804.CreateDeliveryStream':
+    elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = create_stream(stream_name, s3_destination=data.get('S3DestinationConfiguration'))
-    elif action == 'Firehose_20150804.DescribeDeliveryStream':
+    elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
+        stream_name = data['DeliveryStreamName']
+        response = delete_stream(stream_name)
+    elif action == '%s.DescribeDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = get_stream(stream_name)
         if not response:
-            response = {
-                "__type": "ResourceNotFoundException",
-                "message": "Firehose %s under account %s not found." % (stream_name, TEST_AWS_ACCOUNT_ID)
-            }
-            return make_response((jsonify(response), 400, {}))
+            return error_not_found(stream_name)
         response = {
             'DeliveryStreamDescription': response
         }
-    elif action == 'Firehose_20150804.PutRecord':
+    elif action == '%s.PutRecord' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         record = data['Record']
         put_record(stream_name, record)
         response = {
             "RecordId": str(uuid.uuid4())
         }
-    elif action == 'Firehose_20150804.PutRecordBatch':
+    elif action == '%s.PutRecordBatch' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         records = data['Records']
         put_records(stream_name, records)
@@ -151,7 +170,7 @@ def post_request():
             "FailedPutCount": 0,
             "RequestResponses": []
         }
-    elif action == 'Firehose_20150804.UpdateDestination':
+    elif action == '%s.UpdateDestination' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         version_id = data['CurrentDeliveryStreamVersionId']
         destination_id = data['DestinationId']
@@ -159,8 +178,12 @@ def post_request():
         update_destination(stream_name=stream_name, destination_id=destination_id,
             s3_update=s3_update, version_id=version_id)
         response = {}
+    else:
+        response = error_response('Unknown action "%s"' % action, code=400, error_type='InvalidAction')
 
-    return jsonify(response)
+    if isinstance(response, dict):
+        response = jsonify(response)
+    return response
 
 
 def serve(port, quiet=True):
