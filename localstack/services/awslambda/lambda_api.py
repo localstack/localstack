@@ -24,7 +24,7 @@ from localstack.constants import *
 from localstack.services import generic_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.common import *
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
@@ -340,11 +340,9 @@ def get_handler_function_from_name(handler_name, runtime=LAMBDA_RUNTIME_PYTHON27
     return handler_name.split('.')[-1]
 
 
-def error_response(msg, code=400, error_type='Exception'):
+def error_response(msg, code=500, error_type='InternalFailure'):
     LOG.warning(msg)
-    result = {'Type': 'User', 'message': msg}
-    headers = {'x-amzn-errortype': error_type}
-    return make_response((jsonify(result), code, headers))
+    return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
 
 
 def run_lambda_executor(cmd, env_vars={}):
@@ -388,7 +386,7 @@ def set_function_code(code, lambda_name):
         zip_file_content = code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
     else:
-        return error_response('No valid Lambda archive specified.')
+        return error_response('No valid Lambda archive specified.', 400)
 
     # save tmp file
     tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
@@ -414,7 +412,7 @@ def set_function_code(code, lambda_name):
         else:
             file_list = run('ls -la %s' % tmp_dir)
             LOG.debug('Lambda archive content:\n%s' % file_list)
-            return error_response('Unable to find handler script in Lambda archive.')
+            return error_response('Unable to find handler script in Lambda archive.', 400, error_type='ValidationError')
 
     # it could be a JAR file (regardless of whether wrapped in a ZIP file or not)
     is_jar = is_jar_archive(zip_file_content)
