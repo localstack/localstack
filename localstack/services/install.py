@@ -25,9 +25,6 @@ URL_STS_JAR = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.
 URL_LOCALSTACK_FAT_JAR = ('http://central.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/0.1.3/localstack-utils-0.1.3-fat.jar')
 
-# list of additional pip packages to install
-EXTENDED_PIP_LIBS = ['amazon-kclpy==1.4.5']
-
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -74,19 +71,13 @@ def install_dynamodb_local():
             save_file(patched_marker, '')
 
 
-def install_amazon_kinesis_libs():
+def install_amazon_kinesis_client_libs():
     # install KCL/STS JAR files
     if not os.path.exists(INSTALL_DIR_KCL):
         mkdir(INSTALL_DIR_KCL)
         if not os.path.exists(TMP_ARCHIVE_STS):
             download(URL_STS_JAR, TMP_ARCHIVE_STS)
         shutil.copy(TMP_ARCHIVE_STS, INSTALL_DIR_KCL)
-    # install extended libs
-    try:
-        from amazon_kclpy import kcl
-    except Exception as e:
-        for lib in EXTENDED_PIP_LIBS:
-            run('pip install %s' % lib)
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
     classpath = kclipy_helper.get_kcl_classpath()
@@ -113,7 +104,6 @@ def install_component(name):
 
 def install_components(names):
     parallelize(install_component, names)
-    install_amazon_kinesis_libs()
     install_lambda_java_libs()
 
 
@@ -152,9 +142,13 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 
 if __name__ == '__main__':
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'run':
-        print('Initializing installation.')
-        logging.basicConfig(level=logging.INFO)
-        logging.getLogger('requests').setLevel(logging.WARNING)
-        install_all_components()
-        print('Done.')
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'libs':
+            print('Initializing installation.')
+            logging.basicConfig(level=logging.INFO)
+            logging.getLogger('requests').setLevel(logging.WARNING)
+            install_all_components()
+            print('Done.')
+        elif sys.argv[1] == 'testlibs':
+            # Install additional libraries for testing
+            install_amazon_kinesis_client_libs()

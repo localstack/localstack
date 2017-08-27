@@ -154,7 +154,7 @@ You can pass the following environment variables to LocalStack:
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
 
-## Accessing the infrastructure via CLI or code 
+## Accessing the infrastructure via CLI or code
 
 You can point your `aws` CLI to use the local infrastructure, for example:
 
@@ -267,7 +267,7 @@ all the dependencies:
 make install
 ```
 
-This will install the required pip dependencies in a local Python virtualenv directory 
+This will install the required pip dependencies in a local Python virtualenv directory
 `.venv` (your global python packages will remain untouched), as well as some node modules
 in `./localstack/node_modules/`. Depending on your system, some pip/npm modules may require
 additional native libs installed.
@@ -303,6 +303,7 @@ localstack web
 
 ## Change Log
 
+* v0.7.5: Fix issue with incomplete parallel downloads; bypass http_proxy for internal requests; use native Python code to unzip archives; download KCL client libs only for testing and not on pip install
 * v0.7.4: Refactor CLI and enable plugins; support unicode names for S3; fix SQS names containing a dot character; execute Java Lambda functions in Docker containers; fix DynamoDB error handling; update docs
 * v0.7.3: Extract proxy listeners into (sub-)classes; put java libs into a single "fat" jar; fix issue with non-daemonized threads; refactor code to start flask services
 * v0.7.2: Fix DATA_DIR config when running in Docker; fix Maven dependencies; return 'ConsumedCapacity' from DynamoDB get-item; use Queue ARN instead of URL for S3 bucket notifications
