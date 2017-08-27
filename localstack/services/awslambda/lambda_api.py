@@ -401,8 +401,7 @@ def set_function_code(code, lambda_name):
     # check if this is a ZIP file
     is_zip = is_zip_file(zip_file_content)
     if is_zip:
-
-        run('cd %s && unzip %s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME))
+        unzip(tmp_file, tmp_dir)
         main_file = '%s/%s' % (tmp_dir, handler_file)
         if not os.path.isfile(main_file):
             # check if this is a zip file that contains a single JAR file
