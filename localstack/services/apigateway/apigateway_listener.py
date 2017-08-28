@@ -10,6 +10,8 @@ from localstack.utils.aws import aws_stack
 from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.generic_proxy import ProxyListener
+import pprint
+from random import randint
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ AUTHORIZERS = {}
 
 # request parameters global state
 # TODO: Redesign to work with multiple REST API's
-REQUEST_PARAMETERS = {}
+REQUEST_PATH_PARAMETERS = {}
 
 
 def make_response(message):
@@ -86,7 +88,7 @@ def tokenize_path(path):
     return path[1:].split('/')
 
 
-def make_path_params(path_params_table, tokenized_relative_path):    
+def make_path_params(path_params_table, tokenized_relative_path):
     path_params = {}
     for param_index in path_params_table:
         try:
@@ -100,20 +102,29 @@ class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
 
+        # TODO: Maybe a better match for this, don't know if this is ever a false positive
         if method == 'PUT' and 'requestParameters' in data:
+            tokenized_put_path = tokenize_path(path)
+            pprint.pprint(tokenized_put_path)
+            rest_api_id = tokenized_put_path[1]
             for key in data['requestParameters']:
-                REQUEST_PARAMETERS.append(key.encode('utf-8'))
+                REQUEST_PATH_PARAMETERS[rest_api_id] = {randint(0, 99): key.encode('utf-8')}
+            pprint.pprint(REQUEST_PATH_PARAMETERS)
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
         if re.match(regex2, path):
             search_match = re.search(regex2, path)
             api_id = search_match.group(1)
             relative_path = '/%s' % search_match.group(3)
             try:
-                integration = aws_stack.get_apigateway_integration(api_id, method, path='/')
+                integration = aws_stack.get_apigateway_integration(api_id, method, path=relative_path)
             except Exception as e:
-                msg = ('API Gateway endpoint "%s" for method "%s" not found' % (relative_path, method))
-                LOGGER.warning(msg)
-                return make_error(msg, 404)
+                try:
+                    integration = aws_stack.get_apigateway_integration(api_id, method, path='/')
+                except Exception as f:
+                    pprint.pprint(f)
+                    msg = ('API Gateway endpoint "%s" for method "%s" not found' % (relative_path, method))
+                    LOGGER.warning(msg)
+                    return make_error(msg, 404)
             uri = integration.get('uri')
             if method == 'POST' and integration['type'] in ['AWS']:
                 if uri.endswith('kinesis:action/PutRecords'):
@@ -139,16 +150,21 @@ class ProxyListenerApiGateway(ProxyListener):
                         result = lambda_api.process_apigateway_invocation(
                             func_arn, relative_path, data_str, headers)
                     else:
-                        param_list = relative_path[1:].split('/')
-                        path_params = {}
-                        for i, param in enumerate(param_list):
-                            try:
-                                path_params[REQUEST_PARAMETERS[i]] = param
-                            except:
-                                msg = ('API Gateway integration type "%s" for method "%s" not yet implemented' %
-                                    (integration['type'], method))
-                                LOGGER.warning(msg)
-                                return make_error(msg, 404)
+                        # param_list = relative_path[1:].split('/')
+                        # path_params = {}
+                        # for i, param in enumerate(param_list):
+                        #     try:
+                        #         path_params[REQUEST_PATH_PARAMETERS[i]] = param
+                        #     except:
+                        #         msg = ('API Gateway integration type "%s" for method "%s" not yet implemented' %
+                        #             (integration['type'], method))
+                        #         LOGGER.warning(msg)
+                        #         return make_error(msg, 404)
+                        pprint.pprint(path)
+                        tokenized_path = tokenize_path(path)
+                        rest_api_id = tokenized_path[1] # TODO: Figure out a better variable name
+                        pprint.pprint(REQUEST_PATH_PARAMETERS)
+                        path_params = make_path_params(REQUEST_PATH_PARAMETERS[rest_api_id], tokenized_path)
                         result = lambda_api.process_apigateway_invocation(
                             func_arn, relative_path, data_str, headers, path_params=path_params)
                     response = Response()
