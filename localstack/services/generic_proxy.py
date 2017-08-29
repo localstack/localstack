@@ -13,8 +13,7 @@ from six import iteritems, string_types
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from localstack.config import DEFAULT_ENCODING, TMP_FOLDER, USE_SSL
-from localstack.utils.common import FuncThread, generate_ssl_cert
-from localstack.utils.compat import bytes_
+from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
 
 QUIET = False
 
@@ -210,7 +209,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
             self.end_headers()
             if response.content and len(response.content):
-                self.wfile.write(bytes_(response.content))
+                self.wfile.write(to_bytes(response.content))
             self.wfile.flush()
         except Exception as e:
             trace = str(traceback.format_exc())
