@@ -43,10 +43,7 @@ RUN mkdir -p /.npm && \
     ln -s `pwd` /tmp/localstack_install_dir
 
 # expose default environment (required for aws-cli to work)
-ENV AWS_ACCESS_KEY_ID=foobar \
-    AWS_SECRET_ACCESS_KEY=foobar \
-    AWS_DEFAULT_REGION=us-east-1 \
-    MAVEN_CONFIG=/opt/code/localstack \
+ENV MAVEN_CONFIG=/opt/code/localstack \
     USER=localstack
 
 # expose service & web dashboard ports
@@ -60,4 +57,7 @@ ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN make test
+RUN AWS_ACCESS_KEY_ID=foobar \
+    AWS_SECRET_ACCESS_KEY=foobar \
+    AWS_DEFAULT_REGION=us-east-1 \
+    make test
