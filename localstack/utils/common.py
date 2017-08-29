@@ -24,7 +24,6 @@ from six.moves.urllib.parse import urlparse
 from six.moves import cStringIO as StringIO
 from six import with_metaclass
 from multiprocessing.dummy import Pool
-from localstack.utils.compat import bytes_
 from localstack.constants import *
 from localstack.config import DEFAULT_ENCODING
 
@@ -218,7 +217,7 @@ def is_string(s, include_unicode=True):
 
 def md5(string):
     m = hashlib.md5()
-    m.update(bytes_(string))
+    m.update(to_bytes(string))
     return m.hexdigest()
 
 
@@ -390,18 +389,18 @@ def load_file(file_path, default=None, mode=None):
     return result
 
 
-def to_str(obj):
-    """ Convert a string/bytes object to a string """
-    if not obj or isinstance(obj, six.string_types):
-        return obj
-    return obj.decode(DEFAULT_ENCODING)
+def to_str(obj, encoding=DEFAULT_ENCODING, errors='strict'):
+    """If ``obj`` is an instance of ``binary_type``, return
+    ``obj.decode(encoding, errors)``, otherwise return ``obj``
+    """
+    return obj.decode(encoding, errors) if isinstance(obj, six.binary_type) else obj
 
 
-def to_bytes(obj):
-    """ Convert a string/bytes object to bytes """
-    if not isinstance(obj, six.string_types):
-        return obj
-    return obj.encode(DEFAULT_ENCODING)
+def to_bytes(obj, encoding=DEFAULT_ENCODING, errors='strict'):
+    """ If ``obj`` is an instance of ``text_type``, return
+    ``obj.encode(encoding, errors)``, otherwise return ``obj``
+    """
+    return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
 
 
 def cleanup(files=True, env=ENV_DEV, quiet=True):
