@@ -7,7 +7,6 @@
     'ngSanitize',
     'angularResizable',
     'tableSort',
-    'angular-aui',
     'ui.layout'
   ]);
 

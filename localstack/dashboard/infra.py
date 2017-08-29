@@ -285,6 +285,8 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     clean_cache(file_pattern=TMP_DOWNLOAD_FILE_PATTERN,
         last_clean_time=last_cache_cleanup_time,
         max_age=TMP_DOWNLOAD_CACHE_MAX_AGE)
+    # TODO: delete only if cache_time is over
+    rm_rf(folder)
 
     return result
 
