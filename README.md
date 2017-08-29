@@ -7,7 +7,7 @@
 
 # LocalStack - A fully functional local AWS cloud stack
 
-![LocalStack](https://i.imgsafe.org/fe38108cd6.png)
+![LocalStack](https://github.com/localstack/localstack/raw/master/localstack/dashboard/web/img/localstack.png)
 
 *LocalStack* provides an easy-to-use test/mocking framework for developing Cloud applications.
 
@@ -363,6 +363,7 @@ For pull requests, please stick to the following guidelines:
 * Follow the existing code style (e.g., indents). A PEP8 code linting target is included in the Makefile.
 * Put a reasonable amount of comments into the code.
 * Separate unrelated changes into multiple pull requests.
+* 1 commit per PR: Please squash/rebase multiple commits into one single commit (to keep the history clean).
 
 Please note that by contributing any code or documentation to this repository (by
 raising pull requests, or otherwise) you explicitly agree to
