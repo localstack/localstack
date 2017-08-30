@@ -12,6 +12,7 @@ from localstack.services.kinesis import kinesis_listener
 from localstack.services.generic_proxy import ProxyListener
 from fuzzywuzzy import process
 from fuzzywuzzy import fuzz
+# import pprint
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -21,10 +22,6 @@ PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 
 # maps API ids to authorizers
 AUTHORIZERS = {}
-
-# request parameters global state
-# TODO: Redesign to work with multiple REST API's
-REQUEST_PATH_PARAMETERS = {}
 
 
 def make_response(message):
@@ -74,7 +71,6 @@ def add_authorizer(path, data):
 
 def handle_authorizers(method, path, data, headers):
     result = {}
-    # print(method, path)
     if method == 'GET':
         result = get_authorizers(path)
     elif method == 'POST':
@@ -126,7 +122,6 @@ class ProxyListenerApiGateway(ProxyListener):
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
         regex_put_method = r'^/restapis/([A-Za-z0-9_\-]+)/resources/([A-Za-z0-9_\-]+)/(.*)$'
 
-        # TODO: Maybe a better match for this, don't know if this is ever a false positive
         # Begin Rest of API Gateway API
         # if method == 'PUT' and 'requestParameters' in data:
         #     tokenized_path = tokenize_path(path)
@@ -208,15 +203,17 @@ class ProxyListenerApiGateway(ProxyListener):
                             path_params = {}
                         result = lambda_api.process_apigateway_invocation(
                             func_arn, relative_path, data_str, headers, path_params=path_params)
+                    #     pprint.pprint(path_params)
+                    # pprint.pprint(result)
                     response = Response()
                     parsed_result = json.loads(result)
                     response.status_code = int(parsed_result['statusCode'])
                     response.headers.update(parsed_result.get('headers', {}))
-                    response_body = parsed_result['body']
-                    if response_body is None or response_body == '':
-                        response._content = ''
-                    else:
+                    try:
+                        response_body = parsed_result['body']
                         response._content = json.dumps(response_body)
+                    except:
+                        pass
                     return response
                 else:
                     msg = 'API Gateway action uri "%s" not yet implemented' % uri
