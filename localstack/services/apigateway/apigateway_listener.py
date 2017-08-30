@@ -12,7 +12,6 @@ from localstack.services.kinesis import kinesis_listener
 from localstack.services.generic_proxy import ProxyListener
 from fuzzywuzzy import process
 from fuzzywuzzy import fuzz
-import pprint
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -106,12 +105,17 @@ def get_rest_api_paths(rest_api_id):
     return paths
 
 
-def extract_path_params(path, path_list):
-    matched_path = process.extractOne(path, path_list)
-    pprint.pprint(path)
-    pprint.pprint(path_list)
-    pprint.pprint(matched_path)
-    return {'somethingId': 'hello'}
+def extract_path_params(path, extracted_path):
+    tokenized_extracted_path = tokenize_path(extracted_path)
+    # Looks for '{' in the tokenized extracted path
+    path_params_list = [(i, v) for i, v in enumerate(tokenized_extracted_path) if '{' in v]
+    tokenized_path = tokenize_path(path)
+    path_params = {}
+    for param in path_params_list:
+        path_param_name = param[1][1:-1].encode('utf-8')
+        path_param_position = param[0]
+        path_params[path_param_name] = tokenized_path[path_param_position]
+    return path_params
 
 
 class ProxyListenerApiGateway(ProxyListener):
@@ -124,56 +128,40 @@ class ProxyListenerApiGateway(ProxyListener):
 
         # TODO: Maybe a better match for this, don't know if this is ever a false positive
         # Begin Rest of API Gateway API
-        if method == 'PUT' and 'requestParameters' in data:
-            pprint.pprint('PUT matched!')
-            tokenized_path = tokenize_path(path)
-            request_parameters = data['requestParameters']
-            authorization_type = data['authorizationType']
-            http_method = tokenized_path[5]
-            rest_api_id = tokenized_path[1]
-            resource_id = tokenized_path[3]
-            # pprint.pprint(request_parameters)
-            # pprint.pprint(authorization_type)
-            # pprint.pprint(http_method)
-            # pprint.pprint(rest_api_id)
-            # pprint.pprint(resource_id)
+        # if method == 'PUT' and 'requestParameters' in data:
+        #     tokenized_path = tokenize_path(path)
+        #     request_parameters = data['requestParameters']
+        #     authorization_type = data['authorizationType']
+        #     http_method = tokenized_path[5]
+        #     rest_api_id = tokenized_path[1]
+        #     resource_id = tokenized_path[3]
 
-            # path_list = get_rest_api_paths(rest_api_id=rest_api_id)
-            # pprint.pprint(path_list)
+        #     if rest_api_id in REQUEST_PATH_PARAMETERS:
+        #         pass
+        #     else:
+        #         REQUEST_PATH_PARAMETERS[rest_api_id] = {}
+        #     if 'methods' in REQUEST_PATH_PARAMETERS[rest_api_id]:
+        #         REQUEST_PATH_PARAMETERS[rest_api_id]['methods'].append(http_method)
+        #     else:
+        #         REQUEST_PATH_PARAMETERS[rest_api_id]['methods'] = [http_method]
+        #         # {
+        #         #     '234320-x344242': {
+        #         #         '/organisations/organisation/([^/]+)/something/([^/]+)': {
+        #         #             2: 'customFieldId',
+        #         #             1: 'entityId'
+        #         #             methods: ['GET', 'PUT']
+        #         #                 {
+        #         #                     method: 'GET'
+        #         #                     lambdaFunction: 'getMyStuff'
+        #         #                 },
 
-            if rest_api_id in REQUEST_PATH_PARAMETERS:
-                pprint.pprint('should not see this')
-            else:
-                REQUEST_PATH_PARAMETERS[rest_api_id] = {}
-                # for key in data['requestParameters']:
-                #     REQUEST_PATH_PARAMETERS[rest_api_id] = {
-                #         3: key.encode('utf-8')
-                #     }
-            if 'methods' in REQUEST_PATH_PARAMETERS[rest_api_id]:
-                REQUEST_PATH_PARAMETERS[rest_api_id]['methods'].append(http_method)
-            else:
-                REQUEST_PATH_PARAMETERS[rest_api_id]['methods'] = [http_method]
-            # pprint.pprint(REQUEST_PATH_PARAMETERS)
-
-                # {
-                #     '234320-x344242': {
-                #         '/organisations/organisation/([^/]+)/something/([^/]+)': {
-                #             2: 'customFieldId',
-                #             1: 'entityId'
-                #             methods: ['GET', 'PUT']
-                #                 {
-                #                     method: 'GET'
-                #                     lambdaFunction: 'getMyStuff'
-                #                 },
-
-                #             ]
-                #         }
-                #     }
-                # }
-        # End Rest of API Gateway API
+        #         #             ]
+        #         #         }
+        #         #     }
+        #         # }
+        # # End Rest of API Gateway API
 
         if re.match(regex2, path):
-            # pprint.pprint(path)
             search_match = re.search(regex2, path)
             api_id = search_match.group(1)
             relative_path = '/%s' % search_match.group(3)
@@ -183,14 +171,9 @@ class ProxyListenerApiGateway(ProxyListener):
                 apigateway = aws_stack.connect_to_service(service_name='apigateway', client=True, env=None)
                 resources = apigateway.get_resources(restApiId=api_id, limit=100)
                 path_list = get_rest_api_paths(rest_api_id=api_id)
-                pprint.pprint(relative_path)
-                pprint.pprint(path_list)
-                extracted_path = process.extractOne(relative_path, path_list, scorer=fuzz.token_sort_ratio)
-                pprint.pprint(extracted_path)
-                pprint.pprint(unicode(relative_path, 'utf-8'))
-                item_from_path = filter(lambda item: item.get(u'path') == extracted_path[0], resources[u'items'])
+                extracted_path = process.extractOne(relative_path, path_list, scorer=fuzz.token_sort_ratio)[0]
+                item_from_path = filter(lambda item: item.get(u'path') == extracted_path, resources[u'items'])
                 integration = item_from_path[0].get(u'resourceMethods').get(method).get(u'methodIntegration')
-                pprint.pprint(integration)
 
             uri = integration.get('uri')
             if method == 'POST' and integration['type'] in ['AWS']:
@@ -219,8 +202,10 @@ class ProxyListenerApiGateway(ProxyListener):
                         tokenized_path = tokenize_path(path)
                         rest_api_id = tokenized_path[1] # TODO: Figure out a better variable name
                         path_list = get_rest_api_paths(rest_api_id=rest_api_id)
-                        pprint.pprint(path_list)
-                        path_params = extract_path_params(path=relative_path, path_list=path_list)
+                        try:
+                            path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
+                        except:
+                            path_params = {}
                         result = lambda_api.process_apigateway_invocation(
                             func_arn, relative_path, data_str, headers, path_params=path_params)
                     response = Response()
