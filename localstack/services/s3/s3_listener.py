@@ -3,7 +3,6 @@ import logging
 import json
 import uuid
 import xmltodict
-import xml.etree.ElementTree as ET
 import cgi
 import email.parser
 import collections
@@ -31,10 +30,36 @@ LOGGER = logging.getLogger(__name__)
 XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
 
-def match_event(event, action, api_method):
-    regex = event.replace('*', '[^:]*')
-    action_string = 's3:%s:%s' % (action, api_method)
-    return re.match(regex, action_string)
+def event_type_matches(events, action, api_method):
+    ''' check whether any of the event types in `events` matches the
+        given `action` and `api_method`, and return the first match. '''
+    for event in events:
+        regex = event.replace('*', '[^:]*')
+        action_string = 's3:%s:%s' % (action, api_method)
+        match = re.match(regex, action_string)
+        if match:
+            return match
+    return False
+
+
+def filter_rules_match(filters, object_path):
+    ''' check whether the given object path matches all of the given filters '''
+    filters = filters or {}
+    key_filter = filters.get('S3Key', {})
+    for rule in key_filter.get('FilterRule', []):
+        if rule['Name'] == 'prefix':
+            if not prefix_with_slash(object_path).startswith(prefix_with_slash(rule['Value'])):
+                return False
+        elif rule['Name'] == 'suffix':
+            if not object_path.endswith(rule['Value']):
+                return False
+        else:
+            LOGGER.warning('Unknown filter name: "%s"' % rule['Name'])
+    return True
+
+
+def prefix_with_slash(s):
+    return s if s[0] == '/' else '/%s' % s
 
 
 def get_event_message(event_name, bucket_name, file_name='testfile.txt', file_size=1024):
@@ -86,7 +111,8 @@ def send_notifications(method, bucket_name, object_path):
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
             api_method = {'PUT': 'Put', 'DELETE': 'Delete'}[method]
             event_name = '%s:%s' % (action, api_method)
-            if match_event(config['Event'], action, api_method):
+            if (event_type_matches(config['Event'], action, api_method) and
+                    filter_rules_match(config.get('Filter'), object_path)):
                 # send notification
                 message = get_event_message(
                     event_name=event_name, bucket_name=bucket_name,
@@ -118,15 +144,6 @@ def send_notifications(method, bucket_name, object_path):
                             (bucket_name, config['CloudFunction']))
                 if not filter(lambda x: config.get(x), ('Queue', 'Topic', 'CloudFunction')):
                     LOGGER.warning('Neither of Queue/Topic/CloudFunction defined for S3 notification.')
-
-
-def get_xml_text(node, name, ns=None, default=None):
-    if ns is not None:
-        name = '{%s}%s' % (ns, name)
-    child = node.find(name)
-    if child is None:
-        return default
-    return child.text
 
 
 def get_cors(bucket_name):
@@ -341,29 +358,33 @@ class ProxyListenerS3(ProxyListener):
                     notif = S3_NOTIFICATIONS[bucket]
                     for dest in ['Queue', 'Topic', 'CloudFunction']:
                         if dest in notif:
+                            events_string = ''.join(['<Event>%s</Event>' % e
+                                for e in S3_NOTIFICATIONS[bucket]['Event']])
                             result += ('''<{dest}Configuration>
                                         <Id>{uid}</Id>
                                         <{dest}>{endpoint}</{dest}>
-                                        <Event>{event}</Event>
+                                        {events}
                                     </{dest}Configuration>''').format(
                                 dest=dest, uid=uuid.uuid4(),
                                 endpoint=S3_NOTIFICATIONS[bucket][dest],
-                                event=S3_NOTIFICATIONS[bucket]['Event'])
+                                events=events_string)
                 result += '</NotificationConfiguration>'
                 response._content = result
 
             if method == 'PUT':
-                tree = ET.fromstring(data)
+                parsed = xmltodict.parse(data)
+                notif_config = parsed.get('NotificationConfiguration')
                 for dest in ['Queue', 'Topic', 'CloudFunction']:
-                    config = tree.find('{%s}%sConfiguration' % (XMLNS_S3, dest))
-                    if config is not None and len(config):
+                    config = notif_config.get('%sConfiguration' % (dest))
+                    if config:
                         # TODO: what if we have multiple destinations - would we overwrite the config?
-                        S3_NOTIFICATIONS[bucket] = {
-                            'Id': get_xml_text(config, 'Id'),
-                            'Event': get_xml_text(config, 'Event', ns=XMLNS_S3),
-                            # TODO extract 'Events' attribute (in addition to 'Event')
-                            dest: get_xml_text(config, dest, ns=XMLNS_S3),
+                        notification_details = {
+                            'Id': config.get('Id'),
+                            'Event': config.get('Event'),
+                            dest: config.get(dest),
+                            'Filter': config.get('Filter')
                         }
+                        S3_NOTIFICATIONS[bucket] = json.loads(json.dumps(notification_details))
 
             # return response for ?notification request
             return response
@@ -398,7 +419,7 @@ class ProxyListenerS3(ProxyListener):
         # get subscribers and send bucket notifications
         if method in ('PUT', 'DELETE') and '/' in path[1:]:
             parts = parsed.path[1:].split('/', 1)
-            object_path = '/%s' % parts[1]
+            object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
             send_notifications(method, bucket_name, object_path)
         # for creation/deletion of buckets, publish an event:
         if method in ('PUT', 'DELETE') and '/' not in path[1:]:

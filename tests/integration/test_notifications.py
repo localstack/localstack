@@ -61,23 +61,43 @@ def test_bucket_notifications():
     # create notification on bucket
     queue_url = queue_info['QueueUrl']
     queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_FOR_S3)
+    events = ['s3:ObjectCreated:*', 's3:ObjectRemoved:Delete']
     s3_client.put_bucket_notification_configuration(
         Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
         NotificationConfiguration={
-            'QueueConfigurations': [
-                {
-                    'Id': 'id123456',
-                    'QueueArn': queue_arn,
-                    'Events': ['s3:ObjectCreated:*', 's3:ObjectRemoved:Delete']
+            'QueueConfigurations': [{
+                'Id': 'id123456',
+                'QueueArn': queue_arn,
+                'Events': events,
+                'Filter': {
+                    'Key': {
+                        'FilterRules': [{
+                            'Name': 'prefix',
+                            'Value': 'testupload/'
+                        }, {
+                            'Name': 'suffix',
+                            'Value': 'testfile.txt'
+                        }]
+                    }
                 }
-            ]
+            }]
         }
     )
 
-    # upload file to S3
-    test_prefix = '/testdata'
-    test_data = b'{"test": "bucket_notification"}'
-    s3_client.upload_fileobj(BytesIO(test_data), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_prefix)
+    # retrieve and check notification config
+    config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
+    config = config['QueueConfigurations'][0]
+    assert events == config['Events']
+
+    # upload file to S3 (this should NOT trigger a notification)
+    test_key1 = '/testdata'
+    test_data1 = b'{"test": "bucket_notification1"}'
+    s3_client.upload_fileobj(BytesIO(test_data1), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_key1)
+
+    # upload file to S3 (this should trigger a notification)
+    test_key2 = 'testupload/dir1/testfile.txt'
+    test_data2 = b'{"test": "bucket_notification2"}'
+    s3_client.upload_fileobj(BytesIO(test_data2), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_key2)
 
     # receive, assert, and delete message from SQS
-    receive_assert_delete(queue_url, {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}, sqs_client)
+    receive_assert_delete(queue_url, [{'key': test_key2}, {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}], sqs_client)
