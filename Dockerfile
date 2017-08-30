@@ -27,6 +27,9 @@ RUN make init
 ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
 
+# (re-)install web dashboard dependencies (already installed in base image)
+RUN make install-web
+
 # fix some permissions and create local user
 RUN mkdir -p /.npm && \
     mkdir -p localstack/infra/elasticsearch/data && \
