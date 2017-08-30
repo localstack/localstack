@@ -104,6 +104,12 @@ def extract_path_params(path, extracted_path):
     return path_params
 
 
+def match_path_to_api_paths(path, api_paths):
+    # TODO: Use regex matching rather than fuzzy search to reduce false positives
+    matched_path = process.extractOne(relative_path, path_list, scorer=fuzz.token_sort_ratio)[0]
+    return matched_path
+
+
 class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
@@ -122,7 +128,7 @@ class ProxyListenerApiGateway(ProxyListener):
                 apigateway = aws_stack.connect_to_service(service_name='apigateway', client=True, env=None)
                 resources = apigateway.get_resources(restApiId=api_id, limit=100)
                 path_list = get_rest_api_paths(rest_api_id=api_id)
-                extracted_path = process.extractOne(relative_path, path_list, scorer=fuzz.token_sort_ratio)[0]
+                extracted_path = match_path_to_api_paths(path=relative_path, api_paths=path_list)
                 item_from_path = filter(lambda item: item.get(u'path') == extracted_path, resources[u'items'])
                 integration = item_from_path[0].get(u'resourceMethods').get(method).get(u'methodIntegration')
 
