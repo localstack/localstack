@@ -13,6 +13,7 @@ import threading
 import imp
 import glob
 import subprocess
+import shlex
 from io import BytesIO
 from datetime import datetime
 from multiprocessing import Process, Queue
@@ -60,6 +61,7 @@ lambda_arn_to_function = {}
 lambda_arn_to_cwd = {}
 lambda_arn_to_handler = {}
 lambda_arn_to_runtime = {}
+lambda_arn_to_envvars = {}
 
 # list of event source mappings for the API
 event_source_mappings = []
@@ -67,8 +69,8 @@ event_source_mappings = []
 # logger
 LOG = logging.getLogger(__name__)
 
-# mutex for access to CWD
-cwd_mutex = threading.Semaphore(1)
+# mutex for access to CWD and ENV
+exec_mutex = threading.Semaphore(1)
 
 # whether to use Docker for execution
 DO_USE_DOCKER = None
@@ -228,6 +230,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
     try:
         runtime = lambda_arn_to_runtime.get(func_arn)
         handler = lambda_arn_to_handler.get(func_arn)
+        environment = lambda_arn_to_envvars.get(func_arn)
         if use_docker():
             handler_args = '"%s"' % handler
             entrypoint = ''
@@ -250,16 +253,19 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     (taskdir, LAMBDA_EXECUTOR_CLASS, handler, event_file))
                 entrypoint = ' --entrypoint ""'
 
+            env_vars = ' '.join(['-e {}={}'.format(k, shlex.quote(v)) for (k, v) in environment.items()])
+
             if config.LAMBDA_REMOTE_DOCKER:
                 cmd = (
                     'CONTAINER_ID="$(docker create'
                     '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
+                    ' %s'
                     ' "lambci/lambda:%s" %s'
                     ')";'
                     'docker cp "%s/." "$CONTAINER_ID:/var/task";'
                     'docker start -a "$CONTAINER_ID";'
-                ) % (entrypoint, runtime, handler_args, lambda_cwd)
+                ) % (entrypoint, runtime, env_vars, handler_args, lambda_cwd)
             else:
                 lambda_cwd_on_host = get_host_path_for_path_in_docker(lambda_cwd)
                 cmd = (
@@ -267,8 +273,10 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     '%s -v "%s":/var/task'
                     ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
+                    ' %s'
+                    ' --rm'
                     ' "lambci/lambda:%s" %s'
-                ) % (entrypoint, lambda_cwd_on_host, runtime, handler_args)
+                ) % (entrypoint, lambda_cwd_on_host, env_vars, runtime, handler_args)
 
             print(cmd)
             event_body_escaped = event_body.replace("'", "\\'")
@@ -284,9 +292,11 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             queue = Queue()
 
             def do_execute():
-                # now we're executing in the child process, safe to change CWD
+                # now we're executing in the child process, safe to change CWD and ENV
                 if lambda_cwd:
                     os.chdir(lambda_cwd)
+                if environment:
+                    os.environ.update(environment)
                 result = func(event, context)
                 queue.put(result)
 
@@ -303,12 +313,16 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
     return result
 
 
-def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
-    if lambda_cwd:
-        cwd_mutex.acquire()
-        previous_cwd = os.getcwd()
-        os.chdir(lambda_cwd)
-        sys.path = [lambda_cwd] + sys.path
+def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda_env=None):
+    if lambda_cwd or lambda_env:
+        exec_mutex.acquire()
+        if lambda_cwd:
+            previous_cwd = os.getcwd()
+            os.chdir(lambda_cwd)
+            sys.path = [lambda_cwd] + sys.path
+        if lambda_env:
+            previous_env = dict(os.environ)
+            os.environ.update(lambda_env)
     # generate lambda file name
     lambda_id = 'l_%s' % short_uid()
     lambda_file = LAMBDA_SCRIPT_PATTERN.replace('*', lambda_id)
@@ -323,10 +337,13 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
         LOG.error('Unable to exec: %s %s' % (script, traceback.format_exc()))
         raise e
     finally:
-        if lambda_cwd:
-            os.chdir(previous_cwd)
-            sys.path.pop(0)
-            cwd_mutex.release()
+        if lambda_cwd or lambda_env:
+            if lambda_cwd:
+                os.chdir(previous_cwd)
+                sys.path.pop(0)
+            if lambda_env:
+                os.environ = previous_env
+            exec_mutex.release()
     return module_vars[handler_function]
 
 
@@ -370,6 +387,7 @@ def set_function_code(code, lambda_name):
     arn = func_arn(lambda_name)
     runtime = lambda_arn_to_runtime[arn]
     handler_name = lambda_arn_to_handler.get(arn)
+    lambda_environment = lambda_arn_to_envvars.get(arn)
     if not handler_name:
         handler_name = LAMBDA_DEFAULT_HANDLER
     handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
@@ -435,7 +453,8 @@ def set_function_code(code, lambda_name):
     elif runtime.startswith('python') and not use_docker():
         try:
             lambda_handler = exec_lambda_code(zip_file_content,
-                handler_function=handler_function, lambda_cwd=lambda_cwd)
+                handler_function=handler_function, lambda_cwd=lambda_cwd,
+                lambda_env=lambda_environment)
         except Exception as e:
             raise Exception('Unable to get handler function from lambda code.', e)
 
@@ -484,6 +503,7 @@ def create_function():
                 lambda_name, 409, error_type='ResourceConflictException')
         lambda_arn_to_handler[arn] = data['Handler']
         lambda_arn_to_runtime[arn] = data['Runtime']
+        lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
         result = set_function_code(data['Code'], lambda_name)
         return result or jsonify({})
     except Exception as e:
@@ -608,6 +628,8 @@ def update_function_configuration(function):
         lambda_arn_to_handler[arn] = data['Handler']
     if data.get('Runtime'):
         lambda_arn_to_runtime[arn] = data['Runtime']
+    if data.get('Environment'):
+        lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
     result = {}
     return jsonify(result)
 
