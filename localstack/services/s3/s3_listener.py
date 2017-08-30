@@ -418,11 +418,14 @@ class ProxyListenerS3(ProxyListener):
 
         # get subscribers and send bucket notifications
         if method in ('PUT', 'DELETE') and '/' in path[1:]:
-            parts = parsed.path[1:].split('/', 1)
-            object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
-            send_notifications(method, bucket_name, object_path)
+            # check if this is an actual put object request, because it could also be
+            # a put bucket request with a path like this: /bucket_name/
+            if len(path[1:].split('/')[1]) > 0:
+                parts = parsed.path[1:].split('/', 1)
+                object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
+                send_notifications(method, bucket_name, object_path)
         # for creation/deletion of buckets, publish an event:
-        if method in ('PUT', 'DELETE') and '/' not in path[1:]:
+        if method in ('PUT', 'DELETE') and ('/' not in path[1:] or len(path[1:].split('/')[1]) <= 0):
             event_type = (event_publisher.EVENT_S3_CREATE_BUCKET if method == 'PUT'
                 else event_publisher.EVENT_S3_DELETE_BUCKET)
             event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(bucket_name)})
