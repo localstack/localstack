@@ -195,7 +195,7 @@ class ProxyListenerApiGateway(ProxyListener):
                         result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, headers)
                     else:
                         tokenized_path = tokenize_path(path)
-                        rest_api_id = tokenized_path[1] # TODO: Figure out a better variable name
+                        rest_api_id = tokenized_path[1]  # TODO: Figure out a better variable name
                         path_list = get_rest_api_paths(rest_api_id=rest_api_id)
                         try:
                             path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
