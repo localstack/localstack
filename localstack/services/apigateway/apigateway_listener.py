@@ -84,16 +84,6 @@ def tokenize_path(path):
     return path[1:].split('/')
 
 
-def make_path_params(path_params_table, tokenized_relative_path):
-    path_params = {}
-    for param_index in path_params_table:
-        try:
-            path_params[path_params_table[param_index]] = tokenized_relative_path[param_index]
-        except:
-            pass
-    return path_params
-
-
 def get_rest_api_paths(rest_api_id):
     apigateway = aws_stack.connect_to_service(service_name='apigateway', client=True, env=None)
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
@@ -121,40 +111,6 @@ class ProxyListenerApiGateway(ProxyListener):
         # Paths to match
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
         regex_put_method = r'^/restapis/([A-Za-z0-9_\-]+)/resources/([A-Za-z0-9_\-]+)/(.*)$'
-
-        # Begin Rest of API Gateway API
-        # if method == 'PUT' and 'requestParameters' in data:
-        #     tokenized_path = tokenize_path(path)
-        #     request_parameters = data['requestParameters']
-        #     authorization_type = data['authorizationType']
-        #     http_method = tokenized_path[5]
-        #     rest_api_id = tokenized_path[1]
-        #     resource_id = tokenized_path[3]
-
-        #     if rest_api_id in REQUEST_PATH_PARAMETERS:
-        #         pass
-        #     else:
-        #         REQUEST_PATH_PARAMETERS[rest_api_id] = {}
-        #     if 'methods' in REQUEST_PATH_PARAMETERS[rest_api_id]:
-        #         REQUEST_PATH_PARAMETERS[rest_api_id]['methods'].append(http_method)
-        #     else:
-        #         REQUEST_PATH_PARAMETERS[rest_api_id]['methods'] = [http_method]
-        #         # {
-        #         #     '234320-x344242': {
-        #         #         '/organisations/organisation/([^/]+)/something/([^/]+)': {
-        #         #             2: 'customFieldId',
-        #         #             1: 'entityId'
-        #         #             methods: ['GET', 'PUT']
-        #         #                 {
-        #         #                     method: 'GET'
-        #         #                     lambdaFunction: 'getMyStuff'
-        #         #                 },
-
-        #         #             ]
-        #         #         }
-        #         #     }
-        #         # }
-        # # End Rest of API Gateway API
 
         if re.match(regex2, path):
             search_match = re.search(regex2, path)
