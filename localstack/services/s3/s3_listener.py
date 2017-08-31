@@ -13,7 +13,7 @@ from requests.models import Response, Request
 from localstack.constants import *
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
+from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
 from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
 
@@ -73,6 +73,13 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', file_si
             'eventName': event_name,
             'userIdentity': {
                 'principalId': 'AIDAJDPLRKLG7UEXAMPLE'
+            },
+            'requestParameters': {
+                'sourceIPAddress': '127.0.0.1'  # TODO determine real source IP
+            },
+            'responseElements': {
+                'x-amz-request-id': short_uid(),
+                'x-amz-id-2': 'eftixk72aD6Ap51TnqcoF8eFidJG9Z/2'  # Amazon S3 host that processed the request
             },
             's3': {
                 's3SchemaVersion': '1.0',
@@ -424,7 +431,7 @@ class ProxyListenerS3(ProxyListener):
                 parts = parsed.path[1:].split('/', 1)
                 object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
                 send_notifications(method, bucket_name, object_path)
-        # for creation/deletion of buckets, publish an event:
+        # publish event for creation/deletion of buckets:
         if method in ('PUT', 'DELETE') and ('/' not in path[1:] or len(path[1:].split('/')[1]) <= 0):
             event_type = (event_publisher.EVENT_S3_CREATE_BUCKET if method == 'PUT'
                 else event_publisher.EVENT_S3_DELETE_BUCKET)
@@ -434,14 +441,15 @@ class ProxyListenerS3(ProxyListener):
         if response:
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
 
-            # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
-            # https://github.com/jserver/mock-s3/pull/9/files
-            # https://github.com/localstack/localstack/issues/183
             response_content_str = None
             try:
                 response_content_str = to_str(response._content)
             except Exception as e:
                 pass
+
+            # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
+            # https://github.com/jserver/mock-s3/pull/9/files
+            # https://github.com/localstack/localstack/issues/183
             if response_content_str and response_content_str.startswith('<'):
                 is_bytes = isinstance(response._content, six.binary_type)
                 response._content = re.sub(r'>\n\s*<', '><', response_content_str, flags=re.MULTILINE)
