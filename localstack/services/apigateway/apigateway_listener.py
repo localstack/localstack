@@ -153,27 +153,6 @@ class ProxyListenerApiGateway(ProxyListener):
                 if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
                     data_str = json.dumps(data) if isinstance(data, dict) else data
-<<<<<<< HEAD
-                    if relative_path == '/':
-                        result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, headers)
-                    else:
-                        tokenized_path = tokenize_path(path)
-                        rest_api_id = tokenized_path[1]  # TODO: Figure out a better variable name
-                        path_list = get_rest_api_paths(rest_api_id=rest_api_id)
-                        try:
-                            path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
-                        except:
-                            path_params = {}
-                        result = lambda_api.process_apigateway_invocation(
-                            func_arn, relative_path, data_str, headers, path_params=path_params)
-                    #     pprint.pprint(path_params)
-                    # pprint.pprint(result)
-=======
-                    # TODO: fetch actual resource path from the API. Could be something like "/{proxy+}"
-                    resource_path = path
-                    result = lambda_api.process_apigateway_invocation(func_arn, path, data_str,
-                        headers=headers, method=method, resource_path=path)
->>>>>>> e76dcf7fb9f65fe21ae10fe068dd9cfa6ccccf74
                     response = Response()
                     parsed_result = result if isinstance(result, dict) else json.loads(result)
                     response.status_code = int(parsed_result.get('statusCode', 200))
