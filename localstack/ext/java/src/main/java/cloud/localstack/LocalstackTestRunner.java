@@ -123,26 +123,41 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		return ensureInstallationAndGetEndpoint("cloudwatch");
 	}
 
-	/* UTILITY METHODS */
-
 	@Override
 	public void run(RunNotifier notifier) {
 		setupInfrastructure();
 		super.run(notifier);
 	}
 
+	/* UTILITY METHODS */
+
 	private static void ensureInstallation() {
 		File dir = new File(TMP_INSTALL_DIR);
 		File constantsFile = new File(dir, "localstack/constants.py");
+		String logMsg = "Installing LocalStack to temporary directory (this may take a while): " + TMP_INSTALL_DIR;
+		boolean messagePrinted = false;
 		if(!constantsFile.exists()) {
-			LOG.info("Installing LocalStack to temporary directory (this may take a while): " + TMP_INSTALL_DIR);
+			LOG.info(logMsg);
+			messagePrinted = true;
 			try {
 				FileUtils.deleteDirectory(dir);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
 			exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
+		}
+		File installationDoneMarker = new File(dir, "localstack/infra/installation.finished.marker");
+		if(!installationDoneMarker.exists()) {
+			if(!messagePrinted) {
+				LOG.info(logMsg);
+			}
 			exec("cd \"" + TMP_INSTALL_DIR + "\"; make install");
+			/* create marker file */
+			try {
+				installationDoneMarker.createNewFile();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -243,10 +258,17 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 				BufferedReader r1 = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				String line;
 				LOG.info("Waiting for infrastructure to be spun up");
+				boolean ready = false;
+				String output = "";
 				while((line = r1.readLine()) != null) {
+					output += line + "\n";
 					if(INFRA_READY_MARKER.equals(line)) {
+						ready = true;
 						break;
 					}
+				}
+				if(!ready) {
+					throw new RuntimeException("Unable to start local infrastructure. Debug output: " + output);
 				}
 				/* read contents of LocalStack config file */
 				readConfigFile();

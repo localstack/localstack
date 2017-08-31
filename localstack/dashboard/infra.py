@@ -259,9 +259,10 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     try:
         mkdir(folder)
         if not os.path.isfile(archive):
-            download(loc, archive)
+            download(loc, archive, verify_ssl=False)
         if len(os.listdir(folder)) <= 1:
-            run("cd %s && unzip -o %s" % (folder, filename))
+            zip_path = os.path.join(folder, filename)
+            unzip(zip_path, folder)
     except Exception as e:
         print("WARN: %s" % e)
         rm_rf(archive)
@@ -284,6 +285,8 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     clean_cache(file_pattern=TMP_DOWNLOAD_FILE_PATTERN,
         last_clean_time=last_cache_cleanup_time,
         max_age=TMP_DOWNLOAD_CACHE_MAX_AGE)
+    # TODO: delete only if cache_time is over
+    rm_rf(folder)
 
     return result
 

@@ -94,7 +94,7 @@ sidebar div {
     fill: #31D0C6;
 }
 .link .marker-arrowhead:hover {
-    fill: #F39C12;    
+    fill: #F39C12;
 }
 .link-tools .tool-remove circle {
     fill: #fe854f;
@@ -134,6 +134,15 @@ a {
     cursor: pointer;
 }
 
+div.clear {
+  clear: both;
+}
+
+div.code-scroller {
+  max-height: 300px;
+  overflow: auto;
+}
+
 .code .panel {
     border: 1px solid #bbbbbf;
     border-radius: 5px;
@@ -159,6 +168,7 @@ a {
 }
 #code-dialog {
     width: 70%;
+    display: block;
 }
 #code-dialog .code {
     height: 100%;

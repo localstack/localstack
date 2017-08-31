@@ -5,9 +5,11 @@ LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com), Gianluca Bortoli (gi
 
 # add files required to run "make install"
 ADD Makefile requirements.txt ./
-RUN mkdir -p localstack/utils/kinesis/ && touch localstack/__init__.py localstack/utils/__init__.py localstack/utils/kinesis/__init__.py
+RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
+  touch localstack/__init__.py localstack/utils/__init__.py localstack/services/__init__.py localstack/utils/kinesis/__init__.py
 ADD localstack/constants.py localstack/config.py localstack/
-ADD localstack/utils/compat.py localstack/utils/common.py localstack/utils/
+ADD localstack/services/install.py localstack/services/
+ADD localstack/utils/common.py localstack/utils/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
 ADD localstack/ext/ localstack/ext/
 
@@ -24,6 +26,9 @@ RUN make init
 # add rest of the code
 ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
+
+# (re-)install web dashboard dependencies (already installed in base image)
+RUN make install-web
 
 # fix some permissions and create local user
 RUN mkdir -p /.npm && \

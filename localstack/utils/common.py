@@ -16,6 +16,7 @@ import decimal
 import logging
 import tempfile
 import requests
+import zipfile
 from io import BytesIO
 from contextlib import closing
 from datetime import datetime
@@ -23,7 +24,6 @@ from six.moves.urllib.parse import urlparse
 from six.moves import cStringIO as StringIO
 from six import with_metaclass
 from multiprocessing.dummy import Pool
-from localstack.utils.compat import bytes_
 from localstack.constants import *
 from localstack.config import DEFAULT_ENCODING
 
@@ -42,6 +42,9 @@ mutex_popen = threading.Semaphore(1)
 # misc. constants
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
 TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
+
+# chunk size for file downloads
+DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -214,7 +217,7 @@ def is_string(s, include_unicode=True):
 
 def md5(string):
     m = hashlib.md5()
-    m.update(bytes_(string))
+    m.update(to_bytes(string))
     return m.hexdigest()
 
 
@@ -334,18 +337,29 @@ def cp_r(src, dst):
         shutil.copytree(src, dst)
 
 
-def download(url, path):
+def download(url, path, verify_ssl=True):
     """Downloads file at url to the given path"""
-    r = requests.get(url, stream=True)
+    # make sure we're creating a new session here to
+    # enable parallel file downloads during installation!
+    s = requests.Session()
+    r = s.get(url, stream=True, verify=verify_ssl)
+    total = 0
     try:
+        LOGGER.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
         with open(path, 'wb') as f:
-            for chunk in r.iter_content(4096):
+            for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
+                total += len(chunk)
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
-                    f.flush()
-                    os.fsync(f)
+                    LOGGER.debug('Writing %s bytes (total %s) to %s' % (len(chunk), total, path))
+                else:
+                    LOGGER.debug('Empty chunk %s (total %s) from %s' % (chunk, total, url))
+            f.flush()
+            os.fsync(f)
     finally:
+        LOGGER.debug('Done downloading %s, response code %s' % (url, r.status_code))
         r.close()
+        s.close()
 
 
 def short_uid():
@@ -375,18 +389,18 @@ def load_file(file_path, default=None, mode=None):
     return result
 
 
-def to_str(obj):
-    """ Convert a string/bytes object to a string """
-    if not obj or isinstance(obj, six.string_types):
-        return obj
-    return obj.decode(DEFAULT_ENCODING)
+def to_str(obj, encoding=DEFAULT_ENCODING, errors='strict'):
+    """If ``obj`` is an instance of ``binary_type``, return
+    ``obj.decode(encoding, errors)``, otherwise return ``obj``
+    """
+    return obj.decode(encoding, errors) if isinstance(obj, six.binary_type) else obj
 
 
-def to_bytes(obj):
-    """ Convert a string/bytes object to bytes """
-    if not isinstance(obj, six.string_types):
-        return obj
-    return obj.encode(DEFAULT_ENCODING)
+def to_bytes(obj, encoding=DEFAULT_ENCODING, errors='strict'):
+    """ If ``obj`` is an instance of ``text_type``, return
+    ``obj.encode(encoding, errors)``, otherwise return ``obj``
+    """
+    return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
 
 
 def cleanup(files=True, env=ENV_DEV, quiet=True):
@@ -420,9 +434,18 @@ def is_ip_address(addr):
 
 
 def is_zip_file(content):
-    import zipfile
     stream = BytesIO(content)
     return zipfile.is_zipfile(stream)
+
+
+def unzip(path, target_dir):
+    try:
+        zip_ref = zipfile.ZipFile(path, 'r')
+    except Exception as e:
+        LOGGER.warning('Unable to open zip file: %s: %s' % (path, e))
+        raise e
+    zip_ref.extractall(target_dir)
+    zip_ref.close()
 
 
 def is_jar_archive(content):
@@ -593,13 +616,13 @@ class _RequestsSafe(type):
         if not method:
             return method
 
-        def _missing(*args, **kwargs):
+        def _wrapper(*args, **kwargs):
             if 'auth' not in kwargs:
                 kwargs['auth'] = NetrcBypassAuth()
             if not self.verify_ssl and args[0].startswith('https://') and 'verify' not in kwargs:
                 kwargs['verify'] = False
             return method(*args, **kwargs)
-        return _missing
+        return _wrapper
 
 
 # create class-of-a-class

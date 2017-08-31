@@ -7,7 +7,7 @@ import shutil
 import logging
 from localstack.config import *
 from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL
-from localstack.utils.common import download, parallelize, run, mkdir, save_file
+from localstack.utils.common import download, parallelize, run, mkdir, save_file, unzip, rm_rf
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -25,21 +25,18 @@ URL_STS_JAR = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.
 URL_LOCALSTACK_FAT_JAR = ('http://central.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/0.1.3/localstack-utils-0.1.3-fat.jar')
 
-# list of additional pip packages to install
-EXTENDED_PIP_LIBS = ['amazon-kclpy==1.4.5']
-
 # set up logger
-LOGGER = logging.getLogger(os.path.basename(__file__))
+LOGGER = logging.getLogger(__name__)
 
 
 def install_elasticsearch():
     if not os.path.exists(INSTALL_DIR_ES):
         LOGGER.info('Downloading and installing local Elasticsearch server. This may take some time.')
         run('mkdir -p %s' % INSTALL_DIR_INFRA)
-        if not os.path.exists(TMP_ARCHIVE_ES):
-            download(ELASTICSEARCH_JAR_URL, TMP_ARCHIVE_ES)
-        cmd = 'cd %s && cp %s es.zip && unzip -q es.zip && mv elasticsearch* elasticsearch && rm es.zip'
-        run(cmd % (INSTALL_DIR_INFRA, TMP_ARCHIVE_ES))
+        # download and extract archive
+        download_and_extract_with_retry(ELASTICSEARCH_JAR_URL, TMP_ARCHIVE_ES, INSTALL_DIR_INFRA)
+        run('cd %s && mv elasticsearch* elasticsearch' % (INSTALL_DIR_INFRA))
+
         for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
             cmd = 'cd %s && mkdir -p %s && chmod -R 777 %s'
             run(cmd % (INSTALL_DIR_ES, dir_name, dir_name))
@@ -52,22 +49,13 @@ def install_kinesalite():
         run('cd "%s" && npm install' % ROOT_PATH)
 
 
-def is_alpine():
-    try:
-        run('cat /etc/issue | grep Alpine', print_error=False)
-        return True
-    except Exception as e:
-        return False
-
-
 def install_dynamodb_local():
     if not os.path.exists(INSTALL_DIR_DDB):
         LOGGER.info('Downloading and installing local DynamoDB server. This may take some time.')
         mkdir(INSTALL_DIR_DDB)
-        if not os.path.exists(TMP_ARCHIVE_DDB):
-            download(DYNAMODB_JAR_URL, TMP_ARCHIVE_DDB)
-        cmd = 'cd %s && cp %s ddb.zip && unzip -q ddb.zip && rm ddb.zip'
-        run(cmd % (INSTALL_DIR_DDB, TMP_ARCHIVE_DDB))
+        # download and extract archive
+        download_and_extract_with_retry(DYNAMODB_JAR_URL, TMP_ARCHIVE_DDB, INSTALL_DIR_DDB)
+
     # fix for Alpine, otherwise DynamoDBLocal fails with:
     # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
     if is_alpine():
@@ -83,19 +71,13 @@ def install_dynamodb_local():
             save_file(patched_marker, '')
 
 
-def install_amazon_kinesis_libs():
+def install_amazon_kinesis_client_libs():
     # install KCL/STS JAR files
     if not os.path.exists(INSTALL_DIR_KCL):
         mkdir(INSTALL_DIR_KCL)
         if not os.path.exists(TMP_ARCHIVE_STS):
             download(URL_STS_JAR, TMP_ARCHIVE_STS)
         shutil.copy(TMP_ARCHIVE_STS, INSTALL_DIR_KCL)
-    # install extended libs
-    try:
-        from amazon_kclpy import kcl
-    except Exception as e:
-        for lib in EXTENDED_PIP_LIBS:
-            run('pip install %s' % lib)
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
     classpath = kclipy_helper.get_kcl_classpath()
@@ -122,7 +104,6 @@ def install_component(name):
 
 def install_components(names):
     parallelize(install_component, names)
-    install_amazon_kinesis_libs()
     install_lambda_java_libs()
 
 
@@ -130,10 +111,44 @@ def install_all_components():
     install_components(DEFAULT_SERVICE_PORTS.keys())
 
 
+# -----------------
+# HELPER FUNCTIONS
+# -----------------
+
+
+def is_alpine():
+    try:
+        run('cat /etc/issue | grep Alpine', print_error=False)
+        return True
+    except Exception as e:
+        return False
+
+
+def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
+
+    def download_and_extract():
+        if not os.path.exists(tmp_archive):
+            download(archive_url, tmp_archive)
+        unzip(tmp_archive, target_dir)
+
+    try:
+        download_and_extract()
+    except Exception as e:
+        # try deleting and re-downloading the zip file
+        LOGGER.info('Unable to extract file, re-downloading ZIP archive: %s' % tmp_archive)
+        rm_rf(tmp_archive)
+        download_and_extract()
+
+
 if __name__ == '__main__':
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'run':
-        print('Initializing installation.')
-        logging.basicConfig(level=logging.INFO)
-        install_all_components()
-        print('Done.')
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'libs':
+            print('Initializing installation.')
+            logging.basicConfig(level=logging.INFO)
+            logging.getLogger('requests').setLevel(logging.WARNING)
+            install_all_components()
+            print('Done.')
+        elif sys.argv[1] == 'testlibs':
+            # Install additional libraries for testing
+            install_amazon_kinesis_client_libs()

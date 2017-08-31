@@ -3,7 +3,9 @@ import logging
 import json
 import uuid
 import xmltodict
-import xml.etree.ElementTree as ET
+import cgi
+import email.parser
+import collections
 import six
 from six import iteritems
 from six.moves.urllib import parse as urlparse
@@ -11,7 +13,7 @@ from requests.models import Response, Request
 from localstack.constants import *
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
+from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
 from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
 
@@ -28,10 +30,36 @@ LOGGER = logging.getLogger(__name__)
 XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
 
-def match_event(event, action, api_method):
-    regex = event.replace('*', '[^:]*')
-    action_string = 's3:%s:%s' % (action, api_method)
-    return re.match(regex, action_string)
+def event_type_matches(events, action, api_method):
+    ''' check whether any of the event types in `events` matches the
+        given `action` and `api_method`, and return the first match. '''
+    for event in events:
+        regex = event.replace('*', '[^:]*')
+        action_string = 's3:%s:%s' % (action, api_method)
+        match = re.match(regex, action_string)
+        if match:
+            return match
+    return False
+
+
+def filter_rules_match(filters, object_path):
+    ''' check whether the given object path matches all of the given filters '''
+    filters = filters or {}
+    key_filter = filters.get('S3Key', {})
+    for rule in key_filter.get('FilterRule', []):
+        if rule['Name'] == 'prefix':
+            if not prefix_with_slash(object_path).startswith(prefix_with_slash(rule['Value'])):
+                return False
+        elif rule['Name'] == 'suffix':
+            if not object_path.endswith(rule['Value']):
+                return False
+        else:
+            LOGGER.warning('Unknown filter name: "%s"' % rule['Name'])
+    return True
+
+
+def prefix_with_slash(s):
+    return s if s[0] == '/' else '/%s' % s
 
 
 def get_event_message(event_name, bucket_name, file_name='testfile.txt', file_size=1024):
@@ -45,6 +73,13 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', file_si
             'eventName': event_name,
             'userIdentity': {
                 'principalId': 'AIDAJDPLRKLG7UEXAMPLE'
+            },
+            'requestParameters': {
+                'sourceIPAddress': '127.0.0.1'  # TODO determine real source IP
+            },
+            'responseElements': {
+                'x-amz-request-id': short_uid(),
+                'x-amz-id-2': 'eftixk72aD6Ap51TnqcoF8eFidJG9Z/2'  # Amazon S3 host that processed the request
             },
             's3': {
                 's3SchemaVersion': '1.0',
@@ -83,7 +118,8 @@ def send_notifications(method, bucket_name, object_path):
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
             api_method = {'PUT': 'Put', 'DELETE': 'Delete'}[method]
             event_name = '%s:%s' % (action, api_method)
-            if match_event(config['Event'], action, api_method):
+            if (event_type_matches(config['Event'], action, api_method) and
+                    filter_rules_match(config.get('Filter'), object_path)):
                 # send notification
                 message = get_event_message(
                     event_name=event_name, bucket_name=bucket_name,
@@ -115,15 +151,6 @@ def send_notifications(method, bucket_name, object_path):
                             (bucket_name, config['CloudFunction']))
                 if not filter(lambda x: config.get(x), ('Queue', 'Topic', 'CloudFunction')):
                     LOGGER.warning('Neither of Queue/Topic/CloudFunction defined for S3 notification.')
-
-
-def get_xml_text(node, name, ns=None, default=None):
-    if ns is not None:
-        name = '{%s}%s' % (ns, name)
-    child = node.find(name)
-    if child is None:
-        return default
-    return child.text
 
 
 def get_cors(bucket_name):
@@ -193,6 +220,112 @@ def strip_chunk_signatures(data):
     return data_new
 
 
+def _iter_multipart_parts(some_bytes, boundary):
+    ''' Generate a stream of dicts and bytes for each message part.
+
+        Content-Disposition is used as a header for a multipart body:
+        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
+    '''
+    try:
+        parse_data = email.parser.BytesHeaderParser().parsebytes
+    except AttributeError:
+        # Fall back in case of Python 2.x
+        parse_data = email.parser.HeaderParser().parsestr
+
+    while True:
+        try:
+            part, some_bytes = some_bytes.split(boundary, 1)
+        except ValueError:
+            # Ran off the end, stop.
+            break
+
+        if b'\r\n\r\n' not in part:
+            # Real parts have headers and a value separated by '\r\n'.
+            continue
+
+        part_head, _ = part.split(b'\r\n\r\n', 1)
+        head_parsed = parse_data(part_head.lstrip(b'\r\n'))
+
+        if 'Content-Disposition' in head_parsed:
+            _, params = cgi.parse_header(head_parsed['Content-Disposition'])
+            yield params, part
+
+
+def expand_multipart_filename(data, headers):
+    ''' Replace instance of '${filename}' in key with given file name.
+
+        Data is given as multipart form submission bytes, and file name is
+        replace according to Amazon S3 documentation for Post uploads:
+        http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
+    '''
+    _, params = cgi.parse_header(headers.get('Content-Type'))
+    boundary = params['boundary'].encode('ascii')
+    data_bytes = to_bytes(data)
+
+    filename = None
+
+    for (disposition, _) in _iter_multipart_parts(data_bytes, boundary):
+        if disposition.get('name') == 'file' and 'filename' in disposition:
+            filename = disposition['filename']
+            break
+
+    if filename is None:
+        # Found nothing, return unaltered
+        return data
+
+    for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
+        if disposition.get('name') == 'key' and b'${filename}' in part:
+            search = boundary + part
+            replace = boundary + part.replace(b'${filename}', filename.encode('utf8'))
+
+            if search in data_bytes:
+                return data_bytes.replace(search, replace)
+
+    return data
+
+
+def find_multipart_redirect_url(data, headers):
+    ''' Return object key and redirect URL if they can be found.
+
+        Data is given as multipart form submission bytes, and redirect is found
+        in the success_action_redirect field according to Amazon S3
+        documentation for Post uploads:
+        http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
+    '''
+    _, params = cgi.parse_header(headers.get('Content-Type'))
+    boundary = params['boundary'].encode('ascii')
+    data_bytes = to_bytes(data)
+
+    key, redirect_url = None, None
+
+    for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
+        if disposition.get('name') == 'key':
+            _, value = part.split(b'\r\n\r\n', 1)
+            key = value.rstrip(b'\r\n--').decode('utf8')
+
+    if key:
+        for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
+            if disposition.get('name') == 'success_action_redirect':
+                _, value = part.split(b'\r\n\r\n', 1)
+                redirect_url = value.rstrip(b'\r\n--').decode('utf8')
+
+    return key, redirect_url
+
+
+def expand_redirect_url(starting_url, key, bucket):
+    ''' Add key and bucket parameters to starting URL query string.
+    '''
+    parsed = urlparse.urlparse(starting_url)
+    query = collections.OrderedDict(urlparse.parse_qsl(parsed.query))
+    query.update([('key', key), ('bucket', bucket)])
+
+    redirect_url = urlparse.urlunparse((
+        parsed.scheme, parsed.netloc, parsed.path,
+        parsed.params, urlparse.urlencode(query), None))
+
+    return redirect_url
+
+
 class ProxyListenerS3(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
@@ -205,6 +338,14 @@ class ProxyListenerS3(ProxyListener):
         # https://github.com/scality/S3/issues/237
         if headers.get('x-amz-content-sha256') == 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD':
             modified_data = strip_chunk_signatures(data)
+
+        # POST requests to S3 may include a "${filename}" placeholder in the
+        # key, which should be replaced with an actual file name before storing.
+        if method == 'POST':
+            original_data = modified_data or data
+            expanded_data = expand_multipart_filename(original_data, headers)
+            if expanded_data is not original_data:
+                modified_data = expanded_data
 
         # persist this API call to disk
         persistence.record('s3', method, path, data, headers)
@@ -224,29 +365,33 @@ class ProxyListenerS3(ProxyListener):
                     notif = S3_NOTIFICATIONS[bucket]
                     for dest in ['Queue', 'Topic', 'CloudFunction']:
                         if dest in notif:
+                            events_string = ''.join(['<Event>%s</Event>' % e
+                                for e in S3_NOTIFICATIONS[bucket]['Event']])
                             result += ('''<{dest}Configuration>
                                         <Id>{uid}</Id>
                                         <{dest}>{endpoint}</{dest}>
-                                        <Event>{event}</Event>
+                                        {events}
                                     </{dest}Configuration>''').format(
                                 dest=dest, uid=uuid.uuid4(),
                                 endpoint=S3_NOTIFICATIONS[bucket][dest],
-                                event=S3_NOTIFICATIONS[bucket]['Event'])
+                                events=events_string)
                 result += '</NotificationConfiguration>'
                 response._content = result
 
             if method == 'PUT':
-                tree = ET.fromstring(data)
+                parsed = xmltodict.parse(data)
+                notif_config = parsed.get('NotificationConfiguration')
                 for dest in ['Queue', 'Topic', 'CloudFunction']:
-                    config = tree.find('{%s}%sConfiguration' % (XMLNS_S3, dest))
-                    if config is not None and len(config):
+                    config = notif_config.get('%sConfiguration' % (dest))
+                    if config:
                         # TODO: what if we have multiple destinations - would we overwrite the config?
-                        S3_NOTIFICATIONS[bucket] = {
-                            'Id': get_xml_text(config, 'Id'),
-                            'Event': get_xml_text(config, 'Event', ns=XMLNS_S3),
-                            # TODO extract 'Events' attribute (in addition to 'Event')
-                            dest: get_xml_text(config, dest, ns=XMLNS_S3),
+                        notification_details = {
+                            'Id': config.get('Id'),
+                            'Event': config.get('Event'),
+                            dest: config.get(dest),
+                            'Filter': config.get('Filter')
                         }
+                        S3_NOTIFICATIONS[bucket] = json.loads(json.dumps(notification_details))
 
             # return response for ?notification request
             return response
@@ -269,13 +414,25 @@ class ProxyListenerS3(ProxyListener):
         # TODO: consider the case of hostname-based (as opposed to path-based) bucket addressing
         bucket_name = parsed.path.split('/')[1]
 
+        # POST requests to S3 may include a success_action_redirect field,
+        # which should be used to redirect a client to a new location.
+        if method == 'POST':
+            key, redirect_url = find_multipart_redirect_url(data, headers)
+            if key and redirect_url:
+                response.status_code = 303
+                response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
+                LOGGER.debug('S3 POST {} to {}'.format(response.status_code, response.headers['Location']))
+
         # get subscribers and send bucket notifications
         if method in ('PUT', 'DELETE') and '/' in path[1:]:
-            parts = parsed.path[1:].split('/', 1)
-            object_path = '/%s' % parts[1]
-            send_notifications(method, bucket_name, object_path)
-        # for creation/deletion of buckets, publish an event:
-        if method in ('PUT', 'DELETE') and '/' not in path[1:]:
+            # check if this is an actual put object request, because it could also be
+            # a put bucket request with a path like this: /bucket_name/
+            if len(path[1:].split('/')[1]) > 0:
+                parts = parsed.path[1:].split('/', 1)
+                object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
+                send_notifications(method, bucket_name, object_path)
+        # publish event for creation/deletion of buckets:
+        if method in ('PUT', 'DELETE') and ('/' not in path[1:] or len(path[1:].split('/')[1]) <= 0):
             event_type = (event_publisher.EVENT_S3_CREATE_BUCKET if method == 'PUT'
                 else event_publisher.EVENT_S3_DELETE_BUCKET)
             event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(bucket_name)})
@@ -284,14 +441,15 @@ class ProxyListenerS3(ProxyListener):
         if response:
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
 
-            # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
-            # https://github.com/jserver/mock-s3/pull/9/files
-            # https://github.com/localstack/localstack/issues/183
             response_content_str = None
             try:
                 response_content_str = to_str(response._content)
             except Exception as e:
                 pass
+
+            # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
+            # https://github.com/jserver/mock-s3/pull/9/files
+            # https://github.com/localstack/localstack/issues/183
             if response_content_str and response_content_str.startswith('<'):
                 is_bytes = isinstance(response._content, six.binary_type)
                 response._content = re.sub(r'>\n\s*<', '><', response_content_str, flags=re.MULTILINE)

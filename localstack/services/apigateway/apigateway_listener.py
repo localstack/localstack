@@ -133,7 +133,7 @@ class ProxyListenerApiGateway(ProxyListener):
                 integration = item_from_path[0].get(u'resourceMethods').get(method).get(u'methodIntegration')
 
             uri = integration.get('uri')
-            if method == 'POST' and integration['type'] in ['AWS']:
+            if method == 'POST' and integration['type'] == 'AWS':
                 if uri.endswith('kinesis:action/PutRecords'):
                     template = integration['requestTemplates'][APPLICATION_JSON]
                     new_request = aws_stack.render_velocity_template(template, data)
@@ -153,6 +153,7 @@ class ProxyListenerApiGateway(ProxyListener):
                 if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
                     data_str = json.dumps(data) if isinstance(data, dict) else data
+<<<<<<< HEAD
                     if relative_path == '/':
                         result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, headers)
                     else:
@@ -167,9 +168,15 @@ class ProxyListenerApiGateway(ProxyListener):
                             func_arn, relative_path, data_str, headers, path_params=path_params)
                     #     pprint.pprint(path_params)
                     # pprint.pprint(result)
+=======
+                    # TODO: fetch actual resource path from the API. Could be something like "/{proxy+}"
+                    resource_path = path
+                    result = lambda_api.process_apigateway_invocation(func_arn, path, data_str,
+                        headers=headers, method=method, resource_path=path)
+>>>>>>> e76dcf7fb9f65fe21ae10fe068dd9cfa6ccccf74
                     response = Response()
-                    parsed_result = json.loads(result)
-                    response.status_code = int(parsed_result['statusCode'])
+                    parsed_result = result if isinstance(result, dict) else json.loads(result)
+                    response.status_code = int(parsed_result.get('statusCode', 200))
                     response.headers.update(parsed_result.get('headers', {}))
                     try:
                         response_body = parsed_result['body']

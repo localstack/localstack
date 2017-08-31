@@ -22,7 +22,7 @@
         {{state.lambda.loading ? 'Loading' : 'Show Code'}}</button>
     </div>
     <div ng-show="selection.obj.attrs.type == 'kinesis'">
-      
+
     </div>
     <div ng-show="selection.obj.attrs.type == 'es'">
       <table>
@@ -54,40 +54,47 @@
         {{state.kinesis.loading ? 'Loading' : 'Load Data'}}</button>
     </div>
     <div ng-show="selection.obj.attrs.type == 'micros'">
-      
+
     </div>
     <h3>Costs</h3>
     t.b.a.
   </div>
 </section>
 
-<section role="dialog" id="code-dialog" class="aui-layer aui-dialog2 aui-dialog2-medium" ng-show="state.lambda.dialog.visible" data-aui-modal="true" style="z-index: 3000;">
-  <header class="aui-dialog2-header">
-    <h2 class="aui-dialog2-header-main">Lambda Function Source Code</h2>
-  </header>
-  <div class="aui-dialog2-content">
-    <p>{{state.lambda.dialog.data.text}}</p>
-    <div class="code">
-      <div class="panel panel-left">
-        <b>Files</b>
-        <ul>
-          <li ng-repeat="(file,value) in state.lambda.data[selection.obj.attrs.arn]">
-            <a ng-click="state.lambda.dialog.selectedFile = file"
-                ng-class="{'selected': state.lambda.dialog.selectedFile == file}">{{file}}</a>
-          </li>
-        </ul>
+<div role="dialog" id="code-dialog" class="modal" ng-show="state.lambda.dialog.visible" style="z-index: 3000;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h2 class="modal-title">Lambda Function Source Code</h2>
+      </header>
+      <div class="modal-body">
+        <p>{{state.lambda.dialog.data.text}}</p>
+        <div class="code">
+          <div class="panel panel-left">
+            <b>Files</b>
+            <ul>
+              <li ng-repeat="(file,value) in state.lambda.data[selection.obj.attrs.arn]">
+                <a ng-click="state.lambda.dialog.selectedFile = file"
+                    ng-class="{'selected': state.lambda.dialog.selectedFile == file}">{{file}}</a>
+              </li>
+            </ul>
+          </div>
+          <div class="panel panel-right">
+            <b>Code</b>
+            <div class="code-scroller">
+              <pre>{{state.lambda.data[selection.obj.attrs.arn][state.lambda.dialog.selectedFile]}}
+              </pre>
+            </div>
+          </div>
+        </div>
+        <div class="clear"></div>
       </div>
-      <div class="panel panel-right">
-        <b>Code</b>
-        <pre>{{state.lambda.data[selection.obj.attrs.arn][state.lambda.dialog.selectedFile]}}
-        </pre>
-      </div>
+      <footer class="modal-footer">
+        <div class="aui-dialog2-footer-actions">
+          <button id="dialog-submit-button" class="btn btn-default" ng-click="state.lambda.dialog.ok()">Close</button>
+        </div>
+      </footer>
     </div>
   </div>
-  <footer class="aui-dialog2-footer">
-    <div class="aui-dialog2-footer-actions">
-      <button id="dialog-submit-button" class="aui-button aui-button-primary" ng-click="state.lambda.dialog.ok()">Close</button>
-    </div>
-  </footer>
-</section>
+</div>
 <div class="aui-blanket" tabindex="0" ng-show="state.lambda.dialog.visible" aria-hidden="{{!state.lambda.dialog.visible}}" style="z-index: 2980;"></div>

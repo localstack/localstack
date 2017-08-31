@@ -16,6 +16,11 @@ import subprocess
 from io import BytesIO
 from datetime import datetime
 from multiprocessing import Process, Queue
+try:
+    from shlex import quote as cmd_quote
+except ImportError:
+    # for Python 2.7
+    from pipes import quote as cmd_quote
 from six import iteritems
 from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
@@ -24,7 +29,7 @@ from localstack.constants import *
 from localstack.services import generic_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.common import *
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
@@ -38,6 +43,7 @@ LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = 'cloud.localstack.LambdaExecutor'
 
 LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
+LAMBDA_RUNTIME_PYTHON36 = 'python3.6'
 LAMBDA_RUNTIME_NODEJS = 'nodejs'
 LAMBDA_RUNTIME_NODEJS610 = 'nodejs6.10'
 LAMBDA_RUNTIME_JAVA8 = 'java8'
@@ -59,6 +65,7 @@ lambda_arn_to_function = {}
 lambda_arn_to_cwd = {}
 lambda_arn_to_handler = {}
 lambda_arn_to_runtime = {}
+lambda_arn_to_envvars = {}
 
 # list of event source mappings for the API
 event_source_mappings = []
@@ -66,8 +73,8 @@ event_source_mappings = []
 # logger
 LOG = logging.getLogger(__name__)
 
-# mutex for access to CWD
-cwd_mutex = threading.Semaphore(1)
+# mutex for access to CWD and ENV
+exec_mutex = threading.Semaphore(1)
 
 # whether to use Docker for execution
 DO_USE_DOCKER = None
@@ -142,17 +149,19 @@ def use_docker():
     return DO_USE_DOCKER
 
 
-def process_apigateway_invocation(func_arn, path, payload, headers={}, path_params={}):
+def process_apigateway_invocation(func_arn, path, payload, headers={},
+        resource_path=None, method=None, path_params={}):
     try:
         lambda_function = lambda_arn_to_function[func_arn]
+        resource_path = resource_path or path
         event = {
             'path': path,
             'headers': dict(headers),
             'pathParameters': dict(path_params),
             'body': payload,
             'isBase64Encoded': False,
-            'resource': 'TODO',
-            'httpMethod': 'TODO',
+            'resource': resource_path,
+            'httpMethod': method,
             'queryStringParameters': {},  # TODO
             'stageVariables': {}  # TODO
         }
@@ -227,6 +236,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
     try:
         runtime = lambda_arn_to_runtime.get(func_arn)
         handler = lambda_arn_to_handler.get(func_arn)
+        environment = lambda_arn_to_envvars.get(func_arn)
         if use_docker():
             handler_args = '"%s"' % handler
             entrypoint = ''
@@ -249,16 +259,19 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     (taskdir, LAMBDA_EXECUTOR_CLASS, handler, event_file))
                 entrypoint = ' --entrypoint ""'
 
+            env_vars = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in environment.items()])
+
             if config.LAMBDA_REMOTE_DOCKER:
                 cmd = (
                     'CONTAINER_ID="$(docker create'
                     '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
+                    ' %s'
                     ' "lambci/lambda:%s" %s'
                     ')";'
                     'docker cp "%s/." "$CONTAINER_ID:/var/task";'
                     'docker start -a "$CONTAINER_ID";'
-                ) % (entrypoint, runtime, handler_args, lambda_cwd)
+                ) % (entrypoint, runtime, env_vars, handler_args, lambda_cwd)
             else:
                 lambda_cwd_on_host = get_host_path_for_path_in_docker(lambda_cwd)
                 cmd = (
@@ -266,8 +279,10 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     '%s -v "%s":/var/task'
                     ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
+                    ' %s'
+                    ' --rm'
                     ' "lambci/lambda:%s" %s'
-                ) % (entrypoint, lambda_cwd_on_host, runtime, handler_args)
+                ) % (entrypoint, lambda_cwd_on_host, env_vars, runtime, handler_args)
 
             print(cmd)
             event_body_escaped = event_body.replace("'", "\\'")
@@ -283,9 +298,11 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             queue = Queue()
 
             def do_execute():
-                # now we're executing in the child process, safe to change CWD
+                # now we're executing in the child process, safe to change CWD and ENV
                 if lambda_cwd:
                     os.chdir(lambda_cwd)
+                if environment:
+                    os.environ.update(environment)
                 result = func(event, context)
                 queue.put(result)
 
@@ -302,12 +319,16 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
     return result
 
 
-def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
-    if lambda_cwd:
-        cwd_mutex.acquire()
-        previous_cwd = os.getcwd()
-        os.chdir(lambda_cwd)
-        sys.path = [lambda_cwd] + sys.path
+def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda_env=None):
+    if lambda_cwd or lambda_env:
+        exec_mutex.acquire()
+        if lambda_cwd:
+            previous_cwd = os.getcwd()
+            os.chdir(lambda_cwd)
+            sys.path = [lambda_cwd] + sys.path
+        if lambda_env:
+            previous_env = dict(os.environ)
+            os.environ.update(lambda_env)
     # generate lambda file name
     lambda_id = 'l_%s' % short_uid()
     lambda_file = LAMBDA_SCRIPT_PATTERN.replace('*', lambda_id)
@@ -322,10 +343,13 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None):
         LOG.error('Unable to exec: %s %s' % (script, traceback.format_exc()))
         raise e
     finally:
-        if lambda_cwd:
-            os.chdir(previous_cwd)
-            sys.path.pop(0)
-            cwd_mutex.release()
+        if lambda_cwd or lambda_env:
+            if lambda_cwd:
+                os.chdir(previous_cwd)
+                sys.path.pop(0)
+            if lambda_env:
+                os.environ = previous_env
+            exec_mutex.release()
     return module_vars[handler_function]
 
 
@@ -340,11 +364,9 @@ def get_handler_function_from_name(handler_name, runtime=LAMBDA_RUNTIME_PYTHON27
     return handler_name.split('.')[-1]
 
 
-def error_response(msg, code=400, error_type='Exception'):
+def error_response(msg, code=500, error_type='InternalFailure'):
     LOG.warning(msg)
-    result = {'Type': 'User', 'message': msg}
-    headers = {'x-amzn-errortype': error_type}
-    return make_response((jsonify(result), code, headers))
+    return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
 
 
 def run_lambda_executor(cmd, env_vars={}):
@@ -371,6 +393,7 @@ def set_function_code(code, lambda_name):
     arn = func_arn(lambda_name)
     runtime = lambda_arn_to_runtime[arn]
     handler_name = lambda_arn_to_handler.get(arn)
+    lambda_environment = lambda_arn_to_envvars.get(arn)
     if not handler_name:
         handler_name = LAMBDA_DEFAULT_HANDLER
     handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
@@ -388,7 +411,7 @@ def set_function_code(code, lambda_name):
         zip_file_content = code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
     else:
-        return error_response('No valid Lambda archive specified.')
+        return error_response('No valid Lambda archive specified.', 400)
 
     # save tmp file
     tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
@@ -401,8 +424,7 @@ def set_function_code(code, lambda_name):
     # check if this is a ZIP file
     is_zip = is_zip_file(zip_file_content)
     if is_zip:
-
-        run('cd %s && unzip %s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME))
+        unzip(tmp_file, tmp_dir)
         main_file = '%s/%s' % (tmp_dir, handler_file)
         if not os.path.isfile(main_file):
             # check if this is a zip file that contains a single JAR file
@@ -415,7 +437,7 @@ def set_function_code(code, lambda_name):
         else:
             file_list = run('ls -la %s' % tmp_dir)
             LOG.debug('Lambda archive content:\n%s' % file_list)
-            return error_response('Unable to find handler script in Lambda archive.')
+            return error_response('Unable to find handler script in Lambda archive.', 400, error_type='ValidationError')
 
     # it could be a JAR file (regardless of whether wrapped in a ZIP file or not)
     is_jar = is_jar_archive(zip_file_content)
@@ -437,7 +459,8 @@ def set_function_code(code, lambda_name):
     elif runtime.startswith('python') and not use_docker():
         try:
             lambda_handler = exec_lambda_code(zip_file_content,
-                handler_function=handler_function, lambda_cwd=lambda_cwd)
+                handler_function=handler_function, lambda_cwd=lambda_cwd,
+                lambda_env=lambda_environment)
         except Exception as e:
             raise Exception('Unable to get handler function from lambda code.', e)
 
@@ -486,6 +509,7 @@ def create_function():
                 lambda_name, 409, error_type='ResourceConflictException')
         lambda_arn_to_handler[arn] = data['Handler']
         lambda_arn_to_runtime[arn] = data['Runtime']
+        lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
         result = set_function_code(data['Code'], lambda_name)
         return result or jsonify({})
     except Exception as e:
@@ -610,6 +634,8 @@ def update_function_configuration(function):
         lambda_arn_to_handler[arn] = data['Handler']
     if data.get('Runtime'):
         lambda_arn_to_runtime[arn] = data['Runtime']
+    if data.get('Environment'):
+        lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
     result = {}
     return jsonify(result)
 
