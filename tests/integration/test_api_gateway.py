@@ -1,11 +1,13 @@
 import json
 from requests.models import Response
 from localstack.config import DEFAULT_REGION, INBOUND_GATEWAY_URL_PATTERN
+from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-
+from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_PYTHON27)
+from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 # template used to transform incoming requests at the API Gateway (stream name to be filled in later)
 APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
@@ -29,10 +31,11 @@ APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
 # endpoint paths
 API_PATH_DATA_INBOUND = '/data'
 API_PATH_HTTP_BACKEND = '/hello_world'
-# API_PATH_LAMBDA_PROXY_BACKEND = 'arn:aws:apigateway:hello_world:lambda:path'
+API_PATH_LAMBDA_PROXY_BACKEND = '/lambda'
 # name of Kinesis stream connected to API Gateway
 TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
 TEST_STAGE_NAME = 'testing'
+TEST_LAMBDA_PROXY_BACKEND = 'test_lambda_apigw_backend'
 
 
 def connect_api_gateway_to_kinesis(gateway_name, kinesis_stream):
@@ -74,7 +77,7 @@ def connect_api_gateway_to_http(gateway_name, target_url, methods=[], path=None)
         stage_name=TEST_STAGE_NAME)
 
 
-def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_url, methods=[], path=None):
+def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_uri, methods=[], path=None):
     if not methods:
         methods = ['GET', 'POST']
     if not path:
@@ -87,7 +90,7 @@ def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_url, meth
             'httpMethod': method,
             'integrations': [{
                 'type': 'AWS_PROXY',
-                'uri': target_url
+                'uri': target_uri
             }]
         })
     return aws_stack.create_api_gateway(name=gateway_name, resources=resources,
@@ -150,38 +153,25 @@ def test_api_gateway_http_integration():
     proxy.stop()
 
 
-# def test_api_gateway_lambda_proxy_integration():
-#     test_port = 12123
-#     backend_url = 'http://localhost:%s%s' % (test_port, API_PATH_LAMBDA_PROXY_BACKEND)
+def test_api_gateway_lambda_proxy_integration():
 
-#     # create target HTTP backend
-#     class TestListener(ProxyListener):
+    # create lambda function
+    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
+        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
+    response = testutil.create_lambda_function(func_name=TEST_LAMBDA_PROXY_BACKEND,
+        zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27)
 
-#         def forward_request(self, **kwargs):
-#             response = Response()
-#             response.status_code = 200
-#             response._content = json.dumps(kwargs['data']) if kwargs['data'] else '{}'
-#             return response
+    # create API Gateway and connect it to the Lambda proxy backend
+    lambda_uri = aws_stack.lambda_function_arn(TEST_LAMBDA_PROXY_BACKEND)
+    target_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' % (DEFAULT_REGION, lambda_uri)
+    result = connect_api_gateway_to_http_with_lambda_proxy('test_gateway2', target_uri,
+        path=API_PATH_LAMBDA_PROXY_BACKEND)
 
-#     proxy = GenericProxy(test_port, update_listener=TestListener())
-#     proxy.start()
-
-#     aws_stack.create
-
-#     # create API Gateway and connect it to the Lambda proxy backend
-#     result = connect_api_gateway_to_http_with_lambda_proxy('test_gateway2', backend_url,
-#         path=API_PATH_LAMBDA_PROXY_BACKEND)
-
-#     # make test request to gateway
-#     url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=result['id'],
-#         stage_name=TEST_STAGE_NAME, path=API_PATH_LAMBDA_PROXY_BACKEND)
-#     result = requests.get(url)
-#     assert result.status_code == 200
-#     assert to_str(result.content) == '{}'
-#     data = {"data": 123}
-#     result = requests.post(url, data=json.dumps(data))
-#     assert result.status_code == 200
-#     assert json.loads(to_str(result.content)) == data
-
-#     # clean up
-#     proxy.stop()
+    # make test request to gateway and check response
+    url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=result['id'],
+        stage_name=TEST_STAGE_NAME, path=API_PATH_LAMBDA_PROXY_BACKEND)
+    data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
+    result = requests.post(url, data=json.dumps(data))
+    assert result.status_code == 203
+    assert result.headers.get('foo') == 'bar123'
+    assert json.loads(to_str(result.content)) == data

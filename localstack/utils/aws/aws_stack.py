@@ -248,7 +248,7 @@ def lambda_function_arn(function_name, account_id=None):
     pattern = 'arn:aws:lambda:.*:.*:function:.*'
     if re.match(pattern, function_name):
         return function_name
-    if len(function_name.split(':')) > 1:
+    if ':' in function_name:
         raise Exception('Lambda function name should not contain a colon ":"')
     account_id = get_account_id(account_id)
     return pattern.replace('.*', '%s') % (DEFAULT_REGION, account_id, function_name)

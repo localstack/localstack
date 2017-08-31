@@ -145,17 +145,19 @@ def use_docker():
     return DO_USE_DOCKER
 
 
-def process_apigateway_invocation(func_arn, path, payload, headers={}, path_params={}):
+def process_apigateway_invocation(func_arn, path, payload, headers={},
+        resource_path=None, method=None, path_params={}):
     try:
         lambda_function = lambda_arn_to_function[func_arn]
+        resource_path = resource_path or path
         event = {
             'path': path,
             'headers': dict(headers),
             'pathParameters': dict(path_params),
             'body': payload,
             'isBase64Encoded': False,
-            'resource': 'TODO',
-            'httpMethod': 'TODO',
+            'resource': resource_path,
+            'httpMethod': method,
             'queryStringParameters': {},  # TODO
             'stageVariables': {}  # TODO
         }
