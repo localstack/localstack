@@ -13,10 +13,14 @@ import threading
 import imp
 import glob
 import subprocess
-import shlex
 from io import BytesIO
 from datetime import datetime
 from multiprocessing import Process, Queue
+try:
+    from shlex import quote as cmd_quote
+except ImportError:
+    # for Python 2.7
+    from pipes import quote as cmd_quote
 from six import iteritems
 from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
@@ -255,7 +259,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     (taskdir, LAMBDA_EXECUTOR_CLASS, handler, event_file))
                 entrypoint = ' --entrypoint ""'
 
-            env_vars = ' '.join(['-e {}={}'.format(k, shlex.quote(v)) for (k, v) in environment.items()])
+            env_vars = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in environment.items()])
 
             if config.LAMBDA_REMOTE_DOCKER:
                 cmd = (
