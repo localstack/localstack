@@ -17,11 +17,14 @@ INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
 INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
 INSTALL_DIR_KCL = '%s/amazon-kinesis-client' % INSTALL_DIR_INFRA
+INSTALL_DIR_ELASTICMQ = '%s/elasticmq' % INSTALL_DIR_INFRA
 INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_INFRA
 TMP_ARCHIVE_ES = os.path.join(tempfile.gettempdir(), 'localstack.es.zip')
 TMP_ARCHIVE_DDB = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
 TMP_ARCHIVE_STS = os.path.join(tempfile.gettempdir(), 'aws-java-sdk-sts.jar')
+TMP_ARCHIVE_ELASTICMQ = os.path.join(tempfile.gettempdir(), 'elasticmq-server.jar')
 URL_STS_JAR = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
+URL_ELASTICMQ_JAR = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.13.8.jar'
 URL_LOCALSTACK_FAT_JAR = ('http://central.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/0.1.3/localstack-utils-0.1.3-fat.jar')
 
@@ -40,6 +43,16 @@ def install_elasticsearch():
         for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
             cmd = 'cd %s && mkdir -p %s && chmod -R 777 %s'
             run(cmd % (INSTALL_DIR_ES, dir_name, dir_name))
+
+
+def install_elasticmq():
+    if not os.path.exists(INSTALL_DIR_ELASTICMQ):
+        LOGGER.info('Downloading and installing local ElasticMQ server. This may take some time.')
+        run('mkdir -p %s' % INSTALL_DIR_ELASTICMQ)
+        # download archive
+        if not os.path.exists(TMP_ARCHIVE_ELASTICMQ):
+            download(URL_ELASTICMQ_JAR, TMP_ARCHIVE_ELASTICMQ)
+        shutil.copy(TMP_ARCHIVE_ELASTICMQ, INSTALL_DIR_ELASTICMQ)
 
 
 def install_kinesalite():
@@ -100,6 +113,8 @@ def install_component(name):
         install_dynamodb_local()
     elif name == 'es':
         install_elasticsearch()
+    elif name == 'sqs':
+        install_elasticmq()
 
 
 def install_components(names):
