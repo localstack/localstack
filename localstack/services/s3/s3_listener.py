@@ -133,8 +133,8 @@ def send_notifications(method, bucket_name, object_path):
                         queue_url = queue_url_for_arn(config['Queue'])
                         sqs_client.send_message(QueueUrl=queue_url, MessageBody=message)
                     except Exception as e:
-                        LOGGER.warning('Unable to send notification for S3 bucket "%s" to SQS queue "%s".' %
-                            (bucket_name, config['Queue']))
+                        LOGGER.warning('Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s' %
+                            (bucket_name, config['Queue'], e))
                 if config.get('Topic'):
                     sns_client = aws_stack.connect_to_service('sns')
                     try:
@@ -363,17 +363,16 @@ class ProxyListenerS3(ProxyListener):
                 result = '<NotificationConfiguration xmlns="%s">' % XMLNS_S3
                 if bucket in S3_NOTIFICATIONS:
                     notif = S3_NOTIFICATIONS[bucket]
+                    events_string = '\n'.join(['<Event>%s</Event>' % e for e in notif['Event']])
                     for dest in ['Queue', 'Topic', 'CloudFunction']:
                         if dest in notif:
-                            events_string = ''.join(['<Event>%s</Event>' % e
-                                for e in S3_NOTIFICATIONS[bucket]['Event']])
                             result += ('''<{dest}Configuration>
                                         <Id>{uid}</Id>
                                         <{dest}>{endpoint}</{dest}>
                                         {events}
                                     </{dest}Configuration>''').format(
                                 dest=dest, uid=uuid.uuid4(),
-                                endpoint=S3_NOTIFICATIONS[bucket][dest],
+                                endpoint=notif[dest],
                                 events=events_string)
                 result += '</NotificationConfiguration>'
                 response._content = result

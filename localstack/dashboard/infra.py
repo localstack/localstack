@@ -349,7 +349,7 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
             pool[arn] = bucket
             if details:
                 try:
-                    out = cmd_s3api('get-bucket-notification --bucket %s' % bucket_name, env=env)
+                    out = cmd_s3api('get-bucket-notification-configuration --bucket %s' % bucket_name, env=env)
                     if out:
                         out = json.loads(out)
                         if 'CloudFunctionConfiguration' in out:
