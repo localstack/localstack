@@ -6,14 +6,18 @@ from six import iteritems
 from localstack.constants import *
 from os.path import expanduser
 
-# Randomly inject faults to Kinesis
+# randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
 
-# Randomly inject faults to DynamoDB
+# randomly inject faults to DynamoDB
 DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', '').strip() or 0.0)
 
-# Allow custom hostname for services
+# allow custom hostname for services
 HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
+
+# name of the host under which the LocalStack services are available
+LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
+os.environ['LOCALSTACK_HOSTNAME'] = LOCALSTACK_HOSTNAME
 
 # whether to remotely copy the lambda or locally mount a volume
 LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() in ['true', '1']
@@ -52,8 +56,8 @@ if not LAMBDA_EXECUTOR:
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
-CONFIG_ENV_VARS = ('SERVICES', 'DEBUG', 'HOSTNAME', 'LAMBDA_EXECUTOR',
-    'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY',
+CONFIG_ENV_VARS = ('SERVICES', 'DEBUG', 'HOSTNAME', 'LOCALSTACK_HOSTNAME',
+    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY',
     'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY')
 
 # local config file path in home directory
@@ -70,7 +74,7 @@ for folder in [DATA_DIR, TMP_FOLDER]:
             pass
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ','.join([HOSTNAME, LOCALHOST, '127.0.0.1', '[::1]'])
+no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, '127.0.0.1', '[::1]')))
 if os.environ.get('no_proxy'):
     os.environ['no_proxy'] += ',' + no_proxy
 elif os.environ.get('NO_PROXY'):
@@ -110,7 +114,7 @@ def populate_configs():
 
         # define PORT_* variables with actual service ports as per configuration
         exec('global PORT_%s; PORT_%s = SERVICE_PORTS.get("%s", 0)' % (key_upper, key_upper, key))
-        url = "http%s://%s:%s" % ('s' if USE_SSL else '', HOSTNAME, SERVICE_PORTS.get(key, 0))
+        url = "http%s://%s:%s" % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, SERVICE_PORTS.get(key, 0))
         # define TEST_*_URL variables with mock service endpoints
         exec('global TEST_%s_URL; TEST_%s_URL = "%s"' % (key_upper, key_upper, url))
         # expose HOST_*_URL variables as environment variables

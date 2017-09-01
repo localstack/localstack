@@ -266,6 +266,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     'CONTAINER_ID="$(docker create'
                     '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
+                    ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     ' %s'
                     ' "lambci/lambda:%s" %s'
                     ')";'
@@ -279,6 +280,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                     '%s -v "%s":/var/task'
                     ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
+                    ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     ' %s'
                     ' --rm'
                     ' "lambci/lambda:%s" %s'
@@ -289,7 +291,8 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
             env_vars = {
                 'AWS_LAMBDA_EVENT_BODY': event_body_escaped,
-                'HOSTNAME': DOCKER_BRIDGE_IP
+                'HOSTNAME': DOCKER_BRIDGE_IP,
+                'LOCALSTACK_HOSTNAME': DOCKER_BRIDGE_IP
             }
             result, log_output = run_lambda_executor(cmd, env_vars)
             LOG.debug('Lambda log output:\n%s' % log_output)

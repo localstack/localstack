@@ -154,6 +154,14 @@ You can pass the following environment variables to LocalStack:
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
 
+Additionally, the following *read-only* environment variables are available:
+
+* `LOCALSTACK_HOSTNAME`: Name of the host where LocalStack services are available.
+  This is needed in order to access the services from within your Lambda functions
+  (e.g., to store an item to DynamoDB or S3 from Lambda).
+  The variable `LOCALSTACK_HOSTNAME` is available for both, local Lambda execution
+  (`LAMBDA_EXECUTOR=local`) and execution inside separate Docker containers (`LAMBDA_EXECUTOR=docker`).
+
 ## Accessing the infrastructure via CLI or code
 
 You can point your `aws` CLI to use the local infrastructure, for example:
@@ -174,6 +182,9 @@ awslocal kinesis list-streams
     "StreamNames": []
 }
 ```
+
+**UPDATE**: Use the environment variable `$LOCALSTACK_HOSTNAME` to determine the target host
+inside your Lambda function. See [Configurations](#Configurations) section for more details.
 
 ### Client Libraries
 
