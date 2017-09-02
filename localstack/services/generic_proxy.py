@@ -13,6 +13,7 @@ from six import iteritems, string_types
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from localstack.config import DEFAULT_ENCODING, TMP_FOLDER, USE_SSL
+from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
 
 QUIET = False
@@ -214,8 +215,14 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         except Exception as e:
             trace = str(traceback.format_exc())
             conn_error = 'ConnectionRefusedError' in trace or 'NewConnectionError' in trace
+            error_msg = 'Error forwarding request: %s %s' % (e, trace)
             if not self.proxy.quiet or not conn_error:
-                LOGGER.error("Error forwarding request: %s %s" % (e, trace))
+                LOGGER.error(error_msg)
+                if os.environ.get(ENV_INTERNAL_TEST_RUN):
+                    # During a test run, we also want to print error messages, because
+                    # log messages are delayed until the entire test run is over, and
+                    # hence we are missing messages if the test hangs for some reason.
+                    print('ERROR: %s' % error_msg)
             self.send_response(502)  # bad gateway
             self.end_headers()
 
