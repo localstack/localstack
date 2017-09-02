@@ -3,7 +3,7 @@ import logging
 import traceback
 from localstack.constants import *
 from localstack.config import *
-from localstack.services.infra import get_service_protocol, start_proxy, do_run
+from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 from localstack.utils.common import run, is_root
 from localstack.utils.aws import aws_stack
 from localstack.services import install
@@ -40,7 +40,8 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     run('chmod -R 777 %s/infra/elasticsearch' % ROOT_PATH)
     run('mkdir -p "%s"; chmod -R 777 "%s"' % (es_data_dir, es_data_dir))
     # start proxy and ES process
-    start_proxy(port, backend_port, update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})
+    start_proxy_for_service('elasticsearch', port, backend_port,
+        update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})
     if is_root():
         cmd = "su -c '%s' localstack" % cmd
     thread = do_run(cmd, async)

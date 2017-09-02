@@ -242,12 +242,19 @@ def do_run(cmd, async, print_output=False):
         return run(cmd)
 
 
-def start_proxy(port, backend_port, update_listener, quiet=False,
-        backend_host=DEFAULT_BACKEND_HOST, params={}):
-    proxy_thread = GenericProxy(port=port, forward_host='%s:%s' % (backend_host, backend_port),
+def start_proxy_for_service(service_name, port, default_backend_port, update_listener, quiet=False, params={}):
+    # check if we have a custom backend configured
+    custom_backend_url = os.environ.get('%s_BACKEND' % service_name.upper())
+    backend_url = custom_backend_url or ('http://%s:%s' % (DEFAULT_BACKEND_HOST, default_backend_port))
+    return start_proxy(port, backend_url=backend_url, update_listener=update_listener, quiet=quiet, params=params)
+
+
+def start_proxy(port, backend_url, update_listener, quiet=False, params={}):
+    proxy_thread = GenericProxy(port=port, forward_url=backend_url,
         ssl=USE_SSL, update_listener=update_listener, quiet=quiet, params=params)
     proxy_thread.start()
     TMP_THREADS.append(proxy_thread)
+    return proxy_thread
 
 
 def start_moto_server(key, port, name=None, backend_port=None, async=False, update_listener=None):
@@ -255,16 +262,16 @@ def start_moto_server(key, port, name=None, backend_port=None, async=False, upda
         backend_port or port, constants.BIND_HOST)
     if not name:
         name = key
-    print("Starting mock %s (%s port %s)..." % (name, get_service_protocol(), port))
+    print('Starting mock %s (%s port %s)...' % (name, get_service_protocol(), port))
     if backend_port:
-        start_proxy(port, backend_port, update_listener)
+        start_proxy_for_service(key, port, backend_port, update_listener)
     elif USE_SSL:
         cmd += ' --ssl'
     return do_run(cmd, async)
 
 
 def start_local_api(name, port, method, async=False):
-    print("Starting mock %s service (%s port %s)..." % (name, get_service_protocol(), port))
+    print('Starting mock %s service (%s port %s)...' % (name, get_service_protocol(), port))
     if async:
         thread = FuncThread(method, port, quiet=True)
         thread.start()
