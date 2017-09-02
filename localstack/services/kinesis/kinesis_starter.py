@@ -4,8 +4,8 @@ from localstack.config import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import mkdir
 from localstack.services import install
-from localstack.services.install import ROOT_PATH
 from localstack.services.infra import get_service_protocol, start_proxy, do_run
+from localstack.services.install import ROOT_PATH
 
 LOGGER = logging.getLogger(__name__)
 
