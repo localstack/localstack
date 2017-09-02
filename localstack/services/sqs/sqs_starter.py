@@ -1,7 +1,7 @@
 import logging
 from localstack.config import *
 from localstack.utils.common import save_file, short_uid, TMP_FILES
-from localstack.services.infra import start_proxy, get_service_protocol, do_run
+from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq
 
 LOGGER = logging.getLogger(__name__)
@@ -32,5 +32,5 @@ def start_sqs(port=PORT_SQS, async=False, update_listener=None):
     # start process
     cmd = ('java -Dconfig.file=%s -jar %s/elasticmq-server.jar' % (config_file, INSTALL_DIR_ELASTICMQ))
     print("Starting mock SQS (%s port %s)..." % (get_service_protocol(), port))
-    start_proxy(port, backend_port, update_listener)
+    start_proxy_for_service('sqs', port, backend_port, update_listener)
     return do_run(cmd, async)

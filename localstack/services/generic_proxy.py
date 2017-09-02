@@ -135,10 +135,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         path = self.path
         if '://' in path:
             path = '/' + path.split('://', 1)[1].split('/', 1)[1]
-        proxy_url = 'http://%s%s' % (self.proxy.forward_host, path)
+        proxy_url = '%s%s' % (self.proxy.forward_url, path)
         target_url = self.path
         if '://' not in target_url:
-            target_url = 'http://%s%s' % (self.proxy.forward_host, target_url)
+            target_url = '%s%s' % (self.proxy.forward_url, target_url)
         data = None
         if method in ['POST', 'PUT', 'PATCH']:
             data_string = self.data_bytes
@@ -231,13 +231,17 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
 
 class GenericProxy(FuncThread):
-    def __init__(self, port, forward_host=None, ssl=False, host=None, update_listener=None, quiet=False, params={}):
+    def __init__(self, port, forward_url=None, ssl=False, host=None, update_listener=None, quiet=False, params={}):
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
         self.httpd = None
         self.port = port
         self.ssl = ssl
         self.quiet = quiet
-        self.forward_host = forward_host
+        if forward_url:
+            if '://' not in forward_url:
+                forward_url = 'http://%s' % forward_url
+            forward_url = forward_url.rstrip('/')
+        self.forward_url = forward_url
         self.update_listener = update_listener
         self.server_stopped = False
         # Required to enable 'Connection: keep-alive' for S3 uploads

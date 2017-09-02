@@ -4,7 +4,7 @@ from localstack.config import *
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import mkdir
 from localstack.services import install
-from localstack.services.infra import get_service_protocol, start_proxy, do_run
+from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 from localstack.services.install import ROOT_PATH
 
 LOGGER = logging.getLogger(__name__)
@@ -35,5 +35,5 @@ def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
     cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +
         '-jar DynamoDBLocal.jar -sharedDb -port %s %s') % (ROOT_PATH, backend_port, ddb_data_dir_param)
     print("Starting mock DynamoDB (%s port %s)..." % (get_service_protocol(), port))
-    start_proxy(port, backend_port, update_listener)
+    start_proxy_for_service('dynamodb', port, backend_port, update_listener)
     return do_run(cmd, async)

@@ -56,9 +56,13 @@ if not LAMBDA_EXECUTOR:
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
-CONFIG_ENV_VARS = ('SERVICES', 'DEBUG', 'HOSTNAME', 'LOCALSTACK_HOSTNAME',
+CONFIG_ENV_VARS = ['SERVICES', 'DEBUG', 'HOSTNAME', 'LOCALSTACK_HOSTNAME',
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY',
-    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY')
+    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY']
+for key, value in iteritems(DEFAULT_SERVICE_PORTS):
+    backend_override_var = '%s_BACKEND' % key.upper().replace('-', '_')
+    if os.environ.get(backend_override_var):
+        CONFIG_ENV_VARS.append(backend_override_var)
 
 # local config file path in home directory
 CONFIG_FILE_PATH = os.path.join(expanduser("~"), '.localstack')
@@ -114,7 +118,7 @@ def populate_configs():
 
         # define PORT_* variables with actual service ports as per configuration
         exec('global PORT_%s; PORT_%s = SERVICE_PORTS.get("%s", 0)' % (key_upper, key_upper, key))
-        url = "http%s://%s:%s" % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, SERVICE_PORTS.get(key, 0))
+        url = 'http%s://%s:%s' % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, SERVICE_PORTS.get(key, 0))
         # define TEST_*_URL variables with mock service endpoints
         exec('global TEST_%s_URL; TEST_%s_URL = "%s"' % (key_upper, key_upper, url))
         # expose HOST_*_URL variables as environment variables
