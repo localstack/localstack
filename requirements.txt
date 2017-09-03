@@ -15,7 +15,7 @@ flask_swagger==0.2.12
 fuzzywuzzy==0.15.1
 jsonpath-rw==1.4.0
 localstack-ext
-moto-ext==1.0.1.7
+moto-ext==1.1.1
 nose==1.3.7
 pep8==1.7.0
 psutil==5.2.0

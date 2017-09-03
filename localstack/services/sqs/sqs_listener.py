@@ -16,15 +16,17 @@ class ProxyListenerSQS(ProxyListener):
             req_data = urlparse.parse_qs(data)
             action = req_data.get('Action', [None])[0]
             event_type = None
+            queue_url = None
             if action == 'CreateQueue':
                 event_type = event_publisher.EVENT_SQS_CREATE_QUEUE
                 response_data = xmltodict.parse(response.content)
-                queue_url = response_data['CreateQueueResponse']['CreateQueueResult']['QueueUrl']
+                if 'CreateQueueResponse' in response_data:
+                    queue_url = response_data['CreateQueueResponse']['CreateQueueResult']['QueueUrl']
             elif action == 'DeleteQueue':
                 event_type = event_publisher.EVENT_SQS_DELETE_QUEUE
                 queue_url = req_data.get('QueueUrl', [None])[0]
 
-            if event_type:
+            if event_type and queue_url:
                 event_publisher.fire_event(event_type, payload={'u': event_publisher.get_hash(queue_url)})
 
             # patch the response and return https://... if we're supposed to use SSL

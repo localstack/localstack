@@ -153,6 +153,17 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
+* `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
+  service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
+  `KINESIS`, `S3`, `SNS`, `SQS`). This allows to easily integrate third-party services into LocalStack.
+
+Additionally, the following *read-only* environment variables are available:
+
+* `LOCALSTACK_HOSTNAME`: Name of the host where LocalStack services are available.
+  This is needed in order to access the services from within your Lambda functions
+  (e.g., to store an item to DynamoDB or S3 from Lambda).
+  The variable `LOCALSTACK_HOSTNAME` is available for both, local Lambda execution
+  (`LAMBDA_EXECUTOR=local`) and execution inside separate Docker containers (`LAMBDA_EXECUTOR=docker`).
 
 ## Accessing the infrastructure via CLI or code
 
@@ -174,6 +185,9 @@ awslocal kinesis list-streams
     "StreamNames": []
 }
 ```
+
+**UPDATE**: Use the environment variable `$LOCALSTACK_HOSTNAME` to determine the target host
+inside your Lambda function. See [Configurations](#Configurations) section for more details.
 
 ### Client Libraries
 
