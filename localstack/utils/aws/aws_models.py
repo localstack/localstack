@@ -25,11 +25,12 @@ class Component(object):
 
 
 class KinesisStream(Component):
-    def __init__(self, id, params={}, num_shards=1, connection=None):
+    def __init__(self, id, params=None, num_shards=1, connection=None):
         super(KinesisStream, self).__init__(id)
+        params = params or {}
         self.shards = []
-        self.stream_name = params['name'] if 'name' in params else self.name()
-        self.num_shards = params['shards'] if 'shards' in params else num_shards
+        self.stream_name = params.get('name', self.name())
+        self.num_shards = params.get('shards', num_shards)
         self.conn = connection
         self.stream_info = params
 
@@ -238,7 +239,8 @@ class EventSource(Component):
         super(EventSource, self).__init__(id)
 
     @staticmethod
-    def get(obj, pool={}, type=None):
+    def get(obj, pool=None, type=None):
+        pool = pool or {}
         if not obj:
             return None
         if isinstance(obj, Component):
@@ -271,8 +273,4 @@ class EventSource(Component):
 
     @staticmethod
     def filter_type(pool, type):
-        result = []
-        for key, obj in six.iteritems(pool):
-            if isinstance(obj, type):
-                result.append(obj)
-        return result
+        return [obj for obj in six.itervalues(pool) if isinstance(obj, type)]
