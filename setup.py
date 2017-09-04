@@ -42,6 +42,8 @@ package_data = {
         'dashboard/web/img/*',
         'dashboard/web/js/*',
         'dashboard/web/views/*',
+        'infra/*/*.jar',
+        'infra/*.jar',
         'ext/java/*.*',
         'ext/java/src/main/java/com/atlassian/localstack/*.*',
         'utils/kinesis/java/com/atlassian/*.*'
