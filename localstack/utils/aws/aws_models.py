@@ -62,14 +62,16 @@ class KinesisStream(Component):
         return self.conn.put_record(StreamName=self.stream_name, Data=data, PartitionKey=key)
 
     def read(self, amount=-1, shard='shardId-000000000001'):
-        s_iterator = kinesis_conn.get_shard_iterator(self.stream_name, shard, 'TRIM_HORIZON')
-        record = kinesis_conn.get_records(s_iterator['ShardIterator'])
+        if not self.conn:
+            raise Exception('Please create the Kinesis connection first.')
+        s_iterator = self.conn.get_shard_iterator(self.stream_name, shard, 'TRIM_HORIZON')
+        record = self.conn.get_records(s_iterator['ShardIterator'])
         while True:
             try:
                 if record['NextShardIterator'] is None:
                     break
                 else:
-                    next_entry = kinesis_conn.get_records(record['NextShardIterator'])
+                    next_entry = self.conn.get_records(record['NextShardIterator'])
                     if len(next_entry['Records']):
                         print(next_entry['Records'][0]['Data'])
                     record = next_entry
