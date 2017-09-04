@@ -1,6 +1,7 @@
 import json
 from requests.models import Response
-from localstack.config import DEFAULT_REGION, INBOUND_GATEWAY_URL_PATTERN
+from localstack.constants import DEFAULT_REGION
+from localstack.config import INBOUND_GATEWAY_URL_PATTERN
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, load_file
@@ -158,7 +159,7 @@ def test_api_gateway_lambda_proxy_integration():
     # create lambda function
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
         libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    response = testutil.create_lambda_function(func_name=TEST_LAMBDA_PROXY_BACKEND,
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_PROXY_BACKEND,
         zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27)
 
     # create API Gateway and connect it to the Lambda proxy backend

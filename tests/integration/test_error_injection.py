@@ -1,10 +1,7 @@
-import boto3
 from nose.tools import assert_raises, assert_equal
 from botocore.exceptions import ClientError
 from localstack import config
-from localstack.utils.common import *
-from localstack.services import infra
-from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.common import short_uid
 from localstack.utils.aws import aws_stack
 from localstack.utils import testutil
 from .lambdas import lambda_integration
@@ -15,7 +12,7 @@ TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 
 def test_kinesis_error_injection():
     kinesis = aws_stack.connect_to_service('kinesis')
-    stream = aws_stack.create_kinesis_stream(TEST_STREAM_NAME)
+    aws_stack.create_kinesis_stream(TEST_STREAM_NAME)
 
     records = [
         {

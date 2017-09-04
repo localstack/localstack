@@ -16,7 +16,7 @@ jsonpath-rw==1.4.0
 localstack-ext
 moto-ext==1.1.1
 nose==1.3.7
-pep8==1.7.0
+flake8==3.4.1
 psutil==5.2.0
 pyOpenSSL==17.0.0
 python-coveralls==2.7.0

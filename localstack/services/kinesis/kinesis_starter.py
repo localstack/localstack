@@ -1,6 +1,7 @@
 import logging
 import traceback
-from localstack.config import *
+from localstack.config import PORT_KINESIS, DATA_DIR
+from localstack.constants import DEFAULT_PORT_KINESIS_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import mkdir
 from localstack.services import install
@@ -29,7 +30,7 @@ def check_kinesis(expect_shutdown=False, print_error=False):
     out = None
     try:
         # check Kinesis
-        out = aws_stack.connect_to_service(service_name='kinesis', client=True, env=ENV_DEV).list_streams()
+        out = aws_stack.connect_to_service(service_name='kinesis').list_streams()
     except Exception as e:
         if print_error:
             LOGGER.error('Kinesis health check failed: %s %s' % (e, traceback.format_exc()))

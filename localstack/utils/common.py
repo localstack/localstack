@@ -3,6 +3,7 @@ from __future__ import print_function
 import threading
 import traceback
 import os
+import sys
 import hashlib
 import uuid
 import time
@@ -24,7 +25,7 @@ from six.moves.urllib.parse import urlparse
 from six.moves import cStringIO as StringIO
 from six import with_metaclass
 from multiprocessing.dummy import Pool
-from localstack.constants import *
+from localstack.constants import ENV_DEV
 from localstack.config import DEFAULT_ENCODING
 
 # arrays for temporary files and resources
@@ -42,6 +43,7 @@ mutex_popen = threading.Semaphore(1)
 # misc. constants
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
 TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
+CODEC_HANDLER_UNDERSCORE = 'underscore'
 
 # chunk size for file downloads
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
@@ -76,7 +78,7 @@ class FuncThread (threading.Thread):
     def run(self):
         try:
             self.func(self.params)
-        except Exception as e:
+        except Exception:
             if not self.quiet:
                 LOGGER.warning("Thread run method %s(%s) failed: %s" %
                     (self.func, self.params, traceback.format_exc()))
@@ -156,9 +158,9 @@ class ShellCommandThread (FuncThread):
                 child.kill()
             parent.kill()
             self.process = None
-        except Exception as e:
+        except Exception:
             if not quiet:
-                LOGGER.warning('Unable to kill process with pid %s' % pid)
+                LOGGER.warning('Unable to kill process with pid %s' % parent_pid)
 
 
 # Generic JSON serializable object for simplified subclassing
@@ -422,7 +424,7 @@ def cleanup_tmp_files():
                 run('rm -rf "%s"' % tmp)
             else:
                 os.remove(tmp)
-        except Exception as e:
+        except Exception:
             pass  # file likely doesn't exist, or permission denied
     del TMP_FILES[:]
 
@@ -454,7 +456,7 @@ def is_jar_archive(content):
     # TODO Simple stupid heuristic to determine whether a file is a JAR archive
     try:
         return 'class' in content and 'META-INF' in content
-    except TypeError as e:
+    except TypeError:
         # in Python 3 we need to use byte strings for byte-based file content
         return b'class' in content and b'META-INF' in content
 

@@ -5,24 +5,28 @@ import time
 import signal
 import traceback
 import logging
-import json
 import boto3
 import subprocess
 import six
 import warnings
 import pkgutil
 from localstack import constants, config
-from localstack.config import *
-from localstack.utils.aws import aws_stack
+from localstack.constants import (ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER,
+    DEFAULT_PORT_S3_BACKEND, DEFAULT_PORT_APIGATEWAY_BACKEND,
+    DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_CLOUDFORMATION_BACKEND)
+from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
+    PORT_FIREHOSE, PORT_LAMBDA, PORT_SNS, PORT_REDSHIFT, PORT_CLOUDWATCH,
+    PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_CLOUDFORMATION, PORT_APIGATEWAY)
 from localstack.utils import common, persistence
-from localstack.utils.common import *
+from localstack.utils.common import (run, TMP_THREADS, in_ci,
+    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.services.es import es_api
-from localstack.services.generic_proxy import GenericProxy, SERVER_CERT_PEM_FILE
+from localstack.services.generic_proxy import GenericProxy
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -303,7 +307,7 @@ def check_aws_credentials():
     credentials = None
     try:
         credentials = session.get_credentials()
-    except Exception as e:
+    except Exception:
         pass
     if not credentials:
         # set temporary dummy credentials

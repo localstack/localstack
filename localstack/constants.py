@@ -1,5 +1,4 @@
 import os
-import sys
 
 # LocalStack version
 VERSION = '0.7.5'

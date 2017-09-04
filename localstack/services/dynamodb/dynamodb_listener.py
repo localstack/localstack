@@ -5,9 +5,9 @@ from binascii import crc32
 from requests.models import Response
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import *
+from localstack.utils.common import to_bytes, to_str, clone
 from localstack.utils.analytics import event_publisher
-from localstack.constants import *
+from localstack.constants import DEFAULT_REGION
 from localstack.services.awslambda import lambda_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.services.generic_proxy import ProxyListener
@@ -38,7 +38,6 @@ class ProxyListenerDynamoDB(ProxyListener):
         if not action:
             return
 
-        response_data = json.loads(to_str(response.content))
         record = {
             "eventID": "1",
             "eventVersion": "1.0",

@@ -1,5 +1,4 @@
 import os
-import time
 import logging
 from localstack.utils.kinesis import kinesis_connector
 

@@ -2,8 +2,6 @@
 
 from __future__ import print_function
 
-import os
-import sys
 import re
 from setuptools import find_packages, setup
 

@@ -100,7 +100,7 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p `which python3`" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); pep8 --max-line-length=120 --ignore=E128 --exclude=node_modules,$(VENV_DIR)*,dist .)
+	($(VENV_RUN); flake8 --show-source --max-line-length=120 --ignore=E128 --exclude=node_modules,$(VENV_DIR)*,dist .)
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/

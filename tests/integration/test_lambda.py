@@ -1,9 +1,10 @@
 import os
 import json
 from io import BytesIO
+from localstack.constants import LOCALSTACK_ROOT_FOLDER
 from localstack.utils import testutil
-from localstack.utils.common import *
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid, load_file, to_str, mkdir, download
 from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_NODEJS,
     LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, use_docker)
@@ -67,7 +68,7 @@ def test_lambda_runtimes():
     # deploy and invoke lambda - Python 2.7
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
         libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    response = testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_PY,
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_PY,
         zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27)
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}')
     assert result['StatusCode'] == 200
@@ -78,7 +79,7 @@ def test_lambda_runtimes():
         # deploy and invoke lambda - Python 3.6
         zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON3), get_content=True,
             libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36)
-        response = testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_PY3,
+        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_PY3,
             zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON36)
         result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
         assert result['StatusCode'] == 200
@@ -90,7 +91,7 @@ def test_lambda_runtimes():
         mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
         download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
     zip_file = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
-    response = testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=zip_file,
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=zip_file,
         runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaHandler')
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
     assert result['StatusCode'] == 200
@@ -115,7 +116,7 @@ def test_lambda_environment():
     # deploy and invoke lambda without Docker
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True,
         libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    response = testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_ENV,
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_ENV,
         zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27, envvars={'Hello': 'World'})
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_ENV, Payload=b'{}')
     assert result['StatusCode'] == 200

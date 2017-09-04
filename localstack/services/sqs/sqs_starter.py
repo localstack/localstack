@@ -1,5 +1,7 @@
+import os
 import logging
-from localstack.config import *
+from localstack.constants import DEFAULT_PORT_SQS_BACKEND
+from localstack.config import PORT_SQS, LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.common import save_file, short_uid, TMP_FILES
 from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq

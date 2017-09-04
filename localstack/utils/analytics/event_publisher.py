@@ -61,7 +61,7 @@ def get_or_create_file(config_file):
     try:
         save_file(config_file, '{}')
         return config_file
-    except Exception as e:
+    except Exception:
         pass
 
 
@@ -117,8 +117,8 @@ def poll_and_send_messages(params):
             event = EVENT_QUEUE.get(block=True, timeout=None)
             event = event.to_dict()
             endpoint = '%s/events' % API_ENDPOINT
-            result = requests.post(endpoint, json=event)
-        except Exception as e:
+            requests.post(endpoint, json=event)
+        except Exception:
             # silently fail, make collection of usage data as non-intrusive as possible
             time.sleep(1)
 

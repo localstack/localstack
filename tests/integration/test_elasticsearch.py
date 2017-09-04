@@ -1,9 +1,7 @@
-import boto3
 import json
 import time
 from botocore.exceptions import ClientError
 from nose.tools import assert_raises, assert_equal, assert_true, assert_false
-from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import safe_requests as requests
 

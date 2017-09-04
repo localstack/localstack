@@ -4,7 +4,7 @@ import base64
 import traceback
 import requests
 import logging
-from localstack.config import DATA_DIR, DEFAULT_ENCODING
+from localstack.config import DATA_DIR
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_bytes, to_str
 

@@ -86,7 +86,7 @@ class KinesisStream(Component):
                 status = self.get_status()
                 if status == 'ACTIVE':
                     return
-            except Exception as e:
+            except Exception:
                 # swallowing this exception should be ok, as we are in a retry loop
                 pass
             time.sleep(GET_STATUS_SLEEP_SECS)

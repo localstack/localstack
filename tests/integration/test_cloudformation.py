@@ -1,10 +1,10 @@
 import os
-import yaml
 import unittest
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry
 from localstack.utils.cloudformation import template_deployer
 from botocore.exceptions import ClientError
+from botocore.parsers import ResponseParserError
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_TEMPLATE_1 = os.path.join(THIS_FOLDER, 'templates', 'template1.yaml')
@@ -76,8 +76,9 @@ class CloudFormationTest(unittest.TestCase):
         invalid_json = '{"this is invalid JSON"="bobbins"}'
 
         try:
-            response = cloudformation.validate_template(TemplateBody=invalid_json)
-            self.fail("Should raise ValidationError")
-        except ClientError as err:
-            assert err.response['ResponseMetadata']['HTTPStatusCode'] == 400
-            assert err.response['Error']['Message'] == "Template Validation Error"
+            cloudformation.validate_template(TemplateBody=invalid_json)
+            self.fail('Should raise ValidationError')
+        except (ClientError, ResponseParserError) as err:
+            if isinstance(err, ClientError):
+                assert err.response['ResponseMetadata']['HTTPStatusCode'] == 400
+                assert err.response['Error']['Message'] == "Template Validation Error"

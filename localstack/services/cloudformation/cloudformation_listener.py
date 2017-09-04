@@ -1,15 +1,11 @@
 import re
 import uuid
-import json
 import logging
-import yaml
 import xmltodict
 import requests
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
-from localstack.constants import *
-from localstack.config import DEFAULT_REGION
-from localstack.utils import common
+from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -95,10 +91,10 @@ def execute_change_set(req_data):
     # update stack information
     cloudformation_service = aws_stack.connect_to_service('cloudformation')
     if stack_exists(stack_name):
-        result = cloudformation_service.update_stack(StackName=stack_name,
+        cloudformation_service.update_stack(StackName=stack_name,
             TemplateBody=template)
     else:
-        result = cloudformation_service.create_stack(StackName=stack_name,
+        cloudformation_service.create_stack(StackName=stack_name,
             TemplateBody=template)
 
     # now run the actual deployment
@@ -120,11 +116,11 @@ def validate_template(req_data):
     """
 
     try:
-        template = template_deployer.template_to_json(req_data.get('TemplateBody')[0])
+        template_deployer.template_to_json(req_data.get('TemplateBody')[0])
         response = make_response('ValidateTemplate', response_content)
         return response
     except Exception as err:
-        response = error_response("Template Validation Error")
+        response = error_response('Template Validation Error: %s' % err)
         return response
 
 
@@ -172,7 +168,7 @@ class ProxyListenerCloudFormation(ProxyListener):
                         cloudformation_client = aws_stack.connect_to_service('cloudformation')
                         try:
                             cloudformation_client.describe_stacks(StackName=stack_name)
-                        except Exception as e:
+                        except Exception:
                             return error_response('Stack with id %s does not exist' % stack_name, code=404)
             if action == 'DescribeStackResource':
                 if response.status_code >= 500:

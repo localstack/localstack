@@ -1,22 +1,17 @@
 from __future__ import print_function
 
-import os
 import json
 import uuid
 import time
 import logging
-import sys
-import boto3
 import base64
 import traceback
-from datetime import datetime
-from flask import Flask, jsonify, request, make_response
-from localstack.config import TEST_S3_URL
-from localstack.constants import *
+from flask import Flask, jsonify, request
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.aws import aws_responses
-from localstack.utils.aws.aws_stack import *
+from localstack.utils.aws.aws_stack import get_s3_client, firehose_stream_arn
 from six import iteritems
 
 APP_NAME = 'firehose_api'

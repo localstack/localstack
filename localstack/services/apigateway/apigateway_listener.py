@@ -3,7 +3,7 @@ import logging
 import json
 import requests
 from requests.models import Response
-from localstack.constants import *
+from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.config import TEST_KINESIS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
@@ -89,7 +89,7 @@ class ProxyListenerApiGateway(ProxyListener):
             path = '/%s' % search_match.group(3)
             try:
                 integration = aws_stack.get_apigateway_integration(api_id, method, path)
-            except Exception as e:
+            except Exception:
                 msg = ('API Gateway endpoint "%s" for method "%s" not found' % (path, method))
                 LOGGER.warning(msg)
                 return make_error(msg, 404)
@@ -115,7 +115,6 @@ class ProxyListenerApiGateway(ProxyListener):
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
                     data_str = json.dumps(data) if isinstance(data, dict) else data
                     # TODO: fetch actual resource path from the API. Could be something like "/{proxy+}"
-                    resource_path = path
                     result = lambda_api.process_apigateway_invocation(func_arn, path, data_str,
                         headers=headers, method=method, resource_path=path)
                     response = Response()

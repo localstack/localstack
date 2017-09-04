@@ -1,19 +1,14 @@
-import json
-import boto3
-import uuid
 import os
+import json
 import time
 import glob
 import tempfile
 from six import iteritems
-from localstack.constants import REGION_LOCAL, LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
-from localstack.config import TEST_S3_URL
+from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
-from localstack.utils.common import *
+from localstack.utils.common import run, mkdir, to_str, save_file, TMP_FILES
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import DynamoDB, ElasticSearch
-from localstack.utils.kinesis import kinesis_connector
 
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
@@ -109,7 +104,7 @@ def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=L
 
     client = aws_stack.connect_to_service('lambda')
     # create function
-    result = client.create_function(
+    client.create_function(
         FunctionName=func_name,
         Runtime=runtime,
         Handler=handler,

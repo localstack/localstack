@@ -1,14 +1,14 @@
+import os
 import six
 import logging
 import traceback
-from localstack.constants import *
-from localstack.config import *
+from localstack.constants import DEFAULT_PORT_ELASTICSEARCH_BACKEND, LOCALSTACK_ROOT_FOLDER
+from localstack.config import PORT_ELASTICSEARCH, DATA_DIR
 from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 from localstack.utils.common import run, is_root
 from localstack.utils.aws import aws_stack
 from localstack.services import install
 from localstack.services.install import ROOT_PATH
-from localstack.services.generic_proxy import GenericProxy
 
 LOGGER = logging.getLogger(__name__)
 

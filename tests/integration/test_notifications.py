@@ -1,7 +1,5 @@
 import json
 from io import BytesIO
-from localstack.config import HOSTNAME, PORT_SQS
-from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, short_uid

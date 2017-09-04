@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timedelta
-from flask import Flask, Response
+from flask import Response
 from localstack import config
 from localstack.utils.common import now_utc, make_http_request, to_str
 from localstack.utils.aws import aws_stack
@@ -107,7 +107,9 @@ def cloudwatched(ns):
                 publish_error(ns, time_before, e, kwargs)
                 raise e
             finally:
-                time_after = now_utc()
+                # TODO
+                # time_after = now_utc()
+                pass
             return result
         return wrapped
     return wrapping
