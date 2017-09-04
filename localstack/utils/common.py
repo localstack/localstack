@@ -345,6 +345,8 @@ def download(url, path, verify_ssl=True):
     r = s.get(url, stream=True, verify=verify_ssl)
     total = 0
     try:
+        if not os.path.exists(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path))
         LOGGER.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
         with open(path, 'wb') as f:
             for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
