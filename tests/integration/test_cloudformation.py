@@ -1,5 +1,6 @@
 import os
 import yaml
+import unittest
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry
 from localstack.utils.cloudformation import template_deployer
@@ -41,42 +42,42 @@ def get_stack_details(stack_name):
             return stack
 
 
-def test_apply_template():
-    cloudformation = aws_stack.connect_to_resource('cloudformation')
-    template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
+class CloudFormationTest(unittest.TestCase):
 
-    # deploy template
-    cloudformation.create_stack(StackName=TEST_STACK_NAME, TemplateBody=template)
+    def test_apply_template(self):
+        cloudformation = aws_stack.connect_to_resource('cloudformation')
+        template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
 
-    # wait for deployment to finish
-    def check_stack():
-        stack = get_stack_details(TEST_STACK_NAME)
-        assert stack['StackStatus'] == 'CREATE_COMPLETE'
+        # deploy template
+        cloudformation.create_stack(StackName=TEST_STACK_NAME, TemplateBody=template)
 
-    retry(check_stack, retries=3, sleep=2)
+        # wait for deployment to finish
+        def check_stack():
+            stack = get_stack_details(TEST_STACK_NAME)
+            assert stack['StackStatus'] == 'CREATE_COMPLETE'
 
-    # assert that bucket has been created
-    assert bucket_exists('cf-test-bucket-1')
-    # assert that queue has been created
-    assert queue_exists('cf-test-queue-1')
-    # assert that stream has been created
-    assert stream_exists('cf-test-stream-1')
+        retry(check_stack, retries=3, sleep=2)
 
+        # assert that bucket has been created
+        assert bucket_exists('cf-test-bucket-1')
+        # assert that queue has been created
+        assert queue_exists('cf-test-queue-1')
+        # assert that stream has been created
+        assert stream_exists('cf-test-stream-1')
 
-def test_validate_template():
-    cloudformation = aws_stack.connect_to_service('cloudformation')
-    template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
-    response = cloudformation.validate_template(TemplateBody=template)
-    assert response['ResponseMetadata']['HTTPStatusCode'] == 200
+    def test_validate_template(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
+        response = cloudformation.validate_template(TemplateBody=template)
+        assert response['ResponseMetadata']['HTTPStatusCode'] == 200
 
+    def test_validate_invalid_json_template_should_fail(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        invalid_json = '{"this is invalid JSON"="bobbins"}'
 
-def test_validate_invalid_json_template_should_fail():
-    cloudformation = aws_stack.connect_to_service('cloudformation')
-    invalid_json = '{"this is invalid JSON"="bobbins"}'
-
-    try:
-        response = cloudformation.validate_template(TemplateBody=invalid_json)
-        fail("Should raise ValidationError")
-    except ClientError as err:
-        assert err.response['ResponseMetadata']['HTTPStatusCode'] == 400
-        assert err.response['Error']['Message'] == "Template Validation Error"
+        try:
+            response = cloudformation.validate_template(TemplateBody=invalid_json)
+            self.fail("Should raise ValidationError")
+        except ClientError as err:
+            assert err.response['ResponseMetadata']['HTTPStatusCode'] == 400
+            assert err.response['Error']['Message'] == "Template Validation Error"
