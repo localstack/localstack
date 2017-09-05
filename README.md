@@ -74,7 +74,7 @@ missing functionality on top of them:
   cloud environment.
 * **Pluggable services**: All services in *LocalStack* are easily pluggable (and replaceable), due to the fact that
   we are using isolated processes for each service. This allows us to keep the framework up-to-date and select
-  best-of-breed mocks for each individual service (e.g., kinesalite is much more advanced than its moto counterpart).
+  best-of-breed mocks for each individual service.
 
 
 ## Requirements
@@ -130,8 +130,11 @@ You can pass the following environment variables to LocalStack:
   Example value: `kinesis,lambda:4569,sqs:4570` to start Kinesis on the default port,
   Lambda on port 4569, and SQS on port 4570.
 * `DEFAULT_REGION`: AWS region to use when talking to the API (defaults to `us-east-1`).
-* `HOSTNAME`: If you need to expose your services on a specific host
-  (defaults to `localhost`).
+* `HOSTNAME`: Name of the host to expose the services internally (defaults to `localhost`).
+  Use this to customize the framework-internal communication, e.g., if services are
+  started in different containers using docker-compose.
+* `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (defaults to `localhost`).
+  This host is used, e.g., when returning queue URLs from the SQS service to the client.
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (defaults to `false`).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
