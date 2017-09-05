@@ -1,4 +1,7 @@
-from localstack.services.infra import *
+from localstack.services.infra import (register_plugin, Plugin,
+    start_s3, start_sns, start_ses, start_apigateway,
+    start_elasticsearch_service, start_lambda, start_redshift, start_firehose,
+    start_cloudwatch, start_cloudformation, start_dynamodbstreams, start_route53)
 from localstack.services.apigateway import apigateway_listener
 from localstack.services.cloudformation import cloudformation_listener
 from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter

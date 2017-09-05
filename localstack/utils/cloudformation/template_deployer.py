@@ -2,7 +2,6 @@ import json
 import yaml
 import logging
 import traceback
-from threading import local
 from six import iteritems
 from six import string_types
 from localstack.utils import common
@@ -165,7 +164,7 @@ RESOURCE_TO_FUNCTION = {
 def parse_template(template):
     try:
         return json.loads(template)
-    except Exception as e:
+    except Exception:
         return yaml.load(template)
 
 
@@ -196,7 +195,7 @@ def get_client(resource):
             return aws_stack.connect_to_resource(service)
         return aws_stack.connect_to_service(service)
     except Exception as e:
-        LOGGER.warning('Unable to get client for "%s" API, skipping deployment.' % service)
+        LOGGER.warning('Unable to get client for "%s" API, skipping deployment: %s' % (service, e))
         return None
 
 
@@ -294,7 +293,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     except Exception as e:
         # we expect this to be a "not found" exception
         markers = ['NoSuchBucket', 'ResourceNotFound', '404']
-        if not list(filter(lambda marker: marker in str(e), markers)):
+        if not list(filter(lambda marker, e=e: marker in str(e), markers)):
             LOGGER.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
                 (resource_type, e, traceback.format_exc(), resource, resource_status))
     return None
@@ -321,14 +320,13 @@ def extract_resource_attribute(resource_type, resource, attribute):
     elif resource_type == 'ApiGateway::Resource':
         if attribute == 'PhysicalResourceId':
             return resource['id']
-    result = resource.get(attribute)
+    return resource.get(attribute)
 
 
 def resolve_ref(stack_name, ref, resources, attribute):
     LOGGER.debug('Resolving ref %s - %s' % (ref, attribute))
     if ref == 'AWS::Region':
         return DEFAULT_REGION
-    client = aws_stack.connect_to_service('cloudformation')
     resource_status = describe_stack_resources(stack_name, ref)[0]
     attr_value = resource_status.get(attribute)
     if attr_value not in [None, '']:
@@ -365,11 +363,13 @@ def resolve_refs_recursively(stack_name, value, resources):
 
 
 def set_status_deployed(resource_id, resource, stack_name):
-    client = aws_stack.connect_to_service('cloudformation')
-    template = {
-        # TODO update deployment status
-        MARKER_DONT_REDEPLOY_STACK: {}
-    }
+    # TODO
+    pass
+    # client = aws_stack.connect_to_service('cloudformation')
+    # template = {
+    #     # TODO update deployment status
+    #     MARKER_DONT_REDEPLOY_STACK: {}
+    # }
     # TODO: instead of calling update_stack, introduce a backdoor API method to
     # update the deployment status of individual resources. The problem with
     # using the code below is that it sets the status to UPDATE_COMPLETE which may

@@ -1,5 +1,4 @@
 import json
-import traceback
 import base64
 import boto3.dynamodb.types
 from io import BytesIO

@@ -1,15 +1,15 @@
 import os
+import re
 import boto3
 import json
 import base64
 import logging
-import re
 from six import iteritems
-from threading import Timer
 from localstack import config
-from localstack.constants import *
-from localstack.utils.common import *
-from localstack.utils.aws.aws_models import *
+from localstack.constants import (REGION_LOCAL, DEFAULT_REGION,
+    ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0)
+from localstack.utils.common import run_safe, to_str, is_string, make_http_request, timestamp
+from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
 ENV_ACCESS_KEY = 'AWS_ACCESS_KEY_ID'
@@ -120,7 +120,6 @@ def get_boto3_credentials():
 
 
 def get_boto3_session():
-    my_session = None
     if CUSTOM_BOTO3_SESSION:
         return CUSTOM_BOTO3_SESSION
     if CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
@@ -387,7 +386,7 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
         api_resource = client.create_resource(restApiId=api_id, parentId=root_res_id, pathPart=path)
         # add methods to the API resource
         for method in methods:
-            api_method = client.put_method(
+            client.put_method(
                 restApiId=api_id,
                 resourceId=api_resource['id'],
                 httpMethod=method['httpMethod'],
@@ -398,7 +397,7 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
             integrations = method['integrations']
             create_api_gateway_integrations(api_id, api_resource['id'], method, integrations, env=env)
     # deploy the API gateway
-    api_deployed = client.create_deployment(restApiId=api_id, stageName=stage_name)
+    client.create_deployment(restApiId=api_id, stageName=stage_name)
     return api
 
 
@@ -411,7 +410,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=[]
         client_error_code = integration.get('clientErrorCode') or '400'
         server_error_code = integration.get('serverErrorCode') or '500'
         # create integration
-        response = client.put_integration(
+        client.put_integration(
             restApiId=api_id,
             resourceId=resource_id,
             httpMethod=method['httpMethod'],
@@ -428,7 +427,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=[]
         # create response configs
         for response_config in response_configs:
             # create integration response
-            response = client.put_integration_response(
+            client.put_integration_response(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=method['httpMethod'],
@@ -437,7 +436,7 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=[]
                 selectionPattern=response_config['pattern']
             )
             # create method response
-            response = client.put_method_response(
+            client.put_method_response(
                 restApiId=api_id,
                 resourceId=resource_id,
                 httpMethod=method['httpMethod'],
@@ -514,7 +513,7 @@ def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
         for record in records:
             try:
                 record['Data'] = to_str(record['Data'])
-            except Exception as e:
+            except Exception:
                 pass
         result.extend(records)
         shard_iterator = records_response['NextShardIterator'] if records else False

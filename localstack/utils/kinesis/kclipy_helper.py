@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-from amazon_kclpy import kcl
-from glob import glob
-from localstack.utils.common import save_file, run
 import os
-import argparse
-import sys
-import samples
-import traceback
+from glob import glob
 from six import iteritems
+from amazon_kclpy import kcl
+from localstack.utils.common import save_file
 
 
 def get_dir_of_file(f):

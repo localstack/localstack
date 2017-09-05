@@ -10,7 +10,7 @@ import six
 from six import iteritems
 from six.moves.urllib import parse as urlparse
 from requests.models import Response, Request
-from localstack.constants import *
+from localstack.constants import DEFAULT_REGION
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
@@ -126,7 +126,6 @@ def send_notifications(method, bucket_name, object_path):
                     file_name=urlparse.urlparse(object_path[1:]).path
                 )
                 message = json.dumps(message)
-                result = None
                 if config.get('Queue'):
                     sqs_client = aws_stack.connect_to_service('sqs')
                     try:
@@ -443,7 +442,7 @@ class ProxyListenerS3(ProxyListener):
             response_content_str = None
             try:
                 response_content_str = to_str(response._content)
-            except Exception as e:
+            except Exception:
                 pass
 
             # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:

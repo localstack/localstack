@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import sys
 import re
 import tempfile
 import time
@@ -10,9 +9,10 @@ import logging
 from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
-from localstack.constants import *
+from localstack.constants import (LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER,
+    REGION_LOCAL, DEFAULT_REGION, DEFAULT_PORT_KINESIS, DEFAULT_PORT_DYNAMODB)
 from localstack.config import HOSTNAME, USE_SSL
-from localstack.utils.common import *
+from localstack.utils.common import run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
 from localstack.utils.common import ShellCommandThread, FuncThread
@@ -431,12 +431,12 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         # Wait at most 90 seconds for initialization. Note that creating the DDB table can take quite a bit
         try:
             listener.sync_init.get(block=True, timeout=90)
-        except Exception as e:
+        except Exception:
             raise Exception('Timeout when waiting for KCL initialization.')
         # wait at most 30 seconds for shard lease notification
         try:
             listener.sync_take_shard.get(block=True, timeout=30)
-        except Exception as e:
+        except Exception:
             # this merely means that there is no shard available to take. Do nothing.
             pass
 

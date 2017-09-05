@@ -25,10 +25,10 @@ from six import iteritems
 from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
 from localstack import config
-from localstack.constants import *
 from localstack.services import generic_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
-from localstack.utils.common import *
+from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES,
+    unzip, is_zip_file, run, short_uid, cp_r, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -81,7 +81,8 @@ DO_USE_DOCKER = None
 
 
 def cleanup():
-    global lambda_arn_to_function, event_source_mappings, lambda_arn_to_cwd, lambda_arn_to_handler
+    global event_source_mappings
+    global lambda_arn_to_function, lambda_arn_to_cwd, lambda_arn_to_handler, lambda_arn_to_runtime
     # reset the state
     lambda_arn_to_function = {}
     lambda_arn_to_cwd = {}
@@ -144,7 +145,7 @@ def use_docker():
                 run('docker images', print_error=False)
                 # run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
                 DO_USE_DOCKER = True
-            except Exception as e:
+            except Exception:
                 pass
     return DO_USE_DOCKER
 
@@ -660,7 +661,7 @@ def invoke_function(function):
     if request.data:
         try:
             data = json.loads(to_str(request.data))
-        except Exception as e:
+        except Exception:
             return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
     result = run_lambda(lambda_function, func_arn=arn, event=data, context={})
     if isinstance(result, dict):

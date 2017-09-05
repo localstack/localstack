@@ -1,7 +1,4 @@
-import os
 import json
-import uuid
-import logging
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack

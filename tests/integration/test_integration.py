@@ -1,16 +1,10 @@
-import os
-import sys
 import json
 import time
-import base64
 import logging
 from datetime import datetime, timedelta
-from docopt import docopt
 from nose.tools import assert_raises
 from localstack.utils import testutil
-from localstack.utils.common import *
-from localstack.constants import LAMBDA_TEST_ROLE, LOCALSTACK_ROOT_FOLDER
-from localstack.services import infra
+from localstack.utils.common import load_file, short_uid, clone, to_bytes, to_str, run_safe
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
@@ -56,6 +50,7 @@ def test_firehose_s3():
             'Prefix': s3_prefix
         }
     )
+    assert stream
     assert TEST_FIREHOSE_NAME in firehose.list_delivery_streams()['DeliveryStreamNames']
     # create target S3 bucket
     s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)

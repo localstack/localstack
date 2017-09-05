@@ -18,7 +18,6 @@ ACTION_DELETE_STREAM = '%s.DeleteStream' % ACTION_PREFIX
 class ProxyListenerKinesis(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        action = headers.get('X-Amz-Target')
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             return kinesis_error_response(data)
         return True

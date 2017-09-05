@@ -5,7 +5,7 @@ import sys
 import glob
 import shutil
 import logging
-from localstack.config import *
+import tempfile
 from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL
 from localstack.utils.common import download, parallelize, run, mkdir, save_file, unzip, rm_rf
 
@@ -135,7 +135,7 @@ def is_alpine():
     try:
         run('cat /etc/issue | grep Alpine', print_error=False)
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 
@@ -148,7 +148,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 
     try:
         download_and_extract()
-    except Exception as e:
+    except Exception:
         # try deleting and re-downloading the zip file
         LOGGER.info('Unable to extract file, re-downloading ZIP archive: %s' % tmp_archive)
         rm_rf(tmp_archive)

@@ -1,5 +1,4 @@
 from localstack.dashboard import infra
-from localstack.config import USE_SSL
 
 
 def test_infra_graph_generation():

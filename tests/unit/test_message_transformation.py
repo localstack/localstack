@@ -1,6 +1,5 @@
 import json
 import base64
-from localstack.config import DEFAULT_ENCODING
 from localstack.utils.aws.aws_stack import render_velocity_template
 from localstack.utils.common import to_str
 

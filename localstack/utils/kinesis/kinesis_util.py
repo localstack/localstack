@@ -51,8 +51,8 @@ class EventFileReaderThread(FuncThread):
                     else:
                         self.callback(records)
                 except Exception as e:
-                    LOGGER.warning("Unable to process JSON line: '%s': %s. Callback: %s" %
-                        (truncate(line), traceback.format_exc(), self.callback))
+                    LOGGER.warning("Unable to process JSON line: '%s': %s %s. Callback: %s" %
+                        (truncate(line), e, traceback.format_exc(), self.callback))
         conn.close()
 
     def stop(self, quiet=True):

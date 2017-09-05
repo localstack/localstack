@@ -1,6 +1,7 @@
 import logging
 import traceback
-from localstack.config import *
+from localstack.config import PORT_DYNAMODB, DATA_DIR
+from localstack.constants import DEFAULT_PORT_DYNAMODB_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import mkdir
 from localstack.services import install
@@ -14,7 +15,7 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
     out = None
     try:
         # check DynamoDB
-        out = aws_stack.connect_to_service(service_name='dynamodb', client=True, env=ENV_DEV).list_tables()
+        out = aws_stack.connect_to_service(service_name='dynamodb').list_tables()
     except Exception as e:
         if print_error:
             LOGGER.error('DynamoDB health check failed: %s %s' % (e, traceback.format_exc()))

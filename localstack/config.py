@@ -2,9 +2,9 @@ import re
 import os
 import subprocess
 import tempfile
-from six import iteritems
-from localstack.constants import *
 from os.path import expanduser
+from six import iteritems
+from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
@@ -134,4 +134,5 @@ populate_configs()
 
 
 # set URL pattern of inbound API gateway
-INBOUND_GATEWAY_URL_PATTERN = '%s/restapis/{api_id}/{stage_name}/%s{path}' % (TEST_APIGATEWAY_URL, PATH_USER_REQUEST)
+INBOUND_GATEWAY_URL_PATTERN = ('%s/restapis/{api_id}/{stage_name}/%s{path}' %
+    (TEST_APIGATEWAY_URL, PATH_USER_REQUEST))  # flake8: noqa
