@@ -12,8 +12,11 @@ KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', ''
 # randomly inject faults to DynamoDB
 DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', '').strip() or 0.0)
 
-# allow custom hostname for services
+# expose services on a specific host internally
 HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
+
+# expose services on a specific host externally
+HOSTNAME_EXTERNAL = os.environ.get('HOSTNAME_EXTERNAL', '').strip() or LOCALHOST
 
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
@@ -56,8 +59,8 @@ if not LAMBDA_EXECUTOR:
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
-CONFIG_ENV_VARS = ['SERVICES', 'DEBUG', 'HOSTNAME', 'LOCALSTACK_HOSTNAME',
-    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY',
+CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME',
+    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY', 'DEBUG',
     'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY']
 for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     backend_override_var = '%s_BACKEND' % key.upper().replace('-', '_')
