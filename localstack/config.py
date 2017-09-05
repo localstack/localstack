@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 from os.path import expanduser
 from six import iteritems
-from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST
+from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
@@ -46,6 +46,9 @@ DEFAULT_ENCODING = 'utf-8'
 # path to local Docker UNIX domain socket
 DOCKER_SOCK = os.environ.get('DOCKER_SOCK', '').strip() or '/var/run/docker.sock'
 
+# port of Web UI
+PORT_WEB_UI = int(os.environ.get('PORT_WEB_UI', '').strip() or DEFAULT_PORT_WEB_UI)
+
 # whether to use Lambda functions in a Docker container
 LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR', '').strip()
 if not LAMBDA_EXECUTOR:
@@ -61,7 +64,7 @@ if not LAMBDA_EXECUTOR:
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME',
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'USE_SSL', 'LICENSE_KEY', 'DEBUG',
-    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY']
+    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI']
 for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     backend_override_var = '%s_BACKEND' % key.upper().replace('-', '_')
     if os.environ.get(backend_override_var):

@@ -71,7 +71,7 @@ Options:
     args.update(docopt(cmd_web.__doc__.strip(), argv=argv))
     if args['<subcommand>'] == 'start':
         import localstack.dashboard.api
-        port = args['--port'] or constants.DEFAULT_PORT_WEB_UI
+        port = args['--port'] or config.PORT_WEB_UI
         localstack.dashboard.api.serve(port)
 
 
