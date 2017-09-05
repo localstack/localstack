@@ -347,7 +347,7 @@ def get_apigateway_resource_for_path(api_id, path, parent=None, resources=None):
 def get_apigateway_path_for_resource(api_id, resource_id, path_suffix='', resources=None):
     if resources is None:
         apigateway = connect_to_service(service_name='apigateway')
-        resources = apigateway.get_resources(restApiId=api_id, limit=100)
+        resources = apigateway.get_resources(restApiId=api_id, limit=100)['items']
     target_resource = list(filter(lambda res: res['id'] == resource_id, resources))[0]
     path_part = target_resource.get('pathPart', '')
     if path_suffix:
@@ -381,9 +381,11 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
     root_res_id = resources_list['items'][0]['id']
     # add API resources and methods
     for path, methods in iteritems(resources):
-        if '/' in path:
-            raise Exception('Currently only works for root-level resources.')
-        api_resource = client.create_resource(restApiId=api_id, parentId=root_res_id, pathPart=path)
+        # create resources recursively
+        parent_id = root_res_id
+        for path_part in path.split('/'):
+            api_resource = client.create_resource(restApiId=api_id, parentId=parent_id, pathPart=path_part)
+            parent_id = api_resource['id']
         # add methods to the API resource
         for method in methods:
             client.put_method(

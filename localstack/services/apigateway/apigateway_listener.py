@@ -10,14 +10,13 @@ from localstack.utils.aws import aws_stack
 from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.generic_proxy import ProxyListener
-from fuzzywuzzy import process
-from fuzzywuzzy import fuzz
-# import pprint
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
-PATH_REGEX_AUTHORIZER = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers/([A-Za-z0-9_\-]+)/.*'
+# regex path patterns
+PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
+PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
 PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 
 # maps API ids to authorizers
@@ -40,10 +39,10 @@ def make_error(message, code=400):
 
 
 def get_api_id_from_path(path):
-    match = re.match(PATH_REGEX_AUTHORIZER, path)
+    match = re.match(PATH_REGEX_SUB, path)
     if match:
         return match.group(1)
-    return re.match(PATH_REGEX_AUTHORIZERS, path).group(1)
+    return re.match(PATH_REGEX_MAIN, path).group(1)
 
 
 def get_authorizers(path):
@@ -81,14 +80,17 @@ def handle_authorizers(method, path, data, headers):
 
 
 def tokenize_path(path):
-    return path[1:].split('/')
+    return path.lstrip('/').split('/')
 
 
 def get_rest_api_paths(rest_api_id):
-    apigateway = aws_stack.connect_to_service(service_name='apigateway', client=True, env=None)
+    apigateway = aws_stack.connect_to_service(service_name='apigateway')
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
-    paths = map(lambda item: item.get(u'path'), resources[u'items'])
-    return paths
+    resource_map = {}
+    for resource in resources['items']:
+        path = aws_stack.get_apigateway_path_for_resource(rest_api_id, resource['id'])
+        resource_map[path] = resource
+    return resource_map
 
 
 def extract_path_params(path, extracted_path):
@@ -101,13 +103,25 @@ def extract_path_params(path, extracted_path):
         path_param_name = param[1][1:-1].encode('utf-8')
         path_param_position = param[0]
         path_params[path_param_name] = tokenized_path[path_param_position]
+    path_params = common.json_safe(path_params)
     return path_params
 
 
-def match_path_to_api_paths(path, api_paths):
-    # TODO: Use regex matching rather than fuzzy search to reduce false positives
-    matched_path = process.extractOne(relative_path, path_list, scorer=fuzz.token_sort_ratio)[0]
-    return matched_path
+def get_resource_for_path(path, path_map):
+    matches = []
+    for api_path, details in path_map.items():
+        api_path_regex = re.sub(r'\{[^\}]+\}', '[^/]+', api_path)
+        if re.match(r'^%s$' % api_path_regex, path):
+            matches.append((api_path, details))
+    if not matches:
+        return None
+    if len(matches) > 1:
+        # check if we have an exact match
+        for match in matches:
+            if match[0] == path:
+                return match
+        raise Exception('Ambiguous API path %s - matches found: %s' % (path, matches))
+    return matches[0]
 
 
 class ProxyListenerApiGateway(ProxyListener):
@@ -116,7 +130,6 @@ class ProxyListenerApiGateway(ProxyListener):
 
         # Paths to match
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
-        regex_put_method = r'^/restapis/([A-Za-z0-9_\-]+)/resources/([A-Za-z0-9_\-]+)/(.*)$'
 
         if re.match(regex2, path):
             search_match = re.search(regex2, path)
@@ -124,13 +137,16 @@ class ProxyListenerApiGateway(ProxyListener):
             relative_path = '/%s' % search_match.group(3)
             try:
                 integration = aws_stack.get_apigateway_integration(api_id, method, path=relative_path)
-            except Exception as e:
-                apigateway = aws_stack.connect_to_service(service_name='apigateway', client=True, env=None)
-                resources = apigateway.get_resources(restApiId=api_id, limit=100)
-                path_list = get_rest_api_paths(rest_api_id=api_id)
-                extracted_path = match_path_to_api_paths(path=relative_path, api_paths=path_list)
-                item_from_path = filter(lambda item: item.get(u'path') == extracted_path, resources[u'items'])
-                integration = item_from_path[0].get(u'resourceMethods').get(method).get(u'methodIntegration')
+                assert integration
+            except Exception:
+                # if we have no exact match, try to find an API resource that contains path parameters
+                path_map = get_rest_api_paths(rest_api_id=api_id)
+                extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map) or {}
+                integrations = resource.get('resourceMethods', {})
+                integration = integrations.get(method, {})
+                integration = integration.get('methodIntegration')
+                if not integration:
+                    return make_error('Unable to find integration for path %s' % path, 404)
 
             uri = integration.get('uri')
             if method == 'POST' and integration['type'] == 'AWS':
@@ -154,31 +170,23 @@ class ProxyListenerApiGateway(ProxyListener):
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
                     data_str = json.dumps(data) if isinstance(data, dict) else data
 
-                    if relative_path == '/':
-                        result = lambda_api.process_apigateway_invocation(func_arn,
-                            relative_path, data_str, headers, method=method, resource_path=path)
-                    else:
-                        tokenized_path = tokenize_path(path)
-                        rest_api_id = tokenized_path[1]  # TODO: Figure out a better variable name
-                        path_list = get_rest_api_paths(rest_api_id=rest_api_id)
-                        try:
-                            path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
-                        except:
-                            path_params = {}
-                        result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
-                            headers, path_params=path_params, method=method, resource_path=path)
-                    #     pprint.pprint(path_params)
-                    # pprint.pprint(result)
+                    try:
+                        path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
+                    except:
+                        path_params = {}
+                    result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
+                        headers, path_params=path_params, method=method, resource_path=path)
 
                     response = Response()
                     parsed_result = result if isinstance(result, dict) else json.loads(result)
+                    parsed_result = common.json_safe(parsed_result)
                     response.status_code = int(parsed_result.get('statusCode', 200))
                     response.headers.update(parsed_result.get('headers', {}))
                     try:
                         response_body = parsed_result['body']
                         response._content = json.dumps(response_body)
                     except:
-                        pass
+                        response._content = '{}'
                     return response
                 else:
                     msg = 'API Gateway action uri "%s" not yet implemented' % uri

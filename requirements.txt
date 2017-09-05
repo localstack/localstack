@@ -12,7 +12,6 @@ elasticsearch==5.3.0
 flask==0.10.1
 flask-cors==3.0.3
 flask_swagger==0.2.12
-fuzzywuzzy==0.15.1
 jsonpath-rw==1.4.0
 localstack-ext
 moto-ext==1.1.1
