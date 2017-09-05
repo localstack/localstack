@@ -32,7 +32,7 @@ APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
 # endpoint paths
 API_PATH_DATA_INBOUND = '/data'
 API_PATH_HTTP_BACKEND = '/hello_world'
-API_PATH_LAMBDA_PROXY_BACKEND = '/lambda'
+API_PATH_LAMBDA_PROXY_BACKEND = '/lambda/{test_param1}'
 # name of Kinesis stream connected to API Gateway
 TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
 TEST_STAGE_NAME = 'testing'
@@ -41,16 +41,16 @@ TEST_LAMBDA_PROXY_BACKEND = 'test_lambda_apigw_backend'
 
 def connect_api_gateway_to_kinesis(gateway_name, kinesis_stream):
     resources = {}
-    template_data_inbound = APIGATEWAY_DATA_INBOUND_TEMPLATE % (kinesis_stream)
-    resource_data_inbound = API_PATH_DATA_INBOUND.replace('/', '')
-    resources[resource_data_inbound] = [{
+    template = APIGATEWAY_DATA_INBOUND_TEMPLATE % (kinesis_stream)
+    resource_path = API_PATH_DATA_INBOUND.replace('/', '')
+    resources[resource_path] = [{
         'httpMethod': 'POST',
         'authorizationType': 'NONE',
         'integrations': [{
             'type': 'AWS',
             'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % DEFAULT_REGION,
             'requestTemplates': {
-                'application/json': template_data_inbound
+                'application/json': template
             }
         }]
     }]
@@ -64,10 +64,10 @@ def connect_api_gateway_to_http(gateway_name, target_url, methods=[], path=None)
     if not path:
         path = '/'
     resources = {}
-    resource_data_inbound = path.replace('/', '')
-    resources[resource_data_inbound] = []
+    resource_path = path.replace('/', '')
+    resources[resource_path] = []
     for method in methods:
-        resources[resource_data_inbound].append({
+        resources[resource_path].append({
             'httpMethod': method,
             'integrations': [{
                 'type': 'HTTP',
@@ -84,10 +84,10 @@ def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_uri, meth
     if not path:
         path = '/'
     resources = {}
-    resource_data_inbound = path.replace('/', '')
-    resources[resource_data_inbound] = []
+    resource_path = path.lstrip('/')
+    resources[resource_path] = []
     for method in methods:
-        resources[resource_data_inbound].append({
+        resources[resource_path].append({
             'httpMethod': method,
             'integrations': [{
                 'type': 'AWS_PROXY',
@@ -155,7 +155,6 @@ def test_api_gateway_http_integration():
 
 
 def test_api_gateway_lambda_proxy_integration():
-
     # create lambda function
     zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
         libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
@@ -169,10 +168,13 @@ def test_api_gateway_lambda_proxy_integration():
         path=API_PATH_LAMBDA_PROXY_BACKEND)
 
     # make test request to gateway and check response
-    url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=result['id'],
-        stage_name=TEST_STAGE_NAME, path=API_PATH_LAMBDA_PROXY_BACKEND)
+    path = API_PATH_LAMBDA_PROXY_BACKEND.replace('{test_param1}', 'foo1')
+    url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=result['id'], stage_name=TEST_STAGE_NAME, path=path)
     data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
     result = requests.post(url, data=json.dumps(data))
     assert result.status_code == 203
     assert result.headers.get('foo') == 'bar123'
-    assert json.loads(to_str(result.content)) == data
+    parsed_body = json.loads(to_str(result.content))
+    assert parsed_body.get('return_status_code') == 203
+    assert parsed_body.get('return_headers') == {'foo': 'bar123'}
+    assert parsed_body.get('pathParameters') == {'test_param1': 'foo1'}
