@@ -473,6 +473,8 @@ def set_function_code(code, lambda_name):
 
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
+    return {'FunctionName': lambda_name}
+
 
 def do_list_functions():
     funcs = []
@@ -515,7 +517,21 @@ def create_function():
         lambda_arn_to_runtime[arn] = data['Runtime']
         lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
         result = set_function_code(data['Code'], lambda_name)
-        return result or jsonify({})
+        result.update({
+            "DeadLetterConfig": data.get('DeadLetterConfig'),
+            "Description": data.get('Description'),
+            "Environment": {"Error": {}, "Variables": lambda_arn_to_envvars[arn]},
+            "FunctionArn": arn,
+            "FunctionName": lambda_name,
+            "Handler": lambda_arn_to_handler[arn],
+            "MemorySize": data.get('MemorySize'),
+            "Role": data.get('Role'),
+            "Runtime": lambda_arn_to_runtime[arn],
+            "Timeout": data.get('Timeout'),
+            "TracingConfig": {},
+            "VpcConfig": {"SecurityGroupIds": [None], "SubnetIds": [None], "VpcId": None}
+        })
+        return jsonify(result or {})
     except Exception as e:
         return error_response('Unknown error: %s' % e)
 
@@ -605,7 +621,7 @@ def update_function_code(function):
     """
     data = json.loads(to_str(request.data))
     result = set_function_code(data, function)
-    return result or jsonify({})
+    return jsonify(result or {})
 
 
 @app.route('%s/functions/<function>/code' % PATH_ROOT, methods=['GET'])
