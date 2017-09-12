@@ -102,6 +102,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         content_length = self.headers.get('Content-Length')
         if content_length:
             self.data_bytes = self.rfile.read(int(content_length))
+        else:
+            self.data_bytes = None
         self.forward('GET')
 
     def do_PUT(self):
@@ -115,10 +117,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.forward('POST')
 
     def do_DELETE(self):
+        self.data_bytes = None
         self.method = requests.delete
         self.forward('DELETE')
 
     def do_HEAD(self):
+        self.data_bytes = None
         self.method = requests.head
         self.forward('HEAD')
 
@@ -128,6 +132,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.forward('PATCH')
 
     def do_OPTIONS(self):
+        self.data_bytes = None
         self.method = requests.options
         self.forward('OPTIONS')
 
