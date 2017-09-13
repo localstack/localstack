@@ -54,17 +54,23 @@ docker-push:       ## Push Docker image to registry
 docker-push-master:## Push Docker image to registry IF we are currently on the master branch
 	(CURRENT_BRANCH=`(git rev-parse --abbrev-ref HEAD | grep '^master$$' || ((git branch -a | grep 'HEAD detached at [0-9a-zA-Z]*)') && git branch -a)) | grep '^[* ]*master$$' | sed 's/[* ]//g' || true`; \
 		test "$$CURRENT_BRANCH" != 'master' && echo "Not on master branch.") || \
-	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && echo "Skipping docker push as no credentials are provided.") || \
+	((test "$$DOCKER_USERNAME" = '' || test "$$DOCKER_PASSWORD" = '' ) && \
+		echo "Skipping docker push as no credentials are provided.") || \
 	(REMOTE_ORIGIN="`git remote -v | grep '/localstack' | grep origin | grep push | awk '{print $$2}'`"; \
-		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && echo "This is a fork and not the main repo.") || \
-		(which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
+		test "$$REMOTE_ORIGIN" != 'https://github.com/localstack/localstack.git' && \
+		echo "This is a fork and not the main repo.") || \
+	( \
+		which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
 		which docker-squash || $(PIP_CMD) install docker-squash; \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 		BASE_IMAGE_ID=`docker history -q $(IMAGE_NAME):$(IMAGE_TAG) | tail -n 1`; \
 		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) -f $$BASE_IMAGE_ID $(IMAGE_NAME):$(IMAGE_TAG) && \
 			docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
 		make test-java-docker && \
-			docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME):latest)
+		((! (git diff HEAD~1 localstack/constants.py | grep '^+VERSION =') && echo "Only pushing tag 'latest' as version has not changed.") || \
+			docker push $(IMAGE_NAME):$(IMAGE_TAG)) && \
+		docker push $(IMAGE_NAME):latest \
+	)
 
 docker-run:        ## Run Docker image locally
 	($(VENV_RUN); bin/localstack start --docker)
