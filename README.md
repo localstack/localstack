@@ -180,7 +180,7 @@ aws --endpoint-url=http://localhost:4568 kinesis list-streams
 }
 ```
 
-**NEW**: Check out `awslocal`, a thin CLI wrapper that runs commands directly against *LocalStack* (no need to
+**NEW**: Check out [awslocal](https://github.com/localstack/awscli-local), a thin CLI wrapper that runs commands directly against *LocalStack* (no need to
 specify `--endpoint-url` anymore). Install it via `pip install awscli-local`, and then use it as follows:
 
 ```
