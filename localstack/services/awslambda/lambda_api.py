@@ -682,6 +682,28 @@ def get_function_code(function):
             headers={'Content-Disposition': 'attachment; filename=lambda_archive.zip'})
 
 
+@app.route('%s/functions/<function>/configuration' % PATH_ROOT, methods=['GET'])
+def get_function_configuration(function):
+    """ Get the configuration of an existing function
+        ---
+        operationId: 'getFunctionConfiguration'
+        parameters:
+    """
+    arn = func_arn(function)
+    lambda_function = lambda_arn_to_function.get(arn)
+    if not lambda_function:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    result = {
+        'Version': '$LATEST',
+        'FunctionName': function,
+        'FunctionArn': arn,
+        'Handler': lambda_arn_to_handler.get(arn),
+        'Runtime': lambda_arn_to_runtime.get(arn),
+        'Timeout': LAMBDA_DEFAULT_TIMEOUT,
+        'Environment': lambda_arn_to_envvars[arn]
+    }
+    return jsonify(result)
+
 @app.route('%s/functions/<function>/configuration' % PATH_ROOT, methods=['PUT'])
 def update_function_configuration(function):
     """ Update the configuration of an existing function
