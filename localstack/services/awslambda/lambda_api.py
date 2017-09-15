@@ -61,6 +61,7 @@ app = Flask(APP_NAME)
 
 # map ARN strings to lambda function objects
 # TODO: create a single map for function details
+lambda_arn_to_versions = {}
 lambda_arn_to_function = {}
 lambda_arn_to_cwd = {}
 lambda_arn_to_handler = {}
@@ -83,11 +84,13 @@ DO_USE_DOCKER = None
 def cleanup():
     global event_source_mappings
     global lambda_arn_to_function, lambda_arn_to_cwd, lambda_arn_to_handler, lambda_arn_to_runtime
+    global lambda_arn_to_versions
     # reset the state
     lambda_arn_to_function = {}
     lambda_arn_to_cwd = {}
     lambda_arn_to_handler = {}
     lambda_arn_to_runtime = {}
+    lambda_arn_to_versions = {}
     event_source_mappings = []
 
 
@@ -217,6 +220,35 @@ def get_event_sources(func_name=None, source_arn=None):
             if not source_arn or m['EventSourceArn'].startswith(source_arn):
                 result.append(m)
     return result
+
+
+def get_function_version(arn, version):
+    func_name = arn.split(':function:')[-1]
+    return \
+        {
+            'Version': version,
+            'CodeSize': lambda_arn_to_versions.get(arn).get(version).get('CodeSize'),
+            'FunctionName': func_name,
+            'FunctionArn': arn,
+            'Handler': lambda_arn_to_handler.get(arn),
+            'Runtime': lambda_arn_to_runtime.get(arn),
+            'Timeout': LAMBDA_DEFAULT_TIMEOUT,
+        }
+
+
+def publish_new_function_version(arn):
+    versions = lambda_arn_to_versions.get(arn)
+    if len(versions) == 1:
+        last_version = 0
+    else:
+        last_version = max([int(key) for key in versions.keys() if key != '$LATEST'])
+    versions[last_version + 1] = {'CodeSize': versions.get('$LATEST').get('CodeSize')}
+    return get_function_version(arn, last_version + 1)
+
+
+def do_list_versions(arn):
+    return sorted([get_function_version(arn, version) for version in
+                   lambda_arn_to_versions.get(arn).keys()], key=lambda k: str(k.get('Version')))
 
 
 def get_host_path_for_path_in_docker(path):
@@ -483,6 +515,7 @@ def do_list_functions():
         arn = func_arn(func_name)
         funcs.append({
             'Version': '$LATEST',
+            'CodeSize': lambda_arn_to_versions.get(arn).get('$LATEST').get('CodeSize'),
             'FunctionName': func_name,
             'FunctionArn': f_arn,
             'Handler': lambda_arn_to_handler.get(arn),
@@ -490,7 +523,6 @@ def do_list_functions():
             'Timeout': LAMBDA_DEFAULT_TIMEOUT,
             # 'Description': ''
             # 'MemorySize': 192,
-            # 'CodeSize': 2526917
         })
     return funcs
 
@@ -513,6 +545,7 @@ def create_function():
         if arn in lambda_arn_to_handler:
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
+        lambda_arn_to_versions[arn] = {'$LATEST': {'CodeSize': 50}}
         lambda_arn_to_handler[arn] = data['Handler']
         lambda_arn_to_runtime[arn] = data['Runtime']
         lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
@@ -753,6 +786,22 @@ def delete_event_source_mapping(mapping_uuid):
 
     mapping = delete_event_source(mapping_uuid)
     return jsonify(mapping)
+
+
+@app.route('%s/functions/<function>/versions' % PATH_ROOT, methods=['POST'])
+def publish_version(function):
+    arn = func_arn(function)
+    if arn not in lambda_arn_to_versions:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    return jsonify(publish_new_function_version(arn))
+
+
+@app.route('%s/functions/<function>/versions' % PATH_ROOT, methods=['GET'])
+def list_versions(function):
+    arn = func_arn(function)
+    if arn not in lambda_arn_to_versions:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    return jsonify({'Versions': do_list_versions(arn)})
 
 
 def serve(port, quiet=True):
