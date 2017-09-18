@@ -16,7 +16,8 @@ from localstack.constants import (ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDE
     DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_CLOUDFORMATION_BACKEND)
 from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
     PORT_FIREHOSE, PORT_LAMBDA, PORT_SNS, PORT_REDSHIFT, PORT_CLOUDWATCH,
-    PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_CLOUDFORMATION, PORT_APIGATEWAY)
+    PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_CLOUDFORMATION, PORT_APIGATEWAY,
+    PORT_SSM)
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci,
     TIMESTAMP_FORMAT, FuncThread, ShellCommandThread)
@@ -186,6 +187,10 @@ def start_dynamodbstreams(port=PORT_DYNAMODBSTREAMS, async=False):
 
 def start_lambda(port=PORT_LAMBDA, async=False):
     return start_local_api('Lambda', port, method=lambda_api.serve, async=async)
+
+
+def start_ssm(port=PORT_SSM, async=False):
+    return start_moto_server('ssm', port, name='SSM', async=async)
 
 
 # ---------------
