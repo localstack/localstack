@@ -43,6 +43,7 @@ any longer.
 * **Route53** at http://localhost:4580
 * **CloudFormation** at http://localhost:4581
 * **CloudWatch** at http://localhost:4582
+* **SSM** at http://localhost:4583
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
