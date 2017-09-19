@@ -258,6 +258,10 @@ def expand_multipart_filename(data, headers):
         http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
     '''
     _, params = cgi.parse_header(headers.get('Content-Type'))
+
+    if 'boundary' not in params:
+        return data
+
     boundary = params['boundary'].encode('ascii')
     data_bytes = to_bytes(data)
 
