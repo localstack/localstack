@@ -10,11 +10,21 @@ class TestLambdaAPI(unittest.TestCase):
     RUNTIME = 'node.js4.3'
     TIMEOUT = 60  # Default value, hardcoded
     FUNCTION_NAME = 'test1'
+    RESOURCENOTFOUND_EXCEPTION = 'ResourceNotFoundException'
+    RESOURCENOTFOUND_MESSAGE = 'Function not found: %s'
+    TEST_UUID = "Test"
 
     def setUp(self):
         lambda_api.cleanup()
         self.maxDiff = None
         self.app = Flask(__name__)
+
+    def test_delete_event_source_mapping(self):
+        with self.app.test_request_context():
+            lambda_api.event_source_mappings.append({'UUID': self.TEST_UUID})
+            result = lambda_api.delete_event_source_mapping(self.TEST_UUID)
+            self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
+            self.assertEqual(0, len(lambda_api.event_source_mappings))
 
     def test_publish_function_version(self):
         with self.app.test_request_context():
@@ -35,6 +45,13 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result2[u'Version'] = 2
             self.assertDictEqual(expected_result, result)
             self.assertDictEqual(expected_result2, result2)
+
+    def test_publish_non_existant_function_version_returns_error(self):
+        with self.app.test_request_context():
+            result = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
+            self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
+            self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                             result['message'])
 
     def test_list_function_versions(self):
         with self.app.test_request_context():
@@ -59,6 +76,13 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result = {u'Versions': sorted([latest_version, version1, version2],
                                                    key=lambda k: str(k.get('Version')))}
             self.assertDictEqual(expected_result, result)
+
+    def test_list_non_existant_function_versions_returns_error(self):
+        with self.app.test_request_context():
+            result = json.loads(lambda_api.list_versions(self.FUNCTION_NAME).get_data())
+            self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
+            self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                             result['message'])
 
     def _create_function(self, function_name):
         arn = lambda_api.func_arn(function_name)
