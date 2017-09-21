@@ -134,7 +134,7 @@ def update_event_source(uuid_value, function_name, enabled, batch_size):
 
 def delete_event_source(uuid_value):
     for i, m in enumerate(event_source_mappings):
-        if uuid_value == m['uuid']:
+        if uuid_value == m['UUID']:
             return event_source_mappings.pop(i)
     return {}
 
