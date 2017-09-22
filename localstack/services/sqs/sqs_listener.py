@@ -40,7 +40,7 @@ class ProxyListenerSQS(ProxyListener):
                     # return https://... if we're supposed to use SSL
                     content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
                 # expose external hostname
-                content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://.*:([0-9]+)/(.*)\s*</QueueUrl>',
+                content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
                     r'<QueueUrl>\1://%s:\2/\3</QueueUrl>' % HOSTNAME_EXTERNAL, content_str)
                 new_response._content = content_str
                 if content_str_original != new_response._content:

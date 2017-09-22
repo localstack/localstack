@@ -527,6 +527,13 @@ def do_list_functions():
     return funcs
 
 
+def cleanup_state(lambda_arn):
+    del lambda_arn_to_handler[lambda_arn]
+    del lambda_arn_to_runtime[lambda_arn]
+    del lambda_arn_to_envvars[lambda_arn]
+    del lambda_arn_to_versions[lambda_arn]
+
+
 @app.route('%s/functions' % PATH_ROOT, methods=['POST'])
 def create_function():
     """ Create new function
@@ -536,6 +543,7 @@ def create_function():
             - name: 'request'
               in: body
     """
+    arn = 'n/a'
     try:
         data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
@@ -550,6 +558,9 @@ def create_function():
         lambda_arn_to_runtime[arn] = data['Runtime']
         lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
         result = set_function_code(data['Code'], lambda_name)
+        if isinstance(result, Response):
+            cleanup_state(arn)
+            return result
         result.update({
             "DeadLetterConfig": data.get('DeadLetterConfig'),
             "Description": data.get('Description'),
@@ -566,6 +577,7 @@ def create_function():
         })
         return jsonify(result or {})
     except Exception as e:
+        cleanup_state(arn)
         return error_response('Unknown error: %s' % e)
 
 
