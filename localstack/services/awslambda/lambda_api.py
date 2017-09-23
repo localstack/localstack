@@ -32,6 +32,7 @@ from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES,
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
+from localstack.utils.aws.aws_models import LambdaFunction
 
 
 APP_NAME = 'lambda_api'
@@ -60,13 +61,7 @@ DOCKER_BRIDGE_IP = '172.17.0.1'
 app = Flask(APP_NAME)
 
 # map ARN strings to lambda function objects
-# TODO: create a single map for function details
-lambda_arn_to_versions = {}
-lambda_arn_to_function = {}
-lambda_arn_to_cwd = {}
-lambda_arn_to_handler = {}
-lambda_arn_to_runtime = {}
-lambda_arn_to_envvars = {}
+arn_to_lambda = {}
 
 # list of event source mappings for the API
 event_source_mappings = []
@@ -82,15 +77,8 @@ DO_USE_DOCKER = None
 
 
 def cleanup():
-    global event_source_mappings
-    global lambda_arn_to_function, lambda_arn_to_cwd, lambda_arn_to_handler, lambda_arn_to_runtime
-    global lambda_arn_to_versions
-    # reset the state
-    lambda_arn_to_function = {}
-    lambda_arn_to_cwd = {}
-    lambda_arn_to_handler = {}
-    lambda_arn_to_runtime = {}
-    lambda_arn_to_versions = {}
+    global event_source_mappings, arn_to_lambda
+    arn_to_lambda = {}
     event_source_mappings = []
 
 
@@ -100,8 +88,8 @@ def func_arn(function_name):
 
 def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     arn = func_arn(lambda_name)
-    lambda_arn_to_function[arn] = lambda_handler
-    lambda_arn_to_cwd[arn] = lambda_cwd
+    arn_to_lambda[arn].function = lambda_handler
+    arn_to_lambda[arn].cwd = lambda_cwd
 
 
 def add_event_source(function_name, source_arn):
@@ -156,7 +144,7 @@ def use_docker():
 def process_apigateway_invocation(func_arn, path, payload, headers={},
         resource_path=None, method=None, path_params={}):
     try:
-        lambda_function = lambda_arn_to_function[func_arn]
+        lambda_function = arn_to_lambda[func_arn].function
         resource_path = resource_path or path
         event = {
             'path': path,
@@ -176,7 +164,7 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
 
 def process_sns_notification(func_arn, topic_arn, message, subject=''):
     try:
-        lambda_function = lambda_arn_to_function[func_arn]
+        lambda_function = arn_to_lambda[func_arn].function
         event = {
             'Records': [{
                 'Sns': {
@@ -200,7 +188,7 @@ def process_kinesis_records(records, stream_name):
         sources = get_event_sources(source_arn=stream_arn)
         for source in sources:
             arn = source['FunctionArn']
-            lambda_function = lambda_arn_to_function[arn]
+            lambda_function = arn_to_lambda[arn].function
             event = {
                 'Records': []
             }
@@ -227,17 +215,17 @@ def get_function_version(arn, version):
     return \
         {
             'Version': version,
-            'CodeSize': lambda_arn_to_versions.get(arn).get(version).get('CodeSize'),
+            'CodeSize': arn_to_lambda.get(arn).get_version(version).get('CodeSize'),
             'FunctionName': func_name,
             'FunctionArn': arn,
-            'Handler': lambda_arn_to_handler.get(arn),
-            'Runtime': lambda_arn_to_runtime.get(arn),
+            'Handler': arn_to_lambda.get(arn).handler,
+            'Runtime': arn_to_lambda.get(arn).runtime,
             'Timeout': LAMBDA_DEFAULT_TIMEOUT,
         }
 
 
 def publish_new_function_version(arn):
-    versions = lambda_arn_to_versions.get(arn)
+    versions = arn_to_lambda.get(arn).versions
     if len(versions) == 1:
         last_version = 0
     else:
@@ -248,7 +236,7 @@ def publish_new_function_version(arn):
 
 def do_list_versions(arn):
     return sorted([get_function_version(arn, version) for version in
-                   lambda_arn_to_versions.get(arn).keys()], key=lambda k: str(k.get('Version')))
+                   arn_to_lambda.get(arn).versions.keys()], key=lambda k: str(k.get('Version')))
 
 
 def get_host_path_for_path_in_docker(path):
@@ -264,12 +252,12 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         stream = StringIO()
         sys.stdout = stream
         sys.stderr = stream
-    lambda_cwd = lambda_arn_to_cwd.get(func_arn)
+    lambda_cwd = arn_to_lambda.get(func_arn).cwd
     result = None
     try:
-        runtime = lambda_arn_to_runtime.get(func_arn)
-        handler = lambda_arn_to_handler.get(func_arn)
-        environment = lambda_arn_to_envvars.get(func_arn)
+        runtime = arn_to_lambda.get(func_arn).runtime
+        handler = arn_to_lambda.get(func_arn).handler
+        environment = arn_to_lambda.get(func_arn).envvars
         if use_docker():
             handler_args = '"%s"' % handler
             entrypoint = ''
@@ -427,9 +415,9 @@ def set_function_code(code, lambda_name):
     lambda_handler = generic_handler
     lambda_cwd = None
     arn = func_arn(lambda_name)
-    runtime = lambda_arn_to_runtime[arn]
-    handler_name = lambda_arn_to_handler.get(arn)
-    lambda_environment = lambda_arn_to_envvars.get(arn)
+    runtime = arn_to_lambda[arn].runtime
+    handler_name = arn_to_lambda.get(arn).handler
+    lambda_environment = arn_to_lambda.get(arn).envvars
     if not handler_name:
         handler_name = LAMBDA_DEFAULT_HANDLER
     handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
@@ -483,7 +471,7 @@ def set_function_code(code, lambda_name):
             event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
             save_file(event_file, json.dumps(event))
             TMP_FILES.append(event_file)
-            class_name = lambda_arn_to_handler[arn].split('::')[0]
+            class_name = arn_to_lambda[arn].handler.split('::')[0]
             classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
             cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
             result, log_output = run_lambda_executor(cmd)
@@ -510,28 +498,21 @@ def set_function_code(code, lambda_name):
 
 def do_list_functions():
     funcs = []
-    for f_arn, func in iteritems(lambda_arn_to_handler):
+    for f_arn, func in iteritems(arn_to_lambda):
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
         funcs.append({
             'Version': '$LATEST',
-            'CodeSize': lambda_arn_to_versions.get(arn).get('$LATEST').get('CodeSize'),
+            'CodeSize': arn_to_lambda.get(arn).get_version('$LATEST').get('CodeSize'),
             'FunctionName': func_name,
             'FunctionArn': f_arn,
-            'Handler': lambda_arn_to_handler.get(arn),
-            'Runtime': lambda_arn_to_runtime.get(arn),
+            'Handler': arn_to_lambda.get(arn).handler,
+            'Runtime': arn_to_lambda.get(arn).runtime,
             'Timeout': LAMBDA_DEFAULT_TIMEOUT,
             # 'Description': ''
             # 'MemorySize': 192,
         })
     return funcs
-
-
-def cleanup_state(lambda_arn):
-    del lambda_arn_to_handler[lambda_arn]
-    del lambda_arn_to_runtime[lambda_arn]
-    del lambda_arn_to_envvars[lambda_arn]
-    del lambda_arn_to_versions[lambda_arn]
 
 
 @app.route('%s/functions' % PATH_ROOT, methods=['POST'])
@@ -550,34 +531,35 @@ def create_function():
         event_publisher.fire_event(event_publisher.EVENT_LAMBDA_CREATE_FUNC,
             payload={'n': event_publisher.get_hash(lambda_name)})
         arn = func_arn(lambda_name)
-        if arn in lambda_arn_to_handler:
+        if arn in arn_to_lambda:
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
-        lambda_arn_to_versions[arn] = {'$LATEST': {'CodeSize': 50}}
-        lambda_arn_to_handler[arn] = data['Handler']
-        lambda_arn_to_runtime[arn] = data['Runtime']
-        lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
+        arn_to_lambda[arn] = LambdaFunction(arn)
+        arn_to_lambda[arn].versions = {'$LATEST': {'CodeSize': 50}}
+        arn_to_lambda[arn].handler = data['Handler']
+        arn_to_lambda[arn].runtime = data['Runtime']
+        arn_to_lambda[arn].envvars = data.get('Environment', {}).get('Variables', {})
         result = set_function_code(data['Code'], lambda_name)
         if isinstance(result, Response):
-            cleanup_state(arn)
+            del arn_to_lambda[arn]
             return result
         result.update({
             "DeadLetterConfig": data.get('DeadLetterConfig'),
             "Description": data.get('Description'),
-            "Environment": {"Error": {}, "Variables": lambda_arn_to_envvars[arn]},
+            "Environment": {"Error": {}, "Variables": arn_to_lambda[arn].envvars},
             "FunctionArn": arn,
             "FunctionName": lambda_name,
-            "Handler": lambda_arn_to_handler[arn],
+            "Handler": arn_to_lambda[arn].handler,
             "MemorySize": data.get('MemorySize'),
             "Role": data.get('Role'),
-            "Runtime": lambda_arn_to_runtime[arn],
+            "Runtime": arn_to_lambda[arn].runtime,
             "Timeout": data.get('Timeout'),
             "TracingConfig": {},
             "VpcConfig": {"SecurityGroupIds": [None], "SubnetIds": [None], "VpcId": None}
         })
         return jsonify(result or {})
     except Exception as e:
-        cleanup_state(arn)
+        del arn_to_lambda[arn]
         return error_response('Unknown error: %s' % e)
 
 
@@ -636,14 +618,12 @@ def delete_function(function):
     """
     arn = func_arn(function)
     try:
-        lambda_arn_to_handler.pop(arn)
+        arn_to_lambda.pop(arn)
     except KeyError:
         return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
 
     event_publisher.fire_event(event_publisher.EVENT_LAMBDA_DELETE_FUNC,
         payload={'n': event_publisher.get_hash(function)})
-    lambda_arn_to_cwd.pop(arn, None)
-    lambda_arn_to_function.pop(arn, None)
     i = 0
     while i < len(event_source_mappings):
         mapping = event_source_mappings[i]
@@ -677,7 +657,7 @@ def get_function_code(function):
         parameters:
     """
     arn = func_arn(function)
-    lambda_cwd = lambda_arn_to_cwd[arn]
+    lambda_cwd = arn_to_lambda[arn].cwd
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
     return Response(load_file(tmp_file, mode="rb"),
             mimetype='application/zip',
@@ -696,11 +676,11 @@ def update_function_configuration(function):
     data = json.loads(to_str(request.data))
     arn = func_arn(function)
     if data.get('Handler'):
-        lambda_arn_to_handler[arn] = data['Handler']
+        arn_to_lambda[arn].handler = data['Handler']
     if data.get('Runtime'):
-        lambda_arn_to_runtime[arn] = data['Runtime']
+        arn_to_lambda[arn].runtime = data['Runtime']
     if data.get('Environment'):
-        lambda_arn_to_envvars[arn] = data.get('Environment', {}).get('Variables', {})
+        arn_to_lambda[arn].envvars = data.get('Environment', {}).get('Variables', {})
     result = {}
     return jsonify(result)
 
@@ -715,7 +695,7 @@ def invoke_function(function):
               in: body
     """
     arn = func_arn(function)
-    lambda_function = lambda_arn_to_function.get(arn)
+    lambda_function = arn_to_lambda.get(arn).function
     if not lambda_function:
         return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
     data = None
@@ -803,7 +783,7 @@ def delete_event_source_mapping(mapping_uuid):
 @app.route('%s/functions/<function>/versions' % PATH_ROOT, methods=['POST'])
 def publish_version(function):
     arn = func_arn(function)
-    if arn not in lambda_arn_to_versions:
+    if arn not in arn_to_lambda:
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
     return jsonify(publish_new_function_version(arn))
 
@@ -811,7 +791,7 @@ def publish_version(function):
 @app.route('%s/functions/<function>/versions' % PATH_ROOT, methods=['GET'])
 def list_versions(function):
     arn = func_arn(function)
-    if arn not in lambda_arn_to_versions:
+    if arn not in arn_to_lambda:
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
     return jsonify({'Versions': do_list_versions(arn)})
 

@@ -157,10 +157,19 @@ class FirehoseStream(KinesisStream):
 
 
 class LambdaFunction(Component):
-    def __init__(self, id):
-        super(LambdaFunction, self).__init__(id)
+    def __init__(self, arn):
+        super(LambdaFunction, self).__init__(arn)
         self.event_sources = []
         self.targets = []
+        self.versions = {}
+        self.envvars = {}
+        self.runtime = None
+        self.function = None
+        self.handler = None
+        self.cwd = None
+
+    def get_version(self, version):
+        return self.versions.get(version)
 
     def name(self):
         return self.id.split(':function:')[-1]
