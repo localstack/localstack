@@ -2,6 +2,7 @@ import unittest
 import json
 from flask import Flask
 from localstack.services.awslambda import lambda_api
+from localstack.utils.aws.aws_models import LambdaFunction
 
 
 class TestLambdaAPI(unittest.TestCase):
@@ -86,7 +87,8 @@ class TestLambdaAPI(unittest.TestCase):
 
     def _create_function(self, function_name):
         arn = lambda_api.func_arn(function_name)
-        lambda_api.lambda_arn_to_versions[arn] = {'$LATEST': {'CodeSize': self.CODE_SIZE}}
-        lambda_api.lambda_arn_to_handler[arn] = self.HANDLER
-        lambda_api.lambda_arn_to_runtime[arn] = self.RUNTIME
-        lambda_api.lambda_arn_to_envvars[arn] = {}
+        lambda_api.arn_to_lambda[arn] = LambdaFunction(arn)
+        lambda_api.arn_to_lambda[arn].versions = {'$LATEST': {'CodeSize': self.CODE_SIZE}}
+        lambda_api.arn_to_lambda[arn].handler = self.HANDLER
+        lambda_api.arn_to_lambda[arn].runtime = self.RUNTIME
+        lambda_api.arn_to_lambda[arn].envvars = {}
