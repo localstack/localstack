@@ -3,6 +3,29 @@ from nose.tools import assert_equal
 from localstack.services.sns import sns_listener
 
 
+def test_unsubscribe_without_arn_should_error():
+    sns = sns_listener.ProxyListenerSNS()
+    error = sns.forward_request('POST', '/', 'Action=Unsubscribe', '')
+    assert(error is not None)
+    assert(error.status_code == 400)
+
+
+def test_unsubscribe_should_remove_listener():
+    sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+    topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+
+    assert(sns_listener.get_topic_by_arn(topic_arn) is None)
+    sns_listener.do_create_topic(topic_arn)
+    assert(sns_listener.get_topic_by_arn(topic_arn) is not None)
+    sns_listener.do_subscribe(topic_arn,
+                     'http://localhost:1234/listen',
+                     'http',
+                     sub_arn)
+    assert(sns_listener.get_subscription_by_arn(sub_arn) is not None)
+    sns_listener.do_unsubscribe(sub_arn)
+    assert(sns_listener.get_subscription_by_arn(sub_arn) is None)
+
+
 def test_create_sns_message_body_raw_message_delivery():
     subscriber = {
         'RawMessageDelivery': 'true'

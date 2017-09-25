@@ -24,10 +24,10 @@ class ProxyListenerSNS(ProxyListener):
             req_data = urlparse.parse_qs(data)
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn')
+
             if topic_arn:
                 topic_arn = topic_arn[0]
-                if topic_arn not in SNS_SUBSCRIPTIONS:
-                    SNS_SUBSCRIPTIONS[topic_arn] = []
+                do_create_topic(topic_arn)
 
             if req_action == 'SetSubscriptionAttributes':
                 sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
@@ -49,6 +49,11 @@ class ProxyListenerSNS(ProxyListener):
             elif req_action == 'Subscribe':
                 if 'Endpoint' not in req_data:
                     return make_error(message='Endpoint not specified in subscription', code=400)
+            elif req_action == 'Unsubscribe':
+                if 'SubscriptionArn' not in req_data:
+                    return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
+                do_unsubscribe(req_data.get('SubscriptionArn')[0])
+
             elif req_action == 'Publish':
                 message = req_data['Message'][0]
                 sqs_client = aws_stack.connect_to_service('sqs')
@@ -95,24 +100,48 @@ class ProxyListenerSNS(ProxyListener):
                 response_data = xmltodict.parse(response.content)
                 topic_arn = (req_data.get('TargetArn') or req_data.get('TopicArn'))[0]
                 sub_arn = response_data['SubscribeResponse']['SubscribeResult']['SubscriptionArn']
-                subscription = {
-                    # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
-                    'TopicArn': topic_arn,
-                    'Endpoint': req_data['Endpoint'][0],
-                    'Protocol': req_data['Protocol'][0],
-                    'SubscriptionArn': sub_arn,
-                    'RawMessageDelivery': 'false'
-                }
-                SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+                do_subscribe(topic_arn, req_data['Endpoint'][0], req_data['Protocol'][0], sub_arn)
 
 
 # instantiate listener
 UPDATE_SNS = ProxyListenerSNS()
 
 
+def do_create_topic(topic_arn):
+    if topic_arn not in SNS_SUBSCRIPTIONS:
+        SNS_SUBSCRIPTIONS[topic_arn] = []
+
+
+def do_subscribe(topic_arn, endpoint, protocol, subscription_arn):
+    subscription = {
+        # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
+        'TopicArn': topic_arn,
+        'Endpoint': endpoint,
+        'Protocol': protocol,
+        'SubscriptionArn': subscription_arn,
+        'RawMessageDelivery': 'false'
+    }
+    SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+
+
+def do_unsubscribe(subscription_arn):
+    for topic_arn in SNS_SUBSCRIPTIONS:
+        SNS_SUBSCRIPTIONS[topic_arn] = [
+            sub for sub in SNS_SUBSCRIPTIONS[topic_arn]
+            if sub['SubscriptionArn'] != subscription_arn
+        ]
+
+
 # ---------------
 # HELPER METHODS
 # ---------------
+
+def get_topic_by_arn(topic_arn):
+    if topic_arn in SNS_SUBSCRIPTIONS:
+        return SNS_SUBSCRIPTIONS[topic_arn]
+    else:
+        return None
+
 
 def get_subscription_by_arn(sub_arn):
     # TODO maintain separate map instead of traversing all items
