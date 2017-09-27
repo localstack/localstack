@@ -3,7 +3,7 @@
 
 airspeed==0.5.5.dev20160812
 amazon-kclpy==1.4.5 #extended-lib
-awscli==1.11.86
+awscli==1.11.125
 boto==2.46.1
 boto3==1.4.4
 coverage==4.0.3

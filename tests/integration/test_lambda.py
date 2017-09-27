@@ -21,10 +21,11 @@ TEST_LAMBDA_NAME_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
+TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 TEST_LAMBDA_JAR_URL = ('https://repo.maven.apache.org/maven2/cloud/localstack/' +
-    'localstack-utils/0.1.5/localstack-utils-0.1.5-tests.jar')
+    'localstack-utils/0.1.6/localstack-utils-0.1.6-tests.jar')
 
 TEST_LAMBDA_LIBS = ['localstack', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
 
@@ -94,6 +95,28 @@ def test_lambda_runtimes():
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=zip_file,
         runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaHandler')
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
+    assert result['StatusCode'] == 200
+    result_data = result['Payload'].read()
+    assert 'LinkedHashMap' in to_str(result_data)
+
+    # test SNSEvent
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA,
+                                  Payload=b'{"Records": [{"Sns": {"Message": "{}"}}]}')
+    assert result['StatusCode'] == 200
+    result_data = result['Payload'].read()
+    assert 'SNSEvent' in to_str(result_data)
+
+    # test KinesisEvent
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA,
+                                  Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
+    assert result['StatusCode'] == 200
+    result_data = result['Payload'].read()
+    assert 'KinesisEvent' in to_str(result_data)
+
+    # deploy and invoke lambda - Java with stream handler
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA_STREAM, zip_file=zip_file,
+        runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaStreamHandler')
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM, Payload=b'{}')
     assert result['StatusCode'] == 200
     result_data = result['Payload'].read()
     assert to_str(result_data).strip() == '{}'

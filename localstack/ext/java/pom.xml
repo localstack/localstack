@@ -5,7 +5,7 @@
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.5</version>
+    <version>0.1.6</version>
     <name>localstack-utils</name>
 
     <description>Java utilities for the LocalStack platform.</description>
@@ -63,7 +63,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
-            <version>1.11.86</version>
+            <version>1.11.125</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -112,7 +112,7 @@
                 <dependency>
                     <groupId>com.amazonaws</groupId>
                     <artifactId>aws-java-sdk</artifactId>
-                    <version>1.11.86</version>
+                    <version>1.11.125</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -147,6 +147,8 @@
                     <shadedClassifierName>fat</shadedClassifierName>
                     <artifactSet>
                         <includes>
+                            <include>com.amazonaws:aws-java-sdk-core</include>
+                            <include>com.amazonaws:aws-java-sdk-kinesis</include>
                             <include>com.amazonaws:aws-java-sdk-lambda</include>
                             <include>com.amazonaws:aws-lambda-java-events</include>
                             <include>com.amazonaws:aws-lambda-java-core</include>
