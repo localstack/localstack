@@ -81,7 +81,7 @@ class ProxyListenerSNS(ProxyListener):
                             },
                             data=json.dumps({
                                 'Type': 'Notification',
-				'Subject': subject,
+                                'Subject': subject,
                                 'Message': message,
                             })
                         )
