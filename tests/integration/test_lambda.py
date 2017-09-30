@@ -121,4 +121,4 @@ def test_lambda_environment():
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_ENV, Payload=b'{}')
     assert result['StatusCode'] == 200
     result_data = result['Payload']
-    assert json.load(result_data) == {"Hello": "World"}
+    assert json.load(result_data) == {'Hello': 'World'}

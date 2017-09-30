@@ -22,7 +22,7 @@ class TypeDeserializer(boto3.dynamodb.types.TypeDeserializer):
 
 
 def handler(event, context):
-    ''' Generic event forwarder Lambda. '''
+    """ Generic event forwarder Lambda. """
 
     if 'httpMethod' in event:
         # looks like this is a call from an AWS_PROXY API Gateway

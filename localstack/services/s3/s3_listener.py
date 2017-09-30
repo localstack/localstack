@@ -31,8 +31,8 @@ XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
 
 def event_type_matches(events, action, api_method):
-    ''' check whether any of the event types in `events` matches the
-        given `action` and `api_method`, and return the first match. '''
+    """ check whether any of the event types in `events` matches the
+        given `action` and `api_method`, and return the first match. """
     for event in events:
         regex = event.replace('*', '[^:]*')
         action_string = 's3:%s:%s' % (action, api_method)
@@ -43,7 +43,7 @@ def event_type_matches(events, action, api_method):
 
 
 def filter_rules_match(filters, object_path):
-    ''' check whether the given object path matches all of the given filters '''
+    """ check whether the given object path matches all of the given filters """
     filters = filters or {}
     key_filter = filters.get('S3Key', {})
     for rule in key_filter.get('FilterRule', []):
@@ -220,11 +220,11 @@ def strip_chunk_signatures(data):
 
 
 def _iter_multipart_parts(some_bytes, boundary):
-    ''' Generate a stream of dicts and bytes for each message part.
+    """ Generate a stream of dicts and bytes for each message part.
 
         Content-Disposition is used as a header for a multipart body:
         https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
-    '''
+    """
     try:
         parse_data = email.parser.BytesHeaderParser().parsebytes
     except AttributeError:
@@ -251,12 +251,12 @@ def _iter_multipart_parts(some_bytes, boundary):
 
 
 def expand_multipart_filename(data, headers):
-    ''' Replace instance of '${filename}' in key with given file name.
+    """ Replace instance of '${filename}' in key with given file name.
 
         Data is given as multipart form submission bytes, and file name is
         replace according to Amazon S3 documentation for Post uploads:
         http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
-    '''
+    """
     _, params = cgi.parse_header(headers.get('Content-Type'))
 
     if 'boundary' not in params:
@@ -288,13 +288,13 @@ def expand_multipart_filename(data, headers):
 
 
 def find_multipart_redirect_url(data, headers):
-    ''' Return object key and redirect URL if they can be found.
+    """ Return object key and redirect URL if they can be found.
 
         Data is given as multipart form submission bytes, and redirect is found
         in the success_action_redirect field according to Amazon S3
         documentation for Post uploads:
         http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
-    '''
+    """
     _, params = cgi.parse_header(headers.get('Content-Type'))
     boundary = params['boundary'].encode('ascii')
     data_bytes = to_bytes(data)
@@ -316,8 +316,7 @@ def find_multipart_redirect_url(data, headers):
 
 
 def expand_redirect_url(starting_url, key, bucket):
-    ''' Add key and bucket parameters to starting URL query string.
-    '''
+    """ Add key and bucket parameters to starting URL query string. """
     parsed = urlparse.urlparse(starting_url)
     query = collections.OrderedDict(urlparse.parse_qsl(parsed.query))
     query.update([('key', key), ('bucket', bucket)])
@@ -369,11 +368,11 @@ class ProxyListenerS3(ProxyListener):
                     events_string = '\n'.join(['<Event>%s</Event>' % e for e in notif['Event']])
                     for dest in ['Queue', 'Topic', 'CloudFunction']:
                         if dest in notif:
-                            result += ('''<{dest}Configuration>
+                            result += ("""<{dest}Configuration>
                                         <Id>{uid}</Id>
                                         <{dest}>{endpoint}</{dest}>
                                         {events}
-                                    </{dest}Configuration>''').format(
+                                    </{dest}Configuration>""").format(
                                 dest=dest, uid=uuid.uuid4(),
                                 endpoint=notif[dest],
                                 events=events_string)

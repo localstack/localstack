@@ -98,12 +98,12 @@ class KinesisStream(Component):
 
 
 class KinesisShard(Component):
-    MAX_KEY = "340282366920938463463374607431768211455"
+    MAX_KEY = '340282366920938463463374607431768211455'
 
     def __init__(self, id):
         super(KinesisShard, self).__init__(id)
         self.stream = None
-        self.start_key = "0"
+        self.start_key = '0'
         self.end_key = KinesisShard.MAX_KEY  # 128 times '1' binary as decimal
         self.child_shards = []
 
@@ -287,7 +287,7 @@ class EventSource(Component):
                     if o.endpoint == obj:
                         return o
         else:
-            print("Unexpected object name! %s" % obj)
+            print("Unexpected object name: '%s'" % obj)
         return inst
 
     @staticmethod

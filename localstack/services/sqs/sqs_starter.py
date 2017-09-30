@@ -13,7 +13,7 @@ def start_sqs(port=PORT_SQS, async=False, update_listener=None):
     install_elasticmq()
     backend_port = DEFAULT_PORT_SQS_BACKEND
     # create config file
-    config = '''
+    config = """
     include classpath("application.conf")
     node-address {
         protocol = http
@@ -27,12 +27,12 @@ def start_sqs(port=PORT_SQS, async=False, update_listener=None):
         bind-hostname = "0.0.0.0"
         sqs-limits = strict
     }
-    ''' % (LOCALSTACK_HOSTNAME, port, backend_port)
+    """ % (LOCALSTACK_HOSTNAME, port, backend_port)
     config_file = os.path.join(TMP_FOLDER, 'sqs.%s.conf' % short_uid())
     TMP_FILES.append(config_file)
     save_file(config_file, config)
     # start process
     cmd = ('java -Dconfig.file=%s -jar %s/elasticmq-server.jar' % (config_file, INSTALL_DIR_ELASTICMQ))
-    print("Starting mock SQS (%s port %s)..." % (get_service_protocol(), port))
+    print('Starting mock SQS (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('sqs', port, backend_port, update_listener)
     return do_run(cmd, async)

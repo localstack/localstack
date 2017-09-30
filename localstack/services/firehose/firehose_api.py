@@ -51,7 +51,7 @@ def put_records(stream_name, records):
                 try:
                     s3.Object(bucket, obj_path).put(Body=data)
                 except Exception as e:
-                    LOG.error("Unable to put record to stream: %s %s" % (e, traceback.format_exc()))
+                    LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
                     raise e
 
 
@@ -114,11 +114,11 @@ def bucket_name(bucket_arn):
 
 
 def role_arn(stream_name):
-    return "arn:aws:iam::%s:role/%s" % (TEST_AWS_ACCOUNT_ID, stream_name)
+    return 'arn:aws:iam::%s:role/%s' % (TEST_AWS_ACCOUNT_ID, stream_name)
 
 
 def error_not_found(stream_name):
-    msg = "Firehose %s under account %s not found." % (stream_name, TEST_AWS_ACCOUNT_ID)
+    msg = 'Firehose %s under account %s not found.' % (stream_name, TEST_AWS_ACCOUNT_ID)
     return error_response(msg, code=400, error_type='ResourceNotFoundException')
 
 
@@ -133,8 +133,8 @@ def post_request():
     response = None
     if action == '%s.ListDeliveryStreams' % ACTION_HEADER_PREFIX:
         response = {
-            "DeliveryStreamNames": get_delivery_stream_names(),
-            "HasMoreDeliveryStreams": False
+            'DeliveryStreamNames': get_delivery_stream_names(),
+            'HasMoreDeliveryStreams': False
         }
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
@@ -155,15 +155,15 @@ def post_request():
         record = data['Record']
         put_record(stream_name, record)
         response = {
-            "RecordId": str(uuid.uuid4())
+            'RecordId': str(uuid.uuid4())
         }
     elif action == '%s.PutRecordBatch' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         records = data['Records']
         put_records(stream_name, records)
         response = {
-            "FailedPutCount": 0,
-            "RequestResponses": []
+            'FailedPutCount': 0,
+            'RequestResponses': []
         }
     elif action == '%s.UpdateDestination' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']

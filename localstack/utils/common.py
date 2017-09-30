@@ -80,12 +80,12 @@ class FuncThread (threading.Thread):
             self.func(self.params)
         except Exception:
             if not self.quiet:
-                LOGGER.warning("Thread run method %s(%s) failed: %s" %
+                LOGGER.warning('Thread run method %s(%s) failed: %s' %
                     (self.func, self.params, traceback.format_exc()))
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:
-            LOGGER.warning("Not implemented: FuncThread.stop(..)")
+            LOGGER.warning('Not implemented: FuncThread.stop(..)')
 
 
 class ShellCommandThread (FuncThread):
@@ -371,7 +371,7 @@ def short_uid():
 
 
 def json_safe(item):
-    ''' return a copy of the given object (e.g., dict) that is safe for JSON dumping '''
+    """ return a copy of the given object (e.g., dict) that is safe for JSON dumping """
     try:
         return json.loads(json.dumps(item, cls=CustomEncoder))
     except:
@@ -380,7 +380,7 @@ def json_safe(item):
 
 
 def fix_json_keys(item):
-    ''' make sure the keys of a JSON are strings (not binary type or other) '''
+    """ make sure the keys of a JSON are strings (not binary type or other) """
     item_copy = item
     if isinstance(item, list):
         item_copy = []
@@ -509,12 +509,12 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
 
     # create a self-signed cert
     cert = crypto.X509()
-    cert.get_subject().C = "AU"
-    cert.get_subject().ST = "Some-State"
-    cert.get_subject().L = "Some-Locality"
-    cert.get_subject().O = "LocalStack Org"
-    cert.get_subject().OU = "Testing"
-    cert.get_subject().CN = "LocalStack"
+    cert.get_subject().C = 'AU'
+    cert.get_subject().ST = 'Some-State'
+    cert.get_subject().L = 'Some-Locality'
+    cert.get_subject().O = 'LocalStack Org'
+    cert.get_subject().OU = 'Testing'
+    cert.get_subject().CN = 'LocalStack'
     cert.set_serial_number(1000)
     cert.gmtime_adj_notBefore(0)
     cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
