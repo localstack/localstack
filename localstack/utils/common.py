@@ -27,6 +27,7 @@ from six import with_metaclass
 from multiprocessing.dummy import Pool
 from localstack.constants import ENV_DEV
 from localstack.config import DEFAULT_ENCODING
+from localstack import config
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -232,11 +233,7 @@ def in_ci():
 
 
 def in_docker():
-    """ Returns: True if running in a docker container, else False """
-    if not os.path.exists('/proc/1/cgroup'):
-        return False
-    with open('/proc/1/cgroup', 'rt') as ifh:
-        return 'docker' in ifh.read()
+    return config.in_docker()
 
 
 def is_port_open(port_or_url):

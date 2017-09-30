@@ -55,9 +55,6 @@ LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_DEFAULT_TIMEOUT = 60
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 
-# IP address of Docker bridge
-DOCKER_BRIDGE_IP = '172.17.0.1'
-
 app = Flask(APP_NAME)
 
 # map ARN strings to lambda function objects
@@ -321,12 +318,13 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
 
             print(cmd)
             event_body_escaped = event_body.replace("'", "\\'")
-            # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
+            docker_host = config.DOCKER_HOST_FROM_CONTAINER
             env_vars = {
                 'AWS_LAMBDA_EVENT_BODY': event_body_escaped,
-                'HOSTNAME': DOCKER_BRIDGE_IP,
-                'LOCALSTACK_HOSTNAME': DOCKER_BRIDGE_IP
+                'HOSTNAME': docker_host,
+                'LOCALSTACK_HOSTNAME': docker_host
             }
+            # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
             result, log_output = run_lambda_executor(cmd, env_vars)
             LOG.debug('Lambda log output:\n%s' % log_output)
         else:
