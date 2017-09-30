@@ -552,6 +552,10 @@ def run_safe(_python_lambda, print_error=True, **kwargs):
             print('Unable to execute function: %s' % e)
 
 
+def run_cmd_safe(**kwargs):
+    return run_safe(run, print_error=False, **kwargs)
+
+
 def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False,
         stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False):
     # don't use subprocess module as it is not thread-safe
