@@ -58,7 +58,7 @@ class ProxyListenerSNS(ProxyListener):
                 message = req_data['Message'][0]
                 subject = ""
                 if req_data.get('Subject') is not None:
-               	    subject = req_data.get('Subject')[0]
+                    subject = req_data.get('Subject')[0]
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
                     if subscriber['Protocol'] == 'sqs':
