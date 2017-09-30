@@ -19,8 +19,8 @@ from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
     PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_CLOUDFORMATION, PORT_APIGATEWAY,
     PORT_SSM)
 from localstack.utils import common, persistence
-from localstack.utils.common import (run, TMP_THREADS, in_ci,
-    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread)
+from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
+    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.firehose import firehose_api
@@ -423,7 +423,9 @@ def start_infra_in_docker():
             config.HOST_TMP_FOLDER, image_name, cmd
     )
 
-    run('mkdir -p "{folder}"; chmod -R 777 "{folder}";'.format(folder=config.TMP_FOLDER))
+    mkdir(config.TMP_FOLDER)
+    run_cmd_safe('chmod -R 777 "%s"' % config.TMP_FOLDER)
+
     print(docker_cmd)
     t = ShellCommandThread(docker_cmd, outfile=subprocess.PIPE)
     t.start()

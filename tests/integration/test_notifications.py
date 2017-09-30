@@ -21,6 +21,14 @@ def receive_assert_delete(queue_url, assertions, sqs_client=None):
         sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
 
 
+def test_sqs_queue_names():
+    sqs_client = aws_stack.connect_to_service('sqs')
+    queue_name = '%s.fifo' % short_uid()
+    # make sure we can create *.fifo queues
+    queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+    sqs_client.delete_queue(QueueUrl=queue_url)
+
+
 def test_sns_to_sqs():
     sqs_client = aws_stack.connect_to_service('sqs')
     sns_client = aws_stack.connect_to_service('sns')
