@@ -88,7 +88,7 @@ def func_arn(function_name):
 
 def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     arn = func_arn(lambda_name)
-    arn_to_lambda[arn].function = lambda_handler
+    arn_to_lambda[arn].versions.get('$LATEST')['Function'] = lambda_handler
     arn_to_lambda[arn].cwd = lambda_cwd
 
 
@@ -144,7 +144,7 @@ def use_docker():
 def process_apigateway_invocation(func_arn, path, payload, headers={},
         resource_path=None, method=None, path_params={}):
     try:
-        lambda_function = arn_to_lambda[func_arn].function
+        lambda_function = arn_to_lambda[func_arn].function()
         resource_path = resource_path or path
         event = {
             'path': path,
@@ -164,7 +164,7 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
 
 def process_sns_notification(func_arn, topic_arn, message, subject=''):
     try:
-        lambda_function = arn_to_lambda[func_arn].function
+        lambda_function = arn_to_lambda[func_arn].function()
         event = {
             'Records': [{
                 'Sns': {
@@ -188,7 +188,7 @@ def process_kinesis_records(records, stream_name):
         sources = get_event_sources(source_arn=stream_arn)
         for source in sources:
             arn = source['FunctionArn']
-            lambda_function = arn_to_lambda[arn].function
+            lambda_function = arn_to_lambda[arn].function()
             event = {
                 'Records': []
             }
@@ -217,7 +217,7 @@ def get_function_version(arn, version):
             'Version': version,
             'CodeSize': arn_to_lambda.get(arn).get_version(version).get('CodeSize'),
             'FunctionName': func_name,
-            'FunctionArn': arn,
+            'FunctionArn': arn + ':' + str(version),
             'Handler': arn_to_lambda.get(arn).handler,
             'Runtime': arn_to_lambda.get(arn).runtime,
             'Timeout': LAMBDA_DEFAULT_TIMEOUT,
@@ -230,13 +230,25 @@ def publish_new_function_version(arn):
         last_version = 0
     else:
         last_version = max([int(key) for key in versions.keys() if key != '$LATEST'])
-    versions[last_version + 1] = {'CodeSize': versions.get('$LATEST').get('CodeSize')}
-    return get_function_version(arn, last_version + 1)
+    versions[str(last_version + 1)] = {'CodeSize': versions.get('$LATEST').get('CodeSize'),
+                                  'Function': versions.get('$LATEST').get('Function')}
+    return get_function_version(arn, str(last_version + 1))
 
 
 def do_list_versions(arn):
     return sorted([get_function_version(arn, version) for version in
                    arn_to_lambda.get(arn).versions.keys()], key=lambda k: str(k.get('Version')))
+
+
+def do_update_alias(arn, alias, version, description=None):
+    new_alias = {
+        'AliasArn': arn + ':' + alias,
+        'FunctionVersion': version,
+        'Name': alias,
+        'Description': description or ''
+    }
+    arn_to_lambda.get(arn).aliases[alias] = new_alias
+    return new_alias
 
 
 def get_host_path_for_path_in_docker(path):
@@ -695,9 +707,13 @@ def invoke_function(function):
               in: body
     """
     arn = func_arn(function)
-    lambda_function = arn_to_lambda.get(arn).function
-    if not lambda_function:
-        return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
+    if arn not in arn_to_lambda:
+        return error_response('Function does not exist: %s' % arn, 404, error_type='ResourceNotFoundException')
+    qualifier = request.args['Qualifier'] if 'Qualifier' in request.args else '$LATEST'
+    if not arn_to_lambda.get(arn).qualifier_exists(qualifier):
+        return error_response('Function does not exist: {0}:{1}'.format(arn, qualifier), 404,
+                              error_type='ResourceNotFoundException')
+    lambda_function = arn_to_lambda.get(arn).function(qualifier)
     data = None
     if request.data:
         try:
@@ -794,6 +810,45 @@ def list_versions(function):
     if arn not in arn_to_lambda:
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
     return jsonify({'Versions': do_list_versions(arn)})
+
+
+@app.route('%s/functions/<function>/aliases' % PATH_ROOT, methods=['POST'])
+def create_alias(function):
+    arn = func_arn(function)
+    if arn not in arn_to_lambda:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    data = json.loads(request.data)
+    alias = data.get('Name')
+    if alias in arn_to_lambda.get(arn).aliases:
+        return error_response('Alias already exists: %s' % arn + ':' + alias, 404,
+                              error_type='ResourceConflictException')
+    version = data.get('FunctionVersion')
+    description = data.get('Description')
+    return jsonify(do_update_alias(arn, alias, version, description))
+
+
+@app.route('%s/functions/<function>/aliases/<name>' % PATH_ROOT, methods=['PUT'])
+def update_alias(function, name):
+    arn = func_arn(function)
+    if arn not in arn_to_lambda:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    if name not in arn_to_lambda.get(arn).aliases:
+        return error_response('Alias not found: %s' % arn + ':' + name, 404,
+                              error_type='ResourceNotFoundException')
+    current_alias = arn_to_lambda.get(arn).aliases.get(name)
+    data = json.loads(request.data)
+    version = data.get('FunctionVersion') or current_alias.get('FunctionVersion')
+    description = data.get('Description') or current_alias.get('Description')
+    return jsonify(do_update_alias(arn, name, version, description))
+
+
+@app.route('%s/functions/<function>/aliases' % PATH_ROOT, methods=['GET'])
+def list_aliases(function):
+    arn = func_arn(function)
+    if arn not in arn_to_lambda:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    return jsonify({'Aliases': sorted(arn_to_lambda.get(arn).aliases.values(),
+                                      key=lambda x: x['Name'])})
 
 
 def serve(port, quiet=True):

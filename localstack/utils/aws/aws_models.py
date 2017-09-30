@@ -162,9 +162,9 @@ class LambdaFunction(Component):
         self.event_sources = []
         self.targets = []
         self.versions = {}
+        self.aliases = {}
         self.envvars = {}
         self.runtime = None
-        self.function = None
         self.handler = None
         self.cwd = None
 
@@ -173,6 +173,14 @@ class LambdaFunction(Component):
 
     def name(self):
         return self.id.split(':function:')[-1]
+
+    def function(self, qualifier='$LATEST'):
+        version = qualifier if qualifier in self.versions else \
+            self.aliases.get(qualifier).get('FunctionVersion')
+        return self.versions.get(version).get('Function')
+
+    def qualifier_exists(self, qualifier):
+        return qualifier in self.aliases or qualifier in self.versions
 
     def __str__(self):
         return '<%s:%s>' % (self.__class__.__name__, self.name())
