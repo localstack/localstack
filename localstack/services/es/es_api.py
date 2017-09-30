@@ -18,30 +18,30 @@ def error_response(error_type, code=400, message='Unknown error.'):
             message = 'Resource not found.'
         elif error_type == 'ResourceAlreadyExistsException':
             message = 'Resource already exists.'
-    response = make_response(jsonify({"error": message}))
+    response = make_response(jsonify({'error': message}))
     response.headers['x-amzn-errortype'] = error_type
     return response, code
 
 
 def get_domain_status(domain_name, deleted=False):
     return {
-        "DomainStatus": {
-            "ARN": "arn:aws:es:%s:%s:domain/%s" % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),
-            "Created": True,
-            "Deleted": deleted,
-            "DomainId": "%s/%s" % (TEST_AWS_ACCOUNT_ID, domain_name),
-            "DomainName": domain_name,
-            "ElasticsearchClusterConfig": {
-                "DedicatedMasterCount": 1,
-                "DedicatedMasterEnabled": True,
-                "DedicatedMasterType": "m3.medium.elasticsearch",
-                "InstanceCount": 1,
-                "InstanceType": "m3.medium.elasticsearch",
-                "ZoneAwarenessEnabled": True
+        'DomainStatus': {
+            'ARN': 'arn:aws:es:%s:%s:domain/%s' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),
+            'Created': True,
+            'Deleted': deleted,
+            'DomainId': '%s/%s' % (TEST_AWS_ACCOUNT_ID, domain_name),
+            'DomainName': domain_name,
+            'ElasticsearchClusterConfig': {
+                'DedicatedMasterCount': 1,
+                'DedicatedMasterEnabled': True,
+                'DedicatedMasterType': 'm3.medium.elasticsearch',
+                'InstanceCount': 1,
+                'InstanceType': 'm3.medium.elasticsearch',
+                'ZoneAwarenessEnabled': True
             },
-            "ElasticsearchVersion": "5.3",
-            "Endpoint": None,
-            "Processing": True
+            'ElasticsearchVersion': '5.3',
+            'Endpoint': None,
+            'Processing': True
         }
     }
 

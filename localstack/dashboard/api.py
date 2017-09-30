@@ -19,7 +19,7 @@ app.root_path = root_path
 def spec():
     swag = swagger(app)
     swag['info']['version'] = VERSION
-    swag['info']['title'] = "AWS Resources Dashboard"
+    swag['info']['title'] = 'AWS Resources Dashboard'
     return jsonify(swag)
 
 

@@ -39,15 +39,15 @@ class ProxyListenerDynamoDB(ProxyListener):
             return
 
         record = {
-            "eventID": "1",
-            "eventVersion": "1.0",
-            "dynamodb": {
-                "StreamViewType": "NEW_AND_OLD_IMAGES",
-                "SequenceNumber": "1",
-                "SizeBytes": -1
+            'eventID': '1',
+            'eventVersion': '1.0',
+            'dynamodb': {
+                'StreamViewType': 'NEW_AND_OLD_IMAGES',
+                'SequenceNumber': '1',
+                'SizeBytes': -1
             },
-            "awsRegion": DEFAULT_REGION,
-            "eventSource": "aws:dynamodb"
+            'awsRegion': DEFAULT_REGION,
+            'eventSource': 'aws:dynamodb'
         }
         records = [record]
 
@@ -163,7 +163,7 @@ def forward_to_ddb_stream(records):
 def dynamodb_extract_keys(item, table_name):
     result = {}
     if table_name not in TABLE_DEFINITIONS:
-        LOGGER.warning("Unknown table: %s not found in %s" % (table_name, TABLE_DEFINITIONS))
+        LOGGER.warning('Unknown table: %s not found in %s' % (table_name, TABLE_DEFINITIONS))
         return None
     for key in TABLE_DEFINITIONS[table_name]['KeySchema']:
         attr_name = key['AttributeName']

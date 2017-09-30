@@ -217,7 +217,7 @@ def get_account_id(account_id=None, env=None):
 def role_arn(role_name, account_id=None, env=None):
     env = get_environment(env)
     account_id = get_account_id(account_id, env=env)
-    return "arn:aws:iam::%s:role/%s" % (account_id, role_name)
+    return 'arn:aws:iam::%s:role/%s' % (account_id, role_name)
 
 
 def iam_resource_arn(resource, role=None, env=None):
@@ -234,12 +234,12 @@ def get_iam_role(resource, env=None):
 
 def dynamodb_table_arn(table_name, account_id=None):
     account_id = get_account_id(account_id)
-    return "arn:aws:dynamodb:%s:%s:table/%s" % (DEFAULT_REGION, account_id, table_name)
+    return 'arn:aws:dynamodb:%s:%s:table/%s' % (DEFAULT_REGION, account_id, table_name)
 
 
 def dynamodb_stream_arn(table_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ("arn:aws:dynamodb:%s:%s:table/%s/stream/%s" %
+    return ('arn:aws:dynamodb:%s:%s:table/%s/stream/%s' %
         (DEFAULT_REGION, account_id, table_name, timestamp()))
 
 
@@ -260,26 +260,26 @@ def cognito_user_pool_arn(user_pool_id, account_id=None):
 
 def kinesis_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
-    return "arn:aws:kinesis:%s:%s:stream/%s" % (DEFAULT_REGION, account_id, stream_name)
+    return 'arn:aws:kinesis:%s:%s:stream/%s' % (DEFAULT_REGION, account_id, stream_name)
 
 
 def firehose_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ("arn:aws:firehose:%s:%s:deliverystream/%s" % (DEFAULT_REGION, account_id, stream_name))
+    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (DEFAULT_REGION, account_id, stream_name))
 
 
 def s3_bucket_arn(bucket_name, account_id=None):
-    return "arn:aws:s3:::%s" % (bucket_name)
+    return 'arn:aws:s3:::%s' % (bucket_name)
 
 
 def sqs_queue_arn(queue_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ("arn:aws:sqs:%s:%s:%s" % (DEFAULT_REGION, account_id, queue_name))
+    return ('arn:aws:sqs:%s:%s:%s' % (DEFAULT_REGION, account_id, queue_name))
 
 
 def sns_topic_arn(topic_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ("arn:aws:sns:%s:%s:%s" % (DEFAULT_REGION, account_id, topic_name))
+    return ('arn:aws:sns:%s:%s:%s' % (DEFAULT_REGION, account_id, topic_name))
 
 
 def get_sqs_queue_url(queue_name):

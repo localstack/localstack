@@ -106,8 +106,8 @@ class TestLambdaAPI(unittest.TestCase):
             })
             result = json.loads(lambda_api.create_alias(self.FUNCTION_NAME).get_data())
 
-            expected_result = {u'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME,
-                               u'FunctionVersion': '1', u'Description': '', u'Name': self.ALIAS_NAME}
+            expected_result = {'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME,
+                               'FunctionVersion': '1', 'Description': '', 'Name': self.ALIAS_NAME}
             self.assertDictEqual(expected_result, result)
 
     def test_create_alias_on_non_existant_function_returns_error(self):
@@ -146,13 +146,13 @@ class TestLambdaAPI(unittest.TestCase):
             lambda_api.create_alias(self.FUNCTION_NAME).get_data()
 
             flask.request.data = json.dumps({
-                "FunctionVersion": '$LATEST',
-                "Description": 'Test-Description'
+                'FunctionVersion': '$LATEST',
+                'Description': 'Test-Description'
             })
             result = json.loads(lambda_api.update_alias(self.FUNCTION_NAME, self.ALIAS_NAME).get_data())
 
             expected_result = {'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME,
-                               'FunctionVersion': '$LATEST', u'Description': 'Test-Description',
+                               'FunctionVersion': '$LATEST', 'Description': 'Test-Description',
                                'Name': self.ALIAS_NAME}
             self.assertDictEqual(expected_result, result)
 
@@ -167,7 +167,7 @@ class TestLambdaAPI(unittest.TestCase):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)
             result = json.loads(lambda_api.update_alias(self.FUNCTION_NAME, self.ALIAS_NAME).get_data())
-            alias_arn = lambda_api.func_arn(self.FUNCTION_NAME) + ":" + self.ALIAS_NAME
+            alias_arn = lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME
             self.assertEqual(self.ALIASNOTFOUND_EXCEPTION, result['__type'])
             self.assertEqual(self.ALIASNOTFOUND_MESSAGE % alias_arn, result['message'])
 
@@ -176,8 +176,8 @@ class TestLambdaAPI(unittest.TestCase):
             self._create_function(self.FUNCTION_NAME)
             lambda_api.publish_version(self.FUNCTION_NAME)
             flask.request.data = json.dumps({
-                "Name": self.ALIAS2_NAME,
-                "FunctionVersion": '$LATEST'
+                'Name': self.ALIAS2_NAME,
+                'FunctionVersion': '$LATEST'
             })
             lambda_api.create_alias(self.FUNCTION_NAME).get_data()
             flask.request.data = json.dumps({
@@ -189,7 +189,7 @@ class TestLambdaAPI(unittest.TestCase):
 
             result = json.loads(lambda_api.list_aliases(self.FUNCTION_NAME).get_data())
 
-            expected_result = {u'Aliases': [
+            expected_result = {'Aliases': [
                 {
                     'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME,
                     'FunctionVersion': '1',

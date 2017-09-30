@@ -90,7 +90,7 @@ def test_kinesis_lambda_sns_ddb_streams():
     kinesis_connector.listen_to_kinesis(TEST_STREAM_NAME, listener_func=process_records,
         wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
 
-    LOGGER.info("Kinesis consumer initialized.")
+    LOGGER.info('Kinesis consumer initialized.')
 
     # create table with stream forwarding config
     testutil.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY,
@@ -163,7 +163,7 @@ def test_kinesis_lambda_sns_ddb_streams():
         shard_id='shardId-000000000000', count=10)
     assert len(latest) == 10
 
-    LOGGER.info("Waiting some time before finishing test.")
+    LOGGER.info('Waiting some time before finishing test.')
     time.sleep(2)
 
     num_events = num_events_ddb + num_events_kinesis + num_events_sns

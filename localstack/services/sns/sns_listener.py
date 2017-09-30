@@ -200,12 +200,12 @@ def get_message_attributes(req_data):
     attributes = {}
     x = 1
     while True:
-        name = req_data.get('MessageAttributes.entry.' + str(x) + ".Name", [None])[0]
+        name = req_data.get('MessageAttributes.entry.' + str(x) + '.Name', [None])[0]
         if name is not None:
             attribute = {}
-            attribute['Type'] = req_data.get('MessageAttributes.entry.' + str(x) + ".Value.DataType", [None])[0]
-            string_value = req_data.get('MessageAttributes.entry.' + str(x) + ".Value.StringValue", [None])[0]
-            binary_value = req_data.get('MessageAttributes.entry.' + str(x) + ".Value.BinaryValue", [None])[0]
+            attribute['Type'] = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.DataType', [None])[0]
+            string_value = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.StringValue', [None])[0]
+            binary_value = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.BinaryValue', [None])[0]
             if string_value is not None:
                 attribute['Value'] = string_value
             elif binary_value is not None:

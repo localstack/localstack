@@ -152,7 +152,7 @@ def get_sqs_queues(filter='.*', pool={}, env=None):
 def resolve_string_or_variable(string, code_map):
     if re.match(r'^["\'].*["\']$', string):
         return string.replace('"', '').replace("'", '')
-    LOG.warning("Variable resolution not implemented")
+    LOG.warning('Variable resolution not implemented')
     return None
 
 
@@ -266,12 +266,12 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
             zip_path = os.path.join(folder, filename)
             unzip(zip_path, folder)
     except Exception as e:
-        print("WARN: %s" % e)
+        print('WARN: %s' % e)
         rm_rf(archive)
         if retries > 0:
             return get_lambda_code(func_name, retries=retries - 1, cache_time=1, env=env)
         else:
-            print("WARNING: Unable to retrieve lambda code: %s" % e)
+            print('WARNING: Unable to retrieve lambda code: %s' % e)
 
     # traverse subdirectories and get script sources
     result = {}
@@ -361,7 +361,7 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
                             n.target = func
                             bucket.notifications.append(n)
                 except Exception as e:
-                    print("WARNING: Unable to get details for bucket: %s" % e)
+                    print('WARNING: Unable to get details for bucket: %s' % e)
 
     try:
         out = cmd_s3api('list-buckets', env)

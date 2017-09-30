@@ -94,15 +94,15 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
 
 def add_event_source(function_name, source_arn):
     mapping = {
-        "UUID": str(uuid.uuid4()),
-        "StateTransitionReason": "User action",
-        "LastModified": float(time.mktime(datetime.utcnow().timetuple())),
-        "BatchSize": 100,
-        "State": "Enabled",
-        "FunctionArn": func_arn(function_name),
-        "EventSourceArn": source_arn,
-        "LastProcessingResult": "OK",
-        "StartingPosition": LAMBDA_DEFAULT_STARTING_POSITION
+        'UUID': str(uuid.uuid4()),
+        'StateTransitionReason': 'User action',
+        'LastModified': float(time.mktime(datetime.utcnow().timetuple())),
+        'BatchSize': 100,
+        'State': 'Enabled',
+        'FunctionArn': func_arn(function_name),
+        'EventSourceArn': source_arn,
+        'LastProcessingResult': 'OK',
+        'StartingPosition': LAMBDA_DEFAULT_STARTING_POSITION
     }
     event_source_mappings.append(mapping)
     return mapping
@@ -347,7 +347,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
             result = queue.get()
 
     except Exception as e:
-        return error_response("Error executing Lambda function: %s %s" % (e, traceback.format_exc()))
+        return error_response('Error executing Lambda function: %s %s' % (e, traceback.format_exc()))
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -556,18 +556,18 @@ def create_function():
             del arn_to_lambda[arn]
             return result
         result.update({
-            "DeadLetterConfig": data.get('DeadLetterConfig'),
-            "Description": data.get('Description'),
-            "Environment": {"Error": {}, "Variables": arn_to_lambda[arn].envvars},
-            "FunctionArn": arn,
-            "FunctionName": lambda_name,
-            "Handler": arn_to_lambda[arn].handler,
-            "MemorySize": data.get('MemorySize'),
-            "Role": data.get('Role'),
-            "Runtime": arn_to_lambda[arn].runtime,
-            "Timeout": data.get('Timeout'),
-            "TracingConfig": {},
-            "VpcConfig": {"SecurityGroupIds": [None], "SubnetIds": [None], "VpcId": None}
+            'DeadLetterConfig': data.get('DeadLetterConfig'),
+            'Description': data.get('Description'),
+            'Environment': {'Error': {}, 'Variables': arn_to_lambda[arn].envvars},
+            'FunctionArn': arn,
+            'FunctionName': lambda_name,
+            'Handler': arn_to_lambda[arn].handler,
+            'MemorySize': data.get('MemorySize'),
+            'Role': data.get('Role'),
+            'Runtime': arn_to_lambda[arn].runtime,
+            'Timeout': data.get('Timeout'),
+            'TracingConfig': {},
+            'VpcConfig': {'SecurityGroupIds': [None], 'SubnetIds': [None], 'VpcId': None}
         })
         return jsonify(result or {})
     except Exception as e:
@@ -671,7 +671,7 @@ def get_function_code(function):
     arn = func_arn(function)
     lambda_cwd = arn_to_lambda[arn].cwd
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
-    return Response(load_file(tmp_file, mode="rb"),
+    return Response(load_file(tmp_file, mode='rb'),
             mimetype='application/zip',
             headers={'Content-Disposition': 'attachment; filename=lambda_archive.zip'})
 

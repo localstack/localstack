@@ -35,6 +35,6 @@ def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
         ddb_data_dir_param = '-dbPath %s' % ddb_data_dir
     cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +
         '-jar DynamoDBLocal.jar -sharedDb -port %s %s') % (ROOT_PATH, backend_port, ddb_data_dir_param)
-    print("Starting mock DynamoDB (%s port %s)..." % (get_service_protocol(), port))
+    print('Starting mock DynamoDB (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('dynamodb', port, backend_port, update_listener)
     return do_run(cmd, async)

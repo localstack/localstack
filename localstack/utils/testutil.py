@@ -91,7 +91,7 @@ def create_zip_file(file_path, include='*', get_content=False):
         TMP_FILES.append(tmp_dir)
         return zip_file
     zip_file_content = None
-    with open(zip_file, "rb") as file_obj:
+    with open(zip_file, 'rb') as file_obj:
         zip_file_content = file_obj.read()
     run('rm -r "%s"' % tmp_dir)
     return zip_file_content
@@ -141,8 +141,7 @@ def assert_object(expected_object, all_objects):
         all_objects = [all_objects]
     found = find_object(expected_object, all_objects)
     if not found:
-        raise Exception("Expected object not found: %s in list %s" %
-                        (expected_object, all_objects))
+        raise Exception('Expected object not found: %s in list %s' % (expected_object, all_objects))
 
 
 def find_object(expected_object, object_list):

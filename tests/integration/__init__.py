@@ -18,6 +18,6 @@ def setup_package():
 
 
 def teardown_package():
-    print("Shutdown")
+    print('Shutdown')
     cleanup(files=True)
     infra.stop_infra()

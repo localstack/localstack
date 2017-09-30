@@ -81,4 +81,4 @@ class CloudFormationTest(unittest.TestCase):
         except (ClientError, ResponseParserError) as err:
             if isinstance(err, ClientError):
                 assert err.response['ResponseMetadata']['HTTPStatusCode'] == 400
-                assert err.response['Error']['Message'] == "Template Validation Error"
+                assert err.response['Error']['Message'] == 'Template Validation Error'
