@@ -1,5 +1,6 @@
 import re
 import os
+import socket
 import subprocess
 import tempfile
 from os.path import expanduser
@@ -20,10 +21,9 @@ HOSTNAME_EXTERNAL = os.environ.get('HOSTNAME_EXTERNAL', '').strip() or LOCALHOST
 
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
-os.environ['LOCALSTACK_HOSTNAME'] = LOCALSTACK_HOSTNAME
 
 # whether to remotely copy the lambda or locally mount a volume
-LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip() in ['true', '1']
+LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').lower().strip() in ['true', '1']
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), 'localstack')
@@ -69,6 +69,23 @@ for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     backend_override_var = '%s_BACKEND' % key.upper().replace('-', '_')
     if os.environ.get(backend_override_var):
         CONFIG_ENV_VARS.append(backend_override_var)
+
+def in_docker():
+    """ Returns: True if running in a docker container, else False """
+    if not os.path.exists('/proc/1/cgroup'):
+        return False
+    with open('/proc/1/cgroup', 'rt') as ifh:
+        return 'docker' in ifh.read()
+
+# determine route to Docker host from container
+DOCKER_BRIDGE_IP = '172.17.0.1'
+try:
+    DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('docker.for.mac.localhost')
+    # update LOCALSTACK_HOSTNAME if docker.for.mac.localhost is available
+    if in_docker() and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
+        LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
+except socket.error:
+    DOCKER_HOST_FROM_CONTAINER = DOCKER_BRIDGE_IP
 
 # local config file path in home directory
 CONFIG_FILE_PATH = os.path.join(expanduser("~"), '.localstack')
@@ -129,6 +146,9 @@ def populate_configs():
         exec('global TEST_%s_URL; TEST_%s_URL = "%s"' % (key_upper, key_upper, url))
         # expose HOST_*_URL variables as environment variables
         os.environ['TEST_%s_URL' % key_upper] = url
+
+    # expose LOCALSTACK_HOSTNAME as env. variable
+    os.environ['LOCALSTACK_HOSTNAME'] = LOCALSTACK_HOSTNAME
 
 
 def service_port(service_key):
