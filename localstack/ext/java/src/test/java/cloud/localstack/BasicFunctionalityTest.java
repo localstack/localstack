@@ -5,6 +5,7 @@ import static cloud.localstack.TestUtils.TEST_CREDENTIALS;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -14,7 +15,10 @@ import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.ListStreamsResult;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
 import com.amazonaws.services.lambda.AWSLambda;
+import com.amazonaws.services.lambda.model.CreateEventSourceMappingRequest;
+import com.amazonaws.services.lambda.model.CreateFunctionRequest;
 import com.amazonaws.services.lambda.model.ListFunctionsResult;
+import com.amazonaws.services.lambda.model.Runtime;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -27,6 +31,7 @@ import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 
+import cloud.localstack.sample.KinesisLambdaHandler;
 import cloud.localstack.sample.S3Sample;
 
 /**
@@ -62,6 +67,38 @@ public class BasicFunctionalityTest {
 		req.setData(ByteBuffer.wrap("{}".getBytes()));
 		req.setStreamName(streamName);
 		kinesis.putRecord(req);
+	}
+
+	@Test
+	public void testKinesisLambdaIntegration() throws Exception {
+		AmazonKinesis kinesis = TestUtils.getClientKinesis();
+		AWSLambda lambda = TestUtils.getClientLambda();
+		String functionName = UUID.randomUUID().toString();
+		String streamName = UUID.randomUUID().toString();
+
+		// create function
+		CreateFunctionRequest request = new CreateFunctionRequest();
+		request.setFunctionName(functionName);
+		request.setRuntime(Runtime.Java8);
+		request.setCode(LocalTestUtil.createFunctionCode(KinesisLambdaHandler.class));
+		request.setHandler(KinesisLambdaHandler.class.getName());
+		lambda.createFunction(request);
+
+		// create stream
+		kinesis.createStream(streamName, 1);
+		Thread.sleep(500);
+		String streamArn = kinesis.describeStream(streamName).getStreamDescription().getStreamARN();
+
+		// create mapping
+		CreateEventSourceMappingRequest mapping = new CreateEventSourceMappingRequest();
+		mapping.setFunctionName(functionName);
+		mapping.setEventSourceArn(streamArn);
+		mapping.setStartingPosition("LATEST");
+		lambda.createEventSourceMapping(mapping);
+
+		// push event
+		kinesis.putRecord(streamName, ByteBuffer.wrap("{\"foo\": \"bar\"}".getBytes()), "partitionKey1");
+		// TODO: have Lambda store the record to S3, retrieve it from there, compare result
 	}
 
 	@Test

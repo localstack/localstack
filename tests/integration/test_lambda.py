@@ -24,7 +24,7 @@ TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 TEST_LAMBDA_JAR_URL = ('https://repo.maven.apache.org/maven2/cloud/localstack/' +
-    'localstack-utils/0.1.1/localstack-utils-0.1.1-tests.jar')
+    'localstack-utils/0.1.5/localstack-utils-0.1.5-tests.jar')
 
 TEST_LAMBDA_LIBS = ['localstack', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
 

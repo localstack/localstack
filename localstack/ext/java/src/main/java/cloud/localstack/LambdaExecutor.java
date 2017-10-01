@@ -2,6 +2,7 @@ package cloud.localstack;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.Base64;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +54,9 @@ public class LambdaExecutor {
 				kinesisEvent.getRecords().add(r);
 				Record kinesisRecord = new Record();
 				Map<String,Object> kinesis = (Map<String, Object>) get(record, "Kinesis");
-				kinesisRecord.setData(ByteBuffer.wrap(get(kinesis, "Data").toString().getBytes()));
+				String dataString = new String(get(kinesis, "Data").toString().getBytes());
+				byte[] decodedData = Base64.getDecoder().decode(dataString);
+				kinesisRecord.setData(ByteBuffer.wrap(decodedData));
 				kinesisRecord.setPartitionKey((String) get(kinesis, "PartitionKey"));
 				kinesisRecord.setApproximateArrivalTimestamp(new Date());
 				r.setKinesis(kinesisRecord);
