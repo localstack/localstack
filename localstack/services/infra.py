@@ -424,7 +424,7 @@ def start_infra_in_docker():
     )
 
     mkdir(config.TMP_FOLDER)
-    run_cmd_safe('chmod -R 777 "%s"' % config.TMP_FOLDER)
+    run_cmd_safe(cmd='chmod -R 777 "%s"' % config.TMP_FOLDER)
 
     print(docker_cmd)
     t = ShellCommandThread(docker_cmd, outfile=subprocess.PIPE)
