@@ -267,8 +267,10 @@ def start_proxy(port, backend_url, update_listener, quiet=False, params={}):
 
 
 def start_moto_server(key, port, name=None, backend_port=None, async=False, update_listener=None):
-    cmd = 'VALIDATE_LAMBDA_S3=0 %s/bin/moto_server %s -p %s -H %s' % (LOCALSTACK_VENV_FOLDER, key,
-        backend_port or port, constants.BIND_HOST)
+    moto_server_cmd = '%s/bin/moto_server' % LOCALSTACK_VENV_FOLDER
+    if not os.path.exists(moto_server_cmd):
+        moto_server_cmd = run('which moto_server').strip()
+    cmd = 'VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s' % (moto_server_cmd, key, backend_port or port, constants.BIND_HOST)
     if not name:
         name = key
     print('Starting mock %s (%s port %s)...' % (name, get_service_protocol(), port))

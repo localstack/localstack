@@ -1,7 +1,7 @@
 import os
 
 # LocalStack version
-VERSION = '0.8.0'
+VERSION = '0.8.1'
 
 # default AWS region
 if 'DEFAULT_REGION' not in os.environ:
