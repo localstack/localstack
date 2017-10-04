@@ -11,7 +11,7 @@ public class LambdaHandler implements RequestHandler<Object, Object> {
     @Override
     public Object handleRequest(Object event, Context context) {
         System.err.println(event);
-        return "{}";
+        return event.getClass();
     }
 
 }
