@@ -173,7 +173,7 @@ def process_sns_notification(func_arn, topic_arn, message, subject=''):
                 }
             }]
         }
-        run_lambda(lambda_function, event=event, context={}, func_arn=func_arn)
+        run_lambda(lambda_function, event=event, context={}, func_arn=func_arn, async=True)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (e, traceback.format_exc()))
 
@@ -254,7 +254,7 @@ def get_host_path_for_path_in_docker(path):
 
 
 @cloudwatched('lambda')
-def run_lambda(func, event, context, func_arn, suppress_output=False):
+def run_lambda(func, event, context, func_arn, suppress_output=False, async=False):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -262,7 +262,6 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
         sys.stdout = stream
         sys.stderr = stream
     lambda_cwd = arn_to_lambda.get(func_arn).cwd
-    result = None
     try:
         runtime = arn_to_lambda.get(func_arn).runtime
         handler = arn_to_lambda.get(func_arn).handler
@@ -325,7 +324,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False):
                 'LOCALSTACK_HOSTNAME': docker_host
             }
             # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
-            result, log_output = run_lambda_executor(cmd, env_vars)
+            result, log_output = run_lambda_executor(cmd, env_vars, async)
             LOG.debug('Lambda log output:\n%s' % log_output)
         else:
             # execute the Lambda function in a forked sub-process, sync result via queue
@@ -403,16 +402,19 @@ def error_response(msg, code=500, error_type='InternalFailure'):
     return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
 
 
-def run_lambda_executor(cmd, env_vars={}):
+def run_lambda_executor(cmd, env_vars={}, async=False):
     process = run(cmd, async=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars)
-    return_code = process.wait()
-    result = to_str(process.stdout.read())
-    log_output = to_str(process.stderr.read())
+    if async:
+        result = '{"async": "%s"}' % async
+        log_output = 'Lambda executed asynchronously'
+    else:
+        return_code = process.wait()
+        result = to_str(process.stdout.read())
+        log_output = to_str(process.stderr.read())
 
-    if return_code != 0:
-        raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
-            (return_code, log_output))
-
+        if return_code != 0:
+            raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
+                (return_code, log_output))
     return result, log_output
 
 
@@ -484,7 +486,13 @@ def set_function_code(code, lambda_name):
             class_name = arn_to_lambda[arn].handler.split('::')[0]
             classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
             cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
-            result, log_output = run_lambda_executor(cmd)
+            async = False
+            # flip async flag depending on origin
+            if 'Records' in event:
+                # TODO: add more event supporting async lambda execution
+                if 'Sns' in event['Records'][0]:
+                    async = True
+            result, log_output = run_lambda_executor(cmd, async=async)
             LOG.info('Lambda output: %s' % log_output.replace('\n', '\n> '))
             return result
 
@@ -718,7 +726,10 @@ def invoke_function(function):
             data = json.loads(to_str(request.data))
         except Exception:
             return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
-    result = run_lambda(lambda_function, func_arn=arn, event=data, context={})
+    async = False
+    if 'HTTP_X_AMZ_INVOCATION_TYPE' in request.environ:
+        async = request.environ['HTTP_X_AMZ_INVOCATION_TYPE'] == 'Event'
+    result = run_lambda(lambda_function, async=async, func_arn=arn, event=data, context={})
     if isinstance(result, dict):
         return jsonify(result)
     if result:

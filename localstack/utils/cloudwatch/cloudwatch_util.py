@@ -99,7 +99,6 @@ def cloudwatched(ns):
     def wrapping(func):
         def wrapped(*args, **kwargs):
             time_before = now_utc()
-            result = None
             try:
                 result = func(*args, **kwargs)
                 publish_result(ns, time_before, result, kwargs)
