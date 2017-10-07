@@ -56,6 +56,7 @@ class ProxyListenerSNS(ProxyListener):
 
             elif req_action == 'Publish':
                 message = req_data['Message'][0]
+                subject = (req_data.get('Subject', ['']))[0]
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
                     if subscriber['Protocol'] == 'sqs':
@@ -80,6 +81,7 @@ class ProxyListenerSNS(ProxyListener):
                             },
                             data=json.dumps({
                                 'Type': 'Notification',
+                                'Subject': subject,
                                 'Message': message,
                             })
                         )
