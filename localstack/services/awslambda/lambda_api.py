@@ -173,7 +173,7 @@ def process_sns_notification(func_arn, topic_arn, message, subject=''):
                 }
             }]
         }
-        run_lambda(lambda_function, event=event, context={}, func_arn=func_arn, async=True)
+        return run_lambda(lambda_function, event=event, context={}, func_arn=func_arn, async=True)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (e, traceback.format_exc()))
 

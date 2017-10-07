@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timedelta
 from nose.tools import assert_raises
 from localstack.utils import testutil
-from localstack.utils.common import load_file, short_uid, clone, to_bytes, to_str, run_safe
+from localstack.utils.common import load_file, short_uid, clone, to_bytes, to_str, run_safe, retry
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
@@ -167,9 +167,15 @@ def test_kinesis_lambda_sns_ddb_streams():
     time.sleep(2)
 
     num_events = num_events_ddb + num_events_kinesis + num_events_sns
-    if len(EVENTS) != num_events:
-        LOGGER.warning('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s' % (len(EVENTS), num_events))
-    assert len(EVENTS) == num_events
+
+    def check_events():
+        if len(EVENTS) != num_events:
+            LOGGER.warning(('DynamoDB and Kinesis updates retrieved ' +
+                '(actual/expected): %s/%s') % (len(EVENTS), num_events))
+        assert len(EVENTS) == num_events
+
+    # this can take a long time in CI, make sure we give it enough time/retries
+    retry(check_events, retries=7, sleep=3)
 
     # check cloudwatch notifications
     stats1 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM)

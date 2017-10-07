@@ -71,7 +71,7 @@ class ProxyListenerSNS(ProxyListener):
                             subscriber['Endpoint'],
                             topic_arn, message, subject=req_data.get('Subject')
                         )
-                    elif subscriber['Protocol'] == 'http':
+                    elif subscriber['Protocol'] in ['http', 'https']:
                         requests.post(
                             subscriber['Endpoint'],
                             headers={
