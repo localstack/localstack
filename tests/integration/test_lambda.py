@@ -100,11 +100,11 @@ def test_lambda_runtimes():
     assert 'LinkedHashMap' in to_str(result_data)
 
     # test SNSEvent
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA,
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
                                   Payload=b'{"Records": [{"Sns": {"Message": "{}"}}]}')
     assert result['StatusCode'] == 200
     result_data = result['Payload'].read()
-    assert 'SNSEvent' in to_str(result_data)
+    assert to_str(result_data).strip() == '{"async": "True"}'
 
     # test KinesisEvent
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA,
