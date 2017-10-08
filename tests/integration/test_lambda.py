@@ -1,7 +1,7 @@
 import os
 import json
 from io import BytesIO
-from localstack.constants import LOCALSTACK_ROOT_FOLDER
+from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSION
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, load_file, to_str, mkdir, download
@@ -25,7 +25,7 @@ TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 TEST_LAMBDA_JAR_URL = ('https://repo.maven.apache.org/maven2/cloud/localstack/' +
-    'localstack-utils/0.1.6/localstack-utils-0.1.6-tests.jar')
+    'localstack-utils/{version}/localstack-utils-{version}-tests.jar').format(version=LOCALSTACK_MAVEN_VERSION)
 
 TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
 

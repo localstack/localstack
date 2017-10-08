@@ -2,7 +2,6 @@ package cloud.localstack;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
@@ -11,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.runner.notification.RunNotifier;
@@ -33,13 +31,11 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	private static final Logger LOG = Logger.getLogger(LocalstackTestRunner.class.getName());
 
 	private static final AtomicReference<Process> INFRA_STARTED = new AtomicReference<Process>();
-	private static String CONFIG_FILE_CONTENT = "";
 
 	private static final String INFRA_READY_MARKER = "Ready.";
 	private static final String TMP_INSTALL_DIR = System.getProperty("java.io.tmpdir") +
 			File.separator + "localstack_install_dir";
 	private static final String ADDITIONAL_PATH = "/usr/local/bin/";
-	private static final String LOCALHOST = "localhost";
 	private static final String LOCALSTACK_REPO_URL = "https://github.com/localstack/localstack";
 
 	public static final String ENV_CONFIG_USE_SSL = "USE_SSL";
@@ -123,6 +119,10 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		return ensureInstallationAndGetEndpoint("cloudwatch");
 	}
 
+	public static String getEndpointSSM() {
+		return ensureInstallationAndGetEndpoint("ssm");
+	}
+
 	@Override
 	public void run(RunNotifier notifier) {
 		setupInfrastructure();
@@ -185,17 +185,17 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	}
 
 	private static String getEndpoint(String service) {
-		if("".equals(CONFIG_FILE_CONTENT)) {
-			readConfigFile();
+		String useSSL = useSSL() ? "USE_SSL=1" : "";
+		String cmd = "cd '" + TMP_INSTALL_DIR + "'; "
+				+ ". .venv/bin/activate; "
+				+ useSSL + " python -c 'import localstack_client.config; "
+					+ "print(localstack_client.config.get_service_endpoint(\"" + service + "\"))'";
+		Process p = exec(cmd);
+		try {
+			return IOUtils.toString(p.getInputStream()).trim();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
-		String variableName = "DEFAULT_PORT_" + service.toUpperCase();
-		String regex = ".*" + variableName + "\\s*=\\s*([0-9]+).*";
-		String port = Pattern.compile(regex, Pattern.DOTALL | Pattern.MULTILINE).matcher(CONFIG_FILE_CONTENT).replaceAll("$1");
-		String protocol = "http";
-		if (useSSL()) {
-			protocol = "https";
-		}
-		return protocol + "://" + LOCALHOST + ":" + port + "/";
 	}
 
 	private static Process exec(String ... cmd) {
@@ -234,15 +234,6 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		}
 	}
 
-	private static void readConfigFile() {
-		try {
-			String configFile = TMP_INSTALL_DIR + File.separator + "localstack" +  File.separator + "constants.py";
-			CONFIG_FILE_CONTENT = IOUtils.toString(new FileInputStream(configFile));
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	private void setupInfrastructure() {
 		synchronized (INFRA_STARTED) {
 			// make sure everything is installed locally
@@ -270,8 +261,6 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 				if(!ready) {
 					throw new RuntimeException("Unable to start local infrastructure. Debug output: " + output);
 				}
-				/* read contents of LocalStack config file */
-				readConfigFile();
 				INFRA_STARTED.set(proc);
 			} catch (IOException e) {
 				throw new RuntimeException(e);

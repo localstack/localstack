@@ -6,7 +6,8 @@ import glob
 import shutil
 import logging
 import tempfile
-from localstack.constants import DEFAULT_SERVICE_PORTS, ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL
+from localstack.constants import (DEFAULT_SERVICE_PORTS,
+    ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION)
 from localstack.utils.common import download, parallelize, run, mkdir, save_file, unzip, rm_rf
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -26,7 +27,7 @@ TMP_ARCHIVE_ELASTICMQ = os.path.join(tempfile.gettempdir(), 'elasticmq-server.ja
 URL_STS_JAR = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
 URL_ELASTICMQ_JAR = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.13.8.jar'
 URL_LOCALSTACK_FAT_JAR = ('http://central.maven.org/maven2/' +
-    'cloud/localstack/localstack-utils/0.1.6/localstack-utils-0.1.6-fat.jar')
+    'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
