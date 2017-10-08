@@ -27,7 +27,7 @@ TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 TEST_LAMBDA_JAR_URL = ('https://repo.maven.apache.org/maven2/cloud/localstack/' +
     'localstack-utils/0.1.6/localstack-utils-0.1.6-tests.jar')
 
-TEST_LAMBDA_LIBS = ['localstack', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
+TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
 
 
 def test_upload_lambda_from_s3():
