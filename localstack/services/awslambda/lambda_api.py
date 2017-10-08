@@ -690,19 +690,20 @@ def get_function_configuration(function):
         parameters:
     """
     arn = func_arn(function)
-    lambda_function = lambda_arn_to_function.get(arn)
-    if not lambda_function:
+    lambda_details = arn_to_lambda.get(arn)
+    if not lambda_details:
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
     result = {
         'Version': '$LATEST',
         'FunctionName': function,
         'FunctionArn': arn,
-        'Handler': lambda_arn_to_handler.get(arn),
-        'Runtime': lambda_arn_to_runtime.get(arn),
+        'Handler': lambda_details.handler,
+        'Runtime': lambda_details.runtime,
         'Timeout': LAMBDA_DEFAULT_TIMEOUT,
-        'Environment': lambda_arn_to_envvars[arn]
+        'Environment': lambda_details.envvars
     }
     return jsonify(result)
+
 
 @app.route('%s/functions/<function>/configuration' % PATH_ROOT, methods=['PUT'])
 def update_function_configuration(function):
