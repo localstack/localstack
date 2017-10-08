@@ -49,6 +49,14 @@ RUN mkdir -p /.npm && \
 ENV MAVEN_CONFIG=/opt/code/localstack \
     USER=localstack
 
+# set test AWS credentials and default region in config file
+RUN mkdir -p /root/.aws && \
+    echo '[default]' > /root/.aws/config && \
+    echo 'region = us-east-1' >> /root/.aws/config && \
+    echo '[default]' > /root/.aws/credentials && \
+    echo 'aws_access_key_id = foobar' >> /root/.aws/credentials && \
+    echo 'aws_secret_access_key = foobar' >> /root/.aws/credentials
+
 # expose service & web dashboard ports
 EXPOSE 4567-4583 8080
 
@@ -60,7 +68,4 @@ ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN AWS_ACCESS_KEY_ID=foobar \
-    AWS_SECRET_ACCESS_KEY=foobar \
-    AWS_DEFAULT_REGION=us-east-1 \
-    make test
+RUN make test
