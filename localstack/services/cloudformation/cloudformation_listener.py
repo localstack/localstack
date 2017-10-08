@@ -98,7 +98,7 @@ def execute_change_set(req_data):
             TemplateBody=template)
 
     # now run the actual deployment
-    template_deployer.deploy_template(template)
+    template_deployer.deploy_template(template, stack_name)
 
     response = make_response('ExecuteChangeSet')
     return response
