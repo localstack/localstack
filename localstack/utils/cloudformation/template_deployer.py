@@ -1,3 +1,4 @@
+import re
 import json
 import yaml
 import logging
@@ -23,7 +24,7 @@ RESOURCE_TO_FUNCTION = {
             'function': 'create_bucket',
             'parameters': {
                 'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
-                'ACL': 'AccessControl'
+                'ACL': lambda params: convert_acl_cf_to_s3(params['AccessControl'])
             }
         }
     },
@@ -160,6 +161,19 @@ RESOURCE_TO_FUNCTION = {
     }
 }
 
+
+# ----------------
+# UTILITY METHODS
+# ----------------
+
+def convert_acl_cf_to_s3(acl):
+    """ Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read') """
+    return re.sub('(?<!^)(?=[A-Z])', '-', acl).lower()
+
+
+# ----------------
+# CF TEMPLATE HANDLING
+# ----------------
 
 def parse_template(template):
     try:
@@ -405,7 +419,10 @@ def deploy_resource(resource_id, resources, stack_name):
                 params[param_key] = resolve_ref(stack_name, resource_id, resources,
                     attribute='PhysicalResourceId')
             else:
-                prop_value = resource_props.get(prop_key)
+                if callable(prop_key):
+                    prop_value = prop_key(resource_props)
+                else:
+                    prop_value = resource_props.get(prop_key)
                 if prop_value is not None:
                     params[param_key] = prop_value
             tmp_value = params.get(param_key)

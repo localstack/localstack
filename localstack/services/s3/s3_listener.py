@@ -434,11 +434,18 @@ class ProxyListenerS3(ProxyListener):
                 if parsed.query != 'notification':
                     object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
                     send_notifications(method, bucket_name, object_path)
+
         # publish event for creation/deletion of buckets:
         if method in ('PUT', 'DELETE') and ('/' not in path[1:] or len(path[1:].split('/')[1]) <= 0):
             event_type = (event_publisher.EVENT_S3_CREATE_BUCKET if method == 'PUT'
                 else event_publisher.EVENT_S3_DELETE_BUCKET)
             event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(bucket_name)})
+
+        # fix an upstream issue in moto S3 (see https://github.com/localstack/localstack/issues/382)
+        if method == 'PUT' and parsed.query == 'policy':
+            response._content = ''
+            response.status_code = 204
+            return response
 
         # append CORS headers to response
         if response:
