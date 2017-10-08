@@ -46,11 +46,16 @@ RUN mkdir -p /.npm && \
     ln -s `pwd` /tmp/localstack_install_dir
 
 # expose default environment (required for aws-cli to work)
-ENV AWS_ACCESS_KEY_ID=foobar \
-    AWS_SECRET_ACCESS_KEY=foobar \
-    AWS_DEFAULT_REGION=us-east-1 \
-    MAVEN_CONFIG=/opt/code/localstack \
+ENV MAVEN_CONFIG=/opt/code/localstack \
     USER=localstack
+
+# set test AWS credentials and default region in config file
+RUN mkdir -p /root/.aws && \
+    echo '[default]' > /root/.aws/config && \
+    echo 'region = us-east-1' >> /root/.aws/config && \
+    echo '[default]' > /root/.aws/credentials && \
+    echo 'aws_access_key_id = foobar' >> /root/.aws/credentials && \
+    echo 'aws_secret_access_key = foobar' >> /root/.aws/credentials
 
 # expose service & web dashboard ports
 EXPOSE 4567-4583 8080

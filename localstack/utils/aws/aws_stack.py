@@ -146,7 +146,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         if env.region == REGION_LOCAL:
             endpoint_url = get_local_service_url(service_name)
             verify = False
-    region = env.region if env.region != REGION_LOCAL else DEFAULT_REGION
+    region = env.region if env.region != REGION_LOCAL else None
     return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify)
 
 
