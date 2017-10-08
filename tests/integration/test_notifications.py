@@ -4,7 +4,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, short_uid
 
-TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_2'
+TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_notif_1'
 TEST_QUEUE_NAME_FOR_S3 = 'test_queue'
 TEST_TOPIC_NAME = 'test_topic_name_for_sqs'
 TEST_QUEUE_NAME_FOR_SNS = 'test_queue_for_sns'
