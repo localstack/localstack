@@ -410,16 +410,14 @@ def load_file(file_path, default=None, mode=None):
 
 
 def to_str(obj, encoding=DEFAULT_ENCODING, errors='strict'):
-    """If ``obj`` is an instance of ``binary_type``, return
-    ``obj.decode(encoding, errors)``, otherwise return ``obj``
-    """
+    """ If ``obj`` is an instance of ``binary_type``, return
+    ``obj.decode(encoding, errors)``, otherwise return ``obj`` """
     return obj.decode(encoding, errors) if isinstance(obj, six.binary_type) else obj
 
 
 def to_bytes(obj, encoding=DEFAULT_ENCODING, errors='strict'):
     """ If ``obj`` is an instance of ``text_type``, return
-    ``obj.encode(encoding, errors)``, otherwise return ``obj``
-    """
+    ``obj.encode(encoding, errors)``, otherwise return ``obj`` """
     return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
 
 
@@ -431,6 +429,13 @@ def cleanup(files=True, env=ENV_DEV, quiet=True):
 def cleanup_threads_and_processes(quiet=True):
     for t in TMP_THREADS:
         t.stop(quiet=quiet)
+    # clear list
+    clear_list(TMP_THREADS)
+
+
+def clear_list(l):
+    while len(l):
+        del l[0]
 
 
 def cleanup_tmp_files():
