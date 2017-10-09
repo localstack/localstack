@@ -29,9 +29,6 @@ addons:
 env:
   global:
     - JAVA_HOME=/usr/lib/jvm/java-8-oracle
-    - AWS_ACCESS_KEY_ID=foobar
-    - AWS_SECRET_ACCESS_KEY=foobar
-    - AWS_DEFAULT_REGION=us-east-1
 
 install:
   - make reinstall-p3

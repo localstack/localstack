@@ -37,7 +37,7 @@ class Environment(object):
     def __init__(self, region=None, prefix=None):
         # target is the runtime environment to use, e.g.,
         # 'local' for local mode
-        self.region = region or DEFAULT_REGION
+        self.region = region or get_local_region()
         # prefix can be 'prod', 'stg', 'uat-1', etc.
         self.prefix = prefix
 
@@ -52,7 +52,7 @@ class Environment(object):
         if len(parts) == 1:
             if s in PREDEFINED_ENVIRONMENTS:
                 return PREDEFINED_ENVIRONMENTS[s]
-            parts = [DEFAULT_REGION, s]
+            parts = [get_local_region(), s]
         if len(parts) > 2:
             raise Exception('Invalid environment string "%s"' % s)
         region = parts[0]
@@ -128,6 +128,11 @@ def get_boto3_session():
     return boto3
 
 
+def get_local_region():
+    session = boto3.session.Session()
+    return session.region_name or DEFAULT_REGION
+
+
 def get_local_service_url(service_name):
     if service_name == 's3api':
         service_name = 's3'
@@ -146,7 +151,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         if env.region == REGION_LOCAL:
             endpoint_url = get_local_service_url(service_name)
             verify = False
-    region = env.region if env.region != REGION_LOCAL else None
+    region = env.region if env.region != REGION_LOCAL else get_local_region()
     return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify)
 
 
@@ -234,13 +239,13 @@ def get_iam_role(resource, env=None):
 
 def dynamodb_table_arn(table_name, account_id=None):
     account_id = get_account_id(account_id)
-    return 'arn:aws:dynamodb:%s:%s:table/%s' % (DEFAULT_REGION, account_id, table_name)
+    return 'arn:aws:dynamodb:%s:%s:table/%s' % (get_local_region(), account_id, table_name)
 
 
 def dynamodb_stream_arn(table_name, account_id=None):
     account_id = get_account_id(account_id)
     return ('arn:aws:dynamodb:%s:%s:table/%s/stream/%s' %
-        (DEFAULT_REGION, account_id, table_name, timestamp()))
+        (get_local_region(), account_id, table_name, timestamp()))
 
 
 def lambda_function_arn(function_name, account_id=None):
@@ -250,22 +255,22 @@ def lambda_function_arn(function_name, account_id=None):
     if ':' in function_name:
         raise Exception('Lambda function name should not contain a colon ":"')
     account_id = get_account_id(account_id)
-    return pattern.replace('.*', '%s') % (DEFAULT_REGION, account_id, function_name)
+    return pattern.replace('.*', '%s') % (get_local_region(), account_id, function_name)
 
 
 def cognito_user_pool_arn(user_pool_id, account_id=None):
     account_id = get_account_id(account_id)
-    return 'arn:aws:cognito-idp:%s:%s:userpool/%s' % (DEFAULT_REGION, account_id, user_pool_id)
+    return 'arn:aws:cognito-idp:%s:%s:userpool/%s' % (get_local_region(), account_id, user_pool_id)
 
 
 def kinesis_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
-    return 'arn:aws:kinesis:%s:%s:stream/%s' % (DEFAULT_REGION, account_id, stream_name)
+    return 'arn:aws:kinesis:%s:%s:stream/%s' % (get_local_region(), account_id, stream_name)
 
 
 def firehose_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (DEFAULT_REGION, account_id, stream_name))
+    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (get_local_region(), account_id, stream_name))
 
 
 def s3_bucket_arn(bucket_name, account_id=None):
@@ -274,12 +279,12 @@ def s3_bucket_arn(bucket_name, account_id=None):
 
 def sqs_queue_arn(queue_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ('arn:aws:sqs:%s:%s:%s' % (DEFAULT_REGION, account_id, queue_name))
+    return ('arn:aws:sqs:%s:%s:%s' % (get_local_region(), account_id, queue_name))
 
 
 def sns_topic_arn(topic_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ('arn:aws:sns:%s:%s:%s' % (DEFAULT_REGION, account_id, topic_name))
+    return ('arn:aws:sns:%s:%s:%s' % (get_local_region(), account_id, topic_name))
 
 
 def get_sqs_queue_url(queue_name):
