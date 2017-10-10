@@ -1,3 +1,4 @@
+import re
 import json
 import random
 import logging
@@ -33,6 +34,14 @@ class ProxyListenerDynamoDB(ProxyListener):
         # update table definitions
         if data and 'TableName' in data and 'KeySchema' in data:
             TABLE_DEFINITIONS[data['TableName']] = data
+
+        if response._content:
+            # fix the table ARN (DynamoDBLocal hardcodes "ddblocal" as the region)
+            content_replaced = re.sub(r'"TableArn"\s*:\s*"arn:aws:dynamodb:ddblocal:([^"]+)"',
+                r'"TableArn": "arn:aws:dynamodb:%s:\1"' % aws_stack.get_local_region(), to_str(response._content))
+            if content_replaced != response._content:
+                response._content = content_replaced
+                fix_headers_for_updated_response(response)
 
         action = headers.get('X-Amz-Target')
         if not action:
@@ -98,8 +107,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                         'TableName': data['TableName']
                     }
                     response._content = json.dumps(content)
-                    response.headers['content-length'] = len(response.content)
-                    response.headers['x-amz-crc32'] = calculate_crc32(response)
+                    fix_headers_for_updated_response(response)
         elif action == '%s.DeleteItem' % ACTION_PREFIX:
             record['eventName'] = 'REMOVE'
             record['dynamodb']['Keys'] = data['Key']
@@ -129,6 +137,11 @@ class ProxyListenerDynamoDB(ProxyListener):
 
 # instantiate listener
 UPDATE_DYNAMODB = ProxyListenerDynamoDB()
+
+
+def fix_headers_for_updated_response(response):
+    response.headers['content-length'] = len(response.content)
+    response.headers['x-amz-crc32'] = calculate_crc32(response)
 
 
 def calculate_crc32(response):
