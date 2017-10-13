@@ -126,7 +126,7 @@ def stream_name_from_stream_arn(stream_arn):
     return get_kinesis_stream_name(table_name)
 
 
-def random_id(stream_arn, kinesis_shard_id, n=16):
+def random_id(stream_arn, kinesis_shard_id):
     namespace = uuid.UUID(bytes=hashlib.sha1(stream_arn.encode('utf-8')).digest()[:16])
     return uuid.uuid5(namespace, kinesis_shard_id.encode('utf-8')).hex
 
