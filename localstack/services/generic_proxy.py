@@ -2,17 +2,16 @@ from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import requests
 import os
 import sys
-import json
 import traceback
 import logging
 import ssl
 from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
-from six import iteritems, string_types
+from six import iteritems
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
-from localstack.config import DEFAULT_ENCODING, TMP_FOLDER, USE_SSL
+from localstack.config import TMP_FOLDER, USE_SSL
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
 
@@ -144,16 +143,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         target_url = self.path
         if '://' not in target_url:
             target_url = '%s%s' % (self.proxy.forward_url, target_url)
-        data = None
-        if method in ['POST', 'PUT', 'PATCH']:
-            data_string = self.data_bytes
-            try:
-                if not isinstance(data_string, string_types):
-                    data_string = data_string.decode(DEFAULT_ENCODING)
-                data = json.loads(data_string)
-            except Exception as e:
-                # unable to parse JSON, fallback to verbatim string/bytes
-                data = data_string
+        data = self.data_bytes
 
         forward_headers = CaseInsensitiveDict(self.headers)
         # update original "Host" header (moto s3 relies on this behavior)
@@ -181,6 +171,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     self.send_response(code)
                     self.end_headers()
                     return
+            # perform the actual invocation of the backend service
             if response is None:
                 if modified_request:
                     response = self.method(proxy_url, data=modified_request.data,

@@ -207,14 +207,15 @@ def strip_chunk_signatures(data):
     # <payload data ...>
     # 0;chunk-signature=927ab45acd82fc90a3c210ca7314d59fedc77ce0c914d79095f8cc9563cf2c70
 
-    data_new = re.sub(r'^[0-9a-fA-F]+;chunk-signature=[0-9a-f]{64}', '', data, flags=re.MULTILINE)
+    data_new = re.sub(b'(\r\n)?[0-9a-fA-F]+;chunk-signature=[0-9a-f]{64}(\r\n){,2}', b'',
+        data, flags=re.MULTILINE | re.DOTALL)
     if data_new != data:
         # trim \r (13) or \n (10)
         for i in range(0, 2):
-            if ord(data_new[0]) in (10, 13):
+            if data_new[0] in (10, 13):
                 data_new = data_new[1:]
         for i in range(0, 6):
-            if ord(data_new[-1]) in (10, 13):
+            if data_new[-1] in (10, 13):
                 data_new = data_new[:-1]
     return data_new
 
