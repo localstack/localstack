@@ -127,6 +127,7 @@ def get_resource_for_path(path, path_map):
 class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
+        data = data and json.loads(data)
 
         # Paths to match
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST

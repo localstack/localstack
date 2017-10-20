@@ -5,7 +5,7 @@ import xmltodict
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, to_str
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 
@@ -21,7 +21,7 @@ class ProxyListenerSNS(ProxyListener):
     def forward_request(self, method, path, data, headers):
 
         if method == 'POST' and path == '/':
-            req_data = urlparse.parse_qs(data)
+            req_data = urlparse.parse_qs(to_str(data))
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn')
 
@@ -96,7 +96,7 @@ class ProxyListenerSNS(ProxyListener):
         # This method is executed by the proxy after we've already received a
         # response from the backend, hence we can utilize the "reponse" variable here
         if method == 'POST' and path == '/':
-            req_data = urlparse.parse_qs(data)
+            req_data = urlparse.parse_qs(to_str(data))
             req_action = req_data['Action'][0]
             if req_action == 'Subscribe' and response.status_code < 400:
                 response_data = xmltodict.parse(response.content)

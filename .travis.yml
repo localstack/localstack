@@ -46,6 +46,8 @@ script:
   - make init
   - DEBUG=1 LAMBDA_EXECUTOR=docker make test
   - LAMBDA_EXECUTOR=local USE_SSL=1 make test
+  # run Java tests
+  - make test-java-if-changed
   # build Docker image, and push it (if on master branch)
   - make docker-build
   - make docker-push-master

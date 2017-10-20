@@ -8,11 +8,13 @@ import hashlib
 import uuid
 import time
 import glob
+import base64
 import subprocess
 import six
 import shutil
 import socket
 import json
+import binascii
 import decimal
 import logging
 import tempfile
@@ -288,6 +290,10 @@ def merge_recursive(source, destination):
                     (key, value, destination))
             destination[key] = value
     return destination
+
+
+def base64_to_hex(b64_string):
+    return binascii.hexlify(base64.b64decode(b64_string))
 
 
 def now_utc():

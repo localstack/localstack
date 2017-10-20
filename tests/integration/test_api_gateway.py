@@ -130,7 +130,7 @@ def test_api_gateway_http_integration():
         def forward_request(self, **kwargs):
             response = Response()
             response.status_code = 200
-            response._content = json.dumps(kwargs['data']) if kwargs['data'] else '{}'
+            response._content = kwargs.get('data') or '{}'
             return response
 
     proxy = GenericProxy(test_port, update_listener=TestListener())

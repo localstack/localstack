@@ -6,6 +6,7 @@ import requests
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID
+from localstack.utils.common import to_str
 from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -129,7 +130,7 @@ class ProxyListenerCloudFormation(ProxyListener):
     def forward_request(self, method, path, data, headers):
         req_data = None
         if method == 'POST' and path == '/':
-            req_data = urlparse.parse_qs(data)
+            req_data = urlparse.parse_qs(to_str(data))
             action = req_data.get('Action')[0]
 
         if req_data:
@@ -154,7 +155,7 @@ class ProxyListenerCloudFormation(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         req_data = None
         if method == 'POST' and path == '/':
-            req_data = urlparse.parse_qs(data)
+            req_data = urlparse.parse_qs(to_str(data))
             action = req_data.get('Action')[0]
 
         if req_data:

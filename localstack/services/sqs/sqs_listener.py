@@ -15,7 +15,7 @@ class ProxyListenerSQS(ProxyListener):
     def forward_request(self, method, path, data, headers):
 
         if method == 'POST' and path == '/':
-            req_data = urlparse.parse_qs(data)
+            req_data = urlparse.parse_qs(to_str(data))
             if 'QueueName' in req_data:
                 if '.' in req_data['QueueName'][0]:
                     # ElasticMQ currently does not support "." in the queue name, e.g., for *.fifo queues
@@ -30,7 +30,7 @@ class ProxyListenerSQS(ProxyListener):
     def return_response(self, method, path, data, headers, response):
 
         if method == 'POST' and path == '/':
-            req_data = urlparse.parse_qs(data)
+            req_data = urlparse.parse_qs(to_str(data))
             action = req_data.get('Action', [None])[0]
             event_type = None
             queue_url = None
