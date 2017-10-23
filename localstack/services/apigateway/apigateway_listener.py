@@ -173,7 +173,7 @@ class ProxyListenerApiGateway(ProxyListener):
 
                     try:
                         path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
-                    except:
+                    except Exception:
                         path_params = {}
                     result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                         headers, path_params=path_params, method=method, resource_path=path)
@@ -186,7 +186,7 @@ class ProxyListenerApiGateway(ProxyListener):
                     try:
                         response_body = parsed_result['body']
                         response._content = json.dumps(response_body)
-                    except:
+                    except Exception:
                         response._content = '{}'
                     return response
                 else:

@@ -160,13 +160,13 @@ class OutputReaderThread(FuncThread):
 
     @classmethod
     def get_log_level_names(cls, min_level):
-        return [logging.getLevelName(l) for l in LOG_LEVELS if l >= min_level]
+        return [logging.getLevelName(lvl) for lvl in LOG_LEVELS if lvl >= min_level]
 
     def get_logger_for_level_in_log_line(self, line):
         level = self.log_level
-        for l in LOG_LEVELS:
-            if l >= level:
-                level_name = logging.getLevelName(l)
+        for lvl in LOG_LEVELS:
+            if lvl >= level:
+                level_name = logging.getLevelName(lvl)
                 if re.match(r'.*(%s):.*' % level_name, line):
                     return getattr(self.logger, level_name.lower())
         return None

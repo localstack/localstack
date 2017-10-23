@@ -377,7 +377,7 @@ def json_safe(item):
     """ return a copy of the given object (e.g., dict) that is safe for JSON dumping """
     try:
         return json.loads(json.dumps(item, cls=CustomEncoder))
-    except:
+    except Exception:
         item = fix_json_keys(item)
         return json.loads(json.dumps(item, cls=CustomEncoder))
 
@@ -517,12 +517,13 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
 
     # create a self-signed cert
     cert = crypto.X509()
-    cert.get_subject().C = 'AU'
-    cert.get_subject().ST = 'Some-State'
-    cert.get_subject().L = 'Some-Locality'
-    cert.get_subject().O = 'LocalStack Org'
-    cert.get_subject().OU = 'Testing'
-    cert.get_subject().CN = 'LocalStack'
+    subj = cert.get_subject()
+    subj.C = 'AU'
+    subj.ST = 'Some-State'
+    subj.L = 'Some-Locality'
+    subj.O = 'LocalStack Org'  # noqa
+    subj.OU = 'Testing'
+    subj.CN = 'LocalStack'
     cert.set_serial_number(1000)
     cert.gmtime_adj_notBefore(0)
     cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)

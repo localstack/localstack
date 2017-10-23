@@ -9,7 +9,7 @@ boto3==1.4.4
 coverage==4.0.3
 docopt==0.6.2
 elasticsearch==5.3.0
-flake8>=3.4.1
+flake8>=3.5.0
 flake8-quotes>=0.11.0
 flask==0.10.1
 flask-cors==3.0.3
