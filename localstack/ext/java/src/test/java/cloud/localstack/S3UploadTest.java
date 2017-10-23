@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.UUID;
 
 import org.apache.commons.codec.binary.Base64;
@@ -24,19 +25,39 @@ import com.amazonaws.services.s3.model.S3Object;
 @RunWith(LocalstackTestRunner.class)
 public class S3UploadTest {
 
+	/**
+	 * Test based on https://github.com/localstack/localstack/issues/359
+	 */
 	@Test
-	public void testUpload() throws Exception {
-		/*
-		 * Test based on https://github.com/localstack/localstack/issues/359
-		 */
+	public void testTrival() throws Exception  {
+		testUpload("{}"); // Some JSON content, just an example
+	}
 
+	/**
+	 * Tests greater than 128k uploads
+	 * @throws Exception
+	 */
+	@Test
+	public void testGreaterThan128k() throws Exception  {
+		testUpload(String.join("", Collections.nCopies(13108, "abcdefghij"))); // Just slightly more than 2^17 bytes
+	}
+
+	/**
+	 * Tests less than 128k uploads
+	 * @throws Exception
+	 */
+	@Test
+	public void testLessThan128k() throws Exception  {
+		testUpload(String.join("", Collections.nCopies(13107, "abcdefghij"))); // Just slightly less than 2^17 bytes
+	}
+
+	private void testUpload(final String dataString) throws Exception {
 		AmazonS3 client = TestUtils.getClientS3();
 
 		String bucketName = UUID.randomUUID().toString();
 		String keyName = UUID.randomUUID().toString();
 		client.createBucket(bucketName);
 
-		String dataString = "{}"; // Some JSON content, just an example
 		byte[] dataBytes = dataString.getBytes(StandardCharsets.UTF_8);
 
 		ObjectMetadata metaData = new ObjectMetadata();
