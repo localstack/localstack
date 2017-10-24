@@ -30,6 +30,6 @@ def test_bucket_policy():
     )
     assert response['ResponseMetadata']['HTTPStatusCode'] == 204
 
-    # retrieve and check notification config
+    # retrieve and check policy config
     saved_policy = s3_client.get_bucket_policy(Bucket=TEST_BUCKET_NAME_WITH_POLICY)['Policy']
     assert json.loads(saved_policy) == policy

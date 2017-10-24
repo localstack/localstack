@@ -107,3 +107,24 @@ def test_bucket_notifications():
 
     # receive, assert, and delete message from SQS
     receive_assert_delete(queue_url, [{'key': test_key2}, {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}], sqs_client)
+
+    # delete notification config
+    s3_client.put_bucket_notification_configuration(
+        Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS, NotificationConfiguration={})
+    config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
+    assert not config.get('QueueConfigurations')
+
+    # put notification config with single event type
+    event = 's3:ObjectCreated:*'
+    s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
+        NotificationConfiguration={
+            'QueueConfigurations': [{
+                'Id': 'id123456',
+                'QueueArn': queue_arn,
+                'Events': [event]
+            }]
+        }
+    )
+    config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
+    config = config['QueueConfigurations'][0]
+    assert config['Events'] == [event]
