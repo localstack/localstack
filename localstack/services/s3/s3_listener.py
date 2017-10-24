@@ -45,7 +45,7 @@ def event_type_matches(events, action, api_method):
 def filter_rules_match(filters, object_path):
     """ check whether the given object path matches all of the given filters """
     filters = filters or {}
-    key_filter = filters.get('S3Key', {})
+    key_filter = filters.get('S3Key', filters.get('Key', {}))
     for rule in key_filter.get('FilterRule', []):
         if rule['Name'] == 'prefix':
             if not prefix_with_slash(object_path).startswith(prefix_with_slash(rule['Value'])):
@@ -366,17 +366,17 @@ class ProxyListenerS3(ProxyListener):
                 result = '<NotificationConfiguration xmlns="%s">' % XMLNS_S3
                 if bucket in S3_NOTIFICATIONS:
                     notif = S3_NOTIFICATIONS[bucket]
-                    events_string = '\n'.join(['<Event>%s</Event>' % e for e in notif['Event']])
                     for dest in ['Queue', 'Topic', 'CloudFunction']:
                         if dest in notif:
-                            result += ("""<{dest}Configuration>
-                                        <Id>{uid}</Id>
-                                        <{dest}>{endpoint}</{dest}>
-                                        {events}
-                                    </{dest}Configuration>""").format(
-                                dest=dest, uid=uuid.uuid4(),
-                                endpoint=notif[dest],
-                                events=events_string)
+                            dest_dict = {
+                                '%sConfiguration' % dest: {
+                                    'Id': uuid.uuid4(),
+                                    dest: notif[dest],
+                                    'Event': notif['Event'],
+                                    'Filter': notif['Filter']
+                                }
+                            }
+                            result += xmltodict.unparse(dest_dict, full_document=False)
                 result += '</NotificationConfiguration>'
                 response._content = result
 
@@ -394,7 +394,7 @@ class ProxyListenerS3(ProxyListener):
                             'Id': config.get('Id'),
                             'Event': events,
                             dest: config.get(dest),
-                            'Filter': config.get('Filter')
+                            'Filter': config.get('Filter', {})
                         }
                         # TODO: what if we have multiple destinations - would we overwrite the config?
                         S3_NOTIFICATIONS[bucket] = clone(notification_details)
