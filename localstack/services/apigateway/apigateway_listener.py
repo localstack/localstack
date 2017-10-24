@@ -124,6 +124,19 @@ def get_resource_for_path(path, path_map):
     return matches[0]
 
 
+def get_cors_response(headers):
+    # TODO: for now we simply return "allow-all" CORS headers, but in the future
+    # we should implement custom headers for CORS rules, as supported by API Gateway:
+    # http://docs.aws.amazon.com/apigateway/latest/developerguide/how-to-cors.html
+    response = Response()
+    response.status_code = 200
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE'
+    response.headers['Access-Control-Allow-Headers'] = '*'
+    response._content = ''
+    return response
+
+
 class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
@@ -147,6 +160,11 @@ class ProxyListenerApiGateway(ProxyListener):
                 integration = integrations.get(method, {})
                 integration = integration.get('methodIntegration')
                 if not integration:
+
+                    if method == 'OPTIONS' and 'Origin' in headers:
+                        # default to returning CORS headers if this is an OPTIONS request
+                        return get_cors_response(headers)
+
                     return make_error('Unable to find integration for path %s' % path, 404)
 
             uri = integration.get('uri')
