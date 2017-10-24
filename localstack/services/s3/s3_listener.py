@@ -13,7 +13,7 @@ from requests.models import Response, Request
 from localstack.constants import DEFAULT_REGION
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes
+from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
 
@@ -383,17 +383,21 @@ class ProxyListenerS3(ProxyListener):
             if method == 'PUT':
                 parsed = xmltodict.parse(data)
                 notif_config = parsed.get('NotificationConfiguration')
+                S3_NOTIFICATIONS.pop(bucket, None)
                 for dest in ['Queue', 'Topic', 'CloudFunction']:
                     config = notif_config.get('%sConfiguration' % (dest))
                     if config:
-                        # TODO: what if we have multiple destinations - would we overwrite the config?
+                        events = config.get('Event')
+                        if isinstance(events, six.string_types):
+                            events = [events]
                         notification_details = {
                             'Id': config.get('Id'),
-                            'Event': config.get('Event'),
+                            'Event': events,
                             dest: config.get(dest),
                             'Filter': config.get('Filter')
                         }
-                        S3_NOTIFICATIONS[bucket] = json.loads(json.dumps(notification_details))
+                        # TODO: what if we have multiple destinations - would we overwrite the config?
+                        S3_NOTIFICATIONS[bucket] = clone(notification_details)
 
             # return response for ?notification request
             return response
