@@ -301,7 +301,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False, async=Fals
                     ')";'
                     'docker cp "%s/." "$CONTAINER_ID:/var/task";'
                     'docker start -a "$CONTAINER_ID";'
-                ) % (entrypoint, runtime, env_vars, handler_args, lambda_cwd)
+                ) % (entrypoint, env_vars, runtime, handler_args, lambda_cwd)
             else:
                 lambda_cwd_on_host = get_host_path_for_path_in_docker(lambda_cwd)
                 cmd = (
