@@ -197,6 +197,10 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
                              result['message'])
 
+    def test_get_container_name(self):
+        name = lambda_api.get_container_name('arn:aws:lambda:us-east-1:00000000:function:my_function_name')
+        self.assertEqual(name, 'localstack_lambda_arn_aws_lambda_us-east-1_00000000_function_my_function_name')
+
     def _create_function(self, function_name):
         arn = lambda_api.func_arn(function_name)
         lambda_api.arn_to_lambda[arn] = LambdaFunction(arn)
