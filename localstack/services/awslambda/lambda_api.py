@@ -75,6 +75,8 @@ DO_USE_DOCKER = None
 # locking thread for creation/destruction of docker containers.
 docker_container_lock = threading.RLock()
 
+# keeps track of each function arn and the last time it was invoked
+function_invoke_times = {}
 
 # holds information about an existing container.
 class ContainerInfo:
@@ -350,6 +352,9 @@ def run_lambda(func, event, context, func_arn, suppress_output=False, async=Fals
 
             env_vars = {}
             print(cmd)
+
+            function_invoke_times[func_arn] = time.time()
+
             # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
             LOG.debug('Running lambda cmd: %s', cmd)
             result, log_output = run_lambda_executor(cmd, env_vars, async)
@@ -520,6 +525,26 @@ def destroy_docker_container(func_arn):
             run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
 
+def destroy_existing_docker_containers():
+    with docker_container_lock:
+        LOG.debug('Removing all existing lambda containers.')
+        cmd = 'docker ps -a --filter="name=localstack_lambda_*" --format "{{.ID}}"'
+        LOG.debug(cmd)
+        cmd_result = run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE).strip()
+
+        if len(cmd_result) == 0:
+            LOG.debug('No containers to remove.')
+            return
+
+        container_ids = cmd_result.split('\n')
+
+        LOG.debug('Removing %d containers.' % len(container_ids))
+        for container_id in container_ids:
+            cmd = 'docker rm -f %s' % container_id
+            LOG.debug(cmd)
+            run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+
+
 def get_docker_container_status(func_arn):
     """
     Determine the status of a docker container.
@@ -554,6 +579,27 @@ def get_docker_container_status(func_arn):
             return 1
 
         return -1
+
+
+def idle_container_destroyer():
+    LOG.info('Checking if there are idle containers.')
+    current_time = time.time()
+    for func_arn, last_run_time in function_invoke_times:
+        duration = current_time - last_run_time
+
+        # not enough idle time has passed
+        if duration < 600:
+            continue
+
+        # container has been idle, destroy it.
+        destroy_docker_container(func_arn)
+
+
+def idle_container_destroyer_worker():
+    # check if there are idle containers every minute
+    while True:
+        idle_container_destroyer()
+        time.sleep(60)
 
 
 def get_container_name(func_arn):
@@ -1053,4 +1099,11 @@ def list_aliases(function):
 
 
 def serve(port, quiet=True):
+    # destroy existing containers.
+    destroy_existing_docker_containers()
+
+    # start a process to remove idle containers
+    process = Process(target=idle_container_destroyer_worker)
+    process.start()
+
     generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
