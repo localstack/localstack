@@ -291,9 +291,8 @@ def run_lambda(func, event, context, func_arn, suppress_output=False, async=Fals
             docker_host = config.DOCKER_HOST_FROM_CONTAINER
 
             # create/verify the docker container is running.
-            create_env_vars = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in environment.items()])
             LOG.debug('Priming docker container with runtime "%s" and arn "%s".', runtime, func_arn)
-            container_info = prime_docker_container(runtime, func_arn, create_env_vars, lambda_cwd)
+            container_info = prime_docker_container(runtime, func_arn, environment.items(), lambda_cwd)
 
             # amend the environment variables for execution
             environment['AWS_LAMBDA_EVENT_BODY'] = event_body_escaped
@@ -448,6 +447,8 @@ def prime_docker_container(runtime, func_arn, env_vars, lambda_cwd):
             # Make sure the container does not exist in any form/state.
             destroy_docker_container(func_arn)
 
+            env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in env_vars])
+
             # Create and start the container
             LOG.debug('Creating container: %s', container_name)
             cmd = (
@@ -460,7 +461,7 @@ def prime_docker_container(runtime, func_arn, env_vars, lambda_cwd):
                 ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                 '  %s'  # env_vars
                 ' lambci/lambda:%s'
-            ) % (container_name, env_vars, runtime)
+            ) % (container_name, env_vars_str, runtime)
             LOG.debug(cmd)
             run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
@@ -525,22 +526,28 @@ def destroy_docker_container(func_arn):
             run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
 
-def destroy_existing_docker_containers():
+def get_all_container_names():
     with docker_container_lock:
-        LOG.debug('Removing all existing lambda containers.')
-        cmd = 'docker ps -a --filter="name=localstack_lambda_*" --format "{{.ID}}"'
+        LOG.debug('Getting all lambda containers names.')
+        cmd = 'docker ps -a --filter="name=localstack_lambda_*" --format "{{.Names}}"'
         LOG.debug(cmd)
         cmd_result = run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE).strip()
 
-        if len(cmd_result) == 0:
-            LOG.debug('No containers to remove.')
-            return
+        if len(cmd_result) > 0:
+            container_names = cmd_result.split('\n')
+        else:
+            container_names = []
 
-        container_ids = cmd_result.split('\n')
+        return container_names
 
-        LOG.debug('Removing %d containers.' % len(container_ids))
-        for container_id in container_ids:
-            cmd = 'docker rm -f %s' % container_id
+
+def destroy_existing_docker_containers():
+    with docker_container_lock:
+        container_names = get_all_container_names()
+
+        LOG.debug('Removing %d containers.' % len(container_names))
+        for container_name in container_names:
+            cmd = 'docker rm -f %s' % container_name
             LOG.debug(cmd)
             run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
@@ -584,7 +591,7 @@ def get_docker_container_status(func_arn):
 def idle_container_destroyer():
     LOG.info('Checking if there are idle containers.')
     current_time = time.time()
-    for func_arn, last_run_time in function_invoke_times:
+    for func_arn, last_run_time in function_invoke_times.items():
         duration = current_time - last_run_time
 
         # not enough idle time has passed
@@ -595,11 +602,9 @@ def idle_container_destroyer():
         destroy_docker_container(func_arn)
 
 
-def idle_container_destroyer_worker():
-    # check if there are idle containers every minute
-    while True:
-        idle_container_destroyer()
-        time.sleep(60)
+def start_idle_container_destroyer_interval():
+    idle_container_destroyer()
+    threading.Timer(60.0, start_idle_container_destroyer_interval).start()
 
 
 def get_container_name(func_arn):
@@ -1103,7 +1108,6 @@ def serve(port, quiet=True):
     destroy_existing_docker_containers()
 
     # start a process to remove idle containers
-    process = Process(target=idle_container_destroyer_worker)
-    process.start()
+    start_idle_container_destroyer_interval()
 
     generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
