@@ -28,7 +28,7 @@ from localstack import config
 from localstack.services import generic_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES,
-    unzip, is_zip_file, run, short_uid, cp_r, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
+    unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -77,6 +77,7 @@ docker_container_lock = threading.RLock()
 
 # keeps track of each function arn and the last time it was invoked
 function_invoke_times = {}
+
 
 # holds information about an existing container.
 class ContainerInfo:
