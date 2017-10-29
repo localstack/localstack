@@ -81,6 +81,9 @@ function_invoke_times = {}
 
 # holds information about an existing container.
 class ContainerInfo:
+    """
+    Contains basic information about a docker container.
+    """
     def __init__(self, name, entry_point):
         self.name = name
         self.entry_point = entry_point
@@ -436,6 +439,14 @@ def error_response(msg, code=500, error_type='InternalFailure'):
 
 
 def prime_docker_container(runtime, func_arn, env_vars, lambda_cwd):
+    """
+    Prepares a persistent docker container for a specific function.
+    :param runtime: Lamda runtime environment. python2.7, nodejs6.10, etc.
+    :param func_arn: The ARN of the lambda function.
+    :param env_vars: The environment variables for the lambda.
+    :param lambda_cwd: The local directory containing the code for the lambda function.
+    :return: ContainerInfo class containing the container name and default entry point.
+    """
     with docker_container_lock:
         # Get the container name and id.
         container_name = get_container_name(func_arn)
@@ -500,6 +511,11 @@ def prime_docker_container(runtime, func_arn, env_vars, lambda_cwd):
 
 
 def destroy_docker_container(func_arn):
+    """
+    Stops and/or removes a docker container for a specific lambda function ARN.
+    :param func_arn: The ARN of the lambda function.
+    :return: None
+    """
     with docker_container_lock:
         status = get_docker_container_status(func_arn)
 
@@ -528,6 +544,10 @@ def destroy_docker_container(func_arn):
 
 
 def get_all_container_names():
+    """
+    Returns a list of container names for lambda containers.
+    :return: A String[] localstack docker container names for each function.
+    """
     with docker_container_lock:
         LOG.debug('Getting all lambda containers names.')
         cmd = 'docker ps -a --filter="name=localstack_lambda_*" --format "{{.Names}}"'
@@ -543,6 +563,10 @@ def get_all_container_names():
 
 
 def destroy_existing_docker_containers():
+    """
+    Stops and/or removes all lambda docker containers for localstack.
+    :return: None
+    """
     with docker_container_lock:
         container_names = get_all_container_names()
 
@@ -556,7 +580,7 @@ def destroy_existing_docker_containers():
 def get_docker_container_status(func_arn):
     """
     Determine the status of a docker container.
-    :param func_arn:
+    :param func_arn: The ARN of the lambda function.
     :return: 1 If the container is running,
     -1 if the container exists but is not running
     0 if the container does not exist.
@@ -590,6 +614,10 @@ def get_docker_container_status(func_arn):
 
 
 def idle_container_destroyer():
+    """
+    Iterates though all the lambda containers and destroys any container that has been inactive for longer than 10min.
+    :return: None
+    """
     LOG.info('Checking if there are idle containers.')
     current_time = time.time()
     for func_arn, last_run_time in function_invoke_times.items():
@@ -604,11 +632,21 @@ def idle_container_destroyer():
 
 
 def start_idle_container_destroyer_interval():
+    """
+    Starts a repeating timer that triggers start_idle_container_destroyer_interval every 60 seconds.
+    Thus checking for idle containers and destroying them.
+    :return: None
+    """
     idle_container_destroyer()
     threading.Timer(60.0, start_idle_container_destroyer_interval).start()
 
 
 def get_container_name(func_arn):
+    """
+    Given a function ARN, returns a valid docker container name.
+    :param func_arn: The ARN of the lambda function.
+    :return: A docker compatible name for the arn.
+    """
     return 'localstack_lambda_' + re.sub(r'[^a-zA-Z0-9_.-]', '_', func_arn)
 
 
