@@ -146,8 +146,6 @@ def test_api_gateway_http_integration():
     # make sure CORS headers are present
     origin = 'localhost'
     result = requests.options(url, headers={'origin': origin})
-    print(result.status_code)
-    print(result._content)
     assert result.status_code == 200
     assert re.match(result.headers['Access-Control-Allow-Origin'].replace('*', '.*'), origin)
     assert 'POST' in result.headers['Access-Control-Allow-Methods']
