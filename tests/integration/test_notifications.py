@@ -54,6 +54,14 @@ def test_sns_to_sqs():
     receive_assert_delete(queue_url, assertions, sqs_client)
 
 
+def _delete_notification_config():
+    s3_client = aws_stack.connect_to_service('s3')
+    s3_client.put_bucket_notification_configuration(
+        Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS, NotificationConfiguration={})
+    config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
+    assert not config.get('QueueConfigurations')
+
+
 def test_bucket_notifications():
 
     s3_resource = aws_stack.connect_to_resource('s3')
@@ -68,6 +76,15 @@ def test_bucket_notifications():
     queue_url = queue_info['QueueUrl']
     queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_FOR_S3)
     events = ['s3:ObjectCreated:*', 's3:ObjectRemoved:Delete']
+    filter_rules = {
+        'FilterRules': [{
+            'Name': 'prefix',
+            'Value': 'testupload/'
+        }, {
+            'Name': 'suffix',
+            'Value': 'testfile.txt'
+        }]
+    }
     s3_client.put_bucket_notification_configuration(
         Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
         NotificationConfiguration={
@@ -76,15 +93,7 @@ def test_bucket_notifications():
                 'QueueArn': queue_arn,
                 'Events': events,
                 'Filter': {
-                    'Key': {
-                        'FilterRules': [{
-                            'Name': 'prefix',
-                            'Value': 'testupload/'
-                        }, {
-                            'Name': 'suffix',
-                            'Value': 'testfile.txt'
-                        }]
-                    }
+                    'Key': filter_rules
                 }
             }]
         }
@@ -94,6 +103,7 @@ def test_bucket_notifications():
     config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
     config = config['QueueConfigurations'][0]
     assert events == config['Events']
+    assert filter_rules == config['Filter']['Key']
 
     # upload file to S3 (this should NOT trigger a notification)
     test_key1 = '/testdata'
@@ -109,10 +119,7 @@ def test_bucket_notifications():
     receive_assert_delete(queue_url, [{'key': test_key2}, {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}], sqs_client)
 
     # delete notification config
-    s3_client.put_bucket_notification_configuration(
-        Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS, NotificationConfiguration={})
-    config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
-    assert not config.get('QueueConfigurations')
+    _delete_notification_config()
 
     # put notification config with single event type
     event = 's3:ObjectCreated:*'
@@ -128,3 +135,38 @@ def test_bucket_notifications():
     config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
     config = config['QueueConfigurations'][0]
     assert config['Events'] == [event]
+
+    # put notification config with single event type
+    event = 's3:ObjectCreated:*'
+    filter_rules = {
+        'FilterRules': [{
+            'Name': 'prefix',
+            'Value': 'testupload/'
+        }]
+    }
+    s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
+        NotificationConfiguration={
+            'QueueConfigurations': [{
+                'Id': 'id123456',
+                'QueueArn': queue_arn,
+                'Events': [event],
+                'Filter': {
+                    'Key': filter_rules
+                }
+            }]
+        }
+    )
+    config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
+    config = config['QueueConfigurations'][0]
+    assert config['Events'] == [event]
+    assert filter_rules == config['Filter']['Key']
+
+    # upload file to S3 (this should trigger a notification)
+    test_key2 = 'testupload/dir1/testfile.txt'
+    test_data2 = b'{"test": "bucket_notification2"}'
+    s3_client.upload_fileobj(BytesIO(test_data2), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_key2)
+    # receive, assert, and delete message from SQS
+    receive_assert_delete(queue_url, [{'key': test_key2}, {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}], sqs_client)
+
+    # delete notification config
+    _delete_notification_config()
