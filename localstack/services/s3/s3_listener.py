@@ -45,8 +45,8 @@ def event_type_matches(events, action, api_method):
 def filter_rules_match(filters, object_path):
     """ check whether the given object path matches all of the given filters """
     filters = filters or {}
-    key_filter = filters.get('S3Key', filters.get('Key', {}))
-    for rule in key_filter.get('FilterRule', []):
+    s3_filter = _get_s3_filter(filters)
+    for rule in s3_filter.get('FilterRule', []):
         if rule['Name'] == 'prefix':
             if not prefix_with_slash(object_path).startswith(prefix_with_slash(rule['Value'])):
                 return False
@@ -56,6 +56,10 @@ def filter_rules_match(filters, object_path):
         else:
             LOGGER.warning('Unknown filter name: "%s"' % rule['Name'])
     return True
+
+
+def _get_s3_filter(filters):
+    return filters.get('S3Key', filters.get('Key', {}))
 
 
 def prefix_with_slash(s):
@@ -258,7 +262,7 @@ def expand_multipart_filename(data, headers):
         replace according to Amazon S3 documentation for Post uploads:
         http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
     """
-    _, params = cgi.parse_header(headers.get('Content-Type'))
+    _, params = cgi.parse_header(headers.get('Content-Type', ''))
 
     if 'boundary' not in params:
         return data
@@ -296,11 +300,14 @@ def find_multipart_redirect_url(data, headers):
         documentation for Post uploads:
         http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
     """
-    _, params = cgi.parse_header(headers.get('Content-Type'))
+    _, params = cgi.parse_header(headers.get('Content-Type', ''))
+    key, redirect_url = None, None
+
+    if 'boundary' not in params:
+        return key, redirect_url
+
     boundary = params['boundary'].encode('ascii')
     data_bytes = to_bytes(data)
-
-    key, redirect_url = None, None
 
     for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
         if disposition.get('name') == 'key':
@@ -390,11 +397,17 @@ class ProxyListenerS3(ProxyListener):
                         events = config.get('Event')
                         if isinstance(events, six.string_types):
                             events = [events]
+                        event_filter = config.get('Filter', {})
+                        # make sure FilterRule is an array
+                        s3_filter = _get_s3_filter(event_filter)
+                        if s3_filter and not isinstance(s3_filter.get('FilterRule', []), list):
+                            s3_filter['FilterRule'] = [s3_filter['FilterRule']]
+                        # create final details dict
                         notification_details = {
                             'Id': config.get('Id'),
                             'Event': events,
                             dest: config.get(dest),
-                            'Filter': config.get('Filter', {})
+                            'Filter': event_filter
                         }
                         # TODO: what if we have multiple destinations - would we overwrite the config?
                         S3_NOTIFICATIONS[bucket] = clone(notification_details)
