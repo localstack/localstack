@@ -193,7 +193,10 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
     if not cors:
         return
     origin = request_headers.get('Origin', '')
-    for rule in cors['CORSConfiguration']['CORSRule']:
+    rules = cors['CORSConfiguration']['CORSRule']
+    if not isinstance(rules, list):
+        rules = [rules]
+    for rule in rules:
         allowed_methods = rule.get('AllowedMethod', [])
         if request_method in allowed_methods:
             allowed_origins = rule.get('AllowedOrigin', [])
