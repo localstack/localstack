@@ -27,7 +27,7 @@ class ProxyListenerSQS(ProxyListener):
 
         return True
 
-    def return_response(self, method, path, data, headers, response):
+    def return_response(self, method, path, data, headers, response, request_handler):
 
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
@@ -55,14 +55,26 @@ class ProxyListenerSQS(ProxyListener):
                 if config.USE_SSL and '<QueueUrl>http://' in content_str:
                     # return https://... if we're supposed to use SSL
                     content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
-                # expose external hostname
+                # expose external hostname:port
+                external_port = get_external_port(headers, request_handler)
                 content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
-                    r'<QueueUrl>\1://%s:\2/\3</QueueUrl>' % HOSTNAME_EXTERNAL, content_str)
+                    r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port), content_str)
                 new_response._content = content_str
                 if content_str_original != new_response._content:
                     # if changes have been made, return patched response
                     new_response.headers['content-length'] = len(new_response._content)
                     return new_response
+
+
+# extract the external port used by the client to make the request
+def get_external_port(headers, request_handler):
+    host = headers.get('Host', '')
+    if ':' in host:
+        return int(host.split(':')[1])
+    # If we cannot find the Host header, then fall back to the port of the proxy.
+    # (note that this could be incorrect, e.g., if running in Docker with a host port that
+    # is different from the internal container port, but there is not much else we can do.)
+    return request_handler.proxy.port
 
 
 # instantiate listener
