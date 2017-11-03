@@ -36,7 +36,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	private static final String TMP_INSTALL_DIR = System.getProperty("java.io.tmpdir") +
 			File.separator + "localstack_install_dir";
 	private static final String ADDITIONAL_PATH = "/usr/local/bin/";
-	private static final String LOCALSTACK_REPO_URL = "https://github.com/localstack/localstack";
+	private static final String LOCALSTACK_REPO_URL = "https://github.com/ataylor284/localstack";
 
 	public static final String ENV_CONFIG_USE_SSL = "USE_SSL";
 	private static final String ENV_LOCALSTACK_PROCESS_GROUP = "ENV_LOCALSTACK_PROCESS_GROUP";
