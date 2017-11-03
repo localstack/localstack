@@ -9,6 +9,7 @@ import collections
 import six
 from six import iteritems
 from six.moves.urllib import parse as urlparse
+import botocore.config
 from requests.models import Response, Request
 from localstack.constants import DEFAULT_REGION
 from localstack.utils import persistence
@@ -146,7 +147,9 @@ def send_notifications(method, bucket_name, object_path):
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s".' %
                             (bucket_name, config['Topic']))
                 if config.get('CloudFunction'):
-                    lambda_client = aws_stack.connect_to_service('lambda')
+                    # make sure we don't run into a socket timeout
+                    config = botocore.config.Config(read_timeout=300)
+                    lambda_client = aws_stack.connect_to_service('lambda', config=config)
                     try:
                         lambda_client.invoke(FunctionName=config['CloudFunction'], Payload=message)
                     except Exception as e:

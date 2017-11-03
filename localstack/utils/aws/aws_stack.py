@@ -139,7 +139,7 @@ def get_local_service_url(service_name):
     return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
 
 
-def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None):
+def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None, config=None):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
@@ -152,7 +152,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
             endpoint_url = get_local_service_url(service_name)
             verify = False
     region = env.region if env.region != REGION_LOCAL else get_local_region()
-    return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify)
+    return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify, config=config)
 
 
 class VelocityInput:

@@ -5,6 +5,7 @@ import sys
 import traceback
 import logging
 import ssl
+import inspect
 from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
@@ -181,8 +182,18 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                         headers=forward_headers)
             # update listener (post-invocation)
             if self.proxy.update_listener:
-                updated_response = self.proxy.update_listener.return_response(method=method,
-                    path=path, data=data, headers=forward_headers, response=response)
+                kwargs = {
+                    'method': method,
+                    'path': path,
+                    'data': data,
+                    'headers': forward_headers,
+                    'response': response
+                }
+                if 'request_handler' in inspect.getargspec(self.proxy.update_listener.return_response)[0]:
+                    # some listeners (e.g., sqs_listener.py) require additional details like the original
+                    # request port, hence we pass in a reference to this request handler as well.
+                    kwargs['request_handler'] = self
+                updated_response = self.proxy.update_listener.return_response(**kwargs)
                 if isinstance(updated_response, Response):
                     response = updated_response
 
