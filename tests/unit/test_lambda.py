@@ -1,6 +1,6 @@
 import unittest
 import json
-from localstack.services.awslambda import lambda_api
+from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
 
 
@@ -198,7 +198,8 @@ class TestLambdaAPI(unittest.TestCase):
                              result['message'])
 
     def test_get_container_name(self):
-        name = lambda_api.get_container_name('arn:aws:lambda:us-east-1:00000000:function:my_function_name')
+        executor = lambda_executors.EXECUTOR_CONTAINERS_REUSE
+        name = executor.get_container_name('arn:aws:lambda:us-east-1:00000000:function:my_function_name')
         self.assertEqual(name, 'localstack_lambda_arn_aws_lambda_us-east-1_00000000_function_my_function_name')
 
     def _create_function(self, function_name):

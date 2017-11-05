@@ -171,8 +171,7 @@ def forward_to_lambda(records):
             'Records': [record]
         }
         for src in sources:
-            func_to_call = lambda_api.arn_to_lambda[src['FunctionArn']].function()
-            lambda_api.run_lambda(func_to_call, event=event, context={}, func_arn=src['FunctionArn'])
+            lambda_api.run_lambda(event=event, context={}, func_arn=src['FunctionArn'])
 
 
 def forward_to_ddb_stream(records):

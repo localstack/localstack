@@ -144,18 +144,22 @@ You can pass the following environment variables to LocalStack:
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
-* `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Valid values are `local` (run
-  the code in a temporary directory on the local machine) or `docker` (run code in a separate
-  Docker container). In the latter case, if *LocalStack* itself is started inside Docker, then
+* `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Possible values are:
+    - `local`: run Lambda functions in a temporary directory on the local machine
+    - `docker`: run each function invocation in a separate Docker container
+    - `docker-reuse`: create one Docker container per function and reuse it across invocations
+
+  For `docker` and `docker-reuse`, if *LocalStack* itself is started inside Docker, then
   the `docker` command needs to be available inside the container (usually requires to run the
   container in privileged mode). Default is `docker`, fallback to `local` if Docker is not available.
-* `LAMBDA_REMOTE_DOCKER`:
-    - when set to `false` (default): your lambda functions definitions will be passed to the container by
-      mounting the volume (potentially faster) It is mandatory to have the Docker client and the Docker
-      host on the same machine
-    - when set to `true`: your lambda functions definitions will be passed to the container by
+* `LAMBDA_REMOTE_DOCKER` determines whether Lambda code is copied or mounted into containers.
+  Possible values are:
+    - `true` (default): your Lambda function definitions will be passed to the container by
       copying the zip file (potentially slower). It allows for remote execution, where the host
-      and the client are not on the same machine
+      and the client are not on the same machine.
+    - `false`: your Lambda function definitions will be passed to the container by mounting a
+      volume (potentially faster). This requires to have the Docker client and the Docker
+      host on the same machine.
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
   Kinesis, DynamoDB, Elasticsearch). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable

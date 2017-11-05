@@ -174,7 +174,9 @@ class LambdaFunction(Component):
     def name(self):
         return self.id.split(':function:')[-1]
 
-    def function(self, qualifier='$LATEST'):
+    def function(self, qualifier=None):
+        if not qualifier:
+            qualifier = '$LATEST'
         version = qualifier if qualifier in self.versions else \
             self.aliases.get(qualifier).get('FunctionVersion')
         return self.versions.get(version).get('Function')
