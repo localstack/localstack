@@ -306,7 +306,7 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
                 details = json.loads(details)['DomainStatus']
                 arn = details['ARN']
                 es = ElasticSearch(arn)
-                es.endpoint = details['Endpoint']
+                es.endpoint = details.get('Endpoint', 'n/a')
                 result.append(es)
                 pool[arn] = es
         parallelize(handle, out['DomainNames'])

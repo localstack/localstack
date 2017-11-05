@@ -176,11 +176,11 @@ class ProxyListenerCloudFormation(ProxyListener):
                     # fix an error in moto where it fails with 500 if the stack does not exist
                     return error_response('Stack resource does not exist', code=404)
             elif action == 'CreateStack' or action == 'UpdateStack':
+                if response.status_code >= 400 and response.status_code < 500:
+                    return response
                 # run the actual deployment
                 template = template_deployer.template_to_json(req_data.get('TemplateBody')[0])
                 template_deployer.deploy_template(template, req_data.get('StackName')[0])
-                if response.status_code >= 400:
-                    return make_response(action)
 
 
 # instantiate listener
