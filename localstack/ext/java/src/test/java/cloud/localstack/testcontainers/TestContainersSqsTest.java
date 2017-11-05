@@ -116,7 +116,6 @@ public class TestContainersSqsTest {
 
         genericContainer = new GenericContainer(DOCKER_IMAGE_NAME)
                 .withExposedPorts(SQS_PORT)
-                .withFileSystemBind("/var/run/docker.sock", "/var/run/docker.sock", READ_WRITE)
                 .waitingFor(new LogMessageWaitStrategy().withRegEx(".*Ready\\.\n"));
 
         genericContainer.start();
