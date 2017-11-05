@@ -56,7 +56,6 @@ class ProxyListenerDynamoDB(ProxyListener):
             'eventVersion': '1.0',
             'dynamodb': {
                 'StreamViewType': 'NEW_AND_OLD_IMAGES',
-                'SequenceNumber': '1',
                 'SizeBytes': -1
             },
             'awsRegion': DEFAULT_REGION,

@@ -16,6 +16,8 @@ DDB_KINESIS_STREAM_NAME_PREFIX = '__ddb_stream_'
 
 ACTION_HEADER_PREFIX = 'DynamoDBStreams_20120810'
 
+SEQUENCE_NUMBER_COUNTER = 1
+
 
 def add_dynamodb_stream(table_name, view_type='NEW_AND_OLD_IMAGES', enabled=True):
     if enabled:
@@ -35,8 +37,12 @@ def add_dynamodb_stream(table_name, view_type='NEW_AND_OLD_IMAGES', enabled=True
 
 
 def forward_events(records):
+    global SEQUENCE_NUMBER_COUNTER
     kinesis = aws_stack.connect_to_service('kinesis')
     for record in records:
+        if 'SequenceNumber' not in record['dynamodb']:
+            record['dynamodb']['SequenceNumber'] = str(SEQUENCE_NUMBER_COUNTER)
+            SEQUENCE_NUMBER_COUNTER += 1
         table_arn = record['eventSourceARN']
         stream = DDB_STREAMS.get(table_arn)
         if stream:
