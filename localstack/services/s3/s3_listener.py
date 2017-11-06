@@ -24,6 +24,9 @@ S3_NOTIFICATIONS = {}
 # mappings for bucket CORS settings
 BUCKET_CORS = {}
 
+# mappings for bucket lifecycle settings
+BUCKET_LIFECYCLE = {}
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -207,6 +210,30 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                 if origin in allowed or re.match(allowed.replace('*', '.*'), origin):
                     response.headers['Access-Control-Allow-Origin'] = origin
                     break
+
+
+def get_lifecycle(bucket_name):
+    response = Response()
+    lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
+    if not lifecycle:
+        # TODO: check if bucket exists, otherwise return 404-like error
+        lifecycle = {
+            'LifecycleConfiguration': []
+        }
+    body = xmltodict.unparse(lifecycle)
+    response._content = body
+    response.status_code = 200
+    return response
+
+
+def set_lifecycle(bucket_name, lifecycle):
+    # TODO: check if bucket exists, otherwise return 404-like error
+    if isinstance(to_str(lifecycle), six.string_types):
+        lifecycle = xmltodict.parse(lifecycle)
+    BUCKET_LIFECYCLE[bucket_name] = lifecycle
+    response = Response()
+    response.status_code = 200
+    return response
 
 
 def strip_chunk_signatures(data):
@@ -429,6 +456,12 @@ class ProxyListenerS3(ProxyListener):
             if method == 'DELETE':
                 return delete_cors(bucket)
 
+        if query == 'lifecycle' or 'lifecycle' in query_map:
+            if method == 'GET':
+                return get_lifecycle(bucket)
+            if method == 'PUT':
+                return set_lifecycle(bucket, data)
+
         if modified_data:
             return Request(data=modified_data, headers=headers, method=method)
         return True
@@ -455,7 +488,7 @@ class ProxyListenerS3(ProxyListener):
             if len(path[1:].split('/')[1]) > 0:
                 parts = parsed.path[1:].split('/', 1)
                 # ignore bucket notification configuration requests
-                if parsed.query != 'notification':
+                if parsed.query != 'notification' and parsed.query != 'lifecycle':
                     object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
                     send_notifications(method, bucket_name, object_path)
 
