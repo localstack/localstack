@@ -81,10 +81,6 @@ public class S3Sample {
         String bucketName = "my-first-s3-bucket-" + UUID.randomUUID();
         String key = "MyObjectKey";
 
-        System.out.println("===========================================");
-        System.out.println("Getting Started with Amazon S3");
-        System.out.println("===========================================\n");
-
         /*
          * Create a new S3 bucket - Amazon S3 bucket names are globally unique,
          * so once a bucket name has been taken by any user, you can't create
@@ -93,7 +89,7 @@ public class S3Sample {
          * You can optionally specify a location for your bucket if you want to
          * keep your data closer to your applications or users.
          */
-        System.out.println("Creating bucket " + bucketName + "\n");
+        System.out.println("Creating bucket " + bucketName);
         if (!s3.doesBucketExist(bucketName)) {
             s3.createBucket(bucketName);
         }
@@ -105,7 +101,6 @@ public class S3Sample {
         for (Bucket bucket : s3.listBuckets()) {
             System.out.println(" - " + bucket.getName());
         }
-        System.out.println();
 
         /*
          * Upload an object to your bucket - You can easily upload a file to
@@ -115,7 +110,7 @@ public class S3Sample {
          * like content-type and content-encoding, plus additional metadata
          * specific to your applications.
          */
-        System.out.println("Uploading a new object to S3 from a file\n");
+        System.out.println("Uploading a new object to S3 from a file");
         s3.putObject(new PutObjectRequest(bucketName, key, createSampleFile()));
 
         /*
@@ -151,13 +146,12 @@ public class S3Sample {
             System.out.println(" - " + objectSummary.getKey() + "  " +
                     "(size = " + objectSummary.getSize() + ")");
         }
-        System.out.println();
 
         /*
          * Delete an object - Unless versioning has been turned on for your bucket,
          * there is no way to undelete an object, so use caution when deleting objects.
          */
-        System.out.println("Deleting an object\n");
+        System.out.println("Deleting an object");
         s3.deleteObject(bucketName, key);
 
         /*
@@ -165,7 +159,7 @@ public class S3Sample {
          * deleted, so remember to delete any objects from your buckets before
          * you try to delete them.
          */
-        System.out.println("Deleting bucket " + bucketName + "\n");
+        System.out.println("Deleting bucket " + bucketName);
         s3.deleteBucket(bucketName);
     }
 
