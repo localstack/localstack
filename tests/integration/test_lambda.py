@@ -8,10 +8,12 @@ from localstack.utils.common import short_uid, load_file, to_str, mkdir, downloa
 from localstack.services.awslambda import lambda_api
 from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_NODEJS,
     LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, use_docker)
+from localstack import config
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py')
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_python3.py')
+TEST_LAMBDA_PYTHON3_DOCKER_NETWORKING = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_python3_nwtest.py')
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'ext', 'java', 'target',
     'localstack-utils-tests.jar')
@@ -19,6 +21,7 @@ TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
+TEST_LAMBDA_NAME_PY3_DN = 'test_lambda_py3_dn'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
@@ -60,6 +63,61 @@ def test_upload_lambda_from_s3():
     result = lambda_client.invoke(FunctionName=lambda_name, Payload=data_before)
     data_after = result['Payload'].read()
     assert json.loads(to_str(data_before)) == json.loads(to_str(data_after))
+
+
+def test_lambda_docker_networking():
+    """Test ability to run lambas in specific docker networks"""
+
+    if use_docker() and (config.LAMBDA_DEFAULT_DOCKER_NETWORK or config.LAMBDA_SUBNET_AS_DOCKERNET):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        # deploy and invoke lambda - Python 3.6
+        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON3_DOCKER_NETWORKING),
+                                                  get_content=True,
+                                                  libs=TEST_LAMBDA_LIBS,
+                                                  runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        # make sure we can connect to the default network if configured
+        if config.LAMBDA_DEFAULT_DOCKER_NETWORK:
+            testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_PY3_DN,
+                                            zip_file=zip_file,
+                                            runtime=LAMBDA_RUNTIME_PYTHON36)
+            result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY3_DN,
+                                          Payload=b'{}')
+            assert result['StatusCode'] == 200
+            result_text = result['Payload'].read()
+            result_data = json.loads(result_text)
+            assert result_data['network'].strip() == 'default network'
+            lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_PY3_DN)
+
+        # make sure we can connect to a specific network if configured
+        if config.LAMBDA_SUBNET_AS_DOCKERNET:
+            lambda_client.create_function(
+                FunctionName=TEST_LAMBDA_NAME_PY3_DN,
+                Code={
+                    'ZipFile': zip_file
+                },
+                VpcConfig={
+                    'SubnetIds': [
+                        'test_localstack_lambdanet_custom',
+                    ],
+                    'SecurityGroupIds': [
+                        'securitygroupsareignored',
+                    ]
+                },
+                Role='somerolewhichisignored',
+                Runtime=LAMBDA_RUNTIME_PYTHON36,
+                Handler='handler.handler'
+            )
+
+            result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY3_DN,
+                                          Payload=b'{}')
+
+            assert result['StatusCode'] == 200
+            result_text = result['Payload'].read()
+            result_data = json.loads(result_text)
+            assert result_data['network'].strip() == 'custom network'
+
+            lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_PY3_DN)
 
 
 def test_lambda_runtimes():

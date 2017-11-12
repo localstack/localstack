@@ -138,6 +138,29 @@ def use_docker():
     return DO_USE_DOCKER
 
 
+def lambda_docker_network(func_arn):
+    network = None
+
+    lambda_config = arn_to_lambda[func_arn]
+    if config.LAMBDA_SUBNET_AS_DOCKERNET and lambda_config.vpc_config:
+        subnets = lambda_config.vpc_config.get('SubnetIds', [])
+        if len(subnets) > 0:
+            network = subnets[0]
+
+    if not network and config.LAMBDA_DEFAULT_DOCKER_NETWORK:
+        network = config.LAMBDA_DEFAULT_DOCKER_NETWORK
+
+    return network
+
+
+def lambda_docker_cmd_networksection(func_arn):
+    network = lambda_docker_network(func_arn)
+    if network:
+        return f' --network="{network}" '
+    else:
+        return ''
+
+
 def process_apigateway_invocation(func_arn, path, payload, headers={},
         resource_path=None, method=None, path_params={}):
     try:
@@ -263,10 +286,12 @@ def run_lambda(func, event, context, func_arn, suppress_output=False, async=Fals
         sys.stderr = stream
     lambda_cwd = arn_to_lambda.get(func_arn).cwd
     try:
+        LOG.debug('Running lambda function: "%s"' % func_arn)
         runtime = arn_to_lambda.get(func_arn).runtime
         handler = arn_to_lambda.get(func_arn).handler
         environment = arn_to_lambda.get(func_arn).envvars
         if use_docker():
+            LOG.debug('Running in docker sub-process')
             handler_args = '"%s"' % handler
             entrypoint = ''
 
@@ -295,7 +320,8 @@ def run_lambda(func, event, context, func_arn, suppress_output=False, async=Fals
                     'CONTAINER_ID="$(docker create'
                     '%s -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
-                    ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
+                    ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"' +
+                    lambda_docker_cmd_networksection(func_arn) +
                     ' %s'
                     ' "lambci/lambda:%s" %s'
                     ')";'
@@ -309,13 +335,14 @@ def run_lambda(func, event, context, func_arn, suppress_output=False, async=Fals
                     '%s -v "%s":/var/task'
                     ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
-                    ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
+                    ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"' +
+                    lambda_docker_cmd_networksection(func_arn) +
                     ' %s'
                     ' --rm'
                     ' "lambci/lambda:%s" %s'
                 ) % (entrypoint, lambda_cwd_on_host, env_vars, runtime, handler_args)
-
-            print(cmd)
+            LOG.debug('Docker Command: ')
+            LOG.debug(cmd)
             event_body_escaped = event_body.replace("'", "\\'")
             docker_host = config.DOCKER_HOST_FROM_CONTAINER
             env_vars = {
@@ -327,6 +354,7 @@ def run_lambda(func, event, context, func_arn, suppress_output=False, async=Fals
             result, log_output = run_lambda_executor(cmd, env_vars, async)
             LOG.debug('Lambda log output:\n%s' % log_output)
         else:
+            LOG.debug('Running in forked sub-process')
             # execute the Lambda function in a forked sub-process, sync result via queue
             queue = Queue()
 
@@ -527,6 +555,7 @@ def do_list_functions():
             'Handler': arn_to_lambda.get(arn).handler,
             'Runtime': arn_to_lambda.get(arn).runtime,
             'Timeout': LAMBDA_DEFAULT_TIMEOUT,
+            'VpcConfig': arn_to_lambda.get(arn).vpc_config
             # 'Description': ''
             # 'MemorySize': 192,
         })
@@ -557,6 +586,9 @@ def create_function():
         arn_to_lambda[arn].handler = data['Handler']
         arn_to_lambda[arn].runtime = data['Runtime']
         arn_to_lambda[arn].envvars = data.get('Environment', {}).get('Variables', {})
+        arn_to_lambda[arn].vpc_config = data.get('VpcConfig',
+            {'SubnetIds': [], 'SecurityGroupIds': []})
+
         result = set_function_code(data['Code'], lambda_name)
         if isinstance(result, Response):
             del arn_to_lambda[arn]
@@ -700,7 +732,8 @@ def get_function_configuration(function):
         'Handler': lambda_details.handler,
         'Runtime': lambda_details.runtime,
         'Timeout': LAMBDA_DEFAULT_TIMEOUT,
-        'Environment': lambda_details.envvars
+        'Environment': lambda_details.envvars,
+        'VpcConfig': lambda_details.vpc_config
     }
     return jsonify(result)
 
@@ -722,6 +755,9 @@ def update_function_configuration(function):
         arn_to_lambda[arn].runtime = data['Runtime']
     if data.get('Environment'):
         arn_to_lambda[arn].envvars = data.get('Environment', {}).get('Variables', {})
+    if data.get('VpcConfig'):
+        arn_to_lambda[arn].vpc_config = data['VpcConfig']
+
     result = {}
     return jsonify(result)
 

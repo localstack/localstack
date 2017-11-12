@@ -167,6 +167,7 @@ class LambdaFunction(Component):
         self.runtime = None
         self.handler = None
         self.cwd = None
+        self.vpc_config = None
 
     def get_version(self, version):
         return self.versions.get(version)
