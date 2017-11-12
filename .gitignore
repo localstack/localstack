@@ -22,3 +22,6 @@ localstack/infra/
 *.sw*
 ~*
 *~
+.vscode
+.idea
+tmp

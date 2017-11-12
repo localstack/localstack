@@ -153,6 +153,14 @@ You can pass the following environment variables to LocalStack:
     - when set to `true`: your lambda functions definitions will be passed to the container by
       copying the zip file (potentially slower). It allows for remote execution, where the host
       and the client are not on the same machine
+* `LAMBDA_DEFAULT_DOCKER_NETWORK`:
+    - When set, and running lambda functions in a docker container 
+      (LAMBDA_EXECUTOR=docker) the docker container running the lambda function
+      will be attached to the docker network identified by LAMBDA_DEFAULT_DOCKER_NETWORK
+* `LAMBDA_SUBNET_AS_DOCKERNET`:
+    - When set to 1, and lambda functions are run in a docker container
+      (LAMBDA_EXECUTOR=docker) if a lambda function is created with a vpc config,
+      the subnet identified in the vpc config will be used as the identifier of the docker network for the lambda function's docker container 
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
   Kinesis, DynamoDB, Elasticsearch). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
