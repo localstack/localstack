@@ -87,6 +87,10 @@ try:
 except socket.error:
     DOCKER_HOST_FROM_CONTAINER = DOCKER_BRIDGE_IP
 
+# make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
+if in_docker() and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
+    LAMBDA_REMOTE_DOCKER = True
+
 # local config file path in home directory
 CONFIG_FILE_PATH = os.path.join(expanduser("~"), '.localstack')
 
