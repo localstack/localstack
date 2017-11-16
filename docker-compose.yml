@@ -4,7 +4,7 @@ services:
   localstack:
     image: localstack/localstack
     ports:
-      - "4567-4582:4567-4582"
+      - "4567-4583:4567-4583"
       - "8080:8080"
     environment:
       - SERVICES=${SERVICES- }
