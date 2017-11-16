@@ -143,7 +143,7 @@ UPDATE_DYNAMODB = ProxyListenerDynamoDB()
 
 
 def fix_headers_for_updated_response(response):
-    response.headers['content-length'] = len(response.content)
+    response.headers['content-length'] = len(to_bytes(response.content))
     response.headers['x-amz-crc32'] = calculate_crc32(response)
 
 

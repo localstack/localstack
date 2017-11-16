@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import json
 import time
 import logging
@@ -128,10 +130,11 @@ def test_kinesis_lambda_sns_ddb_streams():
             PARTITION_KEY: 'testId%s' % i,
             'data': 'foobar123'
         })
+    # batch write some items containing non-ASCII characters
     dynamodb.batch_write_item(RequestItems={TEST_TABLE_NAME: [
-        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}},
-        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}},
-        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123'}}}
+        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 ✓'}}},
+        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 £'}}},
+        {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 ¢'}}}
     ]})
 
     # put items to stream
