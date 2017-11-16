@@ -151,8 +151,8 @@ def send_notifications(method, bucket_name, object_path):
                             (bucket_name, config['Topic']))
                 if config.get('CloudFunction'):
                     # make sure we don't run into a socket timeout
-                    config = botocore.config.Config(read_timeout=300)
-                    lambda_client = aws_stack.connect_to_service('lambda', config=config)
+                    connection_config = botocore.config.Config(read_timeout=300)
+                    lambda_client = aws_stack.connect_to_service('lambda', config=connection_config)
                     try:
                         lambda_client.invoke(FunctionName=config['CloudFunction'], Payload=message)
                     except Exception as e:
