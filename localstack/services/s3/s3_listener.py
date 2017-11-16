@@ -249,10 +249,10 @@ def strip_chunk_signatures(data):
     if data_new != data:
         # trim \r (13) or \n (10)
         for i in range(0, 2):
-            if data_new[0] in (10, 13):
+            if len(data_new) and data_new[0] in (10, 13):
                 data_new = data_new[1:]
         for i in range(0, 6):
-            if data_new[-1] in (10, 13):
+            if len(data_new) and data_new[-1] in (10, 13):
                 data_new = data_new[:-1]
     return data_new
 
