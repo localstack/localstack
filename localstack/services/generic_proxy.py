@@ -6,6 +6,7 @@ import traceback
 import logging
 import ssl
 import inspect
+import socket
 from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
@@ -99,21 +100,17 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         self.method = requests.get
-        content_length = self.headers.get('Content-Length')
-        if content_length:
-            self.data_bytes = self.rfile.read(int(content_length))
-        else:
-            self.data_bytes = None
+        self.read_content()
         self.forward('GET')
 
     def do_PUT(self):
-        self.data_bytes = self.rfile.read(int(self.headers['Content-Length']))
         self.method = requests.put
+        self.read_content()
         self.forward('PUT')
 
     def do_POST(self):
-        self.data_bytes = self.rfile.read(int(self.headers['Content-Length']))
         self.method = requests.post
+        self.read_content()
         self.forward('POST')
 
     def do_DELETE(self):
@@ -128,13 +125,35 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
     def do_PATCH(self):
         self.method = requests.patch
-        self.data_bytes = self.rfile.read(int(self.headers['Content-Length']))
+        self.read_content()
         self.forward('PATCH')
 
     def do_OPTIONS(self):
         self.data_bytes = None
         self.method = requests.options
         self.forward('OPTIONS')
+
+    def read_content(self):
+        content_length = self.headers.get('Content-Length')
+        if content_length:
+            self.data_bytes = self.rfile.read(int(content_length))
+        else:
+            self.data_bytes = None
+            if self.method in (requests.post, requests.put):
+                # If the Content-Length header is missing, try to read
+                # content from the socket using a socket timeout.
+                socket_timeout_secs = 0.5
+                self.request.settimeout(socket_timeout_secs)
+                while True:
+                    try:
+                        # TODO find a more efficient way to do this!
+                        tmp = self.rfile.read(1)
+                        if self.data_bytes is None:
+                            self.data_bytes = tmp
+                        else:
+                            self.data_bytes += tmp
+                    except socket.timeout:
+                        break
 
     def forward(self, method):
         path = self.path
