@@ -10,6 +10,7 @@ from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
     KinesisShard, KinesisStream, LambdaFunction)
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import to_str
 from localstack.constants import REGION_LOCAL, DEFAULT_REGION
 from six import iteritems
 

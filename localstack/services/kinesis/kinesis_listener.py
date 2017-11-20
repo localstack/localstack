@@ -6,7 +6,6 @@ from localstack.utils.common import to_str
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.common import to_str
 
 # action headers
 ACTION_PREFIX = 'Kinesis_20131202'
