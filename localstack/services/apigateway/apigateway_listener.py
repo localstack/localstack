@@ -7,6 +7,7 @@ from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.config import TEST_KINESIS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import to_str
 from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.generic_proxy import ProxyListener
@@ -140,7 +141,7 @@ def get_cors_response(headers):
 class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        data = data and json.loads(data)
+        data = data and json.loads(to_str(data))
 
         # Paths to match
         regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST

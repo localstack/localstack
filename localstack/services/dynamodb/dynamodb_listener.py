@@ -26,14 +26,14 @@ LOGGER = logging.getLogger(__name__)
 class ProxyListenerDynamoDB(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        data = json.loads(data)
+        data = json.loads(to_str(data))
 
         if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
             return error_response_throughput()
         return True
 
     def return_response(self, method, path, data, headers, response):
-        data = json.loads(data)
+        data = json.loads(to_str(data))
 
         # update table definitions
         if data and 'TableName' in data and 'KeySchema' in data:
