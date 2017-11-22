@@ -22,3 +22,4 @@ localstack/infra/
 *.sw*
 ~*
 *~
+/.idea
