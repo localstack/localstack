@@ -24,7 +24,7 @@ RESOURCE_TO_FUNCTION = {
             'function': 'create_bucket',
             'parameters': {
                 'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
-                'ACL': lambda params: convert_acl_cf_to_s3(params['AccessControl'])
+                'ACL': lambda params: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead'))
             }
         }
     },
