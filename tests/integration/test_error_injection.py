@@ -1,3 +1,4 @@
+import os
 from nose.tools import assert_raises, assert_equal
 from botocore.exceptions import ClientError
 from localstack import config
@@ -11,6 +12,9 @@ TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 
 
 def test_kinesis_error_injection():
+    if not do_run():
+        return
+
     kinesis = aws_stack.connect_to_service('kinesis')
     aws_stack.create_kinesis_stream(TEST_STREAM_NAME)
 
@@ -36,6 +40,9 @@ def test_kinesis_error_injection():
 
 
 def test_dynamodb_error_injection():
+    if not do_run():
+        return
+
     dynamodb = aws_stack.connect_to_resource('dynamodb')
     # create table with stream forwarding config
     testutil.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY)
@@ -51,3 +58,9 @@ def test_dynamodb_error_injection():
 
     # reset probability to zero
     config.DYNAMODB_ERROR_PROBABILITY = 0.0
+
+
+def do_run():
+    # Only run the tests if the $TEST_ERROR_INJECTION environment variable is set. This is to reduce the
+    # testing time, because the injected errors result in retries and timeouts that slow down the tests overall.
+    return os.environ.get('TEST_ERROR_INJECTION') in ('true', '1')
