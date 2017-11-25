@@ -266,6 +266,11 @@ def run_lambda(func, event, context, func_arn, suppress_output=False, async=Fals
         runtime = arn_to_lambda.get(func_arn).runtime
         handler = arn_to_lambda.get(func_arn).handler
         environment = arn_to_lambda.get(func_arn).envvars
+
+        # configure USE_SSL in environment
+        if config.USE_SSL:
+            environment['USE_SSL'] = '1'
+
         if use_docker():
             handler_args = '"%s"' % handler
             entrypoint = ''
