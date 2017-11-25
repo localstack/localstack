@@ -6,7 +6,7 @@ import glob
 import shutil
 import logging
 import tempfile
-from localstack.constants import (DEFAULT_SERVICE_PORTS,
+from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION)
 from localstack.utils.common import download, parallelize, run, mkdir, save_file, unzip, rm_rf
 
@@ -24,8 +24,6 @@ TMP_ARCHIVE_ES = os.path.join(tempfile.gettempdir(), 'localstack.es.zip')
 TMP_ARCHIVE_DDB = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
 TMP_ARCHIVE_STS = os.path.join(tempfile.gettempdir(), 'aws-java-sdk-sts.jar')
 TMP_ARCHIVE_ELASTICMQ = os.path.join(tempfile.gettempdir(), 'elasticmq-server.jar')
-URL_STS_JAR = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
-URL_ELASTICMQ_JAR = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.13.8.jar'
 URL_LOCALSTACK_FAT_JAR = ('http://central.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 
@@ -52,7 +50,7 @@ def install_elasticmq():
         run('mkdir -p %s' % INSTALL_DIR_ELASTICMQ)
         # download archive
         if not os.path.exists(TMP_ARCHIVE_ELASTICMQ):
-            download(URL_ELASTICMQ_JAR, TMP_ARCHIVE_ELASTICMQ)
+            download(ELASTICMQ_JAR_URL, TMP_ARCHIVE_ELASTICMQ)
         shutil.copy(TMP_ARCHIVE_ELASTICMQ, INSTALL_DIR_ELASTICMQ)
 
 
@@ -90,7 +88,7 @@ def install_amazon_kinesis_client_libs():
     if not os.path.exists(INSTALL_DIR_KCL):
         mkdir(INSTALL_DIR_KCL)
         if not os.path.exists(TMP_ARCHIVE_STS):
-            download(URL_STS_JAR, TMP_ARCHIVE_STS)
+            download(STS_JAR_URL, TMP_ARCHIVE_STS)
         shutil.copy(TMP_ARCHIVE_STS, INSTALL_DIR_KCL)
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
