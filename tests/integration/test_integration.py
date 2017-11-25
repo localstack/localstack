@@ -122,10 +122,13 @@ def test_kinesis_lambda_sns_ddb_streams():
         zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
 
     # put items to table
-    num_events_ddb = 10
+    num_events_ddb = 15
+    num_put_items = 7
+    num_batch_items = 3
+    num_updates_ddb = num_events_ddb - num_put_items - num_batch_items
     LOGGER.info('Putting %s items to table...' % num_events_ddb)
     table = dynamodb.Table(TEST_TABLE_NAME)
-    for i in range(0, num_events_ddb - 3):
+    for i in range(0, num_put_items):
         table.put_item(Item={
             PARTITION_KEY: 'testId%s' % i,
             'data': 'foobar123'
@@ -136,6 +139,14 @@ def test_kinesis_lambda_sns_ddb_streams():
         {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 £'}}},
         {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 ¢'}}}
     ]})
+    # update some items, which also triggers notification events
+    for i in range(0, num_updates_ddb):
+        dynamodb_service.update_item(TableName=TEST_TABLE_NAME,
+            Key={PARTITION_KEY: {'S': 'testId%s' % i}},
+            AttributeUpdates={'data': {
+                'Action': 'PUT',
+                'Value': {'S': 'foobar123_updated'}
+            }})
 
     # put items to stream
     num_events_kinesis = 10
@@ -186,7 +197,7 @@ def test_kinesis_lambda_sns_ddb_streams():
     stats2 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM, 'Errors')
     assert len(stats2['Datapoints']) == 1
     stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)
-    assert len(stats3['Datapoints']) == 10
+    assert len(stats3['Datapoints']) == num_events_ddb
 
 
 def test_kinesis_lambda_forward_chain():

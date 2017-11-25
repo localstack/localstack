@@ -1,4 +1,5 @@
-from flask import jsonify, make_response
+import json
+from flask import Response
 
 
 def flask_error_response(msg, code=500, error_type='InternalFailure'):
@@ -8,4 +9,6 @@ def flask_error_response(msg, code=500, error_type='InternalFailure'):
         '__type': error_type
     }
     headers = {'x-amzn-errortype': error_type}
-    return make_response((jsonify(result), code, headers))
+    # Note: don't use flask's make_response(..) or jsonify(..) here as they
+    # can lead to "RuntimeError: working outside of application context".
+    return Response(json.dumps(result), status=code, headers=headers)

@@ -1,10 +1,9 @@
-import time
 import logging
 import traceback
 from localstack.config import PORT_DYNAMODB, DATA_DIR
 from localstack.constants import DEFAULT_PORT_DYNAMODB_BACKEND
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import mkdir, is_port_open
+from localstack.utils.common import mkdir, wait_for_port_open
 from localstack.services import install
 from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 from localstack.services.install import ROOT_PATH
@@ -16,7 +15,7 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
     out = None
     try:
         # wait for port to be opened
-        wait_for_port_open()
+        wait_for_port_open(DEFAULT_PORT_DYNAMODB_BACKEND)
         # check DynamoDB
         out = aws_stack.connect_to_service(service_name='dynamodb').list_tables()
     except Exception as e:
@@ -26,13 +25,6 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
         assert out is None
     else:
         assert isinstance(out['TableNames'], list)
-
-
-def wait_for_port_open():
-    for i in range(0, 8):
-        if is_port_open(DEFAULT_PORT_DYNAMODB_BACKEND):
-            break
-        time.sleep(0.5)
 
 
 def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
