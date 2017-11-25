@@ -77,6 +77,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             record['eventName'] = 'MODIFY'
             record['dynamodb']['Keys'] = data['Key']
             record['dynamodb']['NewImage'] = new_item['Item']
+            record['dynamodb']['SizeBytes'] = len(json.dumps(new_item['Item']))
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             records = []
             for table_name, requests in data['RequestItems'].items():
@@ -99,6 +100,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                 return keys
             record['dynamodb']['Keys'] = keys
             record['dynamodb']['NewImage'] = data['Item']
+            record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
         elif action == '%s.GetItem' % ACTION_PREFIX:
             if response.status_code == 200:
                 content = json.loads(to_str(response.content))
@@ -132,10 +134,11 @@ class ProxyListenerDynamoDB(ProxyListener):
             # nothing to do
             return
 
-        if 'TableName' in data:
-            record['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
-        forward_to_lambda(records)
-        forward_to_ddb_stream(records)
+        if len(records) > 0 and 'eventName' in records[0]:
+            if 'TableName' in data:
+                records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
+            forward_to_lambda(records)
+            forward_to_ddb_stream(records)
 
 
 # instantiate listener

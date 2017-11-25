@@ -251,6 +251,13 @@ def is_port_open(port_or_url):
         return result == 0
 
 
+def wait_for_port_open(port, retries=10, sleep_time=0.5):
+    for i in range(0, retries):
+        if is_port_open(port):
+            break
+        time.sleep(sleep_time)
+
+
 def timestamp(time=None, format=TIMESTAMP_FORMAT):
     if not time:
         time = datetime.utcnow()
