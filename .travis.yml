@@ -44,7 +44,7 @@ script:
   #   but instead reinstall using 2.x here, as that allows us to use some cached libs etc.
   - "make reinstall-p2 > /dev/null"
   - make init
-  - DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 make test
+  - DEBUG=1 LAMBDA_EXECUTOR=docker-reuse USE_SSL=1 make test
   # run Java tests
   - make test-java-if-changed
   # build Docker image, and push it (if on master branch)

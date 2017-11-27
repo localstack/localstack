@@ -3,6 +3,7 @@ import logging
 import json
 import requests
 from requests.models import Response
+from flask import Response as FlaskResponse
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.config import TEST_KINESIS_URL
 from localstack.utils import common
@@ -24,12 +25,20 @@ PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 AUTHORIZERS = {}
 
 
-def make_response(message):
+def _create_response_object(content, code, headers):
     response = Response()
-    response.status_code = 200
-    response.headers['Content-Type'] = APPLICATION_JSON
-    response._content = json.dumps(message)
+    response.status_code = code
+    response.headers = headers
+    response._content = content
     return response
+
+
+def make_response(message):
+    return _create_response_object(json.dumps(message), code=200, headers={'Content-Type': APPLICATION_JSON})
+
+
+def flask_to_requests_response(r):
+    return _create_response_object(r.data, code=r.status_code, headers=r.headers)
 
 
 def make_error(message, code=400):
@@ -196,6 +205,9 @@ class ProxyListenerApiGateway(ProxyListener):
                         path_params = {}
                     result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                         headers, path_params=path_params, method=method, resource_path=path)
+
+                    if isinstance(result, FlaskResponse):
+                        return flask_to_requests_response(result)
 
                     response = Response()
                     parsed_result = result if isinstance(result, dict) else json.loads(result)
