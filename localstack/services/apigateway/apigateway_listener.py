@@ -165,7 +165,11 @@ class ProxyListenerApiGateway(ProxyListener):
             except Exception:
                 # if we have no exact match, try to find an API resource that contains path parameters
                 path_map = get_rest_api_paths(rest_api_id=api_id)
-                extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map) or {}
+                try:
+                    extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+                except Exception:
+                    return make_error('Unable to find path %s' % path, 404)
+
                 integrations = resource.get('resourceMethods', {})
                 integration = integrations.get(method, {})
                 integration = integration.get('methodIntegration')
