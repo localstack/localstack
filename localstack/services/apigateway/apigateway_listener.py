@@ -215,8 +215,10 @@ class ProxyListenerApiGateway(ProxyListener):
                     response.status_code = int(parsed_result.get('statusCode', 200))
                     response.headers.update(parsed_result.get('headers', {}))
                     try:
-                        response_body = parsed_result['body']
-                        response._content = json.dumps(response_body)
+                        if isinstance(parsed_result['body'], dict):
+                            response._content = json.dumps(parsed_result['body'])
+                        else:
+                            response._content = parsed_result['body']
                     except Exception:
                         response._content = '{}'
                     return response
