@@ -13,12 +13,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -26,11 +29,13 @@ import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent.KinesisEventRecord;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent.Record;
 import com.amazonaws.util.StringInputStream;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 /**
  * Simple implementation of a Java Lambda function executor.
@@ -38,6 +43,8 @@ import org.joda.time.DateTime;
  * @author Waldemar Hummer
  */
 public class LambdaExecutor {
+
+	private static Object inputObject;
 
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws Exception {
@@ -49,14 +56,15 @@ public class LambdaExecutor {
 
 		String fileContent = readFile(args[1]);
 		ObjectMapper reader = new ObjectMapper();
-		@SuppressWarnings("deprecation")
-		Map<String,Object> map = reader.reader(Map.class).readValue(fileContent);
+		Map<String,Object> map = reader.readerFor(Map.class).readValue(fileContent);
 
 		List<Map<String,Object>> records = (List<Map<String, Object>>) get(map, "Records");
-		@SuppressWarnings("rawtypes")
-		Object inputObject = map;
+		inputObject = map;
 
-		if (records != null) {
+		Object handler = getHandler(args[0]);
+		if (records == null) {
+			setInputObject(reader, fileContent, handler);
+		} else {
 			if (records.stream().filter(record -> record.containsKey("Kinesis")).count() > 0) {
 				KinesisEvent kinesisEvent = new KinesisEvent();
 				inputObject = kinesisEvent;
@@ -96,10 +104,15 @@ public class LambdaExecutor {
 			//TODO: Support other events (S3, SQS...)
 		}
 
-		Object handler = getHandler(args[0]);
 		Context ctx = new LambdaContext();
 		if (handler instanceof RequestHandler) {
 			Object result = ((RequestHandler) handler).handleRequest(inputObject, ctx);
+			// try turning the output into json
+			try {
+				result = new ObjectMapper().writeValueAsString(result);
+			} catch (JsonProcessingException jsonException) {
+				// continue with results as it is
+			}
 			// The contract with lambci is to print the result to stdout, whereas logs go to stderr
 			System.out.println(result);
 		} else if (handler instanceof RequestStreamHandler) {
@@ -107,6 +120,22 @@ public class LambdaExecutor {
 			((RequestStreamHandler) handler).handleRequest(
 				new StringInputStream(fileContent), os, ctx);
 			System.out.println(os);
+		}
+	}
+
+	private static void setInputObject(ObjectMapper mapper, String objectString, Object handler) {
+		try {
+			Optional<Type> handlerInterface = Arrays.stream(handler.getClass().getGenericInterfaces())
+					.filter(genericInterface ->
+						((ParameterizedTypeImpl) genericInterface).getRawType().equals(RequestHandler.class))
+					.findFirst();
+			if (handlerInterface.isPresent()) {
+				Class handlerInputType = Class.forName(((ParameterizedTypeImpl) handlerInterface.get())
+						.getActualTypeArguments()[0].getTypeName());
+				inputObject = mapper.readerFor(handlerInputType).readValue(objectString);
+			}
+		} catch (Exception genericException) {
+			// do nothing
 		}
 	}
 
