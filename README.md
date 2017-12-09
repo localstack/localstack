@@ -5,7 +5,7 @@
 [![Code Climate](https://codeclimate.com/github/atlassian/localstack/badges/gpa.svg)](https://codeclimate.com/github/atlassian/localstack)
 [![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/_localstack)
 
-# LocalStack - A fully functional local AWS cloud stack
+# LocalStack - A fully functional local AWS cloud stack 
 
 ![LocalStack](https://github.com/localstack/localstack/raw/master/localstack/dashboard/web/img/localstack.png)
 
