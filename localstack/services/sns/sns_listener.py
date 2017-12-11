@@ -57,7 +57,6 @@ class ProxyListenerSNS(ProxyListener):
 
             elif req_action == 'Publish':
                 message = req_data['Message'][0]
-                subject = (req_data.get('Subject', ['']))[0]
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
                     if subscriber['Protocol'] == 'sqs':
@@ -80,12 +79,7 @@ class ProxyListenerSNS(ProxyListener):
                                 'Content-Type': 'text/plain',
                                 'x-amz-sns-message-type': 'Notification'
                             },
-                            data=json.dumps({
-                                'Type': 'Notification',
-                                'Subject': subject,
-                                'Message': message,
-                            })
-                        )
+                            data=create_sns_message_body(subscriber, req_data))
                     else:
                         LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
                 # return response here because we do not want the request to be forwarded to SNS
