@@ -1,6 +1,7 @@
 import json
 import logging
 import requests
+import uuid
 import xmltodict
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
@@ -187,6 +188,7 @@ def create_sns_message_body(subscriber, req_data):
         return message
 
     data = {}
+    data['MessageId'] = str(uuid.uuid4())
     data['Type'] = 'Notification'
     data['Message'] = message
     data['TopicArn'] = subscriber['TopicArn']

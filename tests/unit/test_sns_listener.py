@@ -1,4 +1,5 @@
 import json
+import uuid
 from nose.tools import assert_equal
 from localstack.services.sns import sns_listener
 
@@ -45,8 +46,15 @@ def test_create_sns_message_body():
     action = {
         'Message': ['msg']
     }
-    result = sns_listener.create_sns_message_body(subscriber, action)
-    assert_equal(json.loads(result), {'Message': 'msg', 'Type': 'Notification', 'TopicArn': 'arn'})
+    result_str = sns_listener.create_sns_message_body(subscriber, action)
+    result = json.loads(result_str)
+    try:
+        uuid.UUID(result.pop('MessageId'))
+    except KeyError:
+        assert False, 'MessageId missing in SNS response message body'
+    except ValueError:
+        assert False, 'SNS response MessageId not a valid UUID'
+    assert_equal(result, {'Message': 'msg', 'Type': 'Notification', 'TopicArn': 'arn'})
 
     # Now add a subject
     action = {
@@ -61,7 +69,9 @@ def test_create_sns_message_body():
         'MessageAttributes.entry.2.Value.StringValue': ['value2'],
         'MessageAttributes.entry.2.Value.BinaryValue': ['value2'],
     }
-    result = sns_listener.create_sns_message_body(subscriber, action)
+    result_str = sns_listener.create_sns_message_body(subscriber, action)
+    result = json.loads(result_str)
+    del result['MessageId']
     expected = json.dumps({'Message': 'msg',
                            'TopicArn': 'arn',
                            'Type': 'Notification',
@@ -75,4 +85,4 @@ def test_create_sns_message_body():
                                    'Value': 'value2',
                                }
                            }})
-    assert_equal(json.loads(result), json.loads(expected))
+    assert_equal(result, json.loads(expected))
