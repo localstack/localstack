@@ -44,8 +44,6 @@ import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
  */
 public class LambdaExecutor {
 
-	private static Object inputObject;
-
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) throws Exception {
 		if(args.length < 2) {
@@ -59,11 +57,14 @@ public class LambdaExecutor {
 		Map<String,Object> map = reader.readerFor(Map.class).readValue(fileContent);
 
 		List<Map<String,Object>> records = (List<Map<String, Object>>) get(map, "Records");
-		inputObject = map;
+		Object inputObject = map;
 
 		Object handler = getHandler(args[0]);
 		if (records == null) {
-			setInputObject(reader, fileContent, handler);
+			Optional<Object> deserialisedInput = getInputObject(reader, fileContent, handler);
+			if (deserialisedInput.isPresent()) {
+				inputObject = deserialisedInput.get();
+			}
 		} else {
 			if (records.stream().filter(record -> record.containsKey("Kinesis")).count() > 0) {
 				KinesisEvent kinesisEvent = new KinesisEvent();
@@ -123,7 +124,8 @@ public class LambdaExecutor {
 		}
 	}
 
-	private static void setInputObject(ObjectMapper mapper, String objectString, Object handler) {
+	private static Optional<Object> getInputObject(ObjectMapper mapper, String objectString, Object handler) {
+		Optional<Object> inputObject = Optional.empty();
 		try {
 			Optional<Type> handlerInterface = Arrays.stream(handler.getClass().getGenericInterfaces())
 					.filter(genericInterface ->
@@ -132,11 +134,12 @@ public class LambdaExecutor {
 			if (handlerInterface.isPresent()) {
 				Class handlerInputType = Class.forName(((ParameterizedTypeImpl) handlerInterface.get())
 						.getActualTypeArguments()[0].getTypeName());
-				inputObject = mapper.readerFor(handlerInputType).readValue(objectString);
+				inputObject = Optional.of(mapper.readerFor(handlerInputType).readValue(objectString));
 			}
 		} catch (Exception genericException) {
 			// do nothing
 		}
+		return inputObject;
 	}
 
 	private static Object getHandler(String handlerName) throws NoSuchMethodException, IllegalAccessException,
