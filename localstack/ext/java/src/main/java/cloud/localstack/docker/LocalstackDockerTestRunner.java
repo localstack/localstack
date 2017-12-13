@@ -1,16 +1,22 @@
 package cloud.localstack.docker;
 
 import java.lang.annotation.Annotation;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
 
+import cloud.localstack.ServiceName;
 import cloud.localstack.docker.annotation.IHostNameResolver;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
+import cloud.localstack.docker.command.RegexStream;
 
 /**
  * JUnit test runner that automatically pulls and runs the latest localstack docker image
@@ -31,27 +37,14 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
 
     private static final Logger LOG = Logger.getLogger(LocalstackDockerTestRunner.class.getName());
 
-    //These are the default internal ports in the localstack docker image, in order to 
-    //use them, they must be resolved to an external docker port via Container.getExternalPortFor()
-    public static final int API_GATEWAY_INTERNAL_PORT = 4567;
-    public static final int KINESIS_INTERNAL_PORT = 4568;
-    public static final int DYNAMO_INTERNAL_PORT = 4569;
-    public static final int DYNAMO_STREAMS_INTERNAL_PORT = 4570;
-    public static final int ELASTICSEARCH_INTERNAL_PORT = 4571;
-    public static final int S3_INTERNAL_PORT = 4572;
-    public static final int FIREHOSE_INTERNAL_PORT = 4573;
-    public static final int LAMBDA_INTERNAL_PORT = 4574;
-    public static final int SNS_INTERNAL_PORT = 4575;
-    public static final int SQS_INTERNAL_PORT = 4576;
-    public static final int REDSHIFT_INTERNAL_PORT = 4577;
-    public static final int ES_INTERNAL_PORT = 4578;
-    public static final int SES_INTERNAL_PORT = 4579;
-    public static final int ROUTE53_INTERNAL_PORT = 4580;
-    public static final int CLOUDFORMATION_INTERNAL_PORT = 4581;
-    public static final int CLOUDWATCH_INTERNAL_PORT = 4582;
-    public static final int SSM_INTERNAL_PORT = 4583;
+    private static final String PORT_CONFIG_FILENAME = "/opt/code/localstack/.venv/lib/python2.7/site-packages/localstack_client/config.py";
 
     private static final Pattern READY_TOKEN = Pattern.compile("Ready\\.");
+
+    //Regular expression used to parse localstack config to determine default ports for services
+    private static final Pattern DEFAULT_PORT_PATTERN = Pattern.compile("'(\\w+)'\\Q: '{proto}://{host}:\\E(\\d+)'");
+    private static final int SERVICE_NAME_GROUP = 1;
+    private static final int PORT_GROUP = 2;
 
 
     private static Container localStackContainer;
@@ -60,6 +53,11 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
         return localStackContainer;
     }
 
+    /**
+     * This is a mapping from service name to internal ports.  In order to use them, the
+     * internal port must be resolved to an external docker port via Container.getExternalPortFor()
+     */
+    private static Map<String, Integer> serviceToPortMap;
 
     private static String externalHostName = "localhost";
 
@@ -77,6 +75,7 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
             }
         }
     }
+
 
     private void processDockerPropertiesAnnotation(LocalstackDockerProperties properties) {
         try {
@@ -97,6 +96,7 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
     public void run(RunNotifier notifier) {
         localStackContainer = Container.createLocalstackContainer(externalHostName);
         try {
+            loadServiceToPortMap();
 
             LOG.info("Waiting for localstack container to be ready...");
             localStackContainer.waitForLogToken(READY_TOKEN);
@@ -109,8 +109,19 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
     }
 
 
+    private void loadServiceToPortMap() {
+        String localStackPortConfig = localStackContainer.executeCommand(Arrays.asList("cat", PORT_CONFIG_FILENAME));
+
+        Map<String, Integer> ports =  new RegexStream(DEFAULT_PORT_PATTERN.matcher(localStackPortConfig)).stream()
+                .collect(Collectors.toMap(match -> match.group(SERVICE_NAME_GROUP),
+                                            match -> Integer.parseInt(match.group(PORT_GROUP))));
+
+        serviceToPortMap = Collections.unmodifiableMap(ports);
+    }
+
+
     public static String getEndpointS3() {
-        String s3Endpoint = endpointForPort(S3_INTERNAL_PORT);
+        String s3Endpoint = endpointForService(ServiceName.S3);
         /*
          * Use the domain name wildcard *.localhost.atlassian.io which maps to 127.0.0.1
          * We need to do this because S3 SDKs attempt to access a domain <bucket-name>.<service-host-name>
@@ -123,67 +134,81 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
 
 
     public static String getEndpointKinesis() {
-        return endpointForPort(KINESIS_INTERNAL_PORT);
+        return endpointForService(ServiceName.KINESIS);
     }
 
     public static String getEndpointLambda() {
-        return endpointForPort(LAMBDA_INTERNAL_PORT);
+        return endpointForService(ServiceName.LAMBDA);
     }
 
     public static String getEndpointDynamoDB() {
-        return endpointForPort(DYNAMO_INTERNAL_PORT);
+        return endpointForService(ServiceName.DYNAMO);
     }
 
     public static String getEndpointDynamoDBStreams() {
-        return endpointForPort(DYNAMO_STREAMS_INTERNAL_PORT);
+        return endpointForService(ServiceName.DYNAMO_STREAMS);
     }
 
     public static String getEndpointAPIGateway() {
-        return endpointForPort(API_GATEWAY_INTERNAL_PORT);
+        return endpointForService(ServiceName.API_GATEWAY);
     }
 
     public static String getEndpointElasticsearch() {
-        return endpointForPort(ELASTICSEARCH_INTERNAL_PORT);
+        return endpointForService(ServiceName.ELASTICSEARCH);
     }
 
     public static String getEndpointElasticsearchService() {
-        return endpointForPort(ES_INTERNAL_PORT);
+        return endpointForService(ServiceName.ELASTICSEARCH_SERVICE);
     }
 
     public static String getEndpointFirehose() {
-        return endpointForPort(FIREHOSE_INTERNAL_PORT);
+        return endpointForService(ServiceName.FIREHOSE);
     }
 
     public static String getEndpointSNS() {
-        return endpointForPort(SNS_INTERNAL_PORT);
+        return endpointForService(ServiceName.SNS);
     }
 
     public static String getEndpointSQS() {
-        return endpointForPort(SQS_INTERNAL_PORT);
+        return endpointForService(ServiceName.SQS);
     }
 
     public static String getEndpointRedshift() {
-        return endpointForPort(REDSHIFT_INTERNAL_PORT);
+        return endpointForService(ServiceName.REDSHIFT);
     }
 
     public static String getEndpointSES() {
-        return endpointForPort(SES_INTERNAL_PORT);
+        return endpointForService(ServiceName.SES);
     }
 
     public static String getEndpointRoute53() {
-        return endpointForPort(ROUTE53_INTERNAL_PORT);
+        return endpointForService(ServiceName.ROUTE53);
     }
 
     public static String getEndpointCloudFormation() {
-        return endpointForPort(CLOUDFORMATION_INTERNAL_PORT);
+        return endpointForService(ServiceName.CLOUDFORMATION);
     }
 
     public static String getEndpointCloudWatch() {
-        return endpointForPort(CLOUDWATCH_INTERNAL_PORT);
+        return endpointForService(ServiceName.CLOUDWATCH);
     }
 
     public static String getEndpointSSM() {
-        return endpointForPort(SSM_INTERNAL_PORT);
+        return endpointForService(ServiceName.SSM);
+    }
+
+
+    public static String endpointForService(String serviceName) {
+        if(serviceToPortMap == null) {
+            throw new IllegalStateException("Service to port mapping has not been determined yet.");
+        }
+
+        if(!serviceToPortMap.containsKey(serviceName)) {
+            throw new IllegalArgumentException("Unknown port mapping for service");
+        }
+
+        int internalPort = serviceToPortMap.get(serviceName);
+        return endpointForPort(internalPort);
     }
 
 

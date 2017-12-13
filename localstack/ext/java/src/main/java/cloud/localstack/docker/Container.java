@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import cloud.localstack.docker.command.ExecCommand;
 import cloud.localstack.docker.command.LogCommand;
 import cloud.localstack.docker.command.PortCommand;
 import cloud.localstack.docker.command.PullCommand;
@@ -140,5 +141,13 @@ public class Container {
     public void stop(){
         new StopCommand(containerId).execute();
         LOG.info("Stopped container: " + containerId);
+    }
+
+
+    /**
+     * Run a command on the container via docker exec
+     */
+    public String executeCommand(List<String> command) {
+        return new ExecCommand(containerId).execute(command);
     }
 }

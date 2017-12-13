@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class DockerExe {
 
+    private static final int WAIT_TIMEOUT_MINUTES = 3;
+
     private static final List<String> POSSIBLE_EXE_LOCATIONS = Arrays.asList(
             System.getenv("DOCKER_LOCATION"),
             "C:/program files/docker/docker/resources/bin/docker.exe",
@@ -59,8 +61,8 @@ public class DockerExe {
             ExecutorService exec = newSingleThreadExecutor();
             Future<String> outputFuture = exec.submit(() -> handleOutput(process));
 
-            String output = outputFuture.get(1, TimeUnit.MINUTES);
-            process.waitFor(1, TimeUnit.MINUTES);
+            String output = outputFuture.get(WAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            process.waitFor(WAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
             exec.shutdown();
 
             return output;

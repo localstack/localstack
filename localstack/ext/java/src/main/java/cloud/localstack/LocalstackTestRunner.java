@@ -48,7 +48,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	/* SERVICE ENDPOINTS */
 
 	public static String getEndpointS3() {
-		String s3Endpoint = ensureInstallationAndGetEndpoint("s3");
+		String s3Endpoint = ensureInstallationAndGetEndpoint(ServiceName.S3);
 		/*
 		 * Use the domain name wildcard *.localhost.atlassian.io which maps to 127.0.0.1
 		 * We need to do this because S3 SDKs attempt to access a domain <bucket-name>.<service-host-name>
@@ -60,67 +60,67 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 	}
 
 	public static String getEndpointKinesis() {
-		return ensureInstallationAndGetEndpoint("kinesis");
+		return ensureInstallationAndGetEndpoint(ServiceName.KINESIS);
 	}
 
 	public static String getEndpointLambda() {
-		return ensureInstallationAndGetEndpoint("lambda");
+		return ensureInstallationAndGetEndpoint(ServiceName.LAMBDA);
 	}
 
 	public static String getEndpointDynamoDB() {
-		return ensureInstallationAndGetEndpoint("dynamodb");
+		return ensureInstallationAndGetEndpoint(ServiceName.DYNAMO);
 	}
 
 	public static String getEndpointDynamoDBStreams() {
-		return ensureInstallationAndGetEndpoint("dynamodbstreams");
+		return ensureInstallationAndGetEndpoint(ServiceName.DYNAMO_STREAMS);
 	}
 
 	public static String getEndpointAPIGateway() {
-		return ensureInstallationAndGetEndpoint("apigateway");
+		return ensureInstallationAndGetEndpoint(ServiceName.API_GATEWAY);
 	}
 
 	public static String getEndpointElasticsearch() {
-		return ensureInstallationAndGetEndpoint("elasticsearch");
+		return ensureInstallationAndGetEndpoint(ServiceName.ELASTICSEARCH);
 	}
 
 	public static String getEndpointElasticsearchService() {
-		return ensureInstallationAndGetEndpoint("es");
+		return ensureInstallationAndGetEndpoint(ServiceName.ELASTICSEARCH_SERVICE);
 	}
 
 	public static String getEndpointFirehose() {
-		return ensureInstallationAndGetEndpoint("firehose");
+		return ensureInstallationAndGetEndpoint(ServiceName.FIREHOSE);
 	}
 
 	public static String getEndpointSNS() {
-		return ensureInstallationAndGetEndpoint("sns");
+		return ensureInstallationAndGetEndpoint(ServiceName.SNS);
 	}
 
 	public static String getEndpointSQS() {
-		return ensureInstallationAndGetEndpoint("sqs");
+		return ensureInstallationAndGetEndpoint(ServiceName.SQS);
 	}
 
 	public static String getEndpointRedshift() {
-		return ensureInstallationAndGetEndpoint("redshift");
+		return ensureInstallationAndGetEndpoint(ServiceName.REDSHIFT);
 	}
 
 	public static String getEndpointSES() {
-		return ensureInstallationAndGetEndpoint("ses");
+		return ensureInstallationAndGetEndpoint(ServiceName.SES);
 	}
 
 	public static String getEndpointRoute53() {
-		return ensureInstallationAndGetEndpoint("route53");
+		return ensureInstallationAndGetEndpoint(ServiceName.ROUTE53);
 	}
 
 	public static String getEndpointCloudFormation() {
-		return ensureInstallationAndGetEndpoint("cloudformation");
+		return ensureInstallationAndGetEndpoint(ServiceName.CLOUDFORMATION);
 	}
 
 	public static String getEndpointCloudWatch() {
-		return ensureInstallationAndGetEndpoint("cloudwatch");
+		return ensureInstallationAndGetEndpoint(ServiceName.CLOUDWATCH);
 	}
 
 	public static String getEndpointSSM() {
-		return ensureInstallationAndGetEndpoint("ssm");
+		return ensureInstallationAndGetEndpoint(ServiceName.SSM);
 	}
 
 	@Override
