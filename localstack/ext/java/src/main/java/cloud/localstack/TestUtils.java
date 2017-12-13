@@ -63,7 +63,7 @@ public class TestUtils {
 				withCredentials(getCredentialsProvider()).build();
 	}
 
-	protected static AWSCredentialsProvider getCredentialsProvider() {
+	public static AWSCredentialsProvider getCredentialsProvider() {
 		return new AWSStaticCredentialsProvider(TEST_CREDENTIALS);
 	}
 
