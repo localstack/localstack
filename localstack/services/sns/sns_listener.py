@@ -89,7 +89,7 @@ class ProxyListenerSNS(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
         # This method is executed by the proxy after we've already received a
-        # response from the backend, hence we can utilize the "reponse" variable here
+        # response from the backend, hence we can utilize the "response" variable here
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
             req_action = req_data['Action'][0]

@@ -2,13 +2,14 @@ import re
 import logging
 import json
 import requests
+import dateutil.parser
 from requests.models import Response
 from flask import Response as FlaskResponse
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.config import TEST_KINESIS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, to_bytes
 from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.generic_proxy import ProxyListener
@@ -250,6 +251,19 @@ class ProxyListenerApiGateway(ProxyListener):
             return handle_authorizers(method, path, data, headers)
 
         return True
+
+    def return_response(self, method, path, data, headers, response):
+        try:
+            response_data = json.loads(response.content)
+            # Fix an upstream issue in Moto API Gateway, where it returns `createdDate` as a string
+            # instead of as an integer timestamp:
+            # see https://github.com/localstack/localstack/issues/511
+            if 'createdDate' in response_data and not isinstance(response_data['createdDate'], int):
+                response_data['createdDate'] = int(dateutil.parser.parse(response_data['createdDate']).strftime('%s'))
+                response._content = to_bytes(json.dumps(response_data))
+                response.headers['Content-Length'] = len(response.content)
+        except Exception:
+            pass
 
 
 # instantiate listener
