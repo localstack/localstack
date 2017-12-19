@@ -28,7 +28,7 @@
           },
           "devices": {
             "SS": [
-              "urn:bamtech:subscription-api:subscriber:device:fdafsafdscaa"
+              "deviceID"
             ]
           },
           "numbers": {
