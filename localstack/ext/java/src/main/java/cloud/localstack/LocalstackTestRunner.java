@@ -248,6 +248,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 				proc = exec(false, cmd);
 				BufferedReader r1 = new BufferedReader(new InputStreamReader(proc.getInputStream()));
 				String line;
+				LOG.info(TMP_INSTALL_DIR);
 				LOG.info("Waiting for infrastructure to be spun up");
 				boolean ready = false;
 				String output = "";
