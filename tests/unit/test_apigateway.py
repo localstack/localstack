@@ -14,12 +14,18 @@ class ApiGatewayPathsTest (unittest.TestCase):
         params = apigateway_listener.extract_path_params('/foo/bar', '/foo/bar')
         self.assertEqual(params, {})
 
+        params = apigateway_listener.extract_path_params('/foo/bar/baz', '/foo/{proxy+}')
+        self.assertEqual(params, {'proxy+': 'bar/baz'})
+
     def test_path_matches(self):
         path, details = apigateway_listener.get_resource_for_path('/foo/bar', {'/foo/{param1}': {}})
         self.assertEqual(path, '/foo/{param1}')
 
         path, details = apigateway_listener.get_resource_for_path('/foo/bar', {'/foo/bar': {}, '/foo/{param1}': {}})
         self.assertEqual(path, '/foo/bar')
+
+        path, details = apigateway_listener.get_resource_for_path('/foo/bar/baz', {'/foo/bar': {}, '/foo/{proxy+}': {}})
+        self.assertEqual(path, '/foo/{proxy+}')
 
         result = apigateway_listener.get_resource_for_path('/foo/bar', {'/foo/bar1': {}, '/foo/bar2': {}})
         self.assertEqual(result, None)

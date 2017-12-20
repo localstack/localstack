@@ -113,7 +113,10 @@ def extract_path_params(path, extracted_path):
     for param in path_params_list:
         path_param_name = param[1][1:-1].encode('utf-8')
         path_param_position = param[0]
-        path_params[path_param_name] = tokenized_path[path_param_position]
+        if path_param_name.endswith(b'+'):
+            path_params[path_param_name] = '/'.join(tokenized_path[path_param_position:])
+        else:
+            path_params[path_param_name] = tokenized_path[path_param_position]
     path_params = common.json_safe(path_params)
     return path_params
 
@@ -121,7 +124,8 @@ def extract_path_params(path, extracted_path):
 def get_resource_for_path(path, path_map):
     matches = []
     for api_path, details in path_map.items():
-        api_path_regex = re.sub(r'\{[^\}]+\}', '[^/]+', api_path)
+        api_path_regex = re.sub(r'\{[^\+]+\+\}', '[^\?#]+', api_path)
+        api_path_regex = re.sub(r'\{[^\}]+\}', '[^/]+', api_path_regex)
         if re.match(r'^%s$' % api_path_regex, path):
             matches.append((api_path, details))
     if not matches:
