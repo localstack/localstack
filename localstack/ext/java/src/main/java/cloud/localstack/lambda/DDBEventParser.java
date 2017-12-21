@@ -1,14 +1,12 @@
 package cloud.localstack.lambda;
 
 import cloud.localstack.LambdaExecutor;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.Identity;
-import com.amazonaws.services.dynamodbv2.model.OperationType;
-import com.amazonaws.services.dynamodbv2.model.StreamRecord;
+import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 public class DDBEventParser extends LambdaExecutor {
@@ -57,89 +55,77 @@ public class DDBEventParser extends LambdaExecutor {
         if(map == null) {
             return null;
         } else {
-            LinkedHashMap result = new LinkedHashMap();
-            Iterator var2 = map.entrySet().iterator();
-
-            while(var2.hasNext()) {
-                Map.Entry entry = (Map.Entry)var2.next();
-                result.put(entry.getKey(), toAttributeValue(entry.getValue()));
-            }
+            LinkedHashMap<String, AttributeValue> result = new LinkedHashMap<>();
+            map.entrySet().stream().forEach(entry ->
+                    result.put(entry.getKey(),toAttributeValue(entry.getValue()))
+            );
 
             return result;
         }
     }
 
-
+    /**
+     * Reads a previously created Map of Maps in cloud.localstack.LambdaExecutor into Attribute Value
+     * @param value the object which is expected to be Map<String,Object>
+     * @return parsed AttributeValue
+     */
     public static AttributeValue toAttributeValue(Object value) {
 
         AttributeValue result = new AttributeValue();
 
-        if(value instanceof Map){
-            Map.Entry entry = (Map.Entry)((Map) value).entrySet().iterator().next();
-            String key = (String)entry.getKey();
-          if(key.equals("M")) {
+        if(value instanceof Map) {
+            Map.Entry<String,Object> entry = ((Map<String,Object>) value).entrySet().iterator().next();
+            String key = entry.getKey();
 
-              Map in2 = (Map)entry.getValue();
-              if(in2.size() > 0) {
-                  Iterator out2 = in2.entrySet().iterator();
-
-                  while(out2.hasNext()) {
-                      Map.Entry e2 = (Map.Entry)out2.next();
-                      result.addMEntry((String)e2.getKey(), toAttributeValue(e2.getValue()));
-                  }
-              } else {
-                  result.setM(new LinkedHashMap());
-              }
-          }
-          else if(key.equals("SS")) {
-               List in = (List)entry.getValue();
-               result.setSS(in);
-          }
-          else if(key.equals("BS")) {
-              List in = (List) entry.getValue();
-              Set<ByteBuffer> out = new HashSet<>();
-              Iterator outIt = in.iterator();
-              while(outIt.hasNext()) {
-                  byte[] buf1 = outIt.next().toString().getBytes();
-                  out.add(ByteBuffer.wrap(buf1));
-              }
-              result.setBS(out);
-          }
-          else if(key.equals("NS")) {
-              List in1 = (List)entry.getValue();
-              ArrayList out1 = new ArrayList();
-              Iterator e1 = in1.iterator();
-              while(e1.hasNext()) {
-                  String v1 =  e1.next().toString();
-                  out1.add(v1);
-              }
-              result.setNS(out1);
-          } else if(key.equals("L")) {
-              List in1 = (List)entry.getValue();
-              ArrayList out1 = new ArrayList();
-              Iterator e1 = in1.iterator();
-              while(e1.hasNext()) {
-                  Object v1 = e1.next();
-                  out1.add(toAttributeValue(v1));
-              }
-              result.setL(out1);
-          } else if(key.equals("NULL")) {
-              result.withNULL(Boolean.parseBoolean(entry.getValue().toString()));
-          }
-          else if(key.equals("BOOL")) {
-              result.withBOOL(Boolean.parseBoolean(entry.getValue().toString()));
-          } else if(key.equals("S")) {
-             result.withS((String)entry.getValue());
-          } else if(key.equals("N")) {
-             String stringValue = entry.getValue().toString();
-             result.withN(stringValue);
-          } else if(key.equals("B")) {
-             result.withBS(ByteBuffer.wrap(entry.getValue().toString().getBytes()));
-          } else {
-              result.setM(new LinkedHashMap());
-          }
+            switch (key) {
+                case "M":
+                    Map<String, Object> in1 = (Map<String,Object>) entry.getValue();
+                    result.setM(new LinkedHashMap<>());
+                    in1.entrySet().stream().forEach(mapEntry ->
+                        result.addMEntry(mapEntry.getKey(), toAttributeValue(mapEntry.getValue()))
+                    );
+                    break;
+                case "SS":
+                    result.setSS((List<String>) entry.getValue());
+                    break;
+                case "BS":
+                    List<String> in2 = (List<String>) entry.getValue();
+                    result.setBS(in2.stream()
+                            .map(element -> ByteBuffer.wrap(element.getBytes()))
+                            .collect(Collectors.toList()));
+                    break;
+                case "NS":
+                    List<Object> in3 = (List<Object>) entry.getValue();
+                    result.setNS(in3.stream().map(Object::toString).collect(Collectors.toList()));
+                    break;
+                case "L":
+                    List<Object> in4 =(List<Object>) entry.getValue();
+                    result.setL(in4.stream()
+                            .map(el -> toAttributeValue(el))
+                            .collect(Collectors.toList())
+                    );
+                    break;
+                case "NULL":
+                    result.withNULL(Boolean.parseBoolean(entry.getValue().toString()));
+                    break;
+                case "BOOL":
+                    result.withBOOL(Boolean.parseBoolean(entry.getValue().toString()));
+                    break;
+                case "S":
+                    result.withS((String) entry.getValue());
+                    break;
+                case "N":
+                    String stringValue = entry.getValue().toString();
+                    result.withN(stringValue);
+                    break;
+                case "B":
+                    result.withBS(ByteBuffer.wrap(entry.getValue().toString().getBytes()));
+                    break;
+                default:
+                    result.setM(new LinkedHashMap<>());
+                    break;
+            }
         }
-
         return result;
     }
 
