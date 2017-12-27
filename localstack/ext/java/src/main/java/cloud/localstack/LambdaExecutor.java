@@ -1,6 +1,13 @@
 package cloud.localstack;
 
+import cloud.localstack.lambda.DDBEventParser;
+import com.amazonaws.services.dynamodbv2.document.internal.InternalUtils;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.Identity;
+import com.amazonaws.services.dynamodbv2.model.OperationType;
+import com.amazonaws.services.dynamodbv2.model.StreamRecord;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -81,6 +88,10 @@ public class LambdaExecutor {
 					snsRecord.setTimestamp(new DateTime());
 					r.setSns(snsRecord);
 				}
+			} else if (records.stream().filter(record -> record.containsKey("dynamodb")).count() > 0) {
+
+				inputObject = DDBEventParser.parse(records);
+
 			}
 			//TODO: Support other events (S3, SQS...)
 		}
@@ -105,7 +116,7 @@ public class LambdaExecutor {
 		return clazz.getConstructor().newInstance();
 	}
 
-	private static <T> T get(Map<String,T> map, String key) {
+	public static <T> T get(Map<String,T> map, String key) {
 		T result = map.get(key);
 		if(result != null) {
 			return result;
@@ -118,7 +129,7 @@ public class LambdaExecutor {
 		return map.get(key.toLowerCase());
 	}
 
-	private static String readFile(String file) throws Exception {
+	public static String readFile(String file) throws Exception {
 		if(!file.startsWith("/")) {
 			file = System.getProperty("user.dir") + "/" + file;
 		}

@@ -1,0 +1,66 @@
+{
+  "Records": [
+    {
+      "eventID": "1",
+      "eventVersion": "1.0",
+      "dynamodb": {
+        "Keys": {
+          "id": {
+            "S": "uniqueID"
+          }
+        },
+        "OldImage": {},
+        "SizeBytes": 1369,
+        "StreamViewType": "NEW_AND_OLD_IMAGES",
+        "NewImage": {
+          "status": {
+            "M": {
+              "subType": {
+                "S": "LAPSED"
+              },
+              "type": {
+                "S": "SUBSCRIBED"
+              }
+            }
+          },
+          "startDate": {
+            "S": "2012-04-23T18:25:43.511Z"
+          },
+          "devices": {
+            "SS": [
+              "deviceID"
+            ]
+          },
+          "numbers": {
+            "NS": [1,3,5,6]
+          },
+          "number": {
+            "N": 1
+          },
+          "list": {
+            "L": [
+              {
+                "M": {
+                  "product": {
+                    "M": {
+                      "sku": {
+                        "S": "123456"
+                      },
+                      "partner": {
+                        "S": "partner"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "awsRegion": "us-east-1",
+      "eventName": "INSERT",
+      "eventSourceARN": "arn:aws:dynamodb:us-east-1:000000000000:table/test-table",
+      "eventSource": "aws:dynamodb"
+    }
+  ]
+}
