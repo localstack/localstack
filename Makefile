@@ -11,9 +11,9 @@ usage:             ## Show this help
 install:           ## Install dependencies in virtualenv
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
-		($(VENV_RUN) && $(PIP_CMD) install --upgrade pip) && \
-		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install six==1.10.0 ; $(PIP_CMD) -q install -r requirements.txt) && \
-		$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py testlibs)
+		($(VENV_RUN) && $(PIP_CMD) install --upgrade -q pip) && \
+		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install -q six==1.10.0 ; $(PIP_CMD) -q install -r requirements.txt) && \
+		($(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py testlibs))
 
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))

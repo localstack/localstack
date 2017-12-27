@@ -60,9 +60,13 @@ class ProxyListenerSNS(ProxyListener):
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
                     if subscriber['Protocol'] == 'sqs':
-                        queue_name = subscriber['Endpoint'].split(':')[5]
-                        queue_url = subscriber.get('sqs_queue_url')
-                        if not queue_url:
+                        endpoint = subscriber['Endpoint']
+                        if 'sqs_queue_url' in subscriber:
+                            queue_url = subscriber.get('sqs_queue_url')
+                        elif '://' in endpoint:
+                            queue_url = endpoint
+                        else:
+                            queue_name = endpoint.split(':')[5]
                             queue_url = aws_stack.get_sqs_queue_url(queue_name)
                             subscriber['sqs_queue_url'] = queue_url
                         sqs_client.send_message(QueueUrl=queue_url,
