@@ -9,6 +9,9 @@ import org.junit.Test;
 
 import java.util.*;
 
+import static cloud.localstack.LambdaExecutor.readFile;
+import static com.sun.javafx.fxml.expression.Expression.get;
+
 
 public class DDBEventMappingTest {
 
@@ -16,13 +19,13 @@ public class DDBEventMappingTest {
 
     @Test
     public void testParseDDBEvent() throws Exception {
-        String fileContent = LambdaExecutor.readFile(fileName);
+        String fileContent = readFile(fileName);
 
         ObjectMapper reader = new ObjectMapper();
         @SuppressWarnings("deprecation")
         Map<String,Object> map = reader.reader(Map.class).readValue(fileContent);
 
-        List<Map<String,Object>> records = (List<Map<String, Object>>) LambdaExecutor.get(map, "Records");
+        List<Map<String,Object>> records = (List<Map<String, Object>>) get(map, "Records");
 
         DynamodbEvent ddbEvent = DDBEventParser.parse(records);
 

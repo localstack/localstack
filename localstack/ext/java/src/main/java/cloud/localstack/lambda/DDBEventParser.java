@@ -1,6 +1,5 @@
 package cloud.localstack.lambda;
 
-import cloud.localstack.LambdaExecutor;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 
@@ -8,8 +7,10 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.sun.javafx.fxml.expression.Expression.get;
 
-public class DDBEventParser extends LambdaExecutor {
+
+public class DDBEventParser {
 
     public static DynamodbEvent parse(List<Map<String, Object>> records) {
 
@@ -37,7 +38,7 @@ public class DDBEventParser extends LambdaExecutor {
             Date date = (Date) get(ddbMap, "approximateCreationDateTime");
             streamRecord.setApproximateCreationDateTime(date != null ? date : new Date());
 
-            streamRecord.setSequenceNumber((String) get(ddbMap, "SequenceNumber"));
+            streamRecord.setSequenceNumber(UUID.randomUUID().toString());
 
             streamRecord.setKeys(fromSimpleMap((Map<String, Object>) get(ddbMap, "Keys")));
             streamRecord.setNewImage(fromSimpleMap((Map<String, Object>) get(ddbMap, "NewImage")));
