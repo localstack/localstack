@@ -33,6 +33,7 @@ env:
 install:
   - make reinstall-p3
   - make init
+  - make prepare-java-tests-if-changed
 
 script:
   - set -e # fail fast
