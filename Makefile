@@ -12,8 +12,8 @@ usage:             ## Show this help
 install:           ## Install dependencies in virtualenv
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
-		($(VENV_RUN) && $(PIP_CMD) install --upgrade pip) && \
-		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install six==1.10.0 ; $(PIP_CMD) -q install -r requirements.txt) && \
+		($(VENV_RUN) && $(PIP_CMD) -q install --upgrade pip) && \
+		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install -q six==1.10.0 ; $(PIP_CMD) -q install -r requirements.txt) && \
 		$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py testlibs)
 
 install-web:       ## Install npm dependencies for dashboard Web UI
@@ -94,7 +94,8 @@ test-java:         ## Run tests for Java/JUnit compatibility
 prepare-java-tests-if-changed:
 	@(! (git log -n 1 --no-merges --raw | grep localstack/ext/java/)) || (\
 		make build-maven && cp $$(ls localstack/ext/java/target/localstack-utils*fat.jar) localstack/infra/localstack-utils-fat.jar && \
-			cp $$(ls localstack/ext/java/target/localstack-utils*tests.jar) localstack/ext/java/target/localstack-utils-tests.jar)
+			cp $$(ls localstack/ext/java/target/localstack-utils*tests.jar) localstack/infra/localstack-utils-tests.jar && \
+			(cd localstack/ext/java; mvn -q clean))
 
 test-java-if-changed:
 	@(! (git log -n 1 --no-merges --raw | grep localstack/ext/java/)) || make test-java
