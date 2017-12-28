@@ -22,6 +22,7 @@ TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
+TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 TEST_LAMBDA_JAR_URL = ('https://repo.maven.apache.org/maven2/cloud/localstack/' +
@@ -120,6 +121,15 @@ def test_lambda_runtimes():
     assert result['StatusCode'] == 200
     result_data = result['Payload'].read()
     assert to_str(result_data).strip() == '{}'
+
+    # deploy and invoke lambda - Java with serializable input object
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE, zip_file=zip_file,
+        runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.SerializedInputLambdaHandler')
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
+                                  Payload=b'{"bucket": "test_bucket", "key": "test_key"}')
+    assert result['StatusCode'] == 200
+    result_data = result['Payload'].read()
+    assert json.loads(to_str(result_data)) == {'validated': True, 'bucket': 'test_bucket', 'key': 'test_key'}
 
     if use_docker():
         # deploy and invoke lambda - Node.js
