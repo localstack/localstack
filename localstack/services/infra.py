@@ -369,6 +369,7 @@ def start_infra_in_docker():
     cmd = os.environ.get('CMD', '')
     image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
     service_ports = config.SERVICE_PORTS
+    force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
 
     # construct port mappings
     ports_list = sorted(service_ports.values())
@@ -409,7 +410,7 @@ def start_infra_in_docker():
         data_dir_mount = '-v "%s:%s" ' % (data_dir, container_data_dir)
         env_str += '-e DATA_DIR="%s" ' % container_data_dir
 
-    interactive = '-it ' if not in_ci() else ''
+    interactive = '' if force_noninteractive or in_ci() else '-it '
 
     # append space if parameter is set
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
