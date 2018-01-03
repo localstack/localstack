@@ -10,8 +10,7 @@ import org.junit.Test;
 import java.util.*;
 
 import static cloud.localstack.LambdaExecutor.readFile;
-import static com.sun.javafx.fxml.expression.Expression.get;
-
+import static cloud.localstack.LambdaExecutor.get;
 
 public class DDBEventMappingTest {
 

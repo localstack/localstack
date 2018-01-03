@@ -7,8 +7,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.sun.javafx.fxml.expression.Expression.get;
-
+import static cloud.localstack.LambdaExecutor.get;
 
 public class DDBEventParser {
 
