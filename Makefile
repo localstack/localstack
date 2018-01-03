@@ -3,6 +3,7 @@ IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 VENV_DIR ?= .venv
 VENV_RUN = . $(VENV_DIR)/bin/activate
+ADDITIONAL_MVN_ARGS ?= -DskipTests -q
 PIP_CMD ?= pip
 
 usage:             ## Show this help
@@ -11,8 +12,8 @@ usage:             ## Show this help
 install:           ## Install dependencies in virtualenv
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
-		($(VENV_RUN) && $(PIP_CMD) install --upgrade pip) && \
-		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install six==1.10.0 ; $(PIP_CMD) -q install -r requirements.txt) && \
+		($(VENV_RUN) && $(PIP_CMD) -q install --upgrade pip) && \
+		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install -q six==1.10.0 ; $(PIP_CMD) -q install -r requirements.txt) && \
 		$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py testlibs)
 
 install-web:       ## Install npm dependencies for dashboard Web UI
@@ -22,8 +23,11 @@ publish:           ## Publish the library to the central PyPi repository
 	# build and upload archive
 	($(VENV_RUN) && ./setup.py sdist upload)
 
+build-maven:
+	cd localstack/ext/java/; mvn -Pfatjar $(ADDITIONAL_MVN_ARGS) clean javadoc:jar source:jar package $(ADDITIONAL_MVN_TARGETS)
+
 publish-maven:     ## Publish artifacts to Maven Central
-	(cd localstack/ext/java/; mvn -Pfatjar clean javadoc:jar source:jar package deploy)
+	ADDITIONAL_MVN_TARGETS=deploy ADDITIONAL_MVN_ARGS=" " make build-maven
 
 coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
@@ -86,6 +90,12 @@ test:              ## Run automated tests
 
 test-java:         ## Run tests for Java/JUnit compatibility
 	cd localstack/ext/java; mvn -q test && USE_SSL=1 mvn -q test
+
+prepare-java-tests-if-changed:
+	@(! (git log -n 1 --no-merges --raw | grep localstack/ext/java/)) || (\
+		make build-maven && cp $$(ls localstack/ext/java/target/localstack-utils*fat.jar) localstack/infra/localstack-utils-fat.jar && \
+			cp $$(ls localstack/ext/java/target/localstack-utils*tests.jar) localstack/infra/localstack-utils-tests.jar && \
+			(cd localstack/ext/java; mvn -q clean))
 
 test-java-if-changed:
 	@(! (git log -n 1 --no-merges --raw | grep localstack/ext/java/)) || make test-java

@@ -24,7 +24,6 @@ addons:
   apt:
     packages:
     - oracle-java8-installer
-    - oracle-java8-set-default
 
 env:
   global:
@@ -33,6 +32,7 @@ env:
 install:
   - make reinstall-p3
   - make init
+  - make prepare-java-tests-if-changed
 
 script:
   - set -e # fail fast

@@ -102,6 +102,7 @@ def install_amazon_kinesis_client_libs():
 def install_lambda_java_libs():
     # install LocalStack "fat" JAR file (contains all dependencies)
     if not os.path.exists(INSTALL_PATH_LOCALSTACK_FAT_JAR):
+        LOGGER.info('Downloading and installing LocalStack Java libraries. This may take some time.')
         download(URL_LOCALSTACK_FAT_JAR, INSTALL_PATH_LOCALSTACK_FAT_JAR)
 
 

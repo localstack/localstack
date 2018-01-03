@@ -85,6 +85,9 @@ RUN make install-web
 ADD localstack/package.json localstack/package.json
 RUN cd localstack && npm install
 
+# install libs that require dependencies cleaned up below (e.g., gcc)
+RUN (virtualenv .venv && source .venv/bin/activate && pip install cryptography)
+
 # clean up (layers are later squashed into a single one)
 RUN rm -rf /root/.npm; \
   apk del --purge autoconf automake build-base linux-headers openssl-dev python-dev

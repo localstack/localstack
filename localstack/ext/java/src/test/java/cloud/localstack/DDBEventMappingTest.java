@@ -12,7 +12,6 @@ import java.util.*;
 import static cloud.localstack.LambdaExecutor.readFile;
 import static cloud.localstack.LambdaExecutor.get;
 
-
 public class DDBEventMappingTest {
 
     static String fileName = "src/test/resources/DDBEventLambda.json";
