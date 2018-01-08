@@ -75,7 +75,9 @@ def deserialize_event(event):
     ddb = event.get('dynamodb')
     if ddb:
         ddb_deserializer = TypeDeserializer()
-        return ddb_deserializer.deserialize({'M': ddb.get('NewImage')})
+        result = ddb_deserializer.deserialize({'M': ddb.get('NewImage')})
+        result['__action_type'] = event.get('eventName')
+        return result
     kinesis = event.get('kinesis')
     if kinesis:
         assert kinesis['sequenceNumber']

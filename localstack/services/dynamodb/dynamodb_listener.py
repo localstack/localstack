@@ -2,6 +2,7 @@ import re
 import json
 import random
 import logging
+import threading
 from binascii import crc32
 from requests.models import Response
 from localstack import config
@@ -25,11 +26,20 @@ LOGGER = logging.getLogger(__name__)
 
 class ProxyListenerDynamoDB(ProxyListener):
 
+    thread_local = threading.local()
+
     def forward_request(self, method, path, data, headers):
         data = json.loads(to_str(data))
 
         if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
             return error_response_throughput()
+
+        action = headers.get('X-Amz-Target')
+        if action in ('%s.PutItem' % ACTION_PREFIX, '%s.UpdateItem' % ACTION_PREFIX):
+            # find an existing item and store it in a thread-local, so we can access it in return_response,
+            # in order to determine whether an item already existed (MODIFY) or not (INSERT)
+            ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)
+
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -64,20 +74,14 @@ class ProxyListenerDynamoDB(ProxyListener):
         records = [record]
 
         if action == '%s.UpdateItem' % ACTION_PREFIX:
-            req = {'TableName': data['TableName'], 'Key': data['Key']}
-            new_item = aws_stack.dynamodb_get_item_raw(req)
-            if 'Item' not in new_item:
-                if 'message' in new_item:
-                    ddb_client = aws_stack.connect_to_service('dynamodb')
-                    table_names = ddb_client.list_tables()['TableNames']
-                    msg = ('Unable to get item from DynamoDB (existing tables: %s): %s' %
-                        (table_names, new_item['message']))
-                    LOGGER.warning(msg)
+            updated_item = find_existing_item(data)
+            if not updated_item:
                 return
             record['eventName'] = 'MODIFY'
             record['dynamodb']['Keys'] = data['Key']
-            record['dynamodb']['NewImage'] = new_item['Item']
-            record['dynamodb']['SizeBytes'] = len(json.dumps(new_item['Item']))
+            record['dynamodb']['OldImage'] = ProxyListenerDynamoDB.thread_local.existing_item
+            record['dynamodb']['NewImage'] = updated_item
+            record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             records = []
             for table_name, requests in data['RequestItems'].items():
@@ -94,7 +98,9 @@ class ProxyListenerDynamoDB(ProxyListener):
                         new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                         records.append(new_record)
         elif action == '%s.PutItem' % ACTION_PREFIX:
-            record['eventName'] = 'INSERT'
+            existing_item = ProxyListenerDynamoDB.thread_local.existing_item
+            ProxyListenerDynamoDB.thread_local.existing_item = None
+            record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
             keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
             if isinstance(keys, Response):
                 return keys
@@ -143,6 +149,39 @@ class ProxyListenerDynamoDB(ProxyListener):
 
 # instantiate listener
 UPDATE_DYNAMODB = ProxyListenerDynamoDB()
+
+
+def find_existing_item(put_item):
+    table_name = put_item['TableName']
+    ddb_client = aws_stack.connect_to_service('dynamodb')
+
+    if 'Key' in put_item:
+        key_attribute = list(put_item['Key'].keys())[0]
+        key_value = put_item['Key'][key_attribute]
+    else:
+        schema = ddb_client.describe_table(TableName=table_name)
+        schema = schema['Table']['KeySchema']
+        key_attribute = None
+        for key in schema:
+            if key['KeyType'] == 'HASH':
+                key_attribute = key['AttributeName']
+        if not key_attribute:
+            return
+        key_value = put_item['Item'][key_attribute]
+
+    if isinstance(key_value, dict):
+        # extract <value> from {"<datatype>": <value>} string
+        key_value = list(key_value.values())[0]
+    req = {'TableName': table_name, 'Key': {key_attribute: key_value}}
+    existing_item = aws_stack.dynamodb_get_item_raw(req)
+    if 'Item' not in existing_item:
+        if 'message' in existing_item:
+            table_names = ddb_client.list_tables()['TableNames']
+            msg = ('Unable to get item from DynamoDB (existing tables: %s): %s' %
+                (table_names, existing_item['message']))
+            LOGGER.warning(msg)
+        return
+    return existing_item.get('Item')
 
 
 def fix_headers_for_updated_response(response):

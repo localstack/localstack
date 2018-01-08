@@ -3,6 +3,7 @@
 import json
 import time
 import logging
+import base64
 from datetime import datetime, timedelta
 from nose.tools import assert_raises
 from localstack.utils import testutil
@@ -121,18 +122,27 @@ def test_kinesis_lambda_sns_ddb_streams():
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM,
         zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
 
-    # put items to table
+    # set number of items to update/put to table
     num_events_ddb = 15
-    num_put_items = 7
+    num_put_new_items = 5
+    num_put_existing_items = 2
     num_batch_items = 3
-    num_updates_ddb = num_events_ddb - num_put_items - num_batch_items
+    num_updates_ddb = num_events_ddb - num_put_new_items - num_put_existing_items - num_batch_items
+
     LOGGER.info('Putting %s items to table...' % num_events_ddb)
     table = dynamodb.Table(TEST_TABLE_NAME)
-    for i in range(0, num_put_items):
+    for i in range(0, num_put_new_items):
         table.put_item(Item={
             PARTITION_KEY: 'testId%s' % i,
             'data': 'foobar123'
         })
+    # Put items with an already existing ID (fix https://github.com/localstack/localstack/issues/522)
+    for i in range(0, num_put_existing_items):
+        table.put_item(Item={
+            PARTITION_KEY: 'testId%s' % i,
+            'data': 'foobar123_put_existing'
+        })
+
     # batch write some items containing non-ASCII characters
     dynamodb.batch_write_item(RequestItems={TEST_TABLE_NAME: [
         {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 ✓'}}},
@@ -187,9 +197,16 @@ def test_kinesis_lambda_sns_ddb_streams():
             LOGGER.warning(('DynamoDB and Kinesis updates retrieved ' +
                 '(actual/expected): %s/%s') % (len(EVENTS), num_events))
         assert len(EVENTS) == num_events
+        event_items = [json.loads(base64.b64decode(e['data'])) for e in EVENTS]
+        inserts = [e for e in event_items if e.get('__action_type') == 'INSERT']
+        modifies = [e for e in event_items if e.get('__action_type') == 'MODIFY']
+        assert len(inserts) == num_put_new_items + num_batch_items
+        assert len(modifies) == num_put_existing_items + num_updates_ddb
 
     # this can take a long time in CI, make sure we give it enough time/retries
     retry(check_events, retries=7, sleep=3)
+
+    # make sure the we have the right amount of INSERT/MODIFY event types
 
     # check cloudwatch notifications
     stats1 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM)

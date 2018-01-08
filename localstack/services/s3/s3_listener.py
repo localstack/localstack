@@ -3,8 +3,6 @@ import logging
 import json
 import uuid
 import xmltodict
-import cgi
-import email.parser
 import collections
 import six
 from six import iteritems
@@ -17,6 +15,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
+from localstack.services.s3 import multipart_content
 
 # mappings for S3 bucket notifications
 S3_NOTIFICATIONS = {}
@@ -257,105 +256,6 @@ def strip_chunk_signatures(data):
     return data_new
 
 
-def _iter_multipart_parts(some_bytes, boundary):
-    """ Generate a stream of dicts and bytes for each message part.
-
-        Content-Disposition is used as a header for a multipart body:
-        https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition
-    """
-    try:
-        parse_data = email.parser.BytesHeaderParser().parsebytes
-    except AttributeError:
-        # Fall back in case of Python 2.x
-        parse_data = email.parser.HeaderParser().parsestr
-
-    while True:
-        try:
-            part, some_bytes = some_bytes.split(boundary, 1)
-        except ValueError:
-            # Ran off the end, stop.
-            break
-
-        if b'\r\n\r\n' not in part:
-            # Real parts have headers and a value separated by '\r\n'.
-            continue
-
-        part_head, _ = part.split(b'\r\n\r\n', 1)
-        head_parsed = parse_data(part_head.lstrip(b'\r\n'))
-
-        if 'Content-Disposition' in head_parsed:
-            _, params = cgi.parse_header(head_parsed['Content-Disposition'])
-            yield params, part
-
-
-def expand_multipart_filename(data, headers):
-    """ Replace instance of '${filename}' in key with given file name.
-
-        Data is given as multipart form submission bytes, and file name is
-        replace according to Amazon S3 documentation for Post uploads:
-        http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
-    """
-    _, params = cgi.parse_header(headers.get('Content-Type', ''))
-
-    if 'boundary' not in params:
-        return data
-
-    boundary = params['boundary'].encode('ascii')
-    data_bytes = to_bytes(data)
-
-    filename = None
-
-    for (disposition, _) in _iter_multipart_parts(data_bytes, boundary):
-        if disposition.get('name') == 'file' and 'filename' in disposition:
-            filename = disposition['filename']
-            break
-
-    if filename is None:
-        # Found nothing, return unaltered
-        return data
-
-    for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
-        if disposition.get('name') == 'key' and b'${filename}' in part:
-            search = boundary + part
-            replace = boundary + part.replace(b'${filename}', filename.encode('utf8'))
-
-            if search in data_bytes:
-                return data_bytes.replace(search, replace)
-
-    return data
-
-
-def find_multipart_redirect_url(data, headers):
-    """ Return object key and redirect URL if they can be found.
-
-        Data is given as multipart form submission bytes, and redirect is found
-        in the success_action_redirect field according to Amazon S3
-        documentation for Post uploads:
-        http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
-    """
-    _, params = cgi.parse_header(headers.get('Content-Type', ''))
-    key, redirect_url = None, None
-
-    if 'boundary' not in params:
-        return key, redirect_url
-
-    boundary = params['boundary'].encode('ascii')
-    data_bytes = to_bytes(data)
-
-    for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
-        if disposition.get('name') == 'key':
-            _, value = part.split(b'\r\n\r\n', 1)
-            key = value.rstrip(b'\r\n--').decode('utf8')
-
-    if key:
-        for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
-            if disposition.get('name') == 'success_action_redirect':
-                _, value = part.split(b'\r\n\r\n', 1)
-                redirect_url = value.rstrip(b'\r\n--').decode('utf8')
-
-    return key, redirect_url
-
-
 def expand_redirect_url(starting_url, key, bucket):
     """ Add key and bucket parameters to starting URL query string. """
     parsed = urlparse.urlparse(starting_url)
@@ -386,7 +286,7 @@ class ProxyListenerS3(ProxyListener):
         # key, which should be replaced with an actual file name before storing.
         if method == 'POST':
             original_data = modified_data or data
-            expanded_data = expand_multipart_filename(original_data, headers)
+            expanded_data = multipart_content.expand_multipart_filename(original_data, headers)
             if expanded_data is not original_data:
                 modified_data = expanded_data
 
@@ -475,7 +375,7 @@ class ProxyListenerS3(ProxyListener):
         # POST requests to S3 may include a success_action_redirect field,
         # which should be used to redirect a client to a new location.
         if method == 'POST':
-            key, redirect_url = find_multipart_redirect_url(data, headers)
+            key, redirect_url = multipart_content.find_multipart_redirect_url(data, headers)
             if key and redirect_url:
                 response.status_code = 303
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
