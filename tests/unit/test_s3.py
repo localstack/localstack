@@ -1,5 +1,5 @@
 import unittest
-from localstack.services.s3 import s3_listener
+from localstack.services.s3 import s3_listener, multipart_content
 
 
 class S3ListenerTest (unittest.TestCase):
@@ -29,17 +29,17 @@ class S3ListenerTest (unittest.TestCase):
                  b'redirect"\r\n\r\nhttp://127.0.0.1:5000/?id=20170826T181315.679087009Z\r\n--------------------------'
                  b'3c48c744237517ac--\r\n')
 
-        key1, url1 = s3_listener.find_multipart_redirect_url(data1, headers)
+        key1, url1 = multipart_content.find_multipart_redirect_url(data1, headers)
 
         self.assertEqual(key1, 'uploads/20170826T181315.679087009Z/upload/pixel.png')
         self.assertEqual(url1, 'http://127.0.0.1:5000/?id=20170826T181315.679087009Z')
 
-        key2, url2 = s3_listener.find_multipart_redirect_url(data2, headers)
+        key2, url2 = multipart_content.find_multipart_redirect_url(data2, headers)
 
         self.assertEqual(key2, 'uploads/20170826T181315.679087009Z/upload/pixel.png')
         self.assertIsNone(url2, 'Should not get a redirect URL without success_action_redirect')
 
-        key3, url3 = s3_listener.find_multipart_redirect_url(data3, headers)
+        key3, url3 = multipart_content.find_multipart_redirect_url(data3, headers)
 
         self.assertIsNone(key3, 'Should not get a key without provided key')
         self.assertIsNone(url3, 'Should not get a redirect URL without provided key')
@@ -88,15 +88,15 @@ class S3ListenerTest (unittest.TestCase):
                  u'osition: form-data; name="file"; filename="pixel.txt"\r\nContent-Type: text/plain\r\n\r\nHello World'
                  u'\r\n--------------------------3c48c744237517ac--\r\n')
 
-        expanded1 = s3_listener.expand_multipart_filename(data1, headers)
+        expanded1 = multipart_content.expand_multipart_filename(data1, headers)
         self.assertIsNot(expanded1, data1, 'Should have changed content of data with filename to interpolate')
         self.assertIn(b'uploads/20170826T181315.679087009Z/upload/pixel.png', expanded1,
             'Should see the interpolated filename')
 
-        expanded2 = s3_listener.expand_multipart_filename(data2, headers)
+        expanded2 = multipart_content.expand_multipart_filename(data2, headers)
         self.assertIs(expanded2, data2, 'Should not have changed content of data with no filename to interpolate')
 
-        expanded3 = s3_listener.expand_multipart_filename(data3, headers)
+        expanded3 = multipart_content.expand_multipart_filename(data3, headers)
         self.assertIsNot(expanded3, data3, 'Should have changed content of string data with filename to interpolate')
         self.assertIn(b'uploads/20170826T181315.679087009Z/upload/pixel.txt', expanded3,
             'Should see the interpolated filename')

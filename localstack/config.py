@@ -3,6 +3,7 @@ import os
 import socket
 import subprocess
 import tempfile
+import logging
 from os.path import expanduser
 from six import iteritems
 from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI
@@ -162,6 +163,10 @@ def service_port(service_key):
 # initialize config values
 populate_configs()
 
+# set log level
+if os.environ.get('DEBUG', '').lower() in ('1', 'true'):
+    logging.getLogger('').setLevel(logging.DEBUG)
+    logging.getLogger('localstack').setLevel(logging.DEBUG)
 
 # set URL pattern of inbound API gateway
 INBOUND_GATEWAY_URL_PATTERN = ('%s/restapis/{api_id}/{stage_name}/%s{path}' %

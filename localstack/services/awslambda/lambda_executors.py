@@ -127,7 +127,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.debug('Running lambda cmd: %s' % cmd)
         result, log_output = self.run_lambda_executor(cmd, environment, async)
-        LOG.debug('Lambda result / log output:\n%s\n%s' % (result, log_output))
+        LOG.debug('Lambda result / log output:\n%s\n>%s' % (result.strip(), log_output.strip().replace('\n', '\n> ')))
         return result, log_output
 
 
@@ -476,7 +476,7 @@ class LambdaExecutorLocal(LambdaExecutor):
             if 'Sns' in event['Records'][0]:
                 async = True
         result, log_output = self.run_lambda_executor(cmd, async=async)
-        LOG.info('Lambda output: %s' % log_output.replace('\n', '\n> '))
+        LOG.debug('Lambda result / log output:\n%s\n> %s' % (result.strip(), log_output.strip().replace('\n', '\n> ')))
         return result, log_output
 
 
