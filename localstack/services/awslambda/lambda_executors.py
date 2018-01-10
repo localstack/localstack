@@ -475,6 +475,8 @@ class LambdaExecutorLocal(LambdaExecutor):
             # TODO: add more event supporting async lambda execution
             if 'Sns' in event['Records'][0]:
                 async = True
+            if 'dynamodb' in event['Records'][0]:
+                async = True
         result, log_output = self.run_lambda_executor(cmd, async=async)
         LOG.debug('Lambda result / log output:\n%s\n> %s' % (result.strip(), log_output.strip().replace('\n', '\n> ')))
         return result, log_output
