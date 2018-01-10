@@ -115,14 +115,18 @@ class ShellCommandThread (FuncThread):
                 if self.outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
                     for line in iter(self.process.stdout.readline, ''):
-                        if not (line and line.strip()) and self.is_killed():
-                            break
+                        if not (line and line.strip()):
+                            time.sleep(0.1)
+                            if self.is_killed():
+                                break
                         line = convert_line(line)
                         sys.stdout.write(line)
                         sys.stdout.flush()
                     for line in iter(self.process.stderr.readline, ''):
-                        if not (line and line.strip()) and self.is_killed():
-                            break
+                        if not (line and line.strip()):
+                            time.sleep(0.1)
+                            if self.is_killed():
+                                break
                         line = convert_line(line)
                         sys.stderr.write(line)
                         sys.stderr.flush()

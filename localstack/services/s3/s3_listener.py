@@ -177,7 +177,7 @@ def get_cors(bucket_name):
 
 def set_cors(bucket_name, cors):
     # TODO: check if bucket exists, otherwise return 404-like error
-    if isinstance(cors, six.string_types):
+    if not isinstance(cors, dict):
         cors = xmltodict.parse(cors)
     BUCKET_CORS[bucket_name] = cors
     response = Response()
@@ -423,6 +423,8 @@ class ProxyListenerS3(ProxyListener):
                 response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
                 if is_bytes:
                     response._content = to_bytes(response._content)
+            # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
+            if isinstance(response._content, (six.string_types, six.binary_type)):
                 response.headers['content-length'] = len(response._content)
 
 

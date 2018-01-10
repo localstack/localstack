@@ -55,6 +55,14 @@ def stack_exists(stack_name):
     return False
 
 
+def create_stack(req_data):
+    stack_name = req_data.get('StackName')[0]
+    if stack_exists(stack_name):
+        message = 'The resource with the name requested already exists.'
+        return error_response(message, error_type='AlreadyExists')
+    return True
+
+
 def create_change_set(req_data):
     cs_name = req_data.get('ChangeSetName')[0]
     change_set_uuid = uuid.uuid4()
@@ -134,6 +142,8 @@ class ProxyListenerCloudFormation(ProxyListener):
             action = req_data.get('Action')[0]
 
         if req_data:
+            if action == 'CreateStack':
+                return create_stack(req_data)
             if action == 'CreateChangeSet':
                 return create_change_set(req_data)
             elif action == 'DescribeChangeSet':
@@ -175,8 +185,8 @@ class ProxyListenerCloudFormation(ProxyListener):
                 if response.status_code >= 500:
                     # fix an error in moto where it fails with 500 if the stack does not exist
                     return error_response('Stack resource does not exist', code=404)
-            elif action == 'CreateStack' or action == 'UpdateStack':
-                if response.status_code >= 400 and response.status_code < 500:
+            elif action in ('CreateStack', 'UpdateStack'):
+                if response.status_code >= 400:
                     return response
                 # run the actual deployment
                 template = template_deployer.template_to_json(req_data.get('TemplateBody')[0])
