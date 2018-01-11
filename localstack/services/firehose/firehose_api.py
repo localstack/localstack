@@ -126,7 +126,9 @@ def create_stream(stream_name, s3_destination=None, elasticsearch_destination=No
     }
     DELIVERY_STREAMS[stream_name] = stream
     if elasticsearch_destination:
-        update_destination(stream_name=stream_name, destination_id=short_uid(), elasticsearch_update=elasticsearch_destination)
+        update_destination(stream_name=stream_name,
+            destination_id=short_uid(),
+            elasticsearch_update=elasticsearch_destination)
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
     return stream
@@ -174,7 +176,9 @@ def post_request():
         }
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
-        response = create_stream(stream_name, s3_destination=data.get('S3DestinationConfiguration'), elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'))
+        response = create_stream(stream_name,
+            s3_destination=data.get('S3DestinationConfiguration'),
+            elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'))
     elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = delete_stream(stream_name)
