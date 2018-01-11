@@ -7,12 +7,13 @@ import logging
 import base64
 import traceback
 from flask import Flask, jsonify, request
+from six import iteritems
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.aws import aws_responses
-from localstack.utils.aws.aws_stack import get_s3_client, firehose_stream_arn
-from six import iteritems
+from localstack.utils.aws.aws_stack import get_s3_client, firehose_stream_arn, connect_elasticsearch
+from boto3.dynamodb.types import TypeDeserializer
 
 APP_NAME = 'firehose_api'
 app = Flask(APP_NAME)
@@ -23,6 +24,9 @@ LOG = logging.getLogger(__name__)
 
 # maps stream names to details
 DELIVERY_STREAMS = {}
+
+# dynamodb deserializer
+deser = TypeDeserializer()
 
 
 def get_delivery_stream_names():
@@ -39,6 +43,33 @@ def put_record(stream_name, record):
 def put_records(stream_name, records):
     stream = get_stream(stream_name)
     for dest in stream['Destinations']:
+        if 'ESDestinationDescription' in dest:
+            es_dest = dest['ESDestinationDescription']
+            es_index = es_dest['IndexName']
+            es_type = es_dest['TypeName']
+            es = connect_elasticsearch()
+            for record in records:
+                data = base64.b64decode(record['Data'])
+                unparsed_body = json.loads(data)
+                keys = unparsed_body.get('Keys')
+                old = unparsed_body.get('OldImage')
+                new = unparsed_body.get('NewImage')
+                parsed_body = {}
+                if old:
+                    for key in old:
+                        parsed_body[key] = deser.deserialize(old[key])
+                if new:
+                    for key in new:
+                        parsed_body[key] = deser.deserialize(new[key])
+                obj_id = ''
+                for key in keys:
+                    value = deser.deserialize(keys[key])
+                    obj_id += str(value)
+                try:
+                    es.create(index=es_index, doc_type=es_type, id=obj_id, body=parsed_body)
+                except Exception as e:
+                    LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
+                    raise e
         if 'S3DestinationDescription' in dest:
             s3_dest = dest['S3DestinationDescription']
             bucket = bucket_name(s3_dest['BucketARN'])
@@ -71,7 +102,10 @@ def update_destination(stream_name, destination_id,
         s3_update=None, elasticsearch_update=None, version_id=None):
     dest = get_destination(stream_name, destination_id)
     if elasticsearch_update:
-        LOG.warning('Firehose to Elasticsearch updates not yet implemented!')
+        if 'ESDestinationDescription' not in dest:
+            dest['ESDestinationDescription'] = {}
+        for k, v in iteritems(elasticsearch_update):
+            dest['ESDestinationDescription'][k] = v
     if s3_update:
         if 'S3DestinationDescription' not in dest:
             dest['S3DestinationDescription'] = {}
@@ -80,7 +114,7 @@ def update_destination(stream_name, destination_id,
     return dest
 
 
-def create_stream(stream_name, s3_destination=None):
+def create_stream(stream_name, s3_destination=None, elasticsearch_destination=None):
     stream = {
         'HasMoreDestinations': False,
         'VersionId': '1',
@@ -91,6 +125,8 @@ def create_stream(stream_name, s3_destination=None):
         'Destinations': []
     }
     DELIVERY_STREAMS[stream_name] = stream
+    if elasticsearch_destination:
+        update_destination(stream_name=stream_name, destination_id=short_uid(), elasticsearch_update=elasticsearch_destination)
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
     return stream
@@ -138,7 +174,7 @@ def post_request():
         }
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
-        response = create_stream(stream_name, s3_destination=data.get('S3DestinationConfiguration'))
+        response = create_stream(stream_name, s3_destination=data.get('S3DestinationConfiguration'), elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'))
     elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = delete_stream(stream_name)
@@ -172,6 +208,9 @@ def post_request():
         s3_update = data['S3DestinationUpdate'] if 'S3DestinationUpdate' in data else None
         update_destination(stream_name=stream_name, destination_id=destination_id,
             s3_update=s3_update, version_id=version_id)
+        es_update = data['ESDestinationUpdate'] if 'ESDestinationUpdate' in data else None
+        update_destination(stream_name=stream_name, destination_id=destination_id,
+            es_update=es_update, version_id=version_id)
         response = {}
     else:
         response = error_response('Unknown action "%s"' % action, code=400, error_type='InvalidAction')
