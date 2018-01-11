@@ -107,6 +107,13 @@ def test_lambda_runtimes():
     result_data = result['Payload'].read()
     assert json.loads(to_str(result_data)) == {'async': 'True'}
 
+    # test DDBEvent
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
+                                  Payload=b'{"Records": [{"dynamodb": {"Message": "{}"}}]}')
+    assert result['StatusCode'] == 200
+    result_data = result['Payload'].read()
+    assert json.loads(to_str(result_data)) == {'async': 'True'}
+
     # test KinesisEvent
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA,
                                   Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
