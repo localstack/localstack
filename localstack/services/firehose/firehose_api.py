@@ -49,6 +49,7 @@ def put_records(stream_name, records):
             es_type = es_dest['TypeName']
             es = connect_elasticsearch()
             for record in records:
+                obj_id = uuid.uuid4()
                 data = base64.b64decode(record['Data'])
                 body = json.loads(data)
                 try:
