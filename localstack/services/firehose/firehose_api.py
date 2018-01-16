@@ -50,23 +50,9 @@ def put_records(stream_name, records):
             es = connect_elasticsearch()
             for record in records:
                 data = base64.b64decode(record['Data'])
-                unparsed_body = json.loads(data)
-                keys = unparsed_body.get('Keys')
-                old = unparsed_body.get('OldImage')
-                new = unparsed_body.get('NewImage')
-                parsed_body = {}
-                if old:
-                    for key in old:
-                        parsed_body[key] = deser.deserialize(old[key])
-                if new:
-                    for key in new:
-                        parsed_body[key] = deser.deserialize(new[key])
-                obj_id = ''
-                for key in keys:
-                    value = deser.deserialize(keys[key])
-                    obj_id += str(value)
+                body = json.loads(data)
                 try:
-                    es.create(index=es_index, doc_type=es_type, id=obj_id, body=parsed_body)
+                    es.create(index=es_index, doc_type=es_type, id=obj_id, body=body)
                 except Exception as e:
                     LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
                     raise e
