@@ -1,5 +1,6 @@
 import unittest
 from localstack.services.s3 import s3_listener, multipart_content
+from requests.models import CaseInsensitiveDict
 
 
 class S3ListenerTest (unittest.TestCase):
@@ -100,3 +101,69 @@ class S3ListenerTest (unittest.TestCase):
         self.assertIsNot(expanded3, data3, 'Should have changed content of string data with filename to interpolate')
         self.assertIn(b'uploads/20170826T181315.679087009Z/upload/pixel.txt', expanded3,
             'Should see the interpolated filename')
+
+    def test_get_bucket_name(self):
+        bucket_name = 'test-bucket'
+        s3_key = '/some-folder/some-key.txt'
+
+        hosts = ['s3-ap-northeast-1.amazonaws.com',
+                 's3-ap-northeast-2.amazonaws.com',
+                 's3-ap-south-1.amazonaws.com',
+                 's3-ap-southeast-1.amazonaws.com',
+                 's3-ap-southeast-2.amazonaws.com',
+                 's3-ca-central-1.amazonaws.com',
+                 's3-eu-central-1.amazonaws.com',
+                 's3-eu-west-1.amazonaws.com',
+                 's3-eu-west-2.amazonaws.com',
+                 's3-eu-west-3.amazonaws.com',
+                 's3-external-1.amazonaws.com',
+                 's3-sa-east-1.amazonaws.com',
+                 's3-us-east-2.amazonaws.com',
+                 's3-us-west-1.amazonaws.com',
+                 's3-us-west-2.amazonaws.com',
+                 's3.amazonaws.com',
+                 's3.ap-northeast-1.amazonaws.com',
+                 's3.ap-northeast-2.amazonaws.com',
+                 's3.ap-south-1.amazonaws.com',
+                 's3.ap-southeast-1.amazonaws.com',
+                 's3.ap-southeast-2.amazonaws.com',
+                 's3.ca-central-1.amazonaws.com',
+                 's3.cn-north-1.amazonaws.com.cn',
+                 's3.cn-northwest-1.amazonaws.com.cn',
+                 's3.dualstack.ap-northeast-1.amazonaws.com',
+                 's3.dualstack.ap-northeast-2.amazonaws.com',
+                 's3.dualstack.ap-south-1.amazonaws.com',
+                 's3.dualstack.ap-southeast-1.amazonaws.com',
+                 's3.dualstack.ap-southeast-2.amazonaws.com',
+                 's3.dualstack.ca-central-1.amazonaws.com',
+                 's3.dualstack.eu-central-1.amazonaws.com',
+                 's3.dualstack.eu-west-1.amazonaws.com',
+                 's3.dualstack.eu-west-2.amazonaws.com',
+                 's3.dualstack.eu-west-3.amazonaws.com',
+                 's3.dualstack.sa-east-1.amazonaws.com',
+                 's3.dualstack.us-east-1.amazonaws.com',
+                 's3.dualstack.us-east-2.amazonaws.com',
+                 's3.dualstack.us-west-1.amazonaws.com',
+                 's3.dualstack.us-west-2.amazonaws.com',
+                 's3.eu-central-1.amazonaws.com',
+                 's3.eu-west-1.amazonaws.com',
+                 's3.eu-west-2.amazonaws.com',
+                 's3.eu-west-3.amazonaws.com',
+                 's3.sa-east-1.amazonaws.com',
+                 's3.us-east-1.amazonaws.com',
+                 's3.us-east-2.amazonaws.com',
+                 's3.us-west-1.amazonaws.com',
+                 's3.us-west-2.amazonaws.com']
+
+        # test all available hosts with the bucket_name in the path
+        bucket_path = '/{}/{}'.format(bucket_name, s3_key)
+        for host in hosts:
+            headers = CaseInsensitiveDict({'Host': hosts[0]})
+            returned_bucket_name = s3_listener.get_bucket_name(bucket_path, headers)
+            self.assertEqual(returned_bucket_name, bucket_name, 'Should match when bucket_name is in path')
+
+        # test all available hosts with the bucket_name in the host and the path is only the s3_key
+        for host in hosts:
+            headers = CaseInsensitiveDict({'Host': '{}.{}'.format(bucket_name, host)})
+            returned_bucket_name = s3_listener.get_bucket_name(s3_key, headers)
+            self.assertEqual(returned_bucket_name, bucket_name, 'Should match when bucket_name is in the host')
