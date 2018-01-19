@@ -10,6 +10,7 @@ from six.moves.urllib import parse as urlparse
 import botocore.config
 from requests.models import Response, Request
 from localstack.constants import DEFAULT_REGION
+from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone
@@ -269,6 +270,47 @@ def expand_redirect_url(starting_url, key, bucket):
     return redirect_url
 
 
+def get_bucket_name(path, headers):
+    parsed = urlparse.urlparse(path)
+
+    # try pick the bucket_name from the path
+    bucket_name = parsed.path.split('/')[1]
+
+    host = headers['host']
+
+    # is the hostname not starting a bucket name?
+    if host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL):
+        return bucket_name
+
+    # matches the common endpoints like
+    #     - '<bucket_name>.s3.<region>.amazonaws.com'
+    #     - '<bucket_name>.s3-<region>.amazonaws.com.cn'
+    common_pattern = re.compile(r'^(.+)\.s3[.\-][a-z]{2}-[a-z]+-[0-9]{1,}'
+                                r'\.amazonaws\.com(\.[a-z]+)?$')
+    # matches dualstack endpoints like
+    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com'
+    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com.cn'
+    dualstack_pattern = re.compile(r'^(.+)\.s3\.dualstack\.[a-z]{2}-[a-z]+-[0-9]{1,}'
+                                   r'\.amazonaws\.com(\.[a-z]+)?$')
+    # matches legacy endpoints like
+    #     - '<bucket_name>.s3.amazonaws.com'
+    #     - '<bucket_name>.s3-external-1.amazonaws.com.cn'
+    legacy_patterns = re.compile(r'^(.+)\.s3\.?(-external-1)?\.amazonaws\.com(\.[a-z]+)?$')
+
+    # if any of the above patterns match, the first captured group
+    # will be returned as the bucket name
+    for pattern in [common_pattern, dualstack_pattern, legacy_patterns]:
+        match = pattern.match(host)
+        if match:
+            bucket_name = match.groups()[0]
+
+            break
+
+    # we're either returning the original bucket_name,
+    # or a pattern matched the host and we're returning that name instead
+    return bucket_name
+
+
 class ProxyListenerS3(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
@@ -368,9 +410,7 @@ class ProxyListenerS3(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
 
-        parsed = urlparse.urlparse(path)
-        # TODO: consider the case of hostname-based (as opposed to path-based) bucket addressing
-        bucket_name = parsed.path.split('/')[1]
+        bucket_name = get_bucket_name(path, headers)
 
         # POST requests to S3 may include a success_action_redirect field,
         # which should be used to redirect a client to a new location.
@@ -381,16 +421,28 @@ class ProxyListenerS3(ProxyListener):
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
                 LOGGER.debug('S3 POST {} to {}'.format(response.status_code, response.headers['Location']))
 
-        # get subscribers and send bucket notifications
-        if method in ('PUT', 'DELETE') and '/' in path[1:]:
+        parsed = urlparse.urlparse(path)
+
+        bucket_name_in_host = headers['host'].startswith(bucket_name)
+
+        should_send_notifications = all([
+            method in ('PUT', 'DELETE'),
+            '/' in path[1:] or bucket_name_in_host,
             # check if this is an actual put object request, because it could also be
             # a put bucket request with a path like this: /bucket_name/
-            if len(path[1:].split('/')[1]) > 0:
+            bucket_name_in_host or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0),
+            # ignore bucket notification configuration requests
+            parsed.query != 'notification' and parsed.query != 'lifecycle',
+        ])
+
+        # get subscribers and send bucket notifications
+        if should_send_notifications:
+            if bucket_name_in_host:
+                object_path = parsed.path
+            else:
                 parts = parsed.path[1:].split('/', 1)
-                # ignore bucket notification configuration requests
-                if parsed.query != 'notification' and parsed.query != 'lifecycle':
-                    object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
-                    send_notifications(method, bucket_name, object_path)
+                object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
+            send_notifications(method, bucket_name, object_path)
 
         # publish event for creation/deletion of buckets:
         if method in ('PUT', 'DELETE') and ('/' not in path[1:] or len(path[1:].split('/')[1]) <= 0):
