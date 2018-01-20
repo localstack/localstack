@@ -479,6 +479,8 @@ class ProxyListenerS3(ProxyListener):
             if isinstance(response._content, (six.string_types, six.binary_type)):
                 response.headers['content-length'] = len(response._content)
 
+            response.headers['content-type'] = 'binary/octet-stream'
+
 
 # instantiate listener
 UPDATE_S3 = ProxyListenerS3()

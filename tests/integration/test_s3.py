@@ -80,3 +80,19 @@ def test_s3_put_object_notification():
     s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                              Delete={'Objects': [{'Key': key_by_path}, {'Key': key_by_host}]})
     s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+
+
+def test_s3_get_response_content_type():
+    bucket_name = 'test-bucket'
+    s3_client = aws_stack.connect_to_service('s3')
+    s3_client.create_bucket(Bucket=bucket_name)
+
+    key_by_path = 'key-by-hostname'
+
+    s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body='something')
+    url = s3_client.generate_presigned_url(
+        'get_object', ExpiresIn=0, Params={'Bucket': bucket_name, 'Key': key_by_path}
+    )
+
+    response = requests.get(url)
+    assert response.headers['content-type'] == 'binary/octet-stream'
