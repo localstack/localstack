@@ -456,9 +456,13 @@ class ProxyListenerS3(ProxyListener):
             response.status_code = 204
             return response
 
-        # append CORS headers to response
         if response:
+            # append CORS headers to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
+
+            if response._content:
+                # default content type; possibly overwritten with "text/xml" for API calls further below
+                response.headers['Content-Type'] = 'binary/octet-stream'
 
             response_content_str = None
             try:
@@ -475,11 +479,13 @@ class ProxyListenerS3(ProxyListener):
                 response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
                 if is_bytes:
                     response._content = to_bytes(response._content)
+                # fix content-type: https://github.com/localstack/localstack/issues/549
+                if 'text/html' in response.headers.get('Content-Type', ''):
+                    response.headers['Content-Type'] = 'text/xml; charset=utf-8'
+
             # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
             if isinstance(response._content, (six.string_types, six.binary_type)):
                 response.headers['content-length'] = len(response._content)
-
-            response.headers['content-type'] = 'binary/octet-stream'
 
 
 # instantiate listener

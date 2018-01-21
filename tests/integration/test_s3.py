@@ -94,5 +94,5 @@ def test_s3_get_response_content_type():
         'get_object', ExpiresIn=0, Params={'Bucket': bucket_name, 'Key': key_by_path}
     )
 
-    response = requests.get(url)
+    response = requests.get(url, verify=False)
     assert response.headers['content-type'] == 'binary/octet-stream'
