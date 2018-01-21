@@ -208,6 +208,7 @@ def setup_logging():
     logging.getLogger('requests').setLevel(logging.WARNING)
     logging.getLogger('botocore').setLevel(logging.ERROR)
     logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+    logging.getLogger('localstack.services.awslambda.lambda_api').setLevel(log_level)
 
 
 def get_service_protocol():

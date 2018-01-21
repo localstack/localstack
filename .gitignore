@@ -25,3 +25,7 @@ localstack/infra/
 /.idea
 **/obj/**
 **/bin/**
+.vscode
+.idea
+tmp
+/.pydevproject

@@ -474,6 +474,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'Handler': func_details.handler,
         'Runtime': func_details.runtime,
         'Timeout': func_details.timeout,
+        'VpcConfig': func_details.vpc_config,
         'Environment': func_details.envvars,
         # 'Description': ''
         # 'MemorySize': 192,
@@ -507,12 +508,15 @@ def create_function():
         if arn in arn_to_lambda:
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
+
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
         func_details.versions = {'$LATEST': {'CodeSize': 50}}
         func_details.handler = data['Handler']
         func_details.runtime = data['Runtime']
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
         func_details.timeout = data.get('Timeout')
+        func_details.vpc_config = data.get('VpcConfig', {'SubnetIds': [], 'SecurityGroupIds': []})
+
         result = set_function_code(data['Code'], lambda_name)
         if isinstance(result, Response):
             del arn_to_lambda[arn]
@@ -648,6 +652,7 @@ def get_function_configuration(function):
         operationId: 'getFunctionConfiguration'
         parameters:
     """
+
     arn = func_arn(function)
     lambda_details = arn_to_lambda.get(arn)
     if not lambda_details:
@@ -680,6 +685,9 @@ def update_function_configuration(function):
         lambda_details.envvars = data.get('Environment', {}).get('Variables', {})
     if data.get('Timeout'):
         lambda_details.timeout = data['Timeout']
+    if data.get('VpcConfig'):
+        lambda_details.vpc_config = data['VpcConfig']
+
     result = {}
     return jsonify(result)
 

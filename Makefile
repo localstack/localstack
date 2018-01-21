@@ -87,7 +87,40 @@ web:               ## Start web application (dashboard)
 
 test:              ## Run automated tests
 	make lint && \
-		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' .)
+	($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.+' .)
+
+test-lambdanet:    ## Test running lambdas in specific docker networks
+
+	# setup docker infrastructure needed by tests
+	# basically run simple http servers in separate bridge networks
+	-docker network create -d bridge test_localstack_lambdanet_default
+	-docker network create -d bridge test_localstack_lambdanet_custom
+	-docker run -d -P --network=test_localstack_lambdanet_default \
+			  --name=test_localstack_lambdanet_default_id  \
+	          --net-alias=networkidentifier --rm \
+			  -v $$(pwd)/tests/integration/nwfiles/default:/www fnichol/uhttpd
+	-docker run -d -P --network=test_localstack_lambdanet_custom \
+			  --name=test_localstack_lambdanet_custom_id  \
+	          --net-alias=networkidentifier --rm \
+			  -v $$(pwd)/tests/integration/nwfiles/custom:/www fnichol/uhttpd
+	# run the tests -- note the lambda network settings
+	($(VENV_RUN); \
+	DEBUG=$(DEBUG) \
+	PYTHONPATH=`pwd` \
+	LAMBDA_EXECUTOR=docker \
+	LAMBDA_DEFAULT_DOCKER_NETWORK=test_localstack_lambdanet_default \
+	LAMBDA_SUBNET_AS_DOCKERNET=1 \
+	nosetests --with-coverage --logging-level=WARNING --nocapture \
+	          --no-skip --exe --cover-erase --cover-tests --cover-inclusive \
+			  --cover-package=localstack --with-xunit \
+			  --exclude='$(VENV_DIR).*' \
+			  --ignore-files='lambda_python3.+' .)
+	#cleanup our docker infrastructure
+	docker kill test_localstack_lambdanet_default_id
+	docker kill test_localstack_lambdanet_custom_id
+	docker network rm test_localstack_lambdanet_default
+	docker network rm test_localstack_lambdanet_custom
+	
 
 test-java:         ## Run tests for Java/JUnit compatibility
 	cd localstack/ext/java; mvn -q test && USE_SSL=1 mvn -q test

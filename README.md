@@ -163,6 +163,22 @@ You can pass the following environment variables to LocalStack:
     - `false`: your Lambda function definitions will be passed to the container by mounting a
       volume (potentially faster). This requires to have the Docker client and the Docker
       host on the same machine.
+* `LAMBDA_DEFAULT_DOCKER_NETWORK`:
+    - When set, and running lambda functions in a docker container 
+      (LAMBDA_EXECUTOR=docker or docker-reuse) the docker container running the lambda function
+      will be attached to the docker network identified by LAMBDA_DEFAULT_DOCKER_NETWORK
+* `LAMBDA_SUBNET_AS_DOCKERNET`:
+    - When set to 1, and lambda functions are run in a docker container
+      (LAMBDA_EXECUTOR=docker or docker-reuse) if a lambda function is created with a vpc config,
+      the subnet identified in the vpc config will be used as the identifier of the docker network for the lambda function's docker container 
+* `LAMBDA_DOCKER_OPTIONS`:
+    - Specifies custom options to be passed to the docker engine as part of the docker run or docker create command.  
+
+        For example, to log lambda function output to a syslog server listening on the local host at port 5601, you can set LAMBDA_DOCKER_OPTIONS to:
+
+          --log-driver=syslog --log-opt=tag=lambda.$LAMBDA_FUNCTION_NAME --log-opt=syslog-address=tcp://127.0.0.1:5601
+
+
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
   Kinesis, DynamoDB, Elasticsearch, S3). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
@@ -180,7 +196,11 @@ Additionally, the following *read-only* environment variables are available:
   (e.g., to store an item to DynamoDB or S3 from Lambda).
   The variable `LOCALSTACK_HOSTNAME` is available for both, local Lambda execution
   (`LAMBDA_EXECUTOR=local`) and execution inside separate Docker containers (`LAMBDA_EXECUTOR=docker`).
+* `LAMBDA_FUNCTION_ARN` is  arn of the function executed
+* `LAMBDA_FUNCTION_NAME` is the name of the function being created/executed
 
+These variables can be referenced from within a lambda function, or in the value of the `LAMBDA_DOCKER_OPTIONS` or `LAMBDA_DEFAULT_DOCKER_NETWORK` variables specified above.
+ 
 ## Accessing the infrastructure via CLI or code
 
 You can point your `aws` CLI to use the local infrastructure, for example:

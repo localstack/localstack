@@ -62,6 +62,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Handler'] = str(self.HANDLER)
             expected_result['Runtime'] = str(self.RUNTIME)
             expected_result['Timeout'] = self.TIMEOUT
+            expected_result['VpcConfig'] = None
             expected_result['Version'] = '1'
             expected_result['Environment'] = {}
             expected_result2 = dict(expected_result)
@@ -94,6 +95,7 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['Runtime'] = str(self.RUNTIME)
             latest_version['Timeout'] = self.TIMEOUT
             latest_version['Version'] = '$LATEST'
+            latest_version['VpcConfig'] = None
             latest_version['Environment'] = {}
             version1 = dict(latest_version)
             version1['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':1'

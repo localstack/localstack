@@ -8,10 +8,6 @@ services:
 python:
   - "3.6"
 
-branches:
-  only:
-    - master
-
 before_install:
   - "sudo apt-get purge openjdk-6*"
   - "sudo apt-get purge openjdk-7*"
@@ -37,7 +33,8 @@ install:
 script:
   - set -e # fail fast
   # run tests using Python 3
-  - DEBUG=1 LAMBDA_EXECUTOR=docker TEST_ERROR_INJECTION=1 make test
+  - DEBUG=1 LAMBDA_EXECUTOR=docker make test
+  - DEBUG=1 LAMBDA_EXECUTOR=docker make test-lambdanet
   - LAMBDA_EXECUTOR=local USE_SSL=1 make test
   # run tests using Python 2
   #   Note: we're not using multiple versions in the top-level "python" configuration,
@@ -45,10 +42,16 @@ script:
   - "make reinstall-p2 > /dev/null"
   - make init
   - DEBUG=1 LAMBDA_EXECUTOR=docker-reuse USE_SSL=1 make test
-  # build Docker image
-  - make docker-build
+  - DEBUG=1 LAMBDA_EXECUTOR=docker-reuse make test-lambdanet
+  - DEBUG=1 LAMBDA_EXECUTOR=docker make test
+  - DEBUG=1 LAMBDA_EXECUTOR=docker make test-lambdanet
+  - LAMBDA_EXECUTOR=local USE_SSL=1 make test
   # run Java tests
   - make test-java-if-changed
+
+  # build Docker image
+  - make docker-build
+
   # push Docker image (if on master branch)
   - make docker-push-master
 
