@@ -121,10 +121,10 @@ def queue_url_for_arn(queue_arn):
 def send_notifications(method, bucket_name, object_path):
     for bucket, config in iteritems(S3_NOTIFICATIONS):
         if bucket == bucket_name:
-            action = {'PUT': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
+            action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
-            api_method = {'PUT': 'Put', 'DELETE': 'Delete'}[method]
+            api_method = {'PUT': 'Put', 'POST': 'Post', 'DELETE': 'Delete'}[method]
             event_name = '%s:%s' % (action, api_method)
             if (event_type_matches(config['Event'], action, api_method) and
                     filter_rules_match(config.get('Filter'), object_path)):
@@ -154,7 +154,8 @@ def send_notifications(method, bucket_name, object_path):
                     connection_config = botocore.config.Config(read_timeout=300)
                     lambda_client = aws_stack.connect_to_service('lambda', config=connection_config)
                     try:
-                        lambda_client.invoke(FunctionName=config['CloudFunction'], Payload=message)
+                        lambda_client.invoke(FunctionName=config['CloudFunction'],
+                                             InvocationType='Event', Payload=message)
                     except Exception as e:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to Lambda function "%s".' %
                             (bucket_name, config['CloudFunction']))
@@ -412,10 +413,17 @@ class ProxyListenerS3(ProxyListener):
 
         bucket_name = get_bucket_name(path, headers)
 
+        # No path-name based bucket name?  Try host-based
+        hostname_parts = headers['host'].split('.')
+        if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
+            bucket_name = hostname_parts[0]
+
         # POST requests to S3 may include a success_action_redirect field,
         # which should be used to redirect a client to a new location.
+        key = None
         if method == 'POST':
             key, redirect_url = multipart_content.find_multipart_redirect_url(data, headers)
+
             if key and redirect_url:
                 response.status_code = 303
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
@@ -426,7 +434,7 @@ class ProxyListenerS3(ProxyListener):
         bucket_name_in_host = headers['host'].startswith(bucket_name)
 
         should_send_notifications = all([
-            method in ('PUT', 'DELETE'),
+            method in ('PUT', 'POST', 'DELETE'),
             '/' in path[1:] or bucket_name_in_host,
             # check if this is an actual put object request, because it could also be
             # a put bucket request with a path like this: /bucket_name/
@@ -437,11 +445,15 @@ class ProxyListenerS3(ProxyListener):
 
         # get subscribers and send bucket notifications
         if should_send_notifications:
-            if bucket_name_in_host:
+            # if we already have a good key, use it, otherwise examine the path
+            if key:
+                object_path = '/' + key
+            elif bucket_name_in_host:
                 object_path = parsed.path
             else:
                 parts = parsed.path[1:].split('/', 1)
                 object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
+
             send_notifications(method, bucket_name, object_path)
 
         # publish event for creation/deletion of buckets:
