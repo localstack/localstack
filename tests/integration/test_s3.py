@@ -2,6 +2,7 @@ import os
 import json
 import requests
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test_bucket_policy_1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test_bucket_notification_1'
@@ -83,16 +84,58 @@ def test_s3_put_object_notification():
 
 
 def test_s3_get_response_content_type():
-    bucket_name = 'test-bucket'
+    bucket_name = 'test-bucket-%s' % short_uid()
     s3_client = aws_stack.connect_to_service('s3')
     s3_client.create_bucket(Bucket=bucket_name)
 
-    key_by_path = 'key-by-hostname'
-
-    s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body='something')
+    # put object
+    object_key = 'key-by-hostname'
+    s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
     url = s3_client.generate_presigned_url(
-        'get_object', ExpiresIn=0, Params={'Bucket': bucket_name, 'Key': key_by_path}
+        'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
     )
 
+    # get object and assert headers
     response = requests.get(url, verify=False)
     assert response.headers['content-type'] == 'binary/octet-stream'
+    # clean up
+    s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
+    s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_s3_get_response_headers():
+    bucket_name = 'test-bucket-%s' % short_uid()
+    s3_client = aws_stack.connect_to_service('s3')
+    s3_client.create_bucket(Bucket=bucket_name)
+
+    # put object and CORS configuration
+    object_key = 'key-by-hostname'
+    s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+    url = s3_client.generate_presigned_url(
+        'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
+    )
+    s3_client.put_bucket_cors(Bucket=bucket_name,
+        CORSConfiguration={
+            'CORSRules': [{
+                'AllowedMethods': ['GET', 'PUT', 'POST'],
+                'AllowedOrigins': ['*'],
+                'ExposeHeaders': [
+                    'Date', 'x-amz-delete-marker', 'x-amz-version-id'
+                ]
+            }]
+        },
+    )
+
+    # get object and assert headers
+    url = s3_client.generate_presigned_url(
+        'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
+    )
+    response = requests.get(url, verify=False)
+    assert response.headers['Date']
+    assert response.headers['x-amz-delete-marker']
+    assert response.headers['x-amz-version-id']
+    assert not response.headers.get('x-amz-id-2')
+    assert not response.headers.get('x-amz-request-id')
+    # clean up
+    s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
+    s3_client.delete_bucket(Bucket=bucket_name)

@@ -13,7 +13,7 @@ from localstack.constants import DEFAULT_REGION
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone
+from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone, md5
 from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.s3 import multipart_content
@@ -204,6 +204,7 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
     if not isinstance(rules, list):
         rules = [rules]
     for rule in rules:
+        # add allow-origin header
         allowed_methods = rule.get('AllowedMethod', [])
         if request_method in allowed_methods:
             allowed_origins = rule.get('AllowedOrigin', [])
@@ -211,6 +212,20 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                 if origin in allowed or re.match(allowed.replace('*', '.*'), origin):
                     response.headers['Access-Control-Allow-Origin'] = origin
                     break
+        # add additional headers
+        exposed_headers = rule.get('ExposeHeader', [])
+        for header in exposed_headers:
+            if header.lower() == 'date':
+                response.headers[header] = timestamp(format='%a, %d %b %Y %H:%M:%S +0000')
+            elif header.lower() == 'etag':
+                response.headers[header] = md5(response._content)
+            elif header.lower() in ('server', 'x-amz-id-2', 'x-amz-request-id'):
+                response.headers[header] = short_uid()
+            elif header.lower() == 'x-amz-delete-marker':
+                response.headers[header] = 'false'
+            elif header.lower() == 'x-amz-version-id':
+                # TODO: check whether bucket versioning is enabled and return proper version id
+                response.headers[header] = 'null'
 
 
 def get_lifecycle(bucket_name):
