@@ -33,7 +33,7 @@ RESOURCE_TO_FUNCTION = {
             'boto_client': 'resource',
             'function': 'create_queue',
             'parameters': {
-                'QueueName': 'QueueName'
+                'QueueName': PLACEHOLDER_RESOURCE_NAME
             }
         }
     },
@@ -291,7 +291,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             queues = aws_stack.connect_to_service('sqs').list_queues()
             result = list(filter(lambda item:
                 # TODO possibly find a better way to compare resource_id with queue URLs
-                item.endswith('/%s' % resource_id), queues['QueueUrls']))
+                item.endswith('/%s' % resource_id), queues.get('QueueUrls', [])))
             return result
         if resource_type == 'AWS::S3::Bucket':
             return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=resource_id)
