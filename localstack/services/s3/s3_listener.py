@@ -145,7 +145,7 @@ def send_notifications(method, bucket_name, object_path):
                 if config.get('Topic'):
                     sns_client = aws_stack.connect_to_service('sns')
                     try:
-                        sns_client.publish(TopicArn=config['Topic'], Message=message)
+                        sns_client.publish(TopicArn=config['Topic'], Message=message, Subject='Amazon S3 Notification')
                     except Exception as e:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s".' %
                             (bucket_name, config['Topic']))
