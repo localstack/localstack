@@ -74,7 +74,7 @@ class ProxyListenerSNS(ProxyListener):
                     elif subscriber['Protocol'] == 'lambda':
                         lambda_api.process_sns_notification(
                             subscriber['Endpoint'],
-                            topic_arn, message, subject=req_data.get('Subject')
+                            topic_arn, message, subject=req_data.get('Subject', [None])[0]
                         )
                     elif subscriber['Protocol'] in ['http', 'https']:
                         requests.post(

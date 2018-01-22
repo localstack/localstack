@@ -82,6 +82,21 @@ def install_dynamodb_local():
             run("curl -L -o %s/sqlite4java.jar '%s'" % (ddb_libs_dir, patched_jar))
             save_file(patched_marker, '')
 
+    # fix logging configuration for DynamoDBLocal
+    log4j2_config = """<Configuration status="WARN">
+      <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+          <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+      </Appenders>
+      <Loggers>
+        <Root level="WARN"><AppenderRef ref="Console"/></Root>
+      </Loggers>
+    </Configuration>"""
+    log4j2_file = os.path.join(INSTALL_DIR_DDB, 'log4j2.xml')
+    save_file(log4j2_file, log4j2_config)
+    run('cd "%s" && zip -u DynamoDBLocal.jar log4j2.xml || true' % INSTALL_DIR_DDB)
+
 
 def install_amazon_kinesis_client_libs():
     # install KCL/STS JAR files

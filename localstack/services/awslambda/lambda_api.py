@@ -64,6 +64,12 @@ DO_USE_DOCKER = None
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
 
 
+class LambdaContext(object):
+    def get_remaining_time_in_millis(self):
+        # TODO implement!
+        return 1000 * 60
+
+
 def cleanup():
     global event_source_mappings, arn_to_lambda
     arn_to_lambda = {}
@@ -247,6 +253,8 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         sys.stderr = stream
     try:
         func_details = arn_to_lambda.get(func_arn)
+        if not context:
+            context = LambdaContext()
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
             event, context=context, version=version, async=async)
     except Exception as e:

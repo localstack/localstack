@@ -10,9 +10,10 @@ from six.moves.urllib import parse as urlparse
 import botocore.config
 from requests.models import Response, Request
 from localstack.constants import DEFAULT_REGION
+from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone
+from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone, md5
 from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.s3 import multipart_content
@@ -120,10 +121,10 @@ def queue_url_for_arn(queue_arn):
 def send_notifications(method, bucket_name, object_path):
     for bucket, config in iteritems(S3_NOTIFICATIONS):
         if bucket == bucket_name:
-            action = {'PUT': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
+            action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
-            api_method = {'PUT': 'Put', 'DELETE': 'Delete'}[method]
+            api_method = {'PUT': 'Put', 'POST': 'Post', 'DELETE': 'Delete'}[method]
             event_name = '%s:%s' % (action, api_method)
             if (event_type_matches(config['Event'], action, api_method) and
                     filter_rules_match(config.get('Filter'), object_path)):
@@ -153,7 +154,8 @@ def send_notifications(method, bucket_name, object_path):
                     connection_config = botocore.config.Config(read_timeout=300)
                     lambda_client = aws_stack.connect_to_service('lambda', config=connection_config)
                     try:
-                        lambda_client.invoke(FunctionName=config['CloudFunction'], Payload=message)
+                        lambda_client.invoke(FunctionName=config['CloudFunction'],
+                                             InvocationType='Event', Payload=message)
                     except Exception as e:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to Lambda function "%s".' %
                             (bucket_name, config['CloudFunction']))
@@ -202,6 +204,7 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
     if not isinstance(rules, list):
         rules = [rules]
     for rule in rules:
+        # add allow-origin header
         allowed_methods = rule.get('AllowedMethod', [])
         if request_method in allowed_methods:
             allowed_origins = rule.get('AllowedOrigin', [])
@@ -209,6 +212,20 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                 if origin in allowed or re.match(allowed.replace('*', '.*'), origin):
                     response.headers['Access-Control-Allow-Origin'] = origin
                     break
+        # add additional headers
+        exposed_headers = rule.get('ExposeHeader', [])
+        for header in exposed_headers:
+            if header.lower() == 'date':
+                response.headers[header] = timestamp(format='%a, %d %b %Y %H:%M:%S +0000')
+            elif header.lower() == 'etag':
+                response.headers[header] = md5(response._content)
+            elif header.lower() in ('server', 'x-amz-id-2', 'x-amz-request-id'):
+                response.headers[header] = short_uid()
+            elif header.lower() == 'x-amz-delete-marker':
+                response.headers[header] = 'false'
+            elif header.lower() == 'x-amz-version-id':
+                # TODO: check whether bucket versioning is enabled and return proper version id
+                response.headers[header] = 'null'
 
 
 def get_lifecycle(bucket_name):
@@ -267,6 +284,47 @@ def expand_redirect_url(starting_url, key, bucket):
         parsed.params, urlparse.urlencode(query), None))
 
     return redirect_url
+
+
+def get_bucket_name(path, headers):
+    parsed = urlparse.urlparse(path)
+
+    # try pick the bucket_name from the path
+    bucket_name = parsed.path.split('/')[1]
+
+    host = headers['host']
+
+    # is the hostname not starting a bucket name?
+    if host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL):
+        return bucket_name
+
+    # matches the common endpoints like
+    #     - '<bucket_name>.s3.<region>.amazonaws.com'
+    #     - '<bucket_name>.s3-<region>.amazonaws.com.cn'
+    common_pattern = re.compile(r'^(.+)\.s3[.\-][a-z]{2}-[a-z]+-[0-9]{1,}'
+                                r'\.amazonaws\.com(\.[a-z]+)?$')
+    # matches dualstack endpoints like
+    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com'
+    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com.cn'
+    dualstack_pattern = re.compile(r'^(.+)\.s3\.dualstack\.[a-z]{2}-[a-z]+-[0-9]{1,}'
+                                   r'\.amazonaws\.com(\.[a-z]+)?$')
+    # matches legacy endpoints like
+    #     - '<bucket_name>.s3.amazonaws.com'
+    #     - '<bucket_name>.s3-external-1.amazonaws.com.cn'
+    legacy_patterns = re.compile(r'^(.+)\.s3\.?(-external-1)?\.amazonaws\.com(\.[a-z]+)?$')
+
+    # if any of the above patterns match, the first captured group
+    # will be returned as the bucket name
+    for pattern in [common_pattern, dualstack_pattern, legacy_patterns]:
+        match = pattern.match(host)
+        if match:
+            bucket_name = match.groups()[0]
+
+            break
+
+    # we're either returning the original bucket_name,
+    # or a pattern matched the host and we're returning that name instead
+    return bucket_name
 
 
 class ProxyListenerS3(ProxyListener):
@@ -368,29 +426,50 @@ class ProxyListenerS3(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
 
-        parsed = urlparse.urlparse(path)
-        # TODO: consider the case of hostname-based (as opposed to path-based) bucket addressing
-        bucket_name = parsed.path.split('/')[1]
+        bucket_name = get_bucket_name(path, headers)
+
+        # No path-name based bucket name?  Try host-based
+        hostname_parts = headers['host'].split('.')
+        if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
+            bucket_name = hostname_parts[0]
 
         # POST requests to S3 may include a success_action_redirect field,
         # which should be used to redirect a client to a new location.
+        key = None
         if method == 'POST':
             key, redirect_url = multipart_content.find_multipart_redirect_url(data, headers)
+
             if key and redirect_url:
                 response.status_code = 303
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
                 LOGGER.debug('S3 POST {} to {}'.format(response.status_code, response.headers['Location']))
 
-        # get subscribers and send bucket notifications
-        if method in ('PUT', 'DELETE') and '/' in path[1:]:
+        parsed = urlparse.urlparse(path)
+
+        bucket_name_in_host = headers['host'].startswith(bucket_name)
+
+        should_send_notifications = all([
+            method in ('PUT', 'POST', 'DELETE'),
+            '/' in path[1:] or bucket_name_in_host,
             # check if this is an actual put object request, because it could also be
             # a put bucket request with a path like this: /bucket_name/
-            if len(path[1:].split('/')[1]) > 0:
+            bucket_name_in_host or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0),
+            # ignore bucket notification configuration requests
+            parsed.query != 'notification' and parsed.query != 'lifecycle',
+        ])
+
+        # get subscribers and send bucket notifications
+        if should_send_notifications:
+            # if we already have a good key, use it, otherwise examine the path
+            if key:
+                object_path = '/' + key
+            elif bucket_name_in_host:
+                object_path = parsed.path
+            else:
                 parts = parsed.path[1:].split('/', 1)
-                # ignore bucket notification configuration requests
-                if parsed.query != 'notification' and parsed.query != 'lifecycle':
-                    object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
-                    send_notifications(method, bucket_name, object_path)
+                object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
+
+            send_notifications(method, bucket_name, object_path)
 
         # publish event for creation/deletion of buckets:
         if method in ('PUT', 'DELETE') and ('/' not in path[1:] or len(path[1:].split('/')[1]) <= 0):
@@ -404,9 +483,13 @@ class ProxyListenerS3(ProxyListener):
             response.status_code = 204
             return response
 
-        # append CORS headers to response
         if response:
+            # append CORS headers to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
+
+            if response._content:
+                # default content type; possibly overwritten with "text/xml" for API calls further below
+                response.headers['Content-Type'] = 'binary/octet-stream'
 
             response_content_str = None
             try:
@@ -423,6 +506,10 @@ class ProxyListenerS3(ProxyListener):
                 response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
                 if is_bytes:
                     response._content = to_bytes(response._content)
+                # fix content-type: https://github.com/localstack/localstack/issues/549
+                if 'text/html' in response.headers.get('Content-Type', ''):
+                    response.headers['Content-Type'] = 'text/xml; charset=utf-8'
+
             # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
             if isinstance(response._content, (six.string_types, six.binary_type)):
                 response.headers['content-length'] = len(response._content)

@@ -155,24 +155,23 @@ def find_existing_item(put_item):
     table_name = put_item['TableName']
     ddb_client = aws_stack.connect_to_service('dynamodb')
 
+    search_key = {}
     if 'Key' in put_item:
-        key_attribute = list(put_item['Key'].keys())[0]
-        key_value = put_item['Key'][key_attribute]
+        search_key = put_item['Key']
     else:
         schema = ddb_client.describe_table(TableName=table_name)
-        schema = schema['Table']['KeySchema']
-        key_attribute = None
-        for key in schema:
-            if key['KeyType'] == 'HASH':
-                key_attribute = key['AttributeName']
-        if not key_attribute:
+        schemas = [schema['Table']['KeySchema']]
+        for index in schema['Table'].get('GlobalSecondaryIndexes', []):
+            # schemas.append(index['KeySchema'])
+            pass
+        for schema in schemas:
+            for key in schema:
+                key_name = key['AttributeName']
+                search_key[key_name] = put_item['Item'][key_name]
+        if not search_key:
             return
-        key_value = put_item['Item'][key_attribute]
 
-    if isinstance(key_value, dict):
-        # extract <value> from {"<datatype>": <value>} string
-        key_value = list(key_value.values())[0]
-    req = {'TableName': table_name, 'Key': {key_attribute: key_value}}
+    req = {'TableName': table_name, 'Key': search_key}
     existing_item = aws_stack.dynamodb_get_item_raw(req)
     if 'Item' not in existing_item:
         if 'message' in existing_item:
