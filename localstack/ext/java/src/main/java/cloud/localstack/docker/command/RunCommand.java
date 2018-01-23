@@ -27,7 +27,7 @@ public class RunCommand extends Command {
     }
 
     public RunCommand withEnvironmentVariable(String name, String value) {
-        addOptions("-e", String.format("\"%s=%s\"", name, value));
+        addOptions("-e", String.format("%s=%s", name, value));
         return this;
     }
 }

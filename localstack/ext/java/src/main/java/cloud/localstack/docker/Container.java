@@ -25,13 +25,14 @@ public class Container {
 
     private static final String LOCALSTACK_NAME = "localstack/localstack";
     private static final String LOCALSTACK_PORTS = "4567-4583";
-    private static final String LOCALSTACK_EXTERNAL_HOSTNAME = "HOSTNAME_EXTERNAL";
 
     private static final int MAX_PORT_CONNECTION_ATTEMPTS = 10;
 
     private static final int MAX_LOG_COLLECTION_ATTEMPTS = 120;
     private static final long POLL_INTERVAL = 1000;
     private static final int NUM_LOG_LINES = 10;
+
+    public static final String LOCALSTACK_EXTERNAL_HOSTNAME = "HOSTNAME_EXTERNAL";
 
 
     private final String containerId;
