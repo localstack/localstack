@@ -1,19 +1,16 @@
 package cloud.localstack.docker;
 
+import cloud.localstack.docker.command.*;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import cloud.localstack.docker.command.ExecCommand;
-import cloud.localstack.docker.command.LogCommand;
-import cloud.localstack.docker.command.PortCommand;
-import cloud.localstack.docker.command.PullCommand;
-import cloud.localstack.docker.command.RunCommand;
-import cloud.localstack.docker.command.StopCommand;
 
 /**
  * An abstraction of the localstack docker container.  Provides port mappings,
@@ -38,21 +35,29 @@ public class Container {
     private final String containerId;
     private final List<PortMapping> ports;
 
-
     public static Container createLocalstackContainer(String externalHostName) {
+        return createLocalstackContainer(externalHostName, new HashMap<>());
+    }
+
+    /**
+     * It creates a container using the hostname given and the set of environment variables provided
+     * @param externalHostName hostname to be used by localstack
+     * @param environmentVariables map of environment variables to be passed to the docker container
+     */
+    public static Container createLocalstackContainer(String externalHostName, Map<String, String> environmentVariables) {
         LOG.info("Pulling latest image...");
         new PullCommand(LOCALSTACK_NAME).execute();
 
         String containerId = new RunCommand(LOCALSTACK_NAME)
                 .withExposedPorts(LOCALSTACK_PORTS)
                 .withEnvironmentVariable(LOCALSTACK_EXTERNAL_HOSTNAME, externalHostName)
+                .withEnvironmentVariables(environmentVariables)
                 .execute();
         LOG.info("Started container: " + containerId);
 
         List<PortMapping> portMappings = new PortCommand(containerId).execute();
         return new Container(containerId, portMappings);
     }
-
 
     private Container(String containerId, List<PortMapping> ports) {
         this.containerId = containerId;
