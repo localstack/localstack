@@ -7,14 +7,16 @@ from localstack.utils.common import to_str, short_uid
 TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test_bucket_notif_1'
 TEST_QUEUE_NAME_FOR_S3 = 'test_queue'
 TEST_TOPIC_NAME = 'test_topic_name_for_sqs'
+TEST_S3_TOPIC_NAME = 'test_topic_name_for_s3_to_sns_to_sqs'
 TEST_QUEUE_NAME_FOR_SNS = 'test_queue_for_sns'
 
 
-def receive_assert_delete(queue_url, assertions, sqs_client=None):
+def receive_assert_delete(queue_url, assertions, sqs_client=None, required_subject=None):
     if not sqs_client:
         sqs_client = aws_stack.connect_to_service('sqs')
 
     response = sqs_client.receive_message(QueueUrl=queue_url)
+
     messages = [json.loads(to_str(m['Body'])) for m in response['Messages']]
     testutil.assert_objects(assertions, messages)
     for message in response['Messages']:
@@ -60,6 +62,7 @@ def _delete_notification_config():
         Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS, NotificationConfiguration={})
     config = s3_client.get_bucket_notification_configuration(Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS)
     assert not config.get('QueueConfigurations')
+    assert not config.get('TopicConfiguration')
 
 
 def test_bucket_notifications():
@@ -169,4 +172,47 @@ def test_bucket_notifications():
     receive_assert_delete(queue_url, [{'key': test_key2}, {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}], sqs_client)
 
     # delete notification config
+    _delete_notification_config()
+
+    #
+    # Tests s3->sns->sqs notifications
+    #
+    sns_client = aws_stack.connect_to_service('sns')
+    topic_info = sns_client.create_topic(Name=TEST_S3_TOPIC_NAME)
+
+    s3_client.put_bucket_notification_configuration(
+        Bucket=TEST_BUCKET_NAME_WITH_NOTIFICATIONS,
+        NotificationConfiguration={
+            'TopicConfigurations': [
+                {
+                    'Id': 'id123',
+                    'Events': ['s3:ObjectCreated:*'],
+                    'TopicArn': topic_info['TopicArn']
+                }
+            ]
+        })
+
+    sns_client.subscribe(TopicArn=topic_info['TopicArn'], Protocol='sqs', Endpoint=queue_arn)
+
+    test_key2 = 'testupload/dir1/testfile.txt'
+    test_data2 = b'{"test": "bucket_notification2"}'
+
+    s3_client.upload_fileobj(BytesIO(test_data2), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_key2)
+
+    # verify subject and records
+
+    response = sqs_client.receive_message(QueueUrl=queue_url)
+    for message in response['Messages']:
+        snsObj = json.loads(message['Body'])
+        testutil.assert_object({'Subject': 'Amazon S3 Notification'}, snsObj)
+        notificationObj = json.loads(snsObj['Message'])
+#        notificationRecs = [ json.loads( rec_text ) for rec_text in notification
+        testutil.assert_objects(
+            [
+                {'key': test_key2},
+                {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}
+            ], notificationObj['Records'])
+
+        sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
+
     _delete_notification_config()
