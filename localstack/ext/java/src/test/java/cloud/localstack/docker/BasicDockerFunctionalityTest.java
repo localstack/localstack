@@ -45,11 +45,10 @@ import com.amazonaws.util.IOUtils;
 
 import cloud.localstack.DockerTestUtils;
 import cloud.localstack.TestUtils;
-import cloud.localstack.docker.annotation.EC2HostNameResolver;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 
 @RunWith(LocalstackDockerTestRunner.class)
-@LocalstackDockerProperties(hostNameResolver = EC2HostNameResolver.class)
+@LocalstackDockerProperties(randomizePorts = true)
 public class BasicDockerFunctionalityTest {
 
     static {

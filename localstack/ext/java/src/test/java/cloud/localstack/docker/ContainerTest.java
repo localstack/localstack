@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class ContainerTest {
 
@@ -19,7 +20,7 @@ public class ContainerTest {
 
         HashMap<String, String> environmentVariables = new HashMap<>();
         environmentVariables.put(MY_PROPERTY, MY_VALUE);
-        Container localStackContainer = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, environmentVariables);
+        Container localStackContainer = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, true, true, environmentVariables);
 
         try {
             localStackContainer.waitForAllPorts(EXTERNAL_HOST_NAME);
@@ -43,6 +44,40 @@ public class ContainerTest {
         args.add("-c");
         args.add(String.format("echo $%s", valueToEcho));
         return args;
+    }
+
+
+    @Test
+    public void createLocalstackContainerWithRandomPorts() throws Exception {
+        Container container = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, true, true, new HashMap<>());
+
+        try {
+            container.waitForAllPorts(EXTERNAL_HOST_NAME);
+
+            assertNotEquals(4567, container.getExternalPortFor(4567));
+            assertNotEquals(4575, container.getExternalPortFor(4575));
+            assertNotEquals(4583, container.getExternalPortFor(4583));
+        }
+        finally {
+            container.stop();
+        }
+    }
+
+
+    @Test
+    public void createLocalstackContainerWithStaticPorts() throws Exception {
+        Container container = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, true, false, new HashMap<>());
+
+        try {
+            container.waitForAllPorts(EXTERNAL_HOST_NAME);
+
+            assertEquals(4567, container.getExternalPortFor(4567));
+            assertEquals(4575, container.getExternalPortFor(4575));
+            assertEquals(4583, container.getExternalPortFor(4583));
+        }
+        finally {
+            container.stop();
+        }
     }
 
 }
