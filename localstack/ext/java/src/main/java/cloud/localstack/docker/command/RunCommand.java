@@ -2,6 +2,7 @@ package cloud.localstack.docker.command;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class RunCommand extends Command {
 
@@ -27,7 +28,17 @@ public class RunCommand extends Command {
     }
 
     public RunCommand withEnvironmentVariable(String name, String value) {
-        addOptions("-e", String.format("%s=%s", name, value));
+        addEnvOption(name, value);
         return this;
     }
+
+    public RunCommand withEnvironmentVariables(Map<String, String> environmentVariables) {
+        environmentVariables.forEach((name, value) -> addEnvOption(name, value));
+        return this;
+    }
+
+    private void addEnvOption(String name, String value) {
+        addOptions("-e", String.format("%s=%s", name, value));
+    }
+
 }
