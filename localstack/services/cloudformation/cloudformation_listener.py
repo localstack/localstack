@@ -185,6 +185,29 @@ class ProxyListenerCloudFormation(ProxyListener):
                 if response.status_code >= 500:
                     # fix an error in moto where it fails with 500 if the stack does not exist
                     return error_response('Stack resource does not exist', code=404)
+            if action == 'ListStackResources':
+                response_dict = xmltodict.parse(response.content, force_list=('member'))['ListStackResourcesResponse']
+                resources = response_dict['ListStackResourcesResult']['StackResourceSummaries']
+                if resources:
+                    sqs_client = aws_stack.connect_to_service('sqs')
+                    content_str = content_str_original = to_str(response.content)
+                    new_response = Response()
+                    new_response.status_code = response.status_code
+                    new_response.headers = response.headers
+                    for resource in resources['member']:
+                        if resource['ResourceType'] == 'AWS::SQS::Queue':
+                            try:
+                                queue_name = resource['PhysicalResourceId']
+                                queue_url = sqs_client.get_queue_url(QueueName=queue_name)['QueueUrl']
+                            except Exception:
+                                stack_name = req_data.get('StackName')[0]
+                                return error_response('Stack with id %s does not exist' % stack_name, code=404)
+                            content_str = re.sub(resource['PhysicalResourceId'], queue_url, content_str)
+                    new_response._content = content_str
+                    if content_str_original != new_response._content:
+                        # if changes have been made, return patched response
+                        new_response.headers['content-length'] = len(new_response._content)
+                        return new_response
             elif action in ('CreateStack', 'UpdateStack'):
                 if response.status_code >= 400:
                     return response

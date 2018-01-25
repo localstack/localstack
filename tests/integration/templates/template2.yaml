@@ -1,0 +1,9 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Simple CloudFormation Test Template
+Resources:
+  SQSQueue1:
+    Type: AWS::SQS::Queue
+  SQSQueue2:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: cf-test-queue-2
