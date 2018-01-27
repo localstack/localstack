@@ -1,4 +1,5 @@
 import re
+import uuid
 import xmltodict
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
@@ -8,6 +9,9 @@ from localstack.config import HOSTNAME_EXTERNAL
 from localstack.utils.common import to_str
 from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
+
+
+XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
 
 class ProxyListenerSQS(ProxyListener):
@@ -64,6 +68,22 @@ class ProxyListenerSQS(ProxyListener):
                     # if changes have been made, return patched response
                     new_response.headers['content-length'] = len(new_response._content)
                     return new_response
+
+            # Since this API call is not implemented in ElasticMQ, we're mocking it
+            # and letting it return an empty response
+            if action == 'ListQueueTags':
+                new_response = Response()
+                new_response.status_code = 200
+                new_response._content = (
+                    '<?xml version="1.0"?>'
+                    '<ListQueueTagsResponse xmlns="{}">'
+                        '<ListQueueTagsResult/>'  # noqa: W291
+                        '<ResponseMetadata>'  # noqa: W291
+                            '<RequestId>{}</RequestId>'  # noqa: W291
+                        '</ResponseMetadata>'  # noqa: W291
+                    '</ListQueueTagsResponse>'
+                ).format(XMLNS_SQS, uuid.uuid4())
+                return new_response
 
 
 # extract the external port used by the client to make the request
