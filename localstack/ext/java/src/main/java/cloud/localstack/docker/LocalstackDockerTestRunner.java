@@ -14,6 +14,7 @@ import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
 
+import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.ServiceName;
 import cloud.localstack.docker.annotation.IEnvironmentVariableProvider;
 import cloud.localstack.docker.annotation.IHostNameResolver;
@@ -92,7 +93,7 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
             if(StringUtils.isNotBlank(resolvedName)) {
                 externalHostName = resolvedName;
             }
-            LOG.info("External host name is set to:" + externalHostName);
+            LOG.info("External host name is set to: " + externalHostName);
         }
         catch(InstantiationException | IllegalAccessException ex) {
             throw new IllegalStateException("Unable to resolve hostname", ex);
@@ -110,6 +111,10 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
 
     @Override
     public void run(RunNotifier notifier) {
+        // make sure the local infrastructure is not running, to avoid port conflicts
+        LocalstackTestRunner.teardownInfrastructure();
+
+        // now create the container
         localStackContainer = Container.createLocalstackContainer(externalHostName, pullNewImage, randomizePorts, environmentVariables);
         try {
             loadServiceToPortMap();
