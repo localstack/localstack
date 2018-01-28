@@ -348,6 +348,11 @@ class ProxyListenerS3(ProxyListener):
             if expanded_data is not original_data:
                 modified_data = expanded_data
 
+        # If no content-type is provided, 'binary/octet-stream' should be used
+        # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
+        if method == 'PUT' and not headers.get('content-type'):
+            headers['content-type'] = 'binary/octet-stream'
+
         # persist this API call to disk
         persistence.record('s3', method, path, data, headers)
 
@@ -486,10 +491,6 @@ class ProxyListenerS3(ProxyListener):
         if response:
             # append CORS headers to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
-
-            if response._content:
-                # default content type; possibly overwritten with "text/xml" for API calls further below
-                response.headers['Content-Type'] = 'binary/octet-stream'
 
             response_content_str = None
             try:
