@@ -22,8 +22,9 @@ public class RunCommand extends Command {
         return dockerExe.execute(args);
     }
 
-    public RunCommand withExposedPorts(String portsToExpose) {
-        addOptions("-p", ":" + portsToExpose);
+    public RunCommand withExposedPorts(String portsToExpose, boolean randomize) {
+        String portsOption = String.format("%s:%s", randomize ? "" : portsToExpose, portsToExpose );
+        addOptions("-p", portsOption);
         return this;
     }
 
