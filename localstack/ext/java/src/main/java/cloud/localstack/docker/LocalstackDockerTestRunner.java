@@ -3,6 +3,7 @@ package cloud.localstack.docker;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -13,7 +14,9 @@ import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
 
+import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.ServiceName;
+import cloud.localstack.docker.annotation.IEnvironmentVariableProvider;
 import cloud.localstack.docker.annotation.IHostNameResolver;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import cloud.localstack.docker.command.RegexStream;
@@ -60,6 +63,9 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
     private static Map<String, Integer> serviceToPortMap;
 
     private static String externalHostName = "localhost";
+    private static boolean pullNewImage = true;
+    private static boolean randomizePorts = false;
+    private static Map<String, String> environmentVariables = new HashMap<>();
 
 
     public LocalstackDockerTestRunner(Class<?> klass) throws InitializationError {
@@ -78,23 +84,38 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
 
 
     private void processDockerPropertiesAnnotation(LocalstackDockerProperties properties) {
+        pullNewImage = properties.pullNewImage();
+        randomizePorts = properties.randomizePorts();
+
         try {
             IHostNameResolver hostNameResolver = properties.hostNameResolver().newInstance();
             String resolvedName = hostNameResolver.getHostName();
             if(StringUtils.isNotBlank(resolvedName)) {
                 externalHostName = resolvedName;
             }
-            LOG.info("External host name is set to:" + externalHostName);
+            LOG.info("External host name is set to: " + externalHostName);
         }
         catch(InstantiationException | IllegalAccessException ex) {
             throw new IllegalStateException("Unable to resolve hostname", ex);
+        }
+
+        try {
+            IEnvironmentVariableProvider environmentProvider = properties.environmentVariableProvider().newInstance();
+            environmentVariables = environmentProvider.getEnvironmentVariables();
+        }
+        catch(InstantiationException | IllegalAccessException ex) {
+            throw new IllegalStateException("Unable to get environment variables", ex);
         }
     }
 
 
     @Override
     public void run(RunNotifier notifier) {
-        localStackContainer = Container.createLocalstackContainer(externalHostName);
+        // make sure the local infrastructure is not running, to avoid port conflicts
+        LocalstackTestRunner.teardownInfrastructure();
+
+        // now create the container
+        localStackContainer = Container.createLocalstackContainer(externalHostName, pullNewImage, randomizePorts, environmentVariables);
         try {
             loadServiceToPortMap();
 

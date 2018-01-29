@@ -123,6 +123,8 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		return ensureInstallationAndGetEndpoint(ServiceName.SSM);
 	}
 
+	/* OVERRIDE METHODS FROM JUNIT TEST RUNNER */
+
 	@Override
 	public void run(RunNotifier notifier) {
 		setupInfrastructure();
@@ -275,6 +277,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 			return;
 		}
 		killProcess(proc);
+		INFRA_STARTED.set(null);
 	}
 
 	public static String getDefaultRegion() {

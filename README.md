@@ -253,6 +253,24 @@ public class MyCloudAppTest {
 }
 ```
 
+Additionally, there is a version of the *LocalStack* Test Runner which runs in a docker container 
+instead of installing *LocalStack* on the current machine.  The only dependency is to have docker 
+installed locally. The test runner will automatically pull the image and start the container for the
+duration of the test.  The container can be configured by using the @LocalstackDockerProperties annotation.
+
+```
+@RunWith(LocalstackDockerTestRunner.class)
+@LocalstackDockerProperties(randomizePorts = true)
+public class MyDockerCloudAppTest {
+
+  @Test
+  public void testKinesis() {
+    AmazonKinesis kinesis = DockerTestUtils.getClientKinesis();
+
+    ListStreamsResult streams = kinesis.listStreams();
+    ...
+```
+
 The *LocalStack* JUnit test runner is published as an artifact in Maven Central.
 Simply add the following dependency to your `pom.xml` file:
 
