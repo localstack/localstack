@@ -83,7 +83,10 @@ def test_s3_put_object_notification():
     s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
 
 
-def test_s3_get_response_content_type():
+def test_s3_get_response_default_content_type():
+    # When no content type is provided by a PUT request
+    # 'binary/octet-stream' should be used
+    # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
     bucket_name = 'test-bucket-%s' % short_uid()
     s3_client = aws_stack.connect_to_service('s3')
     s3_client.create_bucket(Bucket=bucket_name)
@@ -98,6 +101,26 @@ def test_s3_get_response_content_type():
     # get object and assert headers
     response = requests.get(url, verify=False)
     assert response.headers['content-type'] == 'binary/octet-stream'
+    # clean up
+    s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
+    s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_s3_get_response_content_type_same_as_upload():
+    bucket_name = 'test-bucket-%s' % short_uid()
+    s3_client = aws_stack.connect_to_service('s3')
+    s3_client.create_bucket(Bucket=bucket_name)
+
+    # put object
+    object_key = 'key-by-hostname'
+    s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something', ContentType='text/html; charset=utf-8')
+    url = s3_client.generate_presigned_url(
+        'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
+    )
+
+    # get object and assert headers
+    response = requests.get(url, verify=False)
+    assert response.headers['content-type'] == 'text/html; charset=utf-8'
     # clean up
     s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
     s3_client.delete_bucket(Bucket=bucket_name)
