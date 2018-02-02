@@ -46,9 +46,9 @@ public class Container {
      */
     public static Container createLocalstackContainer(String externalHostName, boolean pullNewImage,
                                                       boolean randomizePorts, Map<String, String> environmentVariables) {
-        LOG.info("Pulling latest image...");
 
         if(pullNewImage) {
+            LOG.info("Pulling latest image...");
             new PullCommand(LOCALSTACK_NAME).execute();
         }
 
