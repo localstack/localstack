@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DockerExe {
 
-    private static final int WAIT_TIMEOUT_MINUTES = 3;
+    private static final int DEFAULT_WAIT_TIME_MINUTES = 1;
 
     private static final List<String> POSSIBLE_EXE_LOCATIONS = Arrays.asList(
             System.getenv("DOCKER_LOCATION"),
@@ -48,6 +48,10 @@ public class DockerExe {
 
 
     public String execute(List<String> args) {
+        return execute(args, DEFAULT_WAIT_TIME_MINUTES);
+    }
+
+    public String execute(List<String> args, int waitTimeoutMinutes) {
         try {
             List<String> command = new ArrayList<>();
             command.add(exeLocation);
@@ -61,8 +65,8 @@ public class DockerExe {
             ExecutorService exec = newSingleThreadExecutor();
             Future<String> outputFuture = exec.submit(() -> handleOutput(process));
 
-            String output = outputFuture.get(WAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
-            process.waitFor(WAIT_TIMEOUT_MINUTES, TimeUnit.MINUTES);
+            String output = outputFuture.get(waitTimeoutMinutes, TimeUnit.MINUTES);
+            process.waitFor(waitTimeoutMinutes, TimeUnit.MINUTES);
             exec.shutdown();
 
             return output;
