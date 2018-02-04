@@ -4,7 +4,7 @@ MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 
 # install some common libs
-RUN apk add --no-cache autoconf automake build-base ca-certificates curl git \
+RUN apk add --no-cache autoconf automake build-base ca-certificates curl g++ gcc git \
         libffi-dev libtool linux-headers make openssl openssl-dev python python-dev \
         py-pip supervisor tar xz zip && \
     update-ca-certificates
@@ -63,15 +63,11 @@ RUN mkdir -p /opt/code/localstack/localstack/infra && \
     mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
     wget -O /tmp/localstack.ddb.zip \
         https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip && \
-    (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
-    (pip install --upgrade pip) && \
-    (test `which virtualenv` || \
-        pip install virtualenv || \
-        sudo pip install virtualenv) && \
-    (virtualenv .testvenv && \
-        source .testvenv/bin/activate && \
-        pip install six==1.10.0 && \
-        pip install --quiet -r requirements.txt && \
+    (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip)
+RUN (pip install --upgrade pip) && \
+    (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
+    (virtualenv .testvenv && source .testvenv/bin/activate && \
+        pip install -q six==1.10.0 && pip install -q -r requirements.txt && \
         rm -rf .testvenv)
 
 # add files required to run "make install-web"
@@ -90,4 +86,4 @@ RUN (virtualenv .venv && source .venv/bin/activate && pip install cryptography)
 
 # clean up (layers are later squashed into a single one)
 RUN rm -rf /root/.npm; \
-  apk del --purge autoconf automake build-base linux-headers openssl-dev python-dev
+  apk del --purge autoconf automake build-base g++ gcc linux-headers openssl-dev python-dev

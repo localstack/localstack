@@ -203,17 +203,8 @@ def get_event_sources(func_name=None, source_arn=None):
 
 
 def get_function_version(arn, version):
-    func_name = arn.split(':function:')[-1]
-    return \
-        {
-            'Version': version,
-            'CodeSize': arn_to_lambda.get(arn).get_version(version).get('CodeSize'),
-            'FunctionName': func_name,
-            'FunctionArn': arn + ':' + str(version),
-            'Handler': arn_to_lambda.get(arn).handler,
-            'Runtime': arn_to_lambda.get(arn).runtime,
-            'Timeout': LAMBDA_DEFAULT_TIMEOUT,
-        }
+    func = arn_to_lambda.get(arn)
+    return format_func_details(func, version=version, always_add_version=True)
 
 
 def publish_new_function_version(arn):
@@ -408,18 +399,33 @@ def do_list_functions():
     for f_arn, func in iteritems(arn_to_lambda):
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
-        funcs.append({
-            'Version': '$LATEST',
-            'CodeSize': arn_to_lambda.get(arn).get_version('$LATEST').get('CodeSize'),
-            'FunctionName': func_name,
-            'FunctionArn': f_arn,
-            'Handler': arn_to_lambda.get(arn).handler,
-            'Runtime': arn_to_lambda.get(arn).runtime,
-            'Timeout': LAMBDA_DEFAULT_TIMEOUT,
-            # 'Description': ''
-            # 'MemorySize': 192,
-        })
+        func_details = arn_to_lambda.get(arn)
+        funcs.append(format_func_details(func_details))
     return funcs
+
+
+def format_func_details(func_details, version=None, always_add_version=False):
+    version = version or '$LATEST'
+    result = {
+        'Version': version,
+        'FunctionArn': func_details.arn(),
+        'FunctionName': func_details.name(),
+        'CodeSize': func_details.get_version(version).get('CodeSize'),
+        'Handler': func_details.handler,
+        'Runtime': func_details.runtime,
+        'Timeout': func_details.timeout,
+        'Environment': func_details.envvars,
+        # 'Description': ''
+        # 'MemorySize': 192,
+    }
+    if (always_add_version or version != '$LATEST') and len(result['FunctionArn'].split(':')) <= 7:
+        result['FunctionArn'] += ':%s' % (version)
+    return result
+
+
+# ------------
+# API METHODS
+# ------------
 
 
 @app.route('%s/functions' % PATH_ROOT, methods=['POST'])
@@ -441,11 +447,12 @@ def create_function():
         if arn in arn_to_lambda:
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
-        arn_to_lambda[arn] = LambdaFunction(arn)
-        arn_to_lambda[arn].versions = {'$LATEST': {'CodeSize': 50}}
-        arn_to_lambda[arn].handler = data['Handler']
-        arn_to_lambda[arn].runtime = data['Runtime']
-        arn_to_lambda[arn].envvars = data.get('Environment', {}).get('Variables', {})
+        arn_to_lambda[arn] = func_details = LambdaFunction(arn)
+        func_details.versions = {'$LATEST': {'CodeSize': 50}}
+        func_details.handler = data['Handler']
+        func_details.runtime = data['Runtime']
+        func_details.envvars = data.get('Environment', {}).get('Variables', {})
+        func_details.timeout = data.get('Timeout')
         result = set_function_code(data['Code'], lambda_name)
         if isinstance(result, Response):
             del arn_to_lambda[arn]
@@ -453,13 +460,13 @@ def create_function():
         result.update({
             'DeadLetterConfig': data.get('DeadLetterConfig'),
             'Description': data.get('Description'),
-            'Environment': {'Error': {}, 'Variables': arn_to_lambda[arn].envvars},
+            'Environment': {'Error': {}, 'Variables': func_details.envvars},
             'FunctionArn': arn,
             'FunctionName': lambda_name,
-            'Handler': arn_to_lambda[arn].handler,
+            'Handler': func_details.handler,
             'MemorySize': data.get('MemorySize'),
             'Role': data.get('Role'),
-            'Runtime': arn_to_lambda[arn].runtime,
+            'Runtime': func_details.runtime,
             'Timeout': data.get('Timeout'),
             'TracingConfig': {},
             'VpcConfig': {'SecurityGroupIds': [None], 'SubnetIds': [None], 'VpcId': None}
@@ -586,15 +593,7 @@ def get_function_configuration(function):
     lambda_details = arn_to_lambda.get(arn)
     if not lambda_details:
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
-    result = {
-        'Version': '$LATEST',
-        'FunctionName': function,
-        'FunctionArn': arn,
-        'Handler': lambda_details.handler,
-        'Runtime': lambda_details.runtime,
-        'Timeout': LAMBDA_DEFAULT_TIMEOUT,
-        'Environment': lambda_details.envvars
-    }
+    result = format_func_details(lambda_details)
     return jsonify(result)
 
 
@@ -613,12 +612,15 @@ def update_function_configuration(function):
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
 
+    lambda_details = arn_to_lambda[arn]
     if data.get('Handler'):
-        arn_to_lambda[arn].handler = data['Handler']
+        lambda_details.handler = data['Handler']
     if data.get('Runtime'):
-        arn_to_lambda[arn].runtime = data['Runtime']
+        lambda_details.runtime = data['Runtime']
     if data.get('Environment'):
-        arn_to_lambda[arn].envvars = data.get('Environment', {}).get('Variables', {})
+        lambda_details.envvars = data.get('Environment', {}).get('Variables', {})
+    if data.get('Timeout'):
+        lambda_details.timeout = data['Timeout']
     result = {}
     return jsonify(result)
 

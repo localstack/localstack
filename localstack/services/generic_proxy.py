@@ -242,9 +242,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             self.wfile.flush()
         except Exception as e:
             trace = str(traceback.format_exc())
-            conn_error = 'ConnectionRefusedError' in trace or 'NewConnectionError' in trace
+            conn_errors = ('ConnectionRefusedError', 'NewConnectionError')
+            conn_error = any(e in trace for e in conn_errors)
             error_msg = 'Error forwarding request: %s %s' % (e, trace)
-            if not self.proxy.quiet or not conn_error:
+            if 'Broken pipe' in trace:
+                LOGGER.warn('Connection prematurely closed by client (broken pipe).')
+            elif not self.proxy.quiet or not conn_error:
                 LOGGER.error(error_msg)
                 if os.environ.get(ENV_INTERNAL_TEST_RUN):
                     # During a test run, we also want to print error messages, because
