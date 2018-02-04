@@ -167,12 +167,17 @@ class LambdaFunction(Component):
         self.runtime = None
         self.handler = None
         self.cwd = None
+        self.timeout = None
 
     def get_version(self, version):
         return self.versions.get(version)
 
     def name(self):
-        return self.id.split(':function:')[-1]
+        # Example ARN: arn:aws:lambda:aws-region:acct-id:function:helloworld:1
+        return self.id.split(':')[6]
+
+    def arn(self):
+        return self.id
 
     def function(self, qualifier=None):
         if not qualifier:

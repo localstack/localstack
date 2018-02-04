@@ -49,9 +49,11 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Runtime'] = str(self.RUNTIME)
             expected_result['Timeout'] = self.TIMEOUT
             expected_result['Version'] = '1'
+            expected_result['Environment'] = {}
             expected_result2 = dict(expected_result)
             expected_result2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
             expected_result2['Version'] = '2'
+            expected_result2['Environment'] = {}
             self.assertDictEqual(expected_result, result)
             self.assertDictEqual(expected_result2, result2)
 
@@ -78,12 +80,15 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['Runtime'] = str(self.RUNTIME)
             latest_version['Timeout'] = self.TIMEOUT
             latest_version['Version'] = '$LATEST'
+            latest_version['Environment'] = {}
             version1 = dict(latest_version)
             version1['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':1'
             version1['Version'] = '1'
+            version1['Environment'] = {}
             version2 = dict(latest_version)
             version2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
             version2['Version'] = '2'
+            version2['Environment'] = {}
             expected_result = {'Versions': sorted([latest_version, version1, version2],
                                                   key=lambda k: str(k.get('Version')))}
             self.assertDictEqual(expected_result, result)
@@ -208,4 +213,5 @@ class TestLambdaAPI(unittest.TestCase):
         lambda_api.arn_to_lambda[arn].versions = {'$LATEST': {'CodeSize': self.CODE_SIZE}}
         lambda_api.arn_to_lambda[arn].handler = self.HANDLER
         lambda_api.arn_to_lambda[arn].runtime = self.RUNTIME
+        lambda_api.arn_to_lambda[arn].timeout = self.TIMEOUT
         lambda_api.arn_to_lambda[arn].envvars = {}
