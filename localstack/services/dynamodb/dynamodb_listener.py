@@ -27,6 +27,7 @@ LOGGER = logging.getLogger(__name__)
 class ProxyListenerDynamoDB(ProxyListener):
 
     thread_local = threading.local()
+    table_ttl_map = {}
 
     def forward_request(self, method, path, data, headers):
         data = json.loads(to_str(data))
@@ -137,13 +138,28 @@ class ProxyListenerDynamoDB(ProxyListener):
                 create_dynamodb_stream(data)
             return
         elif action == '%s.UpdateTimeToLive' % ACTION_PREFIX:
+            ProxyListenerDynamoDB.table_ttl_map[data['TableName']] = {
+                'AttributeName': data['TimeToLiveSpecification']['AttributeName'],
+                'Status': data['TimeToLiveSpecification']['Enabled']
+            }
             response.status_code = 200
-            # Accepts the recquest but ignores TLL as not supported in local DynamoDB
             response._content = json.dumps({'TimeToLiveSpecification': data['TimeToLiveSpecification']})
             return
         elif action == '%s.DescribeTimeToLive' % ACTION_PREFIX:
             response.status_code = 200
-            response._content = json.dumps({'TimeToLiveDescription': {'TimeToLiveStatus': 'DISABLED'}})
+            if data['TableName'] in ProxyListenerDynamoDB.table_ttl_map:
+                if ProxyListenerDynamoDB.table_ttl_map[data['TableName']]['Status']:
+                    ttl_status = 'ENABLED'
+                else:
+                    ttl_status = 'DISABLED'
+                response._content = json.dumps({
+                    'TimeToLiveDescription': {
+                        'AttributeName': ProxyListenerDynamoDB.table_ttl_map[data['TableName']]['AttributeName'],
+                        'TimeToLiveStatus': ttl_status
+                    }
+                })
+            else:  # TTL for dynamodb table not set
+                response._content = json.dumps({'TimeToLiveDescription': {'TimeToLiveStatus': 'DISABLED'}})
             return
         elif action == '%s.TagResource' % ACTION_PREFIX or action == '%s.UntagResource' % ACTION_PREFIX:
             response.status_code = 200
