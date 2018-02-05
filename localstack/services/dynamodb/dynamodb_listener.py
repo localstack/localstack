@@ -136,6 +136,23 @@ class ProxyListenerDynamoDB(ProxyListener):
             if 'StreamSpecification' in data:
                 create_dynamodb_stream(data)
             return
+        elif action == '%s.UpdateTimeToLive' % ACTION_PREFIX:
+            response.status_code = 200
+            # Accepts the recquest but ignores TLL as not supported in local DynamoDB
+            response._content = json.dumps({'TimeToLiveSpecification': data['TimeToLiveSpecification']})
+            return
+        elif action == '%s.DescribeTimeToLive' % ACTION_PREFIX:
+            response.status_code = 200
+            response._content = json.dumps({'TimeToLiveDescription': {'TimeToLiveStatus': 'DISABLED'}})
+            return
+        elif action == '%s.TagResource' % ACTION_PREFIX or action == '%s.UntagResource' % ACTION_PREFIX:
+            response.status_code = 200
+            response._content = {}
+            return
+        elif action == '%s.ListTagsOfResource' % ACTION_PREFIX:
+            response.status_code = 200
+            response._content = {}
+            return
         else:
             # nothing to do
             return
