@@ -19,7 +19,7 @@ localstack-ext>=0.8.1
 localstack-client==0.4
 moto-ext==1.1.25.3
 nose==1.3.7
-psutil==5.2.0
+psutil==5.4.3
 pyOpenSSL==17.0.0
 python-coveralls==2.7.0
 pyYAML==3.12
