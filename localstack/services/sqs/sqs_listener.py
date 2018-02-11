@@ -69,9 +69,21 @@ class ProxyListenerSQS(ProxyListener):
                     new_response.headers['content-length'] = len(new_response._content)
                     return new_response
 
-            # Since this API call is not implemented in ElasticMQ, we're mocking it
-            # and letting it return an empty response
-            if action == 'ListQueueTags':
+            # Since the following 2 API calls are not implemented in ElasticMQ, we're mocking them
+            # and letting them to return an empty response
+            if action == 'TagQueue':
+                new_response = Response()
+                new_response.status_code = 200
+                new_response._content = (
+                    '<?xml version="1.0"?>'
+                    '<TagQueueResponse>'
+                        '<ResponseMetadata>'  # noqa: W291
+                            '<RequestId>{}</RequestId>'  # noqa: W291
+                        '</ResponseMetadata>'  # noqa: W291
+                    '</TagQueueResponse>'
+                ).format(uuid.uuid4())
+                return new_response
+            elif action == 'ListQueueTags':
                 new_response = Response()
                 new_response.status_code = 200
                 new_response._content = (
