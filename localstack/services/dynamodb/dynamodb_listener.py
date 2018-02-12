@@ -138,12 +138,14 @@ class ProxyListenerDynamoDB(ProxyListener):
                 create_dynamodb_stream(data)
             return
         elif action == '%s.UpdateTimeToLive' % ACTION_PREFIX:
+            # TODO: TTL status is maintained/mocked but no real expiry is happening for items
             ProxyListenerDynamoDB.table_ttl_map[data['TableName']] = {
                 'AttributeName': data['TimeToLiveSpecification']['AttributeName'],
                 'Status': data['TimeToLiveSpecification']['Enabled']
             }
             response.status_code = 200
             response._content = json.dumps({'TimeToLiveSpecification': data['TimeToLiveSpecification']})
+            fix_headers_for_updated_response(response)
             return
         elif action == '%s.DescribeTimeToLive' % ACTION_PREFIX:
             response.status_code = 200
@@ -160,14 +162,17 @@ class ProxyListenerDynamoDB(ProxyListener):
                 })
             else:  # TTL for dynamodb table not set
                 response._content = json.dumps({'TimeToLiveDescription': {'TimeToLiveStatus': 'DISABLED'}})
+            fix_headers_for_updated_response(response)
             return
         elif action == '%s.TagResource' % ACTION_PREFIX or action == '%s.UntagResource' % ACTION_PREFIX:
             response.status_code = 200
-            response._content = {}
+            response._content = ''  # TODO: this api is mocked for now and always returns success.
+            fix_headers_for_updated_response(response)
             return
         elif action == '%s.ListTagsOfResource' % ACTION_PREFIX:
             response.status_code = 200
-            response._content = {}
+            response._content = json.dumps({'Tags': []})  # TODO: mocked and returns an empty list of tags for now.
+            fix_headers_for_updated_response(response)
             return
         else:
             # nothing to do

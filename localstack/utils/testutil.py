@@ -3,8 +3,10 @@ import json
 import time
 import glob
 import tempfile
+import requests
 from six import iteritems
-from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE
+from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
+    LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, DEFAULT_REGION)
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
 from localstack.utils.common import run, mkdir, to_str, save_file, TMP_FILES
@@ -201,3 +203,31 @@ def map_all_s3_objects(to_json=True):
                 value = json.loads(value)
             result['%s/%s' % (key.bucket_name, key.key)] = value
     return result
+
+
+def get_sample_arn(service, resource):
+    return 'arn:aws:%s:%s:%s:%s' % (service, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, resource)
+
+
+def send_describe_dynamodb_ttl_request(table_name):
+    return send_dynamodb_request('', 'DescribeTimeToLive', json.dumps({'TableName': table_name}))
+
+
+def send_update_dynamodb_ttl_request(table_name, ttl_status):
+    return send_dynamodb_request('', 'UpdateTimeToLive', json.dumps({
+        'TableName': table_name,
+        'TimeToLiveSpecification': {
+            'AttributeName': 'ExpireItem',
+            'Enabled': ttl_status
+        }
+    }))
+
+
+def send_dynamodb_request(path, action, request_body):
+    headers = {
+        'Host': 'dynamodb.amazonaws.com',
+        'x-amz-target': 'DynamoDB_20120810.{}'.format(action),
+        'authorization': 'some_token'
+    }
+    url = '{}/{}'.format(os.getenv('TEST_DYNAMODB_URL'), path)
+    return requests.put(url, data=request_body, headers=headers, verify=False)
