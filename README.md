@@ -253,8 +253,8 @@ public class MyCloudAppTest {
 }
 ```
 
-Additionally, there is a version of the *LocalStack* Test Runner which runs in a docker container 
-instead of installing *LocalStack* on the current machine.  The only dependency is to have docker 
+Additionally, there is a version of the *LocalStack* Test Runner which runs in a docker container
+instead of installing *LocalStack* on the current machine. The only dependency is to have docker
 installed locally. The test runner will automatically pull the image and start the container for the
 duration of the test.  The container can be configured by using the @LocalstackDockerProperties annotation.
 
@@ -353,6 +353,7 @@ localstack web
 
 ## Change Log
 
+* v0.8.5: Fix DDB streams event type; implement CF Fn::GetAZs; async lambda for DDB events; fix S3 content-type; fix CF deployer for SQS; fix S3 ExposePorts; fix message subject in SNS; support for Firehose -> ES; pass external env vars to containers from Java; add mock for list-queue-tags; enhance docker test runner; fix Windows installation issues; new version of Java libs
 * v0.8.4: Fix `pipenv` dependency issue; Docker JUnit test runner; POJO type for Java Lambda RequestHandler; Java Lambda DynamoDB event; reuse Docker containers for Lambda invocations; API Gateway wildcard path segments; fix SNS RawMessageDelivery
 * v0.8.3: Fix DDB stream events for UPDATE operations; fix DDB streams sequence numbers; fix transfer-encoding for DDB; fix requests with missing content-length header; support non-ascii content in DynamoDB items; map external port for SQS queue URLs; default to LAMBDA_REMOTE_DOCKER=true if running in Docker; S3 lifecycle support; reduce Docker image size
 * v0.8.2: Fix S3 bucket notification configuration; CORS headers for API Gateway; fix >128k S3 multipart uploads; return valid ShardIDs in DynamoDB Streams; fix hardcoded "ddblocal" DynamoDB TableARN; import default service ports from localstack-client; fix S3 bucket policy response; Execute lambdas asynchronously if the source is a topic
