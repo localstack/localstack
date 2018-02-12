@@ -162,7 +162,7 @@ You can pass the following environment variables to LocalStack:
       volume (potentially faster). This requires to have the Docker client and the Docker
       host on the same machine.
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
-  Kinesis, DynamoDB, Elasticsearch). Set it to `/tmp/localstack/data` to enable persistence
+  Kinesis, DynamoDB, Elasticsearch, S3). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
 * `PORT_WEB_UI`: Port for the Web user interface (dashboard). Default is `8080`.
