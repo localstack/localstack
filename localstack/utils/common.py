@@ -486,8 +486,21 @@ def unzip(path, target_dir):
     except Exception as e:
         LOGGER.warning('Unable to open zip file: %s: %s' % (path, e))
         raise e
-    zip_ref.extractall(target_dir)
+    # Make sure to preserve file permissions in the zip file
+    # https://www.burgundywall.com/post/preserving-file-perms-with-python-zipfile-module
+    for file_entry in zip_ref.infolist():
+        _unzip_file_entry(zip_ref, file_entry, target_dir)
     zip_ref.close()
+
+
+def _unzip_file_entry(zip_ref, file_entry, target_dir):
+    """
+    Extracts a Zipfile entry and preserves permissions
+    """
+    zip_ref.extract(file_entry.filename, path=target_dir)
+    out_path = os.path.join(target_dir, file_entry.filename)
+    perm = file_entry.external_attr >> 16
+    os.chmod(out_path, perm)
 
 
 def is_jar_archive(content):
