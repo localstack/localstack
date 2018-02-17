@@ -116,7 +116,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
             'Tags': [{'tagkey1': 'tagvalue1'}, {'tagkey2': 'tagvalue2'}, {'tagkey3': 'tagvalue3'}]
         }))
         assert response.status_code == 200
-        assert response._content == ''  # Empty string if tagging succeeded (mocked for now)
+        assert not response._content  # Empty string if tagging succeeded (mocked for now)
 
     def test_untag_resource(self):
         response = testutil.send_dynamodb_request('', action='UntagResource', request_body=json.dumps({
@@ -124,7 +124,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
             'TagKeys': ['tagkey1', 'tagkey2']  # Keys to untag
         }))
         assert response.status_code == 200
-        assert response._content == ''  # Empty string if untagging succeeded (mocked for now)
+        assert not response._content  # Empty string if untagging succeeded (mocked for now)
 
     def test_list_tags_of_resource(self):
         response = testutil.send_dynamodb_request('', action='ListTagsOfResource', request_body=json.dumps({

@@ -27,7 +27,9 @@ LOGGER = logging.getLogger(__name__)
 class ProxyListenerDynamoDB(ProxyListener):
 
     thread_local = threading.local()
-    table_ttl_map = {}
+
+    def __init__(self):
+        self._table_ttl_map = {}
 
     def forward_request(self, method, path, data, headers):
         data = json.loads(to_str(data))
@@ -40,6 +42,36 @@ class ProxyListenerDynamoDB(ProxyListener):
             # find an existing item and store it in a thread-local, so we can access it in return_response,
             # in order to determine whether an item already existed (MODIFY) or not (INSERT)
             ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)
+        elif action == '%s.DescribeTimeToLive' % ACTION_PREFIX:
+            response = Response()
+            response.status_code = 200
+            if data['TableName'] in self._table_ttl_map:
+                if self._table_ttl_map[data['TableName']]['Status']:
+                    ttl_status = 'ENABLED'
+                else:
+                    ttl_status = 'DISABLED'
+                response._content = json.dumps({
+                    'TimeToLiveDescription': {
+                        'AttributeName': self._table_ttl_map[data['TableName']]['AttributeName'],
+                        'TimeToLiveStatus': ttl_status
+                    }
+                })
+            else:  # TTL for dynamodb table not set
+                response._content = json.dumps({'TimeToLiveDescription': {'TimeToLiveStatus': 'DISABLED'}})
+            fix_headers_for_updated_response(response)
+            return response
+        elif action == '%s.TagResource' % ACTION_PREFIX or action == '%s.UntagResource' % ACTION_PREFIX:
+            response = Response()
+            response.status_code = 200
+            response._content = ''  # returns an empty body on success.
+            fix_headers_for_updated_response(response)
+            return response
+        elif action == '%s.ListTagsOfResource' % ACTION_PREFIX:
+            response = Response()
+            response.status_code = 200
+            response._content = json.dumps({'Tags': []})  # TODO: mocked and returns an empty list of tags for now.
+            fix_headers_for_updated_response(response)
+            return response
 
         return True
 
@@ -139,39 +171,12 @@ class ProxyListenerDynamoDB(ProxyListener):
             return
         elif action == '%s.UpdateTimeToLive' % ACTION_PREFIX:
             # TODO: TTL status is maintained/mocked but no real expiry is happening for items
-            ProxyListenerDynamoDB.table_ttl_map[data['TableName']] = {
+            self._table_ttl_map[data['TableName']] = {
                 'AttributeName': data['TimeToLiveSpecification']['AttributeName'],
                 'Status': data['TimeToLiveSpecification']['Enabled']
             }
             response.status_code = 200
             response._content = json.dumps({'TimeToLiveSpecification': data['TimeToLiveSpecification']})
-            fix_headers_for_updated_response(response)
-            return
-        elif action == '%s.DescribeTimeToLive' % ACTION_PREFIX:
-            response.status_code = 200
-            if data['TableName'] in ProxyListenerDynamoDB.table_ttl_map:
-                if ProxyListenerDynamoDB.table_ttl_map[data['TableName']]['Status']:
-                    ttl_status = 'ENABLED'
-                else:
-                    ttl_status = 'DISABLED'
-                response._content = json.dumps({
-                    'TimeToLiveDescription': {
-                        'AttributeName': ProxyListenerDynamoDB.table_ttl_map[data['TableName']]['AttributeName'],
-                        'TimeToLiveStatus': ttl_status
-                    }
-                })
-            else:  # TTL for dynamodb table not set
-                response._content = json.dumps({'TimeToLiveDescription': {'TimeToLiveStatus': 'DISABLED'}})
-            fix_headers_for_updated_response(response)
-            return
-        elif action == '%s.TagResource' % ACTION_PREFIX or action == '%s.UntagResource' % ACTION_PREFIX:
-            response.status_code = 200
-            response._content = ''  # TODO: this api is mocked for now and always returns success.
-            fix_headers_for_updated_response(response)
-            return
-        elif action == '%s.ListTagsOfResource' % ACTION_PREFIX:
-            response.status_code = 200
-            response._content = json.dumps({'Tags': []})  # TODO: mocked and returns an empty list of tags for now.
             fix_headers_for_updated_response(response)
             return
         else:
