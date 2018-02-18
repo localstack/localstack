@@ -19,8 +19,13 @@ from flask import Flask, Response, jsonify, request, make_response
 from localstack import config
 from localstack.services import generic_proxy
 from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.lambda_executors import (LAMBDA_RUNTIME_PYTHON27,
-    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_JAVA8)
+from localstack.services.awslambda.lambda_executors import (
+    LAMBDA_RUNTIME_PYTHON27,
+    LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_NODEJS,
+    LAMBDA_RUNTIME_NODEJS610,
+    LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_GOLANG)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES,
     unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
 from localstack.utils.aws import aws_stack, aws_responses
@@ -293,7 +298,12 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
 
 def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     # TODO: support Java Lambdas in the future
-    file_ext = '.js' if runtime.startswith(LAMBDA_RUNTIME_NODEJS) else '.py'
+    if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
+        file_ext = '.js'
+    elif runtime.startswith(LAMBDA_RUNTIME_GOLANG):
+        file_ext = ''
+    else:
+        file_ext = '.py'
     return '%s%s' % (handler_name.split('.')[0], file_ext)
 
 
