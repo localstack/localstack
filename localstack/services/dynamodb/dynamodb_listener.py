@@ -42,6 +42,17 @@ class ProxyListenerDynamoDB(ProxyListener):
             # find an existing item and store it in a thread-local, so we can access it in return_response,
             # in order to determine whether an item already existed (MODIFY) or not (INSERT)
             ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)
+        elif action == '%s.UpdateTimeToLive' % ACTION_PREFIX:
+            # TODO: TTL status is maintained/mocked but no real expiry is happening for items
+            response = Response()
+            response.status_code = 200
+            self._table_ttl_map[data['TableName']] = {
+                'AttributeName': data['TimeToLiveSpecification']['AttributeName'],
+                'Status': data['TimeToLiveSpecification']['Enabled']
+            }
+            response._content = json.dumps({'TimeToLiveSpecification': data['TimeToLiveSpecification']})
+            fix_headers_for_updated_response(response)
+            return response
         elif action == '%s.DescribeTimeToLive' % ACTION_PREFIX:
             response = Response()
             response.status_code = 200
@@ -168,16 +179,6 @@ class ProxyListenerDynamoDB(ProxyListener):
         elif action == '%s.UpdateTable' % ACTION_PREFIX:
             if 'StreamSpecification' in data:
                 create_dynamodb_stream(data)
-            return
-        elif action == '%s.UpdateTimeToLive' % ACTION_PREFIX:
-            # TODO: TTL status is maintained/mocked but no real expiry is happening for items
-            self._table_ttl_map[data['TableName']] = {
-                'AttributeName': data['TimeToLiveSpecification']['AttributeName'],
-                'Status': data['TimeToLiveSpecification']['Enabled']
-            }
-            response.status_code = 200
-            response._content = json.dumps({'TimeToLiveSpecification': data['TimeToLiveSpecification']})
-            fix_headers_for_updated_response(response)
             return
         else:
             # nothing to do
