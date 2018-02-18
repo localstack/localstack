@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+import json
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import json_safe
 
 TEST_DDB_TABLE_NAME = 'test-ddb-table-1'
 TEST_DDB_TABLE_NAME_2 = 'test-ddb-table-2'
+TEST_DDB_TABLE_NAME_3 = 'test-ddb-table-3'
 PARTITION_KEY = 'id'
 
 
@@ -53,3 +55,80 @@ class DynamoDBIntegrationTest (unittest.TestCase):
 
         # Clean up
         dynamodb_client.delete_table(TableName=TEST_DDB_TABLE_NAME_2)
+
+    def test_time_to_live(self):
+        dynamodb = aws_stack.connect_to_resource('dynamodb')
+        dynamodb_client = aws_stack.connect_to_service('dynamodb')
+
+        testutil.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
+        table = dynamodb.Table(TEST_DDB_TABLE_NAME_3)
+
+        # Insert some items to the table
+        items = {
+            'id1': {PARTITION_KEY: 'id1', 'data': 'IT IS'},
+            'id2': {PARTITION_KEY: 'id2', 'data': 'TIME'},
+            'id3': {PARTITION_KEY: 'id3', 'data': 'TO LIVE!'}
+        }
+        for k, item in items.items():
+            table.put_item(Item=item)
+
+        # Describe TTL when still unset.
+        response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
+        assert response.status_code == 200
+        assert json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'] == 'DISABLED'
+
+        # Enable TTL for given table
+        response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, True)
+        assert response.status_code == 200
+        assert json.loads(response._content)['TimeToLiveSpecification']['Enabled'] is True
+
+        # Describe TTL status after being enabled.
+        response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
+        assert response.status_code == 200
+        assert json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'] == 'ENABLED'
+
+        # Disable TTL for given table
+        response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, False)
+        assert response.status_code == 200
+        assert json.loads(response._content)['TimeToLiveSpecification']['Enabled'] is False
+
+        # Describe TTL status after being disabled.
+        response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
+        assert response.status_code == 200
+        assert json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'] == 'DISABLED'
+
+        # Enable TTL for given table again
+        response = testutil.send_update_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3, True)
+        assert response.status_code == 200
+        assert json.loads(response._content)['TimeToLiveSpecification']['Enabled'] is True
+
+        # Describe TTL status after being enabled again.
+        response = testutil.send_describe_dynamodb_ttl_request(TEST_DDB_TABLE_NAME_3)
+        assert response.status_code == 200
+        assert json.loads(response._content)['TimeToLiveDescription']['TimeToLiveStatus'] == 'ENABLED'
+
+        # Clean up table
+        dynamodb_client.delete_table(TableName=TEST_DDB_TABLE_NAME_3)
+
+    def test_tag_resource(self):
+        response = testutil.send_dynamodb_request('', action='TagResource', request_body=json.dumps({
+            'ResourceArn': testutil.get_sample_arn('dynamodb', 'table'),
+            'Tags': [{'tagkey1': 'tagvalue1'}, {'tagkey2': 'tagvalue2'}, {'tagkey3': 'tagvalue3'}]
+        }))
+        assert response.status_code == 200
+        assert not response._content  # Empty string if tagging succeeded (mocked for now)
+
+    def test_untag_resource(self):
+        response = testutil.send_dynamodb_request('', action='UntagResource', request_body=json.dumps({
+            'ResourceArn': testutil.get_sample_arn('dynamodb', 'table'),
+            'TagKeys': ['tagkey1', 'tagkey2']  # Keys to untag
+        }))
+        assert response.status_code == 200
+        assert not response._content  # Empty string if untagging succeeded (mocked for now)
+
+    def test_list_tags_of_resource(self):
+        response = testutil.send_dynamodb_request('', action='ListTagsOfResource', request_body=json.dumps({
+            'ResourceArn': testutil.get_sample_arn('dynamodb', 'table')
+        }))
+        assert response.status_code == 200
+        assert json.loads(response._content)['Tags'] == []  # Empty list returned
