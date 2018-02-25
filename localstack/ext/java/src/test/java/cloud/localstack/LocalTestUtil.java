@@ -2,7 +2,6 @@ package cloud.localstack;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.jar.JarEntry;
@@ -43,11 +42,6 @@ public class LocalTestUtil {
 
 		zipStream.close();
 		code.setZipFile(ByteBuffer.wrap(zipOut.toByteArray()));
-
-		// TODO tmp
-		FileOutputStream fos = new FileOutputStream("/tmp/test.zip");
-		fos.write(zipOut.toByteArray());
-		fos.close();
 
 		return code;
 	}

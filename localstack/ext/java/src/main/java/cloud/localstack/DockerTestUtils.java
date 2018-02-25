@@ -6,14 +6,24 @@ import static cloud.localstack.TestUtils.getEndpointConfiguration;
 import java.util.function.Supplier;
 
 import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.cloudformation.AmazonCloudFormation;
+import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
+import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehose;
+import com.amazonaws.services.kinesisfirehose.AmazonKinesisFirehoseClientBuilder;
 import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 
@@ -28,13 +38,17 @@ public class DockerTestUtils {
                 withCredentials(getCredentialsProvider()).build();
     }
 
+    public static AmazonSNS getClientSNS() {
+        return AmazonSNSClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDockerTestRunner::getEndpointSNS))
+                .withCredentials(getCredentialsProvider()).build();
+    }
 
     public static AWSLambda getClientLambda() {
         return AWSLambdaClientBuilder.standard().
                 withEndpointConfiguration(createEndpointConfiguration(LocalstackDockerTestRunner::getEndpointLambda)).
                 withCredentials(getCredentialsProvider()).build();
     }
-
 
     public static AmazonS3 getClientS3() {
         AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard()
@@ -44,17 +58,39 @@ public class DockerTestUtils {
         return builder.build();
     }
 
-
     public static AmazonKinesis getClientKinesis() {
         return AmazonKinesisClientBuilder.standard()
                 .withEndpointConfiguration(createEndpointConfiguration(LocalstackDockerTestRunner::getEndpointKinesis))
                 .withCredentials(getCredentialsProvider()).build();
     }
 
-
     public static AmazonDynamoDB getClientDynamoDb() {
         return AmazonDynamoDBClientBuilder.standard()
                 .withEndpointConfiguration(createEndpointConfiguration(LocalstackDockerTestRunner::getEndpointDynamoDB))
+                .withCredentials(getCredentialsProvider()).build();
+    }
+
+    public static AmazonCloudWatch getClientCloudWatch() {
+        return AmazonCloudWatchClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDockerTestRunner::getEndpointCloudWatch))
+                .withCredentials(getCredentialsProvider()).build();
+    }
+
+    public static AmazonKinesisFirehose getClientFirehose() {
+        return AmazonKinesisFirehoseClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDockerTestRunner::getEndpointFirehose))
+                .withCredentials(getCredentialsProvider()).build();
+    }
+
+    public static AmazonDynamoDBStreams getClientDynamoDbStreams() {
+        return AmazonDynamoDBStreamsClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDockerTestRunner::getEndpointDynamoDBStreams))
+                .withCredentials(getCredentialsProvider()).build();
+    }
+
+    public static AmazonCloudFormation getClientCloudFormation() {
+        return AmazonCloudFormationClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDockerTestRunner::getEndpointCloudFormation))
                 .withCredentials(getCredentialsProvider()).build();
     }
 
