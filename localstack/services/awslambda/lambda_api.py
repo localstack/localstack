@@ -26,7 +26,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_NODEJS610,
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_GOLANG)
-from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES,
+from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
@@ -370,6 +370,8 @@ def set_function_code(code, lambda_name):
             if len(jar_files) == 1:
                 main_file = jar_files[0]
         if os.path.isfile(main_file):
+            # make sure the file is actually readable, then read contents
+            ensure_readable(main_file)
             with open(main_file, 'rb') as file_obj:
                 zip_file_content = file_obj.read()
         else:
@@ -484,7 +486,7 @@ def create_function():
         return jsonify(result or {})
     except Exception as e:
         del arn_to_lambda[arn]
-        return error_response('Unknown error: %s' % e)
+        return error_response('Unknown error: %s %s' % (e, traceback.format_exc()))
 
 
 @app.route('%s/functions/<function>' % PATH_ROOT, methods=['GET'])

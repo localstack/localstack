@@ -324,6 +324,17 @@ def mkdir(folder):
         os.makedirs(folder)
 
 
+def ensure_readable(file_path, default_perms=None):
+    if default_perms is None:
+        default_perms = 0o644
+    try:
+        with open(file_path, 'rb'):
+            pass
+    except Exception:
+        LOGGER.info('Updating permissions as file is currently not readable: %s' % file_path)
+        os.chmod(file_path, default_perms)
+
+
 def chmod_r(path, mode):
     """Recursive chmod"""
     os.chmod(path, mode)
@@ -504,12 +515,22 @@ def _unzip_file_entry(zip_ref, file_entry, target_dir):
 
 
 def is_jar_archive(content):
-    # TODO Simple stupid heuristic to determine whether a file is a JAR archive
+    has_class_content = False
     try:
-        return 'class' in content and 'META-INF' in content
+        has_class_content = 'class' in content
     except TypeError:
         # in Python 3 we need to use byte strings for byte-based file content
-        return b'class' in content and b'META-INF' in content
+        has_class_content = b'class' in content
+    if not has_class_content:
+        return False
+    try:
+        with tempfile.NamedTemporaryFile() as tf:
+            tf.write(content)
+            with zipfile.ZipFile(tf.name, 'r') as zf:
+                zf.infolist()
+    except Exception:
+        return False
+    return True
 
 
 def is_root():
