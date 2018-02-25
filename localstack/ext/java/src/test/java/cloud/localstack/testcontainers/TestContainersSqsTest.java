@@ -1,5 +1,16 @@
 package cloud.localstack.testcontainers;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import java.util.List;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.LogMessageWaitStrategy;
+
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
@@ -9,16 +20,6 @@ import com.amazonaws.services.sqs.model.CreateQueueResult;
 import com.amazonaws.services.sqs.model.Message;
 import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.amazonaws.services.sqs.model.SendMessageResult;
-import org.junit.Before;
-import org.junit.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.LogMessageWaitStrategy;
-
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.testcontainers.containers.BindMode.READ_WRITE;
 
 /**
  * <p>
@@ -40,14 +41,17 @@ public class TestContainersSqsTest {
 
     private AmazonSQS amazonSQS;
 
-    private GenericContainer genericContainer;
+    private GenericContainer<?> genericContainer;
 
     @Before
     public void before() {
-
         startDockerImage();
         createSqsClient();
+    }
 
+    @After
+    public void after() {
+        genericContainer.stop();
     }
 
     private void createSqsClient() {
@@ -112,9 +116,10 @@ public class TestContainersSqsTest {
 
     }
 
-    private void startDockerImage() {
+	@SuppressWarnings("resource")
+	private void startDockerImage() {
 
-        genericContainer = new GenericContainer(DOCKER_IMAGE_NAME)
+        genericContainer = new GenericContainer<>(DOCKER_IMAGE_NAME)
                 .withExposedPorts(SQS_PORT)
                 .waitingFor(new LogMessageWaitStrategy().withRegEx(".*Ready\\.\n"));
 
