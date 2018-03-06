@@ -38,7 +38,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             return error_response_throughput()
 
         action = headers.get('X-Amz-Target')
-        if action in ('%s.PutItem' % ACTION_PREFIX, '%s.UpdateItem' % ACTION_PREFIX):
+        if action in ('%s.PutItem' % ACTION_PREFIX, '%s.UpdateItem' % ACTION_PREFIX, '%s.DeleteItem' % ACTION_PREFIX):
             # find an existing item and store it in a thread-local, so we can access it in return_response,
             # in order to determine whether an item already existed (MODIFY) or not (INSERT)
             ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)
@@ -164,8 +164,10 @@ class ProxyListenerDynamoDB(ProxyListener):
                     response._content = json.dumps(content)
                     fix_headers_for_updated_response(response)
         elif action == '%s.DeleteItem' % ACTION_PREFIX:
+            old_item = ProxyListenerDynamoDB.thread_local.existing_item
             record['eventName'] = 'REMOVE'
             record['dynamodb']['Keys'] = data['Key']
+            record['dynamodb']['OldImage'] = old_item
         elif action == '%s.CreateTable' % ACTION_PREFIX:
             if 'StreamSpecification' in data:
                 create_dynamodb_stream(data)
