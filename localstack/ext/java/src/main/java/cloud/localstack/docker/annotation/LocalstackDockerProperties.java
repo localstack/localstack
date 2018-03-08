@@ -4,12 +4,14 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.annotation.Inherited;
 
 /**
  * An annotation to provide parameters to the LocalstackDockerTestRunner
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
+@Inherited
 public @interface LocalstackDockerProperties {
 
     /**
