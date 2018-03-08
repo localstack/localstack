@@ -692,6 +692,23 @@ def list_event_source_mappings():
     return jsonify(response)
 
 
+@app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['GET'])
+def get_event_source_mapping(mapping_uuid):
+    """ Get an existing event source mapping
+        ---
+        operationId: 'getEventSourceMapping'
+        parameters:
+            - name: 'request'
+              in: body
+    """
+    mappings = event_source_mappings
+    mappings = [m for m in mappings if mapping_uuid == m.get('UUID')]
+
+    if len(mappings) == 0:
+        return error_response('The resource you requested does not exist.', 404, error_type='ResourceNotFoundException')
+    return jsonify(mappings[0])
+
+
 @app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['POST'])
 def create_event_source_mapping():
     """ Create new event source mapping

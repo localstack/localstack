@@ -27,6 +27,12 @@ class TestLambdaAPI(unittest.TestCase):
         self.app.testing = True
         self.client = self.app.test_client()
 
+    def test_get_event_source_mapping(self):
+        with self.app.test_request_context():
+            lambda_api.event_source_mappings.append({'UUID': self.TEST_UUID})
+            result = lambda_api.get_event_source_mapping(self.TEST_UUID)
+            self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
+
     def test_delete_event_source_mapping(self):
         with self.app.test_request_context():
             lambda_api.event_source_mappings.append({'UUID': self.TEST_UUID})
