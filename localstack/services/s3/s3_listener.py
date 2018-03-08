@@ -33,6 +33,9 @@ LOGGER = logging.getLogger(__name__)
 # XML namespace constants
 XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
+# list of destination types for bucket notifications
+NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
+
 
 def event_type_matches(events, action, api_method):
     """ check whether any of the event types in `events` matches the
@@ -149,18 +152,21 @@ def send_notifications(method, bucket_name, object_path):
                     except Exception as e:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s".' %
                             (bucket_name, config['Topic']))
-                if config.get('CloudFunction'):
+                # CloudFunction and LambdaFunction are semantically identical
+                lambda_function_config = config.get('CloudFunction') or config.get('LambdaFunction')
+                if lambda_function_config:
                     # make sure we don't run into a socket timeout
                     connection_config = botocore.config.Config(read_timeout=300)
                     lambda_client = aws_stack.connect_to_service('lambda', config=connection_config)
                     try:
-                        lambda_client.invoke(FunctionName=config['CloudFunction'],
+                        lambda_client.invoke(FunctionName=lambda_function_config,
                                              InvocationType='Event', Payload=message)
                     except Exception as e:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to Lambda function "%s".' %
-                            (bucket_name, config['CloudFunction']))
-                if not filter(lambda x: config.get(x), ('Queue', 'Topic', 'CloudFunction')):
-                    LOGGER.warning('Neither of Queue/Topic/CloudFunction defined for S3 notification.')
+                            (bucket_name, lambda_function_config))
+                if not filter(lambda x: config.get(x), NOTIFICATION_DESTINATION_TYPES):
+                    LOGGER.warning('Neither of %s defined for S3 notification.' %
+                        '/'.join(NOTIFICATION_DESTINATION_TYPES))
 
 
 def get_cors(bucket_name):
@@ -369,7 +375,7 @@ class ProxyListenerS3(ProxyListener):
                 result = '<NotificationConfiguration xmlns="%s">' % XMLNS_S3
                 if bucket in S3_NOTIFICATIONS:
                     notif = S3_NOTIFICATIONS[bucket]
-                    for dest in ['Queue', 'Topic', 'CloudFunction']:
+                    for dest in NOTIFICATION_DESTINATION_TYPES:
                         if dest in notif:
                             dest_dict = {
                                 '%sConfiguration' % dest: {
@@ -387,7 +393,7 @@ class ProxyListenerS3(ProxyListener):
                 parsed = xmltodict.parse(data)
                 notif_config = parsed.get('NotificationConfiguration')
                 S3_NOTIFICATIONS.pop(bucket, None)
-                for dest in ['Queue', 'Topic', 'CloudFunction']:
+                for dest in NOTIFICATION_DESTINATION_TYPES:
                     config = notif_config.get('%sConfiguration' % (dest))
                     if config:
                         events = config.get('Event')
@@ -508,9 +514,10 @@ class ProxyListenerS3(ProxyListener):
                 response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
                 if is_bytes:
                     response._content = to_bytes(response._content)
-                # fix content-type: https://github.com/localstack/localstack/issues/549
+                # fix content-type: https://github.com/localstack/localstack/issues/618
+                #                   https://github.com/localstack/localstack/issues/549
                 if 'text/html' in response.headers.get('Content-Type', ''):
-                    response.headers['Content-Type'] = 'text/xml; charset=utf-8'
+                    response.headers['Content-Type'] = 'application/xml; charset=utf-8'
 
             # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
             if isinstance(response._content, (six.string_types, six.binary_type)):

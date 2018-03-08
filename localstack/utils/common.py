@@ -526,6 +526,7 @@ def is_jar_archive(content):
     try:
         with tempfile.NamedTemporaryFile() as tf:
             tf.write(content)
+            tf.flush()
             with zipfile.ZipFile(tf.name, 'r') as zf:
                 zf.infolist()
     except Exception:
