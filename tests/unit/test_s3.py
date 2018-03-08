@@ -167,3 +167,12 @@ class S3ListenerTest (unittest.TestCase):
             headers = CaseInsensitiveDict({'Host': '{}.{}'.format(bucket_name, host)})
             returned_bucket_name = s3_listener.get_bucket_name(s3_key, headers)
             self.assertEqual(returned_bucket_name, bucket_name, 'Should match when bucket_name is in the host')
+
+    def test_event_type_matching(self):
+        match = s3_listener.event_type_matches
+        self.assertTrue(match(['s3:ObjectCreated:*'], 'ObjectCreated', 'Put'))
+        self.assertTrue(match(['s3:ObjectCreated:*'], 'ObjectCreated', 'Post'))
+        self.assertTrue(match(['s3:ObjectCreated:Post'], 'ObjectCreated', 'Post'))
+        self.assertTrue(match(['s3:ObjectDeleted:*'], 'ObjectDeleted', 'Delete'))
+        self.assertFalse(match(['s3:ObjectCreated:Post'], 'ObjectCreated', 'Put'))
+        self.assertFalse(match(['s3:ObjectCreated:Post'], 'ObjectDeleted', 'Put'))
