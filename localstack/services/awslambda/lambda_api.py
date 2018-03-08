@@ -691,6 +691,7 @@ def list_event_source_mappings():
     }
     return jsonify(response)
 
+
 @app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['GET'])
 def get_event_source_mapping(mapping_uuid):
     """ Get an existing event source mapping
