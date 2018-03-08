@@ -260,7 +260,7 @@ duration of the test.  The container can be configured by using the @LocalstackD
 
 ```
 @RunWith(LocalstackDockerTestRunner.class)
-@LocalstackDockerProperties(randomizePorts = true)
+@LocalstackDockerProperties(randomizePorts = true, services = { "sqs", "kinesis:77077" })
 public class MyDockerCloudAppTest {
 
   @Test

@@ -36,5 +36,11 @@ public @interface LocalstackDockerProperties {
      *  in order to prevent conflicts with other localstack containers running on the same machine
      */
     boolean randomizePorts() default false;
+
+    /**
+     * Determines which services should be run when the localstack starts. When empty, all the services available get
+     * up and running.
+     */
+    String[] services() default {};
 }
 

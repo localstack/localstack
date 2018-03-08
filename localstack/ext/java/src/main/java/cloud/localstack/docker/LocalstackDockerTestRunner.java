@@ -106,6 +106,11 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
         catch(InstantiationException | IllegalAccessException ex) {
             throw new IllegalStateException("Unable to get environment variables", ex);
         }
+
+        String services = String.join(",", properties.services());
+        if(StringUtils.isNotEmpty(services)) {
+            environmentVariables.put("SERVICES", services);
+        }
     }
 
 
