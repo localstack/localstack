@@ -164,6 +164,7 @@ class LambdaFunction(Component):
         self.versions = {}
         self.aliases = {}
         self.envvars = {}
+        self.concurrency = None
         self.runtime = None
         self.handler = None
         self.cwd = None
