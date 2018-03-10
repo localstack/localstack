@@ -509,6 +509,9 @@ def get_function(function):
                     'Location': '%s/code' % request.url
                 }
             }
+            lambda_details = arn_to_lambda.get(func['FunctionArn'])
+            if lambda_details.concurrency is not None:
+                result['Concurrency'] = lambda_details.concurrency
             return jsonify(result)
     result = {
         'ResponseMetadata': {
@@ -808,6 +811,20 @@ def list_aliases(function):
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
     return jsonify({'Aliases': sorted(arn_to_lambda.get(arn).aliases.values(),
                                       key=lambda x: x['Name'])})
+
+
+@app.route('/<version>/functions/<function>/concurrency', methods=['PUT'])
+def put_concurrency(version, function):
+    # the version for put_concurrency != PATH_ROOT, at the time of this
+    # writing it's: /2017-10-31 for this endpoint
+    # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
+    arn = func_arn(function)
+    data = json.loads(request.data)
+    lambda_details = arn_to_lambda.get(arn)
+    if not lambda_details:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    lambda_details.concurrency = data
+    return jsonify(data)
 
 
 def serve(port, quiet=True):
