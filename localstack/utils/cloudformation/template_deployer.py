@@ -179,7 +179,7 @@ def parse_template(template):
     try:
         return json.loads(template)
     except Exception:
-        return yaml.load(template)
+        return yaml.safe_load(template)
 
 
 def template_to_json(template):
