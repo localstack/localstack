@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
@@ -40,32 +41,13 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
 
     private static final Logger LOG = Logger.getLogger(LocalstackDockerTestRunner.class.getName());
 
-    private static final String PORT_CONFIG_FILENAME = "/opt/code/localstack/.venv/lib/python2.7/site-packages/localstack_client/config.py";
-
-    private static final Pattern READY_TOKEN = Pattern.compile("Ready\\.");
-
-    //Regular expression used to parse localstack config to determine default ports for services
-    private static final Pattern DEFAULT_PORT_PATTERN = Pattern.compile("'(\\w+)'\\Q: '{proto}://{host}:\\E(\\d+)'");
-    private static final int SERVICE_NAME_GROUP = 1;
-    private static final int PORT_GROUP = 2;
-
-
-    private static Container localStackContainer;
-
-    public static Container getLocalStackContainer() {
-        return localStackContainer;
-    }
-
-    /**
-     * This is a mapping from service name to internal ports.  In order to use them, the
-     * internal port must be resolved to an external docker port via Container.getExternalPortFor()
-     */
-    private static Map<String, Integer> serviceToPortMap;
-
     private static String externalHostName = "localhost";
     private static boolean pullNewImage = true;
     private static boolean randomizePorts = false;
     private static Map<String, String> environmentVariables = new HashMap<>();
+
+    @Getter
+    private static LocalstackDocker localstackDocker = LocalstackDocker.getLocalstackDocker();
 
 
     public LocalstackDockerTestRunner(Class<?> klass) throws InitializationError {
@@ -73,6 +55,21 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
         processAnnotations(klass.getAnnotations());
     }
 
+    @Override
+    public void run(RunNotifier notifier) {
+        localstackDocker.setExternalHostName(externalHostName);
+        localstackDocker.setPullNewImage(pullNewImage);
+        localstackDocker.setRandomizePorts(randomizePorts);
+        localstackDocker.setEnvironmentVariables(environmentVariables);
+
+        try {
+            localstackDocker.startup();
+            super.run(notifier);
+        }
+        finally {
+            localstackDocker.stop();
+        }
+    }
 
     private void processAnnotations(Annotation[] annotations) {
         for(Annotation annotation : annotations) {
@@ -111,139 +108,5 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
         if(StringUtils.isNotEmpty(services)) {
             environmentVariables.put("SERVICES", services);
         }
-    }
-
-
-    @Override
-    public void run(RunNotifier notifier) {
-        // make sure the local infrastructure is not running, to avoid port conflicts
-        LocalstackTestRunner.teardownInfrastructure();
-
-        // now create the container
-        localStackContainer = Container.createLocalstackContainer(externalHostName, pullNewImage, randomizePorts, environmentVariables);
-        try {
-            loadServiceToPortMap();
-
-            LOG.info("Waiting for localstack container to be ready...");
-            localStackContainer.waitForLogToken(READY_TOKEN);
-
-            super.run(notifier);
-        }
-        finally {
-            localStackContainer.stop();
-        }
-    }
-
-
-    private void loadServiceToPortMap() {
-        String localStackPortConfig = localStackContainer.executeCommand(Arrays.asList("cat", PORT_CONFIG_FILENAME));
-
-        Map<String, Integer> ports =  new RegexStream(DEFAULT_PORT_PATTERN.matcher(localStackPortConfig)).stream()
-                .collect(Collectors.toMap(match -> match.group(SERVICE_NAME_GROUP),
-                                            match -> Integer.parseInt(match.group(PORT_GROUP))));
-
-        serviceToPortMap = Collections.unmodifiableMap(ports);
-    }
-
-
-    public static String getEndpointS3() {
-        String s3Endpoint = endpointForService(ServiceName.S3);
-        /*
-         * Use the domain name wildcard *.localhost.atlassian.io which maps to 127.0.0.1
-         * We need to do this because S3 SDKs attempt to access a domain <bucket-name>.<service-host-name>
-         * which by default would result in <bucket-name>.localhost, but that name cannot be resolved
-         * (unless hardcoded in /etc/hosts)
-         */
-        s3Endpoint = s3Endpoint.replace("localhost", "test.localhost.atlassian.io");
-        return s3Endpoint;
-    }
-
-
-    public static String getEndpointKinesis() {
-        return endpointForService(ServiceName.KINESIS);
-    }
-
-    public static String getEndpointLambda() {
-        return endpointForService(ServiceName.LAMBDA);
-    }
-
-    public static String getEndpointDynamoDB() {
-        return endpointForService(ServiceName.DYNAMO);
-    }
-
-    public static String getEndpointDynamoDBStreams() {
-        return endpointForService(ServiceName.DYNAMO_STREAMS);
-    }
-
-    public static String getEndpointAPIGateway() {
-        return endpointForService(ServiceName.API_GATEWAY);
-    }
-
-    public static String getEndpointElasticsearch() {
-        return endpointForService(ServiceName.ELASTICSEARCH);
-    }
-
-    public static String getEndpointElasticsearchService() {
-        return endpointForService(ServiceName.ELASTICSEARCH_SERVICE);
-    }
-
-    public static String getEndpointFirehose() {
-        return endpointForService(ServiceName.FIREHOSE);
-    }
-
-    public static String getEndpointSNS() {
-        return endpointForService(ServiceName.SNS);
-    }
-
-    public static String getEndpointSQS() {
-        return endpointForService(ServiceName.SQS);
-    }
-
-    public static String getEndpointRedshift() {
-        return endpointForService(ServiceName.REDSHIFT);
-    }
-
-    public static String getEndpointSES() {
-        return endpointForService(ServiceName.SES);
-    }
-
-    public static String getEndpointRoute53() {
-        return endpointForService(ServiceName.ROUTE53);
-    }
-
-    public static String getEndpointCloudFormation() {
-        return endpointForService(ServiceName.CLOUDFORMATION);
-    }
-
-    public static String getEndpointCloudWatch() {
-        return endpointForService(ServiceName.CLOUDWATCH);
-    }
-
-    public static String getEndpointSSM() {
-        return endpointForService(ServiceName.SSM);
-    }
-
-
-    public static String endpointForService(String serviceName) {
-        if(serviceToPortMap == null) {
-            throw new IllegalStateException("Service to port mapping has not been determined yet.");
-        }
-
-        if(!serviceToPortMap.containsKey(serviceName)) {
-            throw new IllegalArgumentException("Unknown port mapping for service");
-        }
-
-        int internalPort = serviceToPortMap.get(serviceName);
-        return endpointForPort(internalPort);
-    }
-
-
-    public static String endpointForPort(int port) {
-        if (localStackContainer != null) {
-            int externalPort = localStackContainer.getExternalPortFor(port);
-            return String.format("http://%s:%s", externalHostName, externalPort);
-        }
-
-        throw new RuntimeException("Container not started");
     }
 }
