@@ -519,8 +519,10 @@ class ProxyListenerS3(ProxyListener):
                 if 'text/html' in response.headers.get('Content-Type', ''):
                     response.headers['Content-Type'] = 'application/xml; charset=utf-8'
 
+                response.headers['content-length'] = len(response._content)
+
             # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
-            if isinstance(response._content, (six.string_types, six.binary_type)):
+            if method == 'DELETE':
                 response.headers['content-length'] = len(response._content)
 
 
