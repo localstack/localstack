@@ -161,7 +161,7 @@ def test_s3_delete_response_content_length_zero():
 
     # get object and assert headers
     response = requests.delete(url, verify=False)
-    print(response.headers['content-length'])
+
     assert response.headers['content-length'] == '0'
     # clean up
     s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
