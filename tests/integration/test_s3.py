@@ -126,6 +126,48 @@ def test_s3_get_response_content_type_same_as_upload():
     s3_client.delete_bucket(Bucket=bucket_name)
 
 
+def test_s3_head_response_content_length_same_as_upload():
+    bucket_name = 'test-bucket-%s' % short_uid()
+    s3_client = aws_stack.connect_to_service('s3')
+    s3_client.create_bucket(Bucket=bucket_name)
+    body = 'something body'
+    # put object
+    object_key = 'key-by-hostname'
+    s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body, ContentType='text/html; charset=utf-8')
+    url = s3_client.generate_presigned_url(
+        'head_object', Params={'Bucket': bucket_name, 'Key': object_key}
+    )
+
+    # get object and assert headers
+    response = requests.head(url, verify=False)
+
+    assert response.headers['content-length'] == str(len(body))
+    # clean up
+    s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
+    s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_s3_delete_response_content_length_zero():
+    bucket_name = 'test-bucket-%s' % short_uid()
+    s3_client = aws_stack.connect_to_service('s3')
+    s3_client.create_bucket(Bucket=bucket_name)
+
+    # put object
+    object_key = 'key-by-hostname'
+    s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something', ContentType='text/html; charset=utf-8')
+    url = s3_client.generate_presigned_url(
+        'delete_object', Params={'Bucket': bucket_name, 'Key': object_key}
+    )
+
+    # get object and assert headers
+    response = requests.delete(url, verify=False)
+
+    assert response.headers['content-length'] == '0'
+    # clean up
+    s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
+    s3_client.delete_bucket(Bucket=bucket_name)
+
+
 def test_s3_get_response_headers():
     bucket_name = 'test-bucket-%s' % short_uid()
     s3_client = aws_stack.connect_to_service('s3')
