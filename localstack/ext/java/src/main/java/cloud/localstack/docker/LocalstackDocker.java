@@ -3,6 +3,7 @@ package cloud.localstack.docker;
 import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.ServiceName;
 import cloud.localstack.docker.command.RegexStream;
+import cloud.localstack.docker.exception.LocalstackDockerException;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 /**
  * Localstack Docker instance
  *
+ * @author Alan Bevier
  * @author fabianoo
  */
 public class LocalstackDocker {
@@ -40,9 +42,9 @@ public class LocalstackDocker {
      */
     private static Map<String, Integer> serviceToPortMap;
 
-    private static boolean started = false;
+    private static boolean locked = false;
 
-    @Setter()
+    @Setter
     private String externalHostName = "localhost";
     @Setter
     private boolean pullNewImage = true;
@@ -62,21 +64,28 @@ public class LocalstackDocker {
         LocalstackTestRunner.teardownInfrastructure();
 
         // now create the container
-        if (started) {
-            throw new IllegalStateException("A docker instance is already started.");
+        if (locked) {
+            throw new IllegalStateException("A docker instance is starting or already started.");
         }
-        started = true;
-        localStackContainer = Container.createLocalstackContainer(externalHostName, pullNewImage, randomizePorts, environmentVariables);
-        loadServiceToPortMap();
+        locked = true;
 
-        LOG.info("Waiting for localstack container to be ready...");
-        localStackContainer.waitForLogToken(READY_TOKEN);
+        try {
+            localStackContainer = Container.createLocalstackContainer(externalHostName, pullNewImage, randomizePorts, environmentVariables);
+            loadServiceToPortMap();
+
+            LOG.info("Waiting for localstack container to be ready...");
+            localStackContainer.waitForLogToken(READY_TOKEN);
+        } catch (Throwable t) {
+            locked = false;
+            throw new LocalstackDockerException("Could not start the localstack docker container.", t);
+        }
+
     }
 
 
     public void stop() {
-        started = false;
         localStackContainer.stop();
+        locked = false;
     }
 
 
