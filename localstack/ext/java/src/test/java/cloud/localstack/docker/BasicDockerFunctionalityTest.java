@@ -158,7 +158,7 @@ public class BasicDockerFunctionalityTest {
 
     private SQSConnection createSQSConnection() throws Exception {
         SQSConnectionFactory connectionFactory = SQSConnectionFactory.builder().withEndpoint(
-                LocalstackDockerTestRunner.getEndpointSQS()).withAWSCredentialsProvider(
+            LocalstackDockerTestRunner.getLocalstackDocker().getEndpointSQS()).withAWSCredentialsProvider(
                 new AWSStaticCredentialsProvider(TestUtils.TEST_CREDENTIALS)).build();
         return  connectionFactory.createConnection();
     }
