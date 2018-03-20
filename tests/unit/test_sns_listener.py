@@ -86,3 +86,55 @@ def test_create_sns_message_body():
                                }
                            }})
     assert_equal(result, json.loads(expected))
+
+
+def test_filter_policy():
+    test_data = [
+        ('no filter with no attributes', {}, {}, True),
+        ('no filter with attributes', {}, {'filter': {'Type': 'String', 'Value': 'type1'}}, True),
+
+        ('exact string filter', {'filter': 'type1'}, {'filter': {'Type': 'String', 'Value': 'type1'}}, True),
+        ('exact string filter with no attributes', {'filter': 'type1'}, {}, False),
+        ('exact string filter with no match', {'filter': 'type1'}, {'filter': {'Type': 'String', 'Value': 'type2'}}, False),
+
+        ('or string filter with match', {'filter': ['type1', 'type2']}, {'filter': {'Type': 'String', 'Value': 'type1'}}, True),
+        ('or string filter with other match', {'filter': ['type1', 'type2']}, {'filter': {'Type': 'String', 'Value': 'type2'}}, True),
+        ('or string filter with no attributes', {'filter': ['type1', 'type2']}, {}, False),
+        ('or string filter with no match', {'filter': ['type1', 'type2']}, {'filter': {'Type': 'String', 'Value': 'type3'}}, False),
+
+        ('anything-but string filter with match', {'filter': [{'anything-but': 'type1'}]}, {'filter': {'Type': 'String', 'Value': 'type1'}}, False),
+        ('anything-but string filter with no match', {'filter': [{'anything-but': 'type1'}]}, {'filter': {'Type': 'String', 'Value': 'type2'}}, True),
+
+        ('prefix string filter with match', {'filter': [{'prefix': 'typ'}]}, {'filter': {'Type': 'String', 'Value': 'type1'}}, True),
+        ('prefix string filter with no match', {'filter': [{'prefix': 'test'}]}, {'filter': {'Type': 'String', 'Value': 'type2'}}, False),
+
+        ('numeric = filter with match', {'filter': [{'numeric': ['=', 300]}]}, {'filter': {'Type': 'Number', 'Value': 300}}, True),
+        ('numeric = filter with no match', {'filter': [{'numeric': ['=', 300]}]}, {'filter': {'Type': 'Number', 'Value': 301}}, False),
+        ('numeric > filter with match', {'filter': [{'numeric': ['>', 300]}]}, {'filter': {'Type': 'Number', 'Value': 301}}, True),
+        ('numeric > filter with no match', {'filter': [{'numeric': ['>', 300]}]}, {'filter': {'Type': 'Number', 'Value': 300}}, False),
+        ('numeric < filter with match', {'filter': [{'numeric': ['<', 300]}]}, {'filter': {'Type': 'Number', 'Value': 299}}, True),
+        ('numeric < filter with no match', {'filter': [{'numeric': ['<', 300]}]}, {'filter': {'Type': 'Number', 'Value': 300}}, False),
+        ('numeric >= filter with match', {'filter': [{'numeric': ['>=', 300]}]}, {'filter': {'Type': 'Number', 'Value': 300}}, True),
+        ('numeric >= filter with no match', {'filter': [{'numeric': ['>=', 300]}]}, {'filter': {'Type': 'Number', 'Value': 299}}, False),
+        ('numeric <= filter with match', {'filter': [{'numeric': ['<=', 300]}]}, {'filter': {'Type': 'Number', 'Value': 300}}, True),
+        ('numeric <= filter with no match', {'filter': [{'numeric': ['<=', 300]}]}, {'filter': {'Type': 'Number', 'Value': 301}}, False),
+        ('numeric filter with bad data', {'filter': [{'numeric': ['=', 300]}]}, {'filter': {'Type': 'String', 'Value': 'test'}}, False),
+
+        ('logical OR with match', {'filter': ['test1', 'test2', {'prefix': 'typ'}]}, {'filter': {'Type': 'String', 'Value': 'test2'}}, True),
+        ('logical OR with match', {'filter': ['test1', 'test2', {'prefix': 'typ'}]}, {'filter': {'Type': 'String', 'Value': 'test1'}}, True),
+        ('logical OR no match', {'filter': ['test1', 'test2', {'prefix': 'typ'}]}, {'filter': {'Type': 'String', 'Value': 'test3'}}, False),
+
+        ('logical AND with match', {'filter': [{'numeric': ['=', 300]}], 'other': [{'prefix': 'typ'}]}, {'filter': {'Type': 'Number', 'Value': 300}, 'other': {'Type': 'String', 'Value': 'type1'}}, True),
+        ('logical AND missing first attribute', {'filter': [{'numeric': ['=', 300]}], 'other': [{'prefix': 'typ'}]}, {'other': {'Type': 'String', 'Value': 'type1'}}, False),
+        ('logical AND missing second attribute', {'filter': [{'numeric': ['=', 300]}], 'other': [{'prefix': 'typ'}]}, {'filter': {'Type': 'Number', 'Value': 300}}, False),
+        ('logical AND no match', {'filter': [{'numeric': ['=', 300]}], 'other': [{'prefix': 'typ'}]}, {'filter': {'Type': 'Number', 'Value': 299}, 'other': {'Type': 'String', 'Value': 'type1'}}, False),
+
+        ('multiple numeric filters with first match', {'filter': [{'numeric': ['=', 300]}, {'numeric': ['=', 500]}]}, {'filter': {'Type': 'Number', 'Value': 300}}, True),
+        ('multiple numeric filters with second match', {'filter': [{'numeric': ['=', 300]}, {'numeric': ['=', 500]}]}, {'filter': {'Type': 'Number', 'Value': 500}}, True),
+        ('multiple prefix filters with first match', {'filter': [{'prefix': 'typ'}, {'prefix': 'tes'}]}, {'filter': {'Type': 'String', 'Value': 'type1'}}, True),
+        ('multiple prefix filters with second match', {'filter': [{'prefix': 'typ'}, {'prefix': 'tes'}]}, {'filter': {'Type': 'String', 'Value': 'test'}}, True),
+        ('multiple anything-but filters with second match', {'filter': [{'anything-but': 'type1'}, {'anything-but': 'type2'}]}, {'filter': {'Type': 'String', 'Value': 'type2'}}, True),
+    ]
+
+    for test in test_data:
+        assert_equal(sns_listener.check_filter_policy(test[1], test[2]),  test[3], test[0])
