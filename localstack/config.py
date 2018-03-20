@@ -70,6 +70,9 @@ for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     backend_override_var = '%s_BACKEND' % key.upper().replace('-', '_')
     if os.environ.get(backend_override_var):
         CONFIG_ENV_VARS.append(backend_override_var)
+    port_external_override_var = '%s_PORT_EXTERNAL' % key.upper().replace('-', '_')
+    if os.environ.get(port_external_override_var):
+        CONFIG_ENV_VARS.append(port_external_override_var)
 
 def in_docker():
     """ Returns: True if running in a docker container, else False """
