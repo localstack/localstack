@@ -69,21 +69,31 @@ class ProxyListenerSNS(ProxyListener):
                             queue_name = endpoint.split(':')[5]
                             queue_url = aws_stack.get_sqs_queue_url(queue_name)
                             subscriber['sqs_queue_url'] = queue_url
-                        sqs_client.send_message(QueueUrl=queue_url,
-                            MessageBody=create_sns_message_body(subscriber, req_data))
+                        try:
+                            sqs_client.send_message(
+                                QueueUrl=queue_url,
+                                MessageBody=create_sns_message_body(subscriber, req_data)
+                            )
+                        except Exception as exc:
+                            return make_error(message=str(exc), code=400)
                     elif subscriber['Protocol'] == 'lambda':
                         lambda_api.process_sns_notification(
                             subscriber['Endpoint'],
                             topic_arn, message, subject=req_data.get('Subject', [None])[0]
                         )
                     elif subscriber['Protocol'] in ['http', 'https']:
+                        try:
+                            message_body = create_sns_message_body(subscriber, req_data)
+                        except Exception as exc:
+                            return make_error(message=str(exc), code=400)
                         requests.post(
                             subscriber['Endpoint'],
                             headers={
                                 'Content-Type': 'text/plain',
                                 'x-amz-sns-message-type': 'Notification'
                             },
-                            data=create_sns_message_body(subscriber, req_data))
+                            data=message_body
+                        )
                     else:
                         LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
                 # return response here because we do not want the request to be forwarded to SNS
@@ -181,9 +191,17 @@ def make_error(message, code=400, code_string='InvalidParameter'):
 def create_sns_message_body(subscriber, req_data):
     message = req_data['Message'][0]
     subject = req_data.get('Subject', [None])[0]
+    protocol = subscriber['Protocol']
 
     if subscriber['RawMessageDelivery'] == 'true':
         return message
+
+    if req_data.get('MessageStructure') == ['json']:
+        message = json.loads(message)
+        try:
+            message = message.get(protocol, message['default'])
+        except KeyError:
+            raise Exception("Unable to find 'default' key in message payload")
 
     data = {}
     data['MessageId'] = str(uuid.uuid4())
