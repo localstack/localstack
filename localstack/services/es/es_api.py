@@ -23,6 +23,144 @@ def error_response(error_type, code=400, message='Unknown error.'):
     return response, code
 
 
+def get_domain_config(domain_name):
+    return {
+        'DomainConfig': {
+            'AccessPolicies': {
+                'Options': '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::%s:root"},"Action":"es:*","Resource":"arn:aws:es:%s:%s:domain/%s/*"}]}' % (TEST_AWS_ACCOUNT_ID, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),  # noqa: E501
+                'Status': {
+                    'CreationDate': 1499817484.04,
+                    'PendingDeletion': False,
+                    'State': 'Active',
+                    'UpdateDate': 1500308955.652,
+                    'UpdateVersion': 17
+                }
+            },
+            'AdvancedOptions': {
+                'Options': {
+                    'indices.fielddata.cache.size': '',
+                    'rest.action.multi.allow_explicit_index': 'true'
+                },
+                'Status': {
+                    'CreationDate': 1499817484.04,
+                    'PendingDeletion': False,
+                    'State': 'Active',
+                    'UpdateDate': 1499818054.108,
+                    'UpdateVersion': 5
+                }
+            },
+            'EBSOptions': {
+                'Options': {
+                    'EBSEnabled': True,
+                    'EncryptionEnabled': False,
+                    'Iops': 0,
+                    'VolumeSize': 10,
+                    'VolumeType': 'gp2'
+                },
+                'Status': {
+                    'CreationDate': 1499817484.04,
+                    'PendingDeletion': False,
+                    'State': 'Active',
+                    'UpdateDate': 1499818054.108,
+                    'UpdateVersion': 5
+                }
+            },
+            'ElasticsearchClusterConfig': {
+                'Options': {
+                    'DedicatedMasterCount': 1,
+                    'DedicatedMasterEnabled': True,
+                    'DedicatedMasterType': 'm4.large.elasticsearch',
+                    'InstanceCount': 1,
+                    'InstanceType': 'm4.large.elasticsearch',
+                    'ZoneAwarenessEnabled': False
+                },
+                'Status': {
+                    'CreationDate': 1499817484.04,
+                    'PendingDeletion': False,
+                    'State': 'Active',
+                    'UpdateDate': 1499966854.612,
+                    'UpdateVersion': 13
+                }
+            },
+            'ElasticsearchVersion': {
+                'Options': '5.3',
+                'Status': {
+                    'PendingDeletion': False,
+                    'State': 'Active',
+                    'CreationDate': 1436913638.995,
+                    'UpdateVersion': 6,
+                    'UpdateDate': 1436914324.278
+                }
+            },
+            'EncryptionAtRestOptions': {
+                'Options': {
+                    'Enabled': False,
+                    'KmsKeyId': ''
+                },
+                'Status': {
+                    'CreationDate': 1509490412.757,
+                    'PendingDeletion': False,
+                    'State': 'Active',
+                    'UpdateDate': 1509490953.717,
+                    'UpdateVersion': 6
+                }
+            },
+            'LogPublishingOptions': {
+                'Status': {
+                    'CreationDate': 1502774634.546,
+                    'PendingDeletion': False,
+                    'State': 'Processing',
+                    'UpdateDate': 1502779590.448,
+                    'UpdateVersion': 60
+                },
+                'Options': {
+                    'INDEX_SLOW_LOGS': {
+                        'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
+                        'Enabled': False
+                    },
+                    'SEARCH_SLOW_LOGS': {
+                        'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
+                        'Enabled': False,
+                    }
+                }
+            },
+            'SnapshotOptions': {
+                'Options': {
+                    'AutomatedSnapshotStartHour': 6
+                },
+                'Status': {
+                    'CreationDate': 1499817484.04,
+                    'PendingDeletion': False,
+                    'State': 'Active',
+                    'UpdateDate': 1499818054.108,
+                    'UpdateVersion': 5
+                }
+            },
+            'VPCOptions': {
+                'Options': {
+                    'AvailabilityZones': [
+                        'us-east-1b'
+                    ],
+                    'SecurityGroupIds': [
+                        'sg-12345678'
+                    ],
+                    'SubnetIds': [
+                        'subnet-12345678'
+                    ],
+                    'VPCId': 'vpc-12345678'
+                },
+                'Status': {
+                    'CreationDate': 1499817484.04,
+                    'PendingDeletion': False,
+                    'State': 'Active',
+                    'UpdateDate': 1499818054.108,
+                    'UpdateVersion': 5
+                }
+            }
+        }
+    }
+
+
 def get_domain_status(domain_name, deleted=False):
     return {
         'DomainStatus': {
@@ -34,14 +172,20 @@ def get_domain_status(domain_name, deleted=False):
             'ElasticsearchClusterConfig': {
                 'DedicatedMasterCount': 1,
                 'DedicatedMasterEnabled': True,
-                'DedicatedMasterType': 'm3.medium.elasticsearch',
+                'DedicatedMasterType': 'm4.large.elasticsearch',
                 'InstanceCount': 1,
-                'InstanceType': 'm3.medium.elasticsearch',
-                'ZoneAwarenessEnabled': True
+                'InstanceType': 'm4.large.elasticsearch',
+                'ZoneAwarenessEnabled': False
             },
             'ElasticsearchVersion': '6.2',
-            'Endpoint': None,
-            'Processing': True
+            'Endpoint': 'http://localhost:4571',
+            'Processing': False,
+            'EBSOptions': {
+                'EBSEnabled': True,
+                'VolumeType': 'gp2',
+                'VolumeSize': 10,
+                'Iops': 0
+            },
         }
     }
 
@@ -73,6 +217,12 @@ def describe_domain(domain_name):
     return jsonify(result)
 
 
+@app.route('%s/es/domain/<domain_name>/config' % API_PREFIX, methods=['GET', 'POST'])
+def domain_config(domain_name):
+    config = get_domain_config(domain_name)
+    return jsonify(config)
+
+
 @app.route('%s/es/domain/<domain_name>' % API_PREFIX, methods=['DELETE'])
 def delete_domain(domain_name):
     if domain_name not in ES_DOMAINS:
@@ -80,6 +230,26 @@ def delete_domain(domain_name):
     result = get_domain_status(domain_name, deleted=True)
     ES_DOMAINS.pop(domain_name)
     return jsonify(result)
+
+
+@app.route('%s/tags/' % API_PREFIX, methods=['GET', 'POST'])
+def add_list_tags():
+    if request.method == 'POST' and request.args.get('arn'):
+        response = {
+            'TagList': [
+                {
+                    'Key': 'Example1',
+                    'Value': 'Value'
+                },
+                {
+                    'Key': 'Example2',
+                    'Value': 'Value'
+                }
+            ]
+        }
+        return jsonify(response)
+
+    return jsonify({})
 
 
 def serve(port, quiet=True):
