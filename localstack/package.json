@@ -4,7 +4,7 @@
   "description": "Local Cloud Stack and Utilities",
   "version": "0.0.1",
   "dependencies": {
-    "kinesalite": "1.11.6",
+    "kinesalite": "1.12.1",
     "leveldown": "1.6.0"
   }
 }
