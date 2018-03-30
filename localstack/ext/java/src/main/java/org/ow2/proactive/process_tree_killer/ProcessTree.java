@@ -25,45 +25,26 @@
  */
 package org.ow2.proactive.process_tree_killer;
 
-import static com.sun.jna.Pointer.NULL;
-import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.FINER;
-import static java.util.logging.Level.FINEST;
-import static org.ow2.proactive.process_tree_killer.jna.GNUCLibrary.LIBC;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.RandomAccessFile;
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.rmi.Remote;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.jvnet.winp.WinProcess;
-import org.jvnet.winp.WinpException;
-
 import com.sun.jna.Memory;
 import com.sun.jna.Native;
 import com.sun.jna.ptr.IntByReference;
+import org.jvnet.winp.WinProcess;
+import org.jvnet.winp.WinpException;
+
+import java.io.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.rmi.Remote;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static com.sun.jna.Pointer.NULL;
+import static java.util.logging.Level.*;
+import static org.ow2.proactive.process_tree_killer.jna.GNUCLibrary.LIBC;
 
 
 /**
@@ -687,12 +668,7 @@ public abstract class ProcessTree
         }
 
         public byte[] readFileToByteArray(File file) throws IOException {
-            InputStream in = org.apache.commons.io.FileUtils.openInputStream(file);
-            try {
-                return org.apache.commons.io.IOUtils.toByteArray(in);
-            } finally {
-                in.close();
-            }
+            return Files.readAllBytes(file.toPath());
         }
     }
 

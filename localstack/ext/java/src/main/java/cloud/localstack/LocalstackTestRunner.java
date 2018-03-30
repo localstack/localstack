@@ -1,23 +1,20 @@
 package cloud.localstack;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.logging.Logger;
-
-import org.apache.commons.io.FileUtils;
+import com.amazonaws.util.IOUtils;
 import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.InitializationError;
 import org.ow2.proactive.process_tree_killer.ProcessTree;
 
-import com.amazonaws.util.IOUtils;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 
 /**
  * Simple JUnit test runner that automatically downloads, installs, starts,
@@ -141,11 +138,7 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 		if(!constantsFile.exists()) {
 			LOG.info(logMsg);
 			messagePrinted = true;
-			try {
-				FileUtils.deleteDirectory(dir);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
+			deleteDirectory(dir);
 			exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
 		}
 		File installationDoneMarker = new File(dir, "localstack/infra/installation.finished.marker");
@@ -160,6 +153,18 @@ public class LocalstackTestRunner extends BlockJUnit4ClassRunner {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+		}
+	}
+
+	private static void deleteDirectory(File dir) {
+		try {
+			if(dir.exists())
+				Files.walk(dir.toPath())
+						.sorted(Comparator.reverseOrder())
+						.map(Path::toFile)
+						.forEach(File::delete);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
