@@ -242,46 +242,51 @@ def get_message_attributes(req_data):
     return attributes
 
 
+def evaluate_numeric_condition(conditions, attribute):
+    for i in range(0, len(conditions), 2):
+        operator = conditions[i]
+        operand = conditions[i + 1]
+
+        if operator == '=':
+            if attribute != operand:
+                return False
+        elif operator == '>':
+            if attribute <= operand:
+                return False
+        elif operator == '<':
+            if attribute >= operand:
+                return False
+        elif operator == '>=':
+            if attribute < operand:
+                return False
+        elif operator == '<=':
+            if attribute > operand:
+                return False
+
+    return True
+
+
 def evaluate_filter_policy_conditions(conditions, attribute):
-    result = False
-
-    if attribute is None:
-        return False
-
     if type(conditions) is not list:
         conditions = [conditions]
 
     for condition in conditions:
         if type(condition) is not dict:
             if attribute['Value'] == condition:
-                result = True
+                return True
         elif condition.get('anything-but'):
             if attribute['Value'] not in condition.get('anything-but'):
-                result = True
+                return True
         elif condition.get('prefix'):
             prefix = condition.get('prefix')
             if attribute['Value'].startswith(prefix):
-                result = True
+                return True
         elif condition.get('numeric'):
-            operator = condition.get('numeric')[0]
-            operand = condition.get('numeric')[1]
-            if operator == '=':
-                if attribute['Value'] == operand:
-                    result = True
-            elif operator == '>':
-                if attribute['Value'] > operand:
-                    result = True
-            elif operator == '<':
-                if attribute['Value'] < operand:
-                    result = True
-            elif operator == '>=':
-                if attribute['Value'] >= operand:
-                    result = True
-            elif operator == '<=':
-                if attribute['Value'] <= operand:
-                    result = True
+            if attribute['Type'] == 'Number':
+                if evaluate_numeric_condition(condition.get('numeric'), attribute['Value']):
+                    return True
 
-    return result
+    return False
 
 
 def check_filter_policy(filter_policy, message_attributes):
@@ -291,6 +296,10 @@ def check_filter_policy(filter_policy, message_attributes):
     for criteria in filter_policy:
         conditions = filter_policy.get(criteria)
         attribute = message_attributes.get(criteria)
+
+        if attribute is None:
+            return False
+
         if evaluate_filter_policy_conditions(conditions, attribute) is False:
             return False
 

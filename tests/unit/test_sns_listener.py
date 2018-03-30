@@ -339,6 +339,24 @@ def test_filter_policy():
             {'filter': {'Type': 'String', 'Value': 'type2'}},
             True
         ),
+        (
+            'multiple numeric conditions',
+            {'filter': [{'numeric': ['>', 0, '<=', 150]}]},
+            {'filter': {'Type': 'Number', 'Value': 122}},
+            True
+        ),
+        (
+            'multiple numeric conditions',
+            {'filter': [{'numeric': ['>', 0, '<=', 150]}]},
+            {'filter': {'Type': 'Number', 'Value': 200}},
+            False
+        ),
+        (
+            'multiple numeric conditions',
+            {'filter': [{'numeric': ['>', 0, '<=', 150]}]},
+            {'filter': {'Type': 'Number', 'Value': -1}},
+            False
+        )
     ]
 
     for test in test_data:
