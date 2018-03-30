@@ -28,7 +28,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_GOLANG)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-                                     unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
+    unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -41,7 +41,7 @@ LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 
 # List of Lambda runtime names. Keep them in this list, mainly to silence the linter
 LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_DOTNETCORE2,
-                   LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_JAVA8]
+    LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_JAVA8]
 
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
 LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
@@ -143,7 +143,7 @@ def use_docker():
 
 
 def process_apigateway_invocation(func_arn, path, payload, headers={},
-                                  resource_path=None, method=None, path_params={}):
+        resource_path=None, method=None, path_params={}):
     try:
         resource_path = resource_path or path
         event = {
@@ -220,7 +220,7 @@ def publish_new_function_version(arn):
     else:
         last_version = max([int(key) for key in versions.keys() if key != '$LATEST'])
     versions[str(last_version + 1)] = {'CodeSize': versions.get('$LATEST').get('CodeSize'),
-                                       'Function': versions.get('$LATEST').get('Function')}
+                                    'Function': versions.get('$LATEST').get('Function')}
     return get_function_version(arn, str(last_version + 1))
 
 
@@ -253,7 +253,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         if not context:
             context = LambdaContext()
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
-                                                     event, context=context, version=version, async=async)
+            event, context=context, version=version, async=async)
     except Exception as e:
         return error_response('Error executing Lambda function: %s %s' % (e, traceback.format_exc()))
     finally:
@@ -329,7 +329,7 @@ def set_function_code(code, lambda_name):
 
     def generic_handler(event, context):
         raise Exception(('Unable to find executor for Lambda function "%s". ' +
-                         'Note that Node.js and .NET Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
+            'Note that Node.js and .NET Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
 
     lambda_handler = generic_handler
     lambda_cwd = None
@@ -393,7 +393,7 @@ def set_function_code(code, lambda_name):
 
         def execute(event, context):
             result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(event, context,
-                                                                                     handler=arn_to_lambda[arn].handler, main_file=main_file)
+                handler=arn_to_lambda[arn].handler, main_file=main_file)
             return result
 
         lambda_handler = execute
@@ -401,8 +401,8 @@ def set_function_code(code, lambda_name):
     elif runtime.startswith('python') and not use_docker():
         try:
             lambda_handler = exec_lambda_code(zip_file_content,
-                                              handler_function=handler_function, lambda_cwd=lambda_cwd,
-                                              lambda_env=lambda_environment)
+                handler_function=handler_function, lambda_cwd=lambda_cwd,
+                lambda_env=lambda_environment)
         except Exception as e:
             raise Exception('Unable to get handler function from lambda code.', e)
 
@@ -462,11 +462,11 @@ def create_function():
         data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
         event_publisher.fire_event(event_publisher.EVENT_LAMBDA_CREATE_FUNC,
-                                   payload={'n': event_publisher.get_hash(lambda_name)})
+            payload={'n': event_publisher.get_hash(lambda_name)})
         arn = func_arn(lambda_name)
         if arn in arn_to_lambda:
             return error_response('Function already exist: %s' %
-                                  lambda_name, 409, error_type='ResourceConflictException')
+                lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
         func_details.versions = {'$LATEST': {'CodeSize': 50}}
         func_details.handler = data['Handler']
@@ -601,8 +601,8 @@ def get_function_code(function):
     lambda_cwd = arn_to_lambda[arn].cwd
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
     return Response(load_file(tmp_file, mode='rb'),
-                    mimetype='application/zip',
-                    headers={'Content-Disposition': 'attachment; filename=lambda_archive.zip'})
+            mimetype='application/zip',
+            headers={'Content-Disposition': 'attachment; filename=lambda_archive.zip'})
 
 
 @app.route('%s/functions/<function>/configuration' % PATH_ROOT, methods=['GET'])
