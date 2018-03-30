@@ -564,7 +564,7 @@ def delete_function(function):
         return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
 
     event_publisher.fire_event(event_publisher.EVENT_LAMBDA_DELETE_FUNC,
-                               payload={'n': event_publisher.get_hash(function)})
+        payload={'n': event_publisher.get_hash(function)})
     i = 0
     while i < len(event_source_mappings):
         mapping = event_source_mappings[i]
