@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
  *
  * @author Waldemar Hummer
  */
+@SuppressWarnings("restriction")
 public class LambdaExecutor {
 
 	@SuppressWarnings("unchecked")
@@ -121,7 +122,7 @@ public class LambdaExecutor {
 						((ParameterizedTypeImpl) genericInterface).getRawType().equals(RequestHandler.class))
 					.findFirst();
 			if (handlerInterface.isPresent()) {
-				Class handlerInputType = Class.forName(((ParameterizedTypeImpl) handlerInterface.get())
+				Class<?> handlerInputType = Class.forName(((ParameterizedTypeImpl) handlerInterface.get())
 						.getActualTypeArguments()[0].getTypeName());
 				inputObject = Optional.of(mapper.readerFor(handlerInputType).readValue(objectString));
 			}
