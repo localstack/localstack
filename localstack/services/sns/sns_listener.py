@@ -59,43 +59,46 @@ class ProxyListenerSNS(ProxyListener):
                 message = req_data['Message'][0]
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
-                    if subscriber['Protocol'] == 'sqs':
-                        endpoint = subscriber['Endpoint']
-                        if 'sqs_queue_url' in subscriber:
-                            queue_url = subscriber.get('sqs_queue_url')
-                        elif '://' in endpoint:
-                            queue_url = endpoint
-                        else:
-                            queue_name = endpoint.split(':')[5]
-                            queue_url = aws_stack.get_sqs_queue_url(queue_name)
-                            subscriber['sqs_queue_url'] = queue_url
-                        try:
-                            sqs_client.send_message(
-                                QueueUrl=queue_url,
-                                MessageBody=create_sns_message_body(subscriber, req_data)
+                    filter_policy = json.loads(subscriber.get('FilterPolicy', '{}'))
+                    message_attributes = get_message_attributes(req_data)
+                    if check_filter_policy(filter_policy, message_attributes):
+                        if subscriber['Protocol'] == 'sqs':
+                            endpoint = subscriber['Endpoint']
+                            if 'sqs_queue_url' in subscriber:
+                                queue_url = subscriber.get('sqs_queue_url')
+                            elif '://' in endpoint:
+                                queue_url = endpoint
+                            else:
+                                queue_name = endpoint.split(':')[5]
+                                queue_url = aws_stack.get_sqs_queue_url(queue_name)
+                                subscriber['sqs_queue_url'] = queue_url
+                            try:
+                                sqs_client.send_message(
+                                    QueueUrl=queue_url,
+                                    MessageBody=create_sns_message_body(subscriber, req_data)
+                                )
+                            except Exception as exc:
+                                return make_error(message=str(exc), code=400)
+                        elif subscriber['Protocol'] == 'lambda':
+                            lambda_api.process_sns_notification(
+                                subscriber['Endpoint'],
+                                topic_arn, message, subject=req_data.get('Subject', [None])[0]
                             )
-                        except Exception as exc:
-                            return make_error(message=str(exc), code=400)
-                    elif subscriber['Protocol'] == 'lambda':
-                        lambda_api.process_sns_notification(
-                            subscriber['Endpoint'],
-                            topic_arn, message, subject=req_data.get('Subject', [None])[0]
-                        )
-                    elif subscriber['Protocol'] in ['http', 'https']:
-                        try:
-                            message_body = create_sns_message_body(subscriber, req_data)
-                        except Exception as exc:
-                            return make_error(message=str(exc), code=400)
-                        requests.post(
-                            subscriber['Endpoint'],
-                            headers={
-                                'Content-Type': 'text/plain',
-                                'x-amz-sns-message-type': 'Notification'
-                            },
-                            data=message_body
-                        )
-                    else:
-                        LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
+                        elif subscriber['Protocol'] in ['http', 'https']:
+                            try:
+                                message_body = create_sns_message_body(subscriber, req_data)
+                            except Exception as exc:
+                                return make_error(message=str(exc), code=400)
+                            requests.post(
+                                subscriber['Endpoint'],
+                                headers={
+                                    'Content-Type': 'text/plain',
+                                    'x-amz-sns-message-type': 'Notification'
+                                },
+                                data=message_body
+                            )
+                        else:
+                            LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
                 # return response here because we do not want the request to be forwarded to SNS
                 return make_response(req_action)
 
@@ -237,3 +240,67 @@ def get_message_attributes(req_data):
             break
 
     return attributes
+
+
+def evaluate_numeric_condition(conditions, attribute):
+    for i in range(0, len(conditions), 2):
+        operator = conditions[i]
+        operand = conditions[i + 1]
+
+        if operator == '=':
+            if attribute != operand:
+                return False
+        elif operator == '>':
+            if attribute <= operand:
+                return False
+        elif operator == '<':
+            if attribute >= operand:
+                return False
+        elif operator == '>=':
+            if attribute < operand:
+                return False
+        elif operator == '<=':
+            if attribute > operand:
+                return False
+
+    return True
+
+
+def evaluate_filter_policy_conditions(conditions, attribute):
+    if type(conditions) is not list:
+        conditions = [conditions]
+
+    for condition in conditions:
+        if type(condition) is not dict:
+            if attribute['Value'] == condition:
+                return True
+        elif condition.get('anything-but'):
+            if attribute['Value'] not in condition.get('anything-but'):
+                return True
+        elif condition.get('prefix'):
+            prefix = condition.get('prefix')
+            if attribute['Value'].startswith(prefix):
+                return True
+        elif condition.get('numeric'):
+            if attribute['Type'] == 'Number':
+                if evaluate_numeric_condition(condition.get('numeric'), attribute['Value']):
+                    return True
+
+    return False
+
+
+def check_filter_policy(filter_policy, message_attributes):
+    if not filter_policy:
+        return True
+
+    for criteria in filter_policy:
+        conditions = filter_policy.get(criteria)
+        attribute = message_attributes.get(criteria)
+
+        if attribute is None:
+            return False
+
+        if evaluate_filter_policy_conditions(conditions, attribute) is False:
+            return False
+
+    return True
