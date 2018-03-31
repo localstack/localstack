@@ -43,12 +43,6 @@
             <version>3.5</version>
         </dependency>
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.5</version>
-        </dependency>
-
-        <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>4.1.0</version>
@@ -179,6 +173,38 @@
                             <include>software.*:*</include>
                         </includes>
                     </artifactSet>
+                    <relocations>
+                        <!--Default relocations of-->
+                        <!--http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.11.301/aws-java-sdk-bundle-1.11.301.pom-->
+                        <relocation>
+                            <pattern>org.joda</pattern>
+                            <shadedPattern>com.amazonaws.thirdparty.joda</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.fasterxml.jackson</pattern>
+                            <shadedPattern>com.amazonaws.thirdparty.jackson</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.http</pattern>
+                            <shadedPattern>com.amazonaws.thirdparty.apache.http</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.commons</pattern>
+                            <shadedPattern>com.amazonaws.thirdparty.apache.codec</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>software.amazon.ion</pattern>
+                            <shadedPattern>com.amazonaws.thirdparty.ion</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.commons.logging</pattern>
+                            <shadedPattern>com.amazonaws.thirdparty.apache.logging</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.commons.logging</pattern>
+                            <shadedPattern>com.amazonaws.thirdparty.apache.logging</shadedPattern>
+                        </relocation>
+                    </relocations>
                 </configuration>
             </plugin>
             <plugin>
