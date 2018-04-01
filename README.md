@@ -102,8 +102,8 @@ localstack start
 ```
 
 **Note**: Please do **not** use `sudo` or the `root` user - *LocalStack*
-should be installed and started entirely under a local non-root user. 
-If you have problems with permissions in MacOS X Sierra, 
+should be installed and started entirely under a local non-root user.
+If you have problems with permissions in MacOS X Sierra,
 install with `pip install --user localstack`
 
 ## Running in Docker
@@ -280,7 +280,7 @@ Simply add the following dependency to your `pom.xml` file:
 <dependency>
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
-    <version>0.1.11</version>
+    <version>0.1.12</version>
 </dependency>
 ```
 
