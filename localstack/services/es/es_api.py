@@ -39,7 +39,7 @@ def get_domain_status(domain_name, deleted=False):
                 'InstanceType': 'm3.medium.elasticsearch',
                 'ZoneAwarenessEnabled': True
             },
-            'ElasticsearchVersion': '5.3',
+            'ElasticsearchVersion': '6.2',
             'Endpoint': None,
             'Processing': True
         }
