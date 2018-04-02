@@ -12,7 +12,7 @@ from amazon_kclpy import kcl
 from localstack.constants import (LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, REGION_LOCAL, DEFAULT_REGION)
 from localstack import config
 from localstack.config import HOSTNAME, USE_SSL
-from localstack.utils.common import run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid
+from localstack.utils.common import run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid, chmod_r
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
 from localstack.utils.common import ShellCommandThread, FuncThread
@@ -386,7 +386,7 @@ if __name__ == '__main__':
     kinesis_connector.KinesisProcessor.run_processor(log_file=log_file, processor_func=receive_msg)
     """ % (LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, events_file, log_file)
     save_file(script_file, content)
-    run('chmod +x %s' % script_file)
+    chmod_r(script_file, 0o755)
     TMP_FILES.append(script_file)
     return script_file
 

@@ -8,7 +8,7 @@ import logging
 import tempfile
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION)
-from localstack.utils.common import download, parallelize, run, mkdir, save_file, unzip, rm_rf
+from localstack.utils.common import download, parallelize, run, mkdir, save_file, unzip, rm_rf, chmod_r
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -34,20 +34,21 @@ LOGGER = logging.getLogger(__name__)
 def install_elasticsearch():
     if not os.path.exists(INSTALL_DIR_ES):
         LOGGER.info('Downloading and installing local Elasticsearch server. This may take some time.')
-        run('mkdir -p %s' % INSTALL_DIR_INFRA)
+        mkdir(INSTALL_DIR_INFRA)
         # download and extract archive
         download_and_extract_with_retry(ELASTICSEARCH_JAR_URL, TMP_ARCHIVE_ES, INSTALL_DIR_INFRA)
         run('cd %s && mv elasticsearch* elasticsearch' % (INSTALL_DIR_INFRA))
 
         for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
-            cmd = 'cd %s && mkdir -p %s && chmod -R 777 %s'
-            run(cmd % (INSTALL_DIR_ES, dir_name, dir_name))
+            dir_path = '%s/%s' % (INSTALL_DIR_ES, dir_name)
+            mkdir(dir_path)
+            chmod_r(dir_path, 0o777)
 
 
 def install_elasticmq():
     if not os.path.exists(INSTALL_DIR_ELASTICMQ):
         LOGGER.info('Downloading and installing local ElasticMQ server. This may take some time.')
-        run('mkdir -p %s' % INSTALL_DIR_ELASTICMQ)
+        mkdir(INSTALL_DIR_ELASTICMQ)
         # download archive
         if not os.path.exists(TMP_ARCHIVE_ELASTICMQ):
             download(ELASTICMQ_JAR_URL, TMP_ARCHIVE_ELASTICMQ)

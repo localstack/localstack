@@ -5,7 +5,7 @@ import traceback
 from localstack.constants import DEFAULT_PORT_ELASTICSEARCH_BACKEND, LOCALSTACK_ROOT_FOLDER
 from localstack.config import PORT_ELASTICSEARCH, DATA_DIR
 from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
-from localstack.utils.common import run, is_root
+from localstack.utils.common import run, is_root, mkdir, chmod_r
 from localstack.utils.aws import aws_stack
 from localstack.services import install
 from localstack.services.install import ROOT_PATH
@@ -37,8 +37,9 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     if delete_data:
         run('rm -rf %s' % es_data_dir)
     # fix permissions
-    run('chmod -R 777 %s/infra/elasticsearch' % ROOT_PATH)
-    run('mkdir -p "%s"; chmod -R 777 "%s"' % (es_data_dir, es_data_dir))
+    chmod_r('%s/infra/elasticsearch' % ROOT_PATH, 0o777)
+    mkdir(es_data_dir)
+    chmod_r(es_data_dir, 0o777)
     # start proxy and ES process
     start_proxy_for_service('elasticsearch', port, backend_port,
         update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})

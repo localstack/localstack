@@ -27,7 +27,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_GOLANG)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-    unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
+    mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -353,7 +353,7 @@ def set_function_code(code, lambda_name):
 
     # save tmp file
     tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
-    run('mkdir -p %s' % tmp_dir)
+    mkdir(tmp_dir)
     tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
     save_file(tmp_file, zip_file_content)
     TMP_FILES.append(tmp_dir)
