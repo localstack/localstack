@@ -222,7 +222,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             content_length_sent = False
             for header_key, header_value in iteritems(response.headers):
                 # filter out certain headers that we don't want to transmit
-                if header_key not in ['Transfer-Encoding']:
+                if header_key.lower() not in ('transfer-encoding', 'date', 'server'):
                     self.send_header(header_key, header_value)
                     content_length_sent = content_length_sent or header_key.lower() == 'content-length'
             if not content_length_sent:

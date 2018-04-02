@@ -65,7 +65,7 @@ def replay_command(command):
         data = base64.b64decode(data)
     endpoint = aws_stack.get_local_service_url(command['a'])
     full_url = (endpoint[:-1] if endpoint.endswith('/') else endpoint) + command['p']
-    result = function(full_url, data=data, headers=command['h'])
+    result = function(full_url, data=data, headers=command['h'], verify=False)
     return result
 
 
