@@ -1,4 +1,6 @@
 import json
+import time
+from random import randint
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.constants import TEST_AWS_ACCOUNT_ID, DEFAULT_REGION
@@ -23,31 +25,29 @@ def error_response(error_type, code=400, message='Unknown error.'):
     return response, code
 
 
+def get_domain_config_status():
+    return {
+        'CreationDate': '%.2f' % time.time(),
+        'PendingDeletion': False,
+        'State': 'Active',
+        'UpdateDate': '%.2f' % time.time(),
+        'UpdateVersion': randint(1, 100)
+    }
+
+
 def get_domain_config(domain_name):
     return {
         'DomainConfig': {
             'AccessPolicies': {
                 'Options': '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::%s:root"},"Action":"es:*","Resource":"arn:aws:es:%s:%s:domain/%s/*"}]}' % (TEST_AWS_ACCOUNT_ID, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),  # noqa: E501
-                'Status': {
-                    'CreationDate': 1499817484.04,
-                    'PendingDeletion': False,
-                    'State': 'Active',
-                    'UpdateDate': 1500308955.652,
-                    'UpdateVersion': 17
-                }
+                'Status': get_domain_config_status()
             },
             'AdvancedOptions': {
                 'Options': {
                     'indices.fielddata.cache.size': '',
                     'rest.action.multi.allow_explicit_index': 'true'
                 },
-                'Status': {
-                    'CreationDate': 1499817484.04,
-                    'PendingDeletion': False,
-                    'State': 'Active',
-                    'UpdateDate': 1499818054.108,
-                    'UpdateVersion': 5
-                }
+                'Status': get_domain_config_status()
             },
             'EBSOptions': {
                 'Options': {
@@ -57,62 +57,32 @@ def get_domain_config(domain_name):
                     'VolumeSize': 10,
                     'VolumeType': 'gp2'
                 },
-                'Status': {
-                    'CreationDate': 1499817484.04,
-                    'PendingDeletion': False,
-                    'State': 'Active',
-                    'UpdateDate': 1499818054.108,
-                    'UpdateVersion': 5
-                }
+                'Status': get_domain_config_status()
             },
             'ElasticsearchClusterConfig': {
                 'Options': {
                     'DedicatedMasterCount': 1,
                     'DedicatedMasterEnabled': True,
-                    'DedicatedMasterType': 'm4.large.elasticsearch',
+                    'DedicatedMasterType': 'm3.medium.elasticsearch',
                     'InstanceCount': 1,
-                    'InstanceType': 'm4.large.elasticsearch',
+                    'InstanceType': 'm3.medium.elasticsearch',
                     'ZoneAwarenessEnabled': False
                 },
-                'Status': {
-                    'CreationDate': 1499817484.04,
-                    'PendingDeletion': False,
-                    'State': 'Active',
-                    'UpdateDate': 1499966854.612,
-                    'UpdateVersion': 13
-                }
+                'Status': get_domain_config_status()
             },
             'ElasticsearchVersion': {
                 'Options': '5.3',
-                'Status': {
-                    'PendingDeletion': False,
-                    'State': 'Active',
-                    'CreationDate': 1436913638.995,
-                    'UpdateVersion': 6,
-                    'UpdateDate': 1436914324.278
-                }
+                'Status': get_domain_config_status()
             },
             'EncryptionAtRestOptions': {
                 'Options': {
                     'Enabled': False,
                     'KmsKeyId': ''
                 },
-                'Status': {
-                    'CreationDate': 1509490412.757,
-                    'PendingDeletion': False,
-                    'State': 'Active',
-                    'UpdateDate': 1509490953.717,
-                    'UpdateVersion': 6
-                }
+                'Status': get_domain_config_status()
             },
             'LogPublishingOptions': {
-                'Status': {
-                    'CreationDate': 1502774634.546,
-                    'PendingDeletion': False,
-                    'State': 'Processing',
-                    'UpdateDate': 1502779590.448,
-                    'UpdateVersion': 60
-                },
+                'Status': get_domain_config_status(),
                 'Options': {
                     'INDEX_SLOW_LOGS': {
                         'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
@@ -126,15 +96,9 @@ def get_domain_config(domain_name):
             },
             'SnapshotOptions': {
                 'Options': {
-                    'AutomatedSnapshotStartHour': 6
+                    'AutomatedSnapshotStartHour': randint(0, 23)
                 },
-                'Status': {
-                    'CreationDate': 1499817484.04,
-                    'PendingDeletion': False,
-                    'State': 'Active',
-                    'UpdateDate': 1499818054.108,
-                    'UpdateVersion': 5
-                }
+                'Status': get_domain_config_status()
             },
             'VPCOptions': {
                 'Options': {
@@ -149,13 +113,7 @@ def get_domain_config(domain_name):
                     ],
                     'VPCId': 'vpc-12345678'
                 },
-                'Status': {
-                    'CreationDate': 1499817484.04,
-                    'PendingDeletion': False,
-                    'State': 'Active',
-                    'UpdateDate': 1499818054.108,
-                    'UpdateVersion': 5
-                }
+                'Status': get_domain_config_status()
             }
         }
     }
@@ -172,9 +130,9 @@ def get_domain_status(domain_name, deleted=False):
             'ElasticsearchClusterConfig': {
                 'DedicatedMasterCount': 1,
                 'DedicatedMasterEnabled': True,
-                'DedicatedMasterType': 'm4.large.elasticsearch',
+                'DedicatedMasterType': 'm3.medium.elasticsearch',
                 'InstanceCount': 1,
-                'InstanceType': 'm4.large.elasticsearch',
+                'InstanceType': 'm3.medium.elasticsearch',
                 'ZoneAwarenessEnabled': False
             },
             'ElasticsearchVersion': '6.2',
