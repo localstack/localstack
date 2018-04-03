@@ -27,6 +27,14 @@ class TestLambdaAPI(unittest.TestCase):
         self.app.testing = True
         self.client = self.app.test_client()
 
+    def test_get_non_existent_function_returns_error(self):
+        with self.app.test_request_context():
+            result = json.loads(lambda_api.get_function('non_existent_function_name').get_data())
+            self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
+            self.assertEqual(
+                self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn('non_existent_function_name'),
+                result['message'])
+
     def test_get_event_source_mapping(self):
         with self.app.test_request_context():
             lambda_api.event_source_mappings.append({'UUID': self.TEST_UUID})
