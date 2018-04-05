@@ -513,12 +513,8 @@ def get_function(function):
             if lambda_details.concurrency is not None:
                 result['Concurrency'] = lambda_details.concurrency
             return jsonify(result)
-    result = {
-        'ResponseMetadata': {
-            'HTTPStatusCode': 404
-        }
-    }
-    return make_response((jsonify(result), 404, {}))
+    return error_response(
+        'Function not found: %s' % func_arn(function), 404, error_type='ResourceNotFoundException')
 
 
 @app.route('%s/functions/' % PATH_ROOT, methods=['GET'])
