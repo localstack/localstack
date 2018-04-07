@@ -26,13 +26,15 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
     install.install_elasticsearch()
     backend_port = DEFAULT_PORT_ELASTICSEARCH_BACKEND
     es_data_dir = '%s/infra/elasticsearch/data' % (ROOT_PATH)
+    es_tmp_dir = '%s/infra/elasticsearch/tmp' % (ROOT_PATH)
     if DATA_DIR:
         es_data_dir = '%s/elasticsearch' % DATA_DIR
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
-    cmd = (('ES_JAVA_OPTS=\"$ES_JAVA_OPTS -Xms200m -Xmx500m\" %s/infra/elasticsearch/bin/elasticsearch ' +
+    cmd = (('ES_JAVA_OPTS=\"$ES_JAVA_OPTS -Xms200m -Xmx500m\" ES_TMPDIR="%s" ' +
+        '%s/infra/elasticsearch/bin/elasticsearch ' +
         '-E http.port=%s -E http.publish_port=%s -E http.compression=false -E path.data=%s') %
-        (ROOT_PATH, backend_port, backend_port, es_data_dir))
+        (es_tmp_dir, ROOT_PATH, backend_port, backend_port, es_data_dir))
     print('Starting local Elasticsearch (%s port %s)...' % (get_service_protocol(), port))
     if delete_data:
         run('rm -rf %s' % es_data_dir)
