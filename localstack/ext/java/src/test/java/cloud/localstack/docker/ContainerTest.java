@@ -17,7 +17,6 @@ public class ContainerTest {
     @Test
     public void createLocalstackContainer() throws Exception {
 
-
         HashMap<String, String> environmentVariables = new HashMap<>();
         environmentVariables.put(MY_PROPERTY, MY_VALUE);
         Container localStackContainer = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, true, true, environmentVariables);
@@ -35,7 +34,6 @@ public class ContainerTest {
         finally {
             localStackContainer.stop();
         }
-
     }
 
     private ArrayList<String> buildEchoStatement(String valueToEcho) {

@@ -30,7 +30,7 @@ DEFAULT_PORT_WEB_UI = 8080
 LOCALHOST = 'localhost'
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = '0.1.12'
+LOCALSTACK_MAVEN_VERSION = '0.1.13'
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
