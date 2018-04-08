@@ -60,10 +60,6 @@ public class LocalstackDocker {
 
 
     public void startup() {
-        // make sure the local infrastructure is not running, to avoid port conflicts
-        LocalstackTestRunner.teardownInfrastructure();
-
-        // now create the container
         if (locked) {
             throw new IllegalStateException("A docker instance is starting or already started.");
         }
@@ -79,7 +75,6 @@ public class LocalstackDocker {
             locked = false;
             throw new LocalstackDockerException("Could not start the localstack docker container.", t);
         }
-
     }
 
 

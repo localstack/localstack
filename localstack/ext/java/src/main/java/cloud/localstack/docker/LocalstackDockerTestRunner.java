@@ -57,6 +57,8 @@ public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
 
     @Override
     public void run(RunNotifier notifier) {
+        LocalstackTestRunner.teardownInfrastructure();
+
         localstackDocker.setExternalHostName(externalHostName);
         localstackDocker.setPullNewImage(pullNewImage);
         localstackDocker.setRandomizePorts(randomizePorts);
