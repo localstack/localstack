@@ -23,3 +23,5 @@ localstack/infra/
 ~*
 *~
 /.idea
+**/obj/**
+**/bin/**
