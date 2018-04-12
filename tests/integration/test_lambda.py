@@ -153,7 +153,7 @@ def test_lambda_runtimes():
         # deploy and invoke - .NET Core 2.0. Its already a zip
         zip_file = TEST_LAMBDA_DOTNETCORE2
         testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DOTNETCORE2, zip_file=zip_file,
-            handler='DotNetCore::DotNetCore.Function::SimpleFunctionHandler', runtime=LAMBDA_RUNTIME_DOTNETCORE2)
+            handler='DotNetCore2::DotNetCore2.Function::SimpleFunctionHandler', runtime=LAMBDA_RUNTIME_DOTNETCORE2)
         result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_DOTNETCORE2, Payload=b'{}')
         assert result['StatusCode'] == 200
         result_data = result['Payload'].read()
