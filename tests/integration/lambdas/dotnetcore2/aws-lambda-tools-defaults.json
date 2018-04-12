@@ -10,5 +10,5 @@
     "function-runtime": "dotnetcore2.0",
     "function-memory-size": 256,
     "function-timeout": 30,
-    "function-handler": "DotNetCore::DotNetCore.Function::SimpleFunctionHandler"
+    "function-handler": "DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler"
 }
