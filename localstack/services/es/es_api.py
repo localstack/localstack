@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.constants import TEST_AWS_ACCOUNT_ID, DEFAULT_REGION
 from localstack.utils.common import to_str
+from localstack.utils.aws import aws_stack
 
 APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'
@@ -136,7 +137,7 @@ def get_domain_status(domain_name, deleted=False):
                 'ZoneAwarenessEnabled': False
             },
             'ElasticsearchVersion': '6.2',
-            'Endpoint': 'http://localhost:4571',
+            'Endpoint': aws_stack.get_elasticsearch_endpoint(),
             'Processing': False,
             'EBSOptions': {
                 'EBSEnabled': True,
@@ -192,7 +193,7 @@ def delete_domain(domain_name):
 
 @app.route('%s/tags/' % API_PREFIX, methods=['GET', 'POST'])
 def add_list_tags():
-    if request.method == 'POST' and request.args.get('arn'):
+    if request.method == 'GET' and request.args.get('arn'):
         response = {
             'TagList': [
                 {
