@@ -7,19 +7,21 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, load_file, to_str, mkdir, download
 from localstack.services.awslambda import lambda_api, lambda_executors
-from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_NODEJS,
+from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, use_docker)
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py')
 TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_python3.py')
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js')
+TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, 'lambdas', 'dotnetcore2', 'dotnetcore2.zip')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', 'localstack-utils-tests.jar')
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
+TEST_LAMBDA_NAME_DOTNETCORE2 = 'test_lambda_dotnetcore2'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
@@ -144,6 +146,19 @@ def test_lambda_runtimes():
         testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JS,
             zip_file=zip_file, handler='lambda_integration.handler', runtime=LAMBDA_RUNTIME_NODEJS)
         result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')
+        assert result['StatusCode'] == 200
+        result_data = result['Payload'].read()
+        assert to_str(result_data).strip() == '{}'
+
+        # deploy and invoke - .NET Core 2.0. Its already a zip
+        zip_file = TEST_LAMBDA_DOTNETCORE2
+        zip_file_content = None
+        with open(zip_file, 'rb') as file_obj:
+            zip_file_content = file_obj.read()
+        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DOTNETCORE2, zip_file=zip_file_content,
+            handler='DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler',
+            runtime=LAMBDA_RUNTIME_DOTNETCORE2)
+        result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_DOTNETCORE2, Payload=b'{}')
         assert result['StatusCode'] == 200
         result_data = result['Payload'].read()
         assert to_str(result_data).strip() == '{}'

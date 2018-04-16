@@ -25,6 +25,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_NODEJS,
     LAMBDA_RUNTIME_NODEJS610,
     LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_GOLANG)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
@@ -39,7 +40,7 @@ ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 
 # List of Lambda runtime names. Keep them in this list, mainly to silence the linter
-LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36,
+LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_JAVA8]
 
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
@@ -219,7 +220,7 @@ def publish_new_function_version(arn):
     else:
         last_version = max([int(key) for key in versions.keys() if key != '$LATEST'])
     versions[str(last_version + 1)] = {'CodeSize': versions.get('$LATEST').get('CodeSize'),
-                                  'Function': versions.get('$LATEST').get('Function')}
+                                    'Function': versions.get('$LATEST').get('Function')}
     return get_function_version(arn, str(last_version + 1))
 
 
@@ -298,18 +299,25 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
 
 def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     # TODO: support Java Lambdas in the future
+    delimiter = '.'
     if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
         file_ext = '.js'
     elif runtime.startswith(LAMBDA_RUNTIME_GOLANG):
         file_ext = ''
+    elif runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2):
+        file_ext = '.dll'
+        delimiter = ':'
     else:
         file_ext = '.py'
-    return '%s%s' % (handler_name.split('.')[0], file_ext)
+    return '%s%s' % (handler_name.split(delimiter)[0], file_ext)
 
 
 def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     # TODO: support Java Lambdas in the future
-    return handler_name.split('.')[-1]
+    if runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2):
+        return handler_name.split(':')[-1]
+    else:
+        return handler_name.split('.')[-1]
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
@@ -321,7 +329,7 @@ def set_function_code(code, lambda_name):
 
     def generic_handler(event, context):
         raise Exception(('Unable to find executor for Lambda function "%s". ' +
-            'Note that Node.js Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
+            'Note that Node.js and .NET Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
 
     lambda_handler = generic_handler
     lambda_cwd = None
