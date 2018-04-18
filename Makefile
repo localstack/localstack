@@ -10,9 +10,10 @@ usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
 install:           ## Install dependencies in virtualenv
+	@# TODO: There are currently some issues with pip 10.0.0 -> downgrade to 9.0.3 for now
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
-		($(VENV_RUN) && $(PIP_CMD) -q install --upgrade pip) && \
+		($(VENV_RUN) && $(PIP_CMD) -q install pip==9.0.3) && \
 		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install -q six==1.10.0 ; $(PIP_CMD) -q install -r requirements.txt) && \
 		$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py testlibs)
 
@@ -111,11 +112,11 @@ test-docker-mount:
 
 reinstall-p2:      ## Re-initialize the virtualenv with Python 2.x
 	rm -rf $(VENV_DIR)
-	PIP_CMD=pip2 VENV_OPTS="-p `which python2`" make install
+	PIP_CMD=pip2 VENV_OPTS="-p '`which python2`'" make install
 
 reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	rm -rf $(VENV_DIR)
-	PIP_CMD=pip3 VENV_OPTS="-p `which python3`" make install
+	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
 
 lint:              ## Run code linter to check code style
 	($(VENV_RUN); flake8 --inline-quotes=single --show-source --max-line-length=120 --ignore=E128 --exclude=node_modules,$(VENV_DIR)*,dist .)
