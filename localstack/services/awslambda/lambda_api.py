@@ -193,15 +193,9 @@ def process_kinesis_records(records, stream_name):
             for rec in records:
                 event['Records'].append({
                     'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
-                    #'eventVersion': '1.0',
-                    #'invokeIdentityArn': identityarn,
-                    #'eventName': 'aws:kinesis:record',
                     'eventSourceARN': stream_arn,
-                    #'eventSource': 'aws:kinesis',
-                    #'awsRegion': DEFAULT_REGION
                     'kinesis': rec
-                })
-                
+                })                
             run_lambda(event=event, context={}, func_arn=arn)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
