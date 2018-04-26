@@ -1,12 +1,12 @@
 package cloud.localstack;
 
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import com.amazonaws.services.lambda.runtime.ClientContext;
 import com.amazonaws.services.lambda.runtime.CognitoIdentity;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
+
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LambdaContext implements Context {
 
@@ -14,8 +14,15 @@ public class LambdaContext implements Context {
 
 	public LambdaLogger getLogger() {
 		return new LambdaLogger() {
+
+			@Override
 			public void log(String msg) {
 				LOG.log(Level.INFO, msg);
+			}
+
+			@Override
+			public void log(byte[] msg) {
+				log(new String(msg));
 			}
 		};
 	}
