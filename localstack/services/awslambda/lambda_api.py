@@ -192,6 +192,8 @@ def process_kinesis_records(records, stream_name):
             }
             for rec in records:
                 event['Records'].append({
+                    'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
+                    'eventSourceARN': stream_arn,
                     'kinesis': rec
                 })
             run_lambda(event=event, context={}, func_arn=arn)
