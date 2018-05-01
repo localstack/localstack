@@ -69,7 +69,7 @@ def test_domain_creation():
     assert_true(status['DomainStatus']['Created'])
     assert_false(status['DomainStatus']['Processing'])
     assert_false(status['DomainStatus']['Deleted'])
-    assert_equal(status['DomainStatus']['Endpoint'], TEST_ENDPOINT_URL)
+    assert_equal(status['DomainStatus']['Endpoint'], aws_stack.get_elasticsearch_endpoint())
     assert_true(status['DomainStatus']['EBSOptions']['EBSEnabled'])
 
     # make sure we can fake adding tags to a domain
