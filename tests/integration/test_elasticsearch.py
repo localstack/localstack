@@ -13,6 +13,7 @@ COMMON_HEADERS = {
     'Accept-encoding': 'identity'
 }
 TEST_DOMAIN_NAME = 'test_es_domain_1'
+TEST_ENDPOINT_URL = 'http://localhost:4571'
 
 
 def setUp():
@@ -66,7 +67,14 @@ def test_domain_creation():
     status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
     assert_equal(status['DomainStatus']['DomainName'], TEST_DOMAIN_NAME)
     assert_true(status['DomainStatus']['Created'])
+    assert_false(status['DomainStatus']['Processing'])
     assert_false(status['DomainStatus']['Deleted'])
+    assert_equal(status['DomainStatus']['Endpoint'], aws_stack.get_elasticsearch_endpoint())
+    assert_true(status['DomainStatus']['EBSOptions']['EBSEnabled'])
+
+    # make sure we can fake adding tags to a domain
+    response = es_client.add_tags(ARN='string', TagList=[{'Key': 'SOME_TAG', 'Value': 'SOME_VALUE'}])
+    assert_equal(200, response['ResponseMetadata']['HTTPStatusCode'])
 
     # make sure domain deletion works
     es_client.delete_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)

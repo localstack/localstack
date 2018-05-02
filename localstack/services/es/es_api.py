@@ -1,8 +1,11 @@
 import json
+import time
+from random import randint
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.constants import TEST_AWS_ACCOUNT_ID, DEFAULT_REGION
 from localstack.utils.common import to_str
+from localstack.utils.aws import aws_stack
 
 APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'
@@ -23,6 +26,100 @@ def error_response(error_type, code=400, message='Unknown error.'):
     return response, code
 
 
+def get_domain_config_status():
+    return {
+        'CreationDate': '%.2f' % time.time(),
+        'PendingDeletion': False,
+        'State': 'Active',
+        'UpdateDate': '%.2f' % time.time(),
+        'UpdateVersion': randint(1, 100)
+    }
+
+
+def get_domain_config(domain_name):
+    return {
+        'DomainConfig': {
+            'AccessPolicies': {
+                'Options': '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::%s:root"},"Action":"es:*","Resource":"arn:aws:es:%s:%s:domain/%s/*"}]}' % (TEST_AWS_ACCOUNT_ID, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),  # noqa: E501
+                'Status': get_domain_config_status()
+            },
+            'AdvancedOptions': {
+                'Options': {
+                    'indices.fielddata.cache.size': '',
+                    'rest.action.multi.allow_explicit_index': 'true'
+                },
+                'Status': get_domain_config_status()
+            },
+            'EBSOptions': {
+                'Options': {
+                    'EBSEnabled': True,
+                    'EncryptionEnabled': False,
+                    'Iops': 0,
+                    'VolumeSize': 10,
+                    'VolumeType': 'gp2'
+                },
+                'Status': get_domain_config_status()
+            },
+            'ElasticsearchClusterConfig': {
+                'Options': {
+                    'DedicatedMasterCount': 1,
+                    'DedicatedMasterEnabled': True,
+                    'DedicatedMasterType': 'm3.medium.elasticsearch',
+                    'InstanceCount': 1,
+                    'InstanceType': 'm3.medium.elasticsearch',
+                    'ZoneAwarenessEnabled': False
+                },
+                'Status': get_domain_config_status()
+            },
+            'ElasticsearchVersion': {
+                'Options': '5.3',
+                'Status': get_domain_config_status()
+            },
+            'EncryptionAtRestOptions': {
+                'Options': {
+                    'Enabled': False,
+                    'KmsKeyId': ''
+                },
+                'Status': get_domain_config_status()
+            },
+            'LogPublishingOptions': {
+                'Status': get_domain_config_status(),
+                'Options': {
+                    'INDEX_SLOW_LOGS': {
+                        'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
+                        'Enabled': False
+                    },
+                    'SEARCH_SLOW_LOGS': {
+                        'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
+                        'Enabled': False,
+                    }
+                }
+            },
+            'SnapshotOptions': {
+                'Options': {
+                    'AutomatedSnapshotStartHour': randint(0, 23)
+                },
+                'Status': get_domain_config_status()
+            },
+            'VPCOptions': {
+                'Options': {
+                    'AvailabilityZones': [
+                        'us-east-1b'
+                    ],
+                    'SecurityGroupIds': [
+                        'sg-12345678'
+                    ],
+                    'SubnetIds': [
+                        'subnet-12345678'
+                    ],
+                    'VPCId': 'vpc-12345678'
+                },
+                'Status': get_domain_config_status()
+            }
+        }
+    }
+
+
 def get_domain_status(domain_name, deleted=False):
     return {
         'DomainStatus': {
@@ -37,11 +134,17 @@ def get_domain_status(domain_name, deleted=False):
                 'DedicatedMasterType': 'm3.medium.elasticsearch',
                 'InstanceCount': 1,
                 'InstanceType': 'm3.medium.elasticsearch',
-                'ZoneAwarenessEnabled': True
+                'ZoneAwarenessEnabled': False
             },
             'ElasticsearchVersion': '6.2',
-            'Endpoint': None,
-            'Processing': True
+            'Endpoint': aws_stack.get_elasticsearch_endpoint(),
+            'Processing': False,
+            'EBSOptions': {
+                'EBSEnabled': True,
+                'VolumeType': 'gp2',
+                'VolumeSize': 10,
+                'Iops': 0
+            },
         }
     }
 
@@ -73,6 +176,12 @@ def describe_domain(domain_name):
     return jsonify(result)
 
 
+@app.route('%s/es/domain/<domain_name>/config' % API_PREFIX, methods=['GET', 'POST'])
+def domain_config(domain_name):
+    config = get_domain_config(domain_name)
+    return jsonify(config)
+
+
 @app.route('%s/es/domain/<domain_name>' % API_PREFIX, methods=['DELETE'])
 def delete_domain(domain_name):
     if domain_name not in ES_DOMAINS:
@@ -80,6 +189,26 @@ def delete_domain(domain_name):
     result = get_domain_status(domain_name, deleted=True)
     ES_DOMAINS.pop(domain_name)
     return jsonify(result)
+
+
+@app.route('%s/tags/' % API_PREFIX, methods=['GET', 'POST'])
+def add_list_tags():
+    if request.method == 'GET' and request.args.get('arn'):
+        response = {
+            'TagList': [
+                {
+                    'Key': 'Example1',
+                    'Value': 'Value'
+                },
+                {
+                    'Key': 'Example2',
+                    'Value': 'Value'
+                }
+            ]
+        }
+        return jsonify(response)
+
+    return jsonify({})
 
 
 def serve(port, quiet=True):
