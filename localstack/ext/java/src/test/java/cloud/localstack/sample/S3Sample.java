@@ -13,16 +13,8 @@ package cloud.localstack.sample;
  * express or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.util.UUID;
 
+import cloud.localstack.Localstack;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
@@ -39,7 +31,15 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 
-import cloud.localstack.LocalstackTestRunner;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.UUID;
 
 /**
  * This sample demonstrates how to make basic requests to Amazon S3 using the
@@ -74,7 +74,7 @@ public class S3Sample {
 		AmazonS3 s3 = new AmazonS3Client(credentials);
         Region usWest2 = Region.getRegion(Regions.US_WEST_2);
         s3.setRegion(usWest2);
-        s3.setEndpoint(LocalstackTestRunner.getEndpointS3());
+        s3.setEndpoint(Localstack.getEndpointS3());
 		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true)
 				.disableChunkedEncoding().build());
 

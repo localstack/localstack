@@ -53,7 +53,7 @@ public class BasicFunctionalityTest {
 		 */
 		TestUtils.setEnv("AWS_CBOR_DISABLE", "1");
 		/* Disable SSL certificate checks for local testing */
-		if (LocalstackTestRunner.useSSL()) {
+		if (Localstack.useSSL()) {
 			TestUtils.disableSslCertChecking();
 		}
 	}

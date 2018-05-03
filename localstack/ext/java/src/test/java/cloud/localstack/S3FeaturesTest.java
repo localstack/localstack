@@ -65,7 +65,7 @@ public class S3FeaturesTest {
 	 */
 	@Test
 	public void testHttpsConnection() {
-		if (!LocalstackTestRunner.useSSL()) {
+		if (!Localstack.useSSL()) {
 			return;
 		}
 
@@ -75,8 +75,8 @@ public class S3FeaturesTest {
 
 		AmazonS3 amazonS3Client = AmazonS3ClientBuilder.standard()
 				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
-						LocalstackTestRunner.getEndpointS3(),
-						LocalstackTestRunner.getDefaultRegion()))
+						Localstack.getEndpointS3(),
+						Localstack.getDefaultRegion()))
 				.withCredentials(TestUtils.getCredentialsProvider())
 				.withChunkedEncodingDisabled(true)
 				.withPathStyleAccessEnabled(true).build();
