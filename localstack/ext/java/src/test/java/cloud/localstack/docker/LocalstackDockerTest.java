@@ -16,19 +16,17 @@ import static org.junit.Assert.assertNotNull;
 
 public class LocalstackDockerTest {
 
+    private static final LocalstackDockerConfiguration DOCKER_CONFIG = LocalstackDockerConfiguration.builder()
+            .randomizePorts(true)
+            .build();
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
     @Test
     public void startup() {
         LocalstackDocker localstackDocker = LocalstackDocker.INSTANCE;
-        LocalstackDocker.INSTANCE.startup(new LocalstackDockerConfiguration(
-                false,
-                true,
-                "localhost",
-                Collections.emptyMap()
-
-        ));
+        LocalstackDocker.INSTANCE.startup(DOCKER_CONFIG);
 
         AmazonSQS amazonSQS = DockerTestUtils.getClientSQS();
         String queueUrl = amazonSQS.createQueue("test-queue").getQueueUrl();
@@ -41,25 +39,13 @@ public class LocalstackDockerTest {
 
         thrown.expect(IllegalStateException.class);
 
-        LocalstackDocker.INSTANCE.startup(new LocalstackDockerConfiguration(
-                false,
-                true,
-                "localhost",
-                Collections.emptyMap()
-
-        ));
+        LocalstackDocker.INSTANCE.startup(DOCKER_CONFIG);
         localstackDocker.stop();
     }
 
     @Test
     public void stop() {
-        LocalstackDocker.INSTANCE.startup(new LocalstackDockerConfiguration(
-                false,
-                true,
-                "localhost",
-                Collections.emptyMap()
-
-        ));
+        LocalstackDocker.INSTANCE.startup(DOCKER_CONFIG);
         LocalstackDocker.INSTANCE.stop();
 
         AmazonSQS amazonSQS = DockerTestUtils.getClientSQS();

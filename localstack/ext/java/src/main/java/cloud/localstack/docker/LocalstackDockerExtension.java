@@ -3,9 +3,9 @@ package cloud.localstack.docker;
 import cloud.localstack.Localstack;
 import cloud.localstack.docker.annotation.LocalstackDockerAnnotationProcessor;
 import cloud.localstack.docker.annotation.LocalstackDockerConfiguration;
-import org.junit.runner.notification.RunNotifier;
-import org.junit.runners.BlockJUnit4ClassRunner;
-import org.junit.runners.model.InitializationError;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
  * JUnit test runner that automatically pulls and runs the latest localstack docker image
@@ -24,26 +24,22 @@ import org.junit.runners.model.InitializationError;
  * @author Alan Bevier
  * @author Patrick Allain
  */
-public class LocalstackDockerTestRunner extends BlockJUnit4ClassRunner {
+public class LocalstackDockerExtension implements BeforeAllCallback, AfterAllCallback {
 
     private static final LocalstackDockerAnnotationProcessor PROCESSOR = new LocalstackDockerAnnotationProcessor();
 
     private LocalstackDocker localstackDocker = LocalstackDocker.INSTANCE;
 
-    public LocalstackDockerTestRunner(Class<?> klass) throws InitializationError {
-        super(klass);
+    @Override
+    public void beforeAll(final ExtensionContext context) throws Exception {
+        Localstack.teardownInfrastructure();
+        final LocalstackDockerConfiguration dockerConfig = PROCESSOR.process(context.getRequiredTestClass());
+        localstackDocker.startup(dockerConfig);
     }
 
     @Override
-    public void run(RunNotifier notifier) {
-        Localstack.teardownInfrastructure();
-        try {
-            final LocalstackDockerConfiguration dockerConfig = PROCESSOR.process(this.getTestClass().getJavaClass());
-            localstackDocker.startup(dockerConfig);
-            super.run(notifier);
-        } finally {
-            localstackDocker.stop();
-        }
+    public void afterAll(final ExtensionContext context) throws Exception {
+        localstackDocker.stop();
     }
 
 }
