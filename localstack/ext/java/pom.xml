@@ -150,7 +150,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.1.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -173,8 +173,10 @@
                             <include>com.amazonaws:aws-lambda-java-core</include>
                             <include>commons-*:*</include>
                             <include>net.*:*</include>
-                            <include>org.*:*</include>
-                            <include>junit:junit</include>
+                            <include>org.apache.*:*</include>
+                            <include>org.jvnet.*:*</include>
+                            <include>org.apiguardian:*</include>
+                            <include>org.opentest4j:*</include>
                             <include>com.fasterxml.*:*</include>
                             <include>joda-time:*</include>
                             <include>com.jayway.*:*</include>
