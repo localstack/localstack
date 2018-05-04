@@ -31,7 +31,7 @@ public class Localstack {
     /** Single instance...  */
     protected static final Localstack INSTANCE = new Localstack();
 
-    private static final Logger LOG = Logger.getLogger(LocalstackTestRunner.class.getName());
+    private static final Logger LOG = Logger.getLogger(Localstack.class.getName());
 
     private static final AtomicReference<Process> INFRA_STARTED = new AtomicReference<Process>();
 

@@ -1,6 +1,5 @@
 package cloud.localstack.docker.annotation;
 
-import cloud.localstack.docker.LocalstackDockerTestRunner;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
@@ -16,7 +15,7 @@ import java.util.stream.Stream;
  */
 public class LocalstackDockerAnnotationProcessor {
 
-    private static final Logger LOG = Logger.getLogger(LocalstackDockerTestRunner.class.getName());
+    private static final Logger LOG = Logger.getLogger(LocalstackDockerAnnotationProcessor.class.getName());
 
     public LocalstackDockerConfiguration process(final Class<?> klass) {
         return Stream.of(klass.getAnnotations())
