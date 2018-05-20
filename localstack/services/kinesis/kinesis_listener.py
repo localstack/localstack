@@ -21,7 +21,8 @@ class ProxyListenerKinesis(ProxyListener):
         data = json.loads(to_str(data))
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
-            return kinesis_error_response(data)
+            if headers.get('X-Amz-Target') in [ACTION_PUT_RECORD, ACTION_PUT_RECORDS]:
+                return kinesis_error_response(data)
         return True
 
     def return_response(self, method, path, data, headers, response):

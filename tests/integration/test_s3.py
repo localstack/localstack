@@ -204,3 +204,20 @@ def test_s3_get_response_headers():
     # clean up
     s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
     s3_client.delete_bucket(Bucket=bucket_name)
+
+
+def test_s3_invalid_content_md5():
+    bucket_name = 'test-bucket-%s' % short_uid()
+    s3_client = aws_stack.connect_to_service('s3')
+    s3_client.create_bucket(Bucket=bucket_name)
+
+    # put object with invalid content MD5
+    for hash in ['__invalid__', '000']:
+        raised = False
+        try:
+            s3_client.put_object(Bucket=bucket_name, Key='test-key',
+                Body='something', ContentMD5=hash)
+        except Exception:
+            raised = True
+        if not raised:
+            raise Exception('Invalid MD5 hash "%s" should have raised an error' % hash)

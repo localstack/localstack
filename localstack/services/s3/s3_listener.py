@@ -2,6 +2,8 @@ import re
 import logging
 import json
 import uuid
+import base64
+import codecs
 import xmltodict
 import collections
 import six
@@ -279,6 +281,26 @@ def strip_chunk_signatures(data):
     return data_new
 
 
+def check_content_md5(data, headers):
+    actual = md5(data)
+    expected = headers['Content-MD5']
+    try:
+        expected = to_str(codecs.encode(base64.b64decode(expected), 'hex'))
+    except Exception:
+        expected = '__invalid__'
+    if actual != expected:
+        response = Response()
+        result = {
+            'Error': {
+                'Code': 'InvalidDigest',
+                'Message': 'The Content-MD5 you specified was invalid'
+            }
+        }
+        response._content = xmltodict.unparse(result)
+        response.status_code = 400
+        return response
+
+
 def expand_redirect_url(starting_url, key, bucket):
     """ Add key and bucket parameters to starting URL query string. """
     parsed = urlparse.urlparse(starting_url)
@@ -325,7 +347,6 @@ def get_bucket_name(path, headers):
         match = pattern.match(host)
         if match:
             bucket_name = match.groups()[0]
-
             break
 
     # we're either returning the original bucket_name,
@@ -336,6 +357,17 @@ def get_bucket_name(path, headers):
 class ProxyListenerS3(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
+
+        # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
+        # Note that all S3 clients using LocalStack need to enable path style addressing.
+        if 's3.amazonaws.com' not in headers.get('host', ''):
+            headers['host'] = 'localhost'
+
+        # check content md5 hash integrity
+        if 'Content-MD5' in headers:
+            response = check_content_md5(data, headers)
+            if response is not None:
+                return response
 
         modified_data = None
 
@@ -439,7 +471,7 @@ class ProxyListenerS3(ProxyListener):
 
         bucket_name = get_bucket_name(path, headers)
 
-        # No path-name based bucket name?  Try host-based
+        # No path-name based bucket name? Try host-based
         hostname_parts = headers['host'].split('.')
         if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
             bucket_name = hostname_parts[0]

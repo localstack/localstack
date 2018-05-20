@@ -1,18 +1,18 @@
-from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-import requests
 import os
 import sys
-import traceback
-import logging
 import ssl
-import inspect
 import socket
+import inspect
+import logging
+import traceback
+import requests
 from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
 from six import iteritems
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
+from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack.config import TMP_FOLDER, USE_SSL
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
