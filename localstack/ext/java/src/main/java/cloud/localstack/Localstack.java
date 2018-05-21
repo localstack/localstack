@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 /**
- * Simple JUnit wrapper that automatically downloads, installs, starts,
+ * Singleton class that automatically downloads, installs, starts,
  * and stops the LocalStack local cloud infrastructure components.
  *
  * Should work cross-OS, however has been only tested under Unix (Linux/MacOS).
@@ -129,9 +129,6 @@ public class Localstack {
     public static String getEndpointSSM() {
         return ensureInstallationAndGetEndpoint(ServiceName.SSM);
     }
-
-    /* OVERRIDE METHODS FROM JUNIT TEST RUNNER */
-
 
     /* UTILITY METHODS */
 
