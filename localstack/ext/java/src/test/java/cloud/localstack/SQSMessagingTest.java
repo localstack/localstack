@@ -49,7 +49,7 @@ public class SQSMessagingTest {
         Assert.assertNotNull(result);
 
 		/* Disable SSL certificate checks for local testing */
-		if (LocalstackTestRunner.useSSL()) {
+		if (Localstack.useSSL()) {
 			TestUtils.disableSslCertChecking();
 		}
     }
@@ -57,7 +57,7 @@ public class SQSMessagingTest {
     @Test
     public void testSendMessage() throws JMSException {
         SQSConnectionFactory connectionFactory = SQSConnectionFactory.builder().withEndpoint(
-                LocalstackTestRunner.getEndpointSQS()).withAWSCredentialsProvider(
+                Localstack.getEndpointSQS()).withAWSCredentialsProvider(
                         new AWSStaticCredentialsProvider(TestUtils.TEST_CREDENTIALS)).build();
         SQSConnection connection = connectionFactory.createConnection();
         connection.start();

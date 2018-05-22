@@ -5,7 +5,7 @@
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.13</version>
+    <version>0.1.14</version>
     <name>localstack-utils</name>
 
     <description>Java utilities for the LocalStack platform.</description>
@@ -27,6 +27,8 @@
     </scm>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
@@ -36,6 +38,19 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.1.0</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.1.0</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -56,7 +71,8 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.16.12</version>
+            <version>1.16.20</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
@@ -100,17 +116,23 @@
             <version>1.0.13</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.9.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
         <profile>
             <id>fatjar</id>
             <dependencies>
-              <dependency>
-                  <groupId>com.amazonaws</groupId>
-                  <artifactId>aws-java-sdk</artifactId>
-                  <version>1.11.313</version>
-              </dependency>
+                <dependency>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk</artifactId>
+                    <version>1.11.313</version>
+                </dependency>
             </dependencies>
         </profile>
     </profiles>
@@ -133,7 +155,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.0.0</version>
+                <version>3.1.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -156,8 +178,10 @@
                             <include>com.amazonaws:aws-lambda-java-core</include>
                             <include>commons-*:*</include>
                             <include>net.*:*</include>
-                            <include>org.*:*</include>
-                            <include>junit:junit</include>
+                            <include>org.apache.*:*</include>
+                            <include>org.jvnet.*:*</include>
+                            <include>org.apiguardian:*</include>
+                            <include>org.opentest4j:*</include>
                             <include>com.fasterxml.*:*</include>
                             <include>joda-time:*</include>
                             <include>com.jayway.*:*</include>
@@ -231,6 +255,23 @@
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.21.0</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.surefire</groupId>
+                        <artifactId>surefire-junit4</artifactId>
+                        <version>2.21.0</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.junit.platform</groupId>
+                        <artifactId>junit-platform-surefire-provider</artifactId>
+                        <version>1.2.0</version>
+                    </dependency>
+                </dependencies>
             </plugin>
         </plugins>
     </build>

@@ -13,11 +13,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -119,10 +119,10 @@ public class LambdaExecutor {
 		try {
 			Optional<Type> handlerInterface = Arrays.stream(handler.getClass().getGenericInterfaces())
 					.filter(genericInterface ->
-						((ParameterizedTypeImpl) genericInterface).getRawType().equals(RequestHandler.class))
+						((ParameterizedType) genericInterface).getRawType().equals(RequestHandler.class))
 					.findFirst();
 			if (handlerInterface.isPresent()) {
-				Class<?> handlerInputType = Class.forName(((ParameterizedTypeImpl) handlerInterface.get())
+				Class<?> handlerInputType = Class.forName(((ParameterizedType) handlerInterface.get())
 						.getActualTypeArguments()[0].getTypeName());
 				inputObject = Optional.of(mapper.readerFor(handlerInputType).readValue(objectString));
 			}

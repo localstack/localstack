@@ -233,7 +233,7 @@ See the example test file `tests/test_integration.py` for more details.
 
 ## Integration with Java/JUnit
 
-In order to use *LocalStack* with Java, the project ships with a simple JUnit runner. Take a look
+In order to use *LocalStack* with Java, the project ships with a simple JUnit runner and a JUnit 5 extension. Take a look
 at the example JUnit test in `ext/java`. When you run the test, all dependencies are automatically
 downloaded and installed to a temporary directory in your system.
 
@@ -255,6 +255,15 @@ public class MyCloudAppTest {
 }
 ```
 
+Or with JUnit 5 :
+
+```
+@ExtendWith(LocalstackExtension.class)
+public class MyCloudAppTest {
+   ...
+}
+```
+
 Additionally, there is a version of the *LocalStack* Test Runner which runs in a docker container
 instead of installing *LocalStack* on the current machine. The only dependency is to have docker
 installed locally. The test runner will automatically pull the image and start the container for the
@@ -271,6 +280,16 @@ public class MyDockerCloudAppTest {
 
     ListStreamsResult streams = kinesis.listStreams();
     ...
+```
+
+Or with JUnit 5 :
+
+```
+@ExtendWith(LocalstackDockerExtension.class)
+@LocalstackDockerProperties(randomizePorts = true, services = { "sqs", "kinesis:77077" })
+public class MyDockerCloudAppTest {
+   ...
+}
 ```
 
 The *LocalStack* JUnit test runner is published as an artifact in Maven Central.

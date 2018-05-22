@@ -1,6 +1,7 @@
 package cloud.localstack.docker;
 
 import cloud.localstack.ServiceName;
+import cloud.localstack.docker.annotation.LocalstackDockerConfiguration;
 import cloud.localstack.docker.command.RegexStream;
 import cloud.localstack.docker.exception.LocalstackDockerException;
 import lombok.Getter;
@@ -24,13 +25,16 @@ public class LocalstackDocker {
 
     private static final Logger LOG = Logger.getLogger(LocalstackDocker.class.getName());
 
-    private static final String PORT_CONFIG_FILENAME = "/opt/code/localstack/.venv/lib/python2.7/site-packages/localstack_client/config.py";
+    private static final String PORT_CONFIG_FILENAME = "/opt/code/localstack/" +
+            ".venv/lib/python2.7/site-packages/localstack_client/config.py";
 
     private static final Pattern READY_TOKEN = Pattern.compile("Ready\\.");
 
     //Regular expression used to parse localstack config to determine default ports for services
     private static final Pattern DEFAULT_PORT_PATTERN = Pattern.compile("'(\\w+)'\\Q: '{proto}://{host}:\\E(\\d+)'");
+
     private static final int SERVICE_NAME_GROUP = 1;
+
     private static final int PORT_GROUP = 2;
 
     private Container localStackContainer;
@@ -43,56 +47,53 @@ public class LocalstackDocker {
 
     private static boolean locked = false;
 
-    @Setter
-    private String externalHostName = "localhost";
-    @Setter
-    private boolean pullNewImage = true;
-    @Setter
-    private boolean randomizePorts = false;
-    @Setter
-    private Map<String, String> environmentVariables = new HashMap<>();
+    public final static LocalstackDocker INSTANCE = new LocalstackDocker();
 
-    @Getter
-    private static LocalstackDocker localstackDocker = new LocalstackDocker();
+    private String externalHostName;
 
-    private LocalstackDocker() {}
+    private LocalstackDocker() {
+    }
 
-
-    public void startup() {
+    public void startup(LocalstackDockerConfiguration dockerConfiguration) {
         if (locked) {
             throw new IllegalStateException("A docker instance is starting or already started.");
         }
         locked = true;
+        this.externalHostName = dockerConfiguration.getExternalHostName();
 
         try {
-            localStackContainer = Container.createLocalstackContainer(externalHostName, pullNewImage, randomizePorts, environmentVariables);
+            localStackContainer = Container.createLocalstackContainer(
+                    dockerConfiguration.getExternalHostName(),
+                    dockerConfiguration.isPullNewImage(),
+                    dockerConfiguration.isRandomizePorts(),
+                    dockerConfiguration.getEnvironmentVariables()
+            );
             loadServiceToPortMap();
 
             LOG.info("Waiting for localstack container to be ready...");
             localStackContainer.waitForLogToken(READY_TOKEN);
-        } catch (Throwable t) {
-            locked = false;
+        } catch (Exception t) {
+            if (this.localStackContainer != null) {
+                this.stop();
+            }
             throw new LocalstackDockerException("Could not start the localstack docker container.", t);
         }
     }
-
 
     public void stop() {
         localStackContainer.stop();
         locked = false;
     }
 
-
     private void loadServiceToPortMap() {
         String localStackPortConfig = localStackContainer.executeCommand(Arrays.asList("cat", PORT_CONFIG_FILENAME));
 
         Map<String, Integer> ports = new RegexStream(DEFAULT_PORT_PATTERN.matcher(localStackPortConfig)).stream()
-            .collect(Collectors.toMap(match -> match.group(SERVICE_NAME_GROUP),
-                match -> Integer.parseInt(match.group(PORT_GROUP))));
+                .collect(Collectors.toMap(match -> match.group(SERVICE_NAME_GROUP),
+                        match -> Integer.parseInt(match.group(PORT_GROUP))));
 
         serviceToPortMap = Collections.unmodifiableMap(ports);
     }
-
 
     public String getEndpointS3() {
         String s3Endpoint = endpointForService(ServiceName.S3);
@@ -105,7 +106,6 @@ public class LocalstackDocker {
         s3Endpoint = s3Endpoint.replace("localhost", "test.localhost.atlassian.io");
         return s3Endpoint;
     }
-
 
     public String getEndpointKinesis() {
         return endpointForService(ServiceName.KINESIS);
@@ -171,7 +171,6 @@ public class LocalstackDocker {
         return endpointForService(ServiceName.SSM);
     }
 
-
     public String endpointForService(String serviceName) {
         if (serviceToPortMap == null) {
             throw new IllegalStateException("Service to port mapping has not been determined yet.");
@@ -184,7 +183,6 @@ public class LocalstackDocker {
         int internalPort = serviceToPortMap.get(serviceName);
         return endpointForPort(internalPort);
     }
-
 
     public String endpointForPort(int port) {
         if (localStackContainer != null) {
