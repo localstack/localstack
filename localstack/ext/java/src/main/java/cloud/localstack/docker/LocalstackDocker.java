@@ -1,6 +1,5 @@
 package cloud.localstack.docker;
 
-import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.ServiceName;
 import cloud.localstack.docker.command.RegexStream;
 import cloud.localstack.docker.exception.LocalstackDockerException;

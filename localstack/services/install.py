@@ -37,7 +37,10 @@ def install_elasticsearch():
         mkdir(INSTALL_DIR_INFRA)
         # download and extract archive
         download_and_extract_with_retry(ELASTICSEARCH_JAR_URL, TMP_ARCHIVE_ES, INSTALL_DIR_INFRA)
-        run('cd %s && mv elasticsearch* elasticsearch' % (INSTALL_DIR_INFRA))
+        elasticsearch_dir = glob.glob(os.path.join(INSTALL_DIR_INFRA, 'elasticsearch*'))
+        if not elasticsearch_dir:
+            raise Exception('Unable to find Elasticsearch folder in %s' % INSTALL_DIR_INFRA)
+        shutil.move(elasticsearch_dir[0], INSTALL_DIR_ES)
 
         for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
             dir_path = '%s/%s' % (INSTALL_DIR_ES, dir_name)
