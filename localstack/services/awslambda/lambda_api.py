@@ -48,6 +48,7 @@ LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
 LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_DEFAULT_TIMEOUT = 60
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
+LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
 
 app = Flask(APP_NAME)
 
@@ -403,6 +404,15 @@ def set_function_code(code, lambda_name):
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
     if runtime == LAMBDA_RUNTIME_JAVA8:
+        # The Lambda executors for Docker subclass LambdaExecutorContainers,
+        # which runs Lambda in Docker by passing all *.jar files in the function
+        # working directory as part of the classpath. Because of this, we need to
+        # save the zip_file_content as a .jar here.
+        if is_jar_archive(zip_file_content):
+            jar_tmp_file = '{working_dir}/{file_name}'.format(
+                working_dir=tmp_dir, file_name=LAMBDA_JAR_FILE_NAME)
+            save_file(jar_tmp_file, zip_file_content)
+
         lambda_handler = get_java_handler(zip_file_content, handler_name, tmp_file)
         if isinstance(lambda_handler, Response):
             return lambda_handler
