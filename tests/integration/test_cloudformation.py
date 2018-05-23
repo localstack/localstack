@@ -70,6 +70,12 @@ def get_queue_urls():
     return response['QueueUrls']
 
 
+def get_topic_arns():
+    sqs = aws_stack.connect_to_service('sns')
+    response = sqs.list_topics()
+    return [t['TopicArn'] for t in response['Topics']]
+
+
 class CloudFormationTest(unittest.TestCase):
 
     def test_apply_template(self):
@@ -127,6 +133,12 @@ class CloudFormationTest(unittest.TestCase):
 
         list_stack_summaries = list_stack_resources(TEST_STACK_NAME_2)
         queue_urls = get_queue_urls()
+        topic_arns = get_topic_arns()
 
-        for resource in list_stack_summaries:
+        stack_queues = [r for r in list_stack_summaries if r['ResourceType'] == 'AWS::SQS::Queue']
+        for resource in stack_queues:
             assert resource['PhysicalResourceId'] in queue_urls
+
+        stack_topics = [r for r in list_stack_summaries if r['ResourceType'] == 'AWS::SNS::Topic']
+        for resource in stack_topics:
+            assert resource['PhysicalResourceId'] in topic_arns

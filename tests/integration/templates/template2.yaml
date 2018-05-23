@@ -7,3 +7,14 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: cf-test-queue-2
+  SNSTopic1:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: cf-test-topic-1
+      Subscription:
+        - Protocol: sqs
+          Endpoint:
+            "Fn::GetAtt": ["SQSQueue1", "Arn"]
+        - Protocol: sqs
+          Endpoint:
+            "Fn::GetAtt": ["SQSQueue2", "Arn"]
