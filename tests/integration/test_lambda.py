@@ -94,8 +94,10 @@ def test_lambda_runtimes():
     if not os.path.exists(TEST_LAMBDA_JAVA):
         mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
         download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
-    zip_file = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=zip_file,
+    # Lambda supports single JAR deployments without the zip, so we upload the JAR directly.
+    test_java_jar = load_file(TEST_LAMBDA_JAVA, mode='rb')
+    assert test_java_jar is not None
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=test_java_jar,
         runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaHandler')
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
     assert result['StatusCode'] == 200
@@ -124,7 +126,7 @@ def test_lambda_runtimes():
     assert 'KinesisEvent' in to_str(result_data)
 
     # deploy and invoke lambda - Java with stream handler
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA_STREAM, zip_file=zip_file,
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA_STREAM, zip_file=test_java_jar,
         runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaStreamHandler')
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM, Payload=b'{}')
     assert result['StatusCode'] == 200
@@ -132,7 +134,7 @@ def test_lambda_runtimes():
     assert to_str(result_data).strip() == '{}'
 
     # deploy and invoke lambda - Java with serializable input object
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE, zip_file=zip_file,
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE, zip_file=test_java_jar,
         runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.SerializedInputLambdaHandler')
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
                                   Payload=b'{"bucket": "test_bucket", "key": "test_key"}')

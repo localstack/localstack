@@ -10,7 +10,6 @@ import logging
 import base64
 import threading
 import imp
-import glob
 from io import BytesIO
 from datetime import datetime
 from six import iteritems
@@ -49,6 +48,7 @@ LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
 LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_DEFAULT_TIMEOUT = 60
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
+LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
 
 app = Flask(APP_NAME)
 
@@ -328,13 +328,57 @@ def error_response(msg, code=500, error_type='InternalFailure'):
     return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
 
 
+def get_zip_bytes(function_code):
+    """Returns the ZIP file contents from a FunctionCode dict.
+
+    :type function_code: dict
+    :param function_code: https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionCode.html
+    :returns: bytes of the Zip file.
+    """
+    if 'S3Bucket' in function_code:
+        s3_client = aws_stack.connect_to_service('s3')
+        bytes_io = BytesIO()
+        try:
+            s3_client.download_fileobj(function_code['S3Bucket'], function_code['S3Key'], bytes_io)
+            zip_file_content = bytes_io.getvalue()
+        except Exception as e:
+            return error_response('Unable to fetch Lambda archive from S3: %s' % e, 404)
+    elif 'ZipFile' in function_code:
+        zip_file_content = function_code['ZipFile']
+        zip_file_content = base64.b64decode(zip_file_content)
+    else:
+        return error_response('No valid Lambda archive specified.', 400)
+    return zip_file_content
+
+
+def get_java_handler(zip_file_content, handler, main_file):
+    """Creates a Java handler from an uploaded ZIP or JAR.
+
+    :type zip_file_content: bytes
+    :param zip_file_content: ZIP file bytes.
+    :type handler: str
+    :param handler: THe lambda handler path.
+    :type main_file: str
+    :param main_file: Filepath to the uploaded ZIP or JAR file.
+
+    :returns: function or flask.Response
+    """
+    if is_jar_archive(zip_file_content):
+        def execute(event, context):
+            result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
+                event, context, handler=handler, main_file=main_file)
+            return result
+        return execute
+    return error_response(
+        'ZIP file for the java8 runtime not yet supported.', 400, error_type='ValidationError')
+
+
 def set_function_code(code, lambda_name):
 
     def generic_handler(event, context):
         raise Exception(('Unable to find executor for Lambda function "%s". ' +
             'Note that Node.js and .NET Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
 
-    lambda_handler = generic_handler
     lambda_cwd = None
     arn = func_arn(lambda_name)
     runtime = arn_to_lambda[arn].runtime
@@ -342,27 +386,14 @@ def set_function_code(code, lambda_name):
     lambda_environment = arn_to_lambda.get(arn).envvars
     if not handler_name:
         handler_name = LAMBDA_DEFAULT_HANDLER
-    handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
-    handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
 
-    if 'S3Bucket' in code:
-        s3_client = aws_stack.connect_to_service('s3')
-        bytes_io = BytesIO()
-        try:
-            s3_client.download_fileobj(code['S3Bucket'], code['S3Key'], bytes_io)
-            zip_file_content = bytes_io.getvalue()
-        except Exception as e:
-            return error_response('Unable to fetch Lambda archive from S3: %s' % e, 404)
-    elif 'ZipFile' in code:
-        zip_file_content = code['ZipFile']
-        zip_file_content = base64.b64decode(zip_file_content)
-    else:
-        return error_response('No valid Lambda archive specified.', 400)
-
-    # save tmp file
+    # Save the zip file to a temporary file that the lambda executors can reference.
+    zip_file_content = get_zip_bytes(code)
+    if isinstance(zip_file_content, Response):
+        return zip_file_content
     tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
     mkdir(tmp_dir)
     tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
@@ -370,16 +401,32 @@ def set_function_code(code, lambda_name):
     TMP_FILES.append(tmp_dir)
     lambda_cwd = tmp_dir
 
-    # check if this is a ZIP file
-    is_zip = is_zip_file(zip_file_content)
-    if is_zip:
+    # Set the appropriate lambda handler.
+    lambda_handler = generic_handler
+    if runtime == LAMBDA_RUNTIME_JAVA8:
+        # The Lambda executors for Docker subclass LambdaExecutorContainers,
+        # which runs Lambda in Docker by passing all *.jar files in the function
+        # working directory as part of the classpath. Because of this, we need to
+        # save the zip_file_content as a .jar here.
+        if is_jar_archive(zip_file_content):
+            jar_tmp_file = '{working_dir}/{file_name}'.format(
+                working_dir=tmp_dir, file_name=LAMBDA_JAR_FILE_NAME)
+            save_file(jar_tmp_file, zip_file_content)
+
+        lambda_handler = get_java_handler(zip_file_content, handler_name, tmp_file)
+        if isinstance(lambda_handler, Response):
+            return lambda_handler
+    else:
+        handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
+        handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
+
+        # Lambda code must be uploaded in the Zip format.
+        if not is_zip_file(zip_file_content):
+            raise Exception(
+                'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
+
         unzip(tmp_file, tmp_dir)
         main_file = '%s/%s' % (tmp_dir, handler_file)
-        if not os.path.isfile(main_file):
-            # check if this is a zip file that contains a single JAR file
-            jar_files = glob.glob('%s/*.jar' % tmp_dir)
-            if len(jar_files) == 1:
-                main_file = jar_files[0]
         if os.path.isfile(main_file):
             # make sure the file is actually readable, then read contents
             ensure_readable(main_file)
@@ -388,29 +435,19 @@ def set_function_code(code, lambda_name):
         else:
             file_list = run('ls -la %s' % tmp_dir)
             LOG.debug('Lambda archive content:\n%s' % file_list)
-            return error_response('Unable to find handler script in Lambda archive.', 400, error_type='ValidationError')
+            return error_response(
+                'Unable to find handler script in Lambda archive.', 400,
+                error_type='ValidationError')
 
-    # it could be a JAR file (regardless of whether wrapped in a ZIP file or not)
-    is_jar = is_jar_archive(zip_file_content)
-    if is_jar:
-
-        def execute(event, context):
-            result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(event, context,
-                handler=arn_to_lambda[arn].handler, main_file=main_file)
-            return result
-
-        lambda_handler = execute
-
-    elif runtime.startswith('python') and not use_docker():
-        try:
-            lambda_handler = exec_lambda_code(zip_file_content,
-                handler_function=handler_function, lambda_cwd=lambda_cwd,
-                lambda_env=lambda_environment)
-        except Exception as e:
-            raise Exception('Unable to get handler function from lambda code.', e)
-
-    if not is_zip and not is_jar:
-        raise Exception('Uploaded Lambda code is neither a ZIP nor JAR file.')
+        if runtime.startswith('python') and not use_docker():
+            try:
+                lambda_handler = exec_lambda_code(
+                    zip_file_content,
+                    handler_function=handler_function,
+                    lambda_cwd=lambda_cwd,
+                    lambda_env=lambda_environment)
+            except Exception as e:
+                raise Exception('Unable to get handler function from lambda code.', e)
 
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
