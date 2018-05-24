@@ -39,7 +39,7 @@ def record(api, method, path, data, headers):
     try:
         if isinstance(data, dict):
             data = json.dumps(data)
-        if data:
+        if data or data in [u'', b'']:
             try:
                 data = to_bytes(data)
             except Exception as e:
