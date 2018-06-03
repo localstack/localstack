@@ -32,6 +32,11 @@ class ProxyListenerSQS(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response, request_handler):
+        if method == 'OPTIONS' and path == '/':
+            # Allow CORS preflight requests to succeed.
+            new_response = Response()
+            new_response.status_code = 200
+            return new_response
 
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
