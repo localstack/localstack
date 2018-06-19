@@ -61,8 +61,52 @@ def test_upload_lambda_from_s3():
     # invoke lambda function
     data_before = b'{"foo": "bar"}'
     result = lambda_client.invoke(FunctionName=lambda_name, Payload=data_before)
-    data_after = result['Payload'].read()
-    assert json.loads(to_str(data_before)) == json.loads(to_str(data_after))
+    data_after = json.loads(result['Payload'].read())
+    assert json.loads(to_str(data_before)) == data_after['event']
+
+    context = data_after['context']
+    assert '$LATEST' == context['function_version']
+    assert lambda_name == context['function_name']
+
+
+def test_function_invocation_with_qualifier():
+
+    s3_client = aws_stack.connect_to_service('s3')
+    lambda_client = aws_stack.connect_to_service('lambda')
+
+    lambda_name = 'test_lambda_%s' % short_uid()
+    bucket_name = 'test_bucket_lambda2'
+    bucket_key = 'test_lambda.zip'
+
+    # upload zip file to S3
+    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
+        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
+    s3_client.create_bucket(Bucket=bucket_name)
+    s3_client.upload_fileobj(BytesIO(zip_file), bucket_name, bucket_key)
+
+    # create lambda function
+    response = lambda_client.create_function(
+        FunctionName=lambda_name, Handler='handler.handler',
+        Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
+        Code={
+            'S3Bucket': bucket_name,
+            'S3Key': bucket_key
+        },
+        Publish=True
+    )
+
+    assert 'Version' in response
+
+    # invoke lambda function
+    data_before = b'{"foo": "bar"}'
+    result = lambda_client.invoke(FunctionName=lambda_name, Payload=data_before,
+                                  Qualifier=response['Version'])
+    data_after = json.loads(result['Payload'].read())
+    assert json.loads(to_str(data_before)) == data_after['event']
+
+    context = data_after['context']
+    assert response['Version'] == context['function_version']
+    assert lambda_name == context['function_name']
 
 
 def test_lambda_runtimes():
@@ -76,8 +120,8 @@ def test_lambda_runtimes():
         zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27)
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}')
     assert result['StatusCode'] == 200
-    result_data = result['Payload'].read()
-    assert to_str(result_data).strip() == '{}'
+    result_data = json.loads(result['Payload'].read())
+    assert result_data['event'] == json.loads('{}')
 
     if use_docker():
         # deploy and invoke lambda - Python 3.6

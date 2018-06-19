@@ -35,7 +35,14 @@ def handler(event, context):
         }
 
     if 'Records' not in event:
-        return event
+        return {
+            'event': event,
+            'context': {
+                'invoked_function_arn': context.invoked_function_arn,
+                'function_version': context.function_version,
+                'function_name': context.function_name
+            }
+        }
 
     raw_event_messages = []
     for record in event['Records']:
