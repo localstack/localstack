@@ -26,8 +26,12 @@ def handler(event, context):
 
     if 'httpMethod' in event:
         # looks like this is a call from an AWS_PROXY API Gateway
-        body = json.loads(event['body'])
+        try:
+            body = json.loads(event['body'])
+        except Exception:
+            body = {}
         body['pathParameters'] = event.get('pathParameters')
+        body['httpMethod'] = event.get('httpMethod')
         return {
             'body': body,
             'statusCode': body.get('return_status_code', 200),

@@ -34,10 +34,12 @@ APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
 API_PATH_DATA_INBOUND = '/data'
 API_PATH_HTTP_BACKEND = '/hello_world'
 API_PATH_LAMBDA_PROXY_BACKEND = '/lambda/{test_param1}'
+API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD = '/lambda-any-method/{test_param1}'
 # name of Kinesis stream connected to API Gateway
 TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
 TEST_STAGE_NAME = 'testing'
 TEST_LAMBDA_PROXY_BACKEND = 'test_lambda_apigw_backend'
+TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_lambda_apigw_backend_any_method'
 
 
 def connect_api_gateway_to_kinesis(gateway_name, kinesis_stream):
@@ -187,3 +189,49 @@ def test_api_gateway_lambda_proxy_integration():
     assert parsed_body.get('return_status_code') == 203
     assert parsed_body.get('return_headers') == {'foo': 'bar123'}
     assert parsed_body.get('pathParameters') == {'test_param1': 'foo1'}
+    result = requests.delete(url, data=json.dumps(data))
+    assert result.status_code == 404
+
+
+def test_api_gateway_lambda_proxy_integration_any_method():
+    # create lambda function
+    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
+        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD,
+        zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27)
+
+    # create API Gateway and connect it to the Lambda proxy backend
+    lambda_uri = aws_stack.lambda_function_arn(TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD)
+    target_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' % (DEFAULT_REGION, lambda_uri)
+    result = connect_api_gateway_to_http_with_lambda_proxy('test_gateway3', target_uri,
+        methods=['ANY'],
+        path=API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD)
+
+    # make test request to gateway and check response
+    path = API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD.replace('{test_param1}', 'foo1')
+    url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=result['id'], stage_name=TEST_STAGE_NAME, path=path)
+    data = {}
+    result = requests.get(url)
+    assert result.status_code == 200
+    parsed_body = json.loads(to_str(result.content))
+    assert parsed_body.get('httpMethod') == 'GET'
+    result = requests.post(url, data=json.dumps(data))
+    assert result.status_code == 200
+    parsed_body = json.loads(to_str(result.content))
+    assert parsed_body.get('httpMethod') == 'POST'
+    result = requests.put(url, data=json.dumps(data))
+    assert result.status_code == 200
+    parsed_body = json.loads(to_str(result.content))
+    assert parsed_body.get('httpMethod') == 'PUT'
+    result = requests.patch(url, data=json.dumps(data))
+    assert result.status_code == 200
+    parsed_body = json.loads(to_str(result.content))
+    assert parsed_body.get('httpMethod') == 'PATCH'
+    result = requests.delete(url)
+    assert result.status_code == 200
+    parsed_body = json.loads(to_str(result.content))
+    assert parsed_body.get('httpMethod') == 'DELETE'
+    result = requests.options(url)
+    assert result.status_code == 200
+    parsed_body = json.loads(to_str(result.content))
+    assert parsed_body.get('httpMethod') == 'OPTIONS'
