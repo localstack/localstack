@@ -60,7 +60,7 @@ def put_records(stream_name, records):
         if 'S3DestinationDescription' in dest:
             s3_dest = dest['S3DestinationDescription']
             bucket = bucket_name(s3_dest['BucketARN'])
-            prefix = get('s3_dest', 'Prefix')
+            prefix = s3_dest.get('Prefix', '')
             s3 = get_s3_client()
             for record in records:
                 data = base64.b64decode(record['Data'])
