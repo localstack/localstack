@@ -10,7 +10,7 @@ def setup_package():
         # disable SSL verification for local tests
         safe_requests.verify_ssl = False
         # start infrastructure services
-        infra.start_infra(async=True)
+        infra.start_infra(asynchronous=True)
     except Exception as e:
         # make sure to tear down the infrastructure
         infra.stop_infra()

@@ -19,7 +19,7 @@ def delete_all_elasticsearch_data():
     run('rm -rf "%s"' % data_dir)
 
 
-def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, update_listener=None):
+def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, asynchronous=False, update_listener=None):
     # delete Elasticsearch data that may be cached locally from a previous test run
     delete_all_elasticsearch_data()
 
@@ -47,7 +47,7 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, async=False, 
         update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})
     if is_root():
         cmd = "su -c '%s' localstack" % cmd
-    thread = do_run(cmd, async)
+    thread = do_run(cmd, asynchronous)
     return thread
 
 

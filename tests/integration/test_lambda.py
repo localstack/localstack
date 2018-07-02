@@ -109,14 +109,14 @@ def test_lambda_runtimes():
                                   Payload=b'{"Records": [{"Sns": {"Message": "{}"}}]}')
     assert result['StatusCode'] == 200
     result_data = result['Payload'].read()
-    assert json.loads(to_str(result_data)) == {'async': 'True'}
+    assert json.loads(to_str(result_data)) == {'asynchronous': 'True'}
 
     # test DDBEvent
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
                                   Payload=b'{"Records": [{"dynamodb": {"Message": "{}"}}]}')
     assert result['StatusCode'] == 200
     result_data = result['Payload'].read()
-    assert json.loads(to_str(result_data)) == {'async': 'True'}
+    assert json.loads(to_str(result_data)) == {'asynchronous': 'True'}
 
     # test KinesisEvent
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA,

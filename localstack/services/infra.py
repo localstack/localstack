@@ -66,9 +66,9 @@ class Plugin(object):
         self.listener = listener
         self.check_function = check
 
-    def start(self, async):
+    def start(self, asynchronous):
         kwargs = {
-            'async': async
+            'asynchronous': asynchronous
         }
         if self.listener:
             kwargs['update_listener'] = self.listener
@@ -137,60 +137,60 @@ def load_plugins(scope=None):
 # -----------------
 
 
-def start_apigateway(port=PORT_APIGATEWAY, async=False, update_listener=None):
-    return start_moto_server('apigateway', port, name='API Gateway', async=async,
+def start_apigateway(port=PORT_APIGATEWAY, asynchronous=False, update_listener=None):
+    return start_moto_server('apigateway', port, name='API Gateway', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_APIGATEWAY_BACKEND, update_listener=update_listener)
 
 
-def start_s3(port=PORT_S3, async=False, update_listener=None):
-    return start_moto_server('s3', port, name='S3', async=async,
+def start_s3(port=PORT_S3, asynchronous=False, update_listener=None):
+    return start_moto_server('s3', port, name='S3', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_S3_BACKEND, update_listener=update_listener)
 
 
-def start_sns(port=PORT_SNS, async=False, update_listener=None):
-    return start_moto_server('sns', port, name='SNS', async=async,
+def start_sns(port=PORT_SNS, asynchronous=False, update_listener=None):
+    return start_moto_server('sns', port, name='SNS', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
 
 
-def start_cloudformation(port=PORT_CLOUDFORMATION, async=False, update_listener=None):
-    return start_moto_server('cloudformation', port, name='CloudFormation', async=async,
+def start_cloudformation(port=PORT_CLOUDFORMATION, asynchronous=False, update_listener=None):
+    return start_moto_server('cloudformation', port, name='CloudFormation', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_CLOUDFORMATION_BACKEND, update_listener=update_listener)
 
 
-def start_cloudwatch(port=PORT_CLOUDWATCH, async=False):
-    return start_moto_server('cloudwatch', port, name='CloudWatch', async=async)
+def start_cloudwatch(port=PORT_CLOUDWATCH, asynchronous=False):
+    return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
 
 
-def start_redshift(port=PORT_REDSHIFT, async=False):
-    return start_moto_server('redshift', port, name='Redshift', async=async)
+def start_redshift(port=PORT_REDSHIFT, asynchronous=False):
+    return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
 
 
-def start_route53(port=PORT_ROUTE53, async=False):
-    return start_moto_server('route53', port, name='Route53', async=async)
+def start_route53(port=PORT_ROUTE53, asynchronous=False):
+    return start_moto_server('route53', port, name='Route53', asynchronous=asynchronous)
 
 
-def start_ses(port=PORT_SES, async=False):
-    return start_moto_server('ses', port, name='SES', async=async)
+def start_ses(port=PORT_SES, asynchronous=False):
+    return start_moto_server('ses', port, name='SES', asynchronous=asynchronous)
 
 
-def start_elasticsearch_service(port=PORT_ES, async=False):
-    return start_local_api('ES', port, method=es_api.serve, async=async)
+def start_elasticsearch_service(port=PORT_ES, asynchronous=False):
+    return start_local_api('ES', port, method=es_api.serve, asynchronous=asynchronous)
 
 
-def start_firehose(port=PORT_FIREHOSE, async=False):
-    return start_local_api('Firehose', port, method=firehose_api.serve, async=async)
+def start_firehose(port=PORT_FIREHOSE, asynchronous=False):
+    return start_local_api('Firehose', port, method=firehose_api.serve, asynchronous=asynchronous)
 
 
-def start_dynamodbstreams(port=PORT_DYNAMODBSTREAMS, async=False):
-    return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, async=async)
+def start_dynamodbstreams(port=PORT_DYNAMODBSTREAMS, asynchronous=False):
+    return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, asynchronous=asynchronous)
 
 
-def start_lambda(port=PORT_LAMBDA, async=False):
-    return start_local_api('Lambda', port, method=lambda_api.serve, async=async)
+def start_lambda(port=PORT_LAMBDA, asynchronous=False):
+    return start_local_api('Lambda', port, method=lambda_api.serve, asynchronous=asynchronous)
 
 
-def start_ssm(port=PORT_SSM, async=False):
-    return start_moto_server('ssm', port, name='SSM', async=async)
+def start_ssm(port=PORT_SSM, asynchronous=False):
+    return start_moto_server('ssm', port, name='SSM', asynchronous=asynchronous)
 
 
 # ---------------
@@ -237,9 +237,9 @@ def is_debug():
     return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
 
 
-def do_run(cmd, async, print_output=False):
+def do_run(cmd, asynchronous, print_output=False):
     sys.stdout.flush()
-    if async:
+    if asynchronous:
         if is_debug():
             print_output = True
         outfile = subprocess.PIPE if print_output else None
@@ -266,7 +266,7 @@ def start_proxy(port, backend_url, update_listener, quiet=False, params={}):
     return proxy_thread
 
 
-def start_moto_server(key, port, name=None, backend_port=None, async=False, update_listener=None):
+def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
     moto_server_cmd = '%s/bin/moto_server' % LOCALSTACK_VENV_FOLDER
     if not os.path.exists(moto_server_cmd):
         moto_server_cmd = run('which moto_server').strip()
@@ -278,12 +278,12 @@ def start_moto_server(key, port, name=None, backend_port=None, async=False, upda
         start_proxy_for_service(key, port, backend_port, update_listener)
     elif USE_SSL:
         cmd += ' --ssl'
-    return do_run(cmd, async)
+    return do_run(cmd, asynchronous)
 
 
-def start_local_api(name, port, method, async=False):
+def start_local_api(name, port, method, asynchronous=False):
     print('Starting mock %s service (%s port %s)...' % (name, get_service_protocol(), port))
-    if async:
+    if asynchronous:
         thread = FuncThread(method, port, quiet=True)
         thread.start()
         TMP_THREADS.append(thread)
@@ -442,7 +442,7 @@ def start_infra_in_docker():
 # -------------
 
 
-def start_infra(async=False, apis=None):
+def start_infra(asynchronous=False, apis=None):
     try:
         # load plugins
         load_plugins()
@@ -474,7 +474,7 @@ def start_infra(async=False, apis=None):
         # loop through plugins and start each service
         for name, plugin in SERVICE_PLUGINS.items():
             if name in apis:
-                t1 = plugin.start(async=True)
+                t1 = plugin.start(asynchronous=True)
                 thread = thread or t1
 
         time.sleep(sleep_time)
@@ -484,7 +484,7 @@ def start_infra(async=False, apis=None):
         restore_persisted_data(apis=apis)
         print('Ready.')
         sys.stdout.flush()
-        if not async and thread:
+        if not asynchronous and thread:
             # this is a bit of an ugly hack, but we need to make sure that we
             # stay in the execution context of the main thread, otherwise our
             # signal handlers don't work
@@ -498,5 +498,5 @@ def start_infra(async=False, apis=None):
         sys.stdout.flush()
         raise e
     finally:
-        if not async:
+        if not asynchronous:
             stop_infra()

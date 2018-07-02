@@ -176,7 +176,7 @@ def process_sns_notification(func_arn, topic_arn, message, subject=''):
                 }
             }]
         }
-        return run_lambda(event=event, context={}, func_arn=func_arn, async=True)
+        return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=True)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (e, traceback.format_exc()))
 
@@ -244,7 +244,7 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 @cloudwatched('lambda')
-def run_lambda(event, context, func_arn, version=None, suppress_output=False, async=False):
+def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -256,7 +256,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         if not context:
             context = LambdaContext()
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
-            event, context=context, version=version, async=async)
+            event, context=context, version=version, asynchronous=asynchronous)
     except Exception as e:
         return error_response('Error executing Lambda function: %s %s' % (e, traceback.format_exc()))
     finally:
@@ -706,10 +706,10 @@ def invoke_function(function):
             data = json.loads(to_str(request.data))
         except Exception:
             return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
-    async = False
+    asynchronous = False
     if 'HTTP_X_AMZ_INVOCATION_TYPE' in request.environ:
-        async = request.environ['HTTP_X_AMZ_INVOCATION_TYPE'] == 'Event'
-    result = run_lambda(async=async, func_arn=arn, event=data, context={}, version=qualifier)
+        asynchronous = request.environ['HTTP_X_AMZ_INVOCATION_TYPE'] == 'Event'
+    result = run_lambda(asynchronous=asynchronous, func_arn=arn, event=data, context={}, version=qualifier)
     if isinstance(result, dict):
         return jsonify(result)
     if result:
