@@ -10,6 +10,7 @@ import logging
 import base64
 import threading
 import imp
+import re
 from io import BytesIO
 from datetime import datetime
 from six import iteritems
@@ -72,6 +73,15 @@ LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTO
 
 
 class LambdaContext(object):
+
+    def __init__(self, func_details, qualifier=None):
+        self.function_name = func_details.name()
+        self.function_version = func_details.get_qualifier_version(qualifier)
+
+        self.invoked_function_arn = func_details.arn()
+        if qualifier:
+            self.invoked_function_arn += ':' + qualifier
+
     def get_remaining_time_in_millis(self):
         # TODO implement!
         return 1000 * 60
@@ -254,7 +264,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
     try:
         func_details = arn_to_lambda.get(func_arn)
         if not context:
-            context = LambdaContext()
+            context = LambdaContext(func_details, version)
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
             event, context=context, version=version, async=async)
     except Exception as e:
@@ -531,6 +541,8 @@ def create_function():
             'TracingConfig': {},
             'VpcConfig': {'SecurityGroupIds': [None], 'SubnetIds': [None], 'VpcId': None}
         })
+        if data.get('Publish', False):
+            result['Version'] = publish_new_function_version(arn)['Version']
         return jsonify(result or {})
     except Exception as e:
         del arn_to_lambda[arn]
@@ -693,11 +705,20 @@ def invoke_function(function):
             - name: 'request'
               in: body
     """
+    # function here can either be an arn or a function name
     arn = func_arn(function)
+
+    # arn can also contain a qualifier, extract it from there if so
+    m = re.match('(arn:aws:lambda:.*:.*:function:[a-zA-Z0-9-_]+)(:.*)?', arn)
+    if m and m.group(2):
+        qualifier = m.group(2)[1:]
+        arn = m.group(1)
+    else:
+        qualifier = request.args.get('Qualifier')
+
     if arn not in arn_to_lambda:
         return error_response('Function does not exist: %s' % arn, 404, error_type='ResourceNotFoundException')
-    qualifier = request.args['Qualifier'] if 'Qualifier' in request.args else '$LATEST'
-    if not arn_to_lambda.get(arn).qualifier_exists(qualifier):
+    if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
         return error_response('Function does not exist: {0}:{1}'.format(arn, qualifier), 404,
                               error_type='ResourceNotFoundException')
     data = None

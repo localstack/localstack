@@ -110,6 +110,10 @@ class LambdaExecutorContainers(LambdaExecutor):
         environment['AWS_LAMBDA_EVENT_BODY'] = event_body_escaped
         environment['HOSTNAME'] = docker_host
         environment['LOCALSTACK_HOSTNAME'] = docker_host
+        if context:
+            environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
+            environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
+            environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
 
         # custom command to execute in the container
         command = ''
