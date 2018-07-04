@@ -869,6 +869,17 @@ def update_alias(function, name):
     return jsonify(do_update_alias(arn, name, version, description))
 
 
+@app.route('%s/functions/<function>/aliases/<name>' % PATH_ROOT, methods=['GET'])
+def get_alias(function, name):
+    arn = func_arn(function)
+    if arn not in arn_to_lambda:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    if name not in arn_to_lambda.get(arn).aliases:
+        return error_response('Alias not found: %s' % arn + ':' + name, 404,
+                              error_type='ResourceNotFoundException')
+    return jsonify(arn_to_lambda.get(arn).aliases.get(name))
+
+
 @app.route('%s/functions/<function>/aliases' % PATH_ROOT, methods=['GET'])
 def list_aliases(function):
     arn = func_arn(function)

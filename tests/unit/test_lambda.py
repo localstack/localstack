@@ -181,6 +181,37 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(self.ALIASNOTFOUND_EXCEPTION, result['__type'])
             self.assertEqual(self.ALIASNOTFOUND_MESSAGE % alias_arn, result['message'])
 
+    def test_get_alias(self):
+        self._create_function(self.FUNCTION_NAME)
+        self.client.post('{0}/functions/{1}/versions'.format(lambda_api.PATH_ROOT, self.FUNCTION_NAME))
+        self.client.post('{0}/functions/{1}/aliases'.format(lambda_api.PATH_ROOT, self.FUNCTION_NAME),
+                         data=json.dumps({
+                             'Name': self.ALIAS_NAME, 'FunctionVersion': '1', 'Description': ''}))
+
+        response = self.client.get('{0}/functions/{1}/aliases/{2}'.format(lambda_api.PATH_ROOT, self.FUNCTION_NAME,
+                                                                          self.ALIAS_NAME))
+        result = json.loads(response.get_data())
+
+        expected_result = {'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME,
+                           'FunctionVersion': '1', 'Description': '',
+                           'Name': self.ALIAS_NAME}
+        self.assertDictEqual(expected_result, result)
+
+    def test_get_alias_on_non_existant_function_returns_error(self):
+        with self.app.test_request_context():
+            result = json.loads(lambda_api.get_alias(self.FUNCTION_NAME, self.ALIAS_NAME).get_data())
+            self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
+            self.assertEqual(self.RESOURCENOTFOUND_MESSAGE % lambda_api.func_arn(self.FUNCTION_NAME),
+                             result['message'])
+
+    def test_get_alias_on_non_existant_alias_returns_error(self):
+        with self.app.test_request_context():
+            self._create_function(self.FUNCTION_NAME)
+            result = json.loads(lambda_api.get_alias(self.FUNCTION_NAME, self.ALIAS_NAME).get_data())
+            alias_arn = lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME
+            self.assertEqual(self.ALIASNOTFOUND_EXCEPTION, result['__type'])
+            self.assertEqual(self.ALIASNOTFOUND_MESSAGE % alias_arn, result['message'])
+
     def test_list_aliases(self):
         self._create_function(self.FUNCTION_NAME)
         self.client.post('{0}/functions/{1}/versions'.format(lambda_api.PATH_ROOT, self.FUNCTION_NAME))
