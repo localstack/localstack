@@ -10,6 +10,7 @@ import logging
 import base64
 import threading
 import imp
+import re
 from io import BytesIO
 from datetime import datetime
 from six import iteritems
@@ -72,6 +73,15 @@ LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTO
 
 
 class LambdaContext(object):
+
+    def __init__(self, func_details, qualifier=None):
+        self.function_name = func_details.name()
+        self.function_version = func_details.get_qualifier_version(qualifier)
+
+        self.invoked_function_arn = func_details.arn()
+        if qualifier:
+            self.invoked_function_arn += ':' + qualifier
+
     def get_remaining_time_in_millis(self):
         # TODO implement!
         return 1000 * 60
@@ -254,7 +264,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
     try:
         func_details = arn_to_lambda.get(func_arn)
         if not context:
-            context = LambdaContext()
+            context = LambdaContext(func_details, version)
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
             event, context=context, version=version, asynchronous=asynchronous)
     except Exception as e:
@@ -531,6 +541,8 @@ def create_function():
             'TracingConfig': {},
             'VpcConfig': {'SecurityGroupIds': [None], 'SubnetIds': [None], 'VpcId': None}
         })
+        if data.get('Publish', False):
+            result['Version'] = publish_new_function_version(arn)['Version']
         return jsonify(result or {})
     except Exception as e:
         del arn_to_lambda[arn]
@@ -693,11 +705,20 @@ def invoke_function(function):
             - name: 'request'
               in: body
     """
+    # function here can either be an arn or a function name
     arn = func_arn(function)
+
+    # arn can also contain a qualifier, extract it from there if so
+    m = re.match('(arn:aws:lambda:.*:.*:function:[a-zA-Z0-9-_]+)(:.*)?', arn)
+    if m and m.group(2):
+        qualifier = m.group(2)[1:]
+        arn = m.group(1)
+    else:
+        qualifier = request.args.get('Qualifier')
+
     if arn not in arn_to_lambda:
         return error_response('Function does not exist: %s' % arn, 404, error_type='ResourceNotFoundException')
-    qualifier = request.args['Qualifier'] if 'Qualifier' in request.args else '$LATEST'
-    if not arn_to_lambda.get(arn).qualifier_exists(qualifier):
+    if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
         return error_response('Function does not exist: {0}:{1}'.format(arn, qualifier), 404,
                               error_type='ResourceNotFoundException')
     data = None
@@ -706,15 +727,27 @@ def invoke_function(function):
             data = json.loads(to_str(request.data))
         except Exception:
             return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
-    asynchronous = False
-    if 'HTTP_X_AMZ_INVOCATION_TYPE' in request.environ:
-        asynchronous = request.environ['HTTP_X_AMZ_INVOCATION_TYPE'] == 'Event'
-    result = run_lambda(asynchronous=asynchronous, func_arn=arn, event=data, context={}, version=qualifier)
-    if isinstance(result, dict):
-        return jsonify(result)
-    if result:
-        return result
-    return make_response('', 200)
+
+    # Default invocation type is RequestResponse
+    invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
+
+    if invocation_type == 'RequestResponse':
+        result = run_lambda(asynchronous=False, func_arn=arn, event=data, context={}, version=qualifier)
+        if isinstance(result, dict):
+            return jsonify(result)
+        if result:
+            return result
+        return make_response('', 200)
+    elif invocation_type == 'Event':
+        run_lambda(asynchronous=True, func_arn=arn, event=data, context={}, version=qualifier)
+        return make_response('', 202)
+    elif invocation_type == 'DryRun':
+        # Assume the dry run always passes.
+        return make_response('', 204)
+    else:
+        return error_response('Invocation type not one of: RequestResponse, Event or DryRun',
+                              code=400,
+                              error_type='InvalidParameterValueException')
 
 
 @app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])
@@ -846,6 +879,17 @@ def update_alias(function, name):
     version = data.get('FunctionVersion') or current_alias.get('FunctionVersion')
     description = data.get('Description') or current_alias.get('Description')
     return jsonify(do_update_alias(arn, name, version, description))
+
+
+@app.route('%s/functions/<function>/aliases/<name>' % PATH_ROOT, methods=['GET'])
+def get_alias(function, name):
+    arn = func_arn(function)
+    if arn not in arn_to_lambda:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    if name not in arn_to_lambda.get(arn).aliases:
+        return error_response('Alias not found: %s' % arn + ':' + name, 404,
+                              error_type='ResourceNotFoundException')
+    return jsonify(arn_to_lambda.get(arn).aliases.get(name))
 
 
 @app.route('%s/functions/<function>/aliases' % PATH_ROOT, methods=['GET'])
