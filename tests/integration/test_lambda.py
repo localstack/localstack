@@ -118,10 +118,26 @@ def test_lambda_runtimes():
         libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_PY,
         zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27)
+
+    # Invocation Type not set
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}')
     assert result['StatusCode'] == 200
     result_data = json.loads(result['Payload'].read())
     assert result_data['event'] == json.loads('{}')
+
+    # Invocation Type - RequestResponse
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', InvocationType='RequestResponse')
+    assert result['StatusCode'] == 200
+    result_data = result['Payload'].read()
+    assert to_str(result_data).strip() == '{}'
+
+    # Invocation Type - Event
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', InvocationType='Event')
+    assert result['StatusCode'] == 202
+
+    # Invocation Type - DryRun
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', InvocationType='DryRun')
+    assert result['StatusCode'] == 204
 
     if use_docker():
         # deploy and invoke lambda - Python 3.6
@@ -151,16 +167,12 @@ def test_lambda_runtimes():
     # test SNSEvent
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
                                   Payload=b'{"Records": [{"Sns": {"Message": "{}"}}]}')
-    assert result['StatusCode'] == 200
-    result_data = result['Payload'].read()
-    assert json.loads(to_str(result_data)) == {'async': 'True'}
+    assert result['StatusCode'] == 202
 
     # test DDBEvent
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
                                   Payload=b'{"Records": [{"dynamodb": {"Message": "{}"}}]}')
-    assert result['StatusCode'] == 200
-    result_data = result['Payload'].read()
-    assert json.loads(to_str(result_data)) == {'async': 'True'}
+    assert result['StatusCode'] == 202
 
     # test KinesisEvent
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA,

@@ -727,15 +727,27 @@ def invoke_function(function):
             data = json.loads(to_str(request.data))
         except Exception:
             return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
-    async = False
-    if 'HTTP_X_AMZ_INVOCATION_TYPE' in request.environ:
-        async = request.environ['HTTP_X_AMZ_INVOCATION_TYPE'] == 'Event'
-    result = run_lambda(async=async, func_arn=arn, event=data, context={}, version=qualifier)
-    if isinstance(result, dict):
-        return jsonify(result)
-    if result:
-        return result
-    return make_response('', 200)
+
+    # Default invocation type is RequestResponse
+    invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
+
+    if invocation_type == 'RequestResponse':
+        result = run_lambda(async=False, func_arn=arn, event=data, context={}, version=qualifier)
+        if isinstance(result, dict):
+            return jsonify(result)
+        if result:
+            return result
+        return make_response('', 200)
+    elif invocation_type == 'Event':
+        run_lambda(async=True, func_arn=arn, event=data, context={}, version=qualifier)
+        return make_response('', 202)
+    elif invocation_type == 'DryRun':
+        # Assume the dry run always passes.
+        return make_response('', 204)
+    else:
+        return error_response('Invocation type not one of: RequestResponse, Event or DryRun',
+                              code=400,
+                              error_type='InvalidParameterValueException')
 
 
 @app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])
