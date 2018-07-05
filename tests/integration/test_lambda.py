@@ -129,7 +129,8 @@ def test_lambda_runtimes():
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', InvocationType='RequestResponse')
     assert result['StatusCode'] == 200
     result_data = result['Payload'].read()
-    assert to_str(result_data).strip() == '{}'
+    result_data = json.loads(to_str(result_data))
+    assert isinstance(result_data, dict)
 
     # Invocation Type - Event
     result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', InvocationType='Event')
