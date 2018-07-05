@@ -60,12 +60,12 @@ def put_records(stream_name, records):
         if 'S3DestinationDescription' in dest:
             s3_dest = dest['S3DestinationDescription']
             bucket = bucket_name(s3_dest['BucketARN'])
-            prefix = s3_dest['Prefix']
+            prefix = s3_dest.get('Prefix', '')
             s3 = get_s3_client()
             for record in records:
                 data = base64.b64decode(record['Data'])
                 obj_name = str(uuid.uuid4())
-                obj_path = '%s%s' % (prefix, obj_name)
+                obj_path = '%s%s%s' % (prefix, '' if prefix.endswith('/') else '/', obj_name)
                 try:
                     s3.Object(bucket, obj_path).put(Body=data)
                 except Exception as e:
