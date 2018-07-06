@@ -58,7 +58,7 @@ class LambdaExecutor(object):
         process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars)
         if asynchronous:
             result = '{"asynchronous": "%s"}' % asynchronous
-            log_output = 'Lambda executed asynchronoushronously'
+            log_output = 'Lambda executed asynchronously'
         else:
             return_code = process.wait()
             result = to_str(process.stdout.read())
