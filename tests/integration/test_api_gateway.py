@@ -202,7 +202,8 @@ def test_api_gateway_lambda_proxy_integration_any_method():
 
     # create API Gateway and connect it to the Lambda proxy backend
     lambda_uri = aws_stack.lambda_function_arn(TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD)
-    target_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' % (DEFAULT_REGION, lambda_uri)
+    target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
+
     result = connect_api_gateway_to_http_with_lambda_proxy('test_gateway3', target_uri,
         methods=['ANY'],
         path=API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD)
@@ -211,27 +212,10 @@ def test_api_gateway_lambda_proxy_integration_any_method():
     path = API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD.replace('{test_param1}', 'foo1')
     url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=result['id'], stage_name=TEST_STAGE_NAME, path=path)
     data = {}
-    result = requests.get(url)
-    assert result.status_code == 200
-    parsed_body = json.loads(to_str(result.content))
-    assert parsed_body.get('httpMethod') == 'GET'
-    result = requests.post(url, data=json.dumps(data))
-    assert result.status_code == 200
-    parsed_body = json.loads(to_str(result.content))
-    assert parsed_body.get('httpMethod') == 'POST'
-    result = requests.put(url, data=json.dumps(data))
-    assert result.status_code == 200
-    parsed_body = json.loads(to_str(result.content))
-    assert parsed_body.get('httpMethod') == 'PUT'
-    result = requests.patch(url, data=json.dumps(data))
-    assert result.status_code == 200
-    parsed_body = json.loads(to_str(result.content))
-    assert parsed_body.get('httpMethod') == 'PATCH'
-    result = requests.delete(url)
-    assert result.status_code == 200
-    parsed_body = json.loads(to_str(result.content))
-    assert parsed_body.get('httpMethod') == 'DELETE'
-    result = requests.options(url)
-    assert result.status_code == 200
-    parsed_body = json.loads(to_str(result.content))
-    assert parsed_body.get('httpMethod') == 'OPTIONS'
+
+    for method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'):
+        body = json.dumps(data) if method in ('POST', 'PUT', 'PATCH') else None
+        result = getattr(requests, method.lower())(url, data=body)
+        assert result.status_code == 200
+        parsed_body = json.loads(to_str(result.content))
+        assert parsed_body.get('httpMethod') == method

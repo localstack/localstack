@@ -451,6 +451,10 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=[]
             )
 
 
+def apigateway_invocations_arn(lambda_uri):
+    return 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' % (DEFAULT_REGION, lambda_uri)
+
+
 def get_elasticsearch_endpoint(domain=None, region_name=None):
     env = get_environment(region_name=region_name)
     if env.region == REGION_LOCAL:
