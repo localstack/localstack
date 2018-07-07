@@ -168,23 +168,29 @@ class ProxyListenerApiGateway(ProxyListener):
                 integration = aws_stack.get_apigateway_integration(api_id, method, path=relative_path)
                 assert integration
             except Exception:
-                # if we have no exact match, try to find an API resource that contains path parameters
-                path_map = get_rest_api_paths(rest_api_id=api_id)
                 try:
-                    extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+                    integration = aws_stack.get_apigateway_integration(api_id, 'ANY', path=relative_path)
+                    assert integration
                 except Exception:
-                    return make_error('Unable to find path %s' % path, 404)
+                    # if we have no exact match, try to find an API resource that contains path parameters
+                    path_map = get_rest_api_paths(rest_api_id=api_id)
+                    try:
+                        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
+                    except Exception:
+                        return make_error('Unable to find path %s' % path, 404)
 
-                integrations = resource.get('resourceMethods', {})
-                integration = integrations.get(method, {})
-                integration = integration.get('methodIntegration')
-                if not integration:
+                    integrations = resource.get('resourceMethods', {})
+                    integration = integrations.get(method, {})
+                    if not integration:
+                        integration = integrations.get('ANY', {})
+                    integration = integration.get('methodIntegration')
+                    if not integration:
 
-                    if method == 'OPTIONS' and 'Origin' in headers:
-                        # default to returning CORS headers if this is an OPTIONS request
-                        return get_cors_response(headers)
+                        if method == 'OPTIONS' and 'Origin' in headers:
+                            # default to returning CORS headers if this is an OPTIONS request
+                            return get_cors_response(headers)
 
-                    return make_error('Unable to find integration for path %s' % path, 404)
+                        return make_error('Unable to find integration for path %s' % path, 404)
 
             uri = integration.get('uri')
             if method == 'POST' and integration['type'] == 'AWS':
