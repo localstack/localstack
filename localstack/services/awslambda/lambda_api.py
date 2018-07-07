@@ -186,7 +186,7 @@ def process_sns_notification(func_arn, topic_arn, message, subject=''):
                 }
             }]
         }
-        return run_lambda(event=event, context={}, func_arn=func_arn, async=True)
+        return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=True)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (e, traceback.format_exc()))
 
@@ -254,7 +254,7 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 @cloudwatched('lambda')
-def run_lambda(event, context, func_arn, version=None, suppress_output=False, async=False):
+def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -266,7 +266,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         if not context:
             context = LambdaContext(func_details, version)
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
-            event, context=context, version=version, async=async)
+            event, context=context, version=version, asynchronous=asynchronous)
     except Exception as e:
         return error_response('Error executing Lambda function: %s %s' % (e, traceback.format_exc()))
     finally:
@@ -732,14 +732,14 @@ def invoke_function(function):
     invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
 
     if invocation_type == 'RequestResponse':
-        result = run_lambda(async=False, func_arn=arn, event=data, context={}, version=qualifier)
+        result = run_lambda(asynchronous=False, func_arn=arn, event=data, context={}, version=qualifier)
         if isinstance(result, dict):
             return jsonify(result)
         if result:
             return result
         return make_response('', 200)
     elif invocation_type == 'Event':
-        run_lambda(async=True, func_arn=arn, event=data, context={}, version=qualifier)
+        run_lambda(asynchronous=True, func_arn=arn, event=data, context={}, version=qualifier)
         return make_response('', 202)
     elif invocation_type == 'DryRun':
         # Assume the dry run always passes.

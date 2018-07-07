@@ -45,7 +45,7 @@ class LambdaExecutor(object):
     def __init__(self):
         pass
 
-    def execute(self, func_arn, func_details, event, context=None, version=None, async=False):
+    def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
         raise Exception('Not implemented.')
 
     def startup(self):
@@ -54,10 +54,10 @@ class LambdaExecutor(object):
     def cleanup(self, arn=None):
         pass
 
-    def run_lambda_executor(self, cmd, env_vars={}, async=False):
-        process = run(cmd, async=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars)
-        if async:
-            result = '{"async": "%s"}' % async
+    def run_lambda_executor(self, cmd, env_vars={}, asynchronous=False):
+        process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars)
+        if asynchronous:
+            result = '{"asynchronous": "%s"}' % asynchronous
             log_output = 'Lambda executed asynchronously'
         else:
             return_code = process.wait()
@@ -86,7 +86,7 @@ class LambdaExecutorContainers(LambdaExecutor):
     def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
         raise Exception('Not implemented')
 
-    def execute(self, func_arn, func_details, event, context=None, version=None, async=False):
+    def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
 
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
@@ -133,7 +133,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.debug('Running lambda cmd: %s' % cmd)
-        result, log_output = self.run_lambda_executor(cmd, environment, async)
+        result, log_output = self.run_lambda_executor(cmd, environment, asynchronous)
         LOG.debug('Lambda result / log output:\n%s\n>%s' % (result.strip(), log_output.strip().replace('\n', '\n> ')))
         return result, log_output
 
@@ -263,7 +263,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             ) % (runtime)
 
             LOG.debug(cmd)
-            run_result = run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+            run_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
             entry_point = run_result.strip('[]\n\r ')
 
@@ -289,7 +289,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 ) % (container_name)
 
                 LOG.debug(cmd)
-                run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+                run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
                 status = self.get_docker_container_status(func_arn)
 
@@ -300,7 +300,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 ) % (container_name)
 
                 LOG.debug(cmd)
-                run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+                run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
     def get_all_container_names(self):
         """
@@ -311,7 +311,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LOG.debug('Getting all lambda containers names.')
             cmd = 'docker ps -a --filter="name=localstack_lambda_*" --format "{{.Names}}"'
             LOG.debug(cmd)
-            cmd_result = run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE).strip()
+            cmd_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE).strip()
 
             if len(cmd_result) > 0:
                 container_names = cmd_result.split('\n')
@@ -332,7 +332,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             for container_name in container_names:
                 cmd = 'docker rm -f %s' % container_name
                 LOG.debug(cmd)
-                run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+                run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
     def get_docker_container_status(self, func_arn):
         """
@@ -356,7 +356,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             ) % (container_name)
 
             LOG.debug(cmd)
-            cmd_result = run(cmd, async=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+            cmd_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
             # If the container doesn't exist. Create and start it.
             container_status = cmd_result.strip()
@@ -444,7 +444,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 class LambdaExecutorLocal(LambdaExecutor):
 
-    def execute(self, func_arn, func_details, event, context=None, version=None, async=False):
+    def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
         lambda_cwd = func_details.cwd
         environment = func_details.envvars.copy()
 
@@ -476,15 +476,15 @@ class LambdaExecutorLocal(LambdaExecutor):
         class_name = handler.split('::')[0]
         classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
         cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
-        async = False
-        # flip async flag depending on origin
+        asynchronous = False
+        # flip asynchronous flag depending on origin
         if 'Records' in event:
-            # TODO: add more event supporting async lambda execution
+            # TODO: add more event supporting asynchronous lambda execution
             if 'Sns' in event['Records'][0]:
-                async = True
+                asynchronous = True
             if 'dynamodb' in event['Records'][0]:
-                async = True
-        result, log_output = self.run_lambda_executor(cmd, async=async)
+                asynchronous = True
+        result, log_output = self.run_lambda_executor(cmd, asynchronous=asynchronous)
         LOG.debug('Lambda result / log output:\n%s\n> %s' % (result.strip(), log_output.strip().replace('\n', '\n> ')))
         return result, log_output
 

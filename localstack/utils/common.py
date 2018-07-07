@@ -109,7 +109,7 @@ class ShellCommandThread (FuncThread):
             return line.strip() + '\r\n'
 
         try:
-            self.process = run(self.cmd, async=True, stdin=self.stdin, outfile=self.outfile,
+            self.process = run(self.cmd, asynchronous=True, stdin=self.stdin, outfile=self.outfile,
                 env_vars=self.env_vars, inherit_cwd=self.inherit_cwd)
             if self.outfile:
                 if self.outfile == subprocess.PIPE:
@@ -611,7 +611,7 @@ def run_cmd_safe(**kwargs):
     return run_safe(run, print_error=False, **kwargs)
 
 
-def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False,
+def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=False,
         stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False):
     # don't use subprocess module as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
@@ -628,7 +628,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False,
     def do_run(cmd):
         try:
             cwd = os.getcwd() if inherit_cwd else None
-            if not async:
+            if not asynchronous:
                 if stdin:
                     return subprocess.check_output(cmd, shell=True,
                         stderr=stderr, stdin=subprocess.PIPE, env=env_dict, cwd=cwd)

@@ -27,7 +27,7 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
         assert isinstance(out['TableNames'], list)
 
 
-def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
+def start_dynamodb(port=PORT_DYNAMODB, asynchronous=False, update_listener=None):
     install.install_dynamodb_local()
     backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
     ddb_data_dir_param = '-inMemory'
@@ -39,4 +39,4 @@ def start_dynamodb(port=PORT_DYNAMODB, async=False, update_listener=None):
         '-jar DynamoDBLocal.jar -sharedDb -port %s %s') % (ROOT_PATH, backend_port, ddb_data_dir_param)
     print('Starting mock DynamoDB (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('dynamodb', port, backend_port, update_listener)
-    return do_run(cmd, async)
+    return do_run(cmd, asynchronous)
