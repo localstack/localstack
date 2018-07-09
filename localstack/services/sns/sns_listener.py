@@ -54,6 +54,8 @@ class ProxyListenerSNS(ProxyListener):
                 if 'SubscriptionArn' not in req_data:
                     return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
                 do_unsubscribe(req_data.get('SubscriptionArn')[0])
+            elif req_action == 'DeleteTopic':
+                do_delete_topic(topic_arn)
 
             elif req_action == 'Publish':
                 message = req_data['Message'][0]
@@ -124,6 +126,11 @@ UPDATE_SNS = ProxyListenerSNS()
 def do_create_topic(topic_arn):
     if topic_arn not in SNS_SUBSCRIPTIONS:
         SNS_SUBSCRIPTIONS[topic_arn] = []
+
+
+def do_delete_topic(topic_arn):
+    if topic_arn in SNS_SUBSCRIPTIONS:
+        del SNS_SUBSCRIPTIONS[topic_arn]
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn):
