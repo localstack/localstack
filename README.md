@@ -451,7 +451,7 @@ the [**Contributor License Agreement**](doc/contributor_license_agreement).
 ## Contributors
 
 This project exists thanks to all the people who contribute.
-<a href="graphs/contributors"><img src="https://opencollective.com/localstack/contributors.svg?width=890" /></a>
+<a href="https://github.com/localstack/localstack/graphs/contributors"><img src="https://opencollective.com/localstack/contributors.svg?width=890" /></a>
 
 
 ## Backers
