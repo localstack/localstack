@@ -329,6 +329,10 @@ with the `--user` flag: `pip install --user localstack`
 * The environment variable `no_proxy` is rewritten by *LocalStack*.
 (Internal requests will go straight via localhost, bypassing any proxy configuration).
 
+* For troubleshooting localstack start issues, you can check debug logs by running `DEBUG=1 localstack start`
+
+* In case you get errors related to node/nodejs, you may find (this issue comment: https://github.com/localstack/localstack/issues/227#issuecomment-319938530) helpful.
+
 ## Developing
 
 If you pull the repo in order to extend/modify LocalStack, run this command to install
