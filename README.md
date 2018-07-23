@@ -331,7 +331,7 @@ with the `--user` flag: `pip install --user localstack`
 
 * For troubleshooting localstack start issues, you can check debug logs by running `DEBUG=1 localstack start`
 
-* In case you get errors related to node/nodejs, you may find (this page: https://github.com/localstack/localstack/issues/227) helpful.
+* In case you get errors related to node/nodejs, you may find (this issue comment: https://github.com/localstack/localstack/issues/227#issuecomment-319938530) helpful.
 
 ## Developing
 
