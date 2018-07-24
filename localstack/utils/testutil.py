@@ -11,7 +11,7 @@ from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER
     LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, DEFAULT_REGION)
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
-from localstack.utils.common import run, mkdir, to_str, save_file, TMP_FILES
+from localstack.utils.common import mkdir, to_str, save_file, TMP_FILES
 from localstack.utils.aws import aws_stack
 
 
@@ -92,7 +92,7 @@ def create_zip_file(file_path, get_content=False):
     zip_file_name = 'archive.zip'
     full_zip_file = os.path.join(tmp_dir, zip_file_name)
     # create zip file
-    with zipfile.ZipFile(full_zip_file, "w") as zip_file:
+    with zipfile.ZipFile(full_zip_file, 'w') as zip_file:
         for root, dirs, files in os.walk(base_dir):
             for name in files:
                 full_name = os.path.join(root, name)
