@@ -1,3 +1,4 @@
+import ast
 import json
 import logging
 import requests
@@ -242,49 +243,69 @@ def get_message_attributes(req_data):
     return attributes
 
 
-def evaluate_numeric_condition(conditions, attribute):
+def is_number(x):
+    try:
+        float(x)
+        return True
+    except ValueError:
+        return False
+
+
+def evaluate_numeric_condition(conditions, value):
+    if not is_number(value):
+        return False
+
     for i in range(0, len(conditions), 2):
         operator = conditions[i]
         operand = conditions[i + 1]
 
         if operator == '=':
-            if attribute != operand:
+            if value != operand:
                 return False
         elif operator == '>':
-            if attribute <= operand:
+            if value <= operand:
                 return False
         elif operator == '<':
-            if attribute >= operand:
+            if value >= operand:
                 return False
         elif operator == '>=':
-            if attribute < operand:
+            if value < operand:
                 return False
         elif operator == '<=':
-            if attribute > operand:
+            if value > operand:
                 return False
 
     return True
+
+
+def evaluate_condition(value, condition):
+    if type(condition) is not dict:
+        return value == condition
+    elif condition.get('anything-but'):
+        return value not in condition.get('anything-but')
+    elif condition.get('prefix'):
+        prefix = condition.get('prefix')
+        return value.startswith(prefix)
+    elif condition.get('numeric'):
+        return evaluate_numeric_condition(condition.get('numeric'), value)
+
+    return False
 
 
 def evaluate_filter_policy_conditions(conditions, attribute):
     if type(conditions) is not list:
         conditions = [conditions]
 
-    for condition in conditions:
-        if type(condition) is not dict:
-            if attribute['Value'] == condition:
-                return True
-        elif condition.get('anything-but'):
-            if attribute['Value'] not in condition.get('anything-but'):
-                return True
-        elif condition.get('prefix'):
-            prefix = condition.get('prefix')
-            if attribute['Value'].startswith(prefix):
-                return True
-        elif condition.get('numeric'):
-            if attribute['Type'] == 'Number':
-                if evaluate_numeric_condition(condition.get('numeric'), attribute['Value']):
+    if attribute['Type'] == 'String.Array':
+        values = ast.literal_eval(attribute['Value'])
+        for value in values:
+            for condition in conditions:
+                if evaluate_condition(value, condition):
                     return True
+    else:
+        for condition in conditions:
+            if evaluate_condition(attribute['Value'], condition):
+                return True
 
     return False
 
