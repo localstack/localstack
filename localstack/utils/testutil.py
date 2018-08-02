@@ -4,12 +4,14 @@ import time
 import glob
 import tempfile
 import requests
+import shutil
+import zipfile
 from six import iteritems
 from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
     LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, DEFAULT_REGION)
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
-from localstack.utils.common import run, mkdir, to_str, save_file, TMP_FILES
+from localstack.utils.common import mkdir, to_str, save_file, TMP_FILES
 from localstack.utils.aws import aws_stack
 
 
@@ -50,52 +52,61 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
     return table
 
 
-def create_lambda_archive(script, stream=None, get_content=False, libs=[], runtime=None):
+def create_lambda_archive(script, get_content=False, libs=[], runtime=None):
     """Utility method to create a Lambda function archive"""
     tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
     TMP_FILES.append(tmp_dir)
     file_name = get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
-    script_file = '%s/%s' % (tmp_dir, file_name)
+    script_file = os.path.join(tmp_dir, file_name)
     save_file(script_file, script)
     # copy libs
     for lib in libs:
         paths = [lib, '%s.py' % lib]
         target_dir = tmp_dir
-        root_folder = '%s/lib/python*/site-packages' % LOCALSTACK_VENV_FOLDER
+        root_folder = os.path.join(LOCALSTACK_VENV_FOLDER, 'lib/python*/site-packages')
         if lib == 'localstack':
             paths = ['localstack/*.py', 'localstack/utils']
             root_folder = LOCALSTACK_ROOT_FOLDER
-            target_dir = '%s/%s/' % (tmp_dir, lib)
+            target_dir = os.path.join(tmp_dir, lib)
             mkdir(target_dir)
         for path in paths:
-            file_to_copy = '%s/%s' % (root_folder, path)
+            file_to_copy = os.path.join(root_folder, path)
             for file_path in glob.glob(file_to_copy):
-                run('cp -r %s %s/' % (file_path, target_dir))
+                name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
+                if os.path.isdir(file_path):
+                    shutil.copytree(file_path, name)
+                else:
+                    shutil.copyfile(file_path, name)
 
     # create zip file
-    return create_zip_file(tmp_dir, get_content=True)
+    return create_zip_file(tmp_dir, get_content=get_content)
 
 
-# TODO: Refactor this method and use built-in file operations instead of shell commands
-def create_zip_file(file_path, include='*', get_content=False):
+def create_zip_file(file_path, get_content=False):
     base_dir = file_path
     if not os.path.isdir(file_path):
         base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
-        run('cp "%s" "%s"' % (file_path, base_dir))
-        include = os.path.basename(file_path)
+        shutil.copy(file_path, base_dir)
         TMP_FILES.append(base_dir)
     tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
     zip_file_name = 'archive.zip'
-    zip_file = '%s/%s' % (tmp_dir, zip_file_name)
+    full_zip_file = os.path.join(tmp_dir, zip_file_name)
     # create zip file
-    run('cd "%s" && zip -r "%s" %s' % (base_dir, zip_file, include))
+    with zipfile.ZipFile(full_zip_file, 'w') as zip_file:
+        for root, dirs, files in os.walk(base_dir):
+            for name in files:
+                full_name = os.path.join(root, name)
+                relative = root[len(base_dir):].lstrip(os.path.sep)
+                dest = os.path.join(relative, name)
+                zip_file.write(full_name, dest)
     if not get_content:
         TMP_FILES.append(tmp_dir)
-        return zip_file
+        shutil.rmtree(tmp_dir)
+        return full_zip_file
     zip_file_content = None
-    with open(zip_file, 'rb') as file_obj:
+    with open(full_zip_file, 'rb') as file_obj:
         zip_file_content = file_obj.read()
-    run('rm -r "%s"' % tmp_dir)
+    shutil.rmtree(tmp_dir)
     return zip_file_content
 
 
