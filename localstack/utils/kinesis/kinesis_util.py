@@ -45,7 +45,10 @@ class EventFileReaderThread(FuncThread):
                     event = json.loads(line)
                     records = event['records']
                     shard_id = event['shard_id']
+                    stream_name = event['stream_name']
                     method_args = inspect.getargspec(self.callback)[0]
+                    if len(method_args) > 2:
+                        self.callback(records, shard_id=shard_id, stream_name=stream_name)
                     if len(method_args) > 1:
                         self.callback(records, shard_id=shard_id)
                     else:
