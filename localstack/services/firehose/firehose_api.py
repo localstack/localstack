@@ -107,7 +107,7 @@ def process_records(records, shard_id):
     kinesis.put_records(Records=records, StreamName=shard_id)
 
 
-def create_stream(stream_name, delivery_stream_type="DirectPut", delivery_stream_type_configuration=None,
+def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream_type_configuration=None,
                   s3_destination=None, elasticsearch_destination=None):
     stream = {
         'DeliveryStreamType': delivery_stream_type,
@@ -120,8 +120,8 @@ def create_stream(stream_name, delivery_stream_type="DirectPut", delivery_stream
         'Destinations': []
     }
     DELIVERY_STREAMS[stream_name] = stream
-    if delivery_stream_type == "KinesisStreamAsSource":
-        kinesis_connector.listen_to_kinesis(delivery_stream_type_configuration.get("KinesisStreamARN"),
+    if delivery_stream_type == 'KinesisStreamAsSource':
+        kinesis_connector.listen_to_kinesis(delivery_stream_type_configuration.get('KinesisStreamARN'),
                                             listener_func=process_records,
                                             wait_until_started=True)
     if elasticsearch_destination:
@@ -176,8 +176,8 @@ def post_request():
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = create_stream(stream_name,
-                                 delivery_stream_type=data.get("DeliveryStreamType"),
-                                 delivery_stream_type_configuration=data.get("KinesisStreamSourceConfiguration"),
+                                 delivery_stream_type=data.get('DeliveryStreamType'),
+                                 delivery_stream_type_configuration=data.get('KinesisStreamSourceConfiguration'),
                                  s3_destination=data.get('S3DestinationConfiguration'),
                                  elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'))
     elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
