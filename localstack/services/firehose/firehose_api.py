@@ -11,9 +11,10 @@ from six import iteritems
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.utils.common import short_uid, to_str
-from localstack.utils.aws import aws_responses
+from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_stack import get_s3_client, firehose_stream_arn, connect_elasticsearch
 from boto3.dynamodb.types import TypeDeserializer
+from localstack.utils.kinesis import kinesis_connector
 
 APP_NAME = 'firehose_api'
 app = Flask(APP_NAME)
@@ -27,6 +28,7 @@ DELIVERY_STREAMS = {}
 
 # dynamodb deserializer
 deser = TypeDeserializer()
+kinesis = aws_stack.connect_to_service('kinesis')
 
 
 def get_delivery_stream_names():
@@ -101,8 +103,14 @@ def update_destination(stream_name, destination_id,
     return dest
 
 
-def create_stream(stream_name, s3_destination=None, elasticsearch_destination=None):
+def process_records(records, shard_id):
+    kinesis.put_records(Records=records, StreamName=shard_id)
+
+
+def create_stream(stream_name, delivery_stream_type="DirectPut", delivery_stream_type_configuration=None,
+                  s3_destination=None, elasticsearch_destination=None):
     stream = {
+        'DeliveryStreamType': delivery_stream_type,
         'HasMoreDestinations': False,
         'VersionId': '1',
         'CreateTimestamp': time.time(),
@@ -112,6 +120,10 @@ def create_stream(stream_name, s3_destination=None, elasticsearch_destination=No
         'Destinations': []
     }
     DELIVERY_STREAMS[stream_name] = stream
+    if delivery_stream_type == "KinesisStreamAsSource":
+        kinesis_connector.listen_to_kinesis(delivery_stream_type_configuration.get("KinesisStreamARN"),
+                                            listener_func=process_records,
+                                            wait_until_started=True)
     if elasticsearch_destination:
         update_destination(stream_name=stream_name,
             destination_id=short_uid(),
@@ -164,8 +176,10 @@ def post_request():
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = create_stream(stream_name,
-            s3_destination=data.get('S3DestinationConfiguration'),
-            elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'))
+                                 delivery_stream_type=data.get("DeliveryStreamType"),
+                                 delivery_stream_type_configuration=data.get("KinesisStreamSourceConfiguration"),
+                                 s3_destination=data.get('S3DestinationConfiguration'),
+                                 elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'))
     elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = delete_stream(stream_name)
