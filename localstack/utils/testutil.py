@@ -72,7 +72,7 @@ def create_lambda_archive(script, get_content=False, libs=[], runtime=None):
         for path in paths:
             file_to_copy = os.path.join(root_folder, path)
             for file_path in glob.glob(file_to_copy):
-                name = os.path.join(target_dir, file_path.split('/')[-1])
+                name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
                 if os.path.isdir(file_path):
                     shutil.copytree(file_path, name)
                 else:
