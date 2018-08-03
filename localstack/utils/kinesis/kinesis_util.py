@@ -10,12 +10,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 class EventFileReaderThread(FuncThread):
-    def __init__(self, events_file, callback, ready_mutex=None):
+    def __init__(self, events_file, callback, ready_mutex=None, stream_name=None):
         FuncThread.__init__(self, self.retrieve_loop, None)
         self.running = True
         self.events_file = events_file
         self.callback = callback
         self.ready_mutex = ready_mutex
+        self.stream_name = stream_name
 
     def retrieve_loop(self, params):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -45,17 +46,16 @@ class EventFileReaderThread(FuncThread):
                     event = json.loads(line)
                     records = event['records']
                     shard_id = event['shard_id']
-                    stream_name = event['stream_name']
                     method_args = inspect.getargspec(self.callback)[0]
                     if len(method_args) > 2:
-                        self.callback(records, shard_id=shard_id, stream_name=stream_name)
-                    if len(method_args) > 1:
+                        self.callback(records, shard_id=shard_id, stream_name=self.stream_name)
+                    elif len(method_args) > 1:
                         self.callback(records, shard_id=shard_id)
                     else:
                         self.callback(records)
                 except Exception as e:
                     LOGGER.warning("Unable to process JSON line: '%s': %s %s. Callback: %s" %
-                        (truncate(line), e, traceback.format_exc(), self.callback))
+                                   (truncate(line), e, traceback.format_exc(), self.callback))
         conn.close()
 
     def stop(self, quiet=True):

@@ -11,7 +11,7 @@ from six import iteritems
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.utils.common import short_uid, to_str
-from localstack.utils.aws import aws_responses, aws_stack
+from localstack.utils.aws import aws_responses
 from localstack.utils.aws.aws_stack import get_s3_client, firehose_stream_arn, connect_elasticsearch
 from boto3.dynamodb.types import TypeDeserializer
 from localstack.utils.kinesis import kinesis_connector
@@ -28,7 +28,6 @@ DELIVERY_STREAMS = {}
 
 # dynamodb deserializer
 deser = TypeDeserializer()
-kinesis = aws_stack.connect_to_service('kinesis')
 
 
 def get_delivery_stream_names():
@@ -88,7 +87,7 @@ def get_destination(stream_name, destination_id):
 
 
 def update_destination(stream_name, destination_id,
-        s3_update=None, elasticsearch_update=None, version_id=None):
+                       s3_update=None, elasticsearch_update=None, version_id=None):
     dest = get_destination(stream_name, destination_id)
     if elasticsearch_update:
         if 'ESDestinationDescription' not in dest:
@@ -103,8 +102,8 @@ def update_destination(stream_name, destination_id,
     return dest
 
 
-def process_records(records, shard_id):
-    kinesis.put_records(Records=records, StreamName=shard_id)
+def process_records(records, shard_id, stream_name):
+    put_records(stream_name, records)
 
 
 def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream_type_configuration=None,
@@ -126,8 +125,8 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
                                             wait_until_started=True)
     if elasticsearch_destination:
         update_destination(stream_name=stream_name,
-            destination_id=short_uid(),
-            elasticsearch_update=elasticsearch_destination)
+                           destination_id=short_uid(),
+                           elasticsearch_update=elasticsearch_destination)
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
     return stream
@@ -212,10 +211,10 @@ def post_request():
         destination_id = data['DestinationId']
         s3_update = data['S3DestinationUpdate'] if 'S3DestinationUpdate' in data else None
         update_destination(stream_name=stream_name, destination_id=destination_id,
-            s3_update=s3_update, version_id=version_id)
+                           s3_update=s3_update, version_id=version_id)
         es_update = data['ESDestinationUpdate'] if 'ESDestinationUpdate' in data else None
         update_destination(stream_name=stream_name, destination_id=destination_id,
-            es_update=es_update, version_id=version_id)
+                           es_update=es_update, version_id=version_id)
         response = {}
     else:
         response = error_response('Unknown action "%s"' % action, code=400, error_type='InvalidAction')

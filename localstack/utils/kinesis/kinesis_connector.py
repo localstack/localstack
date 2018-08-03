@@ -410,7 +410,7 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     run('rm -f %s' % events_file)
     # start event reader thread (this process)
     ready_mutex = threading.Semaphore(0)
-    thread = EventFileReaderThread(events_file, listener_func, ready_mutex=ready_mutex)
+    thread = EventFileReaderThread(events_file, listener_func, ready_mutex=ready_mutex, stream_name=stream_name)
     thread.start()
     # Wait until the event reader thread is ready (to avoid 'Connection refused' error on the UNIX socket)
     ready_mutex.acquire()
