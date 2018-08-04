@@ -21,13 +21,9 @@ class ProxyListenerSQS(ProxyListener):
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
             if 'QueueName' in req_data:
-                if '.' in req_data['QueueName'][0]:
-                    # ElasticMQ currently does not support "." in the queue name, e.g., for *.fifo queues
-                    # TODO: remove this once *.fifo queues are supported in ElasticMQ
-                    req_data['QueueName'][0] = req_data['QueueName'][0].replace('.', '_')
-                    modified_data = urlencode(req_data, doseq=True)
-                    request = Request(data=modified_data, headers=headers, method=method)
-                    return request
+                encoded_data = urlencode(req_data, doseq=True)
+                request = Request(data=encoded_data, headers=headers, method=method)
+                return request
 
         return True
 
