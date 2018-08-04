@@ -60,6 +60,8 @@ if not LAMBDA_EXECUTOR:
     except Exception as e:
         pass
 
+STACK_NETWORK = os.environ.get('STACK_NETWORK', '').strip()
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately

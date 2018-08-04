@@ -384,7 +384,6 @@ def get_java_handler(zip_file_content, handler, main_file):
 
 
 def set_function_code(code, lambda_name):
-
     def generic_handler(event, context):
         raise Exception(('Unable to find executor for Lambda function "%s". ' +
             'Note that Node.js and .NET Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
