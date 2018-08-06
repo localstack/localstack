@@ -85,8 +85,8 @@ def test_lambda_docker_with_network():
     config.STACK_NETWORK = 'test_network'
     cmd = executor.prepare_execution('test_arn', {}, 'go1.x', '', 'task', '/var/dummy_task')
     expected = 'docker run  --network test_network -v "/var/dummy_task":/var/task  --rm "lambci/lambda:go1.x" "task"'
-    config.STACK_NETWORK = ''
     assert cmd == expected
+    config.STACK_NETWORK = ''
 
 
 def test_kinesis_lambda_sns_ddb_streams():
