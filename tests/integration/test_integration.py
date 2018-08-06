@@ -77,6 +77,7 @@ def test_lambda_docker_command():
     cmd = executor.prepare_execution('test_arn', {}, 'go1.x', '', 'task', '/var/dummy_task')
     LOGGER.info(cmd)
     expected_cmd = 'docker run  -v "/var/dummy_task":/var/task  --rm "lambci/lambda:go1.x" "task"'
+    LOGGER.error("--->", cmd, expected_cmd)
     assert cmd == expected_cmd
 
 
@@ -85,6 +86,7 @@ def test_lambda_docker_with_network():
     config.STACK_NETWORK = 'test_network'
     cmd = executor.prepare_execution('test_arn', {}, 'go1.x', '', 'task', '/var/dummy_task')
     expected = 'docker run  --network test_network -v "/var/dummy_task":/var/task  --rm "lambci/lambda:go1.x" "task"'
+    LOGGER.error("--->", cmd, expected)
     assert cmd == expected
     config.STACK_NETWORK = ''
 
