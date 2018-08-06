@@ -20,7 +20,7 @@ class SQSTest(unittest.TestCase):
     def test_create_fifo_queue(self):
         fifo_queue = 'my-queue.fifo'
         sqs_client = aws_stack.connect_to_service('sqs')
-        queue_info = sqs_client.create_queue(QueueName=fifo_queue)
+        queue_info = sqs_client.create_queue(QueueName=fifo_queue, Attributes={'FifoQueue': 'true'})
         queue_url = queue_info['QueueUrl']
 
         # it should preserve .fifo in the queue name
