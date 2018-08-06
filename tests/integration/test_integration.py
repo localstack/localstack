@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import json
-import time
+# import time
 import logging
-import base64
+# import base64
 from datetime import datetime, timedelta
-from nose.tools import assert_raises
+# from nose.tools import assert_raises
 from localstack.utils import testutil
-from localstack.utils.common import load_file, short_uid, clone, to_bytes, to_str, run_safe, retry
-from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
-from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.common import short_uid, to_bytes, to_str  # , load_file, clone, run_safe, retry
+# from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
+# from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
+from localstack import config
+from localstack.services.awslambda.lambda_executors import LambdaExecutorSeparateContainers
 from localstack.utils.cloudwatch import cloudwatch_util
 from .lambdas import lambda_integration
-from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
+
+# from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
@@ -38,7 +41,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 def test_firehose_s3():
-
     s3_resource = aws_stack.connect_to_resource('s3')
     firehose = aws_stack.connect_to_service('firehose')
 
@@ -68,6 +70,22 @@ def test_firehose_s3():
     # check records in target bucket
     all_objects = testutil.list_all_s3_objects()
     testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+
+
+def test_lambda_docker_command():
+    executor = LambdaExecutorSeparateContainers()
+    cmd = executor.prepare_execution("test_arn", {}, "go1.x", '', 'task', '/var/dummy_task')
+    LOGGER.info(cmd)
+    expected_cmd = 'docker run  -v "/var/dummy_task":/var/task  --rm "lambci/lambda:go1.x" "task"'
+    assert cmd == expected_cmd
+
+
+def test_lambda_docker_with_network():
+    executor = LambdaExecutorSeparateContainers()
+    config.STACK_NETWORK = 'test_network'
+    cmd = executor.prepare_execution("test_arn", {}, "go1.x", '', 'task', '/var/dummy_task')
+    expected = 'docker run  --network test_network -v "/var/dummy_task":/var/task  --rm "lambci/lambda:go1.x" "task"'
+    assert cmd == expected
 
 
 def test_kinesis_lambda_sns_ddb_streams():
