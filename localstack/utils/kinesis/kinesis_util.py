@@ -10,13 +10,13 @@ LOGGER = logging.getLogger(__name__)
 
 
 class EventFileReaderThread(FuncThread):
-    def __init__(self, events_file, callback, ready_mutex=None, stream_name=None):
+    def __init__(self, events_file, callback, ready_mutex=None, fh_d_stream=None):
         FuncThread.__init__(self, self.retrieve_loop, None)
         self.running = True
         self.events_file = events_file
         self.callback = callback
         self.ready_mutex = ready_mutex
-        self.stream_name = stream_name
+        self.fh_d_stream = fh_d_stream
 
     def retrieve_loop(self, params):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -48,7 +48,7 @@ class EventFileReaderThread(FuncThread):
                     shard_id = event['shard_id']
                     method_args = inspect.getargspec(self.callback)[0]
                     if len(method_args) > 2:
-                        self.callback(records, shard_id=shard_id, stream_name=self.stream_name)
+                        self.callback(records, shard_id=shard_id, fh_d_stream=self.fh_d_stream)
                     elif len(method_args) > 1:
                         self.callback(records, shard_id=shard_id)
                     else:

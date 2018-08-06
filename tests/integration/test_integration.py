@@ -85,7 +85,7 @@ def test_firehose_kinesis_to_s3():
         DeliveryStreamType='KinesisStreamAsSource',
         KinesisStreamSourceConfiguration={
             'RoleARN': aws_stack.iam_resource_arn('firehose'),
-            'KinesisStreamARN': get_event_source_arn(TEST_STREAM_NAME)
+            'KinesisStreamARN': aws_stack.kinesis_stream_arn(TEST_STREAM_NAME)
         },
         DeliveryStreamName=TEST_FIREHOSE_NAME,
         S3DestinationConfiguration={
@@ -96,6 +96,7 @@ def test_firehose_kinesis_to_s3():
     )
     assert stream
     assert TEST_FIREHOSE_NAME in firehose.list_delivery_streams()['DeliveryStreamNames']
+
     # create target S3 bucket
     s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 
@@ -106,12 +107,10 @@ def test_firehose_kinesis_to_s3():
         StreamName=TEST_STREAM_NAME
     )
 
-    time.sleep(50)
+    time.sleep(15)
 
     # check records in target bucket
     all_objects = testutil.list_all_s3_objects()
-    print('all_objects : %s', all_objects)
-    print('test_data: %s', json.loads(to_str(test_data)))
     testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
 

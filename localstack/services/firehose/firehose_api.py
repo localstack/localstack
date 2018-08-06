@@ -51,8 +51,16 @@ def put_records(stream_name, records):
             es = connect_elasticsearch()
             for record in records:
                 obj_id = uuid.uuid4()
-                data = base64.b64decode(record['Data'])
+
+                # DirectPut
+                if 'Data' in record:
+                    data = base64.b64decode(record['Data'])
+                # KinesisAsSource
+                elif 'data' in record:
+                    data = base64.b64decode(record['data'])
+
                 body = json.loads(data)
+
                 try:
                     es.create(index=es_index, doc_type=es_type, id=obj_id, body=body)
                 except Exception as e:
@@ -64,7 +72,14 @@ def put_records(stream_name, records):
             prefix = s3_dest.get('Prefix', '')
             s3 = get_s3_client()
             for record in records:
-                data = base64.b64decode(record['Data'])
+
+                # DirectPut
+                if 'Data' in record:
+                    data = base64.b64decode(record['Data'])
+                # KinesisAsSource
+                elif 'data' in record:
+                    data = base64.b64decode(record['data'])
+
                 obj_name = str(uuid.uuid4())
                 obj_path = '%s%s%s' % (prefix, '' if prefix.endswith('/') else '/', obj_name)
                 try:
@@ -102,8 +117,8 @@ def update_destination(stream_name, destination_id,
     return dest
 
 
-def process_records(records, shard_id, stream_name):
-    put_records(stream_name, records)
+def process_records(records, shard_id, fh_d_stream):
+    put_records(fh_d_stream, records)
 
 
 def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream_type_configuration=None,
@@ -120,16 +135,20 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
         'Destinations': []
     }
     DELIVERY_STREAMS[stream_name] = stream
-    if delivery_stream_type == 'KinesisStreamAsSource':
-        kinesis_connector.listen_to_kinesis(delivery_stream_type_configuration.get('KinesisStreamARN'),
-                                            listener_func=process_records,
-                                            wait_until_started=True)
     if elasticsearch_destination:
         update_destination(stream_name=stream_name,
                            destination_id=short_uid(),
                            elasticsearch_update=elasticsearch_destination)
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
+
+    if delivery_stream_type == 'KinesisStreamAsSource':
+        kinesis_stream_name = delivery_stream_type_configuration.get('KinesisStreamARN').split('/')[1]
+        kinesis_connector.listen_to_kinesis(stream_name=kinesis_stream_name,
+                                            fh_d_stream=stream_name,
+                                            listener_func=process_records,
+                                            wait_until_started=True,
+                                            ddb_lease_table_suffix='-firehose')
     return stream
 
 
