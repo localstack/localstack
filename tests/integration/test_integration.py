@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 
 import json
-# import time
+import time
 import logging
-# import base64
+import base64
 from datetime import datetime, timedelta
-# from nose.tools import assert_raises
+from nose.tools import assert_raises
 from localstack.utils import testutil
-from localstack.utils.common import short_uid, to_bytes, to_str  # , load_file, clone, run_safe, retry
-# from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
-# from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.common import short_uid, to_bytes, to_str, load_file, clone, run_safe, retry
+from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
+from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from localstack import config
 from localstack.services.awslambda.lambda_executors import LambdaExecutorSeparateContainers
 from localstack.utils.cloudwatch import cloudwatch_util
 from .lambdas import lambda_integration
 
-# from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
+from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
