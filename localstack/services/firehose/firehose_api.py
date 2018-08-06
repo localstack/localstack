@@ -110,6 +110,7 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
                   s3_destination=None, elasticsearch_destination=None):
     stream = {
         'DeliveryStreamType': delivery_stream_type,
+        'KinesisStreamSourceConfiguration': delivery_stream_type_configuration,
         'HasMoreDestinations': False,
         'VersionId': '1',
         'CreateTimestamp': time.time(),
