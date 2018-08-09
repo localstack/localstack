@@ -107,7 +107,7 @@ def test_firehose_kinesis_to_s3():
         StreamName=TEST_STREAM_NAME
     )
 
-    time.sleep(15)
+    time.sleep(3)
 
     # check records in target bucket
     all_objects = testutil.list_all_s3_objects()
