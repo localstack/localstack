@@ -223,6 +223,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
                 env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in env_vars])
 
+                network = config.LAMBDA_DOCKER_NETWORK
+                network_str = ' --network="%s" ' % network if network else ''
+
                 # Create and start the container
                 LOG.debug('Creating container: %s' % container_name)
                 cmd = (
@@ -234,8 +237,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' -e HOSTNAME="$HOSTNAME"'
                     ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     '  %s'  # env_vars
+                    '  %s'  # network
                     ' lambci/lambda:%s'
-                ) % (container_name, env_vars_str, runtime)
+                ) % (container_name, env_vars_str, network_str, runtime)
                 LOG.debug(cmd)
                 run(cmd, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
@@ -267,7 +271,11 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             entry_point = run_result.strip('[]\n\r ')
 
-            LOG.debug('Using entrypoint "%s" for container "%s".' % (entry_point, container_name))
+            container_network = self.get_docker_container_network(func_arn)
+
+            LOG.debug('Using entrypoint "%s" for container "%s" on network "%s".'
+                % (entry_point, container_name, container_network))
+
             return ContainerInfo(container_name, entry_point)
 
     def destroy_docker_container(self, func_arn):
@@ -369,6 +377,38 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             return -1
 
+    def get_docker_container_network(self, func_arn):
+        """
+        Determine the network of a docker container.
+        :param func_arn: The ARN of the lambda function.
+        :return: name of the container network
+        """
+
+        with self.docker_container_lock:
+
+            status = self.get_docker_container_status(func_arn)
+
+            # container does not exist
+            if status == 0:
+                return ''
+
+            # Get the container name.
+            container_name = self.get_container_name(func_arn)
+
+            # Get the container network
+            LOG.debug('Getting container network: %s' % container_name)
+            cmd = (
+                'docker inspect %s'
+                ' --format "{{ .HostConfig.NetworkMode }}"'
+            ) % (container_name)
+
+            LOG.debug(cmd)
+            cmd_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+
+            container_network = cmd_result.strip()
+
+            return container_network
+
     def idle_container_destroyer(self):
         """
         Iterates though all the lambda containers and destroys any container that has
@@ -416,25 +456,30 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
 
+        network = config.LAMBDA_DOCKER_NETWORK
+        network_str = ' --network="%s" ' % network if network else ''
+
         if config.LAMBDA_REMOTE_DOCKER:
             cmd = (
                 'CONTAINER_ID="$(docker create'
                 ' %s'
                 ' %s'
+                ' %s'  # network
                 ' "lambci/lambda:%s" %s'
                 ')";'
                 'docker cp "%s/." "$CONTAINER_ID:/var/task";'
                 'docker start -a "$CONTAINER_ID";'
-            ) % (entrypoint, env_vars_string, runtime, command, lambda_cwd)
+            ) % (entrypoint, env_vars_string, network_str, runtime, command, lambda_cwd)
         else:
             lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
                 'docker run'
                 '%s -v "%s":/var/task'
                 ' %s'
+                ' %s'  # network
                 ' --rm'
                 ' "lambci/lambda:%s" %s'
-            ) % (entrypoint, lambda_cwd_on_host, env_vars_string, runtime, command)
+            ) % (entrypoint, lambda_cwd_on_host, env_vars_string, network_str, runtime, command)
         return cmd
 
     def get_host_path_for_path_in_docker(self, path):
