@@ -73,15 +73,15 @@ public class LocalstackDocker {
             LOG.info("Waiting for localstack container to be ready...");
             localStackContainer.waitForLogToken(READY_TOKEN);
         } catch (Exception t) {
-            if (this.localStackContainer != null) {
-                this.stop();
-            }
+            this.stop();
             throw new LocalstackDockerException("Could not start the localstack docker container.", t);
         }
     }
 
     public void stop() {
-        localStackContainer.stop();
+        if (this.localStackContainer != null) {
+            localStackContainer.stop();
+        }
         locked = false;
     }
 
