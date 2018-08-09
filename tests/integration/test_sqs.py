@@ -16,3 +16,12 @@ class SQSTest(unittest.TestCase):
 
         # Apparently, if there are no tags, then `Tags` should NOT appear in the response.
         assert 'Tags' not in res
+
+    def test_create_fifo_queue(self):
+        fifo_queue = 'my-queue.fifo'
+        sqs_client = aws_stack.connect_to_service('sqs')
+        queue_info = sqs_client.create_queue(QueueName=fifo_queue, Attributes={'FifoQueue': 'true'})
+        queue_url = queue_info['QueueUrl']
+
+        # it should preserve .fifo in the queue name
+        assert fifo_queue in queue_url
