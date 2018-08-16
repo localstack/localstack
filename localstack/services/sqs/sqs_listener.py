@@ -1,6 +1,7 @@
 import re
 import uuid
 import xmltodict
+import hashlib
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
 from requests.models import Request, Response
@@ -8,6 +9,7 @@ from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL
 from localstack.utils.common import to_str
 from localstack.utils.analytics import event_publisher
+from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 
 
@@ -24,6 +26,32 @@ class ProxyListenerSQS(ProxyListener):
                 encoded_data = urlencode(req_data, doseq=True)
                 request = Request(data=encoded_data, headers=headers, method=method)
                 return request
+            elif req_data.get('Action', [None])[0] == 'SendMessage':
+                queue_url = req_data.get('QueueUrl', [None])[0]
+                queue_name = queue_url[queue_url.rindex('/') + 1:]
+                message_body = req_data.get('MessageBody', [None])[0]
+                if lambda_api.process_sqs_message(message_body, queue_name):
+                    # If an lambda was listening, do not add the message to the queue
+                    new_response = Response()
+                    new_response._content = (
+                        '<?xml version="1.0"?>'
+                        '<SendMessageResponse xmlns="http://queue.amazonaws.com/doc/2012-11-05/">'
+                          '<SendMessageResult>'
+                            '<MD5OfMessageAttributes>{message_attributes_hash}</MD5OfMessageAttributes>'
+                            '<MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>'
+                            '<MessageId>{message_id}</MessageId>'
+                          '</SendMessageResult>'
+                          '<ResponseMetadata>'
+                            '<RequestId>00000000-0000-0000-0000-000000000000</RequestId>'
+                          '</ResponseMetadata>'
+                        '</SendMessageResponse>'
+                    ).format(
+                        message_attributes_hash=hashlib.md5(data).hexdigest(),
+                        message_body_hash=hashlib.md5(message_body).hexdigest(),
+                        message_id=str(uuid.uuid4()),
+                    )
+                    new_response.status_code = 200
+                    return new_response
 
         return True
 
