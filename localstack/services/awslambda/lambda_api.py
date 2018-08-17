@@ -234,7 +234,8 @@ def process_sqs_message(message_body, queue_name):
                     'ApproximateReceiveCount': '1',
                     'SentTimestamp': '{}000'.format(int(time.time()))
                 },
-                'messageAttributes': {}
+                'messageAttributes': {},
+                'sqs': True,
             }]}
             run_lambda(event=event, context={}, func_arn=arn)
             return True

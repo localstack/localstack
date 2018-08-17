@@ -125,7 +125,7 @@ def test_kinesis_lambda_sns_ddb_sqs_streams():
         zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
 
     # deploy test lambda connected to SQS queue
-    sqs_queue_info = testutil.create_sqs_queue()
+    sqs_queue_info = testutil.create_sqs_queue(TEST_LAMBDA_NAME_QUEUE)
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_QUEUE,
         zip_file=zip_file, event_source_arn=sqs_queue_info['QueueArn'], runtime=LAMBDA_RUNTIME_PYTHON27)
 
