@@ -70,6 +70,50 @@ def test_firehose_s3():
     testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
 
+def test_firehose_kinesis_to_s3():
+    kinesis = aws_stack.connect_to_service('kinesis')
+    s3_resource = aws_stack.connect_to_resource('s3')
+    firehose = aws_stack.connect_to_service('firehose')
+
+    aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
+
+    s3_prefix = '/testdata'
+    test_data = '{"test": "firehose_data_%s"}' % short_uid()
+
+    # create Firehose stream
+    stream = firehose.create_delivery_stream(
+        DeliveryStreamType='KinesisStreamAsSource',
+        KinesisStreamSourceConfiguration={
+            'RoleARN': aws_stack.iam_resource_arn('firehose'),
+            'KinesisStreamARN': aws_stack.kinesis_stream_arn(TEST_STREAM_NAME)
+        },
+        DeliveryStreamName=TEST_FIREHOSE_NAME,
+        S3DestinationConfiguration={
+            'RoleARN': aws_stack.iam_resource_arn('firehose'),
+            'BucketARN': aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
+            'Prefix': s3_prefix
+        }
+    )
+    assert stream
+    assert TEST_FIREHOSE_NAME in firehose.list_delivery_streams()['DeliveryStreamNames']
+
+    # create target S3 bucket
+    s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
+
+    # put records
+    kinesis.put_record(
+        Data=to_bytes(test_data),
+        PartitionKey='testId',
+        StreamName=TEST_STREAM_NAME
+    )
+
+    time.sleep(3)
+
+    # check records in target bucket
+    all_objects = testutil.list_all_s3_objects()
+    testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+
+
 def test_kinesis_lambda_sns_ddb_streams():
 
     ddb_lease_table_suffix = '-kclapp'

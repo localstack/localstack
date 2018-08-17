@@ -394,7 +394,7 @@ if __name__ == '__main__':
 def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         events_file=None, endpoint_url=None, log_file=None, configs={}, env=None,
         ddb_lease_table_suffix=None, env_vars={}, kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
-        log_subscribers=[], wait_until_started=False):
+        log_subscribers=[], wait_until_started=False, fh_d_stream=None):
     """
     High-level function that allows to subscribe to a Kinesis stream
     and receive events in a listener function. A KCL client process is
@@ -410,7 +410,7 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     run('rm -f %s' % events_file)
     # start event reader thread (this process)
     ready_mutex = threading.Semaphore(0)
-    thread = EventFileReaderThread(events_file, listener_func, ready_mutex=ready_mutex)
+    thread = EventFileReaderThread(events_file, listener_func, ready_mutex=ready_mutex, fh_d_stream=fh_d_stream)
     thread.start()
     # Wait until the event reader thread is ready (to avoid 'Connection refused' error on the UNIX socket)
     ready_mutex.acquire()
