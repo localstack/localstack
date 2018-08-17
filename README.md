@@ -117,7 +117,7 @@ localstack start --docker
 (Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR localstack start --docker` if
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
 
-Or using docker-compose (you need to clone the repository first):
+Or using docker-compose (you need to clone the repository first, currently supports docker-compose version 2):
 
 ```
 docker-compose up
