@@ -242,3 +242,23 @@ def send_dynamodb_request(path, action, request_body):
     }
     url = '{}/{}'.format(os.getenv('TEST_DYNAMODB_URL'), path)
     return requests.put(url, data=request_body, headers=headers, verify=False)
+
+
+def create_sqs_queue(queue_name):
+    """Utility method to create a new queue via SQS API"""
+
+    client = aws_stack.connect_to_service('sqs')
+
+    # create queue
+    queue_url = client.create_queue(QueueName=queue_name)['QueueUrl']
+
+    # get the queue arn
+    queue_arn = client.get_queue_attributes(
+        QueueUrl=queue_url,
+        AttributeNames=['QueueArn'],
+    )['Attributes']['QueueArn']
+
+    return {
+        'QueueUrl': queue_url,
+        'QueueArn': queue_arn,
+    }

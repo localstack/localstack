@@ -220,26 +220,22 @@ def process_sqs_message(message_body, queue_name):
         source = next(iter(get_event_sources(source_arn=queue_arn)), None)
         if source:
             arn = source['FunctionArn']
-            event = {
-              "Records": [
-                {
-                  "body": message_body,
-                  "receiptHandle": "MessageReceiptHandle",
-                  "md5OfBody": hashlib.md5(message_body).hexdigest(),
-                  "eventSourceARN": queue_arn,
-                  "eventSource": "aws:sqs",
-                  "awsRegion": aws_stack.get_local_region(),
-                  "messageId": str(uuid.uuid4()),
-                  "attributes": {
-                    "ApproximateFirstReceiveTimestamp": '{}000'.format(int(time.time())),
-                    "SenderId": "123456789012",
-                    "ApproximateReceiveCount": "1",
-                    "SentTimestamp": '{}000'.format(int(time.time()))
-                  },
-                  "messageAttributes": {}
-                }
-              ]
-            }
+            event = {'Records': [{
+                'body': message_body,
+                'receiptHandle': 'MessageReceiptHandle',
+                'md5OfBody': hashlib.md5(message_body).hexdigest(),
+                'eventSourceARN': queue_arn,
+                'eventSource': 'aws:sqs',
+                'awsRegion': aws_stack.get_local_region(),
+                'messageId': str(uuid.uuid4()),
+                'attributes': {
+                    'ApproximateFirstReceiveTimestamp': '{}000'.format(int(time.time())),
+                    'SenderId': '123456789012',
+                    'ApproximateReceiveCount': '1',
+                    'SentTimestamp': '{}000'.format(int(time.time()))
+                },
+                'messageAttributes': {}
+            }]}
             run_lambda(event=event, context={}, func_arn=arn)
             return True
     except Exception as e:

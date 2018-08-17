@@ -36,17 +36,17 @@ class ProxyListenerSQS(ProxyListener):
                     new_response._content = (
                         '<?xml version="1.0"?>'
                         '<SendMessageResponse xmlns="http://queue.amazonaws.com/doc/2012-11-05/">'
-                          '<SendMessageResult>'
-                            '<MD5OfMessageAttributes>{message_attributes_hash}</MD5OfMessageAttributes>'
-                            '<MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>'
-                            '<MessageId>{message_id}</MessageId>'
-                          '</SendMessageResult>'
-                          '<ResponseMetadata>'
-                            '<RequestId>00000000-0000-0000-0000-000000000000</RequestId>'
-                          '</ResponseMetadata>'
+                            '<SendMessageResult>'  # noqa: W291
+                                '<MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>'  # noqa: W291
+                                '<MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>'  # noqa: W291
+                                '<MessageId>{message_id}</MessageId>'  # noqa: W291
+                            '</SendMessageResult>'  # noqa: W291
+                            '<ResponseMetadata>'  # noqa: W291
+                                '<RequestId>00000000-0000-0000-0000-000000000000</RequestId>'  # noqa: W291
+                            '</ResponseMetadata>'  # noqa: W291
                         '</SendMessageResponse>'
                     ).format(
-                        message_attributes_hash=hashlib.md5(data).hexdigest(),
+                        message_attr_hash=hashlib.md5(data).hexdigest(),
                         message_body_hash=hashlib.md5(message_body).hexdigest(),
                         message_id=str(uuid.uuid4()),
                     )
