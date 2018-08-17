@@ -223,7 +223,7 @@ def process_sqs_message(message_body, queue_name):
             event = {'Records': [{
                 'body': message_body,
                 'receiptHandle': 'MessageReceiptHandle',
-                'md5OfBody': hashlib.md5(message_body).hexdigest(),
+                'md5OfBody': hashlib.md5(message_body.encode('utf-8')).hexdigest(),
                 'eventSourceARN': queue_arn,
                 'eventSource': 'aws:sqs',
                 'awsRegion': aws_stack.get_local_region(),
