@@ -1,13 +1,12 @@
 import re
 import uuid
 import xmltodict
-import hashlib
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
 from requests.models import Request, Response
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, md5
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -46,8 +45,8 @@ class ProxyListenerSQS(ProxyListener):
                             '</ResponseMetadata>'  # noqa: W291
                         '</SendMessageResponse>'
                     ).format(
-                        message_attr_hash=hashlib.md5(data.encode('utf-8')).hexdigest(),
-                        message_body_hash=hashlib.md5(message_body.encode('utf-8')).hexdigest(),
+                        message_attr_hash=md5(data),
+                        message_body_hash=md5(message_body),
                         message_id=str(uuid.uuid4()),
                     )
                     new_response.status_code = 200

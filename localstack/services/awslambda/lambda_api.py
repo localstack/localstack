@@ -11,7 +11,6 @@ import base64
 import threading
 import imp
 import re
-import hashlib
 from io import BytesIO
 from datetime import datetime
 from six import iteritems
@@ -30,7 +29,8 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_GOLANG)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-    mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
+    mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
+    md5)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -223,7 +223,7 @@ def process_sqs_message(message_body, queue_name):
             event = {'Records': [{
                 'body': message_body,
                 'receiptHandle': 'MessageReceiptHandle',
-                'md5OfBody': hashlib.md5(message_body.encode('utf-8')).hexdigest(),
+                'md5OfBody': md5(message_body),
                 'eventSourceARN': queue_arn,
                 'eventSource': 'aws:sqs',
                 'awsRegion': aws_stack.get_local_region(),
