@@ -46,8 +46,8 @@ class ProxyListenerSQS(ProxyListener):
                             '</ResponseMetadata>'  # noqa: W291
                         '</SendMessageResponse>'
                     ).format(
-                        message_attr_hash=hashlib.md5(data).hexdigest(),
-                        message_body_hash=hashlib.md5(message_body).hexdigest(),
+                        message_attr_hash=hashlib.md5(data.encode('utf-8')).hexdigest(),
+                        message_body_hash=hashlib.md5(message_body.encode('utf-8')).hexdigest(),
                         message_id=str(uuid.uuid4()),
                     )
                     new_response.status_code = 200
