@@ -30,7 +30,7 @@ public class S3EventParser {
 
         Map<String, Object> obj = (Map<String, Object>) get(s3, "object");
         String key = (String) get(obj,"key");
-        Long size = ((Number) get(obj,"size")).longValue();    // can't seem to get over to Long
+        Long size = ((Number) get(obj,"size")).longValue();
         String eTag = (String) get(obj,"eTag");
         String versionId = (String) get(obj,"versionId");
         String sequencer = (String) get(obj,"sequencer");
