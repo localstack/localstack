@@ -1,6 +1,7 @@
 package cloud.localstack;
 
 import cloud.localstack.lambda.DDBEventParser;
+import cloud.localstack.lambda.S3EventParser;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
@@ -91,8 +92,12 @@ public class LambdaExecutor {
 
 				inputObject = DDBEventParser.parse(records);
 
+			} else if (records.stream().anyMatch(record -> record.containsKey("s3"))) {
+
+				inputObject = S3EventParser.parse(records);
+
 			}
-			//TODO: Support other events (S3, SQS...)
+			//TODO: Support other events (SQS...)
 		}
 
 		Context ctx = new LambdaContext();
