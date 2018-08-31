@@ -15,6 +15,21 @@ from localstack.services.generic_proxy import ProxyListener
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
 
+SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = (
+    '<?xml version="1.0"?>'  # noqa: W291
+    '<SendMessageResponse xmlns="' + XMLNS_SQS + '">'  # noqa: W291
+        '<SendMessageResult>'  # noqa: W291
+            '<MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>'  # noqa: W291
+            '<MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>'  # noqa: W291
+            '<MessageId>{message_id}</MessageId>'  # noqa: W291
+        '</SendMessageResult>'  # noqa: W291
+        '<ResponseMetadata>'  # noqa: W291
+            '<RequestId>00000000-0000-0000-0000-000000000000</RequestId>'  # noqa: W291
+        '</ResponseMetadata>'  # noqa: W291
+    '</SendMessageResponse>'  # noqa: W291
+)
+
+
 class ProxyListenerSQS(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
@@ -32,19 +47,7 @@ class ProxyListenerSQS(ProxyListener):
                 if lambda_api.process_sqs_message(message_body, queue_name):
                     # If an lambda was listening, do not add the message to the queue
                     new_response = Response()
-                    new_response._content = (
-                        '<?xml version="1.0"?>'
-                        '<SendMessageResponse xmlns="http://queue.amazonaws.com/doc/2012-11-05/">'
-                            '<SendMessageResult>'  # noqa: W291
-                                '<MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>'  # noqa: W291
-                                '<MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>'  # noqa: W291
-                                '<MessageId>{message_id}</MessageId>'  # noqa: W291
-                            '</SendMessageResult>'  # noqa: W291
-                            '<ResponseMetadata>'  # noqa: W291
-                                '<RequestId>00000000-0000-0000-0000-000000000000</RequestId>'  # noqa: W291
-                            '</ResponseMetadata>'  # noqa: W291
-                        '</SendMessageResponse>'
-                    ).format(
+                    new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
                         message_attr_hash=md5(data),
                         message_body_hash=md5(message_body),
                         message_id=str(uuid.uuid4()),
