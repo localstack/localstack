@@ -62,12 +62,6 @@ missing functionality on top of them:
 * **Error injection:** *LocalStack* allows to inject errors frequently occurring in real Cloud environments,
   for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
   read/write throughput is exceeded.
-* **Actual HTTP REST services**: All services in *LocalStack* allow actual HTTP connections on a TCP port. In contrast,
-  moto uses boto client proxies that are injected into all methods annotated with `@mock_sqs`. These client proxies
-  do not perform an actual REST call, but rather call a local mock service method that lives in the same process as
-  the test code.
-* **Language agnostic**: Although *LocalStack* is written in Python, it works well with arbitrary programming
-  languages and environments, due to the fact that we are using the actual REST APIs via HTTP.
 * **Isolated processes**: All services in *LocalStack* run in separate processes. The overhead of additional
   processes is negligible, and the entire stack can easily be executed on any developer machine and CI server.
   In moto, components are often hard-wired in RAM (e.g., when forwarding a message on an SNS topic to an SQS queue,
