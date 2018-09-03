@@ -57,7 +57,7 @@ RUN mkdir -p /opt/code/localstack/localstack/infra && \
     wget -O /tmp/localstack.es.zip \
         https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.0.zip && \
     wget -O /tmp/elasticmq-server.jar \
-        https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.14.2.jar && \
+        https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.14.5.jar && \
     (cd localstack/infra/ && unzip -q /tmp/localstack.es.zip && \
         mv elasticsearch* elasticsearch && rm /tmp/localstack.es.zip) && \
     mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
