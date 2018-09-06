@@ -247,4 +247,4 @@ def test_s3_upload_download_gzip():
     with gzip.GzipFile(fileobj=download_file_object, mode='rb') as filestream:
         downloaded_data = filestream.read().decode('utf-8')
 
-    assert downloaded_data == data, f'{downloaded_data} != {data}'
+    assert downloaded_data == data, '{} != {}'.format(downloaded_data, data)
