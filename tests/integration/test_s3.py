@@ -1,6 +1,8 @@
+import gzip
 import os
 import json
 import requests
+from io import BytesIO
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
@@ -221,3 +223,28 @@ def test_s3_invalid_content_md5():
             raised = True
         if not raised:
             raise Exception('Invalid MD5 hash "%s" should have raised an error' % hash)
+
+
+def test_s3_upload_download_gzip():
+    bucket_name = 'test-bucket-%s' % short_uid()
+
+    s3_client = aws_stack.connect_to_service('s3')
+    s3_client.create_bucket(Bucket=bucket_name)
+
+    data = '000000000000000000000000000000'
+
+    # Write contents to memory rather than a file.
+    upload_file_object = BytesIO()
+    with gzip.GzipFile(fileobj=upload_file_object, mode='w') as filestream:
+        filestream.write(data.encode('utf-8'))
+
+    # Upload gzip
+    s3_client.put_object(Bucket=bucket_name, Key='test.gz', ContentEncoding='gzip', Body=upload_file_object.getvalue())
+
+    # Download gzip
+    downloaded_object = s3_client.get_object(Bucket=bucket_name, Key='test.gz')
+    download_file_object = BytesIO(downloaded_object['Body'].read())
+    with gzip.GzipFile(fileobj=download_file_object, mode='rb') as filestream:
+        downloaded_data = filestream.read().decode('utf-8')
+
+    assert downloaded_data == data, '{} != {}'.format(downloaded_data, data)

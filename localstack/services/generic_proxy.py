@@ -195,10 +195,13 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             if response is None:
                 if modified_request:
                     response = self.method(proxy_url, data=modified_request.data,
-                        headers=modified_request.headers)
+                        headers=modified_request.headers, stream=True)
                 else:
                     response = self.method(proxy_url, data=self.data_bytes,
-                        headers=forward_headers)
+                        headers=forward_headers, stream=True)
+                # prevent requests from processing response body
+                if not response._content_consumed and response.raw:
+                    response._content = response.raw.read()
             # update listener (post-invocation)
             if self.proxy.update_listener:
                 kwargs = {
@@ -256,6 +259,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     print('ERROR: %s' % error_msg)
             self.send_response(502)  # bad gateway
             self.end_headers()
+        finally:
+            # force close connection
+            self.close_connection = 1
 
     def log_message(self, format, *args):
         return
