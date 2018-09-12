@@ -20,6 +20,7 @@ TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
 TEST_TABLE_NAME = 'test_stream_table'
 TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
 TEST_LAMBDA_NAME_STREAM = 'test_lambda_stream'
+TEST_LAMBDA_NAME_QUEUE = 'test_lambda_queue'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_TOPIC_NAME = 'test_topic'
@@ -114,14 +115,14 @@ def test_firehose_kinesis_to_s3():
     testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
 
-def test_kinesis_lambda_sns_ddb_streams():
-
+def test_kinesis_lambda_sns_ddb_sqs_streams():
     ddb_lease_table_suffix = '-kclapp'
     dynamodb = aws_stack.connect_to_resource('dynamodb')
     dynamodb_service = aws_stack.connect_to_service('dynamodb')
     dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
     kinesis = aws_stack.connect_to_service('kinesis')
     sns = aws_stack.connect_to_service('sns')
+    sqs = aws_stack.connect_to_service('sqs')
 
     LOGGER.info('Creating test streams...')
     run_safe(lambda: dynamodb_service.delete_table(
@@ -165,6 +166,11 @@ def test_kinesis_lambda_sns_ddb_streams():
         StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM,
         zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
+
+    # deploy test lambda connected to SQS queue
+    sqs_queue_info = testutil.create_sqs_queue(TEST_LAMBDA_NAME_QUEUE)
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_QUEUE,
+        zip_file=zip_file, event_source_arn=sqs_queue_info['QueueArn'], runtime=LAMBDA_RUNTIME_PYTHON27)
 
     # set number of items to update/put to table
     num_events_ddb = 15
@@ -231,10 +237,15 @@ def test_kinesis_lambda_sns_ddb_streams():
         shard_id='shardId-000000000000', count=10)
     assert len(latest) == 10
 
+    # send messages to SQS queue
+    num_events_sqs = 4
+    for i in range(num_events_sqs):
+        sqs.send_message(QueueUrl=sqs_queue_info['QueueUrl'], MessageBody=str(i))
+
     LOGGER.info('Waiting some time before finishing test.')
     time.sleep(2)
 
-    num_events = num_events_ddb + num_events_kinesis + num_events_sns
+    num_events = num_events_ddb + num_events_kinesis + num_events_sns + num_events_sqs
 
     def check_events():
         if len(EVENTS) != num_events:
@@ -259,6 +270,8 @@ def test_kinesis_lambda_sns_ddb_streams():
     assert len(stats2['Datapoints']) == 1
     stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)
     assert len(stats3['Datapoints']) == num_events_ddb
+    stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_QUEUE)
+    assert len(stats3['Datapoints']) == num_events_sqs
 
 
 def test_kinesis_lambda_forward_chain():

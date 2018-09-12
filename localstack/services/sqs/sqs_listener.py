@@ -6,12 +6,28 @@ from six.moves.urllib.parse import urlencode
 from requests.models import Request, Response
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, md5
 from localstack.utils.analytics import event_publisher
+from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
+
+
+SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = (
+    '<?xml version="1.0"?>'  # noqa: W291
+    '<SendMessageResponse xmlns="' + XMLNS_SQS + '">'  # noqa: W291
+        '<SendMessageResult>'  # noqa: W291
+            '<MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>'  # noqa: W291
+            '<MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>'  # noqa: W291
+            '<MessageId>{message_id}</MessageId>'  # noqa: W291
+        '</SendMessageResult>'  # noqa: W291
+        '<ResponseMetadata>'  # noqa: W291
+            '<RequestId>00000000-0000-0000-0000-000000000000</RequestId>'  # noqa: W291
+        '</ResponseMetadata>'  # noqa: W291
+    '</SendMessageResponse>'  # noqa: W291
+)
 
 
 class ProxyListenerSQS(ProxyListener):
@@ -24,6 +40,20 @@ class ProxyListenerSQS(ProxyListener):
                 encoded_data = urlencode(req_data, doseq=True)
                 request = Request(data=encoded_data, headers=headers, method=method)
                 return request
+            elif req_data.get('Action', [None])[0] == 'SendMessage':
+                queue_url = req_data.get('QueueUrl', [None])[0]
+                queue_name = queue_url[queue_url.rindex('/') + 1:]
+                message_body = req_data.get('MessageBody', [None])[0]
+                if lambda_api.process_sqs_message(message_body, queue_name):
+                    # If an lambda was listening, do not add the message to the queue
+                    new_response = Response()
+                    new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
+                        message_attr_hash=md5(data),
+                        message_body_hash=md5(message_body),
+                        message_id=str(uuid.uuid4()),
+                    )
+                    new_response.status_code = 200
+                    return new_response
 
         return True
 

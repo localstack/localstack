@@ -279,7 +279,8 @@ def s3_bucket_arn(bucket_name, account_id=None):
 
 def sqs_queue_arn(queue_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ('arn:aws:sqs:%s:%s:%s' % (get_local_region(), account_id, queue_name))
+    # ElasticMQ sets a static region of "elasticmq"
+    return ('arn:aws:sqs:elasticmq:%s:%s' % (account_id, queue_name))
 
 
 def sns_topic_arn(topic_name, account_id=None):

@@ -94,6 +94,10 @@ def deserialize_event(event):
         assert kinesis['sequenceNumber']
         kinesis['data'] = json.loads(to_str(base64.b64decode(kinesis['data'])))
         return kinesis
+    sqs = event.get('sqs')
+    if sqs:
+        result = {'data': event['body']}
+        return result
     return event.get('Sns')
 
 

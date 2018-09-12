@@ -29,7 +29,8 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_GOLANG)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-    mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
+    mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
+    md5)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -210,6 +211,36 @@ def process_kinesis_records(records, stream_name):
             run_lambda(event=event, context={}, func_arn=arn)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
+
+
+def process_sqs_message(message_body, queue_name):
+    # feed message into the first listening lambda
+    try:
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        source = next(iter(get_event_sources(source_arn=queue_arn)), None)
+        if source:
+            arn = source['FunctionArn']
+            event = {'Records': [{
+                'body': message_body,
+                'receiptHandle': 'MessageReceiptHandle',
+                'md5OfBody': md5(message_body),
+                'eventSourceARN': queue_arn,
+                'eventSource': 'aws:sqs',
+                'awsRegion': aws_stack.get_local_region(),
+                'messageId': str(uuid.uuid4()),
+                'attributes': {
+                    'ApproximateFirstReceiveTimestamp': '{}000'.format(int(time.time())),
+                    'SenderId': '123456789012',
+                    'ApproximateReceiveCount': '1',
+                    'SentTimestamp': '{}000'.format(int(time.time()))
+                },
+                'messageAttributes': {},
+                'sqs': True,
+            }]}
+            run_lambda(event=event, context={}, func_arn=arn)
+            return True
+    except Exception as e:
+        LOG.warning('Unable to run Lambda function on SQS messages: %s %s' % (e, traceback.format_exc()))
 
 
 def get_event_sources(func_name=None, source_arn=None):
