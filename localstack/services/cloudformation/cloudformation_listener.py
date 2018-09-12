@@ -180,7 +180,7 @@ class ProxyListenerCloudFormation(ProxyListener):
                         try:
                             cloudformation_client.describe_stacks(StackName=stack_name)
                         except Exception:
-                            return error_response('Stack with id %s does not exist' % stack_name, code=404)
+                            return error_response('Stack with name %s does not exist' % stack_name, code=404)
             if action == 'DescribeStackResource':
                 if response.status_code >= 500:
                     # fix an error in moto where it fails with 500 if the stack does not exist
@@ -201,7 +201,7 @@ class ProxyListenerCloudFormation(ProxyListener):
                                 queue_url = sqs_client.get_queue_url(QueueName=queue_name)['QueueUrl']
                             except Exception:
                                 stack_name = req_data.get('StackName')[0]
-                                return error_response('Stack with id %s does not exist' % stack_name, code=404)
+                                return error_response('Stack with name %s does not exist' % stack_name, code=404)
                             content_str = re.sub(resource['PhysicalResourceId'], queue_url, content_str)
                     new_response._content = content_str
                     if content_str_original != new_response._content:
