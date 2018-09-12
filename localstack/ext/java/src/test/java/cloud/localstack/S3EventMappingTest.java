@@ -27,7 +27,7 @@ public class S3EventMappingTest {
         List<Map<String,Object>> records = (List<Map<String, Object>>) get(map, "Records");
 
         S3Event s3Event = S3EventParser.parse(records);
-        S3EventNotification.S3EventNotificationRecord record = s3Event.getRecords().iterator().next();
+        S3EventNotification.S3EventNotificationRecord record = s3Event.getRecords().get(0);
 
         Assert.assertTrue("eventVersion match", record.getEventVersion().contains("2.0"));
         Assert.assertTrue("eventTime match", record.getEventTime().toString().equals("2018-08-23T21:41:36.511Z"));
