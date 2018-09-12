@@ -448,7 +448,7 @@ class ProxyListenerS3(ProxyListener):
         query = parsed.query
         path = parsed.path
         bucket = path.split('/')[1]
-        query_map = urlparse.parse_qs(query)
+        query_map = urlparse.parse_qs(query, keep_blank_values=True)
         if query == 'notification' or 'notification' in query_map:
             # handle and return response for ?notification request
             response = handle_notification_request(bucket, method, data)
