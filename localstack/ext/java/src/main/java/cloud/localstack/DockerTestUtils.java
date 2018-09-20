@@ -23,6 +23,8 @@ import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.secretsmanager.AWSSecretsManager;
+import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -56,6 +58,12 @@ public class DockerTestUtils {
                 .withCredentials(getCredentialsProvider());
         builder.setPathStyleAccessEnabled(true);
         return builder.build();
+    }
+
+    public static AWSSecretsManager getClientSecretsManager() {
+        return AWSSecretsManagerClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointSecretsmanager))
+                .withCredentials(getCredentialsProvider()).build();
     }
 
     public static AmazonKinesis getClientKinesis() {

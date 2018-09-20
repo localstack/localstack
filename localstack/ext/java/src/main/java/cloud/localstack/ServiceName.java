@@ -18,4 +18,5 @@ public class ServiceName {
     public static final String CLOUDFORMATION = "cloudformation";
     public static final String CLOUDWATCH = "cloudwatch";
     public static final String SSM = "ssm";
+    public static final String SECRETSMANAGER = "secretsmanager";
 }

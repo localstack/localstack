@@ -170,6 +170,10 @@ public class LocalstackDocker {
     public String getEndpointSSM() {
         return endpointForService(ServiceName.SSM);
     }
+    
+    public String getEndpointSecretsmanager() {
+        return endpointForService(ServiceName.SECRETSMANAGER);
+    }
 
     public String endpointForService(String serviceName) {
         if (serviceToPortMap == null) {

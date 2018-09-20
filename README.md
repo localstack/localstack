@@ -45,6 +45,7 @@ any longer.
 * **CloudFormation** at http://localhost:4581
 * **CloudWatch** at http://localhost:4582
 * **SSM** at http://localhost:4583
+* **SecretsManager** at http://localhost:4584
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
@@ -293,7 +294,7 @@ Simply add the following dependency to your `pom.xml` file:
 <dependency>
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
-    <version>0.1.14</version>
+    <version>0.1.15</version>
 </dependency>
 ```
 

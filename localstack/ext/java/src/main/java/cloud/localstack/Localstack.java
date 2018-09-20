@@ -130,6 +130,10 @@ public class Localstack {
         return ensureInstallationAndGetEndpoint(ServiceName.SSM);
     }
 
+    public static String getEndpointSecretsmanager() {
+        return ensureInstallationAndGetEndpoint(ServiceName.SECRETSMANAGER);
+    }
+
     /* UTILITY METHODS */
 
     private static void ensureInstallation() {
