@@ -31,6 +31,7 @@ def handler(event, context):
         except Exception:
             body = {}
         body['pathParameters'] = event.get('pathParameters')
+        body['queryStringParameters'] = event.get('queryStringParameters')
         body['httpMethod'] = event.get('httpMethod')
         return {
             'body': body,

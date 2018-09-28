@@ -34,6 +34,7 @@ APIGATEWAY_DATA_INBOUND_TEMPLATE = """{
 API_PATH_DATA_INBOUND = '/data'
 API_PATH_HTTP_BACKEND = '/hello_world'
 API_PATH_LAMBDA_PROXY_BACKEND = '/lambda/{test_param1}'
+
 API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD = '/lambda-any-method/{test_param1}'
 # name of Kinesis stream connected to API Gateway
 TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
@@ -180,6 +181,8 @@ def test_api_gateway_lambda_proxy_integration():
 
     # make test request to gateway and check response
     path = API_PATH_LAMBDA_PROXY_BACKEND.replace('{test_param1}', 'foo1')
+    path = path + '?foo=foo&bar=bar&bar=baz'
+
     url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=result['id'], stage_name=TEST_STAGE_NAME, path=path)
     data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
     result = requests.post(url, data=json.dumps(data))
@@ -189,6 +192,7 @@ def test_api_gateway_lambda_proxy_integration():
     assert parsed_body.get('return_status_code') == 203
     assert parsed_body.get('return_headers') == {'foo': 'bar123'}
     assert parsed_body.get('pathParameters') == {'test_param1': 'foo1'}
+    assert parsed_body.get('queryStringParameters') == {'foo': 'foo', 'bar': ['bar', 'baz']}
     result = requests.delete(url, data=json.dumps(data))
     assert result.status_code == 404
 
