@@ -1,7 +1,7 @@
 import os
 import re
-import boto3
 import json
+import boto3
 import base64
 import logging
 from six import iteritems
@@ -200,6 +200,22 @@ def render_velocity_template(template, context, as_json=False):
     if as_json:
         replaced = json.loads(replaced)
     return replaced
+
+
+def check_valid_region(headers):
+    """ Check whether a valid region is provided, and if not then raise an Exception. """
+    auth_header = headers.get('Authorization')
+    if not auth_header:
+        raise Exception('Unable to find "Authorization" header in request')
+    replaced = re.sub(r'.*Credential=([^,]+),.*', r'\1', auth_header)
+    if auth_header == replaced:
+        raise Exception('Unable to find "Credential" section in "Authorization" header')
+    # Format is: <your-access-key-id>/<date>/<aws-region>/<aws-service>/aws4_request
+    # See https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html
+    parts = replaced.split('/')
+    region = parts[2]
+    if region not in config.VALID_REGIONS:
+        raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
 
 
 def get_s3_client():
