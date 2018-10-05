@@ -6,6 +6,7 @@ import tempfile
 import logging
 from os.path import expanduser
 from six import iteritems
+from boto3 import Session
 from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI
 
 # randomly inject faults to Kinesis
@@ -81,8 +82,8 @@ def in_docker():
 # determine route to Docker host from container
 DOCKER_BRIDGE_IP = '172.17.0.1'
 try:
-    DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('docker.for.mac.localhost')
-    # update LOCALSTACK_HOSTNAME if docker.for.mac.localhost is available
+    DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
+    # update LOCALSTACK_HOSTNAME if host.docker.internal is available
     if in_docker() and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
         LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
@@ -117,6 +118,8 @@ else:
 # additional CLI commands, can be set by plugins
 CLI_COMMANDS = {}
 
+# set of valid regions
+VALID_REGIONS = set(Session().get_available_regions('sns'))
 
 def parse_service_ports():
     """ Parses the environment variable $SERVICE_PORTS with a comma-separated list of services

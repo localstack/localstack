@@ -1,10 +1,10 @@
 {
   "name": "ai-aws-manager",
-  "author": "Waldemar Hummer, Atlassian <whummer@atlassian.com>",
+  "author": "Waldemar Hummer <waldemar.hummer@gmail.com>",
   "description": "Web app and API to manage AWS resources.",
   "version": "0.0.1",
   "dependencies": {
-    "bootstrap": "3.3.7",
+    "bootstrap": "4.1.2",
     "swagger-client": "2.1.32",
     "jquery": "~> 3.0.0",
     "angular-tablesort": "1.1.2",
