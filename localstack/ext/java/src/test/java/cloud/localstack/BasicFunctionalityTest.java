@@ -64,10 +64,11 @@ public class BasicFunctionalityTest {
         AmazonKinesis kinesis = TestUtils.getClientKinesis();
         ListStreamsResult streams = kinesis.listStreams();
         Assertions.assertThat(streams.getStreamNames()).isNotNull();
-        String streamName = "testStreamJUnit";
+        String streamName = UUID.randomUUID().toString();
         kinesis.createStream(streamName, 1);
         // sleep required because of kinesalite
         Thread.sleep(500);
+        // put record to stream
         PutRecordRequest req = new PutRecordRequest();
         req.setPartitionKey("foobar-key");
         req.setData(ByteBuffer.wrap("{}".getBytes()));
@@ -75,6 +76,8 @@ public class BasicFunctionalityTest {
         kinesis.putRecord(req);
         final ByteBuffer data = ByteBuffer.wrap("{\"test\":\"test\"}".getBytes());
         kinesis.putRecord(streamName, data, "partition-key");
+        // clean up
+        kinesis.deleteStream(streamName);
     }
 
     @org.junit.Test
