@@ -11,6 +11,8 @@ import com.amazonaws.services.lambda.AWSLambda;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.secretsmanager.AWSSecretsManager;
+import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
@@ -57,6 +59,12 @@ public class TestUtils {
         return builder.build();
     }
 
+    public static AWSSecretsManager getClientSecretsManager() {
+        return AWSSecretsManagerClientBuilder.standard().
+                withEndpointConfiguration(getEndpointConfigurationSecretsManager()).
+                withCredentials(getCredentialsProvider()).build();
+    }
+
     public static AmazonKinesis getClientKinesis() {
         return AmazonKinesisClientBuilder.standard().
                 withEndpointConfiguration(getEndpointConfigurationKinesis()).
@@ -81,6 +89,10 @@ public class TestUtils {
 
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationS3() {
         return getEndpointConfiguration(Localstack.getEndpointS3());
+    }
+
+    protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationSecretsManager() {
+        return getEndpointConfiguration(Localstack.getEndpointSecretsmanager());
     }
 
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfiguration(String endpointURL) {

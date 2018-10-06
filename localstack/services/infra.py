@@ -17,7 +17,7 @@ from localstack.constants import (ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDE
 from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
     PORT_FIREHOSE, PORT_LAMBDA, PORT_SNS, PORT_REDSHIFT, PORT_CLOUDWATCH,
     PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_CLOUDFORMATION, PORT_APIGATEWAY,
-    PORT_SSM)
+    PORT_SSM, PORT_SECRETSMANAGER)
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
     TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir)
@@ -191,6 +191,10 @@ def start_lambda(port=PORT_LAMBDA, asynchronous=False):
 
 def start_ssm(port=PORT_SSM, asynchronous=False):
     return start_moto_server('ssm', port, name='SSM', asynchronous=asynchronous)
+
+
+def start_secretsmanager(port=PORT_SECRETSMANAGER, asynchronous=False):
+    return start_moto_server('secretsmanager', port, name='Secrets Manager', asynchronous=asynchronous)
 
 
 # ---------------

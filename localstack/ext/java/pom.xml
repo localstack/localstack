@@ -5,7 +5,7 @@
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.14</version>
+    <version>0.1.15</version>
     <name>localstack-utils</name>
 
     <description>Java utilities for the LocalStack platform.</description>
