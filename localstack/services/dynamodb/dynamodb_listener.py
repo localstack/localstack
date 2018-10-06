@@ -123,7 +123,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                 return
             record['eventName'] = 'MODIFY'
             record['dynamodb']['Keys'] = data['Key']
-            record['dynamodb']['OldImage'] = ProxyListenerDynamoDB.thread_local.existing_item
+            record['dynamodb']['OldImage'] = self._thread_local('existing_item')
             record['dynamodb']['NewImage'] = updated_item
             record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
@@ -142,7 +142,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                         new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                         records.append(new_record)
         elif action == '%s.PutItem' % ACTION_PREFIX:
-            existing_item = ProxyListenerDynamoDB.thread_local.existing_item
+            existing_item = self._thread_local('existing_item')
             ProxyListenerDynamoDB.thread_local.existing_item = None
             record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
             keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
@@ -164,7 +164,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     response._content = json.dumps(content)
                     fix_headers_for_updated_response(response)
         elif action == '%s.DeleteItem' % ACTION_PREFIX:
-            old_item = ProxyListenerDynamoDB.thread_local.existing_item
+            old_item = self._thread_local('existing_item')
             record['eventName'] = 'REMOVE'
             record['dynamodb']['Keys'] = data['Key']
             record['dynamodb']['OldImage'] = old_item
@@ -191,6 +191,12 @@ class ProxyListenerDynamoDB(ProxyListener):
                 records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
             forward_to_lambda(records)
             forward_to_ddb_stream(records)
+
+    def _thread_local(self, name):
+        try:
+            return getattr(ProxyListenerDynamoDB.thread_local, name)
+        except AttributeError:
+            return None
 
 
 # instantiate listener

@@ -1,16 +1,17 @@
 from __future__ import print_function
 
+import re
 import os
+import imp
 import sys
 import json
 import uuid
 import time
-import traceback
-import logging
 import base64
+import logging
+import zipfile
 import threading
-import imp
-import re
+import traceback
 from io import BytesIO
 from datetime import datetime
 from six import iteritems
@@ -30,7 +31,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_GOLANG)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5)
+    md5, new_tmp_file)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -398,12 +399,22 @@ def get_java_handler(zip_file_content, handler, main_file):
     :type zip_file_content: bytes
     :param zip_file_content: ZIP file bytes.
     :type handler: str
-    :param handler: THe lambda handler path.
+    :param handler: The lambda handler path.
     :type main_file: str
     :param main_file: Filepath to the uploaded ZIP or JAR file.
 
     :returns: function or flask.Response
     """
+    if not is_jar_archive(zip_file_content):
+        with zipfile.ZipFile(BytesIO(zip_file_content)) as zip_ref:
+            jar_entries = [e for e in zip_ref.infolist() if e.filename.endswith('.jar')]
+            if len(jar_entries) != 1:
+                raise Exception('Expected exactly one *.jar entry in zip file, found %s' % len(jar_entries))
+            zip_file_content = zip_ref.read(jar_entries[0].filename)
+            LOG.info('Found jar file %s with %s bytes in Lambda zip archive' %
+                     (jar_entries[0].filename, len(zip_file_content)))
+            main_file = new_tmp_file()
+            save_file(main_file, zip_file_content)
     if is_jar_archive(zip_file_content):
         def execute(event, context):
             result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
@@ -411,7 +422,7 @@ def get_java_handler(zip_file_content, handler, main_file):
             return result
         return execute
     return error_response(
-        'ZIP file for the java8 runtime not yet supported.', 400, error_type='ValidationError')
+        'Unable to extract Java Lambda handler - file is not a valid zip/jar files', 400, error_type='ValidationError')
 
 
 def set_function_code(code, lambda_name):
