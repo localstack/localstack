@@ -3,6 +3,7 @@ import logging
 import json
 import requests
 import dateutil.parser
+from six.moves.urllib import parse as urlparse
 from requests.models import Response
 from flask import Response as FlaskResponse
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
@@ -13,11 +14,6 @@ from localstack.utils.common import to_str, to_bytes
 from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.generic_proxy import ProxyListener
-
-try:
-    from urllib.parse import urlparse, parse_qs
-except ImportError:
-    from urlparse import urlparse, parse_qs
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -127,9 +123,9 @@ def extract_path_params(path, extracted_path):
 
 
 def extract_query_string_params(path):
-    parsed_path = urlparse(path)
+    parsed_path = urlparse.urlparse(path)
     path = parsed_path.path
-    parsed_query_string_params = parse_qs(parsed_path.query)
+    parsed_query_string_params = urlparse.parse_qs(parsed_path.query)
 
     query_string_params = {}
     for query_param_name, query_param_values in parsed_query_string_params.items():
