@@ -133,7 +133,7 @@ def extract_query_string_params(path):
 
     query_string_params = {}
     for query_param_name, query_param_values in parsed_query_string_params.items():
-        if len(query_param_values) <= 1:
+        if len(query_param_values) == 1:
             query_string_params[query_param_name] = query_param_values[0]
         else:
             query_string_params[query_param_name] = query_param_values
