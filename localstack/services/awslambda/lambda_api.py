@@ -156,7 +156,7 @@ def use_docker():
 
 
 def process_apigateway_invocation(func_arn, path, payload, headers={},
-        resource_path=None, method=None, path_params={}):
+        resource_path=None, method=None, path_params={}, query_string_params={}):
     try:
         resource_path = resource_path or path
         event = {
@@ -167,7 +167,7 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
             'isBase64Encoded': False,
             'resource': resource_path,
             'httpMethod': method,
-            'queryStringParameters': {},  # TODO
+            'queryStringParameters': query_string_params,
             'stageVariables': {}  # TODO
         }
         return run_lambda(event=event, context={}, func_arn=func_arn)

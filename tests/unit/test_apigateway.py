@@ -4,6 +4,13 @@ from localstack.services.apigateway import apigateway_listener
 
 class ApiGatewayPathsTest (unittest.TestCase):
 
+    def test_extract_query_params(self):
+        path, query_params = apigateway_listener.extract_query_string_params(
+            '/foo/bar?foo=foo&bar=bar&bar=baz'
+        )
+        self.assertEqual(path, '/foo/bar')
+        self.assertEqual(query_params, {'foo': 'foo', 'bar': ['bar', 'baz']})
+
     def test_extract_path_params(self):
         params = apigateway_listener.extract_path_params('/foo/bar', '/foo/{param1}')
         self.assertEqual(params, {'param1': 'bar'})
