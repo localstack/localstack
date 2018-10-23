@@ -130,7 +130,7 @@ class SNSTests(unittest.TestCase):
             'MessageAttributes.entry.1.Value.StringValue': ['value1'],
             'MessageAttributes.entry.2.Name': ['attr2'],
             'MessageAttributes.entry.2.Value.DataType': ['Binary'],
-            'MessageAttributes.entry.2.Value.BinaryValue': [bytes('value2')],
+            'MessageAttributes.entry.2.Value.BinaryValue': ['value2'.encode('utf-8')],
             'MessageAttributes.entry.3.Name': ['attr3'],
             'MessageAttributes.entry.3.Value.DataType': ['Number'],
             'MessageAttributes.entry.3.Value.StringValue': ['value3'],
@@ -142,7 +142,7 @@ class SNSTests(unittest.TestCase):
         assert (result['attr1']['DataType'] == 'String')
         assert (result['attr1']['StringValue'] == 'value1')
         assert (result['attr2']['DataType'] == 'Binary')
-        assert (result['attr2']['BinaryValue'] == bytes('value2'))
+        assert (result['attr2']['BinaryValue'] == 'value2'.encode('utf-8'))
         assert (result['attr3']['DataType'] == 'Number')
         assert (result['attr3']['StringValue'] == 'value3')
 
