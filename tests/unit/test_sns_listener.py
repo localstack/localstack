@@ -120,6 +120,32 @@ class SNSTests(unittest.TestCase):
 
         assert (result['Message'] == 'sqs message')
 
+    def test_create_sqs_message_attributes(self):
+        self.subscriber['RawMessageDelivery'] = 'true'
+        action = {
+            'Message': ['msg'],
+            'Subject': ['subject'],
+            'MessageAttributes.entry.1.Name': ['attr1'],
+            'MessageAttributes.entry.1.Value.DataType': ['String'],
+            'MessageAttributes.entry.1.Value.StringValue': ['value1'],
+            'MessageAttributes.entry.2.Name': ['attr2'],
+            'MessageAttributes.entry.2.Value.DataType': ['Binary'],
+            'MessageAttributes.entry.2.Value.BinaryValue': [bytes('value2')],
+            'MessageAttributes.entry.3.Name': ['attr3'],
+            'MessageAttributes.entry.3.Value.DataType': ['Number'],
+            'MessageAttributes.entry.3.Value.StringValue': ['value3'],
+        }
+
+        attributes = sns_listener.get_message_attributes(action)
+        result = sns_listener.create_sqs_message_attributes(self.subscriber, attributes)
+
+        assert (result['attr1']['DataType'] == 'String')
+        assert (result['attr1']['StringValue'] == 'value1')
+        assert (result['attr2']['DataType'] == 'Binary')
+        assert (result['attr2']['BinaryValue'] == bytes('value2'))
+        assert (result['attr3']['DataType'] == 'Number')
+        assert (result['attr3']['StringValue'] == 'value3')
+
 
 def test_filter_policy():
     test_data = [

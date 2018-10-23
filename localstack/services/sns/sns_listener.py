@@ -82,7 +82,8 @@ class ProxyListenerSNS(ProxyListener):
                             try:
                                 sqs_client.send_message(
                                     QueueUrl=queue_url,
-                                    MessageBody=create_sns_message_body(subscriber, req_data)
+                                    MessageBody=create_sns_message_body(subscriber, req_data),
+                                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
                                 )
                             except Exception as exc:
                                 return make_error(message=str(exc), code=400)
@@ -224,6 +225,23 @@ def create_sns_message_body(subscriber, req_data):
     if attributes:
         data['MessageAttributes'] = attributes
     return json.dumps(data)
+
+
+def create_sqs_message_attributes(subscriber, attributes):
+    if subscriber['RawMessageDelivery'] == 'false':
+        return {}
+
+    message_attributes = {}
+    for key, value in attributes.items():
+        attribute = {}
+        attribute['DataType'] = value['Type']
+        if value['Type'] == 'Binary':
+            attribute['BinaryValue'] = value['Value']
+        else:
+            attribute['StringValue'] = value['Value']
+        message_attributes[key] = attribute
+
+    return message_attributes
 
 
 def get_message_attributes(req_data):
