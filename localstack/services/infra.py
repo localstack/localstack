@@ -98,7 +98,7 @@ def load_plugin_from_path(file_path, scope=None):
             namespace = {}
             exec('from %s.plugins import %s' % (module, method_name), namespace)
             method_to_execute = namespace[method_name]
-        except Exception as e:
+        except Exception:
             return
         try:
             return method_to_execute()
@@ -495,7 +495,7 @@ def start_infra(asynchronous=False, apis=None):
             while True:
                 time.sleep(1)
         return thread
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         print('Shutdown')
     except Exception as e:
         print('Error starting infrastructure: %s %s' % (e, traceback.format_exc()))

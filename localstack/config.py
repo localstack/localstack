@@ -58,7 +58,7 @@ if not LAMBDA_EXECUTOR:
     try:
         if 'Linux' in subprocess.check_output('uname -a'):
             LAMBDA_EXECUTOR = 'docker'
-    except Exception as e:
+    except Exception:
         pass
 
 # list of environment variable names used for configuration.
@@ -72,12 +72,14 @@ for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     if os.environ.get(backend_override_var):
         CONFIG_ENV_VARS.append(backend_override_var)
 
+
 def in_docker():
     """ Returns: True if running in a docker container, else False """
     if not os.path.exists('/proc/1/cgroup'):
         return False
     with open('/proc/1/cgroup', 'rt') as ifh:
         return 'docker' in ifh.read()
+
 
 # determine route to Docker host from container
 DOCKER_BRIDGE_IP = '172.17.0.1'
@@ -94,14 +96,14 @@ if in_docker() and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
     LAMBDA_REMOTE_DOCKER = True
 
 # local config file path in home directory
-CONFIG_FILE_PATH = os.path.join(expanduser("~"), '.localstack')
+CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
 
 # create folders
 for folder in [DATA_DIR, TMP_FOLDER]:
     if folder and not os.path.exists(folder):
         try:
             os.makedirs(folder)
-        except Exception as e:
+        except Exception:
             # this can happen due to a race condition when starting
             # multiple processes in parallel. Should be safe to ignore
             pass
@@ -120,6 +122,7 @@ CLI_COMMANDS = {}
 
 # set of valid regions
 VALID_REGIONS = set(Session().get_available_regions('sns'))
+
 
 def parse_service_ports():
     """ Parses the environment variable $SERVICE_PORTS with a comma-separated list of services
@@ -173,4 +176,4 @@ if os.environ.get('DEBUG', '').lower() in ('1', 'true'):
 
 # set URL pattern of inbound API gateway
 INBOUND_GATEWAY_URL_PATTERN = ('%s/restapis/{api_id}/{stage_name}/%s{path}' %
-    (TEST_APIGATEWAY_URL, PATH_USER_REQUEST))  # flake8: noqa
+    (TEST_APIGATEWAY_URL, PATH_USER_REQUEST))  # noqa
