@@ -65,48 +65,47 @@ class ProxyListenerSNS(ProxyListener):
             elif req_action == 'Publish':
                 message = req_data['Message'][0]
                 sqs_client = aws_stack.connect_to_service('sqs')
-                if topic_arn is not None:
-                    for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
-                        filter_policy = json.loads(subscriber.get('FilterPolicy', '{}'))
-                        message_attributes = get_message_attributes(req_data)
-                        if check_filter_policy(filter_policy, message_attributes):
-                            if subscriber['Protocol'] == 'sqs':
-                                endpoint = subscriber['Endpoint']
-                                if 'sqs_queue_url' in subscriber:
-                                    queue_url = subscriber.get('sqs_queue_url')
-                                elif '://' in endpoint:
-                                    queue_url = endpoint
-                                else:
-                                    queue_name = endpoint.split(':')[5]
-                                    queue_url = aws_stack.get_sqs_queue_url(queue_name)
-                                    subscriber['sqs_queue_url'] = queue_url
-                                try:
-                                    sqs_client.send_message(
-                                        QueueUrl=queue_url,
-                                        MessageBody=create_sns_message_body(subscriber, req_data)
-                                    )
-                                except Exception as exc:
-                                    return make_error(message=str(exc), code=400)
-                            elif subscriber['Protocol'] == 'lambda':
-                                lambda_api.process_sns_notification(
-                                    subscriber['Endpoint'],
-                                    topic_arn, message, subject=req_data.get('Subject', [None])[0]
-                                )
-                            elif subscriber['Protocol'] in ['http', 'https']:
-                                try:
-                                    message_body = create_sns_message_body(subscriber, req_data)
-                                except Exception as exc:
-                                    return make_error(message=str(exc), code=400)
-                                requests.post(
-                                    subscriber['Endpoint'],
-                                    headers={
-                                        'Content-Type': 'text/plain',
-                                        'x-amz-sns-message-type': 'Notification'
-                                    },
-                                    data=message_body
-                                )
+                for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
+                    filter_policy = json.loads(subscriber.get('FilterPolicy', '{}'))
+                    message_attributes = get_message_attributes(req_data)
+                    if check_filter_policy(filter_policy, message_attributes):
+                        if subscriber['Protocol'] == 'sqs':
+                            endpoint = subscriber['Endpoint']
+                            if 'sqs_queue_url' in subscriber:
+                                queue_url = subscriber.get('sqs_queue_url')
+                            elif '://' in endpoint:
+                                queue_url = endpoint
                             else:
-                                LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
+                                queue_name = endpoint.split(':')[5]
+                                queue_url = aws_stack.get_sqs_queue_url(queue_name)
+                                subscriber['sqs_queue_url'] = queue_url
+                            try:
+                                sqs_client.send_message(
+                                    QueueUrl=queue_url,
+                                    MessageBody=create_sns_message_body(subscriber, req_data)
+                                )
+                            except Exception as exc:
+                                return make_error(message=str(exc), code=400)
+                        elif subscriber['Protocol'] == 'lambda':
+                            lambda_api.process_sns_notification(
+                                subscriber['Endpoint'],
+                                topic_arn, message, subject=req_data.get('Subject', [None])[0]
+                            )
+                        elif subscriber['Protocol'] in ['http', 'https']:
+                            try:
+                                message_body = create_sns_message_body(subscriber, req_data)
+                            except Exception as exc:
+                                return make_error(message=str(exc), code=400)
+                            requests.post(
+                                subscriber['Endpoint'],
+                                headers={
+                                    'Content-Type': 'text/plain',
+                                    'x-amz-sns-message-type': 'Notification'
+                                },
+                                data=message_body
+                            )
+                        else:
+                            LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
                 # return response here because we do not want the request to be forwarded to SNS
                 return make_response(req_action)
 
