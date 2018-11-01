@@ -136,7 +136,11 @@ class DynamoDBIntegrationTest (unittest.TestCase):
 
     def test_region_replacement(self):
         dynamodb = aws_stack.connect_to_resource('dynamodb')
-        testutil.create_dynamodb_table(TEST_DDB_TABLE_NAME_4, partition_key=PARTITION_KEY, stream_view_type='NEW_AND_OLD_IMAGES')
+        testutil.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME_4,
+            partition_key=PARTITION_KEY,
+            stream_view_type='NEW_AND_OLD_IMAGES'
+        )
 
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_4)
 
