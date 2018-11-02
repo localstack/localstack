@@ -3,6 +3,7 @@ import logging
 import json
 import requests
 import dateutil.parser
+from .helpers import get_rest_api_paths, get_resource_for_path
 from six.moves.urllib import parse as urlparse
 from requests.models import Response
 from flask import Response as FlaskResponse
@@ -95,16 +96,6 @@ def tokenize_path(path):
     return path.lstrip('/').split('/')
 
 
-def get_rest_api_paths(rest_api_id):
-    apigateway = aws_stack.connect_to_service(service_name='apigateway')
-    resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
-    resource_map = {}
-    for resource in resources['items']:
-        path = aws_stack.get_apigateway_path_for_resource(rest_api_id, resource['id'])
-        resource_map[path] = resource
-    return resource_map
-
-
 def extract_path_params(path, extracted_path):
     tokenized_extracted_path = tokenize_path(extracted_path)
     # Looks for '{' in the tokenized extracted path
@@ -135,26 +126,6 @@ def extract_query_string_params(path):
             query_string_params[query_param_name] = query_param_values
 
     return [path, query_string_params]
-
-
-def get_resource_for_path(path, path_map):
-    matches = []
-    for api_path, details in path_map.items():
-        api_path_regex = re.sub(r'\{[^\+]+\+\}', r'[^\?#]+', api_path)
-        api_path_regex = re.sub(r'\{[^\}]+\}', r'[^/]+', api_path_regex)
-        # We aren't interested in matching against anything with query strings.
-        path = re.sub(r'\?.*', '', path)
-        if re.match(r'^%s$' % api_path_regex, path):
-            matches.append((api_path, details))
-    if not matches:
-        return None
-    if len(matches) > 1:
-        # check if we have an exact match
-        for match in matches:
-            if match[0] == path:
-                return match
-        raise Exception('Ambiguous API path %s - matches found: %s' % (path, matches))
-    return matches[0]
 
 
 def get_cors_response(headers):
