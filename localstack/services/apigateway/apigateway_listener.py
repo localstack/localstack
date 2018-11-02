@@ -152,6 +152,7 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(regex2, path):
             search_match = re.search(regex2, path)
             api_id = search_match.group(1)
+            stage = search_match.group(2)
             relative_path = '/%s' % search_match.group(3)
             try:
                 integration = aws_stack.get_apigateway_integration(api_id, method, path=relative_path)
@@ -201,9 +202,26 @@ class ProxyListenerApiGateway(ProxyListener):
             elif integration['type'] == 'AWS_PROXY':
                 if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
+                    account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
                     data_str = json.dumps(data) if isinstance(data, dict) else data
 
                     relative_path, query_string_params = extract_query_string_params(path=relative_path)
+
+                    source_ip = headers['X-Forwarded-For'].split(',')[-2]
+
+                    # Sample request context:
+                    # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
+                    request_context = {
+                        'path': relative_path,
+                        'accountId': account_id,
+                        'resourceId': resource.get('id'),
+                        'stage': stage,
+                        'identity': {
+                            'accountId': account_id,
+                            'sourceIp': source_ip,
+                            'userAgent': headers['User-Agent'],
+                        }
+                    }
 
                     try:
                         path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
@@ -212,7 +230,7 @@ class ProxyListenerApiGateway(ProxyListener):
 
                     result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                         headers, path_params=path_params, query_string_params=query_string_params,
-                        method=method, resource_path=path)
+                        method=method, resource_path=path, request_context=request_context)
 
                     if isinstance(result, FlaskResponse):
                         return flask_to_requests_response(result)
