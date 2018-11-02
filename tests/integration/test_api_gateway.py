@@ -1,7 +1,7 @@
 import re
 import json
 from requests.models import Response
-from localstack.constants import DEFAULT_REGION
+from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID
 from localstack.config import INBOUND_GATEWAY_URL_PATTERN
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -9,6 +9,7 @@ from localstack.utils.common import to_str, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_PYTHON27)
+from localstack.services.apigateway.helpers import get_rest_api_paths, get_resource_for_path
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 # template used to transform incoming requests at the API Gateway (stream name to be filled in later)
@@ -179,13 +180,17 @@ def test_api_gateway_lambda_proxy_integration():
     result = connect_api_gateway_to_http_with_lambda_proxy('test_gateway2', target_uri,
         path=API_PATH_LAMBDA_PROXY_BACKEND)
 
+    api_id = result['id']
+    path_map = get_rest_api_paths(api_id)
+    _, resource = get_resource_for_path('/lambda/foo1', path_map)
+
     # make test request to gateway and check response
     path = API_PATH_LAMBDA_PROXY_BACKEND.replace('{test_param1}', 'foo1')
     path = path + '?foo=foo&bar=bar&bar=baz'
 
-    url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=result['id'], stage_name=TEST_STAGE_NAME, path=path)
+    url = INBOUND_GATEWAY_URL_PATTERN.format(api_id=api_id, stage_name=TEST_STAGE_NAME, path=path)
     data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
-    result = requests.post(url, data=json.dumps(data))
+    result = requests.post(url, data=json.dumps(data), headers={'User-Agent': 'python-requests/testing'})
     assert result.status_code == 203
     assert result.headers.get('foo') == 'bar123'
     parsed_body = json.loads(to_str(result.content))
@@ -193,6 +198,18 @@ def test_api_gateway_lambda_proxy_integration():
     assert parsed_body.get('return_headers') == {'foo': 'bar123'}
     assert parsed_body.get('pathParameters') == {'test_param1': 'foo1'}
     assert parsed_body.get('queryStringParameters') == {'foo': 'foo', 'bar': ['bar', 'baz']}
+
+    request_context = parsed_body.get('requestContext')
+    source_ip = request_context['identity'].pop('sourceIp')
+
+    assert re.match(re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'), source_ip)
+
+    assert request_context['path'] == '/lambda/foo1'
+    assert request_context['accountId'] == TEST_AWS_ACCOUNT_ID
+    assert request_context['resourceId'] == resource.get('id')
+    assert request_context['stage'] == TEST_STAGE_NAME
+    assert request_context['identity']['userAgent'] == 'python-requests/testing'
+
     result = requests.delete(url, data=json.dumps(data))
     assert result.status_code == 404
 
