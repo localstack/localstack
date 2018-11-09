@@ -45,10 +45,8 @@ docker-build:      ## Build Docker image
 		docker tag $$LAST_BUT_ONE_LAYER $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-build-base:
-	docker build -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
+	docker build --squash -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
 	docker tag $(IMAGE_NAME_BASE) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
-	which docker-squash || $(PIP_CMD) install docker-squash
-	docker-squash -t $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
 	docker tag $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):latest
 
 docker-push:       ## Push Docker image to registry
@@ -117,7 +115,7 @@ reinstall-p3:      ## Re-initialize the virtualenv with Python 3.x
 	PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install
 
 lint:              ## Run code linter to check code style
-	($(VENV_RUN); flake8 --inline-quotes=single --show-source --max-line-length=120 --ignore=E128 --exclude=node_modules,$(VENV_DIR)*,dist .)
+	($(VENV_RUN); flake8 --inline-quotes=single --show-source --max-line-length=120 --ignore=E128,W504 --exclude=node_modules,$(VENV_DIR)*,dist .)
 
 clean:             ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf localstack/dashboard/web/node_modules/

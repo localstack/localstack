@@ -27,8 +27,9 @@ TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
-TEST_LAMBDA_JAR_URL = ('https://repo.maven.apache.org/maven2/cloud/localstack/' +
-    'localstack-utils/{version}/localstack-utils-{version}-tests.jar').format(version=LOCALSTACK_MAVEN_VERSION)
+MAVEN_BASE_URL = 'https://repo.maven.apache.org/maven2'
+TEST_LAMBDA_JAR_URL = ('{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar').format(
+    version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name='localstack-utils')
 
 TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
 
