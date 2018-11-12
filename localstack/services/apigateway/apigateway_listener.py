@@ -140,8 +140,8 @@ def extract_query_string_params(path):
 def get_resource_for_path(path, path_map):
     matches = []
     for api_path, details in path_map.items():
-        api_path_regex = re.sub(r'\{[^\+]+\+\}', '[^\?#]+', api_path)
-        api_path_regex = re.sub(r'\{[^\}]+\}', '[^/]+', api_path_regex)
+        api_path_regex = re.sub(r'\{[^\+]+\+\}', r'[^\?#]+', api_path)
+        api_path_regex = re.sub(r'\{[^\}]+\}', r'[^/]+', api_path_regex)
         # We aren't interested in matching against anything with query strings.
         path = re.sub(r'\?.*', '', path)
         if re.match(r'^%s$' % api_path_regex, path):
