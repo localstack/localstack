@@ -321,7 +321,12 @@ def mktime(timestamp):
 
 def mkdir(folder):
     if not os.path.exists(folder):
-        os.makedirs(folder)
+        try:
+            os.makedirs(folder)
+        except OSError as err:
+            # Ignore rare 'File exists' race conditions.
+            if err.errno != 17:
+                raise
 
 
 def ensure_readable(file_path, default_perms=None):
