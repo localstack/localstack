@@ -2,13 +2,14 @@ import os
 import json
 import time
 from io import BytesIO
+from localstack import config
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSION
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, load_file, to_str, mkdir, download
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_DOTNETCORE2,
-    LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, use_docker)
+    LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_NODEJS810, use_docker)
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py')
@@ -297,11 +298,42 @@ def test_prime_and_destroy_containers():
     status = executor.get_docker_container_status(func_arn)
     assert status == 1
 
+    # assert container network
+    container_network = executor.get_docker_container_network(func_arn)
+    assert container_network == 'default'
+
     executor.cleanup()
     status = executor.get_docker_container_status(func_arn)
     assert status == 0
 
     assert len(executor.get_all_container_names()) == 0
+
+
+def test_docker_command_for_separate_container_lambda_executor():
+
+    # run these tests only for the "separate containers" Lambda executor
+    if not isinstance(lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorSeparateContainers):
+        return
+
+    executor = lambda_api.LAMBDA_EXECUTOR
+    func_name = 'test_docker_command_for_separate_container_lambda_executor'
+
+    func_arn = lambda_api.func_arn(func_name)
+
+    handler = 'handler'
+    lambda_cwd = '/app/lambda'
+    network = 'compose_network'
+
+    config.LAMBDA_DOCKER_NETWORK = network
+
+    cmd = executor.prepare_execution(func_arn, {}, LAMBDA_RUNTIME_NODEJS810, '', handler, lambda_cwd)
+
+    expected = 'docker run -v "%s":/var/task   --network="%s"  --rm "lambci/lambda:%s" "%s"' % (
+        lambda_cwd, network, LAMBDA_RUNTIME_NODEJS810, handler)
+
+    assert cmd == expected, 'cmd=%s expected=%s' % (cmd, expected)
+
+    config.LAMBDA_DOCKER_NETWORK = ''
 
 
 def test_destroy_idle_containers():
