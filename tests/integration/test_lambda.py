@@ -331,7 +331,7 @@ def test_docker_command_for_separate_container_lambda_executor():
     expected = 'docker run -v "%s":/var/task   --network="%s"  --rm "lambci/lambda:%s" "%s"' % (
         lambda_cwd, network, LAMBDA_RUNTIME_NODEJS810, handler)
 
-    assert cmd == expected, 'cmd=%s expected=%s' % (cmd, expected)
+    assert ('--network="%s"' % network) in cmd, 'cmd=%s expected=%s' % (cmd, expected)
 
     config.LAMBDA_DOCKER_NETWORK = ''
 
