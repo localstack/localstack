@@ -25,3 +25,4 @@ localstack/infra/
 /.idea
 **/obj/**
 **/bin/**
+!bin/docker-entrypoint.sh
