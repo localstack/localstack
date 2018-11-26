@@ -23,7 +23,7 @@ psutil==5.4.3
 pyopenssl==17.5.0
 python-coveralls==2.7.0
 pyyaml==4.2b4
-requests==2.18.4
+requests==2.20.0
 requests-aws4auth==0.9
 six==1.10.0
 subprocess32-ext==3.2.8.2
