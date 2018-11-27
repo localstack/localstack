@@ -230,7 +230,7 @@ class ProxyListenerApiGateway(ProxyListener):
             elif integration['type'] == 'AWS_PROXY':
                 if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
-                    data_str = json.dumps(data) if isinstance(data, dict) else data
+                    data_str = json.dumps(data) if isinstance(data, dict) or isinstance(data, list) else data
 
                     relative_path, query_string_params = extract_query_string_params(path=relative_path)
 
