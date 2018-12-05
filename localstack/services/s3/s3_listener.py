@@ -151,7 +151,7 @@ def send_notifications(method, bucket_name, object_path):
                     sns_client = aws_stack.connect_to_service('sns')
                     try:
                         sns_client.publish(TopicArn=config['Topic'], Message=message, Subject='Amazon S3 Notification')
-                    except Exception as e:
+                    except Exception:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s".' %
                             (bucket_name, config['Topic']))
                 # CloudFunction and LambdaFunction are semantically identical
@@ -163,7 +163,7 @@ def send_notifications(method, bucket_name, object_path):
                     try:
                         lambda_client.invoke(FunctionName=lambda_function_config,
                                              InvocationType='Event', Payload=message)
-                    except Exception as e:
+                    except Exception:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to Lambda function "%s".' %
                             (bucket_name, lambda_function_config))
                 if not filter(lambda x: config.get(x), NOTIFICATION_DESTINATION_TYPES):

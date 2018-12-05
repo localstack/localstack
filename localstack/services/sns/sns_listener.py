@@ -65,7 +65,7 @@ class ProxyListenerSNS(ProxyListener):
             elif req_action == 'Publish':
                 message = req_data['Message'][0]
                 sqs_client = aws_stack.connect_to_service('sqs')
-                for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
+                for subscriber in SNS_SUBSCRIPTIONS.get(topic_arn, []):
                     filter_policy = json.loads(subscriber.get('FilterPolicy', '{}'))
                     message_attributes = get_message_attributes(req_data)
                     if check_filter_policy(filter_policy, message_attributes):

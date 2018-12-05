@@ -249,8 +249,8 @@ def test_kinesis_lambda_sns_ddb_sqs_streams():
 
     def check_events():
         if len(EVENTS) != num_events:
-            LOGGER.warning(('DynamoDB and Kinesis updates retrieved ' +
-                '(actual/expected): %s/%s') % (len(EVENTS), num_events))
+            LOGGER.warning(('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s') %
+                (len(EVENTS), num_events))
         assert len(EVENTS) == num_events
         event_items = [json.loads(base64.b64decode(e['data'])) for e in EVENTS]
         inserts = [e for e in event_items if e.get('__action_type') == 'INSERT']

@@ -321,7 +321,12 @@ def mktime(timestamp):
 
 def mkdir(folder):
     if not os.path.exists(folder):
-        os.makedirs(folder)
+        try:
+            os.makedirs(folder)
+        except OSError as err:
+            # Ignore rare 'File exists' race conditions.
+            if err.errno != 17:
+                raise
 
 
 def ensure_readable(file_path, default_perms=None):
@@ -557,6 +562,10 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
     # (Our test Lambdas are importing this file but don't have the module installed)
     from OpenSSL import crypto
 
+    if os.path.exists(target_file):
+        key_file_name = '%s.key' % target_file
+        cert_file_name = '%s.crt' % target_file
+        return target_file, cert_file_name, key_file_name
     if random and target_file:
         if '.' in target_file:
             target_file = target_file.replace('.', '.%s.' % short_uid(), 1)

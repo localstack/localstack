@@ -47,7 +47,8 @@ RUN mkdir -p /.npm && \
 
 # expose default environment (required for aws-cli to work)
 ENV MAVEN_CONFIG=/opt/code/localstack \
-    USER=localstack
+    USER=localstack \
+    PYTHONUNBUFFERED=1
 
 # expose service & web dashboard ports
 EXPOSE 4567-4583 8080

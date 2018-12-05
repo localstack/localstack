@@ -23,7 +23,7 @@ QUIET = False
 SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
 # CORS settings
-CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5',
+CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent')
 CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
 
