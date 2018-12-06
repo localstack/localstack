@@ -18,6 +18,7 @@ TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, 'lambdas', 'dotnetcore2', 'dotnetcore2.zip')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', 'localstack-utils-tests.jar')
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
+TEST_LAMBDA_CONTEXT = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_context.py')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
@@ -27,6 +28,7 @@ TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
+TEST_LAMBDA_NAME_CONTEXT = 'test_lambda_context'
 
 MAVEN_BASE_URL = 'https://repo.maven.apache.org/maven2'
 TEST_LAMBDA_JAR_URL = ('{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar').format(
@@ -238,6 +240,34 @@ def test_lambda_environment():
     assert result['StatusCode'] == 200
     result_data = result['Payload']
     assert json.load(result_data) == {'Hello': 'World'}
+
+
+def test_lambda_remaining_time():
+    """This test will invoke a lambda that will return the amount of time remaining.  It invokes it once,
+    expecting the remaining time to be greater than zero.  It invokes it a second time, telling it to sleep
+    for the duration of the timeout.  It then expects the remaining time to be less than or equal to zero."""
+
+    lambda_client = aws_stack.connect_to_service('lambda')
+
+    # deploy and invoke lambda without Docker
+    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_CONTEXT), get_content=True,
+        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
+    timeout_value = 5 * 1000 # we will timeout and sleep for 5 seconds
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_CONTEXT,
+                                    zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27, timeout=timeout_value,
+                                    envvars={})
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_CONTEXT, Payload=json.dumps({"seconds_to_sleep": "0"}))
+    assert result['StatusCode'] == 200
+    result_data = json.load(result['Payload'])
+    remaining_time = int(result_data['TimeRemainingInMillis'])
+    assert remaining_time > 0
+
+    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_CONTEXT,
+                                  Payload=json.dumps({"seconds_to_sleep": (timeout_value / 1000)}))
+    assert result['StatusCode'] == 200
+    result_data = json.load(result['Payload'])
+    remaining_time = int(result_data['TimeRemainingInMillis'])
+    assert remaining_time <= 0
 
 
 def test_prime_and_destroy_containers():

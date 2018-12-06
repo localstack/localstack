@@ -111,7 +111,8 @@ def create_zip_file(file_path, get_content=False):
 
 
 def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
-        starting_position=LAMBDA_DEFAULT_STARTING_POSITION, runtime=LAMBDA_DEFAULT_RUNTIME,
+                           starting_position=LAMBDA_DEFAULT_STARTING_POSITION, runtime=LAMBDA_DEFAULT_RUNTIME,
+                           timeout=LAMBDA_DEFAULT_TIMEOUT,
         envvars={}):
     """Utility method to create a new function via the Lambda API"""
 
@@ -125,7 +126,7 @@ def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=L
         Code={
             'ZipFile': zip_file
         },
-        Timeout=LAMBDA_DEFAULT_TIMEOUT,
+        Timeout=timeout,
         Environment=dict(Variables=envvars)
     )
     # create event source mapping

@@ -79,14 +79,18 @@ class LambdaContext(object):
     def __init__(self, func_details, qualifier=None):
         self.function_name = func_details.name()
         self.function_version = func_details.get_qualifier_version(qualifier)
-
         self.invoked_function_arn = func_details.arn()
+
+        self.timeout = func_details.timeout
+        self.started_at = time.time() * 1000
+
         if qualifier:
             self.invoked_function_arn += ':' + qualifier
 
     def get_remaining_time_in_millis(self):
-        # TODO implement!
-        return 1000 * 60
+        right_now = time.time() * 1000
+        elapsed = right_now - self.started_at
+        return self.timeout - elapsed
 
 
 def cleanup():
