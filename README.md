@@ -177,6 +177,40 @@ Additionally, the following *read-only* environment variables are available:
   The variable `LOCALSTACK_HOSTNAME` is available for both, local Lambda execution
   (`LAMBDA_EXECUTOR=local`) and execution inside separate Docker containers (`LAMBDA_EXECUTOR=docker`).
 
+## A Note About using own SSL Certificate when `USE_SSL` are `True`
+
+If you need to use your own SSL Certificate and keep it persistent and not use the random automatic generated Certificate, you can place into the localstack temporary directory :
+
+```
+/tmp/localstack/
+```
+
+the three named files below :
+
+```bash
+server.test.pem
+server.test.pem.crt
+server.test.pem.key
+```
+
+- the file `server.test.pem` must contains your key file content, your certificat and chain certificate files contents (do a cat in this order)
+ - the file `server.test.pem.crt` must contains your certificate and chains files contents (do a 'cat' in this order)
+- the file server.test.pem.key must contains your key file content
+***
+### Using USE_SSL and own persistent certificate with docker-compose
+
+Typically with docker-compose you can add into docker-compose.yml this volume to the localstack services :
+
+```
+volumes:
+      - "${PWD}/ls_tmp:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+```
+
+local directory **ls_tmp** must contains the three files (server.test.pem, server.test.pem.crt, server.test.pem.key)
+
+***
+
 ## Accessing the infrastructure via CLI or code
 
 You can point your `aws` CLI to use the local infrastructure, for example:
