@@ -53,7 +53,7 @@ LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36,
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
 LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
 LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
-LAMBDA_DEFAULT_TIMEOUT = 60
+LAMBDA_DEFAULT_TIMEOUT = 3000
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
 
@@ -626,7 +626,7 @@ def create_function():
         func_details.runtime = data['Runtime']
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
         func_details.tags = data.get('Tags', {})
-        func_details.timeout = data.get('Timeout')
+        func_details.timeout = data.get('Timeout', LAMBDA_DEFAULT_TIMEOUT)
         result = set_function_code(data['Code'], lambda_name)
         if isinstance(result, Response):
             del arn_to_lambda[arn]
@@ -641,7 +641,7 @@ def create_function():
             'MemorySize': data.get('MemorySize'),
             'Role': data.get('Role'),
             'Runtime': func_details.runtime,
-            'Timeout': data.get('Timeout'),
+            'Timeout': func_details.timeout,
             'TracingConfig': {},
             'VpcConfig': {'SecurityGroupIds': [None], 'SubnetIds': [None], 'VpcId': None}
         })
