@@ -129,7 +129,11 @@ def send_notifications(method, bucket_name, object_path):
             action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
-            api_method = {'PUT': 'Put', 'POST': 'Post', 'DELETE': 'Delete'}[method]
+            if action == 'ObjectCreated' and method == 'POST':
+                api_method = 'CompleteMultipartUpload'
+            else:
+                api_method = {'PUT': 'Put', 'POST': 'Post', 'DELETE': 'Delete'}[method]
+
             event_name = '%s:%s' % (action, api_method)
             if (event_type_matches(config['Event'], action, api_method) and
                     filter_rules_match(config.get('Filter'), object_path)):
@@ -496,7 +500,9 @@ class ProxyListenerS3(ProxyListener):
 
         bucket_name_in_host = headers['host'].startswith(bucket_name)
 
-        should_send_notifications = all([
+        # TODO Not sure if this is the best way to determine the multipart upload or not
+        multipart_upload_complete = method is 'POST' and 'uploadId' in parsed.query
+        should_send_notifications = multipart_upload_complete or all([
             method in ('PUT', 'POST', 'DELETE'),
             '/' in path[1:] or bucket_name_in_host,
             # check if this is an actual put object request, because it could also be
