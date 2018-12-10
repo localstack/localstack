@@ -137,6 +137,62 @@ def test_s3_upload_fileobj_with_large_file_notification():
         os.remove(large_file.name)
 
 
+def test_s3_multipart_upload_notification():
+
+    s3_client = aws_stack.connect_to_service('s3')
+    sqs_client = aws_stack.connect_to_service('sqs')
+
+    key_by_path = 'key-by-hostname'
+
+    # create test queue
+    queue_url = sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)['QueueUrl']
+    queue_attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+
+    # create test bucket
+    s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+    s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                                    NotificationConfiguration={'QueueConfigurations': [
+                                                        {'QueueArn': queue_attributes['Attributes']['QueueArn'],
+                                                         'Events': ['s3:ObjectCreated:*']}]})
+
+    multipart_upload_dict = s3_client.create_multipart_upload(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                                              Key=key_by_path)
+    uploadId = multipart_upload_dict['UploadId']
+
+    # Write contents to memory rather than a file.
+    upload_file_object = BytesIO()
+    data = '000000000000000000000000000000'
+    with gzip.GzipFile(fileobj=upload_file_object, mode='w') as filestream:
+        filestream.write(data.encode('utf-8'))
+
+    # In a multipart upload "Each part must be at least 5 MB in size, except the last part."
+    # https://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
+    response = s3_client.upload_part(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                     Body=upload_file_object.getvalue(),
+                                     Key=key_by_path,
+                                     PartNumber=1,
+                                     UploadId=uploadId)
+
+    multipart_upload_parts = [{'ETag': response['ETag'], 'PartNumber': 1}]
+
+    s3_client.complete_multipart_upload(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                        Key=key_by_path,
+                                        MultipartUpload={'Parts': multipart_upload_parts},
+                                        UploadId=uploadId)
+
+    queue_attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url,
+                                                       AttributeNames=['ApproximateNumberOfMessages'])
+    message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
+    # the ApproximateNumberOfMessages attribute is a string
+    assert message_count == '1'
+
+    # clean up
+    sqs_client.delete_queue(QueueUrl=queue_url)
+    s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                             Delete={'Objects': [{'Key': key_by_path}]})
+    s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+
+
 def test_s3_get_response_default_content_type():
     # When no content type is provided by a PUT request
     # 'binary/octet-stream' should be used
