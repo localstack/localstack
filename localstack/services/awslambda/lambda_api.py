@@ -28,7 +28,9 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_NODEJS810,
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_DOTNETCORE2,
-    LAMBDA_RUNTIME_GOLANG)
+    LAMBDA_RUNTIME_GOLANG,
+    LAMBDA_RUNTIME_RUBY,
+    LAMBDA_RUNTIME_RUBY25)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
     md5, new_tmp_file)
@@ -43,8 +45,9 @@ ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 
 # List of Lambda runtime names. Keep them in this list, mainly to silence the linter
-LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_DOTNETCORE2,
-    LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_JAVA8]
+LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610,
+    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_RUBY, LAMBDA_RUNTIME_RUBY25]
 
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
 LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
@@ -354,6 +357,8 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     elif runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2):
         file_ext = '.dll'
         delimiter = ':'
+    elif runtime.startswith(LAMBDA_RUNTIME_RUBY):
+        file_ext = '.rb'
     else:
         file_ext = '.py'
     return '%s%s' % (handler_name.split(delimiter)[0], file_ext)
