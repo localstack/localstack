@@ -139,12 +139,12 @@ class SNSTests(unittest.TestCase):
         attributes = sns_listener.get_message_attributes(action)
         result = sns_listener.create_sqs_message_attributes(self.subscriber, attributes)
 
-        assert (result['attr1']['DataType'] == 'String')
-        assert (result['attr1']['StringValue'] == 'value1')
-        assert (result['attr2']['DataType'] == 'Binary')
-        assert (result['attr2']['BinaryValue'] == 'value2'.encode('utf-8'))
-        assert (result['attr3']['DataType'] == 'Number')
-        assert (result['attr3']['StringValue'] == 'value3')
+        self.assertEqual(result['attr1']['DataType'], 'String')
+        self.assertEqual(result['attr1']['StringValue'], 'value1')
+        self.assertEqual(result['attr2']['DataType'], 'Binary')
+        self.assertEqual(result['attr2']['BinaryValue'], 'value2'.encode('utf-8'))
+        self.assertEqual(result['attr3']['DataType'], 'Number')
+        self.assertEqual(result['attr3']['StringValue'], 'value3')
 
 
 def test_filter_policy():

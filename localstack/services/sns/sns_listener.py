@@ -235,7 +235,7 @@ def create_sns_message_body(subscriber, req_data):
 
 
 def create_sqs_message_attributes(subscriber, attributes):
-    if subscriber['RawMessageDelivery'] == 'false':
+    if subscriber.get('RawMessageDelivery') not in ('true', True):
         return {}
 
     message_attributes = {}
