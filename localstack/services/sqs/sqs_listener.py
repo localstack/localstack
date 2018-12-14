@@ -5,7 +5,7 @@ from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
 from requests.models import Request, Response
 from localstack import config
-from localstack.config import HOSTNAME_EXTERNAL
+from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.common import to_str, md5
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
@@ -91,7 +91,7 @@ class ProxyListenerSQS(ProxyListener):
                     # return https://... if we're supposed to use SSL
                     content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
                 # expose external hostname:port
-                external_port = get_external_port(headers, request_handler)
+                external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
                 content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
                     r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port), content_str)
                 new_response._content = content_str

@@ -34,7 +34,7 @@
 
   app.factory('restClient', function($resource) {
     return new SwaggerClient({
-      url: "//" + document.location.host + "/swagger.json",
+      url: "/swagger.json",
       usePromise: true
     });
   });

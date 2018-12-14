@@ -2,6 +2,7 @@ import gzip
 import os
 import json
 import requests
+import uuid
 from io import BytesIO
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
@@ -83,6 +84,57 @@ def test_s3_put_object_notification():
     s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                              Delete={'Objects': [{'Key': key_by_path}, {'Key': key_by_host}]})
     s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+
+
+def generate_large_file(size):
+    # https://stackoverflow.com/questions/8816059/create-file-of-particular-size-in-python
+    filename = 'large_file_%s' % uuid.uuid4()
+    f = open(filename, 'wb')
+    f.seek(size - 1)
+    f.write(b'\0')
+    f.close()
+    return open(filename, 'r')
+
+
+def test_s3_upload_fileobj_with_large_file_notification():
+
+    s3_client = aws_stack.connect_to_service('s3')
+    sqs_client = aws_stack.connect_to_service('sqs')
+
+    # create test queue
+    queue_url = sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)['QueueUrl']
+    queue_attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+
+    # create test bucket
+    s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+    s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                                    NotificationConfiguration={'QueueConfigurations': [
+                                                        {'QueueArn': queue_attributes['Attributes']['QueueArn'],
+                                                         'Events': ['s3:ObjectCreated:*']}]})
+
+    # has to be larger than 64MB to be broken up into a multipart upload
+    large_file = generate_large_file(75000000)
+    try:
+        s3_client.upload_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=large_file.name, Filename=large_file.name)
+        queue_attributes = sqs_client.get_queue_attributes(QueueUrl=queue_url,
+                                                        AttributeNames=['ApproximateNumberOfMessages'])
+        message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
+        # the ApproximateNumberOfMessages attribute is a string
+        assert message_count == '1'
+
+        # ensure that the first message's eventName is ObjectCreated:CompleteMultipartUpload
+        messages = sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=['All'])
+        message = json.loads(messages['Messages'][0]['Body'])
+        assert message['Records'][0]['eventName'] == 'ObjectCreated:CompleteMultipartUpload'
+
+        # clean up
+        sqs_client.delete_queue(QueueUrl=queue_url)
+        s3_client.delete_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=large_file.name)
+        s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+    finally:
+        # clean up large file
+        large_file.close()
+        os.remove(large_file.name)
 
 
 def test_s3_get_response_default_content_type():
