@@ -252,7 +252,7 @@ infrastructure in your test setup method and then clean up everything in your te
 from localstack.services import infra
 
 def setup():
-    infra.start_infra(async=True)
+    infra.start_infra(asyncronous=True)
 
 def teardown():
     infra.stop_infra()
