@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import unittest
 from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSION
@@ -25,7 +26,7 @@ TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', '
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
-TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
+TEST_LAMBDA_NAME_PY3 = 'test_py3_lambda'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
 TEST_LAMBDA_NAME_RUBY = 'test_lambda_ruby'
 TEST_LAMBDA_NAME_DOTNETCORE2 = 'test_lambda_dotnetcore2'
@@ -41,350 +42,479 @@ TEST_LAMBDA_JAR_URL = ('{url}/cloud/localstack/{name}/{version}/{name}-{version}
 TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
 
 
-def test_upload_lambda_from_s3():
+class TestPythonRuntimes(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
+        cls.s3_client = aws_stack.connect_to_service('s3')
 
-    s3_client = aws_stack.connect_to_service('s3')
-    lambda_client = aws_stack.connect_to_service('lambda')
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_PY,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
 
-    lambda_name = 'test_lambda_%s' % short_uid()
-    bucket_name = 'test_bucket_lambda'
-    bucket_key = 'test_lambda.zip'
+    def test_invocation_type_not_set(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}')
+        result_data = json.loads(result['Payload'].read())
 
-    # upload zip file to S3
-    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    s3_client.create_bucket(Bucket=bucket_name)
-    s3_client.upload_fileobj(BytesIO(zip_file), bucket_name, bucket_key)
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(result_data['event'], json.loads('{}'))
 
-    # create lambda function
-    lambda_client.create_function(
-        FunctionName=lambda_name, Handler='handler.handler',
-        Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
-        Code={
-            'S3Bucket': bucket_name,
-            'S3Key': bucket_key
-        }
-    )
-
-    # invoke lambda function
-    data_before = b'{"foo": "bar"}'
-    result = lambda_client.invoke(FunctionName=lambda_name, Payload=data_before)
-    data_after = json.loads(result['Payload'].read())
-    assert json.loads(to_str(data_before)) == data_after['event']
-
-    context = data_after['context']
-    assert '$LATEST' == context['function_version']
-    assert lambda_name == context['function_name']
-
-
-def test_function_invocation_with_qualifier():
-
-    s3_client = aws_stack.connect_to_service('s3')
-    lambda_client = aws_stack.connect_to_service('lambda')
-
-    lambda_name = 'test_lambda_%s' % short_uid()
-    bucket_name = 'test_bucket_lambda2'
-    bucket_key = 'test_lambda.zip'
-
-    # upload zip file to S3
-    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    s3_client.create_bucket(Bucket=bucket_name)
-    s3_client.upload_fileobj(BytesIO(zip_file), bucket_name, bucket_key)
-
-    # create lambda function
-    response = lambda_client.create_function(
-        FunctionName=lambda_name, Handler='handler.handler',
-        Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
-        Code={
-            'S3Bucket': bucket_name,
-            'S3Key': bucket_key
-        },
-        Publish=True
-    )
-
-    assert 'Version' in response
-
-    # invoke lambda function
-    data_before = b'{"foo": "bar"}'
-    result = lambda_client.invoke(FunctionName=lambda_name, Payload=data_before,
-                                  Qualifier=response['Version'])
-    data_after = json.loads(result['Payload'].read())
-    assert json.loads(to_str(data_before)) == data_after['event']
-
-    context = data_after['context']
-    assert response['Version'] == context['function_version']
-    assert lambda_name == context['function_name']
-
-
-def test_lambda_runtimes():
-
-    lambda_client = aws_stack.connect_to_service('lambda')
-
-    # deploy and invoke lambda - Python 2.7
-    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_PY,
-        zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27)
-
-    # Invocation Type not set
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}')
-    assert result['StatusCode'] == 200
-    result_data = json.loads(result['Payload'].read())
-    assert result_data['event'] == json.loads('{}')
-
-    # Invocation Type - RequestResponse
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', InvocationType='RequestResponse')
-    assert result['StatusCode'] == 200
-    result_data = result['Payload'].read()
-    result_data = json.loads(to_str(result_data))
-    assert isinstance(result_data, dict)
-
-    # Invocation Type - Event
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', InvocationType='Event')
-    assert result['StatusCode'] == 202
-
-    # Invocation Type - DryRun
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', InvocationType='DryRun')
-    assert result['StatusCode'] == 204
-
-    if use_docker():
-        # deploy and invoke lambda - Python 3.6
-        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON3), get_content=True,
-            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36)
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_PY3,
-            zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON36)
-        result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
-        assert result['StatusCode'] == 200
+    def test_invocation_type_request_response(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_PY,
+            Payload=b'{}', InvocationType='RequestResponse')
         result_data = result['Payload'].read()
-        assert to_str(result_data).strip() == '{}'
+        result_data = json.loads(to_str(result_data))
 
-    # deploy and invoke lambda - Java
-    if not os.path.exists(TEST_LAMBDA_JAVA):
-        mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
-        download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
-    # Lambda supports single JAR deployments without the zip, so we upload the JAR directly.
-    test_java_jar = load_file(TEST_LAMBDA_JAVA, mode='rb')
-    assert test_java_jar is not None
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA, zip_file=test_java_jar,
-        runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaHandler')
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
-    assert result['StatusCode'] == 200
-    result_data = result['Payload'].read()
-    assert 'LinkedHashMap' in to_str(result_data)
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertIsInstance(result_data, dict)
 
-    # test SNSEvent
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
-                                  Payload=b'{"Records": [{"Sns": {"Message": "{}"}}]}')
-    assert result['StatusCode'] == 202
+    def test_invocation_type_event(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_PY,
+            Payload=b'{}', InvocationType='Event')
 
-    # test DDBEvent
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
-                                  Payload=b'{"Records": [{"dynamodb": {"Message": "{}"}}]}')
-    assert result['StatusCode'] == 202
+        self.assertEqual(result['StatusCode'], 202)
 
-    # test KinesisEvent
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA,
-                                  Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
-    assert result['StatusCode'] == 200
-    result_data = result['Payload'].read()
-    assert 'KinesisEvent' in to_str(result_data)
+    def test_invocation_type_dry_run(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}',
+            InvocationType='DryRun')
 
-    # deploy and invoke lambda - Java with stream handler
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA_STREAM, zip_file=test_java_jar,
-        runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.LambdaStreamHandler')
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM, Payload=b'{}')
-    assert result['StatusCode'] == 200
-    result_data = result['Payload'].read()
-    assert to_str(result_data).strip() == '{}'
+        self.assertEqual(result['StatusCode'], 204)
 
-    # deploy and invoke lambda - Java with serializable input object
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE, zip_file=test_java_jar,
-        runtime=LAMBDA_RUNTIME_JAVA8, handler='cloud.localstack.sample.SerializedInputLambdaHandler')
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
-                                  Payload=b'{"bucket": "test_bucket", "key": "test_key"}')
-    assert result['StatusCode'] == 200
-    result_data = result['Payload'].read()
-    assert json.loads(to_str(result_data)) == {'validated': True, 'bucket': 'test_bucket', 'key': 'test_key'}
+    def test_lambda_environment(self):
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_ENV),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_ENV,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON27,
+            envvars={'Hello': 'World'}
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_ENV, Payload=b'{}')
+        result_data = result['Payload']
 
-    if use_docker():
-        # deploy and invoke lambda - Node.js
-        zip_file = testutil.create_zip_file(TEST_LAMBDA_NODEJS, get_content=True)
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_JS,
-            zip_file=zip_file, handler='lambda_integration.handler', runtime=LAMBDA_RUNTIME_NODEJS)
-        result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')
-        assert result['StatusCode'] == 200
-        result_data = result['Payload'].read()
-        assert to_str(result_data).strip() == '{}'
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertDictEqual(json.load(result_data), {'Hello': 'World'})
 
-        # deploy and invoke - .NET Core 2.0. Its already a zip
+    def test_invocation_with_qualifier(self):
+        lambda_name = 'test_lambda_%s' % short_uid()
+        bucket_name = 'test_bucket_lambda2'
+        bucket_key = 'test_lambda.zip'
+
+        # upload zip file to S3
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.upload_fileobj(
+            BytesIO(zip_file), bucket_name, bucket_key)
+
+        # create lambda function
+        response = self.lambda_client.create_function(
+            FunctionName=lambda_name, Handler='handler.handler',
+            Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            Code={
+                'S3Bucket': bucket_name,
+                'S3Key': bucket_key
+            },
+            Publish=True
+        )
+
+        self.assertIn('Version', response)
+
+        # invoke lambda function
+        data_before = b'{"foo": "bar"}'
+        result = self.lambda_client.invoke(
+            FunctionName=lambda_name,
+            Payload=data_before,
+            Qualifier=response['Version']
+        )
+        data_after = json.loads(result['Payload'].read())
+        self.assertEqual(json.loads(to_str(data_before)), data_after['event'])
+
+        context = data_after['context']
+        self.assertEqual(response['Version'], context['function_version'])
+        self.assertEqual(lambda_name, context['function_name'])
+
+    def test_upload_lambda_from_s3(self):
+        lambda_name = 'test_lambda_%s' % short_uid()
+        bucket_name = 'test_bucket_lambda'
+        bucket_key = 'test_lambda.zip'
+
+        # upload zip file to S3
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.upload_fileobj(
+            BytesIO(zip_file), bucket_name, bucket_key)
+
+        # create lambda function
+        self.lambda_client.create_function(
+            FunctionName=lambda_name, Handler='handler.handler',
+            Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            Code={
+                'S3Bucket': bucket_name,
+                'S3Key': bucket_key
+            }
+        )
+
+        # invoke lambda function
+        data_before = b'{"foo": "bar"}'
+        result = self.lambda_client.invoke(
+            FunctionName=lambda_name, Payload=data_before)
+        data_after = json.loads(result['Payload'].read())
+        self.assertEqual(json.loads(to_str(data_before)), data_after['event'])
+
+        context = data_after['context']
+        self.assertEqual('$LATEST', context['function_version'])
+        self.assertEqual(lambda_name, context['function_name'])
+
+    def test_docker_execution_used(self):
+        if use_docker():
+            zip_file = testutil.create_lambda_archive(
+                load_file(TEST_LAMBDA_PYTHON3),
+                get_content=True,
+                libs=TEST_LAMBDA_LIBS,
+                runtime=LAMBDA_RUNTIME_PYTHON36
+            )
+            testutil.create_lambda_function(
+                func_name=TEST_LAMBDA_NAME_PY3,
+                zip_file=zip_file,
+                runtime=LAMBDA_RUNTIME_PYTHON36
+            )
+
+            result = self.lambda_client.invoke(
+                FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
+            result_data = result['Payload'].read()
+
+            self.assertEqual(result['StatusCode'], 200)
+            self.assertEqual(to_str(result_data).strip(), '{}')
+
+
+class TestNodeJSRuntimes(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
+
+    def test_docker_execution_used(self):
+        if use_docker():
+            zip_file = testutil.create_zip_file(
+                TEST_LAMBDA_NODEJS, get_content=True)
+            testutil.create_lambda_function(
+                func_name=TEST_LAMBDA_NAME_JS,
+                zip_file=zip_file,
+                handler='lambda_integration.handler',
+                runtime=LAMBDA_RUNTIME_NODEJS
+            )
+            result = self.lambda_client.invoke(
+                FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')
+            result_data = result['Payload'].read()
+
+            self.assertEqual(result['StatusCode'], 200)
+            self.assertEqual(to_str(result_data).strip(), '{}')
+
+
+class TestDotNetCoreRuntimes(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
+
+        # lambda .NET Core 2.0 is already a zip
         zip_file = TEST_LAMBDA_DOTNETCORE2
-        zip_file_content = None
+        cls.zip_file_content = None
         with open(zip_file, 'rb') as file_obj:
-            zip_file_content = file_obj.read()
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DOTNETCORE2, zip_file=zip_file_content,
-            handler='DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler',
-            runtime=LAMBDA_RUNTIME_DOTNETCORE2)
-        result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_DOTNETCORE2, Payload=b'{}')
-        assert result['StatusCode'] == 200
+            cls.zip_file_content = file_obj.read()
+
+    def test_docker_execution_used(self):
+        if use_docker():
+            testutil.create_lambda_function(
+                func_name=TEST_LAMBDA_NAME_DOTNETCORE2,
+                zip_file=self.zip_file_content,
+                handler='DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler',
+                runtime=LAMBDA_RUNTIME_DOTNETCORE2
+            )
+            result = self.lambda_client.invoke(
+                FunctionName=TEST_LAMBDA_NAME_DOTNETCORE2, Payload=b'{}')
+            result_data = result['Payload'].read()
+
+            self.assertEqual(result['StatusCode'], 200)
+            self.assertEqual(to_str(result_data).strip(), '{}')
+
+
+class TestRubyRuntimes(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
+
+    def test_docker_execution_used(self):
+        if use_docker():
+            zip_file = testutil.create_zip_file(
+                TEST_LAMBDA_RUBY, get_content=True)
+            testutil.create_lambda_function(
+                func_name=TEST_LAMBDA_NAME_RUBY,
+                zip_file=zip_file,
+                handler='lambda_integration.handler',
+                runtime=LAMBDA_RUNTIME_RUBY25
+            )
+            result = self.lambda_client.invoke(
+                FunctionName=TEST_LAMBDA_NAME_RUBY, Payload=b'{}')
+            result_data = result['Payload'].read()
+
+            self.assertEqual(result['StatusCode'], 200)
+            self.assertEqual(to_str(result_data).strip(), '{}')
+
+
+class TestJavaRuntimes(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
+
+        # deploy lambda - Java
+        if not os.path.exists(TEST_LAMBDA_JAVA):
+            mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
+            download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
+
+        # Lambda supports single JAR deployments without the zip,
+        # so we upload the JAR directly.
+        cls.test_java_jar = load_file(TEST_LAMBDA_JAVA, mode='rb')
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JAVA,
+            zip_file=cls.test_java_jar,
+            runtime=LAMBDA_RUNTIME_JAVA8,
+            handler='cloud.localstack.sample.LambdaHandler'
+        )
+
+        # deploy lambda - Java with stream handler
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JAVA_STREAM,
+            zip_file=cls.test_java_jar,
+            runtime=LAMBDA_RUNTIME_JAVA8,
+            handler='cloud.localstack.sample.LambdaStreamHandler'
+        )
+
+        # deploy lambda - Java with serializable input object
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
+            zip_file=cls.test_java_jar,
+            runtime=LAMBDA_RUNTIME_JAVA8,
+            handler='cloud.localstack.sample.SerializedInputLambdaHandler'
+        )
+
+    def test_java_runtime(self):
+        self.assertIsNotNone(self.test_java_jar)
+
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA, Payload=b'{}')
         result_data = result['Payload'].read()
-        assert to_str(result_data).strip() == '{}'
 
-        # deploy and invoke lambda - Ruby
-        zip_file = testutil.create_zip_file(TEST_LAMBDA_RUBY, get_content=True)
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_RUBY,
-            zip_file=zip_file, handler='lambda_integration.handler', runtime=LAMBDA_RUNTIME_RUBY25)
-        result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_RUBY, Payload=b'{}')
-        assert result['StatusCode'] == 200
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertIn('LinkedHashMap', to_str(result_data))
+
+    def test_sns_event(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
+            Payload=b'{"Records": [{"Sns": {"Message": "{}"}}]}')
+
+        self.assertEqual(result['StatusCode'], 202)
+
+    def test_ddb_event(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
+            Payload=b'{"Records": [{"dynamodb": {"Message": "{}"}}]}')
+
+        self.assertEqual(result['StatusCode'], 202)
+
+    def test_kinesis_event(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA,
+            Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
         result_data = result['Payload'].read()
-        assert to_str(result_data).strip() == '{}'
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertIn('KinesisEvent', to_str(result_data))
+
+    def test_stream_handler(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA_STREAM, Payload=b'{}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(to_str(result_data).strip(), '{}')
+
+    def test_serializable_input_object(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
+            Payload=b'{"bucket": "test_bucket", "key": "test_key"}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertDictEqual(
+            json.loads(to_str(result_data)),
+            {'validated': True, 'bucket': 'test_bucket', 'key': 'test_key'}
+        )
 
 
-def test_lambda_environment():
+class TestDockerBehaviour(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
 
-    lambda_client = aws_stack.connect_to_service('lambda')
+    def test_prime_and_destroy_containers(self):
+        # run these tests only for the "reuse containers" Lambda executor
+        if not isinstance(lambda_api.LAMBDA_EXECUTOR,
+                          lambda_executors.LambdaExecutorReuseContainers):
+            return
 
-    # deploy and invoke lambda without Docker
-    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True,
-        libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_ENV,
-        zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27, envvars={'Hello': 'World'})
-    result = lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_ENV, Payload=b'{}')
-    assert result['StatusCode'] == 200
-    result_data = result['Payload']
-    assert json.load(result_data) == {'Hello': 'World'}
+        executor = lambda_api.LAMBDA_EXECUTOR
+        func_name = 'test_prime_and_destroy_containers'
+        func_arn = lambda_api.func_arn(func_name)
 
+        # make sure existing containers are gone
+        executor.cleanup()
+        self.assertEqual(len(executor.get_all_container_names()), 0)
 
-def test_prime_and_destroy_containers():
+        # deploy and invoke lambda without Docker
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_ENV),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
+        testutil.create_lambda_function(
+            func_name=func_name,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON27,
+            envvars={'Hello': 'World'}
+        )
 
-    # run these tests only for the "reuse containers" Lambda executor
-    if not isinstance(lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers):
-        return
+        self.assertEqual(len(executor.get_all_container_names()), 0)
+        self.assertDictEqual(executor.function_invoke_times, {})
 
-    executor = lambda_api.LAMBDA_EXECUTOR
-    func_name = 'test_prime_and_destroy_containers'
+        # invoke a few times.
+        durations = []
+        num_iterations = 3
 
-    # create a new lambda
-    lambda_client = aws_stack.connect_to_service('lambda')
+        for i in range(0, num_iterations + 1):
+            prev_invoke_time = None
+            if i > 0:
+                prev_invoke_time = executor.function_invoke_times[func_arn]
 
-    func_arn = lambda_api.func_arn(func_name)
+            start_time = time.time()
+            self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
+            duration = time.time() - start_time
 
-    # make sure existing containers are gone
-    executor.cleanup()
-    assert len(executor.get_all_container_names()) == 0
+            self.assertEqual(len(executor.get_all_container_names()), 1)
 
-    # deploy and invoke lambda without Docker
-    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True,
-                                              libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    testutil.create_lambda_function(func_name=func_name, zip_file=zip_file,
-                                    runtime=LAMBDA_RUNTIME_PYTHON27, envvars={'Hello': 'World'})
+            # ensure the last invoke time is being updated properly.
+            if i > 0:
+                self.assertGreater(executor.function_invoke_times[func_arn], prev_invoke_time)
+            else:
+                self.assertGreater(executor.function_invoke_times[func_arn], 0)
 
-    assert len(executor.get_all_container_names()) == 0
+            durations.append(duration)
 
-    assert executor.function_invoke_times == {}
+        # the first call would have created the container. subsequent calls would reuse and be faster.
+        for i in range(1, num_iterations + 1):
+            self.assertLess(durations[i], durations[0])
 
-    # invoke a few times.
-    durations = []
-    num_iterations = 3
+        status = executor.get_docker_container_status(func_arn)
+        self.assertEqual(status, 1)
 
-    for i in range(0, num_iterations + 1):
-        prev_invoke_time = None
-        if i > 0:
-            prev_invoke_time = executor.function_invoke_times[func_arn]
+        container_network = executor.get_docker_container_network(func_arn)
+        self.assertEqual(container_network, 'default')
 
-        start_time = time.time()
-        lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
-        duration = time.time() - start_time
+        executor.cleanup()
+        status = executor.get_docker_container_status(func_arn)
+        self.assertEqual(status, 0)
 
-        assert len(executor.get_all_container_names()) == 1
+        self.assertEqual(len(executor.get_all_container_names()), 0)
 
-        # ensure the last invoke time is being updated properly.
-        if i > 0:
-            assert executor.function_invoke_times[func_arn] > prev_invoke_time
-        else:
-            assert executor.function_invoke_times[func_arn] > 0
+    def test_docker_command_for_separate_container_lambda_executor(self):
+        # run these tests only for the "separate containers" Lambda executor
+        if not isinstance(lambda_api.LAMBDA_EXECUTOR,
+                          lambda_executors.LambdaExecutorSeparateContainers):
+            return
 
-        durations.append(duration)
+        executor = lambda_api.LAMBDA_EXECUTOR
+        func_name = 'test_docker_command_for_separate_container_lambda_executor'
+        func_arn = lambda_api.func_arn(func_name)
 
-    # the first call would have created the container. subsequent calls would reuse and be faster.
-    for i in range(1, num_iterations + 1):
-        assert durations[i] < durations[0]
+        handler = 'handler'
+        lambda_cwd = '/app/lambda'
+        network = 'compose_network'
 
-    status = executor.get_docker_container_status(func_arn)
-    assert status == 1
+        config.LAMBDA_DOCKER_NETWORK = network
 
-    # assert container network
-    container_network = executor.get_docker_container_network(func_arn)
-    assert container_network == 'default'
+        cmd = executor.prepare_execution(func_arn, {}, LAMBDA_RUNTIME_NODEJS810, '', handler, lambda_cwd)
 
-    executor.cleanup()
-    status = executor.get_docker_container_status(func_arn)
-    assert status == 0
+        expected = 'docker run -v "%s":/var/task   --network="%s"  --rm "lambci/lambda:%s" "%s"' % (
+            lambda_cwd, network, LAMBDA_RUNTIME_NODEJS810, handler)
 
-    assert len(executor.get_all_container_names()) == 0
+        self.assertIn(('--network="%s"' % network), cmd, 'cmd=%s expected=%s' % (cmd, expected))
 
+        config.LAMBDA_DOCKER_NETWORK = ''
 
-def test_docker_command_for_separate_container_lambda_executor():
+    def test_destroy_idle_containers(self):
+        # run these tests only for the "reuse containers" Lambda executor
+        if not isinstance(lambda_api.LAMBDA_EXECUTOR,
+                          lambda_executors.LambdaExecutorReuseContainers):
+            return
 
-    # run these tests only for the "separate containers" Lambda executor
-    if not isinstance(lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorSeparateContainers):
-        return
+        executor = lambda_api.LAMBDA_EXECUTOR
+        func_name = 'test_destroy_idle_containers'
+        func_arn = lambda_api.func_arn(func_name)
 
-    executor = lambda_api.LAMBDA_EXECUTOR
-    func_name = 'test_docker_command_for_separate_container_lambda_executor'
+        # make sure existing containers are gone
+        executor.destroy_existing_docker_containers()
+        self.assertEqual(len(executor.get_all_container_names()), 0)
 
-    func_arn = lambda_api.func_arn(func_name)
+        # deploy and invoke lambda without Docker
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_ENV),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
+        testutil.create_lambda_function(
+            func_name=func_name,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON27,
+            envvars={'Hello': 'World'}
+        )
 
-    handler = 'handler'
-    lambda_cwd = '/app/lambda'
-    network = 'compose_network'
+        self.assertEqual(len(executor.get_all_container_names()), 0)
 
-    config.LAMBDA_DOCKER_NETWORK = network
+        self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
+        self.assertEqual(len(executor.get_all_container_names()), 1)
 
-    cmd = executor.prepare_execution(func_arn, {}, LAMBDA_RUNTIME_NODEJS810, '', handler, lambda_cwd)
+        # try to destroy idle containers.
+        executor.idle_container_destroyer()
+        self.assertEqual(len(executor.get_all_container_names()), 1)
 
-    expected = 'docker run -v "%s":/var/task   --network="%s"  --rm "lambci/lambda:%s" "%s"' % (
-        lambda_cwd, network, LAMBDA_RUNTIME_NODEJS810, handler)
-
-    assert ('--network="%s"' % network) in cmd, 'cmd=%s expected=%s' % (cmd, expected)
-
-    config.LAMBDA_DOCKER_NETWORK = ''
-
-
-def test_destroy_idle_containers():
-
-    # run these tests only for the "reuse containers" Lambda executor
-    if not isinstance(lambda_api.LAMBDA_EXECUTOR, lambda_executors.LambdaExecutorReuseContainers):
-        return
-
-    executor = lambda_api.LAMBDA_EXECUTOR
-    func_name = 'test_destroy_idle_containers'
-
-    # create a new lambda
-    lambda_client = aws_stack.connect_to_service('lambda')
-
-    func_arn = lambda_api.func_arn(func_name)
-
-    # make sure existing containers are gone
-    executor.destroy_existing_docker_containers()
-    assert len(executor.get_all_container_names()) == 0
-
-    # deploy and invoke lambda without Docker
-    zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_ENV), get_content=True,
-                                              libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-    testutil.create_lambda_function(func_name=func_name,
-                                    zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON27, envvars={'Hello': 'World'})
-
-    assert len(executor.get_all_container_names()) == 0
-
-    lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
-    assert len(executor.get_all_container_names()) == 1
-
-    # try to destroy idle containers.
-    executor.idle_container_destroyer()
-    assert len(executor.get_all_container_names()) == 1
-
-    # simulate an idle container
-    executor.function_invoke_times[func_arn] = time.time() - 610
-    executor.idle_container_destroyer()
-    assert len(executor.get_all_container_names()) == 0
+        # simulate an idle container
+        executor.function_invoke_times[func_arn] = time.time() - 610
+        executor.idle_container_destroyer()
+        self.assertEqual(len(executor.get_all_container_names()), 0)
