@@ -412,6 +412,7 @@ localstack web
 
 ## Change Log
 
+* v0.8.9: Replace moto-ext with upstream moto; fix SNS message attributes; fix swagger; make external SQS port configurable; support for SNS DeleteTopic; S3 notifications for multipart uploads; support requestContext in AWS_PROXY integration; update docs for SSL usage
 * v0.8.8: Support Docker network config for Lambda containers; support queryStringParameters for Lambda AWS_PROXY apigateway; add AWS SecretsManager service; add SQS/Lambda integration; add support for Firehose Kinesis source; add GetAlias to Lambda API; add function properties to LambdaContext for invocations; fix extraction of Java Lambda archives; check region headers for SNS; fix Lambda output buffering; fix S3 download of gzip; bump ElasticMQ to 0.14.5; fix Lambda response codes; fix syntax issues for Python 3.7
 * v0.8.7: Support .Net Core 2.0 and nodejs8.10 Lambdas; refactor Java libs and integrate with JUnit 5; support tags for ES domains; add CloudFormation support for SNS topics; fix kinesis error injection; fix override of `ES_JAVA_OPTS`; fix SQS CORS preflight response; fix S3 content md5 checks and Host header; fix ES startup issue; Bump elasticmq to 0.13.10; bump kinesalite version
 * v0.8.6: Fixes for Windows installation; bump ES to 6.2.0; support filter policy for SNS; upgrade kinesalite; refactor JUnit runner; support Lambda PutFunctionConcurrency and GetEventSourceMapping; fixes for Terraform; add golang support to Lambda; fix file permission issue in Java Lambda tests; fix S3 bucket notification config

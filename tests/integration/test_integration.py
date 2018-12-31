@@ -11,7 +11,6 @@ from localstack.utils.common import load_file, short_uid, clone, to_bytes, to_st
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
-from localstack.utils.cloudwatch import cloudwatch_util
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
@@ -245,7 +244,8 @@ def test_kinesis_lambda_sns_ddb_sqs_streams():
     LOGGER.info('Waiting some time before finishing test.')
     time.sleep(2)
 
-    num_events = num_events_ddb + num_events_kinesis + num_events_sns + num_events_sqs
+    num_events_lambda = num_events_ddb + num_events_sns + num_events_sqs
+    num_events = num_events_lambda + num_events_kinesis
 
     def check_events():
         if len(EVENTS) != num_events:
@@ -264,14 +264,10 @@ def test_kinesis_lambda_sns_ddb_sqs_streams():
     # make sure the we have the right amount of INSERT/MODIFY event types
 
     # check cloudwatch notifications
-    stats1 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM)
-    assert len(stats1['Datapoints']) == 2 + num_events_sns
-    stats2 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM, 'Errors')
-    assert len(stats2['Datapoints']) == 1
-    stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)
-    assert len(stats3['Datapoints']) == num_events_ddb
-    stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_QUEUE)
-    assert len(stats3['Datapoints']) == num_events_sqs
+    num_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM)
+    assert num_invocations == 2 + num_events_lambda
+    num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
+    assert num_error_invocations == 1
 
 
 def test_kinesis_lambda_forward_chain():
@@ -311,8 +307,14 @@ def get_event_source_arn(stream_name):
     return kinesis.describe_stream(StreamName=stream_name)['StreamDescription']['StreamARN']
 
 
-def get_lambda_metrics(func_name, metric='Invocations'):
-    return cloudwatch_util.get_metric_statistics(
+def get_lambda_invocations_count(lambda_name, metric=None):
+    return get_lambda_metrics(lambda_name, metric)['Datapoints'][-1]['Sum']
+
+
+def get_lambda_metrics(func_name, metric=None):
+    metric = metric or 'Invocations'
+    cloudwatch = aws_stack.connect_to_service('cloudwatch')
+    return cloudwatch.get_metric_statistics(
         Namespace='AWS/Lambda',
         MetricName=metric,
         Dimensions=[{'Name': 'FunctionName', 'Value': func_name}],

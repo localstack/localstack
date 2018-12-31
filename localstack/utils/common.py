@@ -242,9 +242,9 @@ def in_docker():
     return config.in_docker()
 
 
-def is_port_open(port_or_url):
+def is_port_open(port_or_url, http_path=None, expect_success=True):
     port = port_or_url
-    host = '127.0.0.1'
+    host = 'localhost'
     if isinstance(port, six.string_types):
         url = urlparse(port_or_url)
         port = url.port
@@ -252,14 +252,26 @@ def is_port_open(port_or_url):
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         sock.settimeout(1)
         result = sock.connect_ex((host, port))
-        return result == 0
+        if result != 0:
+            return False
+    if not http_path:
+        return True
+    url = 'http://%s:%s%s' % (host, port, http_path)
+    try:
+        response = requests.get(url)
+        return not expect_success or response.status_code < 400
+    except Exception:
+        return False
 
 
-def wait_for_port_open(port, retries=10, sleep_time=0.5):
-    for i in range(0, retries):
-        if is_port_open(port):
-            break
-        time.sleep(sleep_time)
+def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sleep_time=0.5):
+    """ Ping the given network port until it becomes available (for a given number of retries).
+        If 'http_path' is set, make a GET request to this path and assert a non-error response. """
+    def check():
+        if not is_port_open(port, http_path=http_path, expect_success=expect_success):
+            raise Exception()
+
+    return retry(check, sleep=sleep_time, retries=retries)
 
 
 def timestamp(time=None, format=TIMESTAMP_FORMAT):

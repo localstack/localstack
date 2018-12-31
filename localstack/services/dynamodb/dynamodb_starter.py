@@ -14,8 +14,8 @@ LOGGER = logging.getLogger(__name__)
 def check_dynamodb(expect_shutdown=False, print_error=False):
     out = None
     try:
-        # wait for port to be opened
-        wait_for_port_open(DEFAULT_PORT_DYNAMODB_BACKEND)
+        # wait for backend port to be opened
+        wait_for_port_open(DEFAULT_PORT_DYNAMODB_BACKEND, http_path='/', expect_success=False, sleep_time=1)
         # check DynamoDB
         out = aws_stack.connect_to_service(service_name='dynamodb').list_tables()
     except Exception as e:
