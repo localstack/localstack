@@ -1,8 +1,7 @@
-import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import Response
 from localstack import config
-from localstack.utils.common import now_utc, make_http_request, to_str
+from localstack.utils.common import now_utc
 from localstack.utils.aws import aws_stack
 
 
@@ -54,34 +53,6 @@ def publish_lambda_result(time_before, result, kwargs):
 # ---------------
 # Helper methods
 # ---------------
-
-
-# TODO: this is a backdoor based hack until get_metric_statistics becomes available in moto
-def get_metric_statistics(Namespace, MetricName, Dimensions,
-        Period=60, StartTime=None, EndTime=None, Statistics=None):
-    if not StartTime:
-        StartTime = datetime.now() - timedelta(minutes=5)
-    if not EndTime:
-        EndTime = datetime.now()
-    if Statistics is None:
-        Statistics = ['Sum']
-    cloudwatch_url = aws_stack.get_local_service_url('cloudwatch')
-    url = '%s/?Action=GetMetricValues' % cloudwatch_url
-    all_metrics = make_http_request(url)
-    assert all_metrics.status_code == 200
-    datapoints = []
-    for datapoint in json.loads(to_str(all_metrics.content)):
-        if datapoint['Namespace'] == Namespace and datapoint['Name'] == MetricName:
-            dp_dimensions = datapoint['Dimensions']
-            all_present = all(m in dp_dimensions for m in Dimensions)
-            no_additional = all(m in Dimensions for m in dp_dimensions)
-            if all_present and no_additional:
-                datapoints.append(datapoint)
-    result = {
-        'Label': '%s/%s' % (Namespace, MetricName),
-        'Datapoints': datapoints
-    }
-    return result
 
 
 def publish_result(ns, time_before, result, kwargs):

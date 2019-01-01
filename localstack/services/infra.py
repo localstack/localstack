@@ -60,6 +60,7 @@ LOG_DATE_FORMAT = TIMESTAMP_FORMAT
 
 
 class Plugin(object):
+
     def __init__(self, name, start, check=None, listener=None):
         self.plugin_name = name
         self.start_function = start
