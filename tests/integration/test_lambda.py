@@ -26,7 +26,7 @@ TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', '
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
-TEST_LAMBDA_NAME_PY3 = 'test_py3_lambda'
+TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
 TEST_LAMBDA_NAME_RUBY = 'test_lambda_ruby'
 TEST_LAMBDA_NAME_DOTNETCORE2 = 'test_lambda_dotnetcore2'
@@ -193,25 +193,27 @@ class TestPythonRuntimes(unittest.TestCase):
         self.assertEqual(lambda_name, context['function_name'])
 
     def test_docker_execution_used(self):
-        if use_docker():
-            zip_file = testutil.create_lambda_archive(
-                load_file(TEST_LAMBDA_PYTHON3),
-                get_content=True,
-                libs=TEST_LAMBDA_LIBS,
-                runtime=LAMBDA_RUNTIME_PYTHON36
-            )
-            testutil.create_lambda_function(
-                func_name=TEST_LAMBDA_NAME_PY3,
-                zip_file=zip_file,
-                runtime=LAMBDA_RUNTIME_PYTHON36
-            )
+        if not use_docker():
+            return
 
-            result = self.lambda_client.invoke(
-                FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
-            result_data = result['Payload'].read()
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON3),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_PY3,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
 
-            self.assertEqual(result['StatusCode'], 200)
-            self.assertEqual(to_str(result_data).strip(), '{}')
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(to_str(result_data).strip(), '{}')
 
 
 class TestNodeJSRuntimes(unittest.TestCase):
@@ -220,21 +222,23 @@ class TestNodeJSRuntimes(unittest.TestCase):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
 
     def test_docker_execution_used(self):
-        if use_docker():
-            zip_file = testutil.create_zip_file(
-                TEST_LAMBDA_NODEJS, get_content=True)
-            testutil.create_lambda_function(
-                func_name=TEST_LAMBDA_NAME_JS,
-                zip_file=zip_file,
-                handler='lambda_integration.handler',
-                runtime=LAMBDA_RUNTIME_NODEJS
-            )
-            result = self.lambda_client.invoke(
-                FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')
-            result_data = result['Payload'].read()
+        if not use_docker():
+            return
 
-            self.assertEqual(result['StatusCode'], 200)
-            self.assertEqual(to_str(result_data).strip(), '{}')
+        zip_file = testutil.create_zip_file(
+            TEST_LAMBDA_NODEJS, get_content=True)
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JS,
+            zip_file=zip_file,
+            handler='lambda_integration.handler',
+            runtime=LAMBDA_RUNTIME_NODEJS
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(to_str(result_data).strip(), '{}')
 
 
 class TestDotNetCoreRuntimes(unittest.TestCase):
@@ -249,19 +253,21 @@ class TestDotNetCoreRuntimes(unittest.TestCase):
             cls.zip_file_content = file_obj.read()
 
     def test_docker_execution_used(self):
-        if use_docker():
-            testutil.create_lambda_function(
-                func_name=TEST_LAMBDA_NAME_DOTNETCORE2,
-                zip_file=self.zip_file_content,
-                handler='DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler',
-                runtime=LAMBDA_RUNTIME_DOTNETCORE2
-            )
-            result = self.lambda_client.invoke(
-                FunctionName=TEST_LAMBDA_NAME_DOTNETCORE2, Payload=b'{}')
-            result_data = result['Payload'].read()
+        if not use_docker():
+            return
 
-            self.assertEqual(result['StatusCode'], 200)
-            self.assertEqual(to_str(result_data).strip(), '{}')
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_DOTNETCORE2,
+            zip_file=self.zip_file_content,
+            handler='DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler',
+            runtime=LAMBDA_RUNTIME_DOTNETCORE2
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_DOTNETCORE2, Payload=b'{}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(to_str(result_data).strip(), '{}')
 
 
 class TestRubyRuntimes(unittest.TestCase):
@@ -270,21 +276,23 @@ class TestRubyRuntimes(unittest.TestCase):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
 
     def test_docker_execution_used(self):
-        if use_docker():
-            zip_file = testutil.create_zip_file(
-                TEST_LAMBDA_RUBY, get_content=True)
-            testutil.create_lambda_function(
-                func_name=TEST_LAMBDA_NAME_RUBY,
-                zip_file=zip_file,
-                handler='lambda_integration.handler',
-                runtime=LAMBDA_RUNTIME_RUBY25
-            )
-            result = self.lambda_client.invoke(
-                FunctionName=TEST_LAMBDA_NAME_RUBY, Payload=b'{}')
-            result_data = result['Payload'].read()
+        if not use_docker():
+            return
 
-            self.assertEqual(result['StatusCode'], 200)
-            self.assertEqual(to_str(result_data).strip(), '{}')
+        zip_file = testutil.create_zip_file(
+            TEST_LAMBDA_RUBY, get_content=True)
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_RUBY,
+            zip_file=zip_file,
+            handler='lambda_integration.handler',
+            runtime=LAMBDA_RUNTIME_RUBY25
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_RUBY, Payload=b'{}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(to_str(result_data).strip(), '{}')
 
 
 class TestJavaRuntimes(unittest.TestCase):

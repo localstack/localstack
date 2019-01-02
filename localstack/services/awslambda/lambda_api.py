@@ -151,7 +151,6 @@ def use_docker():
         if 'docker' in config.LAMBDA_EXECUTOR:
             try:
                 run('docker images', print_error=False)
-                # run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
                 DO_USE_DOCKER = True
             except Exception:
                 pass
@@ -594,7 +593,7 @@ def create_function():
             result['Version'] = publish_new_function_version(arn)['Version']
         return jsonify(result or {})
     except Exception as e:
-        del arn_to_lambda[arn]
+        arn_to_lambda.pop(arn, None)
         return error_response('Unknown error: %s %s' % (e, traceback.format_exc()))
 
 

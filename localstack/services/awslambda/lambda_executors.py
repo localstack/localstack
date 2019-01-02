@@ -215,9 +215,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             # Get the container name and id.
             container_name = self.get_container_name(func_arn)
 
-            LOG.debug('Priming docker container: %s' % container_name)
-
             status = self.get_docker_container_status(func_arn)
+            LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
+
             # Container is not running or doesn't exist.
             if status < 1:
                 # Make sure the container does not exist in any form/state.
@@ -232,6 +232,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 LOG.debug('Creating container: %s' % container_name)
                 cmd = (
                     'docker create'
+                    ' --rm'
                     ' --name "%s"'
                     ' --entrypoint /bin/bash'  # Load bash when it starts.
                     ' --interactive'  # Keeps the container running bash.
@@ -243,7 +244,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' lambci/lambda:%s'
                 ) % (container_name, env_vars_str, network_str, runtime)
                 LOG.debug(cmd)
-                run(cmd, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+                run(cmd)
 
                 LOG.debug('Copying files to container "%s" from "%s".' % (container_name, lambda_cwd))
                 cmd = (
@@ -251,12 +252,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' "%s/." "%s:/var/task"'
                 ) % (lambda_cwd, container_name)
                 LOG.debug(cmd)
-                run(cmd, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+                run(cmd)
 
                 LOG.debug('Starting container: %s' % container_name)
                 cmd = 'docker start %s' % (container_name)
                 LOG.debug(cmd)
-                run(cmd, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+                run(cmd)
                 # give the container some time to start up
                 time.sleep(1)
 
@@ -269,7 +270,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             ) % (runtime)
 
             LOG.debug(cmd)
-            run_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+            run_result = run(cmd)
 
             entry_point = run_result.strip('[]\n\r ')
 
@@ -356,17 +357,14 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             # Get the container name and id.
             container_name = self.get_container_name(func_arn)
 
-            # Check if the container is already running.
-            LOG.debug('Getting container status: %s' % container_name)
-            cmd = (
-                'docker ps'
-                ' -a'
-                ' --filter name="%s"'
-                ' --format "{{ .Status }}"'
-            ) % (container_name)
-
-            LOG.debug(cmd)
-            cmd_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
+            # Check if the container is already running
+            # Note: filtering by *exact* name using regex filter '^...$' seems unstable on some
+            # systems. Therefore, we use a combination of filter and grep to get the results.
+            cmd = ('docker ps -a --filter name=\'%s\' '
+                   '--format "{{ .Status }} - {{ .Names }}" '
+                   '| grep -w "%s" | cat') % (container_name, container_name)
+            LOG.debug('Getting status for container "%s": %s' % (container_name, cmd))
+            cmd_result = run(cmd)
 
             # If the container doesn't exist. Create and start it.
             container_status = cmd_result.strip()

@@ -675,7 +675,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=
                 mutex_popen.release()
         except subprocess.CalledProcessError as e:
             if print_error:
-                print("ERROR: '%s': %s" % (cmd, e.output))
+                print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
             raise e
 
     if cache_duration_secs <= 0:
