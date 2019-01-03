@@ -1,7 +1,7 @@
 import os
 import logging
 from localstack.constants import DEFAULT_PORT_SQS_BACKEND
-from localstack.config import PORT_SQS, LOCALSTACK_HOSTNAME, TMP_FOLDER
+from localstack.config import PORT_SQS, LOCALSTACK_HOSTNAME, TMP_FOLDER, SQS_QUEUES
 from localstack.utils.common import save_file, short_uid, TMP_FILES
 from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq
@@ -27,7 +27,8 @@ def start_sqs(port=PORT_SQS, asynchronous=False, update_listener=None):
         bind-hostname = "0.0.0.0"
         sqs-limits = strict
     }
-    """ % (LOCALSTACK_HOSTNAME, port, backend_port)
+    %s
+    """ % (LOCALSTACK_HOSTNAME, port, backend_port, SQS_QUEUES)
     config_file = os.path.join(TMP_FOLDER, 'sqs.%s.conf' % short_uid())
     TMP_FILES.append(config_file)
     save_file(config_file, config)
