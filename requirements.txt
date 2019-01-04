@@ -2,7 +2,7 @@
 # from the dependencies when we build the pip package
 
 airspeed==0.5.10
-amazon-kclpy==1.4.5  #extended-lib
+amazon-kclpy==1.5.0
 awscli>=1.14.18
 boto>=2.49.0
 boto3>=1.9.71

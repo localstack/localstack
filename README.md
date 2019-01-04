@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/localstack/localstack.png)](https://travis-ci.org/localstack/localstack) [![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors) [![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/atlassian/localstack?branch=master)
+[![Build Status](https://travis-ci.org/localstack/localstack.png)](https://travis-ci.org/localstack/localstack) [![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors) [![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/localstack/localstack?branch=master)
 [![Gitter](https://img.shields.io/gitter/room/localstack/Platform.svg)](https://gitter.im/localstack/Platform)
 [![PyPI Version](https://badge.fury.io/py/localstack.svg)](https://badge.fury.io/py/localstack)
 [![PyPI License](https://img.shields.io/pypi/l/localstack.svg)](https://img.shields.io/pypi/l/localstack.svg)
-[![Code Climate](https://codeclimate.com/github/atlassian/localstack/badges/gpa.svg)](https://codeclimate.com/github/atlassian/localstack)
+[![Code Climate](https://codeclimate.com/github/localstack/localstack/badges/gpa.svg)](https://codeclimate.com/github/localstack/localstack)
 [![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/_localstack)
 
 # LocalStack - A fully functional local AWS cloud stack
@@ -412,6 +412,7 @@ localstack web
 
 ## Change Log
 
+* v0.8.10: Add kclpy to pip package; fix badges in README
 * v0.8.9: Replace moto-ext with upstream moto; fix SNS message attributes; fix swagger; make external SQS port configurable; support for SNS DeleteTopic; S3 notifications for multipart uploads; support requestContext in AWS_PROXY integration; update docs for SSL usage
 * v0.8.8: Support Docker network config for Lambda containers; support queryStringParameters for Lambda AWS_PROXY apigateway; add AWS SecretsManager service; add SQS/Lambda integration; add support for Firehose Kinesis source; add GetAlias to Lambda API; add function properties to LambdaContext for invocations; fix extraction of Java Lambda archives; check region headers for SNS; fix Lambda output buffering; fix S3 download of gzip; bump ElasticMQ to 0.14.5; fix Lambda response codes; fix syntax issues for Python 3.7
 * v0.8.7: Support .Net Core 2.0 and nodejs8.10 Lambdas; refactor Java libs and integrate with JUnit 5; support tags for ES domains; add CloudFormation support for SNS topics; fix kinesis error injection; fix override of `ES_JAVA_OPTS`; fix SQS CORS preflight response; fix S3 content md5 checks and Host header; fix ES startup issue; Bump elasticmq to 0.13.10; bump kinesalite version
@@ -520,7 +521,7 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 
 ## License
 
-Copyright (c) 2017 *LocalStack* maintainers and contributors.
+Copyright (c) 2017-2019 *LocalStack* maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
@@ -528,26 +529,26 @@ This version of *LocalStack* is released under the Apache License, Version 2.0 (
 By downloading and using this software you agree to the
 [End-User License Agreement (EULA)](doc/end_user_license_agreement).
 
-We build on a number of third-party software tools, with the following licenses:
+We build on a number of third-party software tools, including the following:
 
-Third-Party software		| 	License
-----------------------------|-----------------------
-**Python/pip modules:**		|
-airspeed					| BSD License
-amazon_kclpy				| Amazon Software License
-boto3						| Apache License 2.0
-coverage					| Apache License 2.0
-docopt						| MIT License
-elasticsearch				| Apache License 2.0
-flask						| BSD License
-flask_swagger				| MIT License
-jsonpath-rw					| Apache License 2.0
-moto						| Apache License 2.0
-nose						| GNU LGPL
-pep8						| Expat license
-requests					| Apache License 2.0
-subprocess32				| PSF License
-**Node.js/npm modules:**	|
-kinesalite					| MIT License
-**Other tools:**			|
-Elasticsearch 				| Apache License 2.0
+Third-Party software      | 	License
+--------------------------|-----------------------
+**Python/pip modules:**   |
+airspeed                  | BSD License
+amazon_kclpy              | Amazon Software License
+boto3                     | Apache License 2.0
+coverage                  | Apache License 2.0
+docopt                    | MIT License
+elasticsearch             | Apache License 2.0
+flask                     | BSD License
+flask_swagger             | MIT License
+jsonpath-rw               | Apache License 2.0
+moto                      | Apache License 2.0
+nose                      | GNU LGPL
+pep8                      | Expat license
+requests                  | Apache License 2.0
+subprocess32              | PSF License
+**Node.js/npm modules:**  |
+kinesalite                | MIT License
+**Other tools:**          |
+Elasticsearch             | Apache License 2.0
