@@ -572,8 +572,6 @@ class ProxyListenerS3(ProxyListener):
         # Except we do want to notify on a multipart upload completion, which does use a query.
         elif method == 'POST' and query.startswith('uploadId'):
             return True
-        else:
-            return False
 
 
 # instantiate listener

@@ -137,8 +137,9 @@ def test_s3_upload_fileobj_with_large_file_notification():
         os.remove(large_file.name)
 
 
-def test_s3_multipart_upload_notification():
-
+def test_s3_multipart_upload_with_small_single_part():
+    # In a multipart upload "Each part must be at least 5 MB in size, except the last part."
+    # https://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
     s3_client = aws_stack.connect_to_service('s3')
     sqs_client = aws_stack.connect_to_service('sqs')
 
@@ -165,8 +166,6 @@ def test_s3_multipart_upload_notification():
     with gzip.GzipFile(fileobj=upload_file_object, mode='w') as filestream:
         filestream.write(data.encode('utf-8'))
 
-    # In a multipart upload "Each part must be at least 5 MB in size, except the last part."
-    # https://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
     response = s3_client.upload_part(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                      Body=upload_file_object.getvalue(),
                                      Key=key_by_path,
