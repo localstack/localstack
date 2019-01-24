@@ -105,7 +105,7 @@ class S3ListenerTest (unittest.TestCase):
     def test_get_bucket_lifecycle(self):
         bucket_name = 'test-bucket'
         returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
-        self.assertRegexpMatches(returned_empty_lifecycle._content,r'LifecycleConfiguration')
+        self.assertRegexpMatches(returned_empty_lifecycle._content, r'LifecycleConfiguration')
 
     def test_get_bucket_name(self):
         bucket_name = 'test-bucket'
