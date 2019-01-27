@@ -7,7 +7,7 @@ import shutil
 import logging
 import tempfile
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
-    ELASTICSEARCH_JAR_URL, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION)
+    ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION)
 from localstack.utils.common import download, parallelize, run, mkdir, save_file, unzip, rm_rf, chmod_r
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -46,6 +46,14 @@ def install_elasticsearch():
             dir_path = '%s/%s' % (INSTALL_DIR_ES, dir_name)
             mkdir(dir_path)
             chmod_r(dir_path, 0o777)
+
+        # install default plugins
+        for plugin in ELASTICSEARCH_PLUGIN_LIST:
+            if is_alpine():
+                # https://github.com/pires/docker-elasticsearch/issues/56
+                os.environ['ES_TMPDIR'] = '/tmp'
+            plugin_binary = os.path.join(INSTALL_DIR_ES, 'bin', 'elasticsearch-plugin')
+            run('%s install %s' % (plugin_binary, plugin))
 
 
 def install_elasticmq():
