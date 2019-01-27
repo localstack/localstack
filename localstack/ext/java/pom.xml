@@ -71,7 +71,14 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.16.20</version>
+            <version>1.18.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- required to build on java 9+ -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
