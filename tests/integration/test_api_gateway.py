@@ -136,7 +136,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM)
 
-    def _test_api_gateway_lambda_proxy_integration(self, _fnName, _path):
+    def _test_api_gateway_lambda_proxy_integration(self, fn_name, path):
         # create lambda function
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
@@ -145,20 +145,20 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
         testutil.create_lambda_function(
-            func_name=_fnName,
+            func_name=fn_name,
             zip_file=zip_file,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
 
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = aws_stack.lambda_function_arn(_fnName)
+        lambda_uri = aws_stack.lambda_function_arn(fn_name)
         invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
         target_uri = invocation_uri % (DEFAULT_REGION, lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
             'test_gateway2',
             target_uri,
-            path=_path
+            path=path
         )
 
         api_id = result['id']
@@ -166,7 +166,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         _, resource = get_resource_for_path('/lambda/foo1', path_map)
 
         # make test request to gateway and check response
-        path = _path.replace('{test_param1}', 'foo1')
+        path = path.replace('{test_param1}', 'foo1')
         path = path + '?foo=foo&bar=bar&bar=baz'
 
         url = INBOUND_GATEWAY_URL_PATTERN.format(
@@ -214,7 +214,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM)
 
-    def _test_api_gateway_lambda_proxy_integration_any_method(self, _fnName, _path):
+    def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
         # create lambda function
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
@@ -223,24 +223,24 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
         testutil.create_lambda_function(
-            func_name=_fnName,
+            func_name=fn_name,
             zip_file=zip_file,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
 
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = aws_stack.lambda_function_arn(_fnName)
+        lambda_uri = aws_stack.lambda_function_arn(fn_name)
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
             'test_gateway3',
             target_uri,
             methods=['ANY'],
-            path=_path
+            path=path
         )
 
         # make test request to gateway and check response
-        path = _path.replace('{test_param1}', 'foo1')
+        path = path.replace('{test_param1}', 'foo1')
         url = INBOUND_GATEWAY_URL_PATTERN.format(
             api_id=result['id'],
             stage_name=self.TEST_STAGE_NAME,
