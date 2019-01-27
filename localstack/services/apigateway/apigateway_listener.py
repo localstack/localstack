@@ -45,13 +45,7 @@ class ProxyListenerApiGateway(ProxyListener):
             try:
                 extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
             except Exception:
-                return make_error('Unable to find path %s (%s, %s, %s)' % (
-                    path,
-                    api_id,
-                    stage,
-                    relative_path_w_query_params,
-                    relative_path,
-                    query_string_params), 404)
+                return make_error('Unable to find path %s' % path, 404)
 
             integrations = resource.get('resourceMethods', {})
             integration = integrations.get(method, {})
@@ -133,7 +127,7 @@ class ProxyListenerApiGateway(ProxyListener):
                 else:
                     msg = 'API Gateway action uri "%s" not yet implemented' % uri
                     LOGGER.warning(msg)
-                    return make_error(msg, 407)
+                    return make_error(msg, 404)
 
             elif integration['type'] == 'HTTP':
                 function = getattr(requests, method.lower())
