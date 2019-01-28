@@ -37,34 +37,28 @@ class ProxyListenerApiGateway(ProxyListener):
             search_match = re.search(regex2, path)
             api_id = search_match.group(1)
             stage = search_match.group(2)
-            relative_path = '/%s' % search_match.group(3)
+            relative_path_w_query_params = '/%s' % search_match.group(3)
+
+            relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
+
+            path_map = get_rest_api_paths(rest_api_id=api_id)
             try:
-                integration = aws_stack.get_apigateway_integration(api_id, method, path=relative_path)
-                assert integration
+                extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
             except Exception:
-                try:
-                    integration = aws_stack.get_apigateway_integration(api_id, 'ANY', path=relative_path)
-                    assert integration
-                except Exception:
-                    # if we have no exact match, try to find an API resource that contains path parameters
-                    path_map = get_rest_api_paths(rest_api_id=api_id)
-                    try:
-                        extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
-                    except Exception:
-                        return make_error('Unable to find path %s' % path, 404)
+                return make_error('Unable to find path %s' % path, 404)
 
-                    integrations = resource.get('resourceMethods', {})
-                    integration = integrations.get(method, {})
-                    if not integration:
-                        integration = integrations.get('ANY', {})
-                    integration = integration.get('methodIntegration')
-                    if not integration:
+            integrations = resource.get('resourceMethods', {})
+            integration = integrations.get(method, {})
+            if not integration:
+                integration = integrations.get('ANY', {})
+            integration = integration.get('methodIntegration')
+            if not integration:
 
-                        if method == 'OPTIONS' and 'Origin' in headers:
-                            # default to returning CORS headers if this is an OPTIONS request
-                            return get_cors_response(headers)
+                if method == 'OPTIONS' and 'Origin' in headers:
+                    # default to returning CORS headers if this is an OPTIONS request
+                    return get_cors_response(headers)
 
-                        return make_error('Unable to find integration for path %s' % path, 404)
+                return make_error('Unable to find integration for path %s' % path, 404)
 
             uri = integration.get('uri')
             if method == 'POST' and integration['type'] == 'AWS':
@@ -88,8 +82,6 @@ class ProxyListenerApiGateway(ProxyListener):
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
                     account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
                     data_str = json.dumps(data) if isinstance(data, dict) else data
-
-                    relative_path, query_string_params = extract_query_string_params(path=relative_path)
 
                     source_ip = headers['X-Forwarded-For'].split(',')[-2]
 
