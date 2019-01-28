@@ -246,7 +246,7 @@ def get_lifecycle(bucket_name):
     if not lifecycle:
         # TODO: check if bucket exists, otherwise return 404-like error
         lifecycle = {
-            'LifecycleConfiguration': []
+            'LifecycleConfiguration': {}
         }
     body = xmltodict.unparse(lifecycle)
     response._content = body
