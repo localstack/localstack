@@ -176,3 +176,13 @@ class S3ListenerTest (unittest.TestCase):
         self.assertTrue(match(['s3:ObjectDeleted:*'], 'ObjectDeleted', 'Delete'))
         self.assertFalse(match(['s3:ObjectCreated:Post'], 'ObjectCreated', 'Put'))
         self.assertFalse(match(['s3:ObjectCreated:Post'], 'ObjectDeleted', 'Put'))
+
+    def test_is_query_allowable(self):
+        self.assertTrue(s3_listener.ProxyListenerS3.is_query_allowable('POST', 'uploadId'))
+        self.assertTrue(s3_listener.ProxyListenerS3.is_query_allowable('POST', ''))
+        self.assertTrue(s3_listener.ProxyListenerS3.is_query_allowable('PUT', ''))
+        self.assertFalse(s3_listener.ProxyListenerS3.is_query_allowable('POST', 'differentQueryString'))
+        # abort multipart upload is a delete with the same query string as a complete multipart upload
+        self.assertFalse(s3_listener.ProxyListenerS3.is_query_allowable('DELETE', 'uploadId'))
+        self.assertFalse(s3_listener.ProxyListenerS3.is_query_allowable('DELETE', 'differentQueryString'))
+        self.assertFalse(s3_listener.ProxyListenerS3.is_query_allowable('PUT', 'uploadId'))

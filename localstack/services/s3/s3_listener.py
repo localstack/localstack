@@ -500,17 +500,13 @@ class ProxyListenerS3(ProxyListener):
 
         bucket_name_in_host = headers['host'].startswith(bucket_name)
 
-        # TODO Not sure if this is the best way to determine the multipart upload or not
-        multipart_upload_complete = method is 'POST' and 'uploadId' in parsed.query
-        should_send_notifications = multipart_upload_complete or all([
+        should_send_notifications = all([
             method in ('PUT', 'POST', 'DELETE'),
             '/' in path[1:] or bucket_name_in_host,
             # check if this is an actual put object request, because it could also be
             # a put bucket request with a path like this: /bucket_name/
             bucket_name_in_host or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0),
-            # don't send notification if url has a query part (some/path/with?query)
-            # (query can be one of 'notification', 'lifecycle', 'tagging', etc)
-            not parsed.query
+            self.is_query_allowable(method, parsed.query)
         ])
 
         # get subscribers and send bucket notifications
@@ -567,6 +563,15 @@ class ProxyListenerS3(ProxyListener):
             # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
             if method == 'DELETE':
                 response.headers['content-length'] = len(response._content)
+
+    @staticmethod
+    def is_query_allowable(method, query):
+        # Generally if there is a query (some/path/with?query) we don't want to send notifications
+        if not query:
+            return True
+        # Except we do want to notify on a multipart upload completion, which does use a query.
+        elif method == 'POST' and query.startswith('uploadId'):
+            return True
 
 
 # instantiate listener
