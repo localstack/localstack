@@ -335,7 +335,7 @@ def check_aws_credentials():
 # -----------------------------
 
 
-def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[]):
+def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=[]):
     try:
         print_error = retries <= 0
 
