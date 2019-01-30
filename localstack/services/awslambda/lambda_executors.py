@@ -63,9 +63,10 @@ class LambdaExecutor(object):
             result = '{"asynchronous": "%s"}' % asynchronous
             log_output = 'Lambda executed asynchronously'
         else:
-            return_code = process.wait()
-            result = to_str(process.stdout.read())
-            log_output = to_str(process.stderr.read())
+            result, log_output = process.communicate()
+            result = to_str(result)
+            log_output = to_str(log_output)
+            return_code = process.returncode
 
             if return_code != 0:
                 raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
