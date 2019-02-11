@@ -3,6 +3,7 @@ package cloud.localstack;
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.UUID;
@@ -49,6 +50,30 @@ public class S3UploadTest {
 	@Test
 	public void testLessThan128k() throws Exception  {
 		testUpload(String.join("", Collections.nCopies(13107, "abcdefghij"))); // Just slightly less than 2^17 bytes
+    }
+
+	/**
+	 * Tests upload of empty file. This is an operation that hadoop's S3AFilesystem executes to create "directories"
+	 * in S3.
+	 *
+	 * This test is currently failing because the S3 server doesn't properly calculate the MD5 of null string.
+	 */
+	@Test
+	public void testZeroLengthUpload() {
+		AmazonS3 client = TestUtils.getClientS3();
+
+		String bucketName = UUID.randomUUID().toString();
+		String keyName = UUID.randomUUID().toString();
+		client.createBucket(bucketName);
+
+		final ObjectMetadata objectMetadata = new ObjectMetadata();
+		final InputStream inputStream = new ByteArrayInputStream(new byte[0]);
+		objectMetadata.setContentLength(0L);
+		PutObjectRequest putObjectRequest = new PutObjectRequest(bucketName,
+																 keyName,
+																 inputStream,
+																 objectMetadata);
+		client.putObject(putObjectRequest);
 	}
 
 	private void testUpload(final String dataString) throws Exception {
