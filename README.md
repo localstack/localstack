@@ -46,6 +46,7 @@ any longer.
 * **CloudWatch** at http://localhost:4582
 * **SSM** at http://localhost:4583
 * **SecretsManager** at http://localhost:4584
+* **STS** at http://localhost:4592
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
