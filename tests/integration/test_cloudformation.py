@@ -117,8 +117,8 @@ class CloudFormationTest(unittest.TestCase):
             self.fail('Should raise ValidationError')
         except (ClientError, ResponseParserError) as err:
             if isinstance(err, ClientError):
-                self.assertEquals(err.response['ResponseMetadata']['HTTPStatusCode'], 400)
-                self.assertEquals(err.response['Error']['Message'], 'Template Validation Error')
+                self.assertEqual(err.response['ResponseMetadata']['HTTPStatusCode'], 400)
+                self.assertEqual(err.response['Error']['Message'], 'Template Validation Error')
 
     def test_list_stack_resources_returns_queue_urls(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')

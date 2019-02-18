@@ -46,6 +46,7 @@ any longer.
 * **CloudWatch** at http://localhost:4582
 * **SSM** at http://localhost:4583
 * **SecretsManager** at http://localhost:4584
+* **StepFunctions** at http://localhost:4585
 * **STS** at http://localhost:4592
 
 
@@ -362,7 +363,7 @@ with the `--user` flag: `pip install --user localstack`
 * The environment variable `no_proxy` is rewritten by *LocalStack*.
 (Internal requests will go straight via localhost, bypassing any proxy configuration).
 
-* For troubleshooting localstack start issues, you can check debug logs by running `DEBUG=1 localstack start`
+* For troubleshooting LocalStack start issues, you can check debug logs by running `DEBUG=1 localstack start`
 
 * In case you get errors related to node/nodejs, you may find (this issue comment: https://github.com/localstack/localstack/issues/227#issuecomment-319938530) helpful.
 

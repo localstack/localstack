@@ -97,7 +97,9 @@ def load_plugin_from_path(file_path, scope=None):
             namespace = {}
             exec('from %s.plugins import %s' % (module, method_name), namespace)
             method_to_execute = namespace[method_name]
-        except Exception:
+        except Exception as e:
+            if not re.match(r'.*cannot import name .*%s.*' % method_name, str(e)):
+                LOGGER.debug('Unable to load plugins from module %s: %s' % (module, e))
             return
         try:
             return method_to_execute()
@@ -149,11 +151,6 @@ def start_s3(port=PORT_S3, asynchronous=False, update_listener=None):
 def start_sns(port=PORT_SNS, asynchronous=False, update_listener=None):
     return start_moto_server('sns', port, name='SNS', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
-
-
-# def start_cloudformation(port=PORT_CLOUDFORMATION, asynchronous=False, update_listener=None):
-#     return start_moto_server('cloudformation', port, name='CloudFormation', asynchronous=asynchronous,
-#         backend_port=DEFAULT_PORT_CLOUDFORMATION_BACKEND, update_listener=update_listener)
 
 
 def start_cloudwatch(port=PORT_CLOUDWATCH, asynchronous=False):
