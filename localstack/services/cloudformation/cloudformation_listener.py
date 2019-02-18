@@ -1,9 +1,6 @@
-import re
 import uuid
 import logging
-import xmltodict
-import requests
-from requests.models import Response, Request
+from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import to_str
@@ -55,14 +52,23 @@ def stack_exists(stack_name):
     return False
 
 
+# TODO - deprecated - remove!
 def create_stack(req_data):
     stack_name = req_data.get('StackName')[0]
     if stack_exists(stack_name):
         message = 'The resource with the name requested already exists.'
         return error_response(message, error_type='AlreadyExists')
+    # create stack
+    cloudformation_service = aws_stack.connect_to_service('cloudformation')
+    template = template_deployer.template_to_json(req_data.get('TemplateBody')[0])
+    cloudformation_service.create_stack(StackName=stack_name,
+        TemplateBody=template)
+    # now run the actual deployment
+    template_deployer.deploy_template(template, stack_name)
     return True
 
 
+# TODO - deprecated - remove!
 def create_change_set(req_data):
     cs_name = req_data.get('ChangeSetName')[0]
     change_set_uuid = uuid.uuid4()
@@ -73,6 +79,7 @@ def create_change_set(req_data):
     return response
 
 
+# TODO - deprecated - remove!
 def describe_change_set(req_data):
     cs_arn = req_data.get('ChangeSetName')[0]
     cs_details = CHANGE_SETS.get(cs_arn)
@@ -87,6 +94,7 @@ def describe_change_set(req_data):
     return response
 
 
+# TODO - deprecated - remove!
 def execute_change_set(req_data):
     cs_arn = req_data.get('ChangeSetName')[0]
     stack_name = req_data.get('StackName')[0]
@@ -142,78 +150,10 @@ class ProxyListenerCloudFormation(ProxyListener):
             action = req_data.get('Action')[0]
 
         if req_data:
-            if action == 'CreateStack':
-                return create_stack(req_data)
-            if action == 'CreateChangeSet':
-                return create_change_set(req_data)
-            elif action == 'DescribeChangeSet':
-                return describe_change_set(req_data)
-            elif action == 'ExecuteChangeSet':
-                return execute_change_set(req_data)
-            elif action == 'UpdateStack' and req_data.get('TemplateURL'):
-                # Temporary fix until the moto CF backend can handle TemplateURL (currently fails)
-                url = re.sub(r'https?://s3\.amazonaws\.com', aws_stack.get_local_service_url('s3'),
-                    req_data.get('TemplateURL')[0])
-                req_data['TemplateBody'] = requests.get(url).content
-                modified_data = urlparse.urlencode(req_data, doseq=True)
-                return Request(data=modified_data, headers=headers, method=method)
-            elif action == 'ValidateTemplate':
+            if action == 'ValidateTemplate':
                 return validate_template(req_data)
 
         return True
-
-    def return_response(self, method, path, data, headers, response):
-        req_data = None
-        if method == 'POST' and path == '/':
-            req_data = urlparse.parse_qs(to_str(data))
-            action = req_data.get('Action')[0]
-
-        if req_data:
-            if action == 'DescribeStackResources':
-                if response.status_code < 300:
-                    response_dict = xmltodict.parse(response.content)['DescribeStackResourcesResponse']
-                    resources = response_dict['DescribeStackResourcesResult']['StackResources']
-                    if not resources:
-                        # Check if stack exists
-                        stack_name = req_data.get('StackName')[0]
-                        cloudformation_client = aws_stack.connect_to_service('cloudformation')
-                        try:
-                            cloudformation_client.describe_stacks(StackName=stack_name)
-                        except Exception:
-                            return error_response('Stack with name %s does not exist' % stack_name, code=404)
-            if action == 'DescribeStackResource':
-                if response.status_code >= 500:
-                    # fix an error in moto where it fails with 500 if the stack does not exist
-                    return error_response('Stack resource does not exist', code=404)
-            if action == 'ListStackResources':
-                response_dict = xmltodict.parse(response.content, force_list=('member'))['ListStackResourcesResponse']
-                resources = response_dict['ListStackResourcesResult']['StackResourceSummaries']
-                if resources:
-                    sqs_client = aws_stack.connect_to_service('sqs')
-                    content_str = content_str_original = to_str(response.content)
-                    new_response = Response()
-                    new_response.status_code = response.status_code
-                    new_response.headers = response.headers
-                    for resource in resources['member']:
-                        if resource['ResourceType'] == 'AWS::SQS::Queue':
-                            try:
-                                queue_name = resource['PhysicalResourceId']
-                                queue_url = sqs_client.get_queue_url(QueueName=queue_name)['QueueUrl']
-                            except Exception:
-                                stack_name = req_data.get('StackName')[0]
-                                return error_response('Stack with name %s does not exist' % stack_name, code=404)
-                            content_str = re.sub(resource['PhysicalResourceId'], queue_url, content_str)
-                    new_response._content = content_str
-                    if content_str_original != new_response._content:
-                        # if changes have been made, return patched response
-                        new_response.headers['content-length'] = len(new_response._content)
-                        return new_response
-            elif action in ('CreateStack', 'UpdateStack'):
-                if response.status_code >= 400:
-                    return response
-                # run the actual deployment
-                template = template_deployer.template_to_json(req_data.get('TemplateBody')[0])
-                template_deployer.deploy_template(template, req_data.get('StackName')[0])
 
 
 # instantiate listener

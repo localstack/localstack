@@ -1,10 +1,9 @@
 from localstack.services.infra import (register_plugin, Plugin,
-    start_s3, start_sns, start_ses, start_apigateway,
-    start_elasticsearch_service, start_lambda, start_redshift, start_firehose,
-    start_cloudwatch, start_cloudformation, start_dynamodbstreams, start_route53,
+    start_s3, start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
+    start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
     start_ssm, start_sts, start_secretsmanager)
 from localstack.services.apigateway import apigateway_listener
-from localstack.services.cloudformation import cloudformation_listener
+from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
 from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
 from localstack.services.kinesis import kinesis_listener, kinesis_starter
 from localstack.services.sns import sns_listener
@@ -62,7 +61,7 @@ def register_localstack_plugins():
         register_plugin(Plugin('route53',
             start=start_route53))
         register_plugin(Plugin('cloudformation',
-            start=start_cloudformation,
+            start=cloudformation_starter.start_cloudformation,
             listener=cloudformation_listener.UPDATE_CLOUDFORMATION))
         register_plugin(Plugin('cloudwatch',
             start=start_cloudwatch))

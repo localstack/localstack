@@ -15,7 +15,7 @@ PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
 # flag to indicate whether we are currently in the process of deployment
 MARKER_DONT_REDEPLOY_STACK = 'markerToIndicateNotToRedeployStack'
 
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -180,6 +180,12 @@ def convert_acl_cf_to_s3(acl):
     return re.sub('(?<!^)(?=[A-Z])', '-', acl).lower()
 
 
+def retrieve_topic_arn(topic_name):
+    topics = aws_stack.connect_to_service('sns').list_topics()['Topics']
+    topic_arns = [t['TopicArn'] for t in topics if t['TopicArn'].endswith(':%s' % topic_name)]
+    return topic_arns[0]
+
+
 # ----------------
 # CF TEMPLATE HANDLING
 # ----------------
@@ -197,11 +203,35 @@ def template_to_json(template):
 
 
 def get_resource_type(resource):
-    return resource['Type'].split('::', 1)[1]
+    parts = resource.get('Type', '').split('::', 1)
+    if len(parts) == 1:
+        return None
+    return parts[1]
 
 
 def get_service_name(resource):
-    return resource['Type'].split('::')[1].lower()
+    parts = resource.get('Type', '').split('::')
+    if len(parts) == 1:
+        return None
+    return parts[1].lower()
+
+
+def get_resource_name(resource):
+    res_type = get_resource_type(resource)
+    properties = resource.get('Properties') or {}
+    name = properties.get('Name')
+    if name:
+        return name
+
+    # try to extract name from attributes
+    if res_type == 'S3::Bucket':
+        name = properties.get('BucketName')
+    elif res_type == 'SQS::Queue':
+        name = properties.get('QueueName')
+    else:
+        LOG.warning('Unable to extract name for resource type "%s"' % res_type)
+
+    return name
 
 
 def get_client(resource):
@@ -218,24 +248,20 @@ def get_client(resource):
             return aws_stack.connect_to_resource(service)
         return aws_stack.connect_to_service(service)
     except Exception as e:
-        LOGGER.warning('Unable to get client for "%s" API, skipping deployment: %s' % (service, e))
+        LOG.warning('Unable to get client for "%s" API, skipping deployment: %s' % (service, e))
         return None
 
 
-def describe_stack_resources(stack_name, logical_resource_id):
+def describe_stack_resource(stack_name, logical_resource_id):
     client = aws_stack.connect_to_service('cloudformation')
-    resources = client.describe_stack_resources(StackName=stack_name, LogicalResourceId=logical_resource_id)
-    result = []
-    for res in resources['StackResources']:
-        if res.get('LogicalResourceId') == logical_resource_id:
-            result.append(res)
-    return result
+    result = client.describe_stack_resource(StackName=stack_name, LogicalResourceId=logical_resource_id)
+    return result['StackResourceDetail']
 
 
 def retrieve_resource_details(resource_id, resource_status, resources, stack_name):
-    resource = resources[resource_id]
+    resource = resources.get(resource_id)
     resource_id = resource_status.get('PhysicalResourceId') or resource_id
-    resource_type = resource_status['ResourceType']
+    resource_type = resource_status.get('ResourceType')
     if not resource:
         resource = {}
     resource_props = resource.get('Properties')
@@ -321,18 +347,18 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
             return result
         if is_deployable_resource(resource):
-            LOGGER.warning('Unexpected resource type %s when resolving references' % resource_type)
+            LOG.warning('Unexpected resource type %s when resolving references' % resource_type)
     except Exception as e:
         # we expect this to be a "not found" exception
         markers = ['NoSuchBucket', 'ResourceNotFound', '404']
         if not list(filter(lambda marker, e=e: marker in str(e), markers)):
-            LOGGER.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
+            LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
                 (resource_type, e, traceback.format_exc(), resource, resource_status))
     return None
 
 
 def extract_resource_attribute(resource_type, resource, attribute):
-    LOGGER.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
+    LOG.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
     # extract resource specific attributes
     if resource_type == 'Lambda::Function':
         actual_attribute = 'FunctionArn' if attribute == 'Arn' else attribute
@@ -356,13 +382,17 @@ def extract_resource_attribute(resource_type, resource, attribute):
 
 
 def resolve_ref(stack_name, ref, resources, attribute):
-    LOGGER.debug('Resolving ref %s - %s' % (ref, attribute))
+    LOG.debug('Resolving ref %s - %s' % (ref, attribute))
     if ref == 'AWS::Region':
         return DEFAULT_REGION
-    resource_status = describe_stack_resources(stack_name, ref)[0]
-    attr_value = resource_status.get(attribute)
-    if attr_value not in [None, '']:
-        return attr_value
+    resource_status = {}
+    if stack_name:
+        resource_status = describe_stack_resource(stack_name, ref)
+        attr_value = resource_status.get(attribute)
+        if attr_value not in [None, '']:
+            return attr_value
+    elif ref in resources:
+        resource_status = resources[ref]['__details__']
     # fetch resource details
     resource = resources.get(ref)
     resource_new = retrieve_resource_details(ref, resource_status, resources, stack_name)
@@ -371,7 +401,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
     resource_type = get_resource_type(resource)
     result = extract_resource_attribute(resource_type, resource_new, attribute)
     if not result:
-        LOGGER.warning('Unable to extract reference attribute %s from resource: %s' % (attribute, resource_new))
+        LOG.warning('Unable to extract reference attribute %s from resource: %s' % (attribute, resource_new))
     return result
 
 
@@ -395,7 +425,7 @@ def resolve_refs_recursively(stack_name, value, resources):
 
 
 def set_status_deployed(resource_id, resource, stack_name):
-    # TODO
+    # TODO - deprecated - check if still needed!
     pass
     # client = aws_stack.connect_to_service('cloudformation')
     # template = {
@@ -417,9 +447,9 @@ def deploy_resource(resource_id, resources, stack_name):
     resource_type = get_resource_type(resource)
     func_details = RESOURCE_TO_FUNCTION.get(resource_type)
     if not func_details:
-        LOGGER.warning('Resource type not yet implemented: %s' % resource['Type'])
+        LOG.warning('Resource type not yet implemented: %s' % resource['Type'])
         return
-    LOGGER.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
+    LOG.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
     func_details = func_details[ACTION_CREATE]
     function = getattr(client, func_details['function'])
     params = dict(func_details['parameters'])
@@ -433,9 +463,18 @@ def deploy_resource(resource_id, resources, stack_name):
             prop_keys = [prop_keys]
         for prop_key in prop_keys:
             if prop_key == PLACEHOLDER_RESOURCE_NAME:
-                # obtain physical resource name from stack resources
-                params[param_key] = resolve_ref(stack_name, resource_id, resources,
-                    attribute='PhysicalResourceId')
+                params[param_key] = resource_id
+                resource_name = get_resource_name(resource)
+                if resource_name:
+                    params[param_key] = resource_name
+                else:
+                    # try to obtain physical resource name from stack resources
+                    try:
+                        return resolve_ref(stack_name, resource_id, resources,
+                            attribute='PhysicalResourceId')
+                    except Exception as e:
+                        LOG.debug('Unable to extract physical id for resource %s: %s' % (resource_id, e))
+
             else:
                 if callable(prop_key):
                     prop_value = prop_key(resource_props)
@@ -454,9 +493,10 @@ def deploy_resource(resource_id, resources, stack_name):
     params = common.merge_recursive(defaults, params)
     # invoke function
     try:
+        LOG.debug('Request for creating resource type "%s": %s' % (resource_type, params))
         result = function(**params)
     except Exception as e:
-        LOGGER.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
+        LOG.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
         raise e
     # some resources have attached/nested resources which we need to create recursively now
     if resource_type == 'ApiGateway::Method':
@@ -475,7 +515,7 @@ def deploy_resource(resource_id, resources, stack_name):
         subscriptions = resource_props.get('Subscription', [])
         for subscription in subscriptions:
             endpoint = resolve_refs_recursively(stack_name, subscription['Endpoint'], resources)
-            topic_arn = resource['__details__']['PhysicalResourceId']
+            topic_arn = retrieve_topic_arn(params['Name'])
             aws_stack.connect_to_service('sns').subscribe(
                 TopicArn=topic_arn, Protocol=subscription['Protocol'], Endpoint=endpoint)
     # update status
@@ -496,7 +536,7 @@ def deploy_template(template, stack_name):
 
     resource_map = template.get('Resources')
     if not resource_map:
-        LOGGER.warning('CloudFormation template contains no Resources section')
+        LOG.warning('CloudFormation template contains no Resources section')
         return
 
     next = resource_map
@@ -506,8 +546,8 @@ def deploy_template(template, stack_name):
 
         # get resource details
         for resource_id, resource in iteritems(next):
-            stack_resources = describe_stack_resources(stack_name, resource_id)
-            resource['__details__'] = stack_resources[0]
+            stack_resource = describe_stack_resource(stack_name, resource_id)
+            resource['__details__'] = stack_resource
 
         next = resources_to_deploy_next(resource_map, stack_name)
         if not next:
@@ -516,7 +556,7 @@ def deploy_template(template, stack_name):
         for resource_id, resource in iteritems(next):
             deploy_resource(resource_id, resource_map, stack_name=stack_name)
 
-    LOGGER.warning('Unable to resolve all dependencies and deploy all resources ' +
+    LOG.warning('Unable to resolve all dependencies and deploy all resources ' +
         'after %s iterations. Remaining (%s): %s' % (iters, len(next), next))
 
 
@@ -528,15 +568,25 @@ def is_deployable_resource(resource):
     resource_type = get_resource_type(resource)
     entry = RESOURCE_TO_FUNCTION.get(resource_type)
     if entry is None:
-        LOGGER.warning('Unknown resource type "%s"' % resource_type)
+        LOG.warning('Unknown resource type "%s": %s' % (resource_type, resource))
     return entry and entry.get(ACTION_CREATE)
 
 
 def is_deployed(resource_id, resources, stack_name):
     resource = resources[resource_id]
-    resource_status = resource['__details__']
+    resource_status = resource.get('__details__') or {}
     details = retrieve_resource_details(resource_id, resource_status, resources, stack_name)
     return bool(details)
+
+
+def should_be_deployed(resource_id, resources, stack_name):
+    """ Return whether the given resource is all of: (1) deployable, (2) not yet deployed,
+        and (3) has no unresolved dependencies. """
+    resource = resources[resource_id]
+    if not is_deployable_resource(resource) or is_deployed(resource_id, resources, stack_name):
+        return False
+    res_deps = get_resource_dependencies(resource_id, resource, resources)
+    return all_dependencies_satisfied(res_deps, stack_name, resources, resource_id)
 
 
 def all_dependencies_satisfied(resources, stack_name, all_resources, depending_resource=None):
@@ -550,10 +600,8 @@ def all_dependencies_satisfied(resources, stack_name, all_resources, depending_r
 def resources_to_deploy_next(resources, stack_name):
     result = {}
     for resource_id, resource in iteritems(resources):
-        if is_deployable_resource(resource) and not is_deployed(resource_id, resources, stack_name):
-            res_deps = get_resource_dependencies(resource_id, resource, resources)
-            if all_dependencies_satisfied(res_deps, stack_name, resources, resource_id):
-                result[resource_id] = resource
+        if should_be_deployed(resource_id, resources, stack_name):
+            result[resource_id] = resource
     return result
 
 
