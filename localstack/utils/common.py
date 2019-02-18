@@ -54,6 +54,9 @@ DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
+# flag to indicate whether we've received and processed the stop signal
+INFRA_STOPPED = False
+
 
 # Helper class to convert JSON documents with datetime, decimals, or bytes.
 class CustomEncoder(json.JSONEncoder):
@@ -116,7 +119,7 @@ class ShellCommandThread (FuncThread):
                     # get stdout/stderr from child process and write to parent output
                     for line in iter(self.process.stdout.readline, ''):
                         if not (line and line.strip()):
-                            time.sleep(0.1)
+                            time.sleep(0.05)
                             if self.is_killed():
                                 break
                         line = convert_line(line)
@@ -124,7 +127,7 @@ class ShellCommandThread (FuncThread):
                         sys.stdout.flush()
                     for line in iter(self.process.stderr.readline, ''):
                         if not (line and line.strip()):
-                            time.sleep(0.1)
+                            time.sleep(0.05)
                             if self.is_killed():
                                 break
                         line = convert_line(line)
@@ -141,6 +144,8 @@ class ShellCommandThread (FuncThread):
 
     def is_killed(self):
         if not self.process:
+            return True
+        if INFRA_STOPPED:
             return True
         # Note: Do NOT import "psutil" at the root scope, as this leads
         # to problems when importing this file from our test Lambdas in Docker
