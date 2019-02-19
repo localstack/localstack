@@ -56,8 +56,12 @@ EXPOSE 4567-4584 8080
 # install supervisor daemon & copy config file
 ADD bin/supervisord.conf /etc/supervisord.conf
 
+RUN pip install awscli awscli-local --upgrade --user
+
+ADD bin/docker-entrypoint.sh /usr/local/bin/
+
 # define command at startup
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/

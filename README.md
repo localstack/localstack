@@ -181,6 +181,10 @@ Additionally, the following *read-only* environment variables are available:
   The variable `LOCALSTACK_HOSTNAME` is available for both, local Lambda execution
   (`LAMBDA_EXECUTOR=local`) and execution inside separate Docker containers (`LAMBDA_EXECUTOR=docker`).
 
+### Initializing a fresh instance
+
+When a container is started for the first time, it will execute files with extensions .sh that are found in /docker-entrypoint-initaws.d. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
+
 ## A Note About using own SSL Certificate when `USE_SSL` are `True`
 
 If you need to use your own SSL Certificate and keep it persistent and not use the random automatic generated Certificate, you can place into the localstack temporary directory :
