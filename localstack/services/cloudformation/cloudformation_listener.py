@@ -2,9 +2,7 @@ import uuid
 import logging
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
-from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import to_str
-from localstack.utils.aws import aws_stack
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
 
@@ -43,84 +41,6 @@ def make_response(operation_name, content='', code=200):
     return response
 
 
-def stack_exists(stack_name):
-    cloudformation = aws_stack.connect_to_service('cloudformation')
-    stacks = cloudformation.list_stacks()
-    for stack in stacks['StackSummaries']:
-        if stack['StackName'] == stack_name:
-            return True
-    return False
-
-
-# TODO - deprecated - remove!
-def create_stack(req_data):
-    stack_name = req_data.get('StackName')[0]
-    if stack_exists(stack_name):
-        message = 'The resource with the name requested already exists.'
-        return error_response(message, error_type='AlreadyExists')
-    # create stack
-    cloudformation_service = aws_stack.connect_to_service('cloudformation')
-    template = template_deployer.template_to_json(req_data.get('TemplateBody')[0])
-    cloudformation_service.create_stack(StackName=stack_name,
-        TemplateBody=template)
-    # now run the actual deployment
-    template_deployer.deploy_template(template, stack_name)
-    return True
-
-
-# TODO - deprecated - remove!
-def create_change_set(req_data):
-    cs_name = req_data.get('ChangeSetName')[0]
-    change_set_uuid = uuid.uuid4()
-    cs_arn = 'arn:aws:cloudformation:%s:%s:changeSet/%s/%s' % (
-        DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, cs_name, change_set_uuid)
-    CHANGE_SETS[cs_arn] = dict(req_data)
-    response = make_response('CreateChangeSet', '<Id>%s</Id>' % cs_arn)
-    return response
-
-
-# TODO - deprecated - remove!
-def describe_change_set(req_data):
-    cs_arn = req_data.get('ChangeSetName')[0]
-    cs_details = CHANGE_SETS.get(cs_arn)
-    if not cs_details:
-        return error_response('Change Set %s does not exist' % cs_arn, 404, 'ChangeSetNotFound')
-    stack_name = cs_details.get('StackName')[0]
-    response_content = """
-        <StackName>%s</StackName>
-        <ChangeSetId>%s</ChangeSetId>
-        <Status>CREATE_COMPLETE</Status>""" % (stack_name, cs_arn)
-    response = make_response('DescribeChangeSet', response_content)
-    return response
-
-
-# TODO - deprecated - remove!
-def execute_change_set(req_data):
-    cs_arn = req_data.get('ChangeSetName')[0]
-    stack_name = req_data.get('StackName')[0]
-    cs_details = CHANGE_SETS.get(cs_arn)
-    if not cs_details:
-        return error_response('Change Set %s does not exist' % cs_arn, 404, 'ChangeSetNotFound')
-
-    # convert to JSON (might have been YAML, and update_stack/create_stack seem to only work with JSON)
-    template = template_deployer.template_to_json(cs_details.get('TemplateBody')[0])
-
-    # update stack information
-    cloudformation_service = aws_stack.connect_to_service('cloudformation')
-    if stack_exists(stack_name):
-        cloudformation_service.update_stack(StackName=stack_name,
-            TemplateBody=template)
-    else:
-        cloudformation_service.create_stack(StackName=stack_name,
-            TemplateBody=template)
-
-    # now run the actual deployment
-    template_deployer.deploy_template(template, stack_name)
-
-    response = make_response('ExecuteChangeSet')
-    return response
-
-
 def validate_template(req_data):
     LOGGER.debug(req_data)
     response_content = """
@@ -131,7 +51,6 @@ def validate_template(req_data):
         <Parameters>
         </Parameters>
     """
-
     try:
         template_deployer.template_to_json(req_data.get('TemplateBody')[0])
         response = make_response('ValidateTemplate', response_content)

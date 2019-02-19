@@ -236,6 +236,8 @@ def get_account_id(account_id=None, env=None):
 
 
 def role_arn(role_name, account_id=None, env=None):
+    if role_name.startswith('arn:aws:iam::'):
+        return role_name
     env = get_environment(env)
     account_id = get_account_id(account_id, env=env)
     return 'arn:aws:iam::%s:role/%s' % (account_id, role_name)
