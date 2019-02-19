@@ -24,6 +24,7 @@ DEFAULT_PORT_SNS_BACKEND = 4562
 DEFAULT_PORT_SQS_BACKEND = 4561
 DEFAULT_PORT_ELASTICSEARCH_BACKEND = 4560
 DEFAULT_PORT_CLOUDFORMATION_BACKEND = 4559
+DEFAULT_PORT_STEPFUNCTIONS_BACKEND = 4558
 
 DEFAULT_PORT_WEB_UI = 8080
 
@@ -76,6 +77,7 @@ ELASTICSEARCH_PLUGIN_LIST = ['analysis-icu', 'ingest-attachment', 'ingest-user-a
 DYNAMODB_JAR_URL = 'https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip'
 ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.14.2.jar'
 STS_JAR_URL = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
+STEPFUNCTIONS_ZIP_URL = 'https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip'
 
 # API endpoint for analytics events
 API_ENDPOINT = 'https://api.localstack.cloud/v1'

@@ -60,6 +60,10 @@ class TestPythonRuntimes(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
 
+    @classmethod
+    def tearDownClass(cls):
+        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_PY)
+
     def test_invocation_type_not_set(self):
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}')

@@ -1,15 +1,16 @@
+from localstack.services.es import es_starter
+from localstack.services.s3 import s3_listener, s3_starter
+from localstack.services.sns import sns_listener
+from localstack.services.sqs import sqs_listener, sqs_starter
 from localstack.services.infra import (register_plugin, Plugin,
     start_s3, start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
     start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
     start_ssm, start_sts, start_secretsmanager)
-from localstack.services.apigateway import apigateway_listener
-from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
-from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
 from localstack.services.kinesis import kinesis_listener, kinesis_starter
-from localstack.services.sns import sns_listener
-from localstack.services.sqs import sqs_listener, sqs_starter
-from localstack.services.s3 import s3_listener, s3_starter
-from localstack.services.es import es_starter
+from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
+from localstack.services.apigateway import apigateway_listener
+from localstack.services.stepfunctions import stepfunctions_starter
+from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
 
 
 # register default plugins
@@ -65,6 +66,8 @@ def register_localstack_plugins():
             listener=cloudformation_listener.UPDATE_CLOUDFORMATION))
         register_plugin(Plugin('cloudwatch',
             start=start_cloudwatch))
+        register_plugin(Plugin('stepfunctions',
+            start=stepfunctions_starter.start_stepfunctions))
     except Exception as e:
         print('Unable to register plugins: %s' % e)
         raise e
