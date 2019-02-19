@@ -63,6 +63,3 @@ ADD bin/docker-entrypoint.sh /usr/local/bin/
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# run tests (to verify the build before pushing the image)
-ADD tests/ tests/
-RUN make test
