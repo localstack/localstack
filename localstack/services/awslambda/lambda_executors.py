@@ -28,6 +28,7 @@ LAMBDA_RUNTIME_NODEJS610 = 'nodejs6.10'
 LAMBDA_RUNTIME_NODEJS810 = 'nodejs8.10'
 LAMBDA_RUNTIME_JAVA8 = 'java8'
 LAMBDA_RUNTIME_DOTNETCORE2 = 'dotnetcore2.0'
+LAMBDA_RUNTIME_DOTNETCORE21 = 'dotnetcore2.1'
 LAMBDA_RUNTIME_GOLANG = 'go1.x'
 LAMBDA_RUNTIME_RUBY = 'ruby'
 LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
@@ -42,12 +43,23 @@ MAX_CONTAINER_IDLE_TIME = 600
 
 
 class LambdaExecutor(object):
-    """ Base class for Lambda executors. Subclasses must overwrite the execute method """
+    """ Base class for Lambda executors. Subclasses must overwrite the _execute method """
 
     def __init__(self):
-        pass
+        # keeps track of each function arn and the last time it was invoked
+        self.function_invoke_times = {}
 
     def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
+        # set the invocation time
+        invocation_time = time.time()
+        # start the execution
+        try:
+            return self._execute(func_arn, func_details, event, context, version, asynchronous)
+        finally:
+            self.function_invoke_times[func_arn] = invocation_time
+
+    def _execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
+        """ This method must be overwritten by subclasses. """
         raise Exception('Not implemented.')
 
     def startup(self):
@@ -62,9 +74,10 @@ class LambdaExecutor(object):
             result = '{"asynchronous": "%s"}' % asynchronous
             log_output = 'Lambda executed asynchronously'
         else:
-            return_code = process.wait()
-            result = to_str(process.stdout.read())
-            log_output = to_str(process.stderr.read())
+            result, log_output = process.communicate()
+            result = to_str(result)
+            log_output = to_str(log_output)
+            return_code = process.returncode
 
             if return_code != 0:
                 raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
@@ -88,7 +101,7 @@ class LambdaExecutorContainers(LambdaExecutor):
     def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
         raise Exception('Not implemented')
 
-    def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
+    def _execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
 
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
@@ -145,8 +158,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
     def __init__(self):
         super(LambdaExecutorReuseContainers, self).__init__()
-        # keeps track of each function arn and the last time it was invoked
-        self.function_invoke_times = {}
         # locking thread for creation/destruction of docker containers.
         self.docker_container_lock = threading.RLock()
 
@@ -154,9 +165,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         # check whether the Lambda has been invoked before
         has_been_invoked_before = func_arn in self.function_invoke_times
-
-        # set the invocation time
-        self.function_invoke_times[func_arn] = time.time()
 
         # create/verify the docker container is running.
         LOG.debug('Priming docker container with runtime "%s" and arn "%s".', runtime, func_arn)
@@ -489,7 +497,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 class LambdaExecutorLocal(LambdaExecutor):
 
-    def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
+    def _execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
         lambda_cwd = func_details.cwd
         environment = func_details.envvars.copy()
 

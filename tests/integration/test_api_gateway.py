@@ -38,15 +38,19 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     # endpoint paths
     API_PATH_DATA_INBOUND = '/data'
     API_PATH_HTTP_BACKEND = '/hello_world'
-    API_PATH_LAMBDA_PROXY_BACKEND = '/lambda/{test_param1}'
+    API_PATH_LAMBDA_PROXY_BACKEND = '/lambda/foo1'
+    API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = '/lambda/{test_param1}'
 
-    API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD = '/lambda-any-method/{test_param1}'
+    API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD = '/lambda-any-method/foo1'
+    API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = '/lambda-any-method/{test_param1}'
 
     # name of Kinesis stream connected to API Gateway
     TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
     TEST_STAGE_NAME = 'testing'
     TEST_LAMBDA_PROXY_BACKEND = 'test_lambda_apigw_backend'
-    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_lambda_apigw_backend_any_method'
+    TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = 'test_lambda_apigw_backend_path_param'
+    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_ARMlambda_apigw_backend_any_method'
+    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_ARMlambda_apigw_backend_any_method_path_param'
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
@@ -123,6 +127,16 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         proxy.stop()
 
     def test_api_gateway_lambda_proxy_integration(self):
+        self._test_api_gateway_lambda_proxy_integration(
+            self.TEST_LAMBDA_PROXY_BACKEND,
+            self.API_PATH_LAMBDA_PROXY_BACKEND)
+
+    def test_api_gateway_lambda_proxy_integration_with_path_param(self):
+        self._test_api_gateway_lambda_proxy_integration(
+            self.TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM,
+            self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM)
+
+    def _test_api_gateway_lambda_proxy_integration(self, fn_name, path):
         # create lambda function
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
@@ -131,20 +145,20 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
         testutil.create_lambda_function(
-            func_name=self.TEST_LAMBDA_PROXY_BACKEND,
+            func_name=fn_name,
             zip_file=zip_file,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
 
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = aws_stack.lambda_function_arn(self.TEST_LAMBDA_PROXY_BACKEND)
+        lambda_uri = aws_stack.lambda_function_arn(fn_name)
         invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
         target_uri = invocation_uri % (DEFAULT_REGION, lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
             'test_gateway2',
             target_uri,
-            path=self.API_PATH_LAMBDA_PROXY_BACKEND
+            path=path
         )
 
         api_id = result['id']
@@ -152,7 +166,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         _, resource = get_resource_for_path('/lambda/foo1', path_map)
 
         # make test request to gateway and check response
-        path = self.API_PATH_LAMBDA_PROXY_BACKEND.replace('{test_param1}', 'foo1')
+        path = path.replace('{test_param1}', 'foo1')
         path = path + '?foo=foo&bar=bar&bar=baz'
 
         url = INBOUND_GATEWAY_URL_PATTERN.format(
@@ -174,7 +188,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         parsed_body = json.loads(to_str(result.content))
         self.assertEqual(parsed_body.get('return_status_code'), 203)
         self.assertDictEqual(parsed_body.get('return_headers'), {'foo': 'bar123'})
-        self.assertDictEqual(parsed_body.get('pathParameters'), {'test_param1': 'foo1'})
         self.assertDictEqual(parsed_body.get('queryStringParameters'), {'foo': 'foo', 'bar': ['bar', 'baz']})
 
         request_context = parsed_body.get('requestContext')
@@ -192,6 +205,16 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(result.status_code, 404)
 
     def test_api_gateway_lambda_proxy_integration_any_method(self):
+        self._test_api_gateway_lambda_proxy_integration_any_method(
+            self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD,
+            self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD)
+
+    def test_api_gateway_lambda_proxy_integration_any_method_with_path_param(self):
+        self._test_api_gateway_lambda_proxy_integration_any_method(
+            self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
+            self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM)
+
+    def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
         # create lambda function
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
@@ -200,24 +223,24 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
         testutil.create_lambda_function(
-            func_name=self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD,
+            func_name=fn_name,
             zip_file=zip_file,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
 
         # create API Gateway and connect it to the Lambda proxy backend
-        lambda_uri = aws_stack.lambda_function_arn(self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD)
+        lambda_uri = aws_stack.lambda_function_arn(fn_name)
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
             'test_gateway3',
             target_uri,
             methods=['ANY'],
-            path=self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD
+            path=path
         )
 
         # make test request to gateway and check response
-        path = self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD.replace('{test_param1}', 'foo1')
+        path = path.replace('{test_param1}', 'foo1')
         url = INBOUND_GATEWAY_URL_PATTERN.format(
             api_id=result['id'],
             stage_name=self.TEST_STAGE_NAME,

@@ -11,13 +11,13 @@ import six
 import warnings
 import pkgutil
 from localstack import constants, config
-from localstack.constants import (ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER,
-    DEFAULT_PORT_S3_BACKEND, DEFAULT_PORT_APIGATEWAY_BACKEND,
-    DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_CLOUDFORMATION_BACKEND)
+from localstack.constants import (
+    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, DEFAULT_PORT_S3_BACKEND,
+    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND)
 from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
     PORT_FIREHOSE, PORT_LAMBDA, PORT_SNS, PORT_REDSHIFT, PORT_CLOUDWATCH,
-    PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_CLOUDFORMATION, PORT_APIGATEWAY,
-    PORT_SSM, PORT_SECRETSMANAGER)
+    PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_APIGATEWAY, PORT_SSM,
+    PORT_SECRETSMANAGER, PORT_STS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
     TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir)
@@ -33,8 +33,6 @@ from localstack.services.generic_proxy import GenericProxy
 SIGNAL_HANDLERS_SETUP = False
 # maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
 PLUGINS_LOADED = {}
-# flag to indicate whether we've received and processed the stop signal
-INFRA_STOPPED = False
 
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
@@ -99,7 +97,9 @@ def load_plugin_from_path(file_path, scope=None):
             namespace = {}
             exec('from %s.plugins import %s' % (module, method_name), namespace)
             method_to_execute = namespace[method_name]
-        except Exception:
+        except Exception as e:
+            if not re.match(r'.*cannot import name .*%s.*' % method_name, str(e)):
+                LOGGER.debug('Unable to load plugins from module %s: %s' % (module, e))
             return
         try:
             return method_to_execute()
@@ -153,13 +153,12 @@ def start_sns(port=PORT_SNS, asynchronous=False, update_listener=None):
         backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
 
 
-def start_cloudformation(port=PORT_CLOUDFORMATION, asynchronous=False, update_listener=None):
-    return start_moto_server('cloudformation', port, name='CloudFormation', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_CLOUDFORMATION_BACKEND, update_listener=update_listener)
-
-
 def start_cloudwatch(port=PORT_CLOUDWATCH, asynchronous=False):
     return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
+
+
+def start_sts(port=PORT_STS, asynchronous=False):
+    return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
 
 
 def start_redshift(port=PORT_REDSHIFT, asynchronous=False):
@@ -212,6 +211,7 @@ def setup_logging():
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
     logging.getLogger('botocore').setLevel(logging.ERROR)
+    logging.getLogger('s3transfer').setLevel(logging.INFO)
     logging.getLogger('elasticsearch').setLevel(logging.ERROR)
 
 
@@ -242,13 +242,13 @@ def is_debug():
     return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
 
 
-def do_run(cmd, asynchronous, print_output=False):
+def do_run(cmd, asynchronous, print_output=False, env_vars={}):
     sys.stdout.flush()
     if asynchronous:
         if is_debug():
             print_output = True
         outfile = subprocess.PIPE if print_output else None
-        t = ShellCommandThread(cmd, outfile=outfile)
+        t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)
         t.start()
         TMP_THREADS.append(t)
         return t
@@ -298,9 +298,9 @@ def start_local_api(name, port, method, asynchronous=False):
 
 
 def stop_infra():
-    global INFRA_STOPPED
-    if INFRA_STOPPED:
+    if common.INFRA_STOPPED:
         return
+    common.INFRA_STOPPED = True
 
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
 
@@ -311,7 +311,6 @@ def stop_infra():
     time.sleep(2)
     # TODO: optimize this (takes too long currently)
     # check_infra(retries=2, expect_shutdown=True)
-    INFRA_STOPPED = True
 
 
 def check_aws_credentials():
@@ -335,7 +334,7 @@ def check_aws_credentials():
 # -----------------------------
 
 
-def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[]):
+def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=[]):
     try:
         print_error = retries <= 0
 

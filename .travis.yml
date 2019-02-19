@@ -53,7 +53,7 @@ script:
   - make docker-push-master
 
 after_success:
-  - make coveralls
+  - make coveralls || true
 
 notifications:
   email: false
