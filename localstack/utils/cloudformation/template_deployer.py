@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
         'create': {
-            'boto_client': 'resource',
+            'boto_client': 'client',
             'function': 'create_bucket',
             'parameters': {
                 'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
@@ -30,7 +30,7 @@ RESOURCE_TO_FUNCTION = {
     },
     'SQS::Queue': {
         'create': {
-            'boto_client': 'resource',
+            'boto_client': 'client',
             'function': 'create_queue',
             'parameters': {
                 'QueueName': PLACEHOLDER_RESOURCE_NAME
@@ -39,7 +39,7 @@ RESOURCE_TO_FUNCTION = {
     },
     'SNS::Topic': {
         'create': {
-            'boto_client': 'resource',
+            'boto_client': 'client',
             'function': 'create_topic',
             'parameters': {
                 'Name': 'TopicName'
@@ -167,6 +167,17 @@ RESOURCE_TO_FUNCTION = {
                 'ShardCount': 1
             }
         }
+    },
+    'StepFunctions::StateMachine': {
+        'create': {
+            'boto_client': 'client',
+            'function': 'create_state_machine',
+            'parameters': {
+                'name': 'StateMachineName',
+                'definition': 'DefinitionString',
+                'roleArn': lambda params: aws_stack.role_arn(params.get('RoleArn'))
+            }
+        }
     }
 }
 
@@ -203,7 +214,8 @@ def template_to_json(template):
 
 
 def get_resource_type(resource):
-    parts = resource.get('Type', '').split('::', 1)
+    res_type = resource.get('ResourceType') or resource.get('Type') or ''
+    parts = res_type.split('::', 1)
     if len(parts) == 1:
         return None
     return parts[1]
@@ -261,15 +273,15 @@ def describe_stack_resource(stack_name, logical_resource_id):
 def retrieve_resource_details(resource_id, resource_status, resources, stack_name):
     resource = resources.get(resource_id)
     resource_id = resource_status.get('PhysicalResourceId') or resource_id
-    resource_type = resource_status.get('ResourceType')
     if not resource:
         resource = {}
+    resource_type = get_resource_type(resource)
     resource_props = resource.get('Properties')
     try:
-        if resource_type == 'AWS::Lambda::Function':
+        if resource_type == 'Lambda::Function':
             resource_id = resource_props['FunctionName'] if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
-        elif resource_type == 'AWS::Lambda::EventSourceMapping':
+        elif resource_type == 'Lambda::EventSourceMapping':
             resource_id = resource_props['FunctionName'] if resource else resource_id
             source_arn = resource_props.get('EventSourceArn')
             resource_id = resolve_refs_recursively(stack_name, resource_id, resources)
@@ -284,15 +296,15 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             if not mapping:
                 raise Exception('ResourceNotFound')
             return mapping[0]
-        elif resource_type == 'AWS::DynamoDB::Table':
+        elif resource_type == 'DynamoDB::Table':
             resource_id = resource_props['TableName'] if resource else resource_id
             return aws_stack.connect_to_service('dynamodb').describe_table(TableName=resource_id)
-        elif resource_type == 'AWS::ApiGateway::RestApi':
+        elif resource_type == 'ApiGateway::RestApi':
             apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
             resource_id = resource_props['Name'] if resource else resource_id
             result = list(filter(lambda api: api['name'] == resource_id, apis))
             return result[0] if result else None
-        elif resource_type == 'AWS::ApiGateway::Resource':
+        elif resource_type == 'ApiGateway::Resource':
             api_id = resource_props['RestApiId'] if resource else resource_id
             api_id = resolve_refs_recursively(stack_name, api_id, resources)
             parent_id = resolve_refs_recursively(stack_name, resource_props['ParentId'], resources)
@@ -307,7 +319,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                 target_resource[0]['id'], resources=api_resources)
             result = list(filter(lambda res: res['path'] == path, api_resources))
             return result[0] if result else None
-        elif resource_type == 'AWS::ApiGateway::Deployment':
+        elif resource_type == 'ApiGateway::Deployment':
             api_id = resource_props['RestApiId'] if resource else resource_id
             api_id = resolve_refs_recursively(stack_name, api_id, resources)
             if not api_id:
@@ -315,14 +327,16 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
             # TODO possibly filter results by stage name or other criteria
             return result[0] if result else None
-        elif resource_type == 'AWS::ApiGateway::Method':
+        elif resource_type == 'ApiGateway::Method':
             api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
             res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
             if not api_id or not res_id:
                 return None
-            return aws_stack.connect_to_service('apigateway').get_method(restApiId=api_id,
-                resourceId=res_id, httpMethod=resource_props['HttpMethod'])
-        elif resource_type == 'AWS::SQS::Queue':
+            res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
+            match = [v for (k, v) in res_obj['resourceMethods'].items()
+                     if resource_props['HttpMethod'] in (v.get('httpMethod'), k)]
+            return match or None
+        elif resource_type == 'SQS::Queue':
             sqs_client = aws_stack.connect_to_service('sqs')
             queues = sqs_client.list_queues()
             result = list(filter(lambda item:
@@ -333,21 +347,31 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = sqs_client.get_queue_attributes(QueueUrl=result[0], AttributeNames=['All'])['Attributes']
             result['Arn'] = result['QueueArn']
             return result
-        elif resource_type == 'AWS::SNS::Topic':
+        elif resource_type == 'SNS::Topic':
             topics = aws_stack.connect_to_service('sns').list_topics()
             result = list(filter(lambda item: item['TopicArn'] == resource_id, topics.get('Topics', [])))
             return result[0] if result else None
-        elif resource_type == 'AWS::S3::Bucket':
+        elif resource_type == 'S3::Bucket':
             return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=resource_id)
-        elif resource_type == 'AWS::Logs::LogGroup':
+        elif resource_type == 'Logs::LogGroup':
             # TODO implement
             raise Exception('ResourceNotFound')
-        elif resource_type == 'AWS::Kinesis::Stream':
+        elif resource_type == 'Kinesis::Stream':
             stream_name = resolve_refs_recursively(stack_name, resource_props['Name'], resources)
             result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
             return result
+        elif resource_type == 'StepFunctions::StateMachine':
+            sm_name = resolve_refs_recursively(stack_name, resource_props['StateMachineName'], resources)
+            sfn_client = aws_stack.connect_to_service('stepfunctions')
+            state_machines = sfn_client.list_state_machines()['stateMachines']
+            sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == sm_name]
+            if not sm_arn:
+                return None
+            result = sfn_client.describe_state_machine(stateMachineArn=sm_arn[0])
+            return result
         if is_deployable_resource(resource):
-            LOG.warning('Unexpected resource type %s when resolving references' % resource_type)
+            LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
+                        (resource_type, resource_id, resource))
     except Exception as e:
         # we expect this to be a "not found" exception
         markers = ['NoSuchBucket', 'ResourceNotFound', '404']
@@ -382,7 +406,6 @@ def extract_resource_attribute(resource_type, resource, attribute):
 
 
 def resolve_ref(stack_name, ref, resources, attribute):
-    LOG.debug('Resolving ref %s - %s' % (ref, attribute))
     if ref == 'AWS::Region':
         return DEFAULT_REGION
     resource_status = {}
@@ -447,7 +470,7 @@ def deploy_resource(resource_id, resources, stack_name):
     resource_type = get_resource_type(resource)
     func_details = RESOURCE_TO_FUNCTION.get(resource_type)
     if not func_details:
-        LOG.warning('Resource type not yet implemented: %s' % resource['Type'])
+        LOG.warning('Resource type not yet implemented: %s' % resource_type)
         return
     LOG.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
     func_details = func_details[ACTION_CREATE]

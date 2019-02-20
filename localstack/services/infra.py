@@ -208,10 +208,11 @@ def setup_logging():
     # disable some logs and warnings
     warnings.filterwarnings('ignore')
     logging.captureWarnings(True)
+    logging.getLogger('s3transfer').setLevel(logging.INFO)
+    logging.getLogger('docker').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
     logging.getLogger('botocore').setLevel(logging.ERROR)
-    logging.getLogger('s3transfer').setLevel(logging.INFO)
     logging.getLogger('elasticsearch').setLevel(logging.ERROR)
 
 

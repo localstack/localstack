@@ -2,7 +2,6 @@ import re
 import logging
 import json
 import requests
-
 from requests.models import Response
 from flask import Response as FlaskResponse
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
@@ -148,6 +147,16 @@ class ProxyListenerApiGateway(ProxyListener):
             return handle_authorizers(method, path, data, headers)
 
         return True
+
+    def return_response(self, method, path, data, headers, response):
+        # fix backend issue (missing support for API documentation)
+        if re.match(r'/restapis/[^/]+/documentation/versions', path):
+            if response.status_code == 404:
+                response = Response()
+                response.status_code = 200
+                result = {'position': '1', 'items': []}
+                response._content = json.dumps(result)
+                return response
 
 
 # instantiate listener

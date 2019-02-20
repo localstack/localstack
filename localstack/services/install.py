@@ -168,7 +168,7 @@ def install_all_components():
 # HELPER FUNCTIONS
 # -----------------
 
-def log_install_msg(component, verbatim=True):
+def log_install_msg(component, verbatim=False):
     component = component if verbatim else 'local %s server' % component
     LOGGER.info('Downloading and installing %s. This may take some time.' % component)
 
