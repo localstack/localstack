@@ -13,7 +13,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, DEFAULT_REGION
 from localstack.stepfunctions import models as sfn_models
-from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
+from localstack.services.infra import (
+    get_service_protocol, start_proxy_for_service, do_run, setup_logging)
 from localstack.utils.cloudformation import template_deployer
 
 LOG = logging.getLogger(__name__)
@@ -47,7 +48,6 @@ def apply_patches():
         result = clean_json_orig(resource_json, resources_map)
         if isinstance(result, BaseModel):
             if isinstance(resource_json, dict) and 'Ref' in resource_json:
-                LOG.info('Extracting ID from base model (%s): %s' % (hasattr(result, 'id'), result))
                 if hasattr(result, 'id'):
                     return result.id
                 if hasattr(result, 'name'):
@@ -70,74 +70,78 @@ def apply_patches():
         # create resource definition and store CloudFormation metadata in moto
         resource = parse_and_create_resource_orig(logical_id, resource_json, resources_map, region_name)
 
-        # deploy resource in LocalStack
+        # check whether this resource needs to be deployed
         stack_name = resources_map.get('AWS::StackName')
         resource_wrapped = {logical_id: resource_json}
         should_be_deployed = template_deployer.should_be_deployed(logical_id, resource_wrapped, stack_name)
-        if should_be_deployed:
-            LOG.debug('Deploying CloudFormation resource: %s' % resource_json)
-            result = template_deployer.deploy_resource(logical_id, resource_wrapped, stack_name=stack_name)
-            props = resource_json.get('Properties') or {}
+        if not should_be_deployed:
+            LOG.debug('Resource %s need not be deployed: %s' % (logical_id, resource_json))
+            return resource
 
-            # update id in created resource
-            def find_id(result):
-                for id_attr in ('Id', 'id', 'ResourceId', 'RestApiId', 'DeploymentId'):
-                    if id_attr in result:
-                        return result[id_attr]
+        # deploy resource in LocalStack
+        LOG.debug('Deploying CloudFormation resource: %s' % resource_json)
+        result = template_deployer.deploy_resource(logical_id, resource_wrapped, stack_name=stack_name)
+        props = resource_json.get('Properties') or {}
 
-            def update_id(resource, new_id):
-                # Update the ID of the given resource.
-                # NOTE: this is a bit of a hack, which is required because
-                # of the order of events when CloudFormation resources are created.
-                # When we process a request to create a CF resource that's part of a
-                # stack, say, an API Gateway Resource, then we (1) create the object
-                # in memory in moto, which generates a random ID for the resource, and
-                # (2) create the actual resource in the backend service using
-                # template_deployer.deploy_resource(..) (see above).
-                # The resource created in (2) now has a different ID than the resource
-                # created in (1), which leads to downstream problems. Hence, we need
-                # the logic below to reconcile the ids, i.e., apply IDs from (2) to (1).
+        # update id in created resource
+        def find_id(result):
+            for id_attr in ('Id', 'id', 'ResourceId', 'RestApiId', 'DeploymentId'):
+                if id_attr in result:
+                    return result[id_attr]
 
-                backend = apigw_models.apigateway_backends[region_name]
-                if isinstance(resource, apigw_models.RestAPI):
-                    backend.apis.pop(resource.id, None)
-                    backend.apis[new_id] = resource
-                    # We also need to fetch the resources to replace the root resource
-                    # that moto automatically adds to newly created RestAPI objects
-                    client = aws_stack.connect_to_service('apigateway')
-                    resources = client.get_resources(restApiId=new_id, limit=500)['items']
-                    # make sure no resources have been added in addition to the root /
-                    assert len(resource.resources) == 1
-                    resource.resources = {}
-                    for res in resources:
-                        res_path_part = res.get('pathPart') or res.get('path')
-                        child = resource.add_child(res_path_part, res.get('parentId'))
-                        resource.resources.pop(child.id)
-                        child.id = res['id']
-                        resource.resources[child.id] = child
-                    resource.id = new_id
-                elif isinstance(resource, apigw_models.Resource):
-                    api_id = props['RestApiId']
-                    backend.apis[api_id].resources.pop(resource.id, None)
-                    backend.apis[api_id].resources[new_id] = resource
-                    resource.id = new_id
-                elif isinstance(resource, apigw_models.Deployment):
-                    api_id = props['RestApiId']
-                    backend.apis[api_id].deployments.pop(resource['id'], None)
-                    backend.apis[api_id].deployments[new_id] = resource
-                    resource['id'] = new_id
-                else:
-                    LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
+        def update_id(resource, new_id):
+            # Update the ID of the given resource.
+            # NOTE: this is a bit of a hack, which is required because
+            # of the order of events when CloudFormation resources are created.
+            # When we process a request to create a CF resource that's part of a
+            # stack, say, an API Gateway Resource, then we (1) create the object
+            # in memory in moto, which generates a random ID for the resource, and
+            # (2) create the actual resource in the backend service using
+            # template_deployer.deploy_resource(..) (see above).
+            # The resource created in (2) now has a different ID than the resource
+            # created in (1), which leads to downstream problems. Hence, we need
+            # the logic below to reconcile the ids, i.e., apply IDs from (2) to (1).
 
-            if hasattr(resource, 'id') or (isinstance(resource, dict) and resource.get('id')):
-                existing_id = resource.id if hasattr(resource, 'id') else resource['id']
-                new_res_id = find_id(result)
-                LOG.debug('Updating resource id - %s - %s - %s' % (existing_id, new_res_id, resource, resource_json))
-                if new_res_id:
-                    LOG.info('Updating resource ID from %s to %s' % (existing_id, new_res_id))
-                    update_id(resource, new_res_id)
-                else:
-                    LOG.warning('Unable to extract id for resource %s: %s' % (logical_id, result))
+            backend = apigw_models.apigateway_backends[region_name]
+            if isinstance(resource, apigw_models.RestAPI):
+                backend.apis.pop(resource.id, None)
+                backend.apis[new_id] = resource
+                # We also need to fetch the resources to replace the root resource
+                # that moto automatically adds to newly created RestAPI objects
+                client = aws_stack.connect_to_service('apigateway')
+                resources = client.get_resources(restApiId=new_id, limit=500)['items']
+                # make sure no resources have been added in addition to the root /
+                assert len(resource.resources) == 1
+                resource.resources = {}
+                for res in resources:
+                    res_path_part = res.get('pathPart') or res.get('path')
+                    child = resource.add_child(res_path_part, res.get('parentId'))
+                    resource.resources.pop(child.id)
+                    child.id = res['id']
+                    resource.resources[child.id] = child
+                resource.id = new_id
+            elif isinstance(resource, apigw_models.Resource):
+                api_id = props['RestApiId']
+                backend.apis[api_id].resources.pop(resource.id, None)
+                backend.apis[api_id].resources[new_id] = resource
+                resource.id = new_id
+            elif isinstance(resource, apigw_models.Deployment):
+                api_id = props['RestApiId']
+                backend.apis[api_id].deployments.pop(resource['id'], None)
+                backend.apis[api_id].deployments[new_id] = resource
+                resource['id'] = new_id
+            else:
+                LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
+
+        if hasattr(resource, 'id') or (isinstance(resource, dict) and resource.get('id')):
+            existing_id = resource.id if hasattr(resource, 'id') else resource['id']
+            new_res_id = find_id(result)
+            LOG.debug('Updating resource id: %s - %s, %s - %s' % (existing_id, new_res_id, resource, resource_json))
+            if new_res_id:
+                LOG.info('Updating resource ID from %s to %s' % (existing_id, new_res_id))
+                update_id(resource, new_res_id)
+            else:
+                LOG.warning('Unable to extract id for resource %s: %s' % (logical_id, result))
 
         return resource
 
@@ -239,6 +243,8 @@ def apply_patches():
 
 
 def main():
+    setup_logging()
+
     # patch moto implementation
     apply_patches()
 

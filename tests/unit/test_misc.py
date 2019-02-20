@@ -2,7 +2,7 @@ import time
 from requests.models import Response
 from localstack.utils.aws import aws_stack
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-from localstack.utils.common import download, parallelize, TMP_FILES, load_file
+from localstack.utils.common import download, parallelize, TMP_FILES, load_file, parse_chunked_data
 
 
 def test_environment():
@@ -10,6 +10,14 @@ def test_environment():
     assert env.prefix == 'foobar1'
     env = aws_stack.Environment.from_string('foobar2')
     assert env.prefix == 'foobar2'
+
+
+def test_parse_chunked_data():
+    # See: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
+    chunked = '4\r\nWiki\r\n5\r\npedia\r\nE\r\n in\r\n\r\nchunks.\r\n0\r\n\r\n'
+    expected = 'Wikipedia in\r\n\r\nchunks.'
+    parsed = parse_chunked_data(chunked)
+    assert parsed.strip() == expected.strip()
 
 
 # This test is not enabled in CI, it is just used for manual

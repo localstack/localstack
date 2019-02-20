@@ -9,9 +9,6 @@ from localstack.services.generic_proxy import ProxyListener
 XMLNS_CLOUDFORMATION = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
 LOGGER = logging.getLogger(__name__)
 
-# maps change set names to change set details
-CHANGE_SETS = {}
-
 
 def error_response(message, code=400, error_type='ValidationError'):
     response = Response()

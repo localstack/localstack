@@ -364,8 +364,10 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             sm_name = resolve_refs_recursively(stack_name, resource_props['StateMachineName'], resources)
             sfn_client = aws_stack.connect_to_service('stepfunctions')
             state_machines = sfn_client.list_state_machines()['stateMachines']
-            sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == sm_name][0]
-            result = sfn_client.describe_state_machine(stateMachineArn=sm_arn)
+            sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == sm_name]
+            if not sm_arn:
+                return None
+            result = sfn_client.describe_state_machine(stateMachineArn=sm_arn[0])
             return result
         if is_deployable_resource(resource):
             LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
@@ -404,7 +406,6 @@ def extract_resource_attribute(resource_type, resource, attribute):
 
 
 def resolve_ref(stack_name, ref, resources, attribute):
-    LOG.debug('Resolving ref %s - %s' % (ref, attribute))
     if ref == 'AWS::Region':
         return DEFAULT_REGION
     resource_status = {}

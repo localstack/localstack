@@ -34,7 +34,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_RUBY25)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file)
+    md5, new_tmp_file, parse_chunked_data)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -548,6 +548,14 @@ def format_func_details(func_details, version=None, always_add_version=False):
 # ------------
 
 
+@app.before_request
+def before_request():
+    # fix to enable chunked encoding, as this is used by some Lambda clients
+    transfer_encoding = request.headers.get('Transfer-Encoding', None)
+    if transfer_encoding == 'chunked':
+        request.environ['wsgi.input_terminated'] = True
+
+
 @app.route('%s/functions' % PATH_ROOT, methods=['POST'])
 def create_function():
     """ Create new function
@@ -771,12 +779,18 @@ def invoke_function(function):
     if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
         return error_response('Function does not exist: {0}:{1}'.format(arn, qualifier), 404,
                               error_type='ResourceNotFoundException')
-    data = None
-    if request.data:
+    data = request.get_data()
+    if data:
+        data = to_str(data)
         try:
-            data = json.loads(to_str(request.data))
+            data = json.loads(data)
         except Exception:
-            return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
+            try:
+                # try to read chunked content
+                data = json.loads(parse_chunked_data(data))
+            except Exception:
+                return error_response('The payload is not JSON: %s' % data, 415,
+                                      error_type='UnsupportedMediaTypeException')
 
     # Default invocation type is RequestResponse
     invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
