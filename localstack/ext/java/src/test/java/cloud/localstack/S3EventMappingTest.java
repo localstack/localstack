@@ -29,27 +29,33 @@ public class S3EventMappingTest {
         S3Event s3Event = S3EventParser.parse(records);
         S3EventNotification.S3EventNotificationRecord record = s3Event.getRecords().get(0);
 
-        Assert.assertTrue("eventVersion match", record.getEventVersion().contains("2.0"));
-        Assert.assertTrue("eventTime match", record.getEventTime().toString().equals("2018-08-23T21:41:36.511Z"));
-        Assert.assertTrue("sourceIPAddress match", record.getRequestParameters().getSourceIPAddress().equals("127.0.0.1"));
+        // grab expected results
+        Map<String, Object> expectedResultRecord = records.get(0);
+        Map<String, Object> expS3 = (Map<String, Object>) expectedResultRecord.get("s3");
+        Map<String, Object> expBk = ((Map<String, Object>) get(expS3, "bucket"));
+        Map<String, Object> expOi = (Map<String, Object>) get(expBk,  "ownerIdentity");
 
-        Assert.assertTrue("s3 configurationId match", record.getS3().getConfigurationId().equals("testConfigRule"));
-        Assert.assertTrue("s3 object versionId match", record.getS3().getObject().getVersionId().equals("096fKKXTRTtl3on89fVO.nfljtsv6qko"));
-        Assert.assertTrue("s3 object eTag match", record.getS3().getObject().geteTag().equals("d41d8cd98f00b204e9800998ecf8427e"));
-        Assert.assertTrue("s3 object key match", record.getS3().getObject().getKey().equals("key/file.txt"));
-        Assert.assertTrue("s3 object sequencer match", record.getS3().getObject().getSequencer().equals("0055AED6DCD90281E5"));
-        Assert.assertTrue("s3 object size match", record.getS3().getObject().getSizeAsLong().equals(1024L));
-        Assert.assertTrue("s3 ownerEntity principalId match", record.getS3().getBucket().getOwnerIdentity().getPrincipalId().equals("A3NL1KOZZKExample"));
-        Assert.assertTrue("s3 bucket name match", record.getS3().getBucket().getName().equals("bucket-name"));
-        Assert.assertTrue("s3 bucket arn match", record.getS3().getBucket().getArn().equals("arn:aws:s3:::bucket-name"));
-        Assert.assertTrue("s3 schemaVersion match", record.getS3().getS3SchemaVersion().equals("1.0"));
+        // verify parsed event info
+        Assert.assertEquals("eventVersion match", expectedResultRecord.get("eventVersion"), record.getEventVersion());
+        Assert.assertEquals("eventTime match", expectedResultRecord.get("eventTime"), record.getEventTime().toString());
+        Assert.assertEquals("sourceIPAddress match", get((Map<String, Object>)expectedResultRecord.get("requestParameters"), "sourceIPAddress"), record.getRequestParameters().getSourceIPAddress());
 
-        Assert.assertTrue("responseElements x-amz-id-2 match", record.getResponseElements().getxAmzId2().equals("eftixk72aD6Ap51TnqcoF8eFidJG9Z/2"));
-        Assert.assertTrue("responseElements x-amz-request-id match", record.getResponseElements().getxAmzRequestId().equals("8a0c0d15"));
-        Assert.assertTrue("awsRegion", record.getAwsRegion().equals("us-east-1"));
-        Assert.assertTrue("eventName", record.getEventName().equals("ObjectCreated:Put"));
-        Assert.assertTrue("userIdentity principalId", record.getUserIdentity().getPrincipalId().equals("AIDAJDPLRKLG7UEXAMPLE"));
-        Assert.assertTrue("eventSource match", record.getEventSource().equals("aws:s3"));
+        Assert.assertEquals("s3 configurationId match", expS3.get("configurationId"), record.getS3().getConfigurationId());
+        Assert.assertEquals("s3 object versionId match", get((Map<String, Object>) expS3.get("object"),"versionId"), record.getS3().getObject().getVersionId());
+        Assert.assertEquals("s3 object eTag match", get((Map<String, Object>) expS3.get("object"),"eTag"), record.getS3().getObject().geteTag());
+        Assert.assertEquals("s3 object key match", get((Map<String, Object>) expS3.get("object"),"key"), record.getS3().getObject().getKey());
+        Assert.assertEquals("s3 object sequencer match", get((Map<String, Object>) expS3.get("object"),"sequencer"), record.getS3().getObject().getSequencer());
+        Assert.assertEquals("s3 object size match", new Long(get((Map<String, Object>) expS3.get("object"),"size").toString()), record.getS3().getObject().getSizeAsLong());
+        Assert.assertEquals("s3 ownerEntity principalId match", expOi.get("principalId"), record.getS3().getBucket().getOwnerIdentity().getPrincipalId());
+        Assert.assertEquals("s3 bucket name match", expBk.get("name"), record.getS3().getBucket().getName() );
+        Assert.assertEquals("s3 schemaVersion match", expS3.get("s3SchemaVersion"), record.getS3().getS3SchemaVersion() );
+
+        Assert.assertEquals("responseElements x-amz-id-2 match", get((Map<String, Object>) expectedResultRecord.get("responseElements"),"x-amz-id-2"), record.getResponseElements().getxAmzId2());
+        Assert.assertEquals("responseElements x-amz-request-id match", get((Map<String, Object>) expectedResultRecord.get("responseElements"),"x-amz-request-id"), record.getResponseElements().getxAmzRequestId());
+        Assert.assertEquals("awsRegion match", expectedResultRecord.get("awsRegion"), record.getAwsRegion());
+        Assert.assertEquals("eventName match", expectedResultRecord.get("eventName"), record.getEventName());
+        Assert.assertEquals("userIdentity principalId", get((Map<String, Object>) expectedResultRecord.get("userIdentity"),"principalId"), record.getUserIdentity().getPrincipalId());
+        Assert.assertEquals("eventSource match", expectedResultRecord.get("eventSource"), record.getEventSource());
 
     }
 
