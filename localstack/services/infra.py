@@ -17,7 +17,7 @@ from localstack.constants import (
 from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
     PORT_FIREHOSE, PORT_LAMBDA, PORT_SNS, PORT_REDSHIFT, PORT_CLOUDWATCH,
     PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_APIGATEWAY, PORT_SSM,
-    PORT_SECRETSMANAGER, PORT_STS)
+    PORT_SECRETSMANAGER, PORT_STS, PORT_IAM)
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
     TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir)
@@ -161,6 +161,10 @@ def start_sts(port=PORT_STS, asynchronous=False):
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
 
 
+def start_iam(port=PORT_IAM, asynchronous=False):
+    return start_moto_server('iam', port, name='IAM', asynchronous=asynchronous)
+
+
 def start_redshift(port=PORT_REDSHIFT, asynchronous=False):
     return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
 
@@ -208,6 +212,7 @@ def setup_logging():
     # disable some logs and warnings
     warnings.filterwarnings('ignore')
     logging.captureWarnings(True)
+    logging.getLogger('boto3').setLevel(logging.INFO)
     logging.getLogger('s3transfer').setLevel(logging.INFO)
     logging.getLogger('docker').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)

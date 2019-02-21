@@ -1,13 +1,14 @@
 import sys
 import logging
 from moto.s3 import models as s3_models
+from moto.iam import models as iam_models
 from moto.core import BaseModel
 from moto.server import main as moto_main
 from moto.dynamodb import models as dynamodb_models
 from moto.apigateway import models as apigw_models
-from moto.cloudformation import parsing
+from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
-from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
+from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack.config import PORT_CLOUDFORMATION
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
@@ -18,6 +19,9 @@ from localstack.services.infra import (
 from localstack.utils.cloudformation import template_deployer
 
 LOG = logging.getLogger(__name__)
+
+# Maps (stack_name,resource_logical_id) -> Bool to indicate which resources are currently being updated
+CURRENTLY_UPDATING_RESOURCES = {}
 
 
 def start_cloudformation(port=PORT_CLOUDFORMATION, asynchronous=False, update_listener=None):
@@ -61,6 +65,15 @@ def apply_patches():
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
 
     def parse_and_create_resource(logical_id, resource_json, resources_map, region_name):
+        stack_name = resources_map.get('AWS::StackName')
+        resource_hash_key = (stack_name, logical_id)
+
+        # If the current stack is being updated, avoid
+        updating = CURRENTLY_UPDATING_RESOURCES.get(resource_hash_key)
+        LOG.debug('Currently updating stack resource %s/%s: %s' % (stack_name, logical_id, updating))
+        if updating:
+            return None
+
         # parse and get final resource JSON
         resource_tuple = parsing.parse_resource(logical_id, resource_json, resources_map)
         if not resource_tuple:
@@ -71,7 +84,6 @@ def apply_patches():
         resource = parse_and_create_resource_orig(logical_id, resource_json, resources_map, region_name)
 
         # check whether this resource needs to be deployed
-        stack_name = resources_map.get('AWS::StackName')
         resource_wrapped = {logical_id: resource_json}
         should_be_deployed = template_deployer.should_be_deployed(logical_id, resource_wrapped, stack_name)
         if not should_be_deployed:
@@ -80,7 +92,12 @@ def apply_patches():
 
         # deploy resource in LocalStack
         LOG.debug('Deploying CloudFormation resource: %s' % resource_json)
-        result = template_deployer.deploy_resource(logical_id, resource_wrapped, stack_name=stack_name)
+
+        try:
+            CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
+            result = template_deployer.deploy_resource(logical_id, resource_wrapped, stack_name=stack_name)
+        finally:
+            CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = False
         props = resource_json.get('Properties') or {}
 
         # update id in created resource
@@ -163,18 +180,31 @@ def apply_patches():
     parse_output_orig = parsing.parse_output
     parsing.parse_output = parse_output
 
-    # Patch DynamoDB get_cfn_attribute(..) method to fix a bug in moto
+    # Patch DynamoDB get_cfn_attribute(..) method in moto
 
-    def get_cfn_attribute(self, attribute_name):
+    def DynamoDB_Table_get_cfn_attribute(self, attribute_name):
         try:
-            return get_cfn_attribute_orig(self, attribute_name)
+            return DynamoDB_Table_get_cfn_attribute_orig(self, attribute_name)
         except Exception:
             if attribute_name == 'Arn':
                 return aws_stack.dynamodb_table_arn(table_name=self.name)
             raise
 
-    get_cfn_attribute_orig = dynamodb_models.Table.get_cfn_attribute
-    dynamodb_models.Table.get_cfn_attribute = get_cfn_attribute
+    DynamoDB_Table_get_cfn_attribute_orig = dynamodb_models.Table.get_cfn_attribute
+    dynamodb_models.Table.get_cfn_attribute = DynamoDB_Table_get_cfn_attribute
+
+    # Patch IAM get_cfn_attribute(..) method in moto
+
+    def IAM_Role_get_cfn_attribute(self, attribute_name):
+        try:
+            return IAM_Role_get_cfn_attribute_orig(self, attribute_name)
+        except Exception:
+            if attribute_name == 'Arn':
+                return aws_stack.role_arn(self.name)
+            raise
+
+    IAM_Role_get_cfn_attribute_orig = iam_models.Role.get_cfn_attribute
+    iam_models.Role.get_cfn_attribute = IAM_Role_get_cfn_attribute
 
     # add CloudWatch types
 
@@ -240,6 +270,28 @@ def apply_patches():
     apigw_models.Resource.create_from_cloudformation_json = Resource_create_from_cloudformation_json
     apigw_models.Method.create_from_cloudformation_json = Method_create_from_cloudformation_json
     # TODO: add support for AWS::ApiGateway::Model, AWS::ApiGateway::RequestValidator, ...
+
+    # fix AttributeError in moto's CloudFormation describe_stack_resource
+
+    def describe_stack_resource(self):
+        stack_name = self._get_param('StackName')
+        stack = self.cloudformation_backend.get_stack(stack_name)
+        logical_resource_id = self._get_param('LogicalResourceId')
+
+        for stack_resource in stack.stack_resources:
+            # Note: Line below has been patched
+            # if stack_resource.logical_resource_id == logical_resource_id:
+            if stack_resource and stack_resource.logical_resource_id == logical_resource_id:
+                resource = stack_resource
+                break
+        else:
+            raise ValidationError(logical_resource_id)
+
+        template = self.response_template(
+            responses.DESCRIBE_STACK_RESOURCE_RESPONSE_TEMPLATE)
+        return template.render(stack=stack, resource=resource)
+
+    responses.CloudFormationResponse.describe_stack_resource = describe_stack_resource
 
 
 def main():

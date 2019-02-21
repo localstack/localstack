@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import re
 import os
 import imp
@@ -14,7 +12,6 @@ import threading
 import traceback
 from io import BytesIO
 from datetime import datetime
-from six import iteritems
 from six.moves import cStringIO as StringIO
 from flask import Flask, Response, jsonify, request, make_response
 from localstack import config
@@ -306,7 +303,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
             event, context=context, version=version, asynchronous=asynchronous)
     except Exception as e:
-        return error_response('Error executing Lambda function: %s %s' % (e, traceback.format_exc()))
+        return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -516,7 +513,7 @@ def set_function_code(code, lambda_name):
 
 def do_list_functions():
     funcs = []
-    for f_arn, func in iteritems(arn_to_lambda):
+    for f_arn, func in arn_to_lambda.items():
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
         func_details = arn_to_lambda.get(arn)
