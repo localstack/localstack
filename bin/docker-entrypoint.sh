@@ -6,8 +6,8 @@ shopt -s nullglob
 supervisord -c /etc/supervisord.conf &
 
 until grep -q "^Ready.$" /tmp/localstack_infra.log >/dev/null 2>&1 ; do
-  echo "waiting for localstack"
-  sleep 2
+  echo "Waiting for all LocalStack services to be ready"
+  sleep 7
 done
 
 for f in /docker-entrypoint-initaws.d/*; do

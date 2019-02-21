@@ -5,7 +5,7 @@ from localstack.services.sqs import sqs_listener, sqs_starter
 from localstack.services.infra import (register_plugin, Plugin,
     start_s3, start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
     start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
-    start_ssm, start_sts, start_secretsmanager)
+    start_ssm, start_sts, start_secretsmanager, start_iam)
 from localstack.services.kinesis import kinesis_listener, kinesis_starter
 from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
 from localstack.services.apigateway import apigateway_listener
@@ -38,6 +38,8 @@ def register_localstack_plugins():
             start=start_ssm))
         register_plugin(Plugin('sts',
             start=start_sts))
+        register_plugin(Plugin('iam',
+            start=start_iam))
         register_plugin(Plugin('secretsmanager',
             start=start_secretsmanager))
         register_plugin(Plugin('apigateway',

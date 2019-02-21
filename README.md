@@ -48,6 +48,7 @@ any longer.
 * **SecretsManager** at http://localhost:4584
 * **StepFunctions** at http://localhost:4585
 * **STS** at http://localhost:4592
+* **IAM** at http://localhost:4593
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including

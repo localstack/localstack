@@ -24,7 +24,7 @@ RESOURCE_TO_FUNCTION = {
             'function': 'create_bucket',
             'parameters': {
                 'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
-                'ACL': lambda params: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead'))
+                'ACL': lambda params, **kwargs: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead'))
             }
         }
     },
@@ -33,7 +33,7 @@ RESOURCE_TO_FUNCTION = {
             'boto_client': 'client',
             'function': 'create_queue',
             'parameters': {
-                'QueueName': PLACEHOLDER_RESOURCE_NAME
+                'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME]
             }
         }
     },
@@ -59,7 +59,10 @@ RESOURCE_TO_FUNCTION = {
                 'Role': 'Role',
                 'Handler': 'Handler',
                 'Code': 'Code',
-                'Description': 'Description'
+                'Description': 'Description',
+                'Environment': 'Environment',
+                'Timeout': 'Timeout',
+                'MemorySize': 'MemorySize',
                 # TODO add missing fields
             },
             'defaults': {
@@ -173,9 +176,9 @@ RESOURCE_TO_FUNCTION = {
             'boto_client': 'client',
             'function': 'create_state_machine',
             'parameters': {
-                'name': 'StateMachineName',
+                'name': ['StateMachineName', PLACEHOLDER_RESOURCE_NAME],
                 'definition': 'DefinitionString',
-                'roleArn': lambda params: aws_stack.role_arn(params.get('RoleArn'))
+                'roleArn': lambda params, **kwargs: get_role_arn(params.get('RoleArn'), **kwargs)
             }
         }
     }
@@ -195,6 +198,11 @@ def retrieve_topic_arn(topic_name):
     topics = aws_stack.connect_to_service('sns').list_topics()['Topics']
     topic_arns = [t['TopicArn'] for t in topics if t['TopicArn'].endswith(':%s' % topic_name)]
     return topic_arns[0]
+
+
+def get_role_arn(role_arn, **kwargs):
+    role_arn = resolve_refs_recursively(kwargs.get('stack_name'), role_arn, kwargs.get('resources'))
+    return aws_stack.role_arn(role_arn)
 
 
 # ----------------
@@ -361,7 +369,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
             return result
         elif resource_type == 'StepFunctions::StateMachine':
-            sm_name = resolve_refs_recursively(stack_name, resource_props['StateMachineName'], resources)
+            sm_name = resource_props.get('StateMachineName') or resource_id
+            sm_name = resolve_refs_recursively(stack_name, sm_name, resources)
             sfn_client = aws_stack.connect_to_service('stepfunctions')
             state_machines = sfn_client.list_state_machines()['stateMachines']
             sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == sm_name]
@@ -500,7 +509,7 @@ def deploy_resource(resource_id, resources, stack_name):
 
             else:
                 if callable(prop_key):
-                    prop_value = prop_key(resource_props)
+                    prop_value = prop_key(resource_props, stack_name=stack_name, resources=resources)
                 else:
                     prop_value = resource_props.get(prop_key)
                 if prop_value is not None:

@@ -7,7 +7,7 @@ from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
 
 XMLNS_CLOUDFORMATION = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 def error_response(message, code=400, error_type='ValidationError'):
@@ -39,7 +39,7 @@ def make_response(operation_name, content='', code=200):
 
 
 def validate_template(req_data):
-    LOGGER.debug(req_data)
+    LOG.debug('Validate CloudFormation template: %s' % req_data)
     response_content = """
         <Capabilities></Capabilities>
         <CapabilitiesReason></CapabilitiesReason>
@@ -70,6 +70,11 @@ class ProxyListenerCloudFormation(ProxyListener):
                 return validate_template(req_data)
 
         return True
+
+    def return_response(self, method, path, data, headers, response):
+        if response.status_code >= 400:
+            LOG.warning('Error response from CloudFormation (%s) %s %s: %s' %
+                        (response.status_code, method, path, response.content))
 
 
 # instantiate listener
