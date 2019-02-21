@@ -56,7 +56,7 @@ EXPOSE 4567-4584 8080
 # install supervisor daemon & copy config file
 ADD bin/supervisord.conf /etc/supervisord.conf
 
-RUN pip install awscli awscli-local --upgrade --user
+RUN pip install awscli awscli-local --upgrade 
 
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
