@@ -124,7 +124,7 @@ docker-compose up
 (Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR docker-compose up` if
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
 
-Use on existing cocker-compose project. Add in existing services. The project can be found in docker hub, no need to download or clone source:
+Use on existing docker-compose project. Add in existing services. The project can be found in docker hub, no need to download or clone source:
 
 ```
 services:
