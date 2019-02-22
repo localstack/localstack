@@ -431,6 +431,7 @@ class ProxyListenerS3(ProxyListener):
         # https://github.com/scality/S3/issues/237
         if headers.get('x-amz-content-sha256') == 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD':
             modified_data = strip_chunk_signatures(data)
+            headers['content-length'] = headers.get('x-amz-decoded-content-length')
 
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
@@ -472,7 +473,7 @@ class ProxyListenerS3(ProxyListener):
             if method == 'PUT':
                 return set_lifecycle(bucket, data)
 
-        if modified_data:
+        if modified_data is not None:
             return Request(data=modified_data, headers=headers, method=method)
         return True
 
