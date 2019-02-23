@@ -7,6 +7,9 @@ from localstack.services.infra import get_service_protocol, start_proxy_for_serv
 
 LOG = logging.getLogger(__name__)
 
+# max heap size allocated for the Java process
+MAX_HEAP_SIZE = '256m'
+
 
 def start_stepfunctions(port=PORT_STEPFUNCTIONS, asynchronous=False, update_listener=None):
     install.install_stepfunctions_local()
@@ -17,10 +20,10 @@ def start_stepfunctions(port=PORT_STEPFUNCTIONS, asynchronous=False, update_list
     dynamodb_endpoint = aws_stack.get_local_service_url('dynamodb')
     sns_endpoint = aws_stack.get_local_service_url('sns')
     sqs_endpoint = aws_stack.get_local_service_url('sqs')
-    cmd = ('cd %s; java -Dcom.amazonaws.sdk.disableCertChecking -jar StepFunctionsLocal.jar '
+    cmd = ('cd %s; java -Dcom.amazonaws.sdk.disableCertChecking -Xmx%s -jar StepFunctionsLocal.jar '
            '--lambda-endpoint %s --dynamodb-endpoint %s --sns-endpoint %s '
            '--sqs-endpoint %s --aws-region %s --aws-account %s') % (
-        install.INSTALL_DIR_STEPFUNCTIONS, lambda_endpoint, dynamodb_endpoint,
+        install.INSTALL_DIR_STEPFUNCTIONS, MAX_HEAP_SIZE, lambda_endpoint, dynamodb_endpoint,
         sns_endpoint, sqs_endpoint, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID)
     print('Starting mock StepFunctions (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('stepfunctions', port, backend_port, update_listener)
