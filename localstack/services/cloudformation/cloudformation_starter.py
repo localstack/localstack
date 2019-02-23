@@ -17,6 +17,7 @@ from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, setup_logging)
 from localstack.utils.cloudformation import template_deployer
+from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
 LOG = logging.getLogger(__name__)
 
@@ -41,7 +42,9 @@ def apply_patches():
 
     def get_key(self, bucket_name, key_name, version_id=None):
         s3_client = aws_stack.connect_to_service('s3')
-        value = s3_client.get_object(Bucket=bucket_name, Key=key_name)['Body'].read()
+        value = b''
+        if bucket_name != BUCKET_MARKER_LOCAL:
+            value = s3_client.get_object(Bucket=bucket_name, Key=key_name)['Body'].read()
         return s3_models.FakeKey(name=key_name, value=value)
 
     s3_models.S3Backend.get_key = get_key
@@ -294,11 +297,40 @@ def apply_patches():
     responses.CloudFormationResponse.describe_stack_resource = describe_stack_resource
 
 
+def inject_stats_endpoint():
+    """ Inject a simple /_stats endpoint into the moto server backend Web app. """
+    # TODO: move this utility method to a shared file and enable it for all API endpoints
+    import json
+    from moto import server as moto_server
+
+    def _get_stats():
+        from pympler import muppy, summary
+        all_objects = muppy.get_objects()
+        result = summary.summarize(all_objects)
+        result = result[0:20]
+        summary = '\n'.join([l for l in summary.format_(result)])
+        result = '%s\n\n%s' % (summary, json.dumps(result))
+        return result, 200, {'content-type': 'text/plain'}
+
+    def create_backend_app(service):
+        backend_app = moto_server.create_backend_app_orig(service)
+        backend_app.add_url_rule(
+            '/_stats', endpoint='_get_stats', methods=['GET'], view_func=_get_stats, strict_slashes=False)
+        return backend_app
+
+    if not hasattr(moto_server, 'create_backend_app_orig'):
+        moto_server.create_backend_app_orig = moto_server.create_backend_app
+        moto_server.create_backend_app = create_backend_app
+
+
 def main():
     setup_logging()
 
     # patch moto implementation
     apply_patches()
+
+    # add memory profiling endpoint
+    inject_stats_endpoint()
 
     # start API
     sys.exit(moto_main())

@@ -75,6 +75,10 @@ DO_USE_DOCKER = None
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
 
+# Marker name to indicate that a bucket represents the local file system. This is used for testing
+# Serverless applications where we mount the Lambda code directly into the container from the host OS.
+BUCKET_MARKER_LOCAL = '__local__'
+
 
 class LambdaContext(object):
 
@@ -446,17 +450,26 @@ def set_function_code(code, lambda_name):
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
+    zip_file_content = None
+    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
 
-    # Save the zip file to a temporary file that the lambda executors can reference.
-    zip_file_content = get_zip_bytes(code)
-    if isinstance(zip_file_content, Response):
-        return zip_file_content
-    tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
-    mkdir(tmp_dir)
-    tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
-    save_file(tmp_file, zip_file_content)
-    TMP_FILES.append(tmp_dir)
-    lambda_cwd = tmp_dir
+    if is_local_mount:
+        # Mount or use a local folder lambda executors can reference
+        # WARNING: this means we're pointing lambda_cwd to a local path in the user's
+        # file system! We must ensure that there is no data loss (i.e., we must *not* add
+        # this folder to TMP_FILES or similar).
+        lambda_cwd = code['S3Key']
+    else:
+        # Save the zip file to a temporary file that the lambda executors can reference
+        zip_file_content = get_zip_bytes(code)
+        if isinstance(zip_file_content, Response):
+            return zip_file_content
+        tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
+        mkdir(tmp_dir)
+        tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
+        save_file(tmp_file, zip_file_content)
+        TMP_FILES.append(tmp_dir)
+        lambda_cwd = tmp_dir
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
@@ -477,20 +490,21 @@ def set_function_code(code, lambda_name):
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
-        # Lambda code must be uploaded in the Zip format.
-        if not is_zip_file(zip_file_content):
-            raise Exception(
-                'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
+        if not is_local_mount:
+            # Lambda code must be uploaded in Zip format
+            if not is_zip_file(zip_file_content):
+                raise Exception(
+                    'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
+            unzip(tmp_file, lambda_cwd)
 
-        unzip(tmp_file, tmp_dir)
-        main_file = '%s/%s' % (tmp_dir, handler_file)
+        main_file = '%s/%s' % (lambda_cwd, handler_file)
         if os.path.isfile(main_file):
             # make sure the file is actually readable, then read contents
             ensure_readable(main_file)
             with open(main_file, 'rb') as file_obj:
                 zip_file_content = file_obj.read()
         else:
-            file_list = run('ls -la %s' % tmp_dir)
+            file_list = run('ls -la %s' % lambda_cwd)
             LOG.debug('Lambda archive content:\n%s' % file_list)
             return error_response(
                 'Unable to find handler script in Lambda archive.', 400,
