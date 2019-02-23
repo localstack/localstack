@@ -504,11 +504,15 @@ def set_function_code(code, lambda_name):
             with open(main_file, 'rb') as file_obj:
                 zip_file_content = file_obj.read()
         else:
-            file_list = run('ls -la %s' % lambda_cwd)
-            LOG.debug('Lambda archive content:\n%s' % file_list)
-            return error_response(
-                'Unable to find handler script in Lambda archive.', 400,
-                error_type='ValidationError')
+            # Raise an error if (1) this is not a local mount lambda, or (2) we're
+            # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
+            # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
+            if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
+                file_list = run('ls -la %s' % lambda_cwd)
+                LOG.debug('Lambda archive content:\n%s' % file_list)
+                return error_response(
+                    'Unable to find handler script in Lambda archive.', 400,
+                    error_type='ValidationError')
 
         if runtime.startswith('python') and not use_docker():
             try:

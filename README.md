@@ -197,6 +197,7 @@ You can pass the following environment variables to LocalStack:
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
   `KINESIS`, `S3`, `SNS`, `SQS`). This allows to easily integrate third-party services into LocalStack.
 * `FORCE_NONINTERACTIVE`: when running with Docker, disables the `--interactive` and `--tty` flags. Useful when running headless.
+* `DOCKER_FLAGS`: Allows to pass custom flags (e.g., volume mounts) to "docker run" when running LocalStack in Docker.
 
 Additionally, the following *read-only* environment variables are available:
 
@@ -293,6 +294,12 @@ def my_app_test():
 ```
 
 See the example test file `tests/test_integration.py` for more details.
+
+## Integration with Serverless
+
+You can use the [`localstack-serverless`](https://www.npmjs.com/package/localstack-serverless) plugin to easily run [Serverless](https://serverless.com/framework/) applications on LocalStack.
+For more information, please check out the plugin repository here:
+https://github.com/localstack/localstack-serverlesss
 
 ## Integration with Java/JUnit
 
@@ -443,6 +450,7 @@ localstack web
 
 ## Change Log
 
+* v0.9.0: Enhance integration with Serverless; refactor CloudFormation implementation; add support for Step Functions, IAM, STS; fix CloudFormation integration; support mounting Lambda code locally; add `docker-entrypoint-initaws.d` dir for initializing resources; add S3Event Parser for Lambda; fix S3 chunk encoding; fix S3 multipart upload notification; add dotnetcore2.1 and ruby2.5 Lambda runtimes; fix issues with JDK 9; install ES plugins available in AWS
 * v0.8.10: Add kclpy to pip package; fix badges in README
 * v0.8.9: Replace moto-ext with upstream moto; fix SNS message attributes; fix swagger; make external SQS port configurable; support for SNS DeleteTopic; S3 notifications for multipart uploads; support requestContext in AWS_PROXY integration; update docs for SSL usage
 * v0.8.8: Support Docker network config for Lambda containers; support queryStringParameters for Lambda AWS_PROXY apigateway; add AWS SecretsManager service; add SQS/Lambda integration; add support for Firehose Kinesis source; add GetAlias to Lambda API; add function properties to LambdaContext for invocations; fix extraction of Java Lambda archives; check region headers for SNS; fix Lambda output buffering; fix S3 download of gzip; bump ElasticMQ to 0.14.5; fix Lambda response codes; fix syntax issues for Python 3.7

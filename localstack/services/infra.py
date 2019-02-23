@@ -110,7 +110,7 @@ def load_plugin_from_path(file_path, scope=None):
 def load_plugins(scope=None):
     scope = scope or PLUGIN_SCOPE_SERVICES
     if PLUGINS_LOADED.get(scope, None):
-        return
+        return PLUGINS_LOADED[scope]
 
     setup_logging()
 
@@ -377,6 +377,7 @@ def start_infra_in_docker():
     services = os.environ.get('SERVICES', '')
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
+    user_flags = os.environ.get('DOCKER_FLAGS', '')
     image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
     service_ports = config.SERVICE_PORTS
     force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
@@ -423,15 +424,16 @@ def start_infra_in_docker():
     interactive = '' if force_noninteractive or in_ci() else '-it '
 
     # append space if parameter is set
+    user_flags = '%s ' % user_flags if user_flags else user_flags
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
 
-    docker_cmd = ('docker run %s%s%s%s' +
+    docker_cmd = ('docker run %s%s%s%s%s' +
         '-p 8080:8080 %s %s' +
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-            interactive, entrypoint, env_str, plugin_run_params, port_mappings, data_dir_mount,
+            interactive, entrypoint, env_str, user_flags, plugin_run_params, port_mappings, data_dir_mount,
             config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
             config.HOST_TMP_FOLDER, image_name, cmd
     )
