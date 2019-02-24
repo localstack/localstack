@@ -301,6 +301,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         sys.stdout = stream
         sys.stderr = stream
     try:
+        func_arn = aws_stack.fix_arn(func_arn)
         func_details = arn_to_lambda.get(func_arn)
         if not context:
             context = LambdaContext(func_details, version)
@@ -442,9 +443,10 @@ def set_function_code(code, lambda_name):
 
     lambda_cwd = None
     arn = func_arn(lambda_name)
-    runtime = arn_to_lambda[arn].runtime
-    handler_name = arn_to_lambda.get(arn).handler
-    lambda_environment = arn_to_lambda.get(arn).envvars
+    lambda_details = arn_to_lambda[arn]
+    runtime = lambda_details.runtime
+    handler_name = lambda_details.handler
+    lambda_environment = lambda_details.envvars
     if not handler_name:
         handler_name = LAMBDA_DEFAULT_HANDLER
 
@@ -549,7 +551,9 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'Handler': func_details.handler,
         'Runtime': func_details.runtime,
         'Timeout': func_details.timeout,
-        'Environment': func_details.envvars,
+        'Environment': {
+            'Variables': func_details.envvars
+        },
         # 'Description': ''
         # 'MemorySize': 192,
     }
@@ -761,8 +765,9 @@ def update_function_configuration(function):
         lambda_details.handler = data['Handler']
     if data.get('Runtime'):
         lambda_details.runtime = data['Runtime']
-    if data.get('Environment'):
-        lambda_details.envvars = data.get('Environment', {}).get('Variables', {})
+    env_vars = data.get('Environment', {}).get('Variables')
+    if env_vars is not None:
+        lambda_details.envvars = env_vars
     if data.get('Timeout'):
         lambda_details.timeout = data['Timeout']
     result = {}
