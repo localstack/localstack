@@ -17,7 +17,7 @@ ENV_SECRET_KEY = 'AWS_SECRET_ACCESS_KEY'
 ENV_SESSION_TOKEN = 'AWS_SESSION_TOKEN'
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 # Use this field if you want to provide a custom boto3 session.
 # This field takes priority over CREATE_NEW_SESSION_PER_BOTO3_CONNECTION
@@ -278,6 +278,31 @@ def lambda_function_arn(function_name, account_id=None):
     return pattern.replace('.*', '%s') % (get_local_region(), account_id, function_name)
 
 
+def lambda_function_name(name_or_arn):
+    if ':' not in name_or_arn:
+        return name_or_arn
+    parts = name_or_arn.split(':')
+    # name is index #6 in pattern: arn:aws:lambda:.*:.*:function:.*
+    return parts[6]
+
+
+def state_machine_arn(name, account_id=None):
+    if ':' in name:
+        return name
+    account_id = get_account_id(account_id)
+    pattern = 'arn:aws:states:%s:%s:stateMachine:%s'
+    return pattern % (get_local_region(), account_id, name)
+
+
+def fix_arn(arn):
+    """ Function that attempts to "canonicalize" the given ARN. This includes converting
+        resource names to ARNs, replacing incorrect regions, account IDs, etc. """
+    if arn.startswith('arn:aws:lambda'):
+        return lambda_function_arn(lambda_function_name(arn))
+    LOG.warning('Unable to fix/canonicalize ARN: %s' % arn)
+    return arn
+
+
 def cognito_user_pool_arn(user_pool_id, account_id=None):
     account_id = get_account_id(account_id)
     return 'arn:aws:cognito-idp:%s:%s:userpool/%s' % (get_local_region(), account_id, user_pool_id)
@@ -399,7 +424,7 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
     if not description:
         description = 'Test description for API "%s"' % name
 
-    LOGGER.info('Creating API resources under API Gateway "%s".' % name)
+    LOG.info('Creating API resources under API Gateway "%s".' % name)
     api = client.create_rest_api(name=name, description=description)
     # list resources
     api_id = api['id']

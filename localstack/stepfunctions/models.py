@@ -18,7 +18,7 @@ class StateMachine(BaseModel):
     @classmethod
     def create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
-        name = props.get('RoleArn') or resource_name
+        name = props.get('StateMachineName') or resource_name
         definition = props.get('DefinitionString')
         role_arn = props.get('RoleArn')
         return StateMachine(name, definition=definition, role_arn=role_arn)

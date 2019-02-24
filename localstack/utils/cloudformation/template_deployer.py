@@ -12,10 +12,9 @@ from localstack.constants import DEFAULT_REGION
 ACTION_CREATE = 'create'
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
 
-# flag to indicate whether we are currently in the process of deployment
-MARKER_DONT_REDEPLOY_STACK = 'markerToIndicateNotToRedeployStack'
-
 LOG = logging.getLogger(__name__)
+
+UPDATEABLE_RESOURCES = ['Lambda::Function']
 
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -70,7 +69,15 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'Lambda::Version': {},
+    'Lambda::Version': {
+        'create': {
+            'boto_client': 'client',
+            'function': 'publish_version',
+            'parameters': {
+                # TODO
+            }
+        }
+    },
     'Lambda::Permission': {},
     'Lambda::EventSourceMapping': {
         'create': {
@@ -289,6 +296,12 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         if resource_type == 'Lambda::Function':
             resource_id = resource_props['FunctionName'] if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
+        elif resource_type == 'Lambda::Version':
+            name = resource_props['FunctionName']
+            func_name = aws_stack.lambda_function_name(name)
+            func_version = name.split(':')[7] if len(name.split(':')) > 7 else '$LATEST'
+            versions = aws_stack.connect_to_service('lambda').list_versions_by_function(FunctionName=func_name)
+            return ([v for v in versions['Versions'] if v['Version'] == func_version] or [None])[0]
         elif resource_type == 'Lambda::EventSourceMapping':
             resource_id = resource_props['FunctionName'] if resource else resource_id
             source_arn = resource_props.get('EventSourceArn')
@@ -456,19 +469,18 @@ def resolve_refs_recursively(stack_name, value, resources):
     return value
 
 
-def set_status_deployed(resource_id, resource, stack_name):
-    # TODO - deprecated - check if still needed!
-    pass
-    # client = aws_stack.connect_to_service('cloudformation')
-    # template = {
-    #     # TODO update deployment status
-    #     MARKER_DONT_REDEPLOY_STACK: {}
-    # }
-    # TODO: instead of calling update_stack, introduce a backdoor API method to
-    # update the deployment status of individual resources. The problem with
-    # using the code below is that it sets the status to UPDATE_COMPLETE which may
-    # be undesirable (if the stack has just been created we expect CREATE_COMPLETE).
-    # client.update_stack(StackName=stack_name, TemplateBody=json.dumps(template), UsePreviousTemplate=True)
+def update_resource(resource_id, resources, stack_name):
+    resource = resources[resource_id]
+    resource_type = get_resource_type(resource)
+    if resource_type not in UPDATEABLE_RESOURCES:
+        LOG.warning('Unable to update resource type "%s", id "%s"' % (resource_type, resource_id))
+        return
+    props = resource['Properties']
+    if resource_type == 'Lambda::Function':
+        client = aws_stack.connect_to_service('lambda')
+        keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
+        update_props = dict([(k, props[k]) for k in keys if k in props])
+        return client.update_function_configuration(**update_props)
 
 
 def deploy_resource(resource_id, resources, stack_name):
@@ -550,21 +562,12 @@ def deploy_resource(resource_id, resources, stack_name):
             topic_arn = retrieve_topic_arn(params['Name'])
             aws_stack.connect_to_service('sns').subscribe(
                 TopicArn=topic_arn, Protocol=subscription['Protocol'], Endpoint=endpoint)
-    # update status
-    set_status_deployed(resource_id, resource, stack_name)
     return result
 
 
 def deploy_template(template, stack_name):
     if isinstance(template, string_types):
         template = parse_template(template)
-
-    if MARKER_DONT_REDEPLOY_STACK in template:
-        # If we are currently deploying, then bail. This can occur if
-        # deploy_template(..) method calls boto's update_stack(..) (to update the
-        # state of resources) which itself triggers another call to deploy_template(..).
-        # We don't want to end up in an infinite/recursive deployment loop.
-        return
 
     resource_map = template.get('Resources')
     if not resource_map:
@@ -619,6 +622,15 @@ def should_be_deployed(resource_id, resources, stack_name):
         return False
     res_deps = get_resource_dependencies(resource_id, resource, resources)
     return all_dependencies_satisfied(res_deps, stack_name, resources, resource_id)
+
+
+def is_updateable(resource_id, resources, stack_name):
+    """ Return whether the given resource can be updated or not """
+    resource = resources[resource_id]
+    if not is_deployable_resource(resource) or not is_deployed(resource_id, resources, stack_name):
+        return False
+    resource_type = get_resource_type(resource)
+    return resource_type in UPDATEABLE_RESOURCES
 
 
 def all_dependencies_satisfied(resources, stack_name, all_resources, depending_resource=None):
