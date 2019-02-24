@@ -29,7 +29,7 @@ public @interface LocalstackDockerProperties {
     /**
      * Determines if a new image is pulled from the docker repo before the tests are run.
      */
-    boolean pullNewImage() default true;
+    boolean pullNewImage() default false;
 
     /**
      * Determines if the container should expose the default local stack ports (4567-4583) or if it should expose randomized ports
@@ -43,4 +43,3 @@ public @interface LocalstackDockerProperties {
      */
     String[] services() default {};
 }
-
