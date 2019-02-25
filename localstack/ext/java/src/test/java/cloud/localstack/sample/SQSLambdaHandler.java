@@ -1,31 +1,46 @@
 package cloud.localstack.sample;
 
+import cloud.localstack.TestUtils;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.amazonaws.services.s3.AmazonS3;
 
-import java.util.Map;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
 
-public class SQSLambdaHandler implements RequestHandler<Object, Object> {
+public class SQSLambdaHandler implements RequestHandler<SQSEvent, Object> {
+
+    public static final String[] fileName = { "sqsLambda", "test" };
+    public static final String DID_YOU_GET_THE_MESSAGE = "Did you get the message?";
 
     @Override
-    public Object handleRequest(Object event, Context context) {
-        if(event instanceof SQSEvent) {
-            return handleRequest((SQSEvent)event, context);
-        }
-        return handleRequest((Map<?, ?>)event, context);
-    }
-
-    public Object handleRequest(Map<?, ?> event, Context context) {
-        System.err.println("SQSMessage record: " + event);
-        return "{}";
-    }
-
     public Object handleRequest(SQSEvent event, Context context) {
+        AmazonS3 s3 = TestUtils.getClientS3();
         for (SQSEvent.SQSMessage message : event.getRecords()) {
-            System.err.println("SQSMessage message: " + message.getBody());
+            File file = getFile(DID_YOU_GET_THE_MESSAGE);
+            s3.putObject(message.getBody(), file.getName(), file);
         }
+
         return "{}";
+    }
+
+    private File getFile(String message) {
+        File file = null;
+        try {
+            file = Files.createTempFile(fileName[0], fileName[1]).toFile();
+            file.deleteOnExit();
+            BufferedWriter bw = new BufferedWriter(new FileWriter(file));
+            bw.write(message);
+            bw.close();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return file;
     }
 
 }

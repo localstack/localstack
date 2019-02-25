@@ -13,6 +13,7 @@ import com.amazonaws.services.lambda.model.ListFunctionsResult;
 import com.amazonaws.services.lambda.model.Runtime;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.CreateQueueResult;
@@ -122,6 +123,7 @@ public class BasicFunctionalityTest {
     public void testSQSLambdaIntegration() throws Exception {
         AmazonSQS clientSQS = TestUtils.getClientSQS();
         AWSLambda lambda = TestUtils.getClientLambda();
+        AmazonS3 s3 = TestUtils.getClientS3();
         String functionName = UUID.randomUUID().toString();
         String sqsQueueName = UUID.randomUUID().toString();
 
@@ -139,16 +141,30 @@ public class BasicFunctionalityTest {
         GetQueueAttributesResult queueAttributes = clientSQS.getQueueAttributes(new GetQueueAttributesRequest()
                 .withQueueUrl(queue.getQueueUrl())
                 .withAttributeNames(QueueAttributeName.QueueArn));
-        String streamArn = queueAttributes.getAttributes().get(QueueAttributeName.QueueArn.name());
+        String queueArn = queueAttributes.getAttributes().get(QueueAttributeName.QueueArn.name());
 
         // create mapping
         CreateEventSourceMappingRequest mapping = new CreateEventSourceMappingRequest();
         mapping.setFunctionName(functionName);
-        mapping.setEventSourceArn(streamArn);
+        mapping.setEventSourceArn(queueArn);
         lambda.createEventSourceMapping(mapping);
 
+        // create a s3 bucket
+        String testBucket = UUID.randomUUID().toString();
+        s3.createBucket(testBucket);
+
         // push event
-        clientSQS.sendMessage(queue.getQueueUrl(), "{\"foo\": \"bar\"}");
+        clientSQS.sendMessage(queue.getQueueUrl(), testBucket);
+        Thread.sleep(500);
+
+        // Test file written by Lambda
+        ObjectListing objectListing = s3.listObjects(testBucket);
+        Assertions.assertThat(objectListing.getObjectSummaries()).hasSize(1);
+        String key = objectListing.getObjectSummaries().get(0).getKey();
+        Assertions.assertThat(key).startsWith(SQSLambdaHandler.fileName[0]);
+        Assertions.assertThat(key).endsWith(SQSLambdaHandler.fileName[1]);
+        String message = s3.getObjectAsString(testBucket, key);
+        Assertions.assertThat(message).isEqualTo(SQSLambdaHandler.DID_YOU_GET_THE_MESSAGE);
     }
 
     @org.junit.Test

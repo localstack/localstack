@@ -7,8 +7,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.channels.FileChannel;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,6 +43,8 @@ public class Localstack {
 
     private static final String TMP_INSTALL_DIR = System.getProperty("java.io.tmpdir") +
             File.separator + "localstack_install_dir";
+
+    private static final String CURRENT_DEV_DIR = Paths.get("../../..").toAbsolutePath().toString();
 
     private static final String ADDITIONAL_PATH = "/usr/local/bin/";
 
@@ -137,6 +143,11 @@ public class Localstack {
     /* UTILITY METHODS */
 
     private static void ensureInstallation() {
+        ensureInstallation(false);
+    }
+
+
+    private static void ensureInstallation(boolean devEnvironment) {
         File dir = new File(TMP_INSTALL_DIR);
         File constantsFile = new File(dir, "localstack/constants.py");
         String logMsg = "Installing LocalStack to temporary directory (this may take a while): " + TMP_INSTALL_DIR;
@@ -145,7 +156,17 @@ public class Localstack {
             LOG.info(logMsg);
             messagePrinted = true;
             deleteDirectory(dir);
-            exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
+            if(devEnvironment) {
+                Path localstackDir = Paths.get("../../..");
+                Path tempLocalstackDir = Paths.get(TMP_INSTALL_DIR);
+                try {
+                    copyFolder(localstackDir, tempLocalstackDir);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
+            }
         }
         File installationDoneMarker = new File(dir, "localstack/infra/installation.finished.marker");
         if (!installationDoneMarker.exists()) {
@@ -251,7 +272,10 @@ public class Localstack {
     protected void setupInfrastructure() {
         synchronized (INFRA_STARTED) {
             // make sure everything is installed locally
-            ensureInstallation();
+            ensureInstallation(true);
+
+            ensureJavaFilesRefreshed();
+
             // make sure we avoid any errors related to locally generated SSL certificates
             TestUtils.disableSslCertChecking();
 
@@ -283,6 +307,24 @@ public class Localstack {
         }
     }
 
+    private void ensureJavaFilesRefreshed() {
+        String[] cmdPrepareJava = new String[]{"make", "-C", CURRENT_DEV_DIR
+                , "prepare-java-tests-infra-jars"};
+        exec(true, cmdPrepareJava);
+        Path localstackUtilsFatJar = Paths.get(CURRENT_DEV_DIR,"localstack", "infra", "localstack-utils-fat.jar");
+        Path localstackUtilsTestsJar = Paths.get(CURRENT_DEV_DIR,"localstack", "infra", "localstack-utils-tests.jar");
+
+        if(Files.exists(localstackUtilsFatJar)) {
+            Path tempInstallDirFatJar = Paths.get(TMP_INSTALL_DIR, "localstack", "infra", "localstack-utils-fat.jar");
+            copy(localstackUtilsFatJar, tempInstallDirFatJar);
+        }
+
+        if(Files.exists(localstackUtilsTestsJar)) {
+            Path tempInstallDirTestsJar = Paths.get(TMP_INSTALL_DIR, "localstack", "infra", "localstack-utils-tests.jar");
+            copy(localstackUtilsTestsJar, tempInstallDirTestsJar);
+        }
+    }
+
     public static void teardownInfrastructure() {
         Process proc = INFRA_STARTED.get();
         if (proc == null) {
@@ -294,5 +336,27 @@ public class Localstack {
 
     public static String getDefaultRegion() {
         return TestUtils.DEFAULT_REGION;
+    }
+
+    public static void copyFolder(Path src, Path dest) throws IOException {
+        Files.walk(src)
+                .forEach(source -> copy(source, dest.resolve(src.relativize(source))));
+    }
+
+    private static void copy(Path source, Path dest) {
+        try {
+            CopyOption[] options = new CopyOption[] {StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING};
+            if (Files.exists(dest)) {
+                if ( !Files.getLastModifiedTime(source).equals(Files.getLastModifiedTime(dest))
+                        || FileChannel.open(source).size() != FileChannel.open(dest).size()
+                ) {
+                    Files.copy(source, dest, options);
+                }
+            } else {
+                Files.copy(source, dest, options);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 }
