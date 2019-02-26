@@ -9,13 +9,19 @@ from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
-TEST_LAMBDA_NAME = 'lambda_sfn_1'
+TEST_LAMBDA_NAME_1 = 'lambda_sfn_1'
+TEST_LAMBDA_NAME_2 = 'lambda_sfn_2'
 STATE_MACHINE_NAME = 'test_sm_1'
 STATE_MACHINE_DEF = {
     'Comment': 'Hello World example',
     'StartAt': 'step1',
     'States': {
         'step1': {
+            'Type': 'Task',
+            'Resource': '__tbd__',
+            'Next': 'step2'
+        },
+        'step2': {
             'Type': 'Task',
             'Resource': '__tbd__',
             'End': True
@@ -38,14 +44,20 @@ class TestStateMachine(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36
         )
         testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME,
+            func_name=TEST_LAMBDA_NAME_1,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_2,
             zip_file=zip_file,
             runtime=LAMBDA_RUNTIME_PYTHON36
         )
 
     @classmethod
     def tearDownClass(cls):
-        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME)
+        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_1)
+        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_2)
 
     def test_create_run_state_machine(self):
         state_machines_before = self.sfn_client.list_state_machines()['stateMachines']
@@ -53,8 +65,10 @@ class TestStateMachine(unittest.TestCase):
         # create state machine
         role_arn = aws_stack.role_arn('sfn_role')
         definition = clone(STATE_MACHINE_DEF)
-        lambda_arn = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME)
-        definition['States']['step1']['Resource'] = lambda_arn
+        lambda_arn_1 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_1)
+        lambda_arn_2 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_2)
+        definition['States']['step1']['Resource'] = lambda_arn_1
+        definition['States']['step2']['Resource'] = lambda_arn_2
         definition = json.dumps(definition)
         result = self.sfn_client.create_state_machine(
             name=STATE_MACHINE_NAME, definition=definition, roleArn=role_arn)
@@ -70,10 +84,11 @@ class TestStateMachine(unittest.TestCase):
         self.assertTrue(result.get('executionArn'))
 
         def check_invocations():
-            assert lambda_api.LAMBDA_EXECUTOR.function_invoke_times[lambda_arn]
+            assert lambda_api.LAMBDA_EXECUTOR.function_invoke_times[lambda_arn_1]
+            assert lambda_api.LAMBDA_EXECUTOR.function_invoke_times[lambda_arn_2]
 
         # assert that the lambda has been invoked by the SM execution
-        retry(check_invocations, sleep=0.6, retries=15)
+        retry(check_invocations, sleep=0.7, retries=20)
 
         # clean up
         self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)

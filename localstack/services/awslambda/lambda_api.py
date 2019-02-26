@@ -13,7 +13,7 @@ import traceback
 from io import BytesIO
 from datetime import datetime
 from six.moves import cStringIO as StringIO
-from flask import Flask, Response, jsonify, request, make_response
+from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.services import generic_proxy
 from localstack.services.awslambda import lambda_executors
@@ -570,7 +570,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
 @app.before_request
 def before_request():
     # fix to enable chunked encoding, as this is used by some Lambda clients
-    transfer_encoding = request.headers.get('Transfer-Encoding', None)
+    transfer_encoding = request.headers.get('Transfer-Encoding', '').lower()
     if transfer_encoding == 'chunked':
         request.environ['wsgi.input_terminated'] = True
 
@@ -815,23 +815,48 @@ def invoke_function(function):
     # Default invocation type is RequestResponse
     invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
 
+    def _create_response(result, status_code=200):
+        """ Create the final response for the given invocation result """
+        if isinstance(result, Response):
+            return result
+        details = {
+            'StatusCode': status_code,
+            'Payload': result,
+            'Headers': {}
+        }
+        if isinstance(result, dict):
+            for key in ('StatusCode', 'Payload', 'FunctionError'):
+                if result.get(key):
+                    details[key] = result[key]
+        # Try to parse parse payload as JSON
+        if isinstance(details['Payload'], (str, bytes)):
+            try:
+                details['Payload'] = json.loads(details['Payload'])
+            except Exception:
+                pass
+        # Set error headers
+        if details.get('FunctionError'):
+            details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
+        # Construct response object
+        response_obj = details['Payload']
+        if isinstance(response_obj, (dict, list)):
+            # Assume this is a JSON response
+            response_obj = jsonify(response_obj)
+        else:
+            details['Headers']['Content-Type'] = 'text/plain'
+        return response_obj, details['StatusCode'], details['Headers']
+
     if invocation_type == 'RequestResponse':
         result = run_lambda(asynchronous=False, func_arn=arn, event=data, context={}, version=qualifier)
-        if isinstance(result, dict):
-            return jsonify(result)
-        if result:
-            return result
-        return make_response('', 200)
+        return _create_response(result)
     elif invocation_type == 'Event':
         run_lambda(asynchronous=True, func_arn=arn, event=data, context={}, version=qualifier)
-        return make_response('', 202)
+        return _create_response('', status_code=202)
     elif invocation_type == 'DryRun':
         # Assume the dry run always passes.
-        return make_response('', 204)
-    else:
-        return error_response('Invocation type not one of: RequestResponse, Event or DryRun',
-                              code=400,
-                              error_type='InvalidParameterValueException')
+        return _create_response('', status_code=204)
+    return error_response('Invocation type not one of: RequestResponse, Event or DryRun',
+                          code=400, error_type='InvalidParameterValueException')
 
 
 @app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])
