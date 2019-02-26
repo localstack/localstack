@@ -12,14 +12,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 
-public class SQSLambdaHandler implements RequestHandler<SQSEvent, Object> {
+public class SQSLambdaHandlerSSL implements RequestHandler<SQSEvent, Object> {
 
     public static final String[] fileName = { "sqsLambda", "test" };
     public static final String DID_YOU_GET_THE_MESSAGE = "Did you get the message?";
     protected AmazonS3 clientS3;
 
-    public SQSLambdaHandler() {
-        clientS3 = TestUtils.getClientS3();
+    public SQSLambdaHandlerSSL() {
+        TestUtils.disableSslCertChecking();
+        clientS3 = TestUtils.getClientS3SSL();
     }
 
     @Override

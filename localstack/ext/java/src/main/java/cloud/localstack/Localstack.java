@@ -7,12 +7,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.channels.FileChannel;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -20,6 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Singleton class that automatically downloads, installs, starts,
@@ -44,7 +43,9 @@ public class Localstack {
     private static final String TMP_INSTALL_DIR = System.getProperty("java.io.tmpdir") +
             File.separator + "localstack_install_dir";
 
-    private static final String CURRENT_DEV_DIR = Paths.get("../../..").toAbsolutePath().toString();
+    private static final String CURRENT_DEV_DIR;
+
+    private static boolean DEV_ENVIRONMENT;
 
     private static final String ADDITIONAL_PATH = "/usr/local/bin/";
 
@@ -54,6 +55,48 @@ public class Localstack {
 
     private static final String ENV_LOCALSTACK_PROCESS_GROUP = "ENV_LOCALSTACK_PROCESS_GROUP";
 
+    static {
+        Path insideCurrentDirectory = Paths.get(".");
+        Path previousDirectory = insideCurrentDirectory.toAbsolutePath().getName(insideCurrentDirectory.toAbsolutePath().getNameCount() - 2);
+        if(previousDirectory.getFileName().toString().equals("java")) {
+            CURRENT_DEV_DIR = Paths.get("../../..").toAbsolutePath().toString();
+        } else {
+            CURRENT_DEV_DIR = insideCurrentDirectory.toAbsolutePath().toString();
+        }
+
+        Path gitConfig = Paths.get(CURRENT_DEV_DIR, ".git", "config");
+
+        if(Files.exists(gitConfig)) {
+            setIsDevEnvironment(gitConfig);
+        } else {
+            DEV_ENVIRONMENT = false;
+        }
+    }
+
+    private static void setIsDevEnvironment(Path gitConfig) {
+        Pattern remoteOrigin = Pattern.compile("^\\[remote \"origin\"]");
+        Pattern localstackGit = Pattern.compile(".+localstack\\.git$");
+        boolean remoteOriginFound = false;
+        try {
+            for(String line : Files.lines(gitConfig).collect(Collectors.toList())) {
+                if(remoteOriginFound) {
+                    if(localstackGit.matcher(line).matches()) {
+                        DEV_ENVIRONMENT = true;
+                    } else {
+                        DEV_ENVIRONMENT = false;
+                    }
+                    break;
+                }
+
+                if( remoteOrigin.matcher(line).matches() ) {
+                    remoteOriginFound = true;
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Localstack() {
 
     }
@@ -61,7 +104,11 @@ public class Localstack {
     /* SERVICE ENDPOINTS */
 
     public static String getEndpointS3() {
-        String s3Endpoint = ensureInstallationAndGetEndpoint(ServiceName.S3);
+        return getEndpointS3(false);
+    }
+
+    public static String getEndpointS3(boolean override_SSL) {
+        String s3Endpoint = ensureInstallationAndGetEndpoint(ServiceName.S3, override_SSL);
         /*
          * Use the domain name wildcard *.localhost.atlassian.io which maps to 127.0.0.1
          * We need to do this because S3 SDKs attempt to access a domain <bucket-name>.<service-host-name>
@@ -142,12 +189,11 @@ public class Localstack {
 
     /* UTILITY METHODS */
 
+    /**
+     * Installs localstack into a temporary directory
+     * If DEV_ENVIRONMENT for localstack is detected also copies over any changed files
+     */
     private static void ensureInstallation() {
-        ensureInstallation(false);
-    }
-
-
-    private static void ensureInstallation(boolean devEnvironment) {
         File dir = new File(TMP_INSTALL_DIR);
         File constantsFile = new File(dir, "localstack/constants.py");
         String logMsg = "Installing LocalStack to temporary directory (this may take a while): " + TMP_INSTALL_DIR;
@@ -156,24 +202,29 @@ public class Localstack {
             LOG.info(logMsg);
             messagePrinted = true;
             deleteDirectory(dir);
-            if(devEnvironment) {
-                Path localstackDir = Paths.get("../../..");
-                Path tempLocalstackDir = Paths.get(TMP_INSTALL_DIR);
-                try {
-                    copyFolder(localstackDir, tempLocalstackDir);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } else {
-                exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
-            }
+            exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
         }
+
+        if(DEV_ENVIRONMENT) {
+            // Copy changed files over
+            Path localstackDir = Paths.get(CURRENT_DEV_DIR);
+            Path tempLocalstackDir = Paths.get(TMP_INSTALL_DIR);
+            try {
+                TestUtils.copyFolder(localstackDir, tempLocalstackDir);
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+
+            ensureJavaFilesRefreshedForDev();
+        }
+
         File installationDoneMarker = new File(dir, "localstack/infra/installation.finished.marker");
-        if (!installationDoneMarker.exists()) {
+        if (DEV_ENVIRONMENT || !installationDoneMarker.exists()) {
             if (!messagePrinted) {
                 LOG.info(logMsg);
             }
-            exec("cd \"" + TMP_INSTALL_DIR + "\"; make install");
+            String useSSL = useSSL() ? "USE_SSL=1" : "";
+            exec("cd \"" + TMP_INSTALL_DIR + "\";"+useSSL+" make install");
             /* create marker file */
             try {
                 installationDoneMarker.createNewFile();
@@ -205,8 +256,12 @@ public class Localstack {
     }
 
     private static String ensureInstallationAndGetEndpoint(String service) {
+        return ensureInstallationAndGetEndpoint(service,false);
+    }
+
+    private static String ensureInstallationAndGetEndpoint(String service, boolean override_SSL) {
         ensureInstallation();
-        return getEndpoint(service);
+        return getEndpoint(service, override_SSL);
     }
 
     public static boolean useSSL() {
@@ -218,8 +273,11 @@ public class Localstack {
         return value != null && !Arrays.asList("false", "0", "").contains(value.trim());
     }
 
-    private static String getEndpoint(String service) {
-        String useSSL = useSSL() ? "USE_SSL=1" : "";
+    /**
+     * Gets the endpoint for the service, uses SSL if override_SSL or environmental config USE_SSL is set
+     */
+    private static String getEndpoint(String service, boolean override_SSL) {
+        String useSSL = override_SSL || useSSL() ? "USE_SSL=1" : "";
         String cmd = "cd '" + TMP_INSTALL_DIR + "'; "
                 + ". .venv/bin/activate; "
                 + useSSL + " python -c 'import localstack_client.config; "
@@ -272,9 +330,7 @@ public class Localstack {
     protected void setupInfrastructure() {
         synchronized (INFRA_STARTED) {
             // make sure everything is installed locally
-            ensureInstallation(true);
-
-            ensureJavaFilesRefreshed();
+            ensureInstallation();
 
             // make sure we avoid any errors related to locally generated SSL certificates
             TestUtils.disableSslCertChecking();
@@ -307,21 +363,27 @@ public class Localstack {
         }
     }
 
-    private void ensureJavaFilesRefreshed() {
+    /**
+     * Compiles the localstack-utils-fat and localstack-utils-tests jars and copies them to the localstack tmp install
+     * directory.
+     */
+    private static void ensureJavaFilesRefreshedForDev() {
         String[] cmdPrepareJava = new String[]{"make", "-C", CURRENT_DEV_DIR
                 , "prepare-java-tests-infra-jars"};
         exec(true, cmdPrepareJava);
-        Path localstackUtilsFatJar = Paths.get(CURRENT_DEV_DIR,"localstack", "infra", "localstack-utils-fat.jar");
-        Path localstackUtilsTestsJar = Paths.get(CURRENT_DEV_DIR,"localstack", "infra", "localstack-utils-tests.jar");
+        Path currentInfraPath = Paths.get(CURRENT_DEV_DIR, "localstack", "infra");
+        Path tmpInfraPath = Paths.get(TMP_INSTALL_DIR, "localstack", "infra");
+        Path localstackUtilsFatJar = Paths.get(currentInfraPath.toString(), "localstack-utils-fat.jar");
+        Path localstackUtilsTestsJar = Paths.get(currentInfraPath.toString(), "localstack-utils-tests.jar");
 
         if(Files.exists(localstackUtilsFatJar)) {
-            Path tempInstallDirFatJar = Paths.get(TMP_INSTALL_DIR, "localstack", "infra", "localstack-utils-fat.jar");
-            copy(localstackUtilsFatJar, tempInstallDirFatJar);
+            Path tempInstallDirFatJar = Paths.get(tmpInfraPath.toString(), "localstack-utils-fat.jar");
+            TestUtils.copy(localstackUtilsFatJar, tempInstallDirFatJar);
         }
 
         if(Files.exists(localstackUtilsTestsJar)) {
-            Path tempInstallDirTestsJar = Paths.get(TMP_INSTALL_DIR, "localstack", "infra", "localstack-utils-tests.jar");
-            copy(localstackUtilsTestsJar, tempInstallDirTestsJar);
+            Path tempInstallDirTestsJar = Paths.get(tmpInfraPath.toString(), "localstack-utils-tests.jar");
+            TestUtils.copy(localstackUtilsTestsJar, tempInstallDirTestsJar);
         }
     }
 
@@ -336,27 +398,5 @@ public class Localstack {
 
     public static String getDefaultRegion() {
         return TestUtils.DEFAULT_REGION;
-    }
-
-    public static void copyFolder(Path src, Path dest) throws IOException {
-        Files.walk(src)
-                .forEach(source -> copy(source, dest.resolve(src.relativize(source))));
-    }
-
-    private static void copy(Path source, Path dest) {
-        try {
-            CopyOption[] options = new CopyOption[] {StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING};
-            if (Files.exists(dest)) {
-                if ( !Files.getLastModifiedTime(source).equals(Files.getLastModifiedTime(dest))
-                        || FileChannel.open(source).size() != FileChannel.open(dest).size()
-                ) {
-                    Files.copy(source, dest, options);
-                }
-            } else {
-                Files.copy(source, dest, options);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
     }
 }

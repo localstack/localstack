@@ -3,6 +3,7 @@ package cloud.localstack;
 import cloud.localstack.sample.KinesisLambdaHandler;
 import cloud.localstack.sample.S3Sample;
 import cloud.localstack.sample.SQSLambdaHandler;
+import cloud.localstack.sample.SQSLambdaHandlerSSL;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.ListStreamsResult;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
@@ -131,8 +132,13 @@ public class BasicFunctionalityTest {
         CreateFunctionRequest request = new CreateFunctionRequest();
         request.setFunctionName(functionName);
         request.setRuntime(Runtime.Java8);
-        request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandler.class));
-        request.setHandler(SQSLambdaHandler.class.getName());
+        if(Localstack.useSSL()){
+            request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandlerSSL.class));
+            request.setHandler(SQSLambdaHandlerSSL.class.getName());
+        } else {
+            request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandler.class));
+            request.setHandler(SQSLambdaHandler.class.getName());
+        }
         lambda.createFunction(request);
 
         // create stream
