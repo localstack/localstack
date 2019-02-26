@@ -159,7 +159,7 @@ public class TestUtils {
         }
     }
 
-    private static String[] excludedDirectories = {".git", ".idea", ".venv", "target"};
+    private static String[] excludedDirectories = {".github", ".git", ".idea", ".venv", "target", "node_modules"};
 
     public static void copy(Path source, Path dest) {
         try {
@@ -174,7 +174,7 @@ public class TestUtils {
                 try(FileChannel sourceFile = FileChannel.open(source)) {
                     try (FileChannel destFile = FileChannel.open(dest)) {
                         if (!Files.getLastModifiedTime(source).equals(Files.getLastModifiedTime(dest))
-                                || sourceFile.size() != FileChannel.open(dest).size()
+                                || sourceFile.size() != destFile.size()
                         ) {
                             Files.copy(source, dest, options);
                         }

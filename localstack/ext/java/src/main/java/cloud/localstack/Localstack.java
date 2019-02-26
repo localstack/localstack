@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Singleton class that automatically downloads, installs, starts,
@@ -78,18 +79,20 @@ public class Localstack {
         Pattern localstackGit = Pattern.compile(".+localstack\\.git$");
         boolean remoteOriginFound = false;
         try {
-            for(String line : Files.lines(gitConfig).collect(Collectors.toList())) {
-                if(remoteOriginFound) {
-                    if(localstackGit.matcher(line).matches()) {
-                        DEV_ENVIRONMENT = true;
-                    } else {
-                        DEV_ENVIRONMENT = false;
+            try(Stream<String> lines = Files.lines(gitConfig)){
+                for(String line : lines.collect(Collectors.toList())) {
+                    if(remoteOriginFound) {
+                        if(localstackGit.matcher(line).matches()) {
+                            DEV_ENVIRONMENT = true;
+                        } else {
+                            DEV_ENVIRONMENT = false;
+                        }
+                        break;
                     }
-                    break;
-                }
 
-                if( remoteOrigin.matcher(line).matches() ) {
-                    remoteOriginFound = true;
+                    if( remoteOrigin.matcher(line).matches() ) {
+                        remoteOriginFound = true;
+                    }
                 }
             }
         } catch (IOException e) {
@@ -194,6 +197,10 @@ public class Localstack {
      * If DEV_ENVIRONMENT for localstack is detected also copies over any changed files
      */
     private static void ensureInstallation() {
+        ensureInstallation(false);
+    }
+
+    private static void ensureInstallation(boolean initialSetup) {
         File dir = new File(TMP_INSTALL_DIR);
         File constantsFile = new File(dir, "localstack/constants.py");
         String logMsg = "Installing LocalStack to temporary directory (this may take a while): " + TMP_INSTALL_DIR;
@@ -205,7 +212,7 @@ public class Localstack {
             exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
         }
 
-        if(DEV_ENVIRONMENT) {
+        if(DEV_ENVIRONMENT && initialSetup) {
             // Copy changed files over
             Path localstackDir = Paths.get(CURRENT_DEV_DIR);
             Path tempLocalstackDir = Paths.get(TMP_INSTALL_DIR);
@@ -219,7 +226,7 @@ public class Localstack {
         }
 
         File installationDoneMarker = new File(dir, "localstack/infra/installation.finished.marker");
-        if (DEV_ENVIRONMENT || !installationDoneMarker.exists()) {
+        if ( (DEV_ENVIRONMENT && initialSetup) || !installationDoneMarker.exists()) {
             if (!messagePrinted) {
                 LOG.info(logMsg);
             }
@@ -330,7 +337,7 @@ public class Localstack {
     protected void setupInfrastructure() {
         synchronized (INFRA_STARTED) {
             // make sure everything is installed locally
-            ensureInstallation();
+            ensureInstallation(true);
 
             // make sure we avoid any errors related to locally generated SSL certificates
             TestUtils.disableSslCertChecking();
