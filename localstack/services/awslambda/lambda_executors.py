@@ -5,7 +5,6 @@ import time
 import logging
 import threading
 import subprocess
-# from datetime import datetime
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
@@ -75,9 +74,15 @@ class LambdaExecutor(object):
             log_output = 'Lambda executed asynchronously'
         else:
             result, log_output = process.communicate()
-            result = to_str(result)
-            log_output = to_str(log_output)
+            result = to_str(result).strip()
+            log_output = to_str(log_output).strip()
             return_code = process.returncode
+            # Note: The user's code may have been logging to stderr, in which case the logs
+            # will be part of the "result" variable here. Hence, make sure that we extract
+            # only the *last* line of "result" and consider anything above that as log output.
+            if '\n' in result:
+                additional_logs, _, result = result.rpartition('\n')
+                log_output += '\n%s' % additional_logs
 
             if return_code != 0:
                 raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
@@ -149,7 +154,8 @@ class LambdaExecutorContainers(LambdaExecutor):
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.debug('Running lambda cmd: %s' % cmd)
         result, log_output = self.run_lambda_executor(cmd, environment, asynchronous)
-        LOG.debug('Lambda result / log output:\n%s\n>%s' % (result.strip(), log_output.strip().replace('\n', '\n> ')))
+        log_formatted = log_output.strip().replace('\n', '\n> ')
+        LOG.debug('Lambda %s result / log output:\n%s\n>%s' % (func_arn, result.strip(), log_formatted))
         return result, log_output
 
 

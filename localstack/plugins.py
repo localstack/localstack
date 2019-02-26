@@ -9,7 +9,7 @@ from localstack.services.infra import (register_plugin, Plugin,
 from localstack.services.kinesis import kinesis_listener, kinesis_starter
 from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
 from localstack.services.apigateway import apigateway_listener
-from localstack.services.stepfunctions import stepfunctions_starter
+from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
 from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
 
 
@@ -69,7 +69,8 @@ def register_localstack_plugins():
         register_plugin(Plugin('cloudwatch',
             start=start_cloudwatch))
         register_plugin(Plugin('stepfunctions',
-            start=stepfunctions_starter.start_stepfunctions))
+            start=stepfunctions_starter.start_stepfunctions,
+            listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS))
     except Exception as e:
         print('Unable to register plugins: %s' % e)
         raise e

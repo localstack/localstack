@@ -12,7 +12,7 @@ docopt>=0.6.2
 elasticsearch==6.2.0
 flake8>=3.6.0
 flake8-quotes>=0.11.0
-flask==0.12.4
+flask==1.0.2
 flask-cors==3.0.3
 flask_swagger==0.2.12
 jsonpath-rw==1.4.0
