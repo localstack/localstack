@@ -104,7 +104,8 @@ RESOURCE_TO_FUNCTION = {
                 'ProvisionedThroughput': 'ProvisionedThroughput',
                 'LocalSecondaryIndexes': 'LocalSecondaryIndexes',
                 'GlobalSecondaryIndexes': 'GlobalSecondaryIndexes',
-                'StreamSpecification': 'StreamSpecification'
+                'StreamSpecification': lambda params, **kwargs: (
+                    common.merge_dicts(params.get('StreamSpecification'), {'StreamEnabled': True}, default=None))
             },
             'defaults': {
                 'ProvisionedThroughput': {
