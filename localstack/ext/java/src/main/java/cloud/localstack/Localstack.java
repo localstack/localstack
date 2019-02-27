@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -57,26 +58,38 @@ public class Localstack {
     private static final String ENV_LOCALSTACK_PROCESS_GROUP = "ENV_LOCALSTACK_PROCESS_GROUP";
 
     static {
-        Path insideCurrentDirectory = Paths.get(".");
-        Path previousDirectory = insideCurrentDirectory.toAbsolutePath().getName(insideCurrentDirectory.toAbsolutePath().getNameCount() - 2);
-        if(previousDirectory.getFileName().toString().equals("java")) {
-            CURRENT_DEV_DIR = Paths.get("../../..").toAbsolutePath().toString();
-        } else {
-            CURRENT_DEV_DIR = insideCurrentDirectory.toAbsolutePath().toString();
-        }
+        // Determine if we are running in a development environment for localstack
+        Path currentDirectory = Paths.get(".").toAbsolutePath().getParent();
+        Path localstackDir = Optional.ofNullable(currentDirectory)
+                .map(Path::getParent).map(Path::getParent).map(Path::getParent).orElse(null);
+        if( currentDirectory != null && localstackDir != null
+                && currentDirectory.getFileName().toString().equals("java")
+                && localstackDir.getFileName().toString().equals("localstack")) {
+            CURRENT_DEV_DIR = localstackDir.toString();
+            Path gitConfig = Paths.get(CURRENT_DEV_DIR, ".git", "config");
 
-        Path gitConfig = Paths.get(CURRENT_DEV_DIR, ".git", "config");
-
-        if(Files.exists(gitConfig)) {
-            setIsDevEnvironment(gitConfig);
+            if(Files.exists(gitConfig)) {
+                setIsDevEnvironment(gitConfig);
+            } else {
+                DEV_ENVIRONMENT = false;
+            }
         } else {
+            CURRENT_DEV_DIR = currentDirectory.toAbsolutePath().toString();
             DEV_ENVIRONMENT = false;
         }
     }
 
+    private Localstack() {
+
+    }
+
+    public static boolean isDevEnvironment() {
+        return DEV_ENVIRONMENT;
+    }
+
     private static void setIsDevEnvironment(Path gitConfig) {
         Pattern remoteOrigin = Pattern.compile("^\\[remote \"origin\"]");
-        Pattern localstackGit = Pattern.compile(".+localstack\\.git$");
+        Pattern localstackGit = Pattern.compile(".+\\/localstack\\.git$");
         boolean remoteOriginFound = false;
         try {
             try(Stream<String> lines = Files.lines(gitConfig)){
@@ -98,10 +111,6 @@ public class Localstack {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private Localstack() {
-
     }
 
     /* SERVICE ENDPOINTS */

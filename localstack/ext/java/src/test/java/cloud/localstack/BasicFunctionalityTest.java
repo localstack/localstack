@@ -66,6 +66,12 @@ public class BasicFunctionalityTest {
 
     @org.junit.Test
     @org.junit.jupiter.api.Test
+    public void testDevEnvironmentSetup() {
+        Assertions.assertThat(Localstack.isDevEnvironment()).isTrue();
+    }
+
+    @org.junit.Test
+    @org.junit.jupiter.api.Test
     public void testLocalKinesisAPI() throws InterruptedException {
         AmazonKinesis kinesis = TestUtils.getClientKinesis();
         ListStreamsResult streams = kinesis.listStreams();
