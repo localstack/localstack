@@ -31,7 +31,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_RUBY25)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data)
+    md5, new_tmp_file, parse_chunked_data, is_number)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -829,7 +829,8 @@ def invoke_function(function):
                 if result.get(key):
                     details[key] = result[key]
         # Try to parse parse payload as JSON
-        if isinstance(details['Payload'], (str, bytes)):
+        payload = details['Payload']
+        if payload and isinstance(payload, (str, bytes)) and payload[0] in ('[', '{'):
             try:
                 details['Payload'] = json.loads(details['Payload'])
             except Exception:
@@ -839,10 +840,11 @@ def invoke_function(function):
             details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
         # Construct response object
         response_obj = details['Payload']
-        if isinstance(response_obj, (dict, list)):
+        if isinstance(response_obj, (dict, list, bool)) or is_number(response_obj):
             # Assume this is a JSON response
             response_obj = jsonify(response_obj)
         else:
+            response_obj = str(response_obj)
             details['Headers']['Content-Type'] = 'text/plain'
         return response_obj, details['StatusCode'], details['Headers']
 
