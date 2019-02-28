@@ -34,14 +34,14 @@ class ProxyListenerSQS(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
 
-        if method == 'POST' and path == '/':
+        if method == 'POST':
             req_data = urlparse.parse_qs(to_str(data))
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True)
                 request = Request(data=encoded_data, headers=headers, method=method)
                 return request
             elif req_data.get('Action', [None])[0] == 'SendMessage':
-                queue_url = req_data.get('QueueUrl', [None])[0]
+                queue_url = req_data.get('QueueUrl', [path])[0]
                 queue_name = queue_url[queue_url.rindex('/') + 1:]
                 message_body = req_data.get('MessageBody', [None])[0]
                 if lambda_api.process_sqs_message(message_body, queue_name):

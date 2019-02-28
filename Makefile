@@ -94,6 +94,10 @@ prepare-java-tests-if-changed:
 			cp $$(ls localstack/ext/java/target/localstack-utils*tests.jar) localstack/infra/localstack-utils-tests.jar && \
 			(cd localstack/ext/java; mvn -q clean))
 
+prepare-java-tests-infra-jars:
+	make build-maven && cp $$(ls localstack/ext/java/target/localstack-utils*fat.jar) localstack/infra/localstack-utils-fat.jar && \
+			cp $$(ls localstack/ext/java/target/localstack-utils*tests.jar) localstack/infra/localstack-utils-tests.jar
+
 test-java-if-changed:
 	@(! (git log -n 1 --no-merges --raw | grep localstack/ext/java/)) || make test-java
 
