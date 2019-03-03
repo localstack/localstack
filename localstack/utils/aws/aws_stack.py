@@ -8,7 +8,7 @@ from six import iteritems
 from localstack import config
 from localstack.constants import (REGION_LOCAL, DEFAULT_REGION,
     ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0)
-from localstack.utils.common import run_safe, to_str, is_string, make_http_request, timestamp
+from localstack.utils.common import run_safe, to_str, is_string, make_http_request, timestamp, is_port_open
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -140,10 +140,11 @@ def get_local_service_url(service_name):
 
 
 def is_service_enabled(service_name):
-    """ Return whether the service with the given name (e.g., "lambda") is enabled. """
+    """ Return whether the service with the given name (e.g., "lambda") is available. """
     try:
-        assert get_local_service_url(service_name)
-        return True
+        url = get_local_service_url(service_name)
+        assert url
+        return is_port_open(url, http_path='/', expect_success=False)
     except Exception:
         return False
 
