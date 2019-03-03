@@ -79,8 +79,8 @@ class ProxyListenerApiGateway(ProxyListener):
             elif integration['type'] == 'AWS_PROXY':
                 if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
                     func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
+                    data_str = json.dumps(data) if isinstance(data, (dict, list)) else data
                     account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
-                    data_str = json.dumps(data) if isinstance(data, dict) else data
 
                     source_ip = headers['X-Forwarded-For'].split(',')[-2]
 
