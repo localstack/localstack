@@ -239,7 +239,7 @@ class CaptureOutput(object):
 
     class LogStreamIO(io.StringIO):
         def write(self, s):
-            if isinstance(s, str):
+            if isinstance(s, str) and hasattr(s, 'decode'):
                 s = s.decode('unicode-escape')
             return super(CaptureOutput.LogStreamIO, self).write(s)
 
@@ -334,10 +334,12 @@ def in_docker():
 def is_port_open(port_or_url, http_path=None, expect_success=True):
     port = port_or_url
     host = 'localhost'
+    protocol = 'http'
     if isinstance(port, six.string_types):
         url = urlparse(port_or_url)
         port = url.port
         host = url.hostname
+        protocol = url.scheme
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         sock.settimeout(1)
         result = sock.connect_ex((host, port))
@@ -345,9 +347,9 @@ def is_port_open(port_or_url, http_path=None, expect_success=True):
             return False
     if not http_path:
         return True
-    url = 'http://%s:%s%s' % (host, port, http_path)
+    url = '%s://%s:%s%s' % (protocol, host, port, http_path)
     try:
-        response = requests.get(url)
+        response = safe_requests.get(url)
         return not expect_success or response.status_code < 400
     except Exception:
         return False

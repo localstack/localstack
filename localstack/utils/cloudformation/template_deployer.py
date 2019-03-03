@@ -374,7 +374,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = list(filter(lambda item: item['TopicArn'] == resource_id, topics.get('Topics', [])))
             return result[0] if result else None
         elif resource_type == 'S3::Bucket':
-            return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=resource_id)
+            bucket_name = resource_props.get('BucketName') or resource_id
+            return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=bucket_name)
         elif resource_type == 'Logs::LogGroup':
             # TODO implement
             raise Exception('ResourceNotFound')
