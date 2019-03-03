@@ -1,3 +1,4 @@
+import re
 import os
 import json
 import time
@@ -42,7 +43,25 @@ TEST_LAMBDA_JAR_URL = ('{url}/cloud/localstack/{name}/{version}/{name}-{version}
 TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
 
 
-class TestPythonRuntimes(unittest.TestCase):
+class LambdaTestBase(unittest.TestCase):
+
+    def check_lambda_logs(self, func_name, expected_lines=[]):
+        logs_client = aws_stack.connect_to_service('logs')
+        log_group_name = '/aws/lambda/%s' % func_name
+        streams = logs_client.describe_log_streams(logGroupName=log_group_name)['logStreams']
+        streams = sorted(streams, key=lambda x: x['creationTime'], reverse=True)
+        log_events = logs_client.get_log_events(
+            logGroupName=log_group_name, logStreamName=streams[0]['logStreamName'])['events']
+        log_messages = [e['message'] for e in log_events]
+        for line in expected_lines:
+            if '.*' in line:
+                found = [re.match(line, m) for m in log_messages]
+                if any(found):
+                    continue
+            self.assertIn(line, log_messages)
+
+
+class TestPythonRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
@@ -159,6 +178,14 @@ class TestPythonRuntimes(unittest.TestCase):
         self.assertEqual(response['Version'], context['function_version'])
         self.assertEqual(lambda_name, context['function_name'])
 
+        # assert that logs are present
+        expected = ['Lambda log message - print function']
+        if use_docker():
+            # Note that during regular test execution, nosetests captures the output from
+            # the logging module - hence we can only expect this when running in Docker
+            expected.append('.*Lambda log message - logging module')
+        self.check_lambda_logs(lambda_name, expected_lines=expected)
+
     def test_upload_lambda_from_s3(self):
         lambda_name = 'test_lambda_%s' % short_uid()
         bucket_name = 'test_bucket_lambda'
@@ -196,7 +223,7 @@ class TestPythonRuntimes(unittest.TestCase):
         self.assertEqual('$LATEST', context['function_version'])
         self.assertEqual(lambda_name, context['function_name'])
 
-    def test_docker_execution_used(self):
+    def test_python_lambda_running_in_docker(self):
         if not use_docker():
             return
 
@@ -220,12 +247,12 @@ class TestPythonRuntimes(unittest.TestCase):
         self.assertEqual(to_str(result_data).strip(), '{}')
 
 
-class TestNodeJSRuntimes(unittest.TestCase):
+class TestNodeJSRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
 
-    def test_docker_execution_used(self):
+    def test_nodejs_lambda_running_in_docker(self):
         if not use_docker():
             return
 
@@ -244,8 +271,12 @@ class TestNodeJSRuntimes(unittest.TestCase):
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(to_str(result_data).strip(), '{}')
 
+        # assert that logs are present
+        expected = ['.*Node.js Lambda handler executing.']
+        self.check_lambda_logs(TEST_LAMBDA_NAME_JS, expected_lines=expected)
 
-class TestDotNetCoreRuntimes(unittest.TestCase):
+
+class TestDotNetCoreRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
@@ -256,7 +287,7 @@ class TestDotNetCoreRuntimes(unittest.TestCase):
         with open(zip_file, 'rb') as file_obj:
             cls.zip_file_content = file_obj.read()
 
-    def test_docker_execution_used(self):
+    def test_dotnet_lambda_running_in_docker(self):
         if not use_docker():
             return
 
@@ -273,13 +304,17 @@ class TestDotNetCoreRuntimes(unittest.TestCase):
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(to_str(result_data).strip(), '{}')
 
+        # assert that logs are present
+        expected = ['Running .NET Core 2.0 Lambda']
+        self.check_lambda_logs(TEST_LAMBDA_NAME_DOTNETCORE2, expected_lines=expected)
 
-class TestRubyRuntimes(unittest.TestCase):
+
+class TestRubyRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
 
-    def test_docker_execution_used(self):
+    def test_ruby_lambda_running_in_docker(self):
         if not use_docker():
             return
 
@@ -299,7 +334,7 @@ class TestRubyRuntimes(unittest.TestCase):
         self.assertEqual(to_str(result_data).strip(), '{}')
 
 
-class TestJavaRuntimes(unittest.TestCase):
+class TestJavaRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
@@ -389,7 +424,7 @@ class TestJavaRuntimes(unittest.TestCase):
         )
 
 
-class TestDockerBehaviour(unittest.TestCase):
+class TestDockerBehaviour(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
