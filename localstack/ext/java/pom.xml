@@ -5,7 +5,7 @@
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.15</version>
+    <version>0.1.18</version>
     <name>localstack-utils</name>
 
     <description>Java utilities for the LocalStack platform.</description>
@@ -71,13 +71,20 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.16.20</version>
+            <version>1.18.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- required to build on java 9+ -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
-            <version>1.11.313</version>
+            <version>1.11.505</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -88,19 +95,35 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-lambda-java-events</artifactId>
-            <version>2.1.0</version>
+            <version>2.2.5</version>
         </dependency>
         <dependency>
             <groupId>commons-logging</groupId>
             <artifactId>commons-logging</artifactId>
             <version>1.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-core</artifactId>
+            <version>1.11.505</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-lambda</artifactId>
+            <version>1.11.505</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sqs</artifactId>
+            <version>1.11.505</version>
+        </dependency>
+
 
         <!-- test dependencies -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>amazon-sqs-java-messaging-lib</artifactId>
-            <version>1.0.2</version>
+            <version>1.0.5</version>
             <type>jar</type>
             <scope>test</scope>
         </dependency>
@@ -131,7 +154,7 @@
                 <dependency>
                     <groupId>com.amazonaws</groupId>
                     <artifactId>aws-java-sdk</artifactId>
-                    <version>1.11.313</version>
+                    <version>1.11.505</version>
                 </dependency>
             </dependencies>
         </profile>
@@ -147,9 +170,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.0-M1</version>
+                <version>3.0.1</version>
                 <configuration>
-                    <additionalparam>-Xdoclint:none</additionalparam>
+                    <doclint>none</doclint>
                 </configuration>
             </plugin>
             <plugin>
@@ -174,6 +197,8 @@
                             <include>com.amazonaws:aws-java-sdk-core</include>
                             <include>com.amazonaws:aws-java-sdk-kinesis</include>
                             <include>com.amazonaws:aws-java-sdk-lambda</include>
+                            <include>com.amazonaws:aws-java-sdk-sqs</include>
+                            <include>com.amazonaws:aws-java-sdk-s3</include>
                             <include>com.amazonaws:aws-lambda-java-events</include>
                             <include>com.amazonaws:aws-lambda-java-core</include>
                             <include>commons-*:*</include>

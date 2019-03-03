@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/localstack/localstack.png)](https://travis-ci.org/localstack/localstack) [![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors) [![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/atlassian/localstack?branch=master)
+[![Build Status](https://travis-ci.org/localstack/localstack.svg)](https://travis-ci.org/localstack/localstack) [![Backers on Open Collective](https://opencollective.com/localstack/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/localstack/sponsors/badge.svg)](#sponsors) [![Coverage Status](https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master)](https://coveralls.io/github/localstack/localstack?branch=master)
 [![Gitter](https://img.shields.io/gitter/room/localstack/Platform.svg)](https://gitter.im/localstack/Platform)
 [![PyPI Version](https://badge.fury.io/py/localstack.svg)](https://badge.fury.io/py/localstack)
 [![PyPI License](https://img.shields.io/pypi/l/localstack.svg)](https://img.shields.io/pypi/l/localstack.svg)
-[![Code Climate](https://codeclimate.com/github/atlassian/localstack/badges/gpa.svg)](https://codeclimate.com/github/atlassian/localstack)
+[![Code Climate](https://codeclimate.com/github/localstack/localstack/badges/gpa.svg)](https://codeclimate.com/github/localstack/localstack)
 [![Twitter](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/_localstack)
 
 # LocalStack - A fully functional local AWS cloud stack
@@ -46,6 +46,10 @@ any longer.
 * **CloudWatch** at http://localhost:4582
 * **SSM** at http://localhost:4583
 * **SecretsManager** at http://localhost:4584
+* **StepFunctions** at http://localhost:4585
+* **CloudWatch Logs** at http://localhost:4586
+* **STS** at http://localhost:4592
+* **IAM** at http://localhost:4593
 
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
@@ -121,6 +125,30 @@ docker-compose up
 (Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR docker-compose up` if
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
 
+Use on existing docker-compose project. Add in existing services. The project can be found in docker hub, no need to download or clone source:
+
+```
+services:
+...
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "4567-4584:4567-4584"
+      - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
+    environment:
+      - SERVICES=${SERVICES- }
+      - DEBUG=${DEBUG- }
+      - DATA_DIR=${DATA_DIR- }
+      - PORT_WEB_UI=${PORT_WEB_UI- }
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
+      - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
+  ```    
+
+
+
 ## Configurations
 
 You can pass the following environment variables to LocalStack:
@@ -137,6 +165,8 @@ You can pass the following environment variables to LocalStack:
   started in different containers using docker-compose.
 * `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (defaults to `localhost`).
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
+* `<SERVICE>_PORT_EXTERNAL`: Number of the port to expose a specific service externally (defaults to service ports above)
+  `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (defaults to `false`).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
@@ -168,6 +198,7 @@ You can pass the following environment variables to LocalStack:
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
   `KINESIS`, `S3`, `SNS`, `SQS`). This allows to easily integrate third-party services into LocalStack.
 * `FORCE_NONINTERACTIVE`: when running with Docker, disables the `--interactive` and `--tty` flags. Useful when running headless.
+* `DOCKER_FLAGS`: Allows to pass custom flags (e.g., volume mounts) to "docker run" when running LocalStack in Docker.
 
 Additionally, the following *read-only* environment variables are available:
 
@@ -176,6 +207,44 @@ Additionally, the following *read-only* environment variables are available:
   (e.g., to store an item to DynamoDB or S3 from Lambda).
   The variable `LOCALSTACK_HOSTNAME` is available for both, local Lambda execution
   (`LAMBDA_EXECUTOR=local`) and execution inside separate Docker containers (`LAMBDA_EXECUTOR=docker`).
+
+### Initializing a fresh instance
+
+When a container is started for the first time, it will execute files with extensions .sh that are found in /docker-entrypoint-initaws.d. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
+
+## A Note About using own SSL Certificate when `USE_SSL` are `True`
+
+If you need to use your own SSL Certificate and keep it persistent and not use the random automatic generated Certificate, you can place into the localstack temporary directory :
+
+```
+/tmp/localstack/
+```
+
+the three named files below :
+
+```bash
+server.test.pem
+server.test.pem.crt
+server.test.pem.key
+```
+
+- the file `server.test.pem` must contains your key file content, your certificat and chain certificate files contents (do a cat in this order)
+ - the file `server.test.pem.crt` must contains your certificate and chains files contents (do a 'cat' in this order)
+- the file server.test.pem.key must contains your key file content
+***
+### Using USE_SSL and own persistent certificate with docker-compose
+
+Typically with docker-compose you can add into docker-compose.yml this volume to the localstack services :
+
+```
+volumes:
+      - "${PWD}/ls_tmp:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+```
+
+local directory **ls_tmp** must contains the three files (server.test.pem, server.test.pem.crt, server.test.pem.key)
+
+***
 
 ## Accessing the infrastructure via CLI or code
 
@@ -216,7 +285,7 @@ infrastructure in your test setup method and then clean up everything in your te
 from localstack.services import infra
 
 def setup():
-    infra.start_infra(async=True)
+    infra.start_infra(asynchronous=True)
 
 def teardown():
     infra.stop_infra()
@@ -226,6 +295,12 @@ def my_app_test():
 ```
 
 See the example test file `tests/test_integration.py` for more details.
+
+## Integration with Serverless
+
+You can use the [`localstack-serverless`](https://www.npmjs.com/package/localstack-serverless) plugin to easily run [Serverless](https://serverless.com/framework/) applications on LocalStack.
+For more information, please check out the plugin repository here:
+https://github.com/localstack/localstack-serverlesss
 
 ## Integration with Java/JUnit
 
@@ -295,7 +370,7 @@ Simply add the following dependency to your `pom.xml` file:
 <dependency>
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
-    <version>0.1.15</version>
+    <version>0.1.18</version>
 </dependency>
 ```
 
@@ -325,7 +400,7 @@ with the `--user` flag: `pip install --user localstack`
 * The environment variable `no_proxy` is rewritten by *LocalStack*.
 (Internal requests will go straight via localhost, bypassing any proxy configuration).
 
-* For troubleshooting localstack start issues, you can check debug logs by running `DEBUG=1 localstack start`
+* For troubleshooting LocalStack start issues, you can check debug logs by running `DEBUG=1 localstack start`
 
 * In case you get errors related to node/nodejs, you may find (this issue comment: https://github.com/localstack/localstack/issues/227#issuecomment-319938530) helpful.
 
@@ -376,6 +451,9 @@ localstack web
 
 ## Change Log
 
+* v0.9.0: Enhance integration with Serverless; refactor CloudFormation implementation; add support for Step Functions, IAM, STS; fix CloudFormation integration; support mounting Lambda code locally; add `docker-entrypoint-initaws.d` dir for initializing resources; add S3Event Parser for Lambda; fix S3 chunk encoding; fix S3 multipart upload notification; add dotnetcore2.1 and ruby2.5 Lambda runtimes; fix issues with JDK 9; install ES plugins available in AWS
+* v0.8.10: Add kclpy to pip package; fix badges in README
+* v0.8.9: Replace moto-ext with upstream moto; fix SNS message attributes; fix swagger; make external SQS port configurable; support for SNS DeleteTopic; S3 notifications for multipart uploads; support requestContext in AWS_PROXY integration; update docs for SSL usage
 * v0.8.8: Support Docker network config for Lambda containers; support queryStringParameters for Lambda AWS_PROXY apigateway; add AWS SecretsManager service; add SQS/Lambda integration; add support for Firehose Kinesis source; add GetAlias to Lambda API; add function properties to LambdaContext for invocations; fix extraction of Java Lambda archives; check region headers for SNS; fix Lambda output buffering; fix S3 download of gzip; bump ElasticMQ to 0.14.5; fix Lambda response codes; fix syntax issues for Python 3.7
 * v0.8.7: Support .Net Core 2.0 and nodejs8.10 Lambdas; refactor Java libs and integrate with JUnit 5; support tags for ES domains; add CloudFormation support for SNS topics; fix kinesis error injection; fix override of `ES_JAVA_OPTS`; fix SQS CORS preflight response; fix S3 content md5 checks and Host header; fix ES startup issue; Bump elasticmq to 0.13.10; bump kinesalite version
 * v0.8.6: Fixes for Windows installation; bump ES to 6.2.0; support filter policy for SNS; upgrade kinesalite; refactor JUnit runner; support Lambda PutFunctionConcurrency and GetEventSourceMapping; fixes for Terraform; add golang support to Lambda; fix file permission issue in Java Lambda tests; fix S3 bucket notification config
@@ -483,7 +561,7 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 
 ## License
 
-Copyright (c) 2017 *LocalStack* maintainers and contributors.
+Copyright (c) 2017-2019 *LocalStack* maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
@@ -491,26 +569,26 @@ This version of *LocalStack* is released under the Apache License, Version 2.0 (
 By downloading and using this software you agree to the
 [End-User License Agreement (EULA)](doc/end_user_license_agreement).
 
-We build on a number of third-party software tools, with the following licenses:
+We build on a number of third-party software tools, including the following:
 
-Third-Party software		| 	License
-----------------------------|-----------------------
-**Python/pip modules:**		|
-airspeed					| BSD License
-amazon_kclpy				| Amazon Software License
-boto3						| Apache License 2.0
-coverage					| Apache License 2.0
-docopt						| MIT License
-elasticsearch				| Apache License 2.0
-flask						| BSD License
-flask_swagger				| MIT License
-jsonpath-rw					| Apache License 2.0
-moto						| Apache License 2.0
-nose						| GNU LGPL
-pep8						| Expat license
-requests					| Apache License 2.0
-subprocess32				| PSF License
-**Node.js/npm modules:**	|
-kinesalite					| MIT License
-**Other tools:**			|
-Elasticsearch 				| Apache License 2.0
+Third-Party software      | 	License
+--------------------------|-----------------------
+**Python/pip modules:**   |
+airspeed                  | BSD License
+amazon_kclpy              | Amazon Software License
+boto3                     | Apache License 2.0
+coverage                  | Apache License 2.0
+docopt                    | MIT License
+elasticsearch             | Apache License 2.0
+flask                     | BSD License
+flask_swagger             | MIT License
+jsonpath-rw               | Apache License 2.0
+moto                      | Apache License 2.0
+nose                      | GNU LGPL
+pep8                      | Expat license
+requests                  | Apache License 2.0
+subprocess32              | PSF License
+**Node.js/npm modules:**  |
+kinesalite                | MIT License
+**Other tools:**          |
+Elasticsearch             | Apache License 2.0

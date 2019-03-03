@@ -17,7 +17,7 @@ ENV_SECRET_KEY = 'AWS_SECRET_ACCESS_KEY'
 ENV_SESSION_TOKEN = 'AWS_SESSION_TOKEN'
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 # Use this field if you want to provide a custom boto3 session.
 # This field takes priority over CREATE_NEW_SESSION_PER_BOTO3_CONNECTION
@@ -139,6 +139,15 @@ def get_local_service_url(service_name):
     return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
 
 
+def is_service_enabled(service_name):
+    """ Return whether the service with the given name (e.g., "lambda") is enabled. """
+    try:
+        assert get_local_service_url(service_name)
+        return True
+    except Exception:
+        return False
+
+
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None, config=None):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
@@ -236,6 +245,10 @@ def get_account_id(account_id=None, env=None):
 
 
 def role_arn(role_name, account_id=None, env=None):
+    if not role_name:
+        return role_name
+    if role_name.startswith('arn:aws:iam::'):
+        return role_name
     env = get_environment(env)
     account_id = get_account_id(account_id, env=env)
     return 'arn:aws:iam::%s:role/%s' % (account_id, role_name)
@@ -272,6 +285,31 @@ def lambda_function_arn(function_name, account_id=None):
         raise Exception('Lambda function name should not contain a colon ":"')
     account_id = get_account_id(account_id)
     return pattern.replace('.*', '%s') % (get_local_region(), account_id, function_name)
+
+
+def lambda_function_name(name_or_arn):
+    if ':' not in name_or_arn:
+        return name_or_arn
+    parts = name_or_arn.split(':')
+    # name is index #6 in pattern: arn:aws:lambda:.*:.*:function:.*
+    return parts[6]
+
+
+def state_machine_arn(name, account_id=None):
+    if ':' in name:
+        return name
+    account_id = get_account_id(account_id)
+    pattern = 'arn:aws:states:%s:%s:stateMachine:%s'
+    return pattern % (get_local_region(), account_id, name)
+
+
+def fix_arn(arn):
+    """ Function that attempts to "canonicalize" the given ARN. This includes converting
+        resource names to ARNs, replacing incorrect regions, account IDs, etc. """
+    if arn.startswith('arn:aws:lambda'):
+        return lambda_function_arn(lambda_function_name(arn))
+    LOG.warning('Unable to fix/canonicalize ARN: %s' % arn)
+    return arn
 
 
 def cognito_user_pool_arn(user_pool_id, account_id=None):
@@ -395,7 +433,7 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
     if not description:
         description = 'Test description for API "%s"' % name
 
-    LOGGER.info('Creating API resources under API Gateway "%s".' % name)
+    LOG.info('Creating API resources under API Gateway "%s".' % name)
     api = client.create_rest_api(name=name, description=description)
     # list resources
     api_id = api['id']

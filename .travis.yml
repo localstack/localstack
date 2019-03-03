@@ -38,13 +38,12 @@ script:
   - set -e # fail fast
   # run tests using Python 3
   - DEBUG=1 LAMBDA_EXECUTOR=docker TEST_ERROR_INJECTION=1 make test
-  - LAMBDA_EXECUTOR=local USE_SSL=1 make test
   # run tests using Python 2
   #   Note: we're not using multiple versions in the top-level "python" configuration,
   #   but instead reinstall using 2.x here, as that allows us to use some cached libs etc.
   - "make reinstall-p2 > /dev/null"
   - make init
-  - DEBUG=1 LAMBDA_EXECUTOR=docker-reuse USE_SSL=1 make test
+  - LAMBDA_EXECUTOR=docker-reuse USE_SSL=1 make test
   # build Docker image
   - make docker-build
   # run Java tests
@@ -53,7 +52,7 @@ script:
   - make docker-push-master
 
 after_success:
-  - make coveralls
+  - make coveralls || true
 
 notifications:
   email: false

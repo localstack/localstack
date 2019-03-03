@@ -61,6 +61,8 @@ class ProxyListenerSNS(ProxyListener):
                 if 'SubscriptionArn' not in req_data:
                     return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
                 do_unsubscribe(req_data.get('SubscriptionArn')[0])
+            elif req_action == 'DeleteTopic':
+                do_delete_topic(topic_arn)
 
             elif req_action == 'Publish':
                 message = req_data['Message'][0]
@@ -82,7 +84,8 @@ class ProxyListenerSNS(ProxyListener):
                             try:
                                 sqs_client.send_message(
                                     QueueUrl=queue_url,
-                                    MessageBody=create_sns_message_body(subscriber, req_data)
+                                    MessageBody=create_sns_message_body(subscriber, req_data),
+                                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
                                 )
                             except Exception as exc:
                                 return make_error(message=str(exc), code=400)
@@ -131,6 +134,11 @@ UPDATE_SNS = ProxyListenerSNS()
 def do_create_topic(topic_arn):
     if topic_arn not in SNS_SUBSCRIPTIONS:
         SNS_SUBSCRIPTIONS[topic_arn] = []
+
+
+def do_delete_topic(topic_arn):
+    if topic_arn in SNS_SUBSCRIPTIONS:
+        del SNS_SUBSCRIPTIONS[topic_arn]
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn):
@@ -224,6 +232,23 @@ def create_sns_message_body(subscriber, req_data):
     if attributes:
         data['MessageAttributes'] = attributes
     return json.dumps(data)
+
+
+def create_sqs_message_attributes(subscriber, attributes):
+    if subscriber.get('RawMessageDelivery') not in ('true', True):
+        return {}
+
+    message_attributes = {}
+    for key, value in attributes.items():
+        attribute = {}
+        attribute['DataType'] = value['Type']
+        if value['Type'] == 'Binary':
+            attribute['BinaryValue'] = value['Value']
+        else:
+            attribute['StringValue'] = value['Value']
+        message_attributes[key] = attribute
+
+    return message_attributes
 
 
 def get_message_attributes(req_data):

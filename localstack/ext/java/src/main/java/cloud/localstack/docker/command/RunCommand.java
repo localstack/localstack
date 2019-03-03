@@ -16,6 +16,7 @@ public class RunCommand extends Command {
         List<String> args = new ArrayList<>();
         args.add("run");
         args.add("-d");
+        args.add("--rm");
         args.addAll(options);
         args.add(imageName);
 

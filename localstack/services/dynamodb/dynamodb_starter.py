@@ -10,12 +10,15 @@ from localstack.services.install import ROOT_PATH
 
 LOGGER = logging.getLogger(__name__)
 
+# max heap size allocated for the Java process
+MAX_HEAP_SIZE = '256m'
+
 
 def check_dynamodb(expect_shutdown=False, print_error=False):
     out = None
     try:
-        # wait for port to be opened
-        wait_for_port_open(DEFAULT_PORT_DYNAMODB_BACKEND)
+        # wait for backend port to be opened
+        wait_for_port_open(DEFAULT_PORT_DYNAMODB_BACKEND, http_path='/', expect_success=False, sleep_time=1)
         # check DynamoDB
         out = aws_stack.connect_to_service(service_name='dynamodb').list_tables()
     except Exception as e:
@@ -36,7 +39,8 @@ def start_dynamodb(port=PORT_DYNAMODB, asynchronous=False, update_listener=None)
         mkdir(ddb_data_dir)
         ddb_data_dir_param = '-dbPath %s' % ddb_data_dir
     cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +
-        '-jar DynamoDBLocal.jar -sharedDb -port %s %s') % (ROOT_PATH, backend_port, ddb_data_dir_param)
+        '-Xmx%s -jar DynamoDBLocal.jar -sharedDb -port %s %s') % (
+        ROOT_PATH, MAX_HEAP_SIZE, backend_port, ddb_data_dir_param)
     print('Starting mock DynamoDB (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('dynamodb', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)

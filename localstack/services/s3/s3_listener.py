@@ -129,7 +129,11 @@ def send_notifications(method, bucket_name, object_path):
             action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
-            api_method = {'PUT': 'Put', 'POST': 'Post', 'DELETE': 'Delete'}[method]
+            if action == 'ObjectCreated' and method == 'POST':
+                api_method = 'CompleteMultipartUpload'
+            else:
+                api_method = {'PUT': 'Put', 'POST': 'Post', 'DELETE': 'Delete'}[method]
+
             event_name = '%s:%s' % (action, api_method)
             if (event_type_matches(config['Event'], action, api_method) and
                     filter_rules_match(config.get('Filter'), object_path)):
@@ -242,7 +246,7 @@ def get_lifecycle(bucket_name):
     if not lifecycle:
         # TODO: check if bucket exists, otherwise return 404-like error
         lifecycle = {
-            'LifecycleConfiguration': []
+            'LifecycleConfiguration': {}
         }
     body = xmltodict.unparse(lifecycle)
     response._content = body
@@ -427,6 +431,7 @@ class ProxyListenerS3(ProxyListener):
         # https://github.com/scality/S3/issues/237
         if headers.get('x-amz-content-sha256') == 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD':
             modified_data = strip_chunk_signatures(data)
+            headers['content-length'] = headers.get('x-amz-decoded-content-length')
 
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
@@ -468,7 +473,7 @@ class ProxyListenerS3(ProxyListener):
             if method == 'PUT':
                 return set_lifecycle(bucket, data)
 
-        if modified_data:
+        if modified_data is not None:
             return Request(data=modified_data, headers=headers, method=method)
         return True
 
@@ -502,9 +507,7 @@ class ProxyListenerS3(ProxyListener):
             # check if this is an actual put object request, because it could also be
             # a put bucket request with a path like this: /bucket_name/
             bucket_name_in_host or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0),
-            # don't send notification if url has a query part (some/path/with?query)
-            # (query can be one of 'notification', 'lifecycle', 'tagging', etc)
-            not parsed.query
+            self.is_query_allowable(method, parsed.query)
         ])
 
         # get subscribers and send bucket notifications
@@ -561,6 +564,15 @@ class ProxyListenerS3(ProxyListener):
             # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
             if method == 'DELETE':
                 response.headers['content-length'] = len(response._content)
+
+    @staticmethod
+    def is_query_allowable(method, query):
+        # Generally if there is a query (some/path/with?query) we don't want to send notifications
+        if not query:
+            return True
+        # Except we do want to notify on a multipart upload completion, which does use a query.
+        elif method == 'POST' and query.startswith('uploadId'):
+            return True
 
 
 # instantiate listener

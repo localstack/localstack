@@ -4,7 +4,7 @@
   "description": "Web app and API to manage AWS resources.",
   "version": "0.0.1",
   "dependencies": {
-    "bootstrap": "4.1.2",
+    "bootstrap": ">=4.3.1",
     "swagger-client": "2.1.32",
     "jquery": "~> 3.0.0",
     "angular-tablesort": "1.1.2",
