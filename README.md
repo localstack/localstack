@@ -47,6 +47,7 @@ any longer.
 * **SSM** at http://localhost:4583
 * **SecretsManager** at http://localhost:4584
 * **StepFunctions** at http://localhost:4585
+* **CloudWatch Logs** at http://localhost:4586
 * **STS** at http://localhost:4592
 * **IAM** at http://localhost:4593
 

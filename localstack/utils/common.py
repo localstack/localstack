@@ -1,26 +1,27 @@
 from __future__ import print_function
 
-import threading
-import traceback
+import io
 import os
 import re
 import sys
-import hashlib
 import uuid
 import time
 import glob
 import base64
-import subprocess
 import six
-import shutil
 import socket
 import json
-import binascii
+import hashlib
 import decimal
 import logging
-import tempfile
-import requests
 import zipfile
+import binascii
+import tempfile
+import threading
+import traceback
+import subprocess
+import shutil
+import requests
 from io import BytesIO
 from contextlib import closing
 from datetime import datetime
@@ -59,8 +60,9 @@ LOGGER = logging.getLogger(__name__)
 INFRA_STOPPED = False
 
 
-# Helper class to convert JSON documents with datetime, decimals, or bytes.
 class CustomEncoder(json.JSONEncoder):
+    """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
+
     def default(self, o):
         if isinstance(o, decimal.Decimal):
             if o % 1 > 0:
@@ -75,6 +77,8 @@ class CustomEncoder(json.JSONEncoder):
 
 
 class FuncThread (threading.Thread):
+    """ Helper class to run a Python function in a background thread. """
+
     def __init__(self, func, params, quiet=False):
         threading.Thread.__init__(self)
         self.daemon = True
@@ -96,6 +100,8 @@ class FuncThread (threading.Thread):
 
 
 class ShellCommandThread (FuncThread):
+    """ Helper class to run a shell command in a background thread. """
+
     def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
             quiet=True, inherit_cwd=False):
         self.cmd = cmd
@@ -176,8 +182,8 @@ class ShellCommandThread (FuncThread):
                 LOGGER.warning('Unable to kill process with pid %s' % parent_pid)
 
 
-# Generic JSON serializable object for simplified subclassing
 class JsonObject(object):
+    """ Generic JSON serializable object for simplified subclassing """
 
     def to_json(self, indent=None):
         return json.dumps(self,
@@ -215,6 +221,83 @@ class JsonObject(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+class CaptureOutput(object):
+    """ A context manager that captures stdout/stderr of the current thread. Use it as follows:
+
+        with CaptureOutput() as c:
+            ...
+        print(c.stdout(), c.stderr())
+    """
+
+    orig_stdout = sys.stdout
+    orig_stderr = sys.stderr
+    orig___stdout = sys.__stdout__
+    orig___stderr = sys.__stderr__
+    CONTEXTS_BY_THREAD = {}
+
+    class LogStreamIO(io.StringIO):
+        def write(self, s):
+            if isinstance(s, str):
+                s = s.decode('unicode-escape')
+            return super(CaptureOutput.LogStreamIO, self).write(s)
+
+    def __init__(self):
+        self._stdout = self.LogStreamIO()
+        self._stderr = self.LogStreamIO()
+
+    def __enter__(self):
+        # Note: import werkzeug here (not at top of file) to allow dependency pruning
+        from werkzeug.local import LocalProxy
+
+        ident = self._ident()
+        if ident not in self.CONTEXTS_BY_THREAD:
+            self.CONTEXTS_BY_THREAD[ident] = self
+            self._set(LocalProxy(self._proxy(sys.stdout, 'stdout')),
+                      LocalProxy(self._proxy(sys.stderr, 'stderr')),
+                      LocalProxy(self._proxy(sys.__stdout__, 'stdout')),
+                      LocalProxy(self._proxy(sys.__stderr__, 'stderr')))
+        return self
+
+    def __exit__(self, type, value, traceback):
+        ident = self._ident()
+        removed = self.CONTEXTS_BY_THREAD.pop(ident, None)
+        if not self.CONTEXTS_BY_THREAD:
+            # reset pointers
+            self._set(self.orig_stdout, self.orig_stderr, self.orig___stdout, self.orig___stderr)
+        # get value from streams
+        removed._stdout.flush()
+        removed._stderr.flush()
+        out = removed._stdout.getvalue()
+        err = removed._stderr.getvalue()
+        # close handles
+        removed._stdout.close()
+        removed._stderr.close()
+        removed._stdout = out
+        removed._stderr = err
+
+    def _set(self, out, err, __out, __err):
+        sys.stdout, sys.stderr, sys.__stdout__, sys.__stderr__ = (out, err, __out, __err)
+
+    def _proxy(self, original_stream, type):
+        def proxy():
+            ident = self._ident()
+            ctx = self.CONTEXTS_BY_THREAD.get(ident)
+            if ctx:
+                return ctx._stdout if type == 'stdout' else ctx._stderr
+            return original_stream
+
+        return proxy
+
+    def _ident(self):
+        return threading.currentThread().ident
+
+    def stdout(self):
+        return self._stdout.getvalue() if hasattr(self._stdout, 'getvalue') else self._stdout
+
+    def stderr(self):
+        return self._stderr.getvalue() if hasattr(self._stderr, 'getvalue') else self._stderr
 
 
 # ----------------

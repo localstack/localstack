@@ -139,6 +139,15 @@ def get_local_service_url(service_name):
     return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
 
 
+def is_service_enabled(service_name):
+    """ Return whether the service with the given name (e.g., "lambda") is enabled. """
+    try:
+        assert get_local_service_url(service_name)
+        return True
+    except Exception:
+        return False
+
+
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None, config=None):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.

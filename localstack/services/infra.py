@@ -17,7 +17,7 @@ from localstack.constants import (
 from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
     PORT_FIREHOSE, PORT_LAMBDA, PORT_SNS, PORT_REDSHIFT, PORT_CLOUDWATCH,
     PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_APIGATEWAY, PORT_SSM,
-    PORT_SECRETSMANAGER, PORT_STS, PORT_IAM)
+    PORT_SECRETSMANAGER, PORT_STS, PORT_IAM, PORT_LOGS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
     TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir)
@@ -155,6 +155,10 @@ def start_sns(port=PORT_SNS, asynchronous=False, update_listener=None):
 
 def start_cloudwatch(port=PORT_CLOUDWATCH, asynchronous=False):
     return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
+
+
+def start_cloudwatch_logs(port=PORT_LOGS, asynchronous=False):
+    return start_moto_server('logs', port, name='CloudWatch sLogs', asynchronous=asynchronous)
 
 
 def start_sts(port=PORT_STS, asynchronous=False):
