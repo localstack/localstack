@@ -10,10 +10,10 @@ from moto.apigateway import models as apigw_models
 from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
-from localstack.config import PORT_CLOUDFORMATION
+from localstack import config
+from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, DEFAULT_REGION
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
-from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, DEFAULT_REGION
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, setup_logging)
@@ -26,7 +26,8 @@ LOG = logging.getLogger(__name__)
 CURRENTLY_UPDATING_RESOURCES = {}
 
 
-def start_cloudformation(port=PORT_CLOUDFORMATION, asynchronous=False, update_listener=None):
+def start_cloudformation(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_CLOUDFORMATION
     backend_port = DEFAULT_PORT_CLOUDFORMATION_BACKEND
     cmd = 'python "%s" cloudformation -p %s -H 0.0.0.0' % (__file__, backend_port)
     print('Starting mock CloudFormation (%s port %s)...' % (get_service_protocol(), port))

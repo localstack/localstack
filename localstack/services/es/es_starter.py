@@ -2,12 +2,12 @@ import os
 import six
 import logging
 import traceback
-from localstack.constants import DEFAULT_PORT_ELASTICSEARCH_BACKEND, LOCALSTACK_ROOT_FOLDER
-from localstack.config import PORT_ELASTICSEARCH, DATA_DIR
-from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
-from localstack.utils.common import run, is_root, mkdir, chmod_r
-from localstack.utils.aws import aws_stack
+from localstack import config
 from localstack.services import install
+from localstack.utils.aws import aws_stack
+from localstack.constants import DEFAULT_PORT_ELASTICSEARCH_BACKEND, LOCALSTACK_ROOT_FOLDER
+from localstack.utils.common import run, is_root, mkdir, chmod_r
+from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 from localstack.services.install import ROOT_PATH
 
 LOGGER = logging.getLogger(__name__)
@@ -19,7 +19,8 @@ def delete_all_elasticsearch_data():
     run('rm -rf "%s"' % data_dir)
 
 
-def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, asynchronous=False, update_listener=None):
+def start_elasticsearch(port=None, delete_data=True, asynchronous=False, update_listener=None):
+    port = port or config.PORT_ELASTICSEARCH
     # delete Elasticsearch data that may be cached locally from a previous test run
     delete_all_elasticsearch_data()
 
@@ -27,8 +28,8 @@ def start_elasticsearch(port=PORT_ELASTICSEARCH, delete_data=True, asynchronous=
     backend_port = DEFAULT_PORT_ELASTICSEARCH_BACKEND
     es_data_dir = '%s/infra/elasticsearch/data' % (ROOT_PATH)
     es_tmp_dir = '%s/infra/elasticsearch/tmp' % (ROOT_PATH)
-    if DATA_DIR:
-        es_data_dir = '%s/elasticsearch' % DATA_DIR
+    if config.DATA_DIR:
+        es_data_dir = '%s/elasticsearch' % config.DATA_DIR
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
     cmd = (('ES_JAVA_OPTS=\"${ES_JAVA_OPTS:--Xms200m -Xmx500m}\" ES_TMPDIR="%s" ' +

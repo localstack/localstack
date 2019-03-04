@@ -145,28 +145,28 @@ def parse_service_ports():
         parts = re.split(r'[:=]', service_port)
         service = parts[0]
         result[service] = int(parts[-1]) if len(parts) > 1 else DEFAULT_SERVICE_PORTS.get(service)
-    # Fix Elasticsearch port - we have 'es' (AWS ES API) and 'elasticsearch' (actual Elasticsearch API)
-    if result.get('es') and not result.get('elasticsearch'):
-        result['elasticsearch'] = DEFAULT_SERVICE_PORTS.get('elasticsearch')
     return result
 
 
-def populate_configs():
+def populate_configs(service_ports=None):
     global SERVICE_PORTS
 
-    SERVICE_PORTS = parse_service_ports()
+    SERVICE_PORTS = service_ports or parse_service_ports()
+    globs = globals()
 
     # define service ports and URLs as environment variables
     for key, value in iteritems(DEFAULT_SERVICE_PORTS):
         key_upper = key.upper().replace('-', '_')
 
         # define PORT_* variables with actual service ports as per configuration
-        exec('global PORT_%s; PORT_%s = SERVICE_PORTS.get("%s", 0)' % (key_upper, key_upper, key))
+        port_key = 'PORT_%s' % key_upper
+        globs[port_key] = SERVICE_PORTS.get(key, 0)
         url = 'http%s://%s:%s' % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, SERVICE_PORTS.get(key, 0))
         # define TEST_*_URL variables with mock service endpoints
-        exec('global TEST_%s_URL; TEST_%s_URL = "%s"' % (key_upper, key_upper, url))
+        url_key = 'TEST_%s_URL' % key_upper
+        globs[url_key] = url
         # expose HOST_*_URL variables as environment variables
-        os.environ['TEST_%s_URL' % key_upper] = url
+        os.environ[url_key] = url
 
     # expose LOCALSTACK_HOSTNAME as env. variable
     os.environ['LOCALSTACK_HOSTNAME'] = LOCALSTACK_HOSTNAME
