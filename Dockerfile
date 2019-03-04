@@ -35,7 +35,7 @@ ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
 # expose service & web dashboard ports
-EXPOSE 4567-4584 8080
+EXPOSE 4567-4593 8080
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
