@@ -1,6 +1,6 @@
 import logging
 import traceback
-from localstack.config import PORT_KINESIS, DATA_DIR
+from localstack import config
 from localstack.constants import DEFAULT_PORT_KINESIS_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import mkdir
@@ -11,12 +11,13 @@ from localstack.services.install import ROOT_PATH
 LOGGER = logging.getLogger(__name__)
 
 
-def start_kinesis(port=PORT_KINESIS, asynchronous=False, shard_limit=100, update_listener=None):
+def start_kinesis(port=None, asynchronous=False, shard_limit=100, update_listener=None):
+    port = port or config.PORT_KINESIS
     install.install_kinesalite()
     backend_port = DEFAULT_PORT_KINESIS_BACKEND
     kinesis_data_dir_param = ''
-    if DATA_DIR:
-        kinesis_data_dir = '%s/kinesis' % DATA_DIR
+    if config.DATA_DIR:
+        kinesis_data_dir = '%s/kinesis' % config.DATA_DIR
         mkdir(kinesis_data_dir)
         kinesis_data_dir_param = '--path %s' % kinesis_data_dir
     cmd = ('%s/node_modules/kinesalite/cli.js --shardLimit %s --port %s %s' %

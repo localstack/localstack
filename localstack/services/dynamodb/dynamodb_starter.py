@@ -1,6 +1,6 @@
 import logging
 import traceback
-from localstack.config import PORT_DYNAMODB, DATA_DIR
+from localstack import config
 from localstack.constants import DEFAULT_PORT_DYNAMODB_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import mkdir, wait_for_port_open
@@ -30,12 +30,13 @@ def check_dynamodb(expect_shutdown=False, print_error=False):
         assert isinstance(out['TableNames'], list)
 
 
-def start_dynamodb(port=PORT_DYNAMODB, asynchronous=False, update_listener=None):
+def start_dynamodb(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_DYNAMODB
     install.install_dynamodb_local()
     backend_port = DEFAULT_PORT_DYNAMODB_BACKEND
     ddb_data_dir_param = '-inMemory'
-    if DATA_DIR:
-        ddb_data_dir = '%s/dynamodb' % DATA_DIR
+    if config.DATA_DIR:
+        ddb_data_dir = '%s/dynamodb' % config.DATA_DIR
         mkdir(ddb_data_dir)
         ddb_data_dir_param = '-dbPath %s' % ddb_data_dir
     cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +

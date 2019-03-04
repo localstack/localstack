@@ -14,10 +14,7 @@ from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, DEFAULT_PORT_S3_BACKEND,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND)
-from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
-    PORT_FIREHOSE, PORT_LAMBDA, PORT_SNS, PORT_REDSHIFT, PORT_CLOUDWATCH,
-    PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_APIGATEWAY, PORT_SSM,
-    PORT_SECRETSMANAGER, PORT_STS, PORT_IAM, PORT_LOGS)
+from localstack.config import USE_SSL
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
     TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir)
@@ -31,8 +28,20 @@ from localstack.services.generic_proxy import GenericProxy
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
+
 # maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
 PLUGINS_LOADED = {}
+
+# maps from API names to list of other API names that they depend on
+API_DEPENDENCIES = {
+    'dynamodbstreams': ['kinesis'],
+    'lambda': ['logs'],
+    'es': ['elasticsearch']
+}
+# composites define an abstract name like "serverless" that maps to a set of services
+API_COMPOSITES = {
+    'serverless': ['iam', 'lambda', 'dynamodb', 'apigateway', 's3', 'sns']
+}
 
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
@@ -138,70 +147,86 @@ def load_plugins(scope=None):
 # -----------------
 
 
-def start_apigateway(port=PORT_APIGATEWAY, asynchronous=False, update_listener=None):
+def start_apigateway(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_APIGATEWAY
     return start_moto_server('apigateway', port, name='API Gateway', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_APIGATEWAY_BACKEND, update_listener=update_listener)
 
 
-def start_s3(port=PORT_S3, asynchronous=False, update_listener=None):
+def start_s3(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_S3
     return start_moto_server('s3', port, name='S3', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_S3_BACKEND, update_listener=update_listener)
 
 
-def start_sns(port=PORT_SNS, asynchronous=False, update_listener=None):
+def start_sns(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_SNS
     return start_moto_server('sns', port, name='SNS', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
 
 
-def start_cloudwatch(port=PORT_CLOUDWATCH, asynchronous=False):
+def start_cloudwatch(port=None, asynchronous=False):
+    port = port or config.PORT_CLOUDWATCH
     return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
 
 
-def start_cloudwatch_logs(port=PORT_LOGS, asynchronous=False):
-    return start_moto_server('logs', port, name='CloudWatch sLogs', asynchronous=asynchronous)
+def start_cloudwatch_logs(port=None, asynchronous=False):
+    port = port or config.PORT_LOGS
+    return start_moto_server('logs', port, name='CloudWatch Logs', asynchronous=asynchronous)
 
 
-def start_sts(port=PORT_STS, asynchronous=False):
+def start_sts(port=None, asynchronous=False):
+    port = port or config.PORT_STS
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
 
 
-def start_iam(port=PORT_IAM, asynchronous=False):
+def start_iam(port=None, asynchronous=False):
+    port = port or config.PORT_IAM
     return start_moto_server('iam', port, name='IAM', asynchronous=asynchronous)
 
 
-def start_redshift(port=PORT_REDSHIFT, asynchronous=False):
+def start_redshift(port=None, asynchronous=False):
+    port = port or config.PORT_REDSHIFT
     return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
 
 
-def start_route53(port=PORT_ROUTE53, asynchronous=False):
+def start_route53(port=None, asynchronous=False):
+    port = port or config.PORT_ROUTE53
     return start_moto_server('route53', port, name='Route53', asynchronous=asynchronous)
 
 
-def start_ses(port=PORT_SES, asynchronous=False):
+def start_ses(port=None, asynchronous=False):
+    port = port or config.PORT_SES
     return start_moto_server('ses', port, name='SES', asynchronous=asynchronous)
 
 
-def start_elasticsearch_service(port=PORT_ES, asynchronous=False):
+def start_elasticsearch_service(port=None, asynchronous=False):
+    port = port or config.PORT_ES
     return start_local_api('ES', port, method=es_api.serve, asynchronous=asynchronous)
 
 
-def start_firehose(port=PORT_FIREHOSE, asynchronous=False):
+def start_firehose(port=None, asynchronous=False):
+    port = port or config.PORT_FIREHOSE
     return start_local_api('Firehose', port, method=firehose_api.serve, asynchronous=asynchronous)
 
 
-def start_dynamodbstreams(port=PORT_DYNAMODBSTREAMS, asynchronous=False):
+def start_dynamodbstreams(port=None, asynchronous=False):
+    port = port or config.PORT_DYNAMODBSTREAMS
     return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, asynchronous=asynchronous)
 
 
-def start_lambda(port=PORT_LAMBDA, asynchronous=False):
+def start_lambda(port=None, asynchronous=False):
+    port = port or config.PORT_LAMBDA
     return start_local_api('Lambda', port, method=lambda_api.serve, asynchronous=asynchronous)
 
 
-def start_ssm(port=PORT_SSM, asynchronous=False):
+def start_ssm(port=None, asynchronous=False):
+    port = port or config.PORT_SSM
     return start_moto_server('ssm', port, name='SSM', asynchronous=asynchronous)
 
 
-def start_secretsmanager(port=PORT_SECRETSMANAGER, asynchronous=False):
+def start_secretsmanager(port=None, asynchronous=False):
+    port = port or config.PORT_SECRETSMANAGER
     return start_moto_server('secretsmanager', port, name='Secrets Manager', asynchronous=asynchronous)
 
 
@@ -458,6 +483,40 @@ def start_infra_in_docker():
 # -------------
 
 
+def canonicalize_api_names(apis):
+    """ Finalize the list of API names by
+        (1) resolving and adding dependencies (e.g., "dynamodbstreams" requires "kinesis"),
+        (2) resolving and adding composites (e.g., "serverless" describes an ensemble
+                including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
+        (3) removing duplicates from the list. """
+    def contains(apis, api):
+        for a in apis:
+            if a == api:
+                return True
+
+    # resolve composites
+    for comp, deps in API_COMPOSITES.items():
+        if contains(apis, comp):
+            apis.extend(deps)
+
+    # resolve dependencies
+    for i, api in enumerate(apis):
+        for dep in API_DEPENDENCIES.get(api, []):
+            if not contains(apis, dep):
+                apis.append(dep)
+
+    # remove duplicates and composite names
+    apis = list(set([a for a in apis if a not in API_COMPOSITES.keys()]))
+
+    # make sure we have port mappings for each API
+    for api in apis:
+        if api not in config.SERVICE_PORTS:
+            config.SERVICE_PORTS[api] = config.DEFAULT_SERVICE_PORTS.get(api)
+    config.populate_configs(config.SERVICE_PORTS)
+
+    return apis
+
+
 def start_infra(asynchronous=False, apis=None):
     try:
         # load plugins
@@ -470,6 +529,8 @@ def start_infra(asynchronous=False, apis=None):
 
         if not apis:
             apis = list(config.SERVICE_PORTS.keys())
+        # prepare APIs
+        apis = canonicalize_api_names(apis)
         # set environment
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV

@@ -1,5 +1,5 @@
 import logging
-from localstack.config import PORT_STEPFUNCTIONS
+from localstack import config
 from localstack.services import install
 from localstack.utils.aws import aws_stack
 from localstack.constants import DEFAULT_PORT_STEPFUNCTIONS_BACKEND, TEST_AWS_ACCOUNT_ID, DEFAULT_REGION
@@ -11,7 +11,8 @@ LOG = logging.getLogger(__name__)
 MAX_HEAP_SIZE = '256m'
 
 
-def start_stepfunctions(port=PORT_STEPFUNCTIONS, asynchronous=False, update_listener=None):
+def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_STEPFUNCTIONS
     install.install_stepfunctions_local()
     backend_port = DEFAULT_PORT_STEPFUNCTIONS_BACKEND
     # TODO: local port is currently hard coded in Step Functions Local :/

@@ -6,8 +6,8 @@ import time
 import logging
 import base64
 import traceback
-from flask import Flask, jsonify, request
 from six import iteritems
+from flask import Flask, jsonify, request
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.utils.common import short_uid, to_str

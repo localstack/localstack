@@ -148,7 +148,6 @@ services:
   ```    
 
 
-
 ## Configurations
 
 You can pass the following environment variables to LocalStack:
@@ -158,7 +157,9 @@ You can pass the following environment variables to LocalStack:
   [service names of the AWS CLI](http://docs.aws.amazon.com/cli/latest/reference/#available-services)
   (`kinesis`, `lambda`, `sqs`, etc), although LocalStack only supports a subset of them.
   Example value: `kinesis,lambda:4569,sqs:4570` to start Kinesis on the default port,
-  Lambda on port 4569, and SQS on port 4570.
+  Lambda on port 4569, and SQS on port 4570. In addition, the following shorthand values can be
+  specified to run a predefined ensemble of services:
+  - `serverless`: run services often used for Serverless apps (`iam`, `lambda`, `dynamodb`, `apigateway`, `s3`, `sns`)
 * `DEFAULT_REGION`: AWS region to use when talking to the API (defaults to `us-east-1`).
 * `HOSTNAME`: Name of the host to expose the services internally (defaults to `localhost`).
   Use this to customize the framework-internal communication, e.g., if services are
@@ -212,7 +213,7 @@ Additionally, the following *read-only* environment variables are available:
 
 When a container is started for the first time, it will execute files with extensions .sh that are found in /docker-entrypoint-initaws.d. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
 
-## A Note About using own SSL Certificate when `USE_SSL` are `True`
+## A note about using custom SSL certificates (for `USE_SSL=1`)
 
 If you need to use your own SSL Certificate and keep it persistent and not use the random automatic generated Certificate, you can place into the localstack temporary directory :
 
@@ -298,9 +299,9 @@ See the example test file `tests/test_integration.py` for more details.
 
 ## Integration with Serverless
 
-You can use the [`localstack-serverless`](https://www.npmjs.com/package/localstack-serverless) plugin to easily run [Serverless](https://serverless.com/framework/) applications on LocalStack.
+You can use the [`serverless-localstack`](https://www.npmjs.com/package/serverless-localstack) plugin to easily run [Serverless](https://serverless.com/framework/) applications on LocalStack.
 For more information, please check out the plugin repository here:
-https://github.com/localstack/localstack-serverlesss
+https://github.com/localstack/serverless-localstack
 
 ## Integration with Java/JUnit
 
