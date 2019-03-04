@@ -152,7 +152,9 @@ class ProxyListenerDynamoDB(ProxyListener):
                     return keys
                 record['dynamodb']['Keys'] = keys
                 record['dynamodb']['NewImage'] = data['Item']
-                record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))                
+                record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
+                if existing_item:
+                    record['dynamodb']['OldImage'] = existing_item
         elif action == '%s.GetItem' % ACTION_PREFIX:
             if response.status_code == 200:
                 content = json.loads(to_str(response.content))
