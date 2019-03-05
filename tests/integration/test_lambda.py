@@ -14,7 +14,8 @@ from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_NODEJS810, use_docker
+    LAMBDA_RUNTIME_NODEJS810, use_docker,
+    LAMBDA_RUNTIME_CUSTOM_RUNTIME
 )
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -23,6 +24,7 @@ TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_python3.py')
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js')
 TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.rb')
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, 'lambdas', 'dotnetcore2', 'dotnetcore2.zip')
+TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, 'lambdas', 'custom-runtime')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', 'localstack-utils-tests.jar')
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 
@@ -31,6 +33,7 @@ TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
 TEST_LAMBDA_NAME_RUBY = 'test_lambda_ruby'
 TEST_LAMBDA_NAME_DOTNETCORE2 = 'test_lambda_dotnetcore2'
+TEST_LAMBDA_NAME_CUSTOM_RUNTIME = 'test_lambda_custom_runtime'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
@@ -274,6 +277,39 @@ class TestNodeJSRuntimes(LambdaTestBase):
         # assert that logs are present
         expected = ['.*Node.js Lambda handler executing.']
         self.check_lambda_logs(TEST_LAMBDA_NAME_JS, expected_lines=expected)
+
+
+class TestCustomRuntimes(LambdaTestBase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
+
+    def test_nodejs_lambda_running_in_docker(self):
+        if not use_docker():
+            return
+
+        zip_file = testutil.create_zip_file(
+            TEST_LAMBDA_CUSTOM_RUNTIME, get_content=True)
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
+            zip_file=zip_file,
+            handler='function.handler',
+            runtime=LAMBDA_RUNTIME_CUSTOM_RUNTIME
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
+            Payload=b'{"text":"Hello"}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(
+            to_str(result_data).strip(),
+            """Echoing request: '{"text": "Hello"}'""")
+
+        # assert that logs are present
+        expected = ['.*Custom Runtime Lambda handler executing.']
+        self.check_lambda_logs(
+            TEST_LAMBDA_NAME_CUSTOM_RUNTIME, expected_lines=expected)
 
 
 class TestDotNetCoreRuntimes(LambdaTestBase):

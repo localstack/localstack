@@ -28,7 +28,8 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_DOTNETCORE21,
     LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_RUBY,
-    LAMBDA_RUNTIME_RUBY25)
+    LAMBDA_RUNTIME_RUBY25,
+    LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
     md5, new_tmp_file, parse_chunked_data, is_number)
@@ -362,6 +363,8 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
         delimiter = ':'
     elif runtime.startswith(LAMBDA_RUNTIME_RUBY):
         file_ext = '.rb'
+    elif runtime.startswith(LAMBDA_RUNTIME_CUSTOM_RUNTIME):
+        file_ext = '.sh'
     else:
         file_ext = '.py'
     return '%s%s' % (handler_name.split(delimiter)[0], file_ext)
