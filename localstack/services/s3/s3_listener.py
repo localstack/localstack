@@ -11,11 +11,13 @@ from six import iteritems
 from six.moves.urllib import parse as urlparse
 import botocore.config
 from requests.models import Response, Request
+from localstack import config
 from localstack.constants import DEFAULT_REGION
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone, md5
+from localstack.utils.common import (
+    short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone, md5, get_service_protocol)
 from localstack.utils.analytics import event_publisher
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.s3 import multipart_content
@@ -124,7 +126,7 @@ def queue_url_for_arn(queue_arn):
 
 
 def send_notifications(method, bucket_name, object_path):
-    for bucket, config in iteritems(S3_NOTIFICATIONS):
+    for bucket, b_cfg in iteritems(S3_NOTIFICATIONS):
         if bucket == bucket_name:
             action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
@@ -135,31 +137,31 @@ def send_notifications(method, bucket_name, object_path):
                 api_method = {'PUT': 'Put', 'POST': 'Post', 'DELETE': 'Delete'}[method]
 
             event_name = '%s:%s' % (action, api_method)
-            if (event_type_matches(config['Event'], action, api_method) and
-                    filter_rules_match(config.get('Filter'), object_path)):
+            if (event_type_matches(b_cfg['Event'], action, api_method) and
+                    filter_rules_match(b_cfg.get('Filter'), object_path)):
                 # send notification
                 message = get_event_message(
                     event_name=event_name, bucket_name=bucket_name,
                     file_name=urlparse.urlparse(object_path[1:]).path
                 )
                 message = json.dumps(message)
-                if config.get('Queue'):
+                if b_cfg.get('Queue'):
                     sqs_client = aws_stack.connect_to_service('sqs')
                     try:
-                        queue_url = queue_url_for_arn(config['Queue'])
+                        queue_url = queue_url_for_arn(b_cfg['Queue'])
                         sqs_client.send_message(QueueUrl=queue_url, MessageBody=message)
                     except Exception as e:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s' %
-                            (bucket_name, config['Queue'], e))
-                if config.get('Topic'):
+                            (bucket_name, b_cfg['Queue'], e))
+                if b_cfg.get('Topic'):
                     sns_client = aws_stack.connect_to_service('sns')
                     try:
-                        sns_client.publish(TopicArn=config['Topic'], Message=message, Subject='Amazon S3 Notification')
+                        sns_client.publish(TopicArn=b_cfg['Topic'], Message=message, Subject='Amazon S3 Notification')
                     except Exception:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s".' %
-                            (bucket_name, config['Topic']))
+                            (bucket_name, b_cfg['Topic']))
                 # CloudFunction and LambdaFunction are semantically identical
-                lambda_function_config = config.get('CloudFunction') or config.get('LambdaFunction')
+                lambda_function_config = b_cfg.get('CloudFunction') or b_cfg.get('LambdaFunction')
                 if lambda_function_config:
                     # make sure we don't run into a socket timeout
                     connection_config = botocore.config.Config(read_timeout=300)
@@ -170,7 +172,7 @@ def send_notifications(method, bucket_name, object_path):
                     except Exception:
                         LOGGER.warning('Unable to send notification for S3 bucket "%s" to Lambda function "%s".' %
                             (bucket_name, lambda_function_config))
-                if not filter(lambda x: config.get(x), NOTIFICATION_DESTINATION_TYPES):
+                if not filter(lambda x: b_cfg.get(x), NOTIFICATION_DESTINATION_TYPES):
                     LOGGER.warning('Neither of %s defined for S3 notification.' %
                         '/'.join(NOTIFICATION_DESTINATION_TYPES))
 
@@ -551,9 +553,17 @@ class ProxyListenerS3(ProxyListener):
             # Note: yet, we need to make sure we have a newline after the first line: <?xml ...>\n
             if response_content_str and response_content_str.startswith('<'):
                 is_bytes = isinstance(response._content, six.binary_type)
+
+                # un-pretty-print the XML
                 response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
+
+                # update Location information in response payload
+                response._content = self._update_location(response._content, bucket_name)
+
+                # convert back to bytes
                 if is_bytes:
                     response._content = to_bytes(response._content)
+
                 # fix content-type: https://github.com/localstack/localstack/issues/618
                 #                   https://github.com/localstack/localstack/issues/549
                 if 'text/html' in response.headers.get('Content-Type', ''):
@@ -564,6 +574,14 @@ class ProxyListenerS3(ProxyListener):
             # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
             if method == 'DELETE':
                 response.headers['content-length'] = len(response._content)
+
+    def _update_location(self, content, bucket_name):
+        host = config.HOSTNAME_EXTERNAL
+        if ':' not in host:
+            host = '%s:%s' % (host, config.PORT_S3)
+        return re.sub(r'<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>',
+            r'<Location>%s://%s/%s/\2</Location>' % (get_service_protocol(), host, bucket_name),
+            content, flags=re.MULTILINE)
 
     @staticmethod
     def is_query_allowable(method, query):

@@ -17,7 +17,7 @@ from localstack.constants import (
 from localstack.config import USE_SSL
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
-    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir)
+    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.firehose import firehose_api
@@ -248,10 +248,6 @@ def setup_logging():
     logging.getLogger('requests').setLevel(logging.WARNING)
     logging.getLogger('botocore').setLevel(logging.ERROR)
     logging.getLogger('elasticsearch').setLevel(logging.ERROR)
-
-
-def get_service_protocol():
-    return 'https' if USE_SSL else 'http'
 
 
 def restore_persisted_data(apis):
