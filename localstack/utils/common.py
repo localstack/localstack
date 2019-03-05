@@ -365,6 +365,10 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
     return retry(check, sleep=sleep_time, retries=retries)
 
 
+def get_service_protocol():
+    return 'https' if config.USE_SSL else 'http'
+
+
 def timestamp(time=None, format=TIMESTAMP_FORMAT):
     if not time:
         time = datetime.utcnow()

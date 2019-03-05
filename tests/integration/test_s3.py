@@ -5,8 +5,9 @@ import requests
 import unittest
 import uuid
 from io import BytesIO
+from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, get_service_protocol, to_bytes, safe_requests, to_str
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test_bucket_policy_1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test_bucket_notification_1'
@@ -143,35 +144,14 @@ class S3ListenerTest (unittest.TestCase):
         # create test bucket
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
         self.s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                                        NotificationConfiguration={'QueueConfigurations': [
-                                                            {'QueueArn': queue_attributes['Attributes']['QueueArn'],
-                                                             'Events': ['s3:ObjectCreated:*']}]})
+            NotificationConfiguration={'QueueConfigurations': [
+                {'QueueArn': queue_attributes['Attributes']['QueueArn'], 'Events': ['s3:ObjectCreated:*']}]})
 
-        multipart_upload_dict = self.s3_client.create_multipart_upload(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                                                  Key=key_by_path)
-        uploadId = multipart_upload_dict['UploadId']
+        # perform upload
+        self._perform_multipart_upload(bucket=TEST_BUCKET_WITH_NOTIFICATION, key=key_by_path, zip=True)
 
-        # Write contents to memory rather than a file.
-        upload_file_object = BytesIO()
-        data = '000000000000000000000000000000'
-        with gzip.GzipFile(fileobj=upload_file_object, mode='w') as filestream:
-            filestream.write(data.encode('utf-8'))
-
-        response = self.s3_client.upload_part(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                         Body=upload_file_object.getvalue(),
-                                         Key=key_by_path,
-                                         PartNumber=1,
-                                         UploadId=uploadId)
-
-        multipart_upload_parts = [{'ETag': response['ETag'], 'PartNumber': 1}]
-
-        self.s3_client.complete_multipart_upload(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                            Key=key_by_path,
-                                            MultipartUpload={'Parts': multipart_upload_parts},
-                                            UploadId=uploadId)
-
-        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url,
-                                                           AttributeNames=['ApproximateNumberOfMessages'])
+        queue_attributes = self.sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
         message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
         # the ApproximateNumberOfMessages attribute is a string
         assert message_count == '1'
@@ -319,7 +299,6 @@ class S3ListenerTest (unittest.TestCase):
 
     def test_s3_upload_download_gzip(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         data = '000000000000000000000000000000'
@@ -330,10 +309,8 @@ class S3ListenerTest (unittest.TestCase):
             filestream.write(data.encode('utf-8'))
 
         # Upload gzip
-        self.s3_client.put_object(Bucket=bucket_name,
-                                  Key='test.gz',
-                                  ContentEncoding='gzip',
-                                  Body=upload_file_object.getvalue())
+        self.s3_client.put_object(Bucket=bucket_name, Key='test.gz',
+            ContentEncoding='gzip', Body=upload_file_object.getvalue())
 
         # Download gzip
         downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key='test.gz')
@@ -342,3 +319,56 @@ class S3ListenerTest (unittest.TestCase):
             downloaded_data = filestream.read().decode('utf-8')
 
         assert downloaded_data == data, '{} != {}'.format(downloaded_data, data)
+
+    def test_set_external_hostname(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        key = 'test.file'
+        hostname_before = config.HOSTNAME_EXTERNAL
+        config.HOSTNAME_EXTERNAL = 'foobar'
+        try:
+            content = 'test content 123'
+            acl = 'public-read'
+            self.s3_client.create_bucket(Bucket=bucket_name)
+            # upload file
+            response = self._perform_multipart_upload(bucket=bucket_name, key=key, data=content, acl=acl)
+            expected_url = '%s://%s:%s/%s/%s' % (get_service_protocol(), config.HOSTNAME_EXTERNAL,
+                config.PORT_S3, bucket_name, key)
+            self.assertEqual(expected_url, response['Location'])
+            # fix object ACL - currently not directly support for multipart uploads
+            self.s3_client.put_object_acl(Bucket=bucket_name, Key=key, ACL=acl)
+            # download object via API
+            downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=key)
+            self.assertEqual(to_str(downloaded_object['Body'].read()), content)
+            # download object directly from download link
+            download_url = response['Location'].replace('%s:' % config.HOSTNAME_EXTERNAL, 'localhost:')
+            response = safe_requests.get(download_url)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(to_str(response.content), content)
+        finally:
+            config.HOSTNAME_EXTERNAL = hostname_before
+
+    # ---------------
+    # HELPER METHODS
+    # ---------------
+
+    def _perform_multipart_upload(self, bucket, key, data=None, zip=False, acl=None):
+        acl = acl or 'private'
+        multipart_upload_dict = self.s3_client.create_multipart_upload(Bucket=bucket, Key=key, ACL=acl)
+        uploadId = multipart_upload_dict['UploadId']
+
+        # Write contents to memory rather than a file.
+        data = data or (5 * short_uid())
+        data = to_bytes(data)
+        upload_file_object = BytesIO(data)
+        if zip:
+            upload_file_object = BytesIO()
+            with gzip.GzipFile(fileobj=upload_file_object, mode='w') as filestream:
+                filestream.write(data)
+
+        response = self.s3_client.upload_part(Bucket=bucket, Key=key,
+            Body=upload_file_object, PartNumber=1, UploadId=uploadId)
+
+        multipart_upload_parts = [{'ETag': response['ETag'], 'PartNumber': 1}]
+
+        return self.s3_client.complete_multipart_upload(Bucket=bucket,
+            Key=key, MultipartUpload={'Parts': multipart_upload_parts}, UploadId=uploadId)
