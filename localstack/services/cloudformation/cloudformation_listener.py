@@ -73,8 +73,8 @@ class ProxyListenerCloudFormation(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
         if response.status_code >= 400:
-            LOG.warning('Error response from CloudFormation (%s) %s %s: %s' %
-                        (response.status_code, method, path, response.content))
+            LOG.debug('Error response from CloudFormation (%s) %s %s: %s' %
+                      (response.status_code, method, path, response.content))
 
 
 # instantiate listener

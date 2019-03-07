@@ -115,7 +115,7 @@ class ShellCommandThread (FuncThread):
     def run_cmd(self, params):
 
         def convert_line(line):
-            line = to_str(line)
+            line = to_str(line or '')
             return line.strip() + '\r\n'
 
         try:
