@@ -365,6 +365,14 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
     return retry(check, sleep=sleep_time, retries=retries)
 
 
+def get_free_tcp_port():
+    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp.bind(('', 0))
+    addr, port = tcp.getsockname()
+    tcp.close()
+    return port
+
+
 def get_service_protocol():
     return 'https' if config.USE_SSL else 'http'
 
