@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import re
 import os
 import sys
 import glob
@@ -9,7 +10,8 @@ import tempfile
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION,
     STEPFUNCTIONS_ZIP_URL)
-from localstack.utils.common import download, parallelize, run, mkdir, save_file, unzip, rm_rf, chmod_r
+from localstack.utils.common import (
+    download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -45,6 +47,14 @@ def install_elasticsearch():
             dir_path = '%s/%s' % (INSTALL_DIR_ES, dir_name)
             mkdir(dir_path)
             chmod_r(dir_path, 0o777)
+
+        # patch JVM options file - replace hardcoded heap size settings
+        jvm_options_file = os.path.join(INSTALL_DIR_ES, 'config', 'jvm.options')
+        if os.path.exists(jvm_options_file):
+            jvm_options = load_file(jvm_options_file)
+            jvm_options_replaced = re.sub(r'(^-Xm[sx][a-zA-Z0-9\.]+$)', r'# \1', jvm_options, flags=re.MULTILINE)
+            if jvm_options != jvm_options_replaced:
+                save_file(jvm_options_file, jvm_options_replaced)
 
         # install default plugins
         for plugin in ELASTICSEARCH_PLUGIN_LIST:

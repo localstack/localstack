@@ -7,6 +7,9 @@ from localstack.utils.common import save_file, short_uid, TMP_FILES
 from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq
 
+# max heap size allocated for the Java process
+MAX_HEAP_SIZE = '256m'
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -34,7 +37,8 @@ def start_sqs(port=None, asynchronous=False, update_listener=None):
     TMP_FILES.append(config_file)
     save_file(config_file, config_params)
     # start process
-    cmd = ('java -Dconfig.file=%s -jar %s/elasticmq-server.jar' % (config_file, INSTALL_DIR_ELASTICMQ))
+    cmd = ('java -Dconfig.file=%s -Xmx%s -jar %s/elasticmq-server.jar' % (
+        config_file, MAX_HEAP_SIZE, INSTALL_DIR_ELASTICMQ))
     print('Starting mock SQS (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('sqs', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
