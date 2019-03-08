@@ -1,7 +1,9 @@
+import sys
 from localstack.services.es import es_starter
 from localstack.services.s3 import s3_listener, s3_starter
 from localstack.services.sns import sns_listener
 from localstack.services.sqs import sqs_listener, sqs_starter
+from localstack.services.iam import iam_listener
 from localstack.services.infra import (register_plugin, Plugin,
     start_s3, start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
     start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
@@ -39,7 +41,8 @@ def register_localstack_plugins():
         register_plugin(Plugin('sts',
             start=start_sts))
         register_plugin(Plugin('iam',
-            start=start_iam))
+            start=start_iam,
+            listener=iam_listener.UPDATE_IAM))
         register_plugin(Plugin('secretsmanager',
             start=start_secretsmanager))
         register_plugin(Plugin('apigateway',
@@ -75,4 +78,5 @@ def register_localstack_plugins():
             listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS))
     except Exception as e:
         print('Unable to register plugins: %s' % e)
+        sys.stdout.flush()
         raise e

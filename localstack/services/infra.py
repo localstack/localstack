@@ -13,7 +13,7 @@ import pkgutil
 from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, DEFAULT_PORT_S3_BACKEND,
-    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND)
+    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
 from localstack.config import USE_SSL
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
@@ -118,7 +118,7 @@ def load_plugin_from_path(file_path, scope=None):
 
 def load_plugins(scope=None):
     scope = scope or PLUGIN_SCOPE_SERVICES
-    if PLUGINS_LOADED.get(scope, None):
+    if PLUGINS_LOADED.get(scope):
         return PLUGINS_LOADED[scope]
 
     setup_logging()
@@ -180,9 +180,10 @@ def start_sts(port=None, asynchronous=False):
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
 
 
-def start_iam(port=None, asynchronous=False):
+def start_iam(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_IAM
-    return start_moto_server('iam', port, name='IAM', asynchronous=asynchronous)
+    return start_moto_server('iam', port, name='IAM', asynchronous=asynchronous,
+        backend_port=DEFAULT_PORT_IAM_BACKEND, update_listener=update_listener)
 
 
 def start_redshift(port=None, asynchronous=False):
