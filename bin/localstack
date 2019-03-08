@@ -27,52 +27,8 @@ if os.path.isdir(os.path.join(PARENT_FOLDER, '.venv')):
 
 from docopt import docopt
 from localstack import config, constants
+from localstack.utils import cli
 from localstack.services import infra
-
-
-def cmd_infra(argv, args):
-    """
-Usage:
-  localstack infra <subcommand> [options]
-
-Commands:
-  infra start         Start the local infrastructure
-
-Options:
-  --docker            Run the infrastructure in a Docker container
-    """
-    if argv[0] == 'start':
-        argv = ['infra', 'start'] + argv[1:]
-        args['<command>'] = 'infra'
-        args['<args>'] = ['start'] + args['<args>']
-    args.update(docopt(cmd_infra.__doc__.strip(), argv=argv))
-    if args['<subcommand>'] == 'start':
-        print('Starting local dev environment. CTRL-C to quit.')
-        if args['--docker']:
-            infra.start_infra_in_docker()
-        else:
-            infra.start_infra()
-
-
-def cmd_web(argv, args):
-    """
-Usage:
-  localstack web <subcommand> [options]
-
-Commands:
-  web start           Start the Web dashboard
-
-Options:
-  --port=<>           Network port for running the Web server (default: 8080)
-    """
-    if len(argv) <= 1 or argv[1] != 'start':
-        argv = ['web', 'start'] + argv[1:]
-        args['<args>'] = ['start'] + args['<args>']
-    args.update(docopt(cmd_web.__doc__.strip(), argv=argv))
-    if args['<subcommand>'] == 'start':
-        import localstack.dashboard.api
-        port = args['--port'] or config.PORT_WEB_UI
-        localstack.dashboard.api.serve(port)
 
 
 if __name__ == '__main__':
@@ -80,15 +36,19 @@ if __name__ == '__main__':
     # set basic CLI commands
     config.CLI_COMMANDS['infra'] = {
         'description': 'Commands to manage the infrastructure',
-        'function': cmd_infra
+        'function': cli.cmd_infra
     }
     config.CLI_COMMANDS['start'] = {
         'description': 'Shorthand to start the infrastructure',
-        'function': cmd_infra
+        'function': cli.cmd_infra
     }
     config.CLI_COMMANDS['web'] = {
         'description': 'Commands to manage the Web dashboard',
-        'function': cmd_web
+        'function': cli.cmd_web
+    }
+    config.CLI_COMMANDS['ssh'] = {
+        'description': 'Shorthand to obtain a shell in the running container',
+        'function': cli.cmd_ssh
     }
 
     # load CLI plugins
