@@ -16,7 +16,7 @@ from localstack.constants import (
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
 from localstack.config import USE_SSL
 from localstack.utils import common, persistence
-from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
+from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_free_tcp_port,
     TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
@@ -307,14 +307,14 @@ def start_moto_server(key, port, name=None, backend_port=None, asynchronous=Fals
     moto_server_cmd = '%s/bin/moto_server' % LOCALSTACK_VENV_FOLDER
     if not os.path.exists(moto_server_cmd):
         moto_server_cmd = run('which moto_server').strip()
+    if USE_SSL and not backend_port:
+        backend_port = get_free_tcp_port()
     cmd = 'VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s' % (moto_server_cmd, key, backend_port or port, constants.BIND_HOST)
     if not name:
         name = key
     print('Starting mock %s (%s port %s)...' % (name, get_service_protocol(), port))
     if backend_port:
         start_proxy_for_service(key, port, backend_port, update_listener)
-    elif USE_SSL:
-        cmd += ' --ssl'
     return do_run(cmd, asynchronous)
 
 
