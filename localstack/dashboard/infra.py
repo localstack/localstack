@@ -39,7 +39,8 @@ def run_cached(cmd, cache_duration_secs=None):
         'AWS_DEFAULT_REGION': os.environ.get('AWS_DEFAULT_REGION') or DEFAULT_REGION,
         'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
     })
-    return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars)
+    return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars,
+               stderr=open(os.devnull, 'w'))
 
 
 def run_aws_cmd(service, cmd_params, env=None, cache_duration_secs=None):

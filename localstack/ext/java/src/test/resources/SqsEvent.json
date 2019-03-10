@@ -1,0 +1,40 @@
+{
+  "records": [
+    {
+      "messageId" : "MessageID_1",
+      "receiptHandle" : "MessageReceiptHandle",
+      "body" : "Message Body",
+      "md5OfBody" : "fce0ea8dd236ccb3ed9b37dae260836f",
+      "md5OfMessageAttributes" : "582c92c5c5b6ac403040a4f3ab3115c9",
+      "eventSourceArn": "arn:aws:sqs:us-west-2:123456789012:SQSQueue",
+      "eventSource": "aws:sqs",
+      "awsRegion": "us-west-2",
+      "attributes" : {
+        "ApproximateReceiveCount" : "2",
+        "SentTimestamp" : "1520621625029",
+        "SenderId" : "AROAIWPX5BD2BHG722MW4:sender",
+        "ApproximateFirstReceiveTimestamp" : "1520621634884"
+      },
+      "messageAttributes" : {
+        "Attribute3" : {
+          "binaryValue" : "MTEwMA==",
+          "stringListValues" : ["abc", "123"],
+          "binaryListValues" : ["MA==", "MQ==", "MA=="],
+          "dataType" : "Binary"
+        },
+        "Attribute2" : {
+          "stringValue" : "123",
+          "stringListValues" : [ ],
+          "binaryListValues" : ["MQ==", "MA=="],
+          "dataType" : "Number"
+        },
+        "Attribute1" : {
+          "stringValue" : "AttributeValue1",
+          "stringListValues" : [ ],
+          "binaryListValues" : [ ],
+          "dataType" : "String"
+        }
+      }
+    }
+  ]
+}

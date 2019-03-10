@@ -1,21 +1,19 @@
-from __future__ import print_function
-
+import re
 import os
+import imp
 import sys
 import json
 import uuid
 import time
-import traceback
-import logging
 import base64
+import logging
+import zipfile
 import threading
-import imp
-import re
+import traceback
 from io import BytesIO
 from datetime import datetime
-from six import iteritems
 from six.moves import cStringIO as StringIO
-from flask import Flask, Response, jsonify, request, make_response
+from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.services import generic_proxy
 from localstack.services.awslambda import lambda_executors
@@ -27,9 +25,14 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_NODEJS810,
     LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_DOTNETCORE2,
-    LAMBDA_RUNTIME_GOLANG)
+    LAMBDA_RUNTIME_DOTNETCORE21,
+    LAMBDA_RUNTIME_GOLANG,
+    LAMBDA_RUNTIME_RUBY,
+    LAMBDA_RUNTIME_RUBY25,
+    LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-    mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS)
+    mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
+    md5, new_tmp_file, parse_chunked_data, is_number)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -41,8 +44,10 @@ ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 
 # List of Lambda runtime names. Keep them in this list, mainly to silence the linter
-LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_DOTNETCORE2,
-    LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_JAVA8]
+LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21, LAMBDA_RUNTIME_NODEJS,
+    LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_RUBY,
+    LAMBDA_RUNTIME_RUBY25]
 
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
 LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
@@ -70,6 +75,10 @@ DO_USE_DOCKER = None
 
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
+
+# Marker name to indicate that a bucket represents the local file system. This is used for testing
+# Serverless applications where we mount the Lambda code directly into the container from the host OS.
+BUCKET_MARKER_LOCAL = '__local__'
 
 
 class LambdaContext(object):
@@ -146,7 +155,6 @@ def use_docker():
         if 'docker' in config.LAMBDA_EXECUTOR:
             try:
                 run('docker images', print_error=False)
-                # run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
                 DO_USE_DOCKER = True
             except Exception:
                 pass
@@ -154,7 +162,8 @@ def use_docker():
 
 
 def process_apigateway_invocation(func_arn, path, payload, headers={},
-        resource_path=None, method=None, path_params={}):
+        resource_path=None, method=None, path_params={},
+        query_string_params={}, request_context={}):
     try:
         resource_path = resource_path or path
         event = {
@@ -165,7 +174,8 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
             'isBase64Encoded': False,
             'resource': resource_path,
             'httpMethod': method,
-            'queryStringParameters': {},  # TODO
+            'queryStringParameters': query_string_params,
+            'requestContext': request_context,
             'stageVariables': {}  # TODO
         }
         return run_lambda(event=event, context={}, func_arn=func_arn)
@@ -186,7 +196,7 @@ def process_sns_notification(func_arn, topic_arn, message, subject=''):
                 }
             }]
         }
-        return run_lambda(event=event, context={}, func_arn=func_arn, async=True)
+        return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=True)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (e, traceback.format_exc()))
 
@@ -210,6 +220,36 @@ def process_kinesis_records(records, stream_name):
             run_lambda(event=event, context={}, func_arn=arn)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
+
+
+def process_sqs_message(message_body, queue_name):
+    # feed message into the first listening lambda
+    try:
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        source = next(iter(get_event_sources(source_arn=queue_arn)), None)
+        if source:
+            arn = source['FunctionArn']
+            event = {'Records': [{
+                'body': message_body,
+                'receiptHandle': 'MessageReceiptHandle',
+                'md5OfBody': md5(message_body),
+                'eventSourceARN': queue_arn,
+                'eventSource': 'aws:sqs',
+                'awsRegion': aws_stack.get_local_region(),
+                'messageId': str(uuid.uuid4()),
+                'attributes': {
+                    'ApproximateFirstReceiveTimestamp': '{}000'.format(int(time.time())),
+                    'SenderId': '123456789012',
+                    'ApproximateReceiveCount': '1',
+                    'SentTimestamp': '{}000'.format(int(time.time()))
+                },
+                'messageAttributes': {},
+                'sqs': True,
+            }]}
+            run_lambda(event=event, context={}, func_arn=arn)
+            return True
+    except Exception as e:
+        LOG.warning('Unable to run Lambda function on SQS messages: %s %s' % (e, traceback.format_exc()))
 
 
 def get_event_sources(func_name=None, source_arn=None):
@@ -254,7 +294,7 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 @cloudwatched('lambda')
-def run_lambda(event, context, func_arn, version=None, suppress_output=False, async=False):
+def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -262,13 +302,14 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         sys.stdout = stream
         sys.stderr = stream
     try:
+        func_arn = aws_stack.fix_arn(func_arn)
         func_details = arn_to_lambda.get(func_arn)
         if not context:
             context = LambdaContext(func_details, version)
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
-            event, context=context, version=version, async=async)
+            event, context=context, version=version, asynchronous=asynchronous)
     except Exception as e:
-        return error_response('Error executing Lambda function: %s %s' % (e, traceback.format_exc()))
+        return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -317,9 +358,13 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
         file_ext = '.js'
     elif runtime.startswith(LAMBDA_RUNTIME_GOLANG):
         file_ext = ''
-    elif runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2):
+    elif runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2) or runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE21):
         file_ext = '.dll'
         delimiter = ':'
+    elif runtime.startswith(LAMBDA_RUNTIME_RUBY):
+        file_ext = '.rb'
+    elif runtime.startswith(LAMBDA_RUNTIME_CUSTOM_RUNTIME):
+        file_ext = '.sh'
     else:
         file_ext = '.py'
     return '%s%s' % (handler_name.split(delimiter)[0], file_ext)
@@ -327,7 +372,7 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
 
 def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     # TODO: support Java Lambdas in the future
-    if runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2):
+    if runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2) or runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE21):
         return handler_name.split(':')[-1]
     else:
         return handler_name.split('.')[-1]
@@ -367,12 +412,22 @@ def get_java_handler(zip_file_content, handler, main_file):
     :type zip_file_content: bytes
     :param zip_file_content: ZIP file bytes.
     :type handler: str
-    :param handler: THe lambda handler path.
+    :param handler: The lambda handler path.
     :type main_file: str
     :param main_file: Filepath to the uploaded ZIP or JAR file.
 
     :returns: function or flask.Response
     """
+    if not is_jar_archive(zip_file_content):
+        with zipfile.ZipFile(BytesIO(zip_file_content)) as zip_ref:
+            jar_entries = [e for e in zip_ref.infolist() if e.filename.endswith('.jar')]
+            if len(jar_entries) != 1:
+                raise Exception('Expected exactly one *.jar entry in zip file, found %s' % len(jar_entries))
+            zip_file_content = zip_ref.read(jar_entries[0].filename)
+            LOG.info('Found jar file %s with %s bytes in Lambda zip archive' %
+                     (jar_entries[0].filename, len(zip_file_content)))
+            main_file = new_tmp_file()
+            save_file(main_file, zip_file_content)
     if is_jar_archive(zip_file_content):
         def execute(event, context):
             result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
@@ -380,7 +435,7 @@ def get_java_handler(zip_file_content, handler, main_file):
             return result
         return execute
     return error_response(
-        'ZIP file for the java8 runtime not yet supported.', 400, error_type='ValidationError')
+        'Unable to extract Java Lambda handler - file is not a valid zip/jar files', 400, error_type='ValidationError')
 
 
 def set_function_code(code, lambda_name):
@@ -391,25 +446,35 @@ def set_function_code(code, lambda_name):
 
     lambda_cwd = None
     arn = func_arn(lambda_name)
-    runtime = arn_to_lambda[arn].runtime
-    handler_name = arn_to_lambda.get(arn).handler
-    lambda_environment = arn_to_lambda.get(arn).envvars
+    lambda_details = arn_to_lambda[arn]
+    runtime = lambda_details.runtime
+    handler_name = lambda_details.handler
+    lambda_environment = lambda_details.envvars
     if not handler_name:
         handler_name = LAMBDA_DEFAULT_HANDLER
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
+    zip_file_content = None
+    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
 
-    # Save the zip file to a temporary file that the lambda executors can reference.
-    zip_file_content = get_zip_bytes(code)
-    if isinstance(zip_file_content, Response):
-        return zip_file_content
-    tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
-    mkdir(tmp_dir)
-    tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
-    save_file(tmp_file, zip_file_content)
-    TMP_FILES.append(tmp_dir)
-    lambda_cwd = tmp_dir
+    if is_local_mount:
+        # Mount or use a local folder lambda executors can reference
+        # WARNING: this means we're pointing lambda_cwd to a local path in the user's
+        # file system! We must ensure that there is no data loss (i.e., we must *not* add
+        # this folder to TMP_FILES or similar).
+        lambda_cwd = code['S3Key']
+    else:
+        # Save the zip file to a temporary file that the lambda executors can reference
+        zip_file_content = get_zip_bytes(code)
+        if isinstance(zip_file_content, Response):
+            return zip_file_content
+        tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
+        mkdir(tmp_dir)
+        tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
+        save_file(tmp_file, zip_file_content)
+        TMP_FILES.append(tmp_dir)
+        lambda_cwd = tmp_dir
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
@@ -430,24 +495,29 @@ def set_function_code(code, lambda_name):
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
-        # Lambda code must be uploaded in the Zip format.
-        if not is_zip_file(zip_file_content):
-            raise Exception(
-                'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
+        if not is_local_mount:
+            # Lambda code must be uploaded in Zip format
+            if not is_zip_file(zip_file_content):
+                raise Exception(
+                    'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
+            unzip(tmp_file, lambda_cwd)
 
-        unzip(tmp_file, tmp_dir)
-        main_file = '%s/%s' % (tmp_dir, handler_file)
+        main_file = '%s/%s' % (lambda_cwd, handler_file)
         if os.path.isfile(main_file):
             # make sure the file is actually readable, then read contents
             ensure_readable(main_file)
             with open(main_file, 'rb') as file_obj:
                 zip_file_content = file_obj.read()
         else:
-            file_list = run('ls -la %s' % tmp_dir)
-            LOG.debug('Lambda archive content:\n%s' % file_list)
-            return error_response(
-                'Unable to find handler script in Lambda archive.', 400,
-                error_type='ValidationError')
+            # Raise an error if (1) this is not a local mount lambda, or (2) we're
+            # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
+            # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
+            if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
+                file_list = run('ls -la %s' % lambda_cwd)
+                LOG.debug('Lambda archive content:\n%s' % file_list)
+                return error_response(
+                    'Unable to find handler script in Lambda archive.', 400,
+                    error_type='ValidationError')
 
         if runtime.startswith('python') and not use_docker():
             try:
@@ -466,7 +536,7 @@ def set_function_code(code, lambda_name):
 
 def do_list_functions():
     funcs = []
-    for f_arn, func in iteritems(arn_to_lambda):
+    for f_arn, func in arn_to_lambda.items():
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
         func_details = arn_to_lambda.get(arn)
@@ -484,7 +554,9 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'Handler': func_details.handler,
         'Runtime': func_details.runtime,
         'Timeout': func_details.timeout,
-        'Environment': func_details.envvars,
+        'Environment': {
+            'Variables': func_details.envvars
+        },
         # 'Description': ''
         # 'MemorySize': 192,
     }
@@ -496,6 +568,14 @@ def format_func_details(func_details, version=None, always_add_version=False):
 # ------------
 # API METHODS
 # ------------
+
+
+@app.before_request
+def before_request():
+    # fix to enable chunked encoding, as this is used by some Lambda clients
+    transfer_encoding = request.headers.get('Transfer-Encoding', '').lower()
+    if transfer_encoding == 'chunked':
+        request.environ['wsgi.input_terminated'] = True
 
 
 @app.route('%s/functions' % PATH_ROOT, methods=['POST'])
@@ -545,7 +625,7 @@ def create_function():
             result['Version'] = publish_new_function_version(arn)['Version']
         return jsonify(result or {})
     except Exception as e:
-        del arn_to_lambda[arn]
+        arn_to_lambda.pop(arn, None)
         return error_response('Unknown error: %s %s' % (e, traceback.format_exc()))
 
 
@@ -688,8 +768,9 @@ def update_function_configuration(function):
         lambda_details.handler = data['Handler']
     if data.get('Runtime'):
         lambda_details.runtime = data['Runtime']
-    if data.get('Environment'):
-        lambda_details.envvars = data.get('Environment', {}).get('Variables', {})
+    env_vars = data.get('Environment', {}).get('Variables')
+    if env_vars is not None:
+        lambda_details.envvars = env_vars
     if data.get('Timeout'):
         lambda_details.timeout = data['Timeout']
     result = {}
@@ -721,33 +802,66 @@ def invoke_function(function):
     if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
         return error_response('Function does not exist: {0}:{1}'.format(arn, qualifier), 404,
                               error_type='ResourceNotFoundException')
-    data = None
-    if request.data:
+    data = request.get_data()
+    if data:
+        data = to_str(data)
         try:
-            data = json.loads(to_str(request.data))
+            data = json.loads(data)
         except Exception:
-            return error_response('The payload is not JSON', 415, error_type='UnsupportedMediaTypeException')
+            try:
+                # try to read chunked content
+                data = json.loads(parse_chunked_data(data))
+            except Exception:
+                return error_response('The payload is not JSON: %s' % data, 415,
+                                      error_type='UnsupportedMediaTypeException')
 
     # Default invocation type is RequestResponse
     invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
 
-    if invocation_type == 'RequestResponse':
-        result = run_lambda(async=False, func_arn=arn, event=data, context={}, version=qualifier)
-        if isinstance(result, dict):
-            return jsonify(result)
-        if result:
+    def _create_response(result, status_code=200):
+        """ Create the final response for the given invocation result """
+        if isinstance(result, Response):
             return result
-        return make_response('', 200)
+        details = {
+            'StatusCode': status_code,
+            'Payload': result,
+            'Headers': {}
+        }
+        if isinstance(result, dict):
+            for key in ('StatusCode', 'Payload', 'FunctionError'):
+                if result.get(key):
+                    details[key] = result[key]
+        # Try to parse parse payload as JSON
+        payload = details['Payload']
+        if payload and isinstance(payload, (str, bytes)) and payload[0] in ('[', '{'):
+            try:
+                details['Payload'] = json.loads(details['Payload'])
+            except Exception:
+                pass
+        # Set error headers
+        if details.get('FunctionError'):
+            details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
+        # Construct response object
+        response_obj = details['Payload']
+        if isinstance(response_obj, (dict, list, bool)) or is_number(response_obj):
+            # Assume this is a JSON response
+            response_obj = jsonify(response_obj)
+        else:
+            response_obj = str(response_obj)
+            details['Headers']['Content-Type'] = 'text/plain'
+        return response_obj, details['StatusCode'], details['Headers']
+
+    if invocation_type == 'RequestResponse':
+        result = run_lambda(asynchronous=False, func_arn=arn, event=data, context={}, version=qualifier)
+        return _create_response(result)
     elif invocation_type == 'Event':
-        run_lambda(async=True, func_arn=arn, event=data, context={}, version=qualifier)
-        return make_response('', 202)
+        run_lambda(asynchronous=True, func_arn=arn, event=data, context={}, version=qualifier)
+        return _create_response('', status_code=202)
     elif invocation_type == 'DryRun':
         # Assume the dry run always passes.
-        return make_response('', 204)
-    else:
-        return error_response('Invocation type not one of: RequestResponse, Event or DryRun',
-                              code=400,
-                              error_type='InvalidParameterValueException')
+        return _create_response('', status_code=204)
+    return error_response('Invocation type not one of: RequestResponse, Event or DryRun',
+                          code=400, error_type='InvalidParameterValueException')
 
 
 @app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])

@@ -23,7 +23,7 @@ QUIET = False
 SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
 # CORS settings
-CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5',
+CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent')
 CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
 
@@ -155,6 +155,19 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     except socket.timeout:
                         break
 
+    def build_x_forwarded_for(self, headers):
+        x_forwarded_for = headers.get('X-Forwarded-For')
+
+        client_address = self.client_address[0]
+        server_address = ':'.join(map(str, self.server.server_address))
+
+        if x_forwarded_for:
+            x_forwarded_for_list = (x_forwarded_for, client_address, server_address)
+        else:
+            x_forwarded_for_list = (client_address, server_address)
+
+        return ', '.join(x_forwarded_for_list)
+
     def forward(self, method):
         path = self.path
         if '://' in path:
@@ -171,6 +184,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             forward_headers['host'] = urlparse(target_url).netloc
         if 'localhost.atlassian.io' in forward_headers.get('Host'):
             forward_headers['host'] = 'localhost'
+
+        forward_headers['X-Forwarded-For'] = self.build_x_forwarded_for(forward_headers)
 
         try:
             response = None
@@ -195,10 +210,13 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             if response is None:
                 if modified_request:
                     response = self.method(proxy_url, data=modified_request.data,
-                        headers=modified_request.headers)
+                        headers=modified_request.headers, stream=True)
                 else:
                     response = self.method(proxy_url, data=self.data_bytes,
-                        headers=forward_headers)
+                        headers=forward_headers, stream=True)
+                # prevent requests from processing response body
+                if not response._content_consumed and response.raw:
+                    response._content = response.raw.read()
             # update listener (post-invocation)
             if self.proxy.update_listener:
                 kwargs = {
@@ -256,6 +274,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     print('ERROR: %s' % error_msg)
             self.send_response(502)  # bad gateway
             self.end_headers()
+        finally:
+            # force close connection
+            self.close_connection = 1
 
     def log_message(self, format, *args):
         return

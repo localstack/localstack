@@ -11,16 +11,13 @@ import six
 import warnings
 import pkgutil
 from localstack import constants, config
-from localstack.constants import (ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER,
-    DEFAULT_PORT_S3_BACKEND, DEFAULT_PORT_APIGATEWAY_BACKEND,
-    DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_CLOUDFORMATION_BACKEND)
-from localstack.config import (USE_SSL, PORT_ROUTE53, PORT_S3,
-    PORT_FIREHOSE, PORT_LAMBDA, PORT_SNS, PORT_REDSHIFT, PORT_CLOUDWATCH,
-    PORT_DYNAMODBSTREAMS, PORT_SES, PORT_ES, PORT_CLOUDFORMATION, PORT_APIGATEWAY,
-    PORT_SSM)
+from localstack.constants import (
+    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, DEFAULT_PORT_S3_BACKEND,
+    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
+from localstack.config import USE_SSL
 from localstack.utils import common, persistence
-from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe,
-    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir)
+from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_free_tcp_port,
+    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.firehose import firehose_api
@@ -31,10 +28,20 @@ from localstack.services.generic_proxy import GenericProxy
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
+
 # maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
 PLUGINS_LOADED = {}
-# flag to indicate whether we've received and processed the stop signal
-INFRA_STOPPED = False
+
+# maps from API names to list of other API names that they depend on
+API_DEPENDENCIES = {
+    'dynamodbstreams': ['kinesis'],
+    'lambda': ['logs'],
+    'es': ['elasticsearch']
+}
+# composites define an abstract name like "serverless" that maps to a set of services
+API_COMPOSITES = {
+    'serverless': ['iam', 'lambda', 'dynamodb', 'apigateway', 's3', 'sns']
+}
 
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
@@ -60,15 +67,16 @@ LOG_DATE_FORMAT = TIMESTAMP_FORMAT
 
 
 class Plugin(object):
+
     def __init__(self, name, start, check=None, listener=None):
         self.plugin_name = name
         self.start_function = start
         self.listener = listener
         self.check_function = check
 
-    def start(self, async):
+    def start(self, asynchronous):
         kwargs = {
-            'async': async
+            'asynchronous': asynchronous
         }
         if self.listener:
             kwargs['update_listener'] = self.listener
@@ -99,6 +107,8 @@ def load_plugin_from_path(file_path, scope=None):
             exec('from %s.plugins import %s' % (module, method_name), namespace)
             method_to_execute = namespace[method_name]
         except Exception as e:
+            if not re.match(r'.*cannot import name .*%s.*' % method_name, str(e)):
+                LOGGER.debug('Unable to load plugins from module %s: %s' % (module, e))
             return
         try:
             return method_to_execute()
@@ -108,8 +118,8 @@ def load_plugin_from_path(file_path, scope=None):
 
 def load_plugins(scope=None):
     scope = scope or PLUGIN_SCOPE_SERVICES
-    if PLUGINS_LOADED.get(scope, None):
-        return
+    if PLUGINS_LOADED.get(scope):
+        return PLUGINS_LOADED[scope]
 
     setup_logging()
 
@@ -137,60 +147,88 @@ def load_plugins(scope=None):
 # -----------------
 
 
-def start_apigateway(port=PORT_APIGATEWAY, async=False, update_listener=None):
-    return start_moto_server('apigateway', port, name='API Gateway', async=async,
+def start_apigateway(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_APIGATEWAY
+    return start_moto_server('apigateway', port, name='API Gateway', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_APIGATEWAY_BACKEND, update_listener=update_listener)
 
 
-def start_s3(port=PORT_S3, async=False, update_listener=None):
-    return start_moto_server('s3', port, name='S3', async=async,
+def start_s3(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_S3
+    return start_moto_server('s3', port, name='S3', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_S3_BACKEND, update_listener=update_listener)
 
 
-def start_sns(port=PORT_SNS, async=False, update_listener=None):
-    return start_moto_server('sns', port, name='SNS', async=async,
+def start_sns(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_SNS
+    return start_moto_server('sns', port, name='SNS', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
 
 
-def start_cloudformation(port=PORT_CLOUDFORMATION, async=False, update_listener=None):
-    return start_moto_server('cloudformation', port, name='CloudFormation', async=async,
-        backend_port=DEFAULT_PORT_CLOUDFORMATION_BACKEND, update_listener=update_listener)
+def start_cloudwatch(port=None, asynchronous=False):
+    port = port or config.PORT_CLOUDWATCH
+    return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
 
 
-def start_cloudwatch(port=PORT_CLOUDWATCH, async=False):
-    return start_moto_server('cloudwatch', port, name='CloudWatch', async=async)
+def start_cloudwatch_logs(port=None, asynchronous=False):
+    port = port or config.PORT_LOGS
+    return start_moto_server('logs', port, name='CloudWatch Logs', asynchronous=asynchronous)
 
 
-def start_redshift(port=PORT_REDSHIFT, async=False):
-    return start_moto_server('redshift', port, name='Redshift', async=async)
+def start_sts(port=None, asynchronous=False):
+    port = port or config.PORT_STS
+    return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
 
 
-def start_route53(port=PORT_ROUTE53, async=False):
-    return start_moto_server('route53', port, name='Route53', async=async)
+def start_iam(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_IAM
+    return start_moto_server('iam', port, name='IAM', asynchronous=asynchronous,
+        backend_port=DEFAULT_PORT_IAM_BACKEND, update_listener=update_listener)
 
 
-def start_ses(port=PORT_SES, async=False):
-    return start_moto_server('ses', port, name='SES', async=async)
+def start_redshift(port=None, asynchronous=False):
+    port = port or config.PORT_REDSHIFT
+    return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
 
 
-def start_elasticsearch_service(port=PORT_ES, async=False):
-    return start_local_api('ES', port, method=es_api.serve, async=async)
+def start_route53(port=None, asynchronous=False):
+    port = port or config.PORT_ROUTE53
+    return start_moto_server('route53', port, name='Route53', asynchronous=asynchronous)
 
 
-def start_firehose(port=PORT_FIREHOSE, async=False):
-    return start_local_api('Firehose', port, method=firehose_api.serve, async=async)
+def start_ses(port=None, asynchronous=False):
+    port = port or config.PORT_SES
+    return start_moto_server('ses', port, name='SES', asynchronous=asynchronous)
 
 
-def start_dynamodbstreams(port=PORT_DYNAMODBSTREAMS, async=False):
-    return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, async=async)
+def start_elasticsearch_service(port=None, asynchronous=False):
+    port = port or config.PORT_ES
+    return start_local_api('ES', port, method=es_api.serve, asynchronous=asynchronous)
 
 
-def start_lambda(port=PORT_LAMBDA, async=False):
-    return start_local_api('Lambda', port, method=lambda_api.serve, async=async)
+def start_firehose(port=None, asynchronous=False):
+    port = port or config.PORT_FIREHOSE
+    return start_local_api('Firehose', port, method=firehose_api.serve, asynchronous=asynchronous)
 
 
-def start_ssm(port=PORT_SSM, async=False):
-    return start_moto_server('ssm', port, name='SSM', async=async)
+def start_dynamodbstreams(port=None, asynchronous=False):
+    port = port or config.PORT_DYNAMODBSTREAMS
+    return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, asynchronous=asynchronous)
+
+
+def start_lambda(port=None, asynchronous=False):
+    port = port or config.PORT_LAMBDA
+    return start_local_api('Lambda', port, method=lambda_api.serve, asynchronous=asynchronous)
+
+
+def start_ssm(port=None, asynchronous=False):
+    port = port or config.PORT_SSM
+    return start_moto_server('ssm', port, name='SSM', asynchronous=asynchronous)
+
+
+def start_secretsmanager(port=None, asynchronous=False):
+    port = port or config.PORT_SECRETSMANAGER
+    return start_moto_server('secretsmanager', port, name='Secrets Manager', asynchronous=asynchronous)
 
 
 # ---------------
@@ -204,14 +242,13 @@ def setup_logging():
     # disable some logs and warnings
     warnings.filterwarnings('ignore')
     logging.captureWarnings(True)
+    logging.getLogger('boto3').setLevel(logging.INFO)
+    logging.getLogger('s3transfer').setLevel(logging.INFO)
+    logging.getLogger('docker').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.WARNING)
     logging.getLogger('requests').setLevel(logging.WARNING)
     logging.getLogger('botocore').setLevel(logging.ERROR)
     logging.getLogger('elasticsearch').setLevel(logging.ERROR)
-
-
-def get_service_protocol():
-    return 'https' if USE_SSL else 'http'
 
 
 def restore_persisted_data(apis):
@@ -237,13 +274,13 @@ def is_debug():
     return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
 
 
-def do_run(cmd, async, print_output=False):
+def do_run(cmd, asynchronous, print_output=False, env_vars={}):
     sys.stdout.flush()
-    if async:
+    if asynchronous:
         if is_debug():
             print_output = True
         outfile = subprocess.PIPE if print_output else None
-        t = ShellCommandThread(cmd, outfile=outfile)
+        t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)
         t.start()
         TMP_THREADS.append(t)
         return t
@@ -266,24 +303,24 @@ def start_proxy(port, backend_url, update_listener, quiet=False, params={}):
     return proxy_thread
 
 
-def start_moto_server(key, port, name=None, backend_port=None, async=False, update_listener=None):
+def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
     moto_server_cmd = '%s/bin/moto_server' % LOCALSTACK_VENV_FOLDER
     if not os.path.exists(moto_server_cmd):
         moto_server_cmd = run('which moto_server').strip()
+    if USE_SSL and not backend_port:
+        backend_port = get_free_tcp_port()
     cmd = 'VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s' % (moto_server_cmd, key, backend_port or port, constants.BIND_HOST)
     if not name:
         name = key
     print('Starting mock %s (%s port %s)...' % (name, get_service_protocol(), port))
     if backend_port:
         start_proxy_for_service(key, port, backend_port, update_listener)
-    elif USE_SSL:
-        cmd += ' --ssl'
-    return do_run(cmd, async)
+    return do_run(cmd, asynchronous)
 
 
-def start_local_api(name, port, method, async=False):
+def start_local_api(name, port, method, asynchronous=False):
     print('Starting mock %s service (%s port %s)...' % (name, get_service_protocol(), port))
-    if async:
+    if asynchronous:
         thread = FuncThread(method, port, quiet=True)
         thread.start()
         TMP_THREADS.append(thread)
@@ -293,9 +330,9 @@ def start_local_api(name, port, method, async=False):
 
 
 def stop_infra():
-    global INFRA_STOPPED
-    if INFRA_STOPPED:
+    if common.INFRA_STOPPED:
         return
+    common.INFRA_STOPPED = True
 
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
 
@@ -306,7 +343,6 @@ def stop_infra():
     time.sleep(2)
     # TODO: optimize this (takes too long currently)
     # check_infra(retries=2, expect_shutdown=True)
-    INFRA_STOPPED = True
 
 
 def check_aws_credentials():
@@ -330,7 +366,7 @@ def check_aws_credentials():
 # -----------------------------
 
 
-def check_infra(retries=8, expect_shutdown=False, apis=None, additional_checks=[]):
+def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=[]):
     try:
         print_error = retries <= 0
 
@@ -367,6 +403,7 @@ def start_infra_in_docker():
     services = os.environ.get('SERVICES', '')
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
+    user_flags = os.environ.get('DOCKER_FLAGS', '')
     image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
     service_ports = config.SERVICE_PORTS
     force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
@@ -413,15 +450,16 @@ def start_infra_in_docker():
     interactive = '' if force_noninteractive or in_ci() else '-it '
 
     # append space if parameter is set
+    user_flags = '%s ' % user_flags if user_flags else user_flags
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
 
-    docker_cmd = ('docker run %s%s%s%s' +
+    docker_cmd = ('docker run %s%s%s%s%s' +
         '-p 8080:8080 %s %s' +
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-            interactive, entrypoint, env_str, plugin_run_params, port_mappings, data_dir_mount,
+            interactive, entrypoint, env_str, user_flags, plugin_run_params, port_mappings, data_dir_mount,
             config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
             config.HOST_TMP_FOLDER, image_name, cmd
     )
@@ -442,7 +480,41 @@ def start_infra_in_docker():
 # -------------
 
 
-def start_infra(async=False, apis=None):
+def canonicalize_api_names(apis):
+    """ Finalize the list of API names by
+        (1) resolving and adding dependencies (e.g., "dynamodbstreams" requires "kinesis"),
+        (2) resolving and adding composites (e.g., "serverless" describes an ensemble
+                including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
+        (3) removing duplicates from the list. """
+    def contains(apis, api):
+        for a in apis:
+            if a == api:
+                return True
+
+    # resolve composites
+    for comp, deps in API_COMPOSITES.items():
+        if contains(apis, comp):
+            apis.extend(deps)
+
+    # resolve dependencies
+    for i, api in enumerate(apis):
+        for dep in API_DEPENDENCIES.get(api, []):
+            if not contains(apis, dep):
+                apis.append(dep)
+
+    # remove duplicates and composite names
+    apis = list(set([a for a in apis if a not in API_COMPOSITES.keys()]))
+
+    # make sure we have port mappings for each API
+    for api in apis:
+        if api not in config.SERVICE_PORTS:
+            config.SERVICE_PORTS[api] = config.DEFAULT_SERVICE_PORTS.get(api)
+    config.populate_configs(config.SERVICE_PORTS)
+
+    return apis
+
+
+def start_infra(asynchronous=False, apis=None):
     try:
         # load plugins
         load_plugins()
@@ -454,6 +526,8 @@ def start_infra(async=False, apis=None):
 
         if not apis:
             apis = list(config.SERVICE_PORTS.keys())
+        # prepare APIs
+        apis = canonicalize_api_names(apis)
         # set environment
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
@@ -464,17 +538,17 @@ def start_infra(async=False, apis=None):
         # install libs if not present
         install.install_components(apis)
         # Some services take a bit to come up
-        sleep_time = 3
+        sleep_time = 5
         # start services
         thread = None
 
         if 'elasticsearch' in apis or 'es' in apis:
-            sleep_time = max(sleep_time, 8)
+            sleep_time = max(sleep_time, 10)
 
         # loop through plugins and start each service
         for name, plugin in SERVICE_PLUGINS.items():
             if name in apis:
-                t1 = plugin.start(async=True)
+                t1 = plugin.start(asynchronous=True)
                 thread = thread or t1
 
         time.sleep(sleep_time)
@@ -484,19 +558,19 @@ def start_infra(async=False, apis=None):
         restore_persisted_data(apis=apis)
         print('Ready.')
         sys.stdout.flush()
-        if not async and thread:
+        if not asynchronous and thread:
             # this is a bit of an ugly hack, but we need to make sure that we
             # stay in the execution context of the main thread, otherwise our
             # signal handlers don't work
             while True:
                 time.sleep(1)
         return thread
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         print('Shutdown')
     except Exception as e:
         print('Error starting infrastructure: %s %s' % (e, traceback.format_exc()))
         sys.stdout.flush()
         raise e
     finally:
-        if not async:
+        if not asynchronous:
             stop_infra()

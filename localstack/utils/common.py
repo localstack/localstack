@@ -1,25 +1,29 @@
 from __future__ import print_function
 
-import threading
-import traceback
+import io
 import os
+import re
 import sys
-import hashlib
+import pty
+import json
 import uuid
 import time
 import glob
 import base64
+import select
+import socket
+import hashlib
+import decimal
+import logging
+import zipfile
+import binascii
+import tempfile
+import threading
+import traceback
 import subprocess
 import six
 import shutil
-import socket
-import json
-import binascii
-import decimal
-import logging
-import tempfile
 import requests
-import zipfile
 from io import BytesIO
 from contextlib import closing
 from datetime import datetime
@@ -54,9 +58,13 @@ DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
+# flag to indicate whether we've received and processed the stop signal
+INFRA_STOPPED = False
 
-# Helper class to convert JSON documents with datetime, decimals, or bytes.
+
 class CustomEncoder(json.JSONEncoder):
+    """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
+
     def default(self, o):
         if isinstance(o, decimal.Decimal):
             if o % 1 > 0:
@@ -70,8 +78,10 @@ class CustomEncoder(json.JSONEncoder):
         return super(CustomEncoder, self).default(o)
 
 
-class FuncThread (threading.Thread):
-    def __init__(self, func, params, quiet=False):
+class FuncThread(threading.Thread):
+    """ Helper class to run a Python function in a background thread. """
+
+    def __init__(self, func, params=None, quiet=False):
         threading.Thread.__init__(self)
         self.daemon = True
         self.params = params
@@ -91,7 +101,9 @@ class FuncThread (threading.Thread):
             LOGGER.warning('Not implemented: FuncThread.stop(..)')
 
 
-class ShellCommandThread (FuncThread):
+class ShellCommandThread(FuncThread):
+    """ Helper class to run a shell command in a background thread. """
+
     def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
             quiet=True, inherit_cwd=False):
         self.cmd = cmd
@@ -105,18 +117,18 @@ class ShellCommandThread (FuncThread):
     def run_cmd(self, params):
 
         def convert_line(line):
-            line = to_str(line)
+            line = to_str(line or '')
             return line.strip() + '\r\n'
 
         try:
-            self.process = run(self.cmd, async=True, stdin=self.stdin, outfile=self.outfile,
+            self.process = run(self.cmd, asynchronous=True, stdin=self.stdin, outfile=self.outfile,
                 env_vars=self.env_vars, inherit_cwd=self.inherit_cwd)
             if self.outfile:
                 if self.outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
                     for line in iter(self.process.stdout.readline, ''):
                         if not (line and line.strip()):
-                            time.sleep(0.1)
+                            time.sleep(0.05)
                             if self.is_killed():
                                 break
                         line = convert_line(line)
@@ -124,7 +136,7 @@ class ShellCommandThread (FuncThread):
                         sys.stdout.flush()
                     for line in iter(self.process.stderr.readline, ''):
                         if not (line and line.strip()):
-                            time.sleep(0.1)
+                            time.sleep(0.05)
                             if self.is_killed():
                                 break
                         line = convert_line(line)
@@ -141,6 +153,8 @@ class ShellCommandThread (FuncThread):
 
     def is_killed(self):
         if not self.process:
+            return True
+        if INFRA_STOPPED:
             return True
         # Note: Do NOT import "psutil" at the root scope, as this leads
         # to problems when importing this file from our test Lambdas in Docker
@@ -170,8 +184,8 @@ class ShellCommandThread (FuncThread):
                 LOGGER.warning('Unable to kill process with pid %s' % parent_pid)
 
 
-# Generic JSON serializable object for simplified subclassing
 class JsonObject(object):
+    """ Generic JSON serializable object for simplified subclassing """
 
     def to_json(self, indent=None):
         return json.dumps(self,
@@ -211,6 +225,83 @@ class JsonObject(object):
         return self.__str__()
 
 
+class CaptureOutput(object):
+    """ A context manager that captures stdout/stderr of the current thread. Use it as follows:
+
+        with CaptureOutput() as c:
+            ...
+        print(c.stdout(), c.stderr())
+    """
+
+    orig_stdout = sys.stdout
+    orig_stderr = sys.stderr
+    orig___stdout = sys.__stdout__
+    orig___stderr = sys.__stderr__
+    CONTEXTS_BY_THREAD = {}
+
+    class LogStreamIO(io.StringIO):
+        def write(self, s):
+            if isinstance(s, str) and hasattr(s, 'decode'):
+                s = s.decode('unicode-escape')
+            return super(CaptureOutput.LogStreamIO, self).write(s)
+
+    def __init__(self):
+        self._stdout = self.LogStreamIO()
+        self._stderr = self.LogStreamIO()
+
+    def __enter__(self):
+        # Note: import werkzeug here (not at top of file) to allow dependency pruning
+        from werkzeug.local import LocalProxy
+
+        ident = self._ident()
+        if ident not in self.CONTEXTS_BY_THREAD:
+            self.CONTEXTS_BY_THREAD[ident] = self
+            self._set(LocalProxy(self._proxy(sys.stdout, 'stdout')),
+                      LocalProxy(self._proxy(sys.stderr, 'stderr')),
+                      LocalProxy(self._proxy(sys.__stdout__, 'stdout')),
+                      LocalProxy(self._proxy(sys.__stderr__, 'stderr')))
+        return self
+
+    def __exit__(self, type, value, traceback):
+        ident = self._ident()
+        removed = self.CONTEXTS_BY_THREAD.pop(ident, None)
+        if not self.CONTEXTS_BY_THREAD:
+            # reset pointers
+            self._set(self.orig_stdout, self.orig_stderr, self.orig___stdout, self.orig___stderr)
+        # get value from streams
+        removed._stdout.flush()
+        removed._stderr.flush()
+        out = removed._stdout.getvalue()
+        err = removed._stderr.getvalue()
+        # close handles
+        removed._stdout.close()
+        removed._stderr.close()
+        removed._stdout = out
+        removed._stderr = err
+
+    def _set(self, out, err, __out, __err):
+        sys.stdout, sys.stderr, sys.__stdout__, sys.__stderr__ = (out, err, __out, __err)
+
+    def _proxy(self, original_stream, type):
+        def proxy():
+            ident = self._ident()
+            ctx = self.CONTEXTS_BY_THREAD.get(ident)
+            if ctx:
+                return ctx._stdout if type == 'stdout' else ctx._stderr
+            return original_stream
+
+        return proxy
+
+    def _ident(self):
+        return threading.currentThread().ident
+
+    def stdout(self):
+        return self._stdout.getvalue() if hasattr(self._stdout, 'getvalue') else self._stdout
+
+    def stderr(self):
+        return self._stderr.getvalue() if hasattr(self._stderr, 'getvalue') else self._stderr
+
+
 # ----------------
 # UTILITY METHODS
 # ----------------
@@ -242,24 +333,50 @@ def in_docker():
     return config.in_docker()
 
 
-def is_port_open(port_or_url):
+def is_port_open(port_or_url, http_path=None, expect_success=True):
     port = port_or_url
-    host = '127.0.0.1'
+    host = 'localhost'
+    protocol = 'http'
     if isinstance(port, six.string_types):
         url = urlparse(port_or_url)
         port = url.port
         host = url.hostname
+        protocol = url.scheme
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
         sock.settimeout(1)
         result = sock.connect_ex((host, port))
-        return result == 0
+        if result != 0:
+            return False
+    if not http_path:
+        return True
+    url = '%s://%s:%s%s' % (protocol, host, port, http_path)
+    try:
+        response = safe_requests.get(url)
+        return not expect_success or response.status_code < 400
+    except Exception:
+        return False
 
 
-def wait_for_port_open(port, retries=10, sleep_time=0.5):
-    for i in range(0, retries):
-        if is_port_open(port):
-            break
-        time.sleep(sleep_time)
+def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sleep_time=0.5):
+    """ Ping the given network port until it becomes available (for a given number of retries).
+        If 'http_path' is set, make a GET request to this path and assert a non-error response. """
+    def check():
+        if not is_port_open(port, http_path=http_path, expect_success=expect_success):
+            raise Exception()
+
+    return retry(check, sleep=sleep_time, retries=retries)
+
+
+def get_free_tcp_port():
+    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    tcp.bind(('', 0))
+    addr, port = tcp.getsockname()
+    tcp.close()
+    return port
+
+
+def get_service_protocol():
+    return 'https' if config.USE_SSL else 'http'
 
 
 def timestamp(time=None, format=TIMESTAMP_FORMAT):
@@ -303,6 +420,18 @@ def merge_recursive(source, destination):
     return destination
 
 
+def merge_dicts(*dicts, **kwargs):
+    """ Merge all dicts in `*dicts` into a single dict, and return the result. If any of the entries
+        in `*dicts` is None, and `default` is specified as keyword argument, then return `default`. """
+    result = {}
+    for d in dicts:
+        if d is None and 'default' in kwargs:
+            return kwargs['default']
+        if d:
+            result.update(d)
+    return result
+
+
 def base64_to_hex(b64_string):
     return binascii.hexlify(base64.b64decode(b64_string))
 
@@ -321,7 +450,12 @@ def mktime(timestamp):
 
 def mkdir(folder):
     if not os.path.exists(folder):
-        os.makedirs(folder)
+        try:
+            os.makedirs(folder)
+        except OSError as err:
+            # Ignore rare 'File exists' race conditions.
+            if err.errno != 17:
+                raise
 
 
 def ensure_readable(file_path, default_perms=None):
@@ -389,6 +523,30 @@ def download(url, path, verify_ssl=True):
         LOGGER.debug('Done downloading %s, response code %s' % (url, r.status_code))
         r.close()
         s.close()
+
+
+def parse_chunked_data(data):
+    """ Parse the body of an HTTP message transmitted with chunked transfer encoding. """
+    data = (data or '').strip()
+    chunks = []
+    while data:
+        length = re.match(r'^([0-9a-zA-Z]+)\r\n.*', data)
+        if not length:
+            break
+        length = length.group(1).lower()
+        length = int(length, 16)
+        data = data.partition('\r\n')[2]
+        chunks.append(data[:length])
+        data = data[length:].strip()
+    return ''.join(chunks)
+
+
+def is_number(s):
+    try:
+        float(s)  # for int, long and float
+        return True
+    except ValueError:
+        return False
 
 
 def short_uid():
@@ -478,6 +636,14 @@ def cleanup_tmp_files():
     del TMP_FILES[:]
 
 
+def new_tmp_file():
+    """ Return a path to a new temporary file. """
+    tmp_file, tmp_path = tempfile.mkstemp()
+    os.close(tmp_file)
+    TMP_FILES.append(tmp_path)
+    return tmp_path
+
+
 def is_ip_address(addr):
     try:
         socket.inet_aton(addr)
@@ -549,6 +715,10 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
     # (Our test Lambdas are importing this file but don't have the module installed)
     from OpenSSL import crypto
 
+    if os.path.exists(target_file):
+        key_file_name = '%s.key' % target_file
+        cert_file_name = '%s.crt' % target_file
+        return target_file, cert_file_name, key_file_name
     if random and target_file:
         if '.' in target_file:
             target_file = target_file.replace('.', '.%s.' % short_uid(), 1)
@@ -611,11 +781,10 @@ def run_cmd_safe(**kwargs):
     return run_safe(run, print_error=False, **kwargs)
 
 
-def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False,
-        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False):
-    # don't use subprocess module as it is not thread-safe
+def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=False,
+        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False, tty=False):
+    # don't use subprocess module inn Python 2 as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
-    # import subprocess
     if six.PY2:
         import subprocess32 as subprocess
     else:
@@ -625,28 +794,54 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False,
     if env_vars:
         env_dict.update(env_vars)
 
+    if tty:
+        asynchronous = True
+        stdin = True
+
     def do_run(cmd):
         try:
             cwd = os.getcwd() if inherit_cwd else None
-            if not async:
+            if not asynchronous:
                 if stdin:
-                    return subprocess.check_output(cmd, shell=True,
-                        stderr=stderr, stdin=subprocess.PIPE, env=env_dict, cwd=cwd)
+                    return subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict,
+                        stdin=subprocess.PIPE, cwd=cwd)
                 output = subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict, cwd=cwd)
                 return output.decode(DEFAULT_ENCODING)
-            # subprocess.Popen is not thread-safe, hence use a mutex here..
-            try:
-                mutex_popen.acquire()
+
+            # subprocess.Popen is not thread-safe, hence use a mutex here.. (TODO: mutex still needed?)
+            with mutex_popen:
                 stdin_arg = subprocess.PIPE if stdin else None
                 stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
+                stderr_arg = stderr
+                if tty:
+                    master_fd, slave_fd = pty.openpty()
+                    stdin_arg = slave_fd
+                    stdout_arg = stderr_arg = None
+
+                # start the actual sub process
                 process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
-                    stderr=stderr, stdout=stdout_arg, env=env_dict, cwd=cwd)
+                    stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, preexec_fn=os.setsid)
+
+                if tty:
+                    # based on: https://stackoverflow.com/questions/41542960
+                    def pipe_streams(*args):
+                        while process.poll() is None:
+                            r, w, e = select.select([sys.stdin, master_fd], [], [])
+                            if sys.stdin in r:
+                                d = os.read(sys.stdin.fileno(), 10240)
+                                os.write(master_fd, d)
+                            elif master_fd in r:
+                                o = os.read(master_fd, 10240)
+                                if o:
+                                    os.write(sys.stdout.fileno(), o)
+
+                    FuncThread(pipe_streams).start()
+
                 return process
-            finally:
-                mutex_popen.release()
         except subprocess.CalledProcessError as e:
             if print_error:
-                print("ERROR: '%s': %s" % (cmd, e.output))
+                print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
+                sys.stdout.flush()
             raise e
 
     if cache_duration_secs <= 0:
@@ -662,7 +857,6 @@ def run(cmd, cache_duration_secs=0, print_error=True, async=False, stdin=False,
             result = f.read()
             f.close()
             return result
-    # print("NO CACHED result available for (timeout %s): %s" % (cache_duration_secs,cmd))
     result = do_run(cmd)
     f = open(cache_file, 'w+')
     f.write(result)

@@ -32,6 +32,8 @@ class ProxyListenerDynamoDB(ProxyListener):
         self._table_ttl_map = {}
 
     def forward_request(self, method, path, data, headers):
+        if path.startswith('/shell'):
+            return True
         data = json.loads(to_str(data))
 
         if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
@@ -87,6 +89,8 @@ class ProxyListenerDynamoDB(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response):
+        if path.startswith('/shell'):
+            return
         data = json.loads(to_str(data))
 
         # update table definitions
@@ -94,9 +98,9 @@ class ProxyListenerDynamoDB(ProxyListener):
             TABLE_DEFINITIONS[data['TableName']] = data
 
         if response._content:
-            # fix the table ARN (DynamoDBLocal hardcodes "ddblocal" as the region)
-            content_replaced = re.sub(r'"TableArn"\s*:\s*"arn:aws:dynamodb:ddblocal:([^"]+)"',
-                r'"TableArn": "arn:aws:dynamodb:%s:\1"' % aws_stack.get_local_region(), to_str(response._content))
+            # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
+            content_replaced = re.sub(r'("TableArn"|"LatestStreamArn")\s*:\s*"arn:aws:dynamodb:ddblocal:([^"]+)"',
+                r'\1: "arn:aws:dynamodb:%s:\2"' % aws_stack.get_local_region(), to_str(response._content))
             if content_replaced != response._content:
                 response._content = content_replaced
                 fix_headers_for_updated_response(response)
@@ -118,14 +122,15 @@ class ProxyListenerDynamoDB(ProxyListener):
         records = [record]
 
         if action == '%s.UpdateItem' % ACTION_PREFIX:
-            updated_item = find_existing_item(data)
-            if not updated_item:
-                return
-            record['eventName'] = 'MODIFY'
-            record['dynamodb']['Keys'] = data['Key']
-            record['dynamodb']['OldImage'] = ProxyListenerDynamoDB.thread_local.existing_item
-            record['dynamodb']['NewImage'] = updated_item
-            record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
+            if response.status_code == 200:
+                updated_item = find_existing_item(data)
+                if not updated_item:
+                    return
+                record['eventName'] = 'MODIFY'
+                record['dynamodb']['Keys'] = data['Key']
+                record['dynamodb']['OldImage'] = self._thread_local('existing_item')
+                record['dynamodb']['NewImage'] = updated_item
+                record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             records = []
             for table_name, requests in data['RequestItems'].items():
@@ -142,15 +147,18 @@ class ProxyListenerDynamoDB(ProxyListener):
                         new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                         records.append(new_record)
         elif action == '%s.PutItem' % ACTION_PREFIX:
-            existing_item = ProxyListenerDynamoDB.thread_local.existing_item
-            ProxyListenerDynamoDB.thread_local.existing_item = None
-            record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
-            keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
-            if isinstance(keys, Response):
-                return keys
-            record['dynamodb']['Keys'] = keys
-            record['dynamodb']['NewImage'] = data['Item']
-            record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
+            if response.status_code == 200:
+                existing_item = self._thread_local('existing_item')
+                ProxyListenerDynamoDB.thread_local.existing_item = None
+                record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
+                keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
+                if isinstance(keys, Response):
+                    return keys
+                record['dynamodb']['Keys'] = keys
+                record['dynamodb']['NewImage'] = data['Item']
+                record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
+                if existing_item:
+                    record['dynamodb']['OldImage'] = existing_item
         elif action == '%s.GetItem' % ACTION_PREFIX:
             if response.status_code == 200:
                 content = json.loads(to_str(response.content))
@@ -164,10 +172,11 @@ class ProxyListenerDynamoDB(ProxyListener):
                     response._content = json.dumps(content)
                     fix_headers_for_updated_response(response)
         elif action == '%s.DeleteItem' % ACTION_PREFIX:
-            old_item = ProxyListenerDynamoDB.thread_local.existing_item
-            record['eventName'] = 'REMOVE'
-            record['dynamodb']['Keys'] = data['Key']
-            record['dynamodb']['OldImage'] = old_item
+            if response.status_code == 200:
+                old_item = self._thread_local('existing_item')
+                record['eventName'] = 'REMOVE'
+                record['dynamodb']['Keys'] = data['Key']
+                record['dynamodb']['OldImage'] = old_item
         elif action == '%s.CreateTable' % ACTION_PREFIX:
             if 'StreamSpecification' in data:
                 create_dynamodb_stream(data)
@@ -191,6 +200,12 @@ class ProxyListenerDynamoDB(ProxyListener):
                 records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
             forward_to_lambda(records)
             forward_to_ddb_stream(records)
+
+    def _thread_local(self, name):
+        try:
+            return getattr(ProxyListenerDynamoDB.thread_local, name)
+        except AttributeError:
+            return None
 
 
 # instantiate listener

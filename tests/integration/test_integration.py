@@ -11,7 +11,6 @@ from localstack.utils.common import load_file, short_uid, clone, to_bytes, to_st
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
-from localstack.utils.cloudwatch import cloudwatch_util
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
@@ -20,6 +19,7 @@ TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
 TEST_TABLE_NAME = 'test_stream_table'
 TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
 TEST_LAMBDA_NAME_STREAM = 'test_lambda_stream'
+TEST_LAMBDA_NAME_QUEUE = 'test_lambda_queue'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_TOPIC_NAME = 'test_topic'
@@ -70,14 +70,58 @@ def test_firehose_s3():
     testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
 
-def test_kinesis_lambda_sns_ddb_streams():
+def test_firehose_kinesis_to_s3():
+    kinesis = aws_stack.connect_to_service('kinesis')
+    s3_resource = aws_stack.connect_to_resource('s3')
+    firehose = aws_stack.connect_to_service('firehose')
 
+    aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
+
+    s3_prefix = '/testdata'
+    test_data = '{"test": "firehose_data_%s"}' % short_uid()
+
+    # create Firehose stream
+    stream = firehose.create_delivery_stream(
+        DeliveryStreamType='KinesisStreamAsSource',
+        KinesisStreamSourceConfiguration={
+            'RoleARN': aws_stack.iam_resource_arn('firehose'),
+            'KinesisStreamARN': aws_stack.kinesis_stream_arn(TEST_STREAM_NAME)
+        },
+        DeliveryStreamName=TEST_FIREHOSE_NAME,
+        S3DestinationConfiguration={
+            'RoleARN': aws_stack.iam_resource_arn('firehose'),
+            'BucketARN': aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
+            'Prefix': s3_prefix
+        }
+    )
+    assert stream
+    assert TEST_FIREHOSE_NAME in firehose.list_delivery_streams()['DeliveryStreamNames']
+
+    # create target S3 bucket
+    s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
+
+    # put records
+    kinesis.put_record(
+        Data=to_bytes(test_data),
+        PartitionKey='testId',
+        StreamName=TEST_STREAM_NAME
+    )
+
+    time.sleep(3)
+
+    # check records in target bucket
+    all_objects = testutil.list_all_s3_objects()
+    testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+
+
+def test_kinesis_lambda_sns_ddb_sqs_streams():
     ddb_lease_table_suffix = '-kclapp'
     dynamodb = aws_stack.connect_to_resource('dynamodb')
     dynamodb_service = aws_stack.connect_to_service('dynamodb')
     dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
     kinesis = aws_stack.connect_to_service('kinesis')
     sns = aws_stack.connect_to_service('sns')
+    sqs = aws_stack.connect_to_service('sqs')
 
     LOGGER.info('Creating test streams...')
     run_safe(lambda: dynamodb_service.delete_table(
@@ -121,6 +165,11 @@ def test_kinesis_lambda_sns_ddb_streams():
         StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)['StreamDescription']['StreamARN']
     testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_STREAM,
         zip_file=zip_file, event_source_arn=kinesis_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
+
+    # deploy test lambda connected to SQS queue
+    sqs_queue_info = testutil.create_sqs_queue(TEST_LAMBDA_NAME_QUEUE)
+    testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_QUEUE,
+        zip_file=zip_file, event_source_arn=sqs_queue_info['QueueArn'], runtime=LAMBDA_RUNTIME_PYTHON27)
 
     # set number of items to update/put to table
     num_events_ddb = 15
@@ -187,15 +236,21 @@ def test_kinesis_lambda_sns_ddb_streams():
         shard_id='shardId-000000000000', count=10)
     assert len(latest) == 10
 
+    # send messages to SQS queue
+    num_events_sqs = 4
+    for i in range(num_events_sqs):
+        sqs.send_message(QueueUrl=sqs_queue_info['QueueUrl'], MessageBody=str(i))
+
     LOGGER.info('Waiting some time before finishing test.')
     time.sleep(2)
 
-    num_events = num_events_ddb + num_events_kinesis + num_events_sns
+    num_events_lambda = num_events_ddb + num_events_sns + num_events_sqs
+    num_events = num_events_lambda + num_events_kinesis
 
     def check_events():
         if len(EVENTS) != num_events:
-            LOGGER.warning(('DynamoDB and Kinesis updates retrieved ' +
-                '(actual/expected): %s/%s') % (len(EVENTS), num_events))
+            LOGGER.warning(('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s') %
+                (len(EVENTS), num_events))
         assert len(EVENTS) == num_events
         event_items = [json.loads(base64.b64decode(e['data'])) for e in EVENTS]
         inserts = [e for e in event_items if e.get('__action_type') == 'INSERT']
@@ -209,12 +264,10 @@ def test_kinesis_lambda_sns_ddb_streams():
     # make sure the we have the right amount of INSERT/MODIFY event types
 
     # check cloudwatch notifications
-    stats1 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM)
-    assert len(stats1['Datapoints']) == 2 + num_events_sns
-    stats2 = get_lambda_metrics(TEST_LAMBDA_NAME_STREAM, 'Errors')
-    assert len(stats2['Datapoints']) == 1
-    stats3 = get_lambda_metrics(TEST_LAMBDA_NAME_DDB)
-    assert len(stats3['Datapoints']) == num_events_ddb
+    num_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM)
+    assert num_invocations == 2 + num_events_lambda
+    num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
+    assert num_error_invocations == 1
 
 
 def test_kinesis_lambda_forward_chain():
@@ -254,8 +307,14 @@ def get_event_source_arn(stream_name):
     return kinesis.describe_stream(StreamName=stream_name)['StreamDescription']['StreamARN']
 
 
-def get_lambda_metrics(func_name, metric='Invocations'):
-    return cloudwatch_util.get_metric_statistics(
+def get_lambda_invocations_count(lambda_name, metric=None):
+    return get_lambda_metrics(lambda_name, metric)['Datapoints'][-1]['Sum']
+
+
+def get_lambda_metrics(func_name, metric=None):
+    metric = metric or 'Invocations'
+    cloudwatch = aws_stack.connect_to_service('cloudwatch')
+    return cloudwatch.get_metric_statistics(
         Namespace='AWS/Lambda',
         MetricName=metric,
         Dimensions=[{'Name': 'FunctionName', 'Value': func_name}],

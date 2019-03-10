@@ -9,6 +9,7 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import org.apache.commons.io.IOUtils;
 
 import com.amazonaws.services.kinesis.model.Record;
@@ -33,6 +34,7 @@ public class LocalTestUtil {
 		// write class files into jar stream
 		addClassToJar(clazz, jarStream);
 		addClassToJar(Record.class, jarStream);
+		addClassToJar(SQSEvent.class, jarStream);
 		jarStream.close();
 		// write jar into zip stream
 		ZipEntry zipEntry = new ZipEntry("LambdaCode.jar");

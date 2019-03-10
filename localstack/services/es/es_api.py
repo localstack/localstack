@@ -191,7 +191,7 @@ def delete_domain(domain_name):
     return jsonify(result)
 
 
-@app.route('%s/tags/' % API_PREFIX, methods=['GET', 'POST'])
+@app.route('%s/tags' % API_PREFIX, methods=['GET', 'POST'])
 def add_list_tags():
     if request.method == 'GET' and request.args.get('arn'):
         response = {

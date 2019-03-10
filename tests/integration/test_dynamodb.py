@@ -9,6 +9,7 @@ from localstack.utils.common import json_safe
 TEST_DDB_TABLE_NAME = 'test-ddb-table-1'
 TEST_DDB_TABLE_NAME_2 = 'test-ddb-table-2'
 TEST_DDB_TABLE_NAME_3 = 'test-ddb-table-3'
+TEST_DDB_TABLE_NAME_4 = 'test-ddb-table-4'
 PARTITION_KEY = 'id'
 
 
@@ -132,3 +133,18 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         }))
         assert response.status_code == 200
         assert json.loads(response._content)['Tags'] == []  # Empty list returned
+
+    def test_region_replacement(self):
+        dynamodb = aws_stack.connect_to_resource('dynamodb')
+        testutil.create_dynamodb_table(
+            TEST_DDB_TABLE_NAME_4,
+            partition_key=PARTITION_KEY,
+            stream_view_type='NEW_AND_OLD_IMAGES'
+        )
+
+        table = dynamodb.Table(TEST_DDB_TABLE_NAME_4)
+
+        expected_arn_prefix = 'arn:aws:dynamodb:' + aws_stack.get_local_region()
+
+        assert table.table_arn.startswith(expected_arn_prefix)
+        assert table.latest_stream_arn.startswith(expected_arn_prefix)

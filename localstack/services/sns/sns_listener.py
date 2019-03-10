@@ -1,3 +1,4 @@
+import ast
 import json
 import logging
 import requests
@@ -20,6 +21,12 @@ LOGGER = logging.getLogger(__name__)
 class ProxyListenerSNS(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
+
+        # check region
+        try:
+            aws_stack.check_valid_region(headers)
+        except Exception as e:
+            return make_error(message=str(e), code=400)
 
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
@@ -54,11 +61,13 @@ class ProxyListenerSNS(ProxyListener):
                 if 'SubscriptionArn' not in req_data:
                     return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
                 do_unsubscribe(req_data.get('SubscriptionArn')[0])
+            elif req_action == 'DeleteTopic':
+                do_delete_topic(topic_arn)
 
             elif req_action == 'Publish':
                 message = req_data['Message'][0]
                 sqs_client = aws_stack.connect_to_service('sqs')
-                for subscriber in SNS_SUBSCRIPTIONS[topic_arn]:
+                for subscriber in SNS_SUBSCRIPTIONS.get(topic_arn, []):
                     filter_policy = json.loads(subscriber.get('FilterPolicy', '{}'))
                     message_attributes = get_message_attributes(req_data)
                     if check_filter_policy(filter_policy, message_attributes):
@@ -75,7 +84,8 @@ class ProxyListenerSNS(ProxyListener):
                             try:
                                 sqs_client.send_message(
                                     QueueUrl=queue_url,
-                                    MessageBody=create_sns_message_body(subscriber, req_data)
+                                    MessageBody=create_sns_message_body(subscriber, req_data),
+                                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
                                 )
                             except Exception as exc:
                                 return make_error(message=str(exc), code=400)
@@ -124,6 +134,11 @@ UPDATE_SNS = ProxyListenerSNS()
 def do_create_topic(topic_arn):
     if topic_arn not in SNS_SUBSCRIPTIONS:
         SNS_SUBSCRIPTIONS[topic_arn] = []
+
+
+def do_delete_topic(topic_arn):
+    if topic_arn in SNS_SUBSCRIPTIONS:
+        del SNS_SUBSCRIPTIONS[topic_arn]
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn):
@@ -219,6 +234,23 @@ def create_sns_message_body(subscriber, req_data):
     return json.dumps(data)
 
 
+def create_sqs_message_attributes(subscriber, attributes):
+    if subscriber.get('RawMessageDelivery') not in ('true', True):
+        return {}
+
+    message_attributes = {}
+    for key, value in attributes.items():
+        attribute = {}
+        attribute['DataType'] = value['Type']
+        if value['Type'] == 'Binary':
+            attribute['BinaryValue'] = value['Value']
+        else:
+            attribute['StringValue'] = value['Value']
+        message_attributes[key] = attribute
+
+    return message_attributes
+
+
 def get_message_attributes(req_data):
     attributes = {}
     x = 1
@@ -242,49 +274,69 @@ def get_message_attributes(req_data):
     return attributes
 
 
-def evaluate_numeric_condition(conditions, attribute):
+def is_number(x):
+    try:
+        float(x)
+        return True
+    except ValueError:
+        return False
+
+
+def evaluate_numeric_condition(conditions, value):
+    if not is_number(value):
+        return False
+
     for i in range(0, len(conditions), 2):
         operator = conditions[i]
         operand = conditions[i + 1]
 
         if operator == '=':
-            if attribute != operand:
+            if value != operand:
                 return False
         elif operator == '>':
-            if attribute <= operand:
+            if value <= operand:
                 return False
         elif operator == '<':
-            if attribute >= operand:
+            if value >= operand:
                 return False
         elif operator == '>=':
-            if attribute < operand:
+            if value < operand:
                 return False
         elif operator == '<=':
-            if attribute > operand:
+            if value > operand:
                 return False
 
     return True
+
+
+def evaluate_condition(value, condition):
+    if type(condition) is not dict:
+        return value == condition
+    elif condition.get('anything-but'):
+        return value not in condition.get('anything-but')
+    elif condition.get('prefix'):
+        prefix = condition.get('prefix')
+        return value.startswith(prefix)
+    elif condition.get('numeric'):
+        return evaluate_numeric_condition(condition.get('numeric'), value)
+
+    return False
 
 
 def evaluate_filter_policy_conditions(conditions, attribute):
     if type(conditions) is not list:
         conditions = [conditions]
 
-    for condition in conditions:
-        if type(condition) is not dict:
-            if attribute['Value'] == condition:
-                return True
-        elif condition.get('anything-but'):
-            if attribute['Value'] not in condition.get('anything-but'):
-                return True
-        elif condition.get('prefix'):
-            prefix = condition.get('prefix')
-            if attribute['Value'].startswith(prefix):
-                return True
-        elif condition.get('numeric'):
-            if attribute['Type'] == 'Number':
-                if evaluate_numeric_condition(condition.get('numeric'), attribute['Value']):
+    if attribute['Type'] == 'String.Array':
+        values = ast.literal_eval(attribute['Value'])
+        for value in values:
+            for condition in conditions:
+                if evaluate_condition(value, condition):
                     return True
+    else:
+        for condition in conditions:
+            if evaluate_condition(attribute['Value'], condition):
+                return True
 
     return False
 

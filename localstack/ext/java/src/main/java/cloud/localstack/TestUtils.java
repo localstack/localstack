@@ -21,11 +21,22 @@ import com.amazonaws.services.sns.AmazonSNSAsync;
 import com.amazonaws.services.sns.AmazonSNSAsyncClientBuilder;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.*;
-
+import com.amazonaws.services.secretsmanager.AWSSecretsManager;
+import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.channels.FileChannel;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 @SuppressWarnings("all")
 public class TestUtils {
@@ -106,6 +117,20 @@ public class TestUtils {
         return builder.build();
     }
 
+    public static AmazonS3 getClientS3SSL() {
+        AmazonS3ClientBuilder builder = AmazonS3ClientBuilder.standard().
+                withEndpointConfiguration(getEndpointConfigurationS3SSL()).
+                withCredentials(getCredentialsProvider());
+        builder.setPathStyleAccessEnabled(true);
+        return builder.build();
+    }
+
+    public static AWSSecretsManager getClientSecretsManager() {
+        return AWSSecretsManagerClientBuilder.standard().
+                withEndpointConfiguration(getEndpointConfigurationSecretsManager()).
+                withCredentials(getCredentialsProvider()).build();
+    }
+
     public static AmazonKinesis getClientKinesis() {
         return AmazonKinesisClientBuilder.standard().
                 withEndpointConfiguration(getEndpointConfigurationKinesis()).
@@ -147,6 +172,14 @@ public class TestUtils {
 
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationSNS() {
         return getEndpointConfiguration(Localstack.getEndpointSNS());
+    }
+
+    protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationS3SSL() {
+        return getEndpointConfiguration(Localstack.getEndpointS3(true));
+    }
+
+    protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationSecretsManager() {
+        return getEndpointConfiguration(Localstack.getEndpointSecretsmanager());
     }
 
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfiguration(String endpointURL) {
@@ -191,4 +224,38 @@ public class TestUtils {
         System.setProperty("com.amazonaws.sdk.disableCertChecking", "true");
     }
 
+    public static void copyFolder(Path src, Path dest) throws IOException {
+        try(Stream<Path> stream = Files.walk(src)) {
+            stream.forEach(source -> copy(source, dest.resolve(src.relativize(source))));
+        }
+    }
+
+    private static String[] excludedDirectories = {".github", ".git", ".idea", ".venv", "target", "node_modules"};
+
+    public static void copy(Path source, Path dest) {
+        try {
+            CopyOption[] options = new CopyOption[] {StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING};
+            if (Files.exists(dest)) {
+                if(Files.isDirectory(dest)
+                        || Arrays.stream(excludedDirectories)
+                            .anyMatch( excluded -> source.toAbsolutePath().toString().contains(excluded))) {
+                    // continue without copying
+                    return;
+                }
+                try(FileChannel sourceFile = FileChannel.open(source)) {
+                    try (FileChannel destFile = FileChannel.open(dest)) {
+                        if (!Files.getLastModifiedTime(source).equals(Files.getLastModifiedTime(dest))
+                                || sourceFile.size() != destFile.size()
+                        ) {
+                            Files.copy(source, dest, options);
+                        }
+                    }
+                }
+            } else {
+                Files.copy(source, dest, options);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+    }
 }

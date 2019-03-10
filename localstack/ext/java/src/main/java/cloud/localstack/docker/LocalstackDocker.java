@@ -73,15 +73,15 @@ public class LocalstackDocker {
             LOG.info("Waiting for localstack container to be ready...");
             localStackContainer.waitForLogToken(READY_TOKEN);
         } catch (Exception t) {
-            if (this.localStackContainer != null) {
-                this.stop();
-            }
+            this.stop();
             throw new LocalstackDockerException("Could not start the localstack docker container.", t);
         }
     }
 
     public void stop() {
-        localStackContainer.stop();
+        if (this.localStackContainer != null) {
+            localStackContainer.stop();
+        }
         locked = false;
     }
 
@@ -169,6 +169,10 @@ public class LocalstackDocker {
 
     public String getEndpointSSM() {
         return endpointForService(ServiceName.SSM);
+    }
+    
+    public String getEndpointSecretsmanager() {
+        return endpointForService(ServiceName.SECRETSMANAGER);
     }
 
     public String endpointForService(String serviceName) {

@@ -27,7 +27,7 @@ def test_sqs_queue_names():
     sqs_client = aws_stack.connect_to_service('sqs')
     queue_name = '%s.fifo' % short_uid()
     # make sure we can create *.fifo queues
-    queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+    queue_url = sqs_client.create_queue(QueueName=queue_name, Attributes={'FifoQueue': 'true'})['QueueUrl']
     sqs_client.delete_queue(QueueUrl=queue_url)
 
 

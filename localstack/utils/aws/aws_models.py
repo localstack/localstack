@@ -289,6 +289,8 @@ class EventSource(Component):
                 inst.table = table
             else:
                 inst = DynamoDB(obj)
+        elif obj.startswith('arn:aws:sqs:'):
+            inst = SqsQueue(obj)
         elif type:
             for o in EventSource.filter_type(pool, type):
                 if o.name() == obj:
