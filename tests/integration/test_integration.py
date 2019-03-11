@@ -8,7 +8,8 @@ import unittest
 from datetime import datetime, timedelta
 from nose.tools import assert_raises
 from localstack.utils import testutil
-from localstack.utils.common import load_file, short_uid, clone, to_bytes, to_str, run_safe, retry
+from localstack.utils.common import (
+    load_file, short_uid, clone, to_bytes, to_str, run_safe, retry, profiled)
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
@@ -115,6 +116,7 @@ class IntegrationTest(unittest.TestCase):
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
+    @profiled()
     def test_kinesis_lambda_sns_ddb_sqs_streams(self):
         ddb_lease_table_suffix = '-kclapp'
         dynamodb = aws_stack.connect_to_resource('dynamodb')

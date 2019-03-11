@@ -25,6 +25,7 @@ import six
 import shutil
 import requests
 from io import BytesIO
+from functools import wraps
 from contextlib import closing
 from datetime import datetime
 from six.moves.urllib.parse import urlparse
@@ -126,22 +127,16 @@ class ShellCommandThread(FuncThread):
             if self.outfile:
                 if self.outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
-                    for line in iter(self.process.stdout.readline, ''):
-                        if not (line and line.strip()):
-                            time.sleep(0.05)
-                            if self.is_killed():
+                    streams = ((self.process.stdout, sys.stdout), (self.process.stderr, sys.stderr))
+                    for instream, outstream in streams:
+                        for line in iter(instream.readline, None):
+                            if line is None:
                                 break
-                        line = convert_line(line)
-                        sys.stdout.write(line)
-                        sys.stdout.flush()
-                    for line in iter(self.process.stderr.readline, ''):
-                        if not (line and line.strip()):
-                            time.sleep(0.05)
-                            if self.is_killed():
+                            if not (line and line.strip()) and self.is_killed():
                                 break
-                        line = convert_line(line)
-                        sys.stderr.write(line)
-                        sys.stderr.flush()
+                            line = convert_line(line)
+                            outstream.write(line)
+                            outstream.flush()
                 self.process.wait()
             else:
                 self.process.communicate()
@@ -481,7 +476,11 @@ def chmod_r(path, mode):
 
 
 def rm_rf(path):
-    """Recursively removes file/directory"""
+    """
+    Recursively removes a file or directory
+    """
+    if not path or not os.path.exists(path):
+        return
     # Make sure all files are writeable and dirs executable to remove
     chmod_r(path, 0o777)
     if os.path.isfile(path):
@@ -912,6 +911,41 @@ def make_http_request(url, data=None, headers=None, method='GET'):
         method = requests.__dict__[method.lower()]
 
     return method(url, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False)
+
+
+class SafeStringIO(io.StringIO):
+    """ Safe StringIO implementation that doesn't fail if str is passed in Python 2. """
+    def write(self, obj):
+        if six.PY2 and isinstance(obj, str):
+            obj = obj.decode('unicode-escape')
+        return super(SafeStringIO, self).write(obj)
+
+
+def profiled(lines=30):
+    """ Function decorator that profiles code execution. """
+    def wrapper(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            import cProfile
+            import pstats
+            pr = cProfile.Profile()
+            pr.enable()
+            try:
+                return f(*args, **kwargs)
+            finally:
+                pr.disable()
+                sio = SafeStringIO()
+                sortby = u'cumulative'
+                ps = pstats.Stats(pr, stream=sio).sort_stats(sortby)
+                ps.print_stats(lines * 4)
+                result = sio.getvalue().split('\n')
+                skipped_lines = ['site-packages', '/usr/lib/python']
+                result = [l for l in result if all([s not in l for s in skipped_lines])]
+                result = result[:lines + 6]
+                result = '\n'.join(result)
+                print(result)
+        return wrapped
+    return wrapper
 
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,

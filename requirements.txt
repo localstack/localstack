@@ -20,6 +20,7 @@ localstack-ext>=0.8.6
 localstack-client==0.8
 moto-ext>=1.3.7.1
 nose>=1.3.7
+pprofile==2.0.2
 psutil==5.4.8
 pympler>=0.6
 pyopenssl==17.5.0
