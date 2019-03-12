@@ -8,7 +8,7 @@ from six import iteritems
 from localstack import config
 from localstack.constants import (REGION_LOCAL, DEFAULT_REGION,
     ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0)
-from localstack.utils.common import run_safe, to_str, is_string, make_http_request, timestamp
+from localstack.utils.common import run_safe, to_str, is_string, make_http_request, timestamp, is_port_open
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -17,7 +17,10 @@ ENV_SECRET_KEY = 'AWS_SECRET_ACCESS_KEY'
 ENV_SESSION_TOKEN = 'AWS_SESSION_TOKEN'
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
+
+# cache local region
+LOCAL_REGION = None
 
 # Use this field if you want to provide a custom boto3 session.
 # This field takes priority over CREATE_NEW_SESSION_PER_BOTO3_CONNECTION
@@ -114,9 +117,12 @@ def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=N
 
 
 def get_boto3_credentials():
+    global INITIAL_BOTO3_SESSION
     if CUSTOM_BOTO3_SESSION:
         return CUSTOM_BOTO3_SESSION.get_credentials()
-    return boto3.session.Session().get_credentials()
+    if not INITIAL_BOTO3_SESSION:
+        INITIAL_BOTO3_SESSION = boto3.session.Session()
+    return INITIAL_BOTO3_SESSION.get_credentials()
 
 
 def get_boto3_session():
@@ -129,14 +135,27 @@ def get_boto3_session():
 
 
 def get_local_region():
-    session = boto3.session.Session()
-    return session.region_name or DEFAULT_REGION
+    global LOCAL_REGION
+    if LOCAL_REGION is None:
+        session = boto3.session.Session()
+        LOCAL_REGION = session.region_name or ''
+    return LOCAL_REGION or DEFAULT_REGION
 
 
 def get_local_service_url(service_name):
     if service_name == 's3api':
         service_name = 's3'
     return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
+
+
+def is_service_enabled(service_name):
+    """ Return whether the service with the given name (e.g., "lambda") is available. """
+    try:
+        url = get_local_service_url(service_name)
+        assert url
+        return is_port_open(url, http_path='/', expect_success=False)
+    except Exception:
+        return False
 
 
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None, config=None):
@@ -236,6 +255,10 @@ def get_account_id(account_id=None, env=None):
 
 
 def role_arn(role_name, account_id=None, env=None):
+    if not role_name:
+        return role_name
+    if role_name.startswith('arn:aws:iam::'):
+        return role_name
     env = get_environment(env)
     account_id = get_account_id(account_id, env=env)
     return 'arn:aws:iam::%s:role/%s' % (account_id, role_name)
@@ -272,6 +295,31 @@ def lambda_function_arn(function_name, account_id=None):
         raise Exception('Lambda function name should not contain a colon ":"')
     account_id = get_account_id(account_id)
     return pattern.replace('.*', '%s') % (get_local_region(), account_id, function_name)
+
+
+def lambda_function_name(name_or_arn):
+    if ':' not in name_or_arn:
+        return name_or_arn
+    parts = name_or_arn.split(':')
+    # name is index #6 in pattern: arn:aws:lambda:.*:.*:function:.*
+    return parts[6]
+
+
+def state_machine_arn(name, account_id=None):
+    if ':' in name:
+        return name
+    account_id = get_account_id(account_id)
+    pattern = 'arn:aws:states:%s:%s:stateMachine:%s'
+    return pattern % (get_local_region(), account_id, name)
+
+
+def fix_arn(arn):
+    """ Function that attempts to "canonicalize" the given ARN. This includes converting
+        resource names to ARNs, replacing incorrect regions, account IDs, etc. """
+    if arn.startswith('arn:aws:lambda'):
+        return lambda_function_arn(lambda_function_name(arn))
+    LOG.warning('Unable to fix/canonicalize ARN: %s' % arn)
+    return arn
 
 
 def cognito_user_pool_arn(user_pool_id, account_id=None):
@@ -395,7 +443,7 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
     if not description:
         description = 'Test description for API "%s"' % name
 
-    LOGGER.info('Creating API resources under API Gateway "%s".' % name)
+    LOG.info('Creating API resources under API Gateway "%s".' % name)
     api = client.create_rest_api(name=name, description=description)
     # list resources
     api_id = api['id']

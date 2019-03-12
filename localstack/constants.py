@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.8.8'
+VERSION = '0.9.0'
 
 # default AWS region
 if 'DEFAULT_REGION' not in os.environ:
@@ -24,13 +24,15 @@ DEFAULT_PORT_SNS_BACKEND = 4562
 DEFAULT_PORT_SQS_BACKEND = 4561
 DEFAULT_PORT_ELASTICSEARCH_BACKEND = 4560
 DEFAULT_PORT_CLOUDFORMATION_BACKEND = 4559
+DEFAULT_PORT_STEPFUNCTIONS_BACKEND = 4558
+DEFAULT_PORT_IAM_BACKEND = 4557
 
 DEFAULT_PORT_WEB_UI = 8080
 
 LOCALHOST = 'localhost'
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = '0.1.15'
+LOCALSTACK_MAVEN_VERSION = '0.1.18'
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
@@ -70,9 +72,13 @@ LAMBDA_TEST_ROLE = 'arn:aws:iam::%s:role/lambda-test-role' % TEST_AWS_ACCOUNT_ID
 
 # installation constants
 ELASTICSEARCH_JAR_URL = 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.0.zip'
+# See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
+ELASTICSEARCH_PLUGIN_LIST = ['analysis-icu', 'ingest-attachment', 'ingest-user-agent', 'analysis-kuromoji',
+ 'mapper-murmur3', 'mapper-size', 'analysis-phonetic', 'analysis-smartcn', 'analysis-stempel', 'analysis-ukrainian']
 DYNAMODB_JAR_URL = 'https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip'
 ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.14.2.jar'
 STS_JAR_URL = 'http://central.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
+STEPFUNCTIONS_ZIP_URL = 'https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip'
 
 # API endpoint for analytics events
 API_ENDPOINT = 'https://api.localstack.cloud/v1'

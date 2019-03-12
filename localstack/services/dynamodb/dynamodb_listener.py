@@ -32,6 +32,8 @@ class ProxyListenerDynamoDB(ProxyListener):
         self._table_ttl_map = {}
 
     def forward_request(self, method, path, data, headers):
+        if path.startswith('/shell'):
+            return True
         data = json.loads(to_str(data))
 
         if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
@@ -87,6 +89,8 @@ class ProxyListenerDynamoDB(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response):
+        if path.startswith('/shell'):
+            return
         data = json.loads(to_str(data))
 
         # update table definitions
@@ -118,14 +122,15 @@ class ProxyListenerDynamoDB(ProxyListener):
         records = [record]
 
         if action == '%s.UpdateItem' % ACTION_PREFIX:
-            updated_item = find_existing_item(data)
-            if not updated_item:
-                return
-            record['eventName'] = 'MODIFY'
-            record['dynamodb']['Keys'] = data['Key']
-            record['dynamodb']['OldImage'] = self._thread_local('existing_item')
-            record['dynamodb']['NewImage'] = updated_item
-            record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
+            if response.status_code == 200:
+                updated_item = find_existing_item(data)
+                if not updated_item:
+                    return
+                record['eventName'] = 'MODIFY'
+                record['dynamodb']['Keys'] = data['Key']
+                record['dynamodb']['OldImage'] = self._thread_local('existing_item')
+                record['dynamodb']['NewImage'] = updated_item
+                record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             records = []
             for table_name, requests in data['RequestItems'].items():
@@ -142,15 +147,18 @@ class ProxyListenerDynamoDB(ProxyListener):
                         new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                         records.append(new_record)
         elif action == '%s.PutItem' % ACTION_PREFIX:
-            existing_item = self._thread_local('existing_item')
-            ProxyListenerDynamoDB.thread_local.existing_item = None
-            record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
-            keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
-            if isinstance(keys, Response):
-                return keys
-            record['dynamodb']['Keys'] = keys
-            record['dynamodb']['NewImage'] = data['Item']
-            record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
+            if response.status_code == 200:
+                existing_item = self._thread_local('existing_item')
+                ProxyListenerDynamoDB.thread_local.existing_item = None
+                record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
+                keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
+                if isinstance(keys, Response):
+                    return keys
+                record['dynamodb']['Keys'] = keys
+                record['dynamodb']['NewImage'] = data['Item']
+                record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
+                if existing_item:
+                    record['dynamodb']['OldImage'] = existing_item
         elif action == '%s.GetItem' % ACTION_PREFIX:
             if response.status_code == 200:
                 content = json.loads(to_str(response.content))
@@ -164,10 +172,11 @@ class ProxyListenerDynamoDB(ProxyListener):
                     response._content = json.dumps(content)
                     fix_headers_for_updated_response(response)
         elif action == '%s.DeleteItem' % ACTION_PREFIX:
-            old_item = self._thread_local('existing_item')
-            record['eventName'] = 'REMOVE'
-            record['dynamodb']['Keys'] = data['Key']
-            record['dynamodb']['OldImage'] = old_item
+            if response.status_code == 200:
+                old_item = self._thread_local('existing_item')
+                record['eventName'] = 'REMOVE'
+                record['dynamodb']['Keys'] = data['Key']
+                record['dynamodb']['OldImage'] = old_item
         elif action == '%s.CreateTable' % ACTION_PREFIX:
             if 'StreamSpecification' in data:
                 create_dynamodb_stream(data)

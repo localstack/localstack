@@ -9,6 +9,7 @@ from six import iteritems
 from boto3 import Session
 from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI
 
+
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
 
@@ -20,6 +21,9 @@ HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 
 # expose services on a specific host externally
 HOSTNAME_EXTERNAL = os.environ.get('HOSTNAME_EXTERNAL', '').strip() or LOCALHOST
+
+# expose SQS on a specific port externally
+SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
@@ -69,11 +73,18 @@ if not LAMBDA_EXECUTOR:
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME',
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LICENSE_KEY', 'DEBUG',
-    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI']
+    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB']
+
+
 for key, value in iteritems(DEFAULT_SERVICE_PORTS):
-    backend_override_var = '%s_BACKEND' % key.upper().replace('-', '_')
-    if os.environ.get(backend_override_var):
-        CONFIG_ENV_VARS.append(backend_override_var)
+    clean_key = key.upper().replace('-', '_')
+    CONFIG_ENV_VARS += [
+        clean_key + '_BACKEND',
+        clean_key + '_PORT_EXTERNAL',
+    ]
+
+
+CONFIG_ENV_VARS += ['LOCALSTACK_' + v for v in CONFIG_ENV_VARS]
 
 
 def in_docker():
@@ -138,28 +149,28 @@ def parse_service_ports():
         parts = re.split(r'[:=]', service_port)
         service = parts[0]
         result[service] = int(parts[-1]) if len(parts) > 1 else DEFAULT_SERVICE_PORTS.get(service)
-    # Fix Elasticsearch port - we have 'es' (AWS ES API) and 'elasticsearch' (actual Elasticsearch API)
-    if result.get('es') and not result.get('elasticsearch'):
-        result['elasticsearch'] = DEFAULT_SERVICE_PORTS.get('elasticsearch')
     return result
 
 
-def populate_configs():
+def populate_configs(service_ports=None):
     global SERVICE_PORTS
 
-    SERVICE_PORTS = parse_service_ports()
+    SERVICE_PORTS = service_ports or parse_service_ports()
+    globs = globals()
 
     # define service ports and URLs as environment variables
     for key, value in iteritems(DEFAULT_SERVICE_PORTS):
         key_upper = key.upper().replace('-', '_')
 
         # define PORT_* variables with actual service ports as per configuration
-        exec('global PORT_%s; PORT_%s = SERVICE_PORTS.get("%s", 0)' % (key_upper, key_upper, key))
+        port_key = 'PORT_%s' % key_upper
+        globs[port_key] = SERVICE_PORTS.get(key, 0)
         url = 'http%s://%s:%s' % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, SERVICE_PORTS.get(key, 0))
         # define TEST_*_URL variables with mock service endpoints
-        exec('global TEST_%s_URL; TEST_%s_URL = "%s"' % (key_upper, key_upper, url))
+        url_key = 'TEST_%s_URL' % key_upper
+        globs[url_key] = url
         # expose HOST_*_URL variables as environment variables
-        os.environ['TEST_%s_URL' % key_upper] = url
+        os.environ[url_key] = url
 
     # expose LOCALSTACK_HOSTNAME as env. variable
     os.environ['LOCALSTACK_HOSTNAME'] = LOCALSTACK_HOSTNAME

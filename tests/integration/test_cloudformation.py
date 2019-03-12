@@ -117,8 +117,8 @@ class CloudFormationTest(unittest.TestCase):
             self.fail('Should raise ValidationError')
         except (ClientError, ResponseParserError) as err:
             if isinstance(err, ClientError):
-                assert err.response['ResponseMetadata']['HTTPStatusCode'] == 400
-                assert err.response['Error']['Message'] == 'Template Validation Error'
+                self.assertEqual(err.response['ResponseMetadata']['HTTPStatusCode'], 400)
+                self.assertEqual(err.response['Error']['Message'], 'Template Validation Error')
 
     def test_list_stack_resources_returns_queue_urls(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
@@ -137,8 +137,9 @@ class CloudFormationTest(unittest.TestCase):
 
         stack_queues = [r for r in list_stack_summaries if r['ResourceType'] == 'AWS::SQS::Queue']
         for resource in stack_queues:
-            assert resource['PhysicalResourceId'] in queue_urls
+            url = aws_stack.get_sqs_queue_url(resource['PhysicalResourceId'])
+            self.assertIn(url, queue_urls)
 
         stack_topics = [r for r in list_stack_summaries if r['ResourceType'] == 'AWS::SNS::Topic']
         for resource in stack_topics:
-            assert resource['PhysicalResourceId'] in topic_arns
+            self.assertIn(resource['PhysicalResourceId'], topic_arns)

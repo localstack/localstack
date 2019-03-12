@@ -9,13 +9,18 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Singleton class that automatically downloads, installs, starts,
@@ -40,6 +45,10 @@ public class Localstack {
     private static final String TMP_INSTALL_DIR = System.getProperty("java.io.tmpdir") +
             File.separator + "localstack_install_dir";
 
+    private static final String CURRENT_DEV_DIR;
+
+    private static boolean DEV_ENVIRONMENT;
+
     private static final String ADDITIONAL_PATH = "/usr/local/bin/";
 
     private static final String LOCALSTACK_REPO_URL = "https://github.com/localstack/localstack";
@@ -48,14 +57,70 @@ public class Localstack {
 
     private static final String ENV_LOCALSTACK_PROCESS_GROUP = "ENV_LOCALSTACK_PROCESS_GROUP";
 
+    static {
+        // Determine if we are running in a development environment for localstack
+        Path currentDirectory = Paths.get(".").toAbsolutePath().getParent();
+        Path localstackDir = Optional.ofNullable(currentDirectory)
+                .map(Path::getParent).map(Path::getParent).map(Path::getParent).orElse(null);
+        if( currentDirectory != null && localstackDir != null
+                && currentDirectory.getFileName().toString().equals("java")
+                && localstackDir.getFileName().toString().equals("localstack")) {
+            CURRENT_DEV_DIR = localstackDir.toString();
+            Path gitConfig = Paths.get(CURRENT_DEV_DIR, ".git", "config");
+
+            if(Files.exists(gitConfig)) {
+                setIsDevEnvironment(gitConfig);
+            } else {
+                DEV_ENVIRONMENT = false;
+            }
+        } else {
+            CURRENT_DEV_DIR = currentDirectory.toAbsolutePath().toString();
+            DEV_ENVIRONMENT = false;
+        }
+    }
+
     private Localstack() {
 
+    }
+
+    public static boolean isDevEnvironment() {
+        return DEV_ENVIRONMENT;
+    }
+
+    private static void setIsDevEnvironment(Path gitConfig) {
+        Pattern remoteOrigin = Pattern.compile("^\\[remote \"origin\"]");
+        Pattern localstackGit = Pattern.compile(".+\\/localstack\\.git$");
+        boolean remoteOriginFound = false;
+        try {
+            try(Stream<String> lines = Files.lines(gitConfig)){
+                for(String line : lines.collect(Collectors.toList())) {
+                    if(remoteOriginFound) {
+                        if(localstackGit.matcher(line).matches()) {
+                            DEV_ENVIRONMENT = true;
+                        } else {
+                            DEV_ENVIRONMENT = false;
+                        }
+                        break;
+                    }
+
+                    if( remoteOrigin.matcher(line).matches() ) {
+                        remoteOriginFound = true;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /* SERVICE ENDPOINTS */
 
     public static String getEndpointS3() {
-        String s3Endpoint = ensureInstallationAndGetEndpoint(ServiceName.S3);
+        return getEndpointS3(false);
+    }
+
+    public static String getEndpointS3(boolean override_SSL) {
+        String s3Endpoint = ensureInstallationAndGetEndpoint(ServiceName.S3, override_SSL);
         /*
          * Use the domain name wildcard *.localhost.atlassian.io which maps to 127.0.0.1
          * We need to do this because S3 SDKs attempt to access a domain <bucket-name>.<service-host-name>
@@ -136,7 +201,15 @@ public class Localstack {
 
     /* UTILITY METHODS */
 
+    /**
+     * Installs localstack into a temporary directory
+     * If DEV_ENVIRONMENT for localstack is detected also copies over any changed files
+     */
     private static void ensureInstallation() {
+        ensureInstallation(false);
+    }
+
+    private static void ensureInstallation(boolean initialSetup) {
         File dir = new File(TMP_INSTALL_DIR);
         File constantsFile = new File(dir, "localstack/constants.py");
         String logMsg = "Installing LocalStack to temporary directory (this may take a while): " + TMP_INSTALL_DIR;
@@ -147,12 +220,27 @@ public class Localstack {
             deleteDirectory(dir);
             exec("git clone " + LOCALSTACK_REPO_URL + " " + TMP_INSTALL_DIR);
         }
+
+        if(DEV_ENVIRONMENT && initialSetup) {
+            // Copy changed files over
+            Path localstackDir = Paths.get(CURRENT_DEV_DIR);
+            Path tempLocalstackDir = Paths.get(TMP_INSTALL_DIR);
+            try {
+                TestUtils.copyFolder(localstackDir, tempLocalstackDir);
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+
+            ensureJavaFilesRefreshedForDev();
+        }
+
         File installationDoneMarker = new File(dir, "localstack/infra/installation.finished.marker");
-        if (!installationDoneMarker.exists()) {
+        if ( (DEV_ENVIRONMENT && initialSetup) || !installationDoneMarker.exists()) {
             if (!messagePrinted) {
                 LOG.info(logMsg);
             }
-            exec("cd \"" + TMP_INSTALL_DIR + "\"; make install");
+            String useSSL = useSSL() ? "USE_SSL=1" : "";
+            exec("cd \"" + TMP_INSTALL_DIR + "\";"+useSSL+" make install");
             /* create marker file */
             try {
                 installationDoneMarker.createNewFile();
@@ -184,8 +272,12 @@ public class Localstack {
     }
 
     private static String ensureInstallationAndGetEndpoint(String service) {
+        return ensureInstallationAndGetEndpoint(service,false);
+    }
+
+    private static String ensureInstallationAndGetEndpoint(String service, boolean override_SSL) {
         ensureInstallation();
-        return getEndpoint(service);
+        return getEndpoint(service, override_SSL);
     }
 
     public static boolean useSSL() {
@@ -197,8 +289,11 @@ public class Localstack {
         return value != null && !Arrays.asList("false", "0", "").contains(value.trim());
     }
 
-    private static String getEndpoint(String service) {
-        String useSSL = useSSL() ? "USE_SSL=1" : "";
+    /**
+     * Gets the endpoint for the service, uses SSL if override_SSL or environmental config USE_SSL is set
+     */
+    private static String getEndpoint(String service, boolean override_SSL) {
+        String useSSL = override_SSL || useSSL() ? "USE_SSL=1" : "";
         String cmd = "cd '" + TMP_INSTALL_DIR + "'; "
                 + ". .venv/bin/activate; "
                 + useSSL + " python -c 'import localstack_client.config; "
@@ -251,7 +346,8 @@ public class Localstack {
     protected void setupInfrastructure() {
         synchronized (INFRA_STARTED) {
             // make sure everything is installed locally
-            ensureInstallation();
+            ensureInstallation(true);
+
             // make sure we avoid any errors related to locally generated SSL certificates
             TestUtils.disableSslCertChecking();
 
@@ -280,6 +376,30 @@ public class Localstack {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    /**
+     * Compiles the localstack-utils-fat and localstack-utils-tests jars and copies them to the localstack tmp install
+     * directory.
+     */
+    private static void ensureJavaFilesRefreshedForDev() {
+        String[] cmdPrepareJava = new String[]{"make", "-C", CURRENT_DEV_DIR
+                , "prepare-java-tests-infra-jars"};
+        exec(true, cmdPrepareJava);
+        Path currentInfraPath = Paths.get(CURRENT_DEV_DIR, "localstack", "infra");
+        Path tmpInfraPath = Paths.get(TMP_INSTALL_DIR, "localstack", "infra");
+        Path localstackUtilsFatJar = Paths.get(currentInfraPath.toString(), "localstack-utils-fat.jar");
+        Path localstackUtilsTestsJar = Paths.get(currentInfraPath.toString(), "localstack-utils-tests.jar");
+
+        if(Files.exists(localstackUtilsFatJar)) {
+            Path tempInstallDirFatJar = Paths.get(tmpInfraPath.toString(), "localstack-utils-fat.jar");
+            TestUtils.copy(localstackUtilsFatJar, tempInstallDirFatJar);
+        }
+
+        if(Files.exists(localstackUtilsTestsJar)) {
+            Path tempInstallDirTestsJar = Paths.get(tmpInfraPath.toString(), "localstack-utils-tests.jar");
+            TestUtils.copy(localstackUtilsTestsJar, tempInstallDirTestsJar);
         }
     }
 

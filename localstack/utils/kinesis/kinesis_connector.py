@@ -9,15 +9,16 @@ import logging
 from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
-from localstack.constants import (LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, REGION_LOCAL, DEFAULT_REGION)
 from localstack import config
 from localstack.config import HOSTNAME, USE_SSL
-from localstack.utils.common import run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid, chmod_r
-from localstack.utils.kinesis import kclipy_helper
-from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
-from localstack.utils.common import ShellCommandThread, FuncThread
+from localstack.constants import LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, REGION_LOCAL, DEFAULT_REGION
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import (
+    run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid,
+    chmod_r, rm_rf, ShellCommandThread, FuncThread)
+from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.aws.aws_models import KinesisStream
+from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
 
 
 EVENTS_FILE_PATTERN = os.path.join(tempfile.gettempdir(), 'kclipy.*.fifo')
@@ -204,7 +205,7 @@ class OutputReaderThread(FuncThread):
                 if line:  # empty if at EOF
                     yield line.replace('\n', '')
                 else:
-                    time.sleep(0.1)
+                    time.sleep(0.5)
 
     def stop(self, quiet=True):
         self._stop_event.set()
@@ -407,7 +408,7 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     if not processor_script:
         processor_script = generate_processor_script(events_file, log_file=log_file)
 
-    run('rm -f %s' % events_file)
+    rm_rf(events_file)
     # start event reader thread (this process)
     ready_mutex = threading.Semaphore(0)
     thread = EventFileReaderThread(events_file, listener_func, ready_mutex=ready_mutex, fh_d_stream=fh_d_stream)

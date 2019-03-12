@@ -1,5 +1,5 @@
-import random
 import json
+import random
 from requests.models import Response
 from localstack import config
 from localstack.utils.common import to_str

@@ -26,8 +26,8 @@ RUN { \
     && chmod +x /usr/local/bin/docker-java-home
 ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
 ENV PATH $PATH:/usr/lib/jvm/java-1.8-openjdk/jre/bin:/usr/lib/jvm/java-1.8-openjdk/bin
-ENV JAVA_VERSION 8u171
-ENV JAVA_ALPINE_VERSION 8.181.13-r0
+ENV JAVA_VERSION 8u191
+ENV JAVA_ALPINE_VERSION 8.191.12-r0
 RUN set -x && apk add --no-cache openjdk8="$JAVA_ALPINE_VERSION" \
     && [ "$JAVA_HOME" = "$(docker-java-home)" ]
 
@@ -51,8 +51,11 @@ ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/jdk-8/setting
 RUN mkdir -p /opt/code/localstack
 WORKDIR /opt/code/localstack/
 
+# https://github.com/pires/docker-elasticsearch/issues/56
+ENV ES_TMPDIR  /tmp
+# require --batch option that ingest-attachment plugin require additional permissions
+
 # init environment and cache some dependencies
-ADD requirements.txt .
 RUN mkdir -p /opt/code/localstack/localstack/infra && \
     wget -O /tmp/localstack.es.zip \
         https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.0.zip && \
@@ -60,10 +63,22 @@ RUN mkdir -p /opt/code/localstack/localstack/infra && \
         https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.14.5.jar && \
     (cd localstack/infra/ && unzip -q /tmp/localstack.es.zip && \
         mv elasticsearch* elasticsearch && rm /tmp/localstack.es.zip) && \
+    (cd localstack/infra/elasticsearch/ && \
+        bin/elasticsearch-plugin install analysis-icu && \
+        bin/elasticsearch-plugin install ingest-attachment --batch && \
+        bin/elasticsearch-plugin install ingest-user-agent && \
+        bin/elasticsearch-plugin install analysis-kuromoji && \
+        bin/elasticsearch-plugin install mapper-murmur3 && \
+        bin/elasticsearch-plugin install mapper-size && \
+        bin/elasticsearch-plugin install analysis-phonetic && \
+        bin/elasticsearch-plugin install analysis-smartcn && \
+        bin/elasticsearch-plugin install analysis-stempel && \
+        bin/elasticsearch-plugin install analysis-ukrainian) && \
     mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
     wget -O /tmp/localstack.ddb.zip \
         https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip && \
     (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip)
+ADD requirements.txt .
 RUN (pip install --upgrade pip) && \
     (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
     (virtualenv .testvenv && source .testvenv/bin/activate && \

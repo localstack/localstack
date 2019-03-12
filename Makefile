@@ -12,7 +12,7 @@ usage:             ## Show this help
 install:           ## Install dependencies in virtualenv
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
-		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt) && \
+		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) install -r requirements.txt) && \
 		$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py testlibs)
 
 install-web:       ## Install npm dependencies for dashboard Web UI
@@ -86,13 +86,17 @@ test:              ## Run automated tests
 		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' .)
 
 test-java:         ## Run tests for Java/JUnit compatibility
-	cd localstack/ext/java; mvn -q test && USE_SSL=1 mvn -q test
+	cd localstack/ext/java; USE_SSL=1 mvn -q test
 
 prepare-java-tests-if-changed:
 	@(! (git log -n 1 --no-merges --raw | grep localstack/ext/java/)) || (\
 		make build-maven && cp $$(ls localstack/ext/java/target/localstack-utils*fat.jar) localstack/infra/localstack-utils-fat.jar && \
 			cp $$(ls localstack/ext/java/target/localstack-utils*tests.jar) localstack/infra/localstack-utils-tests.jar && \
 			(cd localstack/ext/java; mvn -q clean))
+
+prepare-java-tests-infra-jars:
+	make build-maven && cp $$(ls localstack/ext/java/target/localstack-utils*fat.jar) localstack/infra/localstack-utils-fat.jar && \
+			cp $$(ls localstack/ext/java/target/localstack-utils*tests.jar) localstack/infra/localstack-utils-tests.jar
 
 test-java-if-changed:
 	@(! (git log -n 1 --no-merges --raw | grep localstack/ext/java/)) || make test-java

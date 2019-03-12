@@ -1,5 +1,6 @@
 import json
 import base64
+import logging
 import boto3.dynamodb.types
 from io import BytesIO
 from localstack.utils.aws import aws_stack
@@ -9,6 +10,10 @@ TEST_BUCKET_NAME = 'test_bucket'
 KINESIS_STREAM_NAME = 'test_stream_1'
 MSG_BODY_RAISE_ERROR_FLAG = 'raise_error'
 MSG_BODY_MESSAGE_TARGET = 'message_target'
+
+logging.basicConfig(level=logging.INFO)
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
 
 
 # Subclass of boto's TypeDeserializer for DynamoDB
@@ -24,6 +29,10 @@ class TypeDeserializer(boto3.dynamodb.types.TypeDeserializer):
 def handler(event, context):
     """ Generic event forwarder Lambda. """
 
+    # print test messages (to test CloudWatch Logs integration)
+    LOGGER.info('Lambda log message - logging module')
+    print('Lambda log message - print function')
+
     if 'httpMethod' in event:
         # looks like this is a call from an AWS_PROXY API Gateway
         try:
@@ -31,6 +40,7 @@ def handler(event, context):
         except Exception:
             body = {}
         body['pathParameters'] = event.get('pathParameters')
+        body['requestContext'] = event.get('requestContext')
         body['queryStringParameters'] = event.get('queryStringParameters')
         body['httpMethod'] = event.get('httpMethod')
         return {
