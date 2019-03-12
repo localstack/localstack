@@ -2,6 +2,8 @@ package cloud.localstack;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
@@ -19,11 +21,18 @@ import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.CreateQueueResult;
+import com.amazonaws.services.sqs.model.Message;
+import com.amazonaws.services.sqs.model.ReceiveMessageRequest;
+import com.amazonaws.services.sqs.model.ReceiveMessageResult;
+import com.amazonaws.services.sqs.model.SendMessageRequest;
+import com.amazonaws.services.sqs.model.SendMessageResult;
 
 import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.TestUtils;
+import cloud.localstack.util.PromiseAsyncHandler;
 
 /**
  * Test integration of SQS/JMS messaging with LocalStack
@@ -75,6 +84,35 @@ public class SQSMessagingTest {
         MessageConsumer consumer = session.createConsumer(queue);
         TextMessage received = (TextMessage) consumer.receive();
         Assert.assertNotNull(received);
+    }
+
+
+
+    @Test
+    public void testSendMessageAsync() throws Exception {
+        final String SAMPLE_QUEUE_NAME = "SAMPLE_QUEUE_NAME";
+
+        final AmazonSQSAsync clientSQSAsync = TestUtils.getClientSQSAsync();
+
+        final PromiseAsyncHandler<CreateQueueRequest, CreateQueueResult> createQueuePromise = new PromiseAsyncHandler<>();
+
+        clientSQSAsync.createQueueAsync(SAMPLE_QUEUE_NAME, createQueuePromise);
+
+        final CompletableFuture<String> queueUrl = createQueuePromise.thenCompose(createQueueResult -> {
+            final PromiseAsyncHandler<SendMessageRequest, SendMessageResult> sendMessagePromise = new PromiseAsyncHandler<>();
+            clientSQSAsync.sendMessageAsync(createQueueResult.getQueueUrl(), "message", sendMessagePromise);
+            return sendMessagePromise.thenApply(e -> createQueueResult.getQueueUrl());
+        });
+
+        final String queue = queueUrl.get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(queue);
+
+        final PromiseAsyncHandler<ReceiveMessageRequest, ReceiveMessageResult> receiveMessagePromise = new PromiseAsyncHandler<>();
+        clientSQSAsync.receiveMessageAsync(queue, receiveMessagePromise);
+
+        final CompletableFuture<Message> receivedMessage = receiveMessagePromise.thenApply(e -> e.getMessages().get(0));
+
+        Assert.assertEquals(receivedMessage.get(5, TimeUnit.SECONDS).getBody(), "message");
     }
 
 }

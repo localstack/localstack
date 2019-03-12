@@ -5,15 +5,30 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.client.builder.ExecutorFactory;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesis;
+import com.amazonaws.services.kinesis.AmazonKinesisAsync;
+import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesisClientBuilder;
 import com.amazonaws.services.lambda.AWSLambda;
+import com.amazonaws.services.lambda.AWSLambdaAsync;
+import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.secretsmanager.AWSSecretsManager;
 import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
+import com.amazonaws.services.sns.AmazonSNS;
+import com.amazonaws.services.sns.AmazonSNSAsync;
+import com.amazonaws.services.sns.AmazonSNSAsyncClientBuilder;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
 
 import java.io.IOException;
@@ -27,7 +42,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import cloud.localstack.docker.LocalstackDocker;
 
 @SuppressWarnings("all")
 public class TestUtils {
@@ -43,16 +61,61 @@ public class TestUtils {
         setEnv(newEnv);
     }
 
+
     public static AmazonSQS getClientSQS() {
         return AmazonSQSClientBuilder.standard().
                 withEndpointConfiguration(getEndpointConfigurationSQS()).
                 withCredentials(getCredentialsProvider()).build();
     }
 
+
+    public static AmazonSQSAsync getClientSQSAsync() {
+        return getClientSQSAsync(null);
+    }
+
+    public static AmazonSQSAsync getClientSQSAsync(final ExecutorFactory executorFactory) {
+        return AmazonSQSAsyncClientBuilder.standard()
+                .withEndpointConfiguration(getEndpointConfigurationSQS())
+                .withExecutorFactory(executorFactory)
+                .withCredentials(getCredentialsProvider())
+                .build();
+    }
+
+    public static AmazonSNS getClientSNS() {
+        return AmazonSNSClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointSNS))
+                .withCredentials(getCredentialsProvider())
+                .build();
+    }
+
+    public static AmazonSNSAsync getClientSNSAsync() {
+        return getClientSNSAsync(null);
+    }
+
+    public static AmazonSNSAsync getClientSNSAsync(final ExecutorFactory executorFactory) {
+        return AmazonSNSAsyncClientBuilder.standard()
+                .withEndpointConfiguration(getEndpointConfigurationSNS())
+                .withExecutorFactory(executorFactory)
+                .withCredentials(getCredentialsProvider())
+                .build();
+    }
+
     public static AWSLambda getClientLambda() {
         return AWSLambdaClientBuilder.standard().
                 withEndpointConfiguration(getEndpointConfigurationLambda()).
                 withCredentials(getCredentialsProvider()).build();
+    }
+
+    public static AWSLambdaAsync getClientLambdaAsync() {
+        return getClientLambdaAsync(null);
+    }
+
+    public static AWSLambdaAsync getClientLambdaAsync(final ExecutorFactory executorFactory) {
+        return AWSLambdaAsyncClientBuilder.standard()
+                .withEndpointConfiguration(getEndpointConfigurationLambda())
+                .withExecutorFactory(executorFactory)
+                .withCredentials(getCredentialsProvider())
+                .build();
     }
 
     public static AmazonS3 getClientS3() {
@@ -83,8 +146,41 @@ public class TestUtils {
                 withCredentials(getCredentialsProvider()).build();
     }
 
+
+    public static AmazonKinesisAsync getClientKinesisAsync() {
+        return getClientKinesisAsync(null);
+    }
+
+    public static AmazonKinesisAsync getClientKinesisAsync(final ExecutorFactory executorFactory) {
+        return AmazonKinesisAsyncClientBuilder.standard()
+                .withEndpointConfiguration(getEndpointConfigurationKinesis())
+                .withExecutorFactory(executorFactory)
+                .withCredentials(getCredentialsProvider())
+                .build();
+    }
+
+    public static AmazonDynamoDB getClientDynamoDb() {
+        return AmazonDynamoDBClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointDynamoDB))
+                .withCredentials(getCredentialsProvider())
+                .build();
+    }
+
+    public static AmazonDynamoDBAsync getClientDynamoDBAsync() {
+        return AmazonDynamoDBAsyncClientBuilder.standard()
+                .withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointDynamoDB))
+                .withCredentials(getCredentialsProvider())
+                .build();
+    }
+
+
     public static AWSCredentialsProvider getCredentialsProvider() {
         return new AWSStaticCredentialsProvider(TEST_CREDENTIALS);
+    }
+
+    protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationSNS() {
+        return getEndpointConfiguration(Localstack.getEndpointSNS());
+
     }
 
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationLambda() {
@@ -113,6 +209,10 @@ public class TestUtils {
 
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfiguration(String endpointURL) {
         return new AwsClientBuilder.EndpointConfiguration(endpointURL, DEFAULT_REGION);
+    }
+
+    private static AwsClientBuilder.EndpointConfiguration createEndpointConfiguration(Supplier<String> supplier) {
+        return getEndpointConfiguration(supplier.get());
     }
 
     protected static void setEnv(Map<String, String> newEnv) {
