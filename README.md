@@ -145,8 +145,9 @@ services:
       - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
-  ```    
+```
 
+To facilitate interoperability, configuration variables can be prefixed with `LOCALSTACK_` in docker. For instance, setting `LOCALSTACK_SERVICES=s3` is equivalent to `SERVICES=s3`.
 
 ## Configurations
 

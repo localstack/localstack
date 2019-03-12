@@ -74,13 +74,17 @@ if not LAMBDA_EXECUTOR:
 CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME',
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LICENSE_KEY', 'DEBUG',
     'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB']
+
+
 for key, value in iteritems(DEFAULT_SERVICE_PORTS):
-    backend_override_var = '%s_BACKEND' % key.upper().replace('-', '_')
-    if os.environ.get(backend_override_var):
-        CONFIG_ENV_VARS.append(backend_override_var)
-    port_external_override_var = '%s_PORT_EXTERNAL' % key.upper().replace('-', '_')
-    if os.environ.get(port_external_override_var):
-        CONFIG_ENV_VARS.append(port_external_override_var)
+    clean_key = key.upper().replace('-', '_')
+    CONFIG_ENV_VARS += [
+        clean_key + '_BACKEND',
+        clean_key + '_PORT_EXTERNAL',
+    ]
+
+
+CONFIG_ENV_VARS += ['LOCALSTACK_' + v for v in CONFIG_ENV_VARS]
 
 
 def in_docker():
