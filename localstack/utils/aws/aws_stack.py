@@ -19,6 +19,9 @@ ENV_SESSION_TOKEN = 'AWS_SESSION_TOKEN'
 # set up logger
 LOG = logging.getLogger(__name__)
 
+# cache local region
+LOCAL_REGION = None
+
 # Use this field if you want to provide a custom boto3 session.
 # This field takes priority over CREATE_NEW_SESSION_PER_BOTO3_CONNECTION
 CUSTOM_BOTO3_SESSION = None
@@ -114,9 +117,12 @@ def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=N
 
 
 def get_boto3_credentials():
+    global INITIAL_BOTO3_SESSION
     if CUSTOM_BOTO3_SESSION:
         return CUSTOM_BOTO3_SESSION.get_credentials()
-    return boto3.session.Session().get_credentials()
+    if not INITIAL_BOTO3_SESSION:
+        INITIAL_BOTO3_SESSION = boto3.session.Session()
+    return INITIAL_BOTO3_SESSION.get_credentials()
 
 
 def get_boto3_session():
@@ -129,8 +135,11 @@ def get_boto3_session():
 
 
 def get_local_region():
-    session = boto3.session.Session()
-    return session.region_name or DEFAULT_REGION
+    global LOCAL_REGION
+    if LOCAL_REGION is None:
+        session = boto3.session.Session()
+        LOCAL_REGION = session.region_name or ''
+    return LOCAL_REGION or DEFAULT_REGION
 
 
 def get_local_service_url(service_name):

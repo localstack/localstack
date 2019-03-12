@@ -45,7 +45,7 @@ class ProxyListenerSQS(ProxyListener):
                 queue_name = queue_url[queue_url.rindex('/') + 1:]
                 message_body = req_data.get('MessageBody', [None])[0]
                 if lambda_api.process_sqs_message(message_body, queue_name):
-                    # If an lambda was listening, do not add the message to the queue
+                    # If a Lambda was listening, do not add the message to the queue
                     new_response = Response()
                     new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
                         message_attr_hash=md5(data),
@@ -53,6 +53,7 @@ class ProxyListenerSQS(ProxyListener):
                         message_id=str(uuid.uuid4()),
                     )
                     new_response.status_code = 200
+                    # TODO: Is it the correct behavior to return here - why not forward the message?
                     return new_response
 
         return True

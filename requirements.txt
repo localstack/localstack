@@ -30,3 +30,4 @@ requests-aws4auth==0.9
 six>=1.12.0
 subprocess32-ext==3.2.8.2
 xmltodict>=0.11.0
+yappi==1.0

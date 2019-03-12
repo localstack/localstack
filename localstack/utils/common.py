@@ -25,13 +25,14 @@ import six
 import shutil
 import requests
 from io import BytesIO
+from functools import wraps
 from contextlib import closing
 from datetime import datetime
 from six.moves.urllib.parse import urlparse
 from six.moves import cStringIO as StringIO
 from six import with_metaclass
 from multiprocessing.dummy import Pool
-from localstack.constants import ENV_DEV
+from localstack.constants import ENV_DEV, LOCALSTACK_ROOT_FOLDER
 from localstack.config import DEFAULT_ENCODING
 from localstack import config
 
@@ -126,22 +127,16 @@ class ShellCommandThread(FuncThread):
             if self.outfile:
                 if self.outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
-                    for line in iter(self.process.stdout.readline, ''):
-                        if not (line and line.strip()):
-                            time.sleep(0.05)
-                            if self.is_killed():
+                    streams = ((self.process.stdout, sys.stdout), (self.process.stderr, sys.stderr))
+                    for instream, outstream in streams:
+                        for line in iter(instream.readline, None):
+                            if line is None:
                                 break
-                        line = convert_line(line)
-                        sys.stdout.write(line)
-                        sys.stdout.flush()
-                    for line in iter(self.process.stderr.readline, ''):
-                        if not (line and line.strip()):
-                            time.sleep(0.05)
-                            if self.is_killed():
+                            if not (line and line.strip()) and self.is_killed():
                                 break
-                        line = convert_line(line)
-                        sys.stderr.write(line)
-                        sys.stderr.flush()
+                            line = convert_line(line)
+                            outstream.write(line)
+                            outstream.flush()
                 self.process.wait()
             else:
                 self.process.communicate()
@@ -481,7 +476,11 @@ def chmod_r(path, mode):
 
 
 def rm_rf(path):
-    """Recursively removes file/directory"""
+    """
+    Recursively removes a file or directory
+    """
+    if not path or not os.path.exists(path):
+        return
     # Make sure all files are writeable and dirs executable to remove
     chmod_r(path, 0o777)
     if os.path.isfile(path):
@@ -912,6 +911,48 @@ def make_http_request(url, data=None, headers=None, method='GET'):
         method = requests.__dict__[method.lower()]
 
     return method(url, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False)
+
+
+class SafeStringIO(io.StringIO):
+    """ Safe StringIO implementation that doesn't fail if str is passed in Python 2. """
+    def write(self, obj):
+        if six.PY2 and isinstance(obj, str):
+            obj = obj.decode('unicode-escape')
+        return super(SafeStringIO, self).write(obj)
+
+
+def profiled(lines=50):
+    """ Function decorator that profiles code execution. """
+    skipped_lines = ['site-packages', 'lib/python']
+    skipped_lines = []
+
+    def wrapper(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            import yappi
+            yappi.start()
+            try:
+                return f(*args, **kwargs)
+            finally:
+                result = list(yappi.get_func_stats())
+                yappi.stop()
+                yappi.clear_stats()
+                result = [l for l in result if all([s not in l.full_name for s in skipped_lines])]
+                entries = result[:lines]
+                prefix = LOCALSTACK_ROOT_FOLDER
+                result = []
+                result.append('ncall\tttot\ttsub\ttavg\tname')
+
+                def c(num):
+                    return str(num)[:7]
+
+                for e in entries:
+                    name = e.full_name.replace(prefix, '')
+                    result.append('%s\t%s\t%s\t%s\t%s' % (c(e.ncall), c(e.ttot), c(e.tsub), c(e.tavg), name))
+                result = '\n'.join(result)
+                print(result)
+        return wrapped
+    return wrapper
 
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,
