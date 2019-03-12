@@ -32,7 +32,7 @@ from six.moves.urllib.parse import urlparse
 from six.moves import cStringIO as StringIO
 from six import with_metaclass
 from multiprocessing.dummy import Pool
-from localstack.constants import ENV_DEV
+from localstack.constants import ENV_DEV, LOCALSTACK_ROOT_FOLDER
 from localstack.config import DEFAULT_ENCODING
 from localstack import config
 
@@ -921,27 +921,34 @@ class SafeStringIO(io.StringIO):
         return super(SafeStringIO, self).write(obj)
 
 
-def profiled(lines=30):
+def profiled(lines=50):
     """ Function decorator that profiles code execution. """
+    skipped_lines = ['site-packages', 'lib/python']
+    skipped_lines = []
+
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            import cProfile
-            import pstats
-            pr = cProfile.Profile()
-            pr.enable()
+            import yappi
+            yappi.start()
             try:
                 return f(*args, **kwargs)
             finally:
-                pr.disable()
-                sio = SafeStringIO()
-                sortby = u'cumulative'
-                ps = pstats.Stats(pr, stream=sio).sort_stats(sortby)
-                ps.print_stats(lines * 4)
-                result = sio.getvalue().split('\n')
-                skipped_lines = ['site-packages', '/usr/lib/python']
-                result = [l for l in result if all([s not in l for s in skipped_lines])]
-                result = result[:lines + 6]
+                result = list(yappi.get_func_stats())
+                yappi.stop()
+                yappi.clear_stats()
+                result = [l for l in result if all([s not in l.full_name for s in skipped_lines])]
+                entries = result[:lines]
+                prefix = LOCALSTACK_ROOT_FOLDER
+                result = []
+                result.append('ncall\tttot\ttsub\ttavg\tname')
+
+                def c(num):
+                    return str(num)[:7]
+
+                for e in entries:
+                    name = e.full_name.replace(prefix, '')
+                    result.append('%s\t%s\t%s\t%s\t%s' % (c(e.ncall), c(e.ttot), c(e.tsub), c(e.tavg), name))
                 result = '\n'.join(result)
                 print(result)
         return wrapped
