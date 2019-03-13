@@ -205,7 +205,7 @@ class OutputReaderThread(FuncThread):
                 if line:  # empty if at EOF
                     yield line.replace('\n', '')
                 else:
-                    time.sleep(0.5)
+                    time.sleep(0.1)
 
     def stop(self, quiet=True):
         self._stop_event.set()

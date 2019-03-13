@@ -75,15 +75,11 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LICENSE_KEY', 'DEBUG',
     'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB']
 
-
 for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
-    CONFIG_ENV_VARS += [
-        clean_key + '_BACKEND',
-        clean_key + '_PORT_EXTERNAL',
-    ]
+    CONFIG_ENV_VARS += [clean_key + '_BACKEND', clean_key + '_PORT_EXTERNAL']
 
-
+# create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
 CONFIG_ENV_VARS += ['LOCALSTACK_' + v for v in CONFIG_ENV_VARS]
 
 
