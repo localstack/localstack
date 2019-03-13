@@ -246,6 +246,26 @@ class S3ListenerTest (unittest.TestCase):
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
+    def test_bucket_exists(self):
+        # Test setup
+        bucket = 'test-bucket'
+
+        s3_client = aws_stack.connect_to_service('s3')
+        s3_client.create_bucket(Bucket=bucket)
+        s3_client.put_bucket_cors(
+            Bucket=bucket,
+            CORSConfiguration={
+                'CORSRules': [{'AllowedMethods': ['GET', 'POST', 'PUT', 'DELETE'],
+                               'AllowedOrigins': ['localhost']}]
+            }
+        )
+
+        response = s3_client.get_bucket_cors(Bucket=bucket)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        # Cleanup
+        s3_client.delete_bucket(Bucket=bucket)
+
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)

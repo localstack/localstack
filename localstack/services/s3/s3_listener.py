@@ -9,6 +9,7 @@ import collections
 import six
 from six import iteritems
 from six.moves.urllib import parse as urlparse
+from botocore.client import ClientError
 import botocore.config
 from requests.models import Response, Request
 from localstack import config
@@ -179,9 +180,14 @@ def send_notifications(method, bucket_name, object_path):
 
 def get_cors(bucket_name):
     response = Response()
+
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        response.status_code = code
+        return response
+
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
-        # TODO: check if bucket exists, otherwise return 404-like error
         cors = {
             'CORSConfiguration': []
         }
@@ -192,19 +198,29 @@ def get_cors(bucket_name):
 
 
 def set_cors(bucket_name, cors):
-    # TODO: check if bucket exists, otherwise return 404-like error
+    response = Response()
+
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        response.status_code = code
+        return response
+
     if not isinstance(cors, dict):
         cors = xmltodict.parse(cors)
     BUCKET_CORS[bucket_name] = cors
-    response = Response()
     response.status_code = 200
     return response
 
 
 def delete_cors(bucket_name):
-    # TODO: check if bucket exists, otherwise return 404-like error
-    BUCKET_CORS.pop(bucket_name, {})
     response = Response()
+
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        response.status_code = code
+        return response
+
+    BUCKET_CORS.pop(bucket_name, {})
     response.status_code = 200
     return response
 
@@ -285,6 +301,20 @@ def strip_chunk_signatures(data):
             if len(data_new) and data_new[-1] in (10, 13):
                 data_new = data_new[:-1]
     return data_new
+
+
+def bucket_exists(bucket_name):
+    """Tests for the existence of the specified bucket. Returns the error code
+    if the bucket does not exist (200 if the bucket does exist).
+    """
+    s3_client = aws_stack.connect_to_service('s3')
+    try:
+        s3_client.head_bucket(Bucket=bucket_name)
+    except ClientError as err:
+        error_code = err.response.get('Error').get('Code')
+        return False, error_code
+
+    return True, 200
 
 
 def check_content_md5(data, headers):
