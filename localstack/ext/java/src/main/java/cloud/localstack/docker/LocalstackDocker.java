@@ -175,6 +175,8 @@ public class LocalstackDocker {
         return endpointForService(ServiceName.SECRETSMANAGER);
     }
 
+    public String getEndpointStepFunctions() { return endpointForService(ServiceName.STEPFUNCTIONS); }
+
     public String endpointForService(String serviceName) {
         if (serviceToPortMap == null) {
             throw new IllegalStateException("Service to port mapping has not been determined yet.");

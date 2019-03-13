@@ -29,6 +29,8 @@ import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+import com.amazonaws.services.stepfunctions.AWSStepFunctions;
+import com.amazonaws.services.stepfunctions.AWSStepFunctionsClientBuilder;
 
 import cloud.localstack.docker.LocalstackDockerTestRunner;
 
@@ -100,6 +102,12 @@ public class DockerTestUtils {
         return AmazonCloudFormationClientBuilder.standard()
                 .withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointCloudFormation))
                 .withCredentials(getCredentialsProvider()).build();
+    }
+
+    public static AWSStepFunctions getClientStepFunctions() {
+        return AWSStepFunctionsClientBuilder.standard()
+          .withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointStepFunctions))
+          .withCredentials(getCredentialsProvider()).build();
     }
 
     private static AwsClientBuilder.EndpointConfiguration createEndpointConfiguration(Supplier<String> supplier) {

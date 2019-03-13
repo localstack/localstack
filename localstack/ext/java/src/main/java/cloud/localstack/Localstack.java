@@ -199,6 +199,10 @@ public class Localstack {
         return ensureInstallationAndGetEndpoint(ServiceName.SECRETSMANAGER);
     }
 
+    public static String getEndpointStepFunctions() {
+        return ensureInstallationAndGetEndpoint(ServiceName.STEPFUNCTIONS);
+    }
+
     /* UTILITY METHODS */
 
     /**
