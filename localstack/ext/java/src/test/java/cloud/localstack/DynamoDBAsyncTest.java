@@ -30,14 +30,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import cloud.localstack.docker.LocalstackDockerExtension;
-import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import cloud.localstack.util.PromiseAsyncHandler;
 
 /**
  * Test integration of DynamoDB
  */
 @ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(randomizePorts = true)
 public class DynamoDBAsyncTest {
 
     public static final String ID_TENANT_VALUE = "1-CKNP";
