@@ -134,7 +134,6 @@ class LambdaExecutor(object):
         return result, log_output
 
 
-# holds information about an existing container.
 class ContainerInfo:
     """
     Contains basic information about a docker container.
@@ -185,11 +184,13 @@ class LambdaExecutorContainers(LambdaExecutor):
         # if running a Java Lambda, set up classpath arguments
         if runtime == LAMBDA_RUNTIME_JAVA8:
             # copy executor jar into temp directory
-            cp_r(LAMBDA_EXECUTOR_JAR, lambda_cwd)
+            target_file = os.path.join(lambda_cwd, os.path.basename(LAMBDA_EXECUTOR_JAR))
+            if not os.path.exists(target_file):
+                cp_r(LAMBDA_EXECUTOR_JAR, target_file)
             # TODO cleanup once we have custom Java Docker image
             taskdir = '/var/task'
             save_file(os.path.join(lambda_cwd, LAMBDA_EVENT_FILE), event_body)
-            command = ("bash -c 'cd %s; java -cp .:`ls *.jar | tr \"\\n\" \":\"` \"%s\" \"%s\" \"%s\"'" %
+            command = ("bash -c 'cd %s; java -cp \".:`ls *.jar | tr \"\\n\" \":\"`\" \"%s\" \"%s\" \"%s\"'" %
                 (taskdir, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
 
         # determine the command to be executed (implemented by subclasses)
@@ -245,6 +246,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             ' %s'  # container name
             ' %s'  # run cmd
         ) % (copy_command, exec_env_vars, container_info.name, command)
+        LOG.debug('Command for docker-reuse Lambda executor: %s' % cmd)
 
         return cmd
 

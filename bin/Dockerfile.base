@@ -53,7 +53,6 @@ WORKDIR /opt/code/localstack/
 
 # https://github.com/pires/docker-elasticsearch/issues/56
 ENV ES_TMPDIR  /tmp
-# require --batch option that ingest-attachment plugin require additional permissions
 
 # init environment and cache some dependencies
 RUN mkdir -p /opt/code/localstack/localstack/infra && \
@@ -82,8 +81,7 @@ ADD requirements.txt .
 RUN (pip install --upgrade pip) && \
     (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
     (virtualenv .testvenv && source .testvenv/bin/activate && \
-        pip install -q six==1.10.0 && pip install -q -r requirements.txt && \
-        rm -rf .testvenv)
+        pip install -q six==1.10.0 && pip install -q -r requirements.txt && rm -rf .testvenv)
 
 # add files required to run "make install-web"
 ADD Makefile .
