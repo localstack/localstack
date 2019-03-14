@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import time
 import boto3
 import base64
 import logging
@@ -358,15 +359,6 @@ def get_sqs_queue_url(queue_name):
     return response['QueueUrl']
 
 
-def dynamodb_get_item_raw(request):
-    headers = mock_aws_request_headers()
-    headers['X-Amz-Target'] = 'DynamoDB_20120810.GetItem'
-    new_item = make_http_request(url=config.TEST_DYNAMODB_URL,
-        method='POST', data=json.dumps(request), headers=headers)
-    new_item = json.loads(new_item.text)
-    return new_item
-
-
 def mock_aws_request_headers(service='dynamodb'):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == 'kinesis':
@@ -381,6 +373,49 @@ def mock_aws_request_headers(service='dynamodb'):
             'SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234') % (access_key, service)
     }
     return headers
+
+
+def dynamodb_get_item_raw(request):
+    headers = mock_aws_request_headers()
+    headers['X-Amz-Target'] = 'DynamoDB_20120810.GetItem'
+    new_item = make_http_request(url=config.TEST_DYNAMODB_URL,
+        method='POST', data=json.dumps(request), headers=headers)
+    new_item = json.loads(new_item.text)
+    return new_item
+
+
+def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None):
+    """Utility method to create a DynamoDB table"""
+
+    dynamodb = connect_to_service('dynamodb', env=env, client=True)
+    stream_spec = {'StreamEnabled': False}
+    key_schema = [{
+        'AttributeName': partition_key,
+        'KeyType': 'HASH'
+    }]
+    attr_defs = [{
+        'AttributeName': partition_key,
+        'AttributeType': 'S'
+    }]
+    if stream_view_type is not None:
+        stream_spec = {
+            'StreamEnabled': True,
+            'StreamViewType': stream_view_type
+        }
+    table = None
+    try:
+        table = dynamodb.create_table(TableName=table_name, KeySchema=key_schema,
+            AttributeDefinitions=attr_defs, ProvisionedThroughput={
+                'ReadCapacityUnits': 10, 'WriteCapacityUnits': 10
+            },
+            StreamSpecification=stream_spec
+        )
+    except Exception as e:
+        if 'ResourceInUseException' in str(e):
+            # Table already exists -> return table reference
+            return connect_to_resource('dynamodb', env=env).Table(table_name)
+    time.sleep(2)
+    return table
 
 
 def get_apigateway_integration(api_id, method, path, env=None):

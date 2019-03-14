@@ -142,7 +142,7 @@ class IntegrationTest(unittest.TestCase):
         LOGGER.info('Kinesis consumer initialized.')
 
         # create table with stream forwarding config
-        testutil.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY,
+        aws_stack.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY,
             stream_view_type='NEW_AND_OLD_IMAGES')
 
         # list DDB streams and make sure the table stream is there
