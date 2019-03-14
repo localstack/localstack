@@ -68,10 +68,16 @@ if not LAMBDA_EXECUTOR:
     except Exception:
         pass
 
+# Fallback URL to use when a non-existing Lambda is invoked. If this matches
+# `dynamodb://<table_name>`, then the invocation is recorded in the corresponding
+# DynamoDB table. If this matches `http(s)://...`, then the Lambda invocation is
+# forwarded as a POST request to that URL.
+LAMBDA_FALLBACK_URL = os.environ.get('LAMBDA_FALLBACK_URL', '').strip()
+
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
-CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME',
+CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME', 'LAMBDA_FALLBACK_URL',
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LICENSE_KEY', 'DEBUG',
     'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB']
 

@@ -18,7 +18,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
     def test_non_ascii_chars(self):
         dynamodb = aws_stack.connect_to_resource('dynamodb')
 
-        testutil.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME)
 
         # write some items containing non-ASCII characters
@@ -41,7 +41,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         dynamodb = aws_stack.connect_to_resource('dynamodb')
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
 
-        testutil.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
+        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_2, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_2)
 
         # Create a large amount of items
@@ -61,7 +61,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         dynamodb = aws_stack.connect_to_resource('dynamodb')
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
 
-        testutil.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
+        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME_3, partition_key=PARTITION_KEY)
         table = dynamodb.Table(TEST_DDB_TABLE_NAME_3)
 
         # Insert some items to the table
@@ -136,7 +136,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
 
     def test_region_replacement(self):
         dynamodb = aws_stack.connect_to_resource('dynamodb')
-        testutil.create_dynamodb_table(
+        aws_stack.create_dynamodb_table(
             TEST_DDB_TABLE_NAME_4,
             partition_key=PARTITION_KEY,
             stream_view_type='NEW_AND_OLD_IMAGES'

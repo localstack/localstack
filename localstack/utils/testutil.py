@@ -1,6 +1,5 @@
 import os
 import json
-import time
 import glob
 import tempfile
 import requests
@@ -16,40 +15,6 @@ from localstack.utils.aws import aws_stack
 
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
-
-
-def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None):
-    """Utility method to create a DynamoDB table"""
-
-    dynamodb = aws_stack.connect_to_service('dynamodb', env=env, client=True)
-    stream_spec = {'StreamEnabled': False}
-    key_schema = [{
-        'AttributeName': partition_key,
-        'KeyType': 'HASH'
-    }]
-    attr_defs = [{
-        'AttributeName': partition_key,
-        'AttributeType': 'S'
-    }]
-    if stream_view_type is not None:
-        stream_spec = {
-            'StreamEnabled': True,
-            'StreamViewType': stream_view_type
-        }
-    table = None
-    try:
-        table = dynamodb.create_table(TableName=table_name, KeySchema=key_schema,
-            AttributeDefinitions=attr_defs, ProvisionedThroughput={
-                'ReadCapacityUnits': 10, 'WriteCapacityUnits': 10
-            },
-            StreamSpecification=stream_spec
-        )
-    except Exception as e:
-        if 'ResourceInUseException' in str(e):
-            # Table already exists -> return table reference
-            return aws_stack.connect_to_resource('dynamodb', env=env).Table(table_name)
-    time.sleep(2)
-    return table
 
 
 def create_lambda_archive(script, get_content=False, libs=[], runtime=None):

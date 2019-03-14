@@ -4,7 +4,6 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.utils.common import short_uid
 from localstack.utils.aws import aws_stack
-from localstack.utils import testutil
 from .lambdas import lambda_integration
 from .test_integration import TEST_TABLE_NAME, PARTITION_KEY
 
@@ -45,7 +44,7 @@ def test_dynamodb_error_injection():
 
     dynamodb = aws_stack.connect_to_resource('dynamodb')
     # create table with stream forwarding config
-    testutil.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY)
+    aws_stack.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY)
     table = dynamodb.Table(TEST_TABLE_NAME)
 
     # by default, no errors

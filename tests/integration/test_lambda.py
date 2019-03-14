@@ -8,8 +8,11 @@ from localstack import config
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSION
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, load_file, to_str, mkdir, download
+from localstack.utils.common import (
+    short_uid, load_file, to_str, mkdir, download, run_safe, get_free_tcp_port, get_service_protocol)
+from localstack.services.infra import start_proxy
 from localstack.services.awslambda import lambda_api, lambda_executors
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
@@ -62,6 +65,46 @@ class LambdaTestBase(unittest.TestCase):
                 if any(found):
                     continue
             self.assertIn(line, log_messages)
+
+
+class TestLambdaBaseFeatures(unittest.TestCase):
+
+    def test_forward_to_fallback_url_dynamodb(self):
+        db_table = 'lambda-records'
+        ddb_client = aws_stack.connect_to_service('dynamodb')
+
+        def num_items():
+            return len((run_safe(ddb_client.scan, TableName=db_table) or {'Items': []})['Items'])
+
+        items_before = num_items()
+        self.run_forward_to_fallback_url('dynamodb://%s' % db_table)
+        items_after = num_items()
+        self.assertEqual(items_after, items_before + 3)
+
+    def test_forward_to_fallback_url_http(self):
+        class MyUpdateListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                records.append(data)
+
+        records = []
+        local_port = get_free_tcp_port()
+        proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
+
+        items_before = len(records)
+        self.run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
+        items_after = len(records)
+        self.assertEqual(items_after, items_before + 3)
+        proxy.stop()
+
+    def run_forward_to_fallback_url(self, url, num_requests=3):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        config.LAMBDA_FALLBACK_URL = url
+        try:
+            for i in range(num_requests):
+                lambda_client.invoke(FunctionName='non-existing-lambda-%s' % i,
+                    Payload=b'{}', InvocationType='RequestResponse')
+        finally:
+            config.LAMBDA_FALLBACK_URL = ''
 
 
 class TestPythonRuntimes(LambdaTestBase):

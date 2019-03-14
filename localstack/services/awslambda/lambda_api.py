@@ -13,6 +13,7 @@ import traceback
 from io import BytesIO
 from datetime import datetime
 from six.moves import cStringIO as StringIO
+from six.moves.urllib.parse import urlparse
 from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.services import generic_proxy
@@ -32,7 +33,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data, is_number)
+    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -565,6 +566,28 @@ def format_func_details(func_details, version=None, always_add_version=False):
     return result
 
 
+def forward_to_fallback_url(func_arn, data):
+    """ If LAMBDA_FALLBACK_URL is configured, forward the invocation of this non-existing
+        Lambda to the configured URL. """
+    if not config.LAMBDA_FALLBACK_URL:
+        return None
+    if config.LAMBDA_FALLBACK_URL.startswith('dynamodb://'):
+        table_name = urlparse(config.LAMBDA_FALLBACK_URL.replace('dynamodb://', 'http://')).netloc
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        item = {
+            'id': {'S': short_uid()},
+            'timestamp': {'N': str(now_utc())},
+            'payload': {'S': str(data)}
+        }
+        aws_stack.create_dynamodb_table(table_name, partition_key='id')
+        dynamodb.put_item(TableName=table_name, Item=item)
+        return ''
+    if re.match(r'^https?://.+', config.LAMBDA_FALLBACK_URL):
+        response = safe_requests.post(config.LAMBDA_FALLBACK_URL, data)
+        return response.content
+    raise Exception('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
+
+
 # ------------
 # API METHODS
 # ------------
@@ -797,11 +820,6 @@ def invoke_function(function):
     else:
         qualifier = request.args.get('Qualifier')
 
-    if arn not in arn_to_lambda:
-        return error_response('Function does not exist: %s' % arn, 404, error_type='ResourceNotFoundException')
-    if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
-        return error_response('Function does not exist: {0}:{1}'.format(arn, qualifier), 404,
-                              error_type='ResourceNotFoundException')
     data = request.get_data()
     if data:
         data = to_str(data)
@@ -850,6 +868,19 @@ def invoke_function(function):
             response_obj = str(response_obj)
             details['Headers']['Content-Type'] = 'text/plain'
         return response_obj, details['StatusCode'], details['Headers']
+
+    # check if this lambda function exists
+    not_found = None
+    if arn not in arn_to_lambda:
+        not_found = error_response('Function does not exist: %s' % arn, 404, error_type='ResourceNotFoundException')
+    if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
+        not_found = error_response('Function does not exist: {0}:{1}'.format(arn, qualifier), 404,
+                              error_type='ResourceNotFoundException')
+    if not_found:
+        forward_result = forward_to_fallback_url(func_arn, data)
+        if forward_result is not None:
+            return _create_response(forward_result)
+        return not_found
 
     if invocation_type == 'RequestResponse':
         result = run_lambda(asynchronous=False, func_arn=arn, event=data, context={}, version=qualifier)

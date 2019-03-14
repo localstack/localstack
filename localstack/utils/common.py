@@ -770,7 +770,7 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
 
 def run_safe(_python_lambda, print_error=True, **kwargs):
     try:
-        _python_lambda(**kwargs)
+        return _python_lambda(**kwargs)
     except Exception as e:
         if print_error:
             print('Unable to execute function: %s' % e)
