@@ -182,6 +182,10 @@ public class TestUtils {
         return getEndpointConfiguration(Localstack.getEndpointSecretsmanager());
     }
 
+    protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationStepFunctions() {
+        return getEndpointConfiguration(Localstack.getEndpointStepFunctions());
+    }
+
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfiguration(String endpointURL) {
         return new AwsClientBuilder.EndpointConfiguration(endpointURL, DEFAULT_REGION);
     }
