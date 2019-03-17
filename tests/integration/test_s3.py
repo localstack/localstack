@@ -7,7 +7,8 @@ import uuid
 from io import BytesIO
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, get_service_protocol, to_bytes, safe_requests, to_str
+from localstack.utils.common import (
+    short_uid, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test_bucket_policy_1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test_bucket_notification_1'
@@ -40,11 +41,11 @@ class S3ListenerTest (unittest.TestCase):
             Bucket=TEST_BUCKET_NAME_WITH_POLICY,
             Policy=json.dumps(policy)
         )
-        assert response['ResponseMetadata']['HTTPStatusCode'] == 204
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 204)
 
         # retrieve and check policy config
         saved_policy = self.s3_client.get_bucket_policy(Bucket=TEST_BUCKET_NAME_WITH_POLICY)['Policy']
-        assert json.loads(saved_policy) == policy
+        self.assertEqual(json.loads(saved_policy), policy)
 
     def test_s3_put_object_notification(self):
         key_by_path = 'key-by-hostname'
@@ -70,13 +71,13 @@ class S3ListenerTest (unittest.TestCase):
         url = '{}/{}'.format(os.getenv('TEST_S3_URL'), key_by_host)
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data='something else', headers=headers, verify=False)
-        assert response.ok
+        self.assertTrue(response.ok)
 
         queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url,
                                                            AttributeNames=['ApproximateNumberOfMessages'])
         message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
         # the ApproximateNumberOfMessages attribute is a string
-        assert message_count == '2'
+        self.assertEqual(message_count, '2')
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
@@ -101,35 +102,42 @@ class S3ListenerTest (unittest.TestCase):
         # create test bucket
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
         self.s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                                        NotificationConfiguration={'QueueConfigurations': [
-                                                            {'QueueArn': queue_attributes['Attributes']['QueueArn'],
-                                                             'Events': ['s3:ObjectCreated:*']}]})
+            NotificationConfiguration={'QueueConfigurations': [
+                {'QueueArn': queue_attributes['Attributes']['QueueArn'],
+                 'Events': ['s3:ObjectCreated:*']}]})
 
         # has to be larger than 64MB to be broken up into a multipart upload
-        large_file = self.generate_large_file(75000000)
+        file_size = 75000000
+        large_file = self.generate_large_file(file_size)
+        download_file = new_tmp_file()
         try:
             self.s3_client.upload_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                       Key=large_file.name,
-                                       Filename=large_file.name)
-            queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url,
-                                                            AttributeNames=['ApproximateNumberOfMessages'])
+                                       Key=large_file.name, Filename=large_file.name)
+            queue_attributes = self.sqs_client.get_queue_attributes(
+                QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
             message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
             # the ApproximateNumberOfMessages attribute is a string
-            assert message_count == '1'
+            self.assertEqual(message_count, '1')
 
             # ensure that the first message's eventName is ObjectCreated:CompleteMultipartUpload
             messages = self.sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=['All'])
             message = json.loads(messages['Messages'][0]['Body'])
-            assert message['Records'][0]['eventName'] == 'ObjectCreated:CompleteMultipartUpload'
+            self.assertEqual(message['Records'][0]['eventName'], 'ObjectCreated:CompleteMultipartUpload')
+
+            # download the file, check file size
+            self.s3_client.download_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                         Key=large_file.name, Filename=download_file)
+            self.assertEqual(os.path.getsize(download_file), file_size)
 
             # clean up
             self.sqs_client.delete_queue(QueueUrl=queue_url)
             self.s3_client.delete_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=large_file.name)
             self.s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
         finally:
-            # clean up large file
+            # clean up large files
             large_file.close()
-            os.remove(large_file.name)
+            rm_rf(large_file.name)
+            rm_rf(download_file)
 
     def test_s3_multipart_upload_with_small_single_part(self):
         # In a multipart upload "Each part must be at least 5 MB in size, except the last part."
@@ -154,7 +162,7 @@ class S3ListenerTest (unittest.TestCase):
             QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
         message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
         # the ApproximateNumberOfMessages attribute is a string
-        assert message_count == '1'
+        self.assertEqual(message_count, '1')
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
@@ -179,7 +187,7 @@ class S3ListenerTest (unittest.TestCase):
 
         # get object and assert headers
         response = requests.get(url, verify=False)
-        assert response.headers['content-type'] == 'binary/octet-stream'
+        self.assertEqual(response.headers['content-type'], 'binary/octet-stream')
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
         self.s3_client.delete_bucket(Bucket=bucket_name)
@@ -200,7 +208,7 @@ class S3ListenerTest (unittest.TestCase):
 
         # get object and assert headers
         response = requests.get(url, verify=False)
-        assert response.headers['content-type'] == 'text/html; charset=utf-8'
+        self.assertEqual(response.headers['content-type'], 'text/html; charset=utf-8')
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
         self.s3_client.delete_bucket(Bucket=bucket_name)
@@ -219,7 +227,7 @@ class S3ListenerTest (unittest.TestCase):
         # get object and assert headers
         response = requests.head(url, verify=False)
 
-        assert response.headers['content-length'] == str(len(body))
+        self.assertEqual(response.headers['content-length'], str(len(body)))
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
         self.s3_client.delete_bucket(Bucket=bucket_name)
@@ -241,7 +249,7 @@ class S3ListenerTest (unittest.TestCase):
         # get object and assert headers
         response = requests.delete(url, verify=False)
 
-        assert response.headers['content-length'] == '0'
+        self.assertEqual(response.headers['content-length'], '0')
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
         self.s3_client.delete_bucket(Bucket=bucket_name)
@@ -293,11 +301,11 @@ class S3ListenerTest (unittest.TestCase):
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         response = requests.get(url, verify=False)
-        assert response.headers['Date']
-        assert response.headers['x-amz-delete-marker']
-        assert response.headers['x-amz-version-id']
-        assert not response.headers.get('x-amz-id-2')
-        assert not response.headers.get('x-amz-request-id')
+        self.assertTrue(response.headers['Date'])
+        self.assertTrue(response.headers['x-amz-delete-marker'])
+        self.assertTrue(response.headers['x-amz-version-id'])
+        self.assertFalse(response.headers.get('x-amz-id-2'))
+        self.assertFalse(response.headers.get('x-amz-request-id'))
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
         self.s3_client.delete_bucket(Bucket=bucket_name)
@@ -338,7 +346,7 @@ class S3ListenerTest (unittest.TestCase):
         with gzip.GzipFile(fileobj=download_file_object, mode='rb') as filestream:
             downloaded_data = filestream.read().decode('utf-8')
 
-        assert downloaded_data == data, '{} != {}'.format(downloaded_data, data)
+        self.assertEqual(downloaded_data, data, '{} != {}'.format(downloaded_data, data))
 
     def test_set_external_hostname(self):
         bucket_name = 'test-bucket-%s' % short_uid()
