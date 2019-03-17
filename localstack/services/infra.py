@@ -12,7 +12,7 @@ import warnings
 import pkgutil
 from localstack import constants, config
 from localstack.constants import (
-    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, DEFAULT_PORT_S3_BACKEND,
+    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
 from localstack.config import USE_SSL
 from localstack.utils import common, persistence
@@ -20,11 +20,11 @@ from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_
     TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
+from localstack.services.es import es_api
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
-from localstack.services.dynamodbstreams import dynamodbstreams_api
-from localstack.services.es import es_api
 from localstack.services.generic_proxy import GenericProxy
+from localstack.services.dynamodbstreams import dynamodbstreams_api
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -151,12 +151,6 @@ def start_apigateway(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_APIGATEWAY
     return start_moto_server('apigateway', port, name='API Gateway', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_APIGATEWAY_BACKEND, update_listener=update_listener)
-
-
-def start_s3(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_S3
-    return start_moto_server('s3', port, name='S3', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_S3_BACKEND, update_listener=update_listener)
 
 
 def start_sns(port=None, asynchronous=False, update_listener=None):

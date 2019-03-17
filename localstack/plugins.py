@@ -5,7 +5,7 @@ from localstack.services.sns import sns_listener
 from localstack.services.sqs import sqs_listener, sqs_starter
 from localstack.services.iam import iam_listener
 from localstack.services.infra import (register_plugin, Plugin,
-    start_s3, start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
+    start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
     start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
     start_ssm, start_sts, start_secretsmanager, start_iam, start_cloudwatch_logs)
 from localstack.services.kinesis import kinesis_listener, kinesis_starter
@@ -25,7 +25,7 @@ def register_localstack_plugins():
             start=es_starter.start_elasticsearch,
             check=es_starter.check_elasticsearch))
         register_plugin(Plugin('s3',
-            start=start_s3,
+            start=s3_starter.start_s3,
             check=s3_starter.check_s3,
             listener=s3_listener.UPDATE_S3))
         register_plugin(Plugin('sns',

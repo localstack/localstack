@@ -481,6 +481,7 @@ class ProxyListenerS3(ProxyListener):
         # persist this API call to disk
         persistence.record('s3', method, path, data, headers)
 
+        # parse query params
         parsed = urlparse.urlparse(path)
         query = parsed.query
         path = parsed.path
