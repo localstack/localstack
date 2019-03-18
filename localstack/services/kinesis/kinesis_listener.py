@@ -69,7 +69,7 @@ def kinesis_error_response(data):
     error_response = Response()
     error_response.status_code = 200
     content = {'FailedRecordCount': 1, 'Records': []}
-    for record in data['Records']:
+    for record in data.get('Records', []):
         content['Records'].append({
             'ErrorCode': 'ProvisionedThroughputExceededException',
             'ErrorMessage': 'Rate exceeded for shard X in stream Y under account Z.'

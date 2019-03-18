@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import json
 import time
 import signal
 import traceback
@@ -10,6 +11,7 @@ import subprocess
 import six
 import warnings
 import pkgutil
+from requests.models import Response
 from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER,
@@ -23,7 +25,7 @@ from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import GenericProxy
+from localstack.services.generic_proxy import GenericProxy, GenericProxyHandler
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 
 # flag to indicate whether signal handlers have been set up already
@@ -47,7 +49,7 @@ API_COMPOSITES = {
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
 # set up logger
-LOGGER = logging.getLogger(os.path.basename(__file__))
+LOG = logging.getLogger(os.path.basename(__file__))
 
 # map of service plugins, mapping from service name to plugin details
 SERVICE_PLUGINS = {}
@@ -108,12 +110,12 @@ def load_plugin_from_path(file_path, scope=None):
             method_to_execute = namespace[method_name]
         except Exception as e:
             if not re.match(r'.*cannot import name .*%s.*' % method_name, str(e)):
-                LOGGER.debug('Unable to load plugins from module %s: %s' % (module, e))
+                LOG.debug('Unable to load plugins from module %s: %s' % (module, e))
             return
         try:
             return method_to_execute()
         except Exception as e:
-            LOGGER.warning('Unable to load plugins from file %s: %s' % (file_path, e))
+            LOG.warning('Unable to load plugins from file %s: %s' % (file_path, e))
 
 
 def load_plugins(scope=None):
@@ -140,6 +142,38 @@ def load_plugins(scope=None):
     # set global flag
     PLUGINS_LOADED[scope] = result
     return result
+
+
+# -----------------------
+# CONFIG UPDATE BACKDOOR
+# -----------------------
+
+
+class ConfigUpdateProxyListener(object):
+    """ Default proxy listener that intercepts requests to retrieve or update config variables. """
+
+    def forward_request(self, method, path, data, headers):
+        if path != constants.CONFIG_UPDATE_PATH or method != 'POST':
+            return True
+        response = Response()
+        data = json.loads(data)
+        variable = data.get('variable', '')
+        response._content = '{}'
+        response.status_code = 200
+        if not re.match(r'^[_a-zA-Z0-9]+$', variable):
+            response.status_code = 400
+            return response
+        new_value = data.get('value')
+        if new_value is not None:
+            LOG.info('Updating value of config variable "%s": %s' % (variable, new_value))
+            setattr(config, variable, new_value)
+        value = getattr(config, variable, None)
+        result = {'variable': variable, 'value': value}
+        response._content = json.dumps(result)
+        return response
+
+
+GenericProxyHandler.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
 
 
 # -----------------
@@ -370,14 +404,14 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
                 try:
                     plugin.check(expect_shutdown=expect_shutdown, print_error=print_error)
                 except Exception as e:
-                    LOGGER.warning('Service "%s" not yet available, retrying...' % name)
+                    LOG.warning('Service "%s" not yet available, retrying...' % name)
                     raise e
 
         for additional in additional_checks:
             additional(expect_shutdown=expect_shutdown)
     except Exception as e:
         if retries <= 0:
-            LOGGER.error('Error checking state of local environment (after some retries): %s' % traceback.format_exc())
+            LOG.error('Error checking state of local environment (after some retries): %s' % traceback.format_exc())
             raise e
         time.sleep(3)
         check_infra(retries - 1, expect_shutdown=expect_shutdown, apis=apis, additional_checks=additional_checks)
