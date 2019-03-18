@@ -71,6 +71,9 @@ class ProxyListener(object):
 
 class GenericProxyHandler(BaseHTTPRequestHandler):
 
+    # List of `ProxyListener` instances that are enabled by default for all requests
+    DEFAULT_LISTENERS = []
+
     def __init__(self, request, client_address, server):
         self.request = request
         self.client_address = client_address
@@ -191,15 +194,19 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             response = None
             modified_request = None
             # update listener (pre-invocation)
-            if self.proxy.update_listener:
-                listener_result = self.proxy.update_listener.forward_request(method=method,
+            for listener in self.DEFAULT_LISTENERS + [self.proxy.update_listener]:
+                if not listener:
+                    continue
+                listener_result = listener.forward_request(method=method,
                     path=path, data=data, headers=forward_headers)
                 if isinstance(listener_result, Response):
                     response = listener_result
+                    break
                 elif isinstance(listener_result, Request):
                     modified_request = listener_result
                     data = modified_request.data
                     forward_headers = modified_request.headers
+                    break
                 elif listener_result is not True:
                     # get status code from response, or use Bad Gateway status code
                     code = listener_result if isinstance(listener_result, int) else 503

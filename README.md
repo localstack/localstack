@@ -214,6 +214,17 @@ Additionally, the following *read-only* environment variables are available:
   The variable `LOCALSTACK_HOSTNAME` is available for both, local Lambda execution
   (`LAMBDA_EXECUTOR=local`) and execution inside separate Docker containers (`LAMBDA_EXECUTOR=docker`).
 
+### Dynamically updating configuration at runtime
+
+Each of the service APIs listed [above](https://github.com/localstack/localstack#overview) defines
+a backdoor API under the path `/?_config_` which allows to dynamically update configuration variables
+defined in [`config.py`](https://github.com/localstack/localstack/blob/master/localstack/config.py).
+
+For example, to dynamically set `KINESIS_ERROR_PROBABILITY=1` at runtime, use the following command:
+```
+curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhost:4568/?_config_'
+```
+
 ### Initializing a fresh instance
 
 When a container is started for the first time, it will execute files with extensions .sh that are found in /docker-entrypoint-initaws.d. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.

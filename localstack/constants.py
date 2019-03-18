@@ -59,6 +59,9 @@ PATH_USER_REQUEST = '_user_request_'
 # name of LocalStack Docker image
 DOCKER_IMAGE_NAME = 'localstack/localstack'
 
+# backdoor API path used to retrieve or update config variables
+CONFIG_UPDATE_PATH = '/?_config_'
+
 # environment variable name to tag local test runs
 ENV_INTERNAL_TEST_RUN = 'LOCALSTACK_INTERNAL_TEST_RUN'
 
