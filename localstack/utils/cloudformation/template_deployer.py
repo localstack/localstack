@@ -14,8 +14,10 @@ PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
 
 LOG = logging.getLogger(__name__)
 
-UPDATEABLE_RESOURCES = ['Lambda::Function']
+# list of resource types that can be updated
+UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method']
 
+# maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
         'create': {
@@ -483,6 +485,23 @@ def update_resource(resource_id, resources, stack_name):
         keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
         update_props = dict([(k, props[k]) for k in keys if k in props])
         return client.update_function_configuration(**update_props)
+    if resource_type == 'ApiGateway::Method':
+        client = aws_stack.connect_to_service('apigateway')
+        integration = props.get('Integration')
+        # TODO use RESOURCE_TO_FUNCTION mechanism for updates, instead of hardcoding here
+        kwargs = {
+            'restApiId': props['RestApiId'],
+            'resourceId': props['ResourceId'],
+            'httpMethod': props['HttpMethod'],
+            'requestParameters': props.get('RequestParameters')
+        }
+        if integration:
+            kwargs['type'] = integration['Type']
+            kwargs['integrationHttpMethod'] = integration.get('IntegrationHttpMethod')
+            kwargs['uri'] = integration.get('Uri')
+            return client.put_integration(**kwargs)
+        kwargs['authorizationType'] = props.get('AuthorizationType')
+        return client.put_method(**kwargs)
 
 
 def deploy_resource(resource_id, resources, stack_name):

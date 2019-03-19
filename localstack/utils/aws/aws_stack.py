@@ -7,9 +7,10 @@ import base64
 import logging
 from six import iteritems
 from localstack import config
-from localstack.constants import (REGION_LOCAL, DEFAULT_REGION,
+from localstack.constants import (REGION_LOCAL, DEFAULT_REGION, LOCALHOST,
     ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0)
-from localstack.utils.common import run_safe, to_str, is_string, make_http_request, timestamp, is_port_open
+from localstack.utils.common import (
+    run_safe, to_str, is_string, make_http_request, timestamp, is_port_open, get_service_protocol)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -143,7 +144,11 @@ def get_local_region():
     return LOCAL_REGION or DEFAULT_REGION
 
 
-def get_local_service_url(service_name):
+def get_local_service_url(service_name_or_port):
+    """ Return the local service URL for the given service name or port. """
+    if isinstance(service_name_or_port, int):
+        return '%s://%s:%s' % (get_service_protocol(), LOCALHOST, service_name_or_port)
+    service_name = service_name_or_port
     if service_name == 's3api':
         service_name = 's3'
     return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
