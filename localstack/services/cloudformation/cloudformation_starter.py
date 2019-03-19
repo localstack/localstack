@@ -57,7 +57,7 @@ def apply_patches():
         result = clean_json_orig(resource_json, resources_map)
         if isinstance(result, BaseModel):
             if isinstance(resource_json, dict) and 'Ref' in resource_json:
-                types_with_ref_as_id_or_name = (apigw_models.RestAPI, )
+                types_with_ref_as_id_or_name = (apigw_models.RestAPI, apigw_models.Resource)
                 attr_candidates = ['function_arn', 'id', 'name']
                 for attr in attr_candidates:
                     if hasattr(result, attr):

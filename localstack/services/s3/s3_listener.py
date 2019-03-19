@@ -6,11 +6,11 @@ import base64
 import codecs
 import xmltodict
 import collections
+import botocore.config
 import six
 from six import iteritems
 from six.moves.urllib import parse as urlparse
 from botocore.client import ClientError
-import botocore.config
 from requests.models import Response, Request
 from localstack import config
 from localstack.constants import DEFAULT_REGION
@@ -457,12 +457,17 @@ class ProxyListenerS3(ProxyListener):
 
         modified_data = None
 
+        # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
+        to_find = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
+        if data and data.startswith(to_bytes('<')) and to_find in data:
+            modified_data = data.replace(to_find, '')
+
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98
         # TODO we should evaluate whether to replace moto s3 with scality/S3:
         # https://github.com/scality/S3/issues/237
         if headers.get('x-amz-content-sha256') == 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD':
-            modified_data = strip_chunk_signatures(data)
+            modified_data = strip_chunk_signatures(modified_data or data)
             headers['content-length'] = headers.get('x-amz-decoded-content-length')
 
         # POST requests to S3 may include a "${filename}" placeholder in the
@@ -531,7 +536,6 @@ class ProxyListenerS3(ProxyListener):
                 LOGGER.debug('S3 POST {} to {}'.format(response.status_code, response.headers['Location']))
 
         parsed = urlparse.urlparse(path)
-
         bucket_name_in_host = headers['host'].startswith(bucket_name)
 
         should_send_notifications = all([
@@ -578,7 +582,7 @@ class ProxyListenerS3(ProxyListener):
             except Exception:
                 pass
 
-            # we need to un-pretty-print the XML, otherwise we run into this issue with Spark:
+            # We need to un-pretty-print the XML, otherwise we run into this issue with Spark:
             # https://github.com/jserver/mock-s3/pull/9/files
             # https://github.com/localstack/localstack/issues/183
             # Note: yet, we need to make sure we have a newline after the first line: <?xml ...>\n
