@@ -59,9 +59,7 @@ public class TestUtils {
     }
 
     public static AmazonSQSAsync getClientSQSAsync() {
-        return AmazonSQSAsyncClientBuilder.standard().
-                withEndpointConfiguration(getEndpointConfigurationSQS()).
-                withCredentials(getCredentialsProvider()).build();
+        return getClientSQSAsync(null);
     }
 
     public static AmazonSQSAsync getClientSQSAsync(final ExecutorFactory executorFactory) {
@@ -78,9 +76,7 @@ public class TestUtils {
     }
 
     public static AmazonSNSAsync getClientSNSAsync() {
-        return AmazonSNSAsyncClientBuilder.standard().
-                withEndpointConfiguration(getEndpointConfigurationSNS()).
-                withCredentials(getCredentialsProvider()).build();
+        return getClientSNSAsync(null);
     }
 
     public static AmazonSNSAsync getClientSNSAsync(final ExecutorFactory executorFactory) {
@@ -97,9 +93,7 @@ public class TestUtils {
     }
 
     public static AWSLambdaAsync getClientLambdaAsync() {
-        return AWSLambdaAsyncClientBuilder.standard().
-                withEndpointConfiguration(getEndpointConfigurationLambda()).
-                withCredentials(getCredentialsProvider()).build();
+        return getClientLambdaAsync(null);
     }
 
     public static AWSLambdaAsync getClientLambdaAsync(final ExecutorFactory executorFactory) {
@@ -138,9 +132,7 @@ public class TestUtils {
     }
 
     public static AmazonKinesisAsync getClientKinesisAsync() {
-        return AmazonKinesisAsyncClientBuilder.standard().
-                withEndpointConfiguration(getEndpointConfigurationKinesis()).
-                withCredentials(getCredentialsProvider()).build();
+        return getClientKinesisAsync(null);
     }
 
     public static AmazonKinesisAsync getClientKinesisAsync(final ExecutorFactory executorFactory) {
