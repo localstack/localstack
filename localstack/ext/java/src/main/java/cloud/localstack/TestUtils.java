@@ -6,6 +6,10 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.client.builder.ExecutorFactory;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.AmazonKinesisAsync;
 import com.amazonaws.services.kinesis.AmazonKinesisAsyncClientBuilder;
@@ -16,15 +20,17 @@ import com.amazonaws.services.lambda.AWSLambdaAsyncClientBuilder;
 import com.amazonaws.services.lambda.AWSLambdaClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.secretsmanager.AWSSecretsManager;
+import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
 import com.amazonaws.services.sns.AmazonSNS;
 import com.amazonaws.services.sns.AmazonSNSAsync;
 import com.amazonaws.services.sns.AmazonSNSAsyncClientBuilder;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
-import com.amazonaws.services.sqs.*;
-import com.amazonaws.services.secretsmanager.AWSSecretsManager;
-import com.amazonaws.services.secretsmanager.AWSSecretsManagerClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQSClientBuilder;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.FileChannel;
@@ -131,15 +137,31 @@ public class TestUtils {
                 withCredentials(getCredentialsProvider()).build();
     }
 
-    public static AmazonKinesisAsync getClientKinesisAsync() {
-        return getClientKinesisAsync(null);
-    }
 
     public static AmazonKinesisAsync getClientKinesisAsync(final ExecutorFactory executorFactory) {
         return AmazonKinesisAsyncClientBuilder.standard().
                 withEndpointConfiguration(getEndpointConfigurationKinesis()).
                 withExecutorFactory(executorFactory).
                 withCredentials(getCredentialsProvider()).build();
+    }
+
+    public static AmazonDynamoDB getClientDynamoDb() {
+        return AmazonDynamoDBClientBuilder.standard()
+                .withEndpointConfiguration(getEndpointConfigurationDynamoDB())
+                .withCredentials(getCredentialsProvider())
+                .build();
+    }
+
+    public static AmazonDynamoDBAsync getClientDynamoDBAsync() {
+        return getClientDynamoDBAsync(null);
+    }
+
+    public static AmazonDynamoDBAsync getClientDynamoDBAsync(final ExecutorFactory executorFactory) {
+        return AmazonDynamoDBAsyncClientBuilder.standard()
+                .withEndpointConfiguration(getEndpointConfigurationDynamoDB())
+                .withExecutorFactory(executorFactory)
+                .withCredentials(getCredentialsProvider())
+                .build();
     }
 
     public static AWSCredentialsProvider getCredentialsProvider() {
@@ -181,6 +203,15 @@ public class TestUtils {
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfiguration(String endpointURL) {
         return new AwsClientBuilder.EndpointConfiguration(endpointURL, DEFAULT_REGION);
     }
+
+    public static AmazonKinesisAsync getClientKinesisAsync() {
+        return getClientKinesisAsync(null);
+    }
+
+    protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationDynamoDB() {
+        return getEndpointConfiguration(Localstack.getEndpointDynamoDB());
+    }
+
 
     protected static void setEnv(Map<String, String> newEnv) {
         try {

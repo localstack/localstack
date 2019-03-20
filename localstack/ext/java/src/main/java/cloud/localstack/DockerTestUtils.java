@@ -12,6 +12,8 @@ import com.amazonaws.services.cloudformation.AmazonCloudFormationClientBuilder;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
 import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreamsClientBuilder;
@@ -78,6 +80,13 @@ public class DockerTestUtils {
         return AmazonDynamoDBClientBuilder.standard()
                 .withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointDynamoDB))
                 .withCredentials(getCredentialsProvider()).build();
+    }
+
+    public static AmazonDynamoDBAsync getClientDynamoDBAsync() {
+        return AmazonDynamoDBAsyncClientBuilder.standard()
+            .withEndpointConfiguration(createEndpointConfiguration(LocalstackDocker.INSTANCE::getEndpointDynamoDB))
+            .withCredentials(getCredentialsProvider())
+            .build();
     }
 
     public static AmazonCloudWatch getClientCloudWatch() {
