@@ -281,7 +281,6 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     print('ERROR: %s' % error_msg)
             self.send_response(502)  # bad gateway
             self.end_headers()
-        finally:
             # force close connection
             self.close_connection = 1
 
