@@ -1,4 +1,4 @@
-FROM localstack/java-maven-node-python
+FROM localstack/java-maven-node-python:0.8.2
 
 MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com), Gianluca Bortoli (giallogiallo93@gmail.com)"
