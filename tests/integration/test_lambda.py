@@ -4,6 +4,7 @@ import json
 import time
 import unittest
 from io import BytesIO
+from requests.models import Response
 from localstack import config
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSION
 from localstack.utils import testutil
@@ -85,6 +86,10 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 records.append(data)
+                response = Response()
+                response.status_code = 200
+                response._content = ''
+                return response
 
         records = []
         local_port = get_free_tcp_port()
