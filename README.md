@@ -387,7 +387,7 @@ Simply add the following dependency to your `pom.xml` file:
 <dependency>
     <groupId>cloud.localstack</groupId>
     <artifactId>localstack-utils</artifactId>
-    <version>0.1.18</version>
+    <version>0.1.19</version>
 </dependency>
 ```
 
@@ -468,6 +468,7 @@ localstack web
 
 ## Change Log
 
+* v0.9.1: Define dependent and composite services in config; forward Lambda logs to CloudWatch Logs; add SQS event deserializing for Lambda; fix AWS_PROXY for JSON list payload; add START_WEB config parameter; return correct location for S3 multipart uploads; add support for Lambda custom runtime; fix account ID for IAM responses; fix using correct SSL cert; limit memory usage for Java processes; fix unicode encoding for SNS messages; allow using `LOCALSTACK_` prefix in Docker environment variables; enable request forwarding for non-existing Lambdas; fix large downloads for S3; add API endpoint for dynamically updating config variables; fix CloudFormation stack update
 * v0.9.0: Enhance integration with Serverless; refactor CloudFormation implementation; add support for Step Functions, IAM, STS; fix CloudFormation integration; support mounting Lambda code locally; add `docker-entrypoint-initaws.d` dir for initializing resources; add S3Event Parser for Lambda; fix S3 chunk encoding; fix S3 multipart upload notification; add dotnetcore2.1 and ruby2.5 Lambda runtimes; fix issues with JDK 9; install ES plugins available in AWS
 * v0.8.10: Add kclpy to pip package; fix badges in README
 * v0.8.9: Replace moto-ext with upstream moto; fix SNS message attributes; fix swagger; make external SQS port configurable; support for SNS DeleteTopic; S3 notifications for multipart uploads; support requestContext in AWS_PROXY integration; update docs for SSL usage
