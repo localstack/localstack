@@ -241,21 +241,11 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
             for allowed in allowed_origins:
                 if origin in allowed or re.match(allowed.replace('*', '.*'), origin):
                     response.headers['Access-Control-Allow-Origin'] = origin
+                    if 'ExposeHeader' in rule:
+                        expose_headers = rule['ExposeHeader']
+                        response.headers['Access-Control-Expose-Headers'] = \
+                            ','.join(expose_headers) if isinstance(expose_headers, list) else expose_headers
                     break
-        # add additional headers
-        exposed_headers = rule.get('ExposeHeader', [])
-        for header in exposed_headers:
-            if header.lower() == 'date':
-                response.headers[header] = timestamp(format='%a, %d %b %Y %H:%M:%S +0000')
-            elif header.lower() == 'etag':
-                response.headers[header] = md5(response._content)
-            elif header.lower() in ('server', 'x-amz-id-2', 'x-amz-request-id'):
-                response.headers[header] = short_uid()
-            elif header.lower() == 'x-amz-delete-marker':
-                response.headers[header] = 'false'
-            elif header.lower() == 'x-amz-version-id':
-                # TODO: check whether bucket versioning is enabled and return proper version id
-                response.headers[header] = 'null'
 
 
 def get_lifecycle(bucket_name):
