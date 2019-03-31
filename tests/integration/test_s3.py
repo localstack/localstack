@@ -281,16 +281,13 @@ class S3ListenerTest (unittest.TestCase):
         # put object and CORS configuration
         object_key = 'key-by-hostname'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
-        url = self.s3_client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
-        )
         self.s3_client.put_bucket_cors(Bucket=bucket_name,
             CORSConfiguration={
                 'CORSRules': [{
                     'AllowedMethods': ['GET', 'PUT', 'POST'],
                     'AllowedOrigins': ['*'],
                     'ExposeHeaders': [
-                        'Date', 'x-amz-delete-marker', 'x-amz-version-id'
+                        'ETag', 'x-amz-version-id'
                     ]
                 }]
             },
@@ -301,11 +298,7 @@ class S3ListenerTest (unittest.TestCase):
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         response = requests.get(url, verify=False)
-        self.assertTrue(response.headers['Date'])
-        self.assertTrue(response.headers['x-amz-delete-marker'])
-        self.assertTrue(response.headers['x-amz-version-id'])
-        self.assertFalse(response.headers.get('x-amz-id-2'))
-        self.assertFalse(response.headers.get('x-amz-request-id'))
+        self.assertEquals(response.headers['Access-Control-Expose-Headers'], 'ETag,x-amz-version-id')
         # clean up
         self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
         self.s3_client.delete_bucket(Bucket=bucket_name)
