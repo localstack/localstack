@@ -2,7 +2,7 @@ import unittest
 
 from localstack.services.firehose import firehose_api
 
-TEST_STREAM_NAME = "test_stream"
+TEST_STREAM_NAME = 'test_stream'
 TEST_TAG_1 = {'Key': 'MyTag', 'Value': 'TestValue'}
 TEST_TAG_2 = {'Key': 'AnotherTag', 'Value': 'AnotherValue'}
 TEST_TAGS = [TEST_TAG_1, TEST_TAG_2]
@@ -20,3 +20,4 @@ class FirehoseApiTest(unittest.TestCase):
         self.assertEquals([TEST_TAG_2], result['Tags'])
         result = firehose_api.get_delivery_stream_tags(TEST_STREAM_NAME, limit=1)
         self.assertEquals([TEST_TAG_1], result['Tags'])
+        self.assertEquals(True, result['HasMore'])
