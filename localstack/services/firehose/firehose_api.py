@@ -135,8 +135,7 @@ def process_records(records, shard_id, fh_d_stream):
 
 def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream_type_configuration=None,
                   s3_destination=None, elasticsearch_destination=None, tags=None):
-    if tags is None:
-        tags = {}
+    tags = tags or {}
     stream = {
         'DeliveryStreamType': delivery_stream_type,
         'KinesisStreamSourceConfiguration': delivery_stream_type_configuration,
