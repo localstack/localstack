@@ -25,6 +25,7 @@ TEST_LAMBDA_NAME_QUEUE = 'test_lambda_queue'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_TOPIC_NAME = 'test_topic'
+TEST_TAGS = [{'Key': 'MyTag', 'Value': 'Value'}]
 # constants for forward chain K1->L1->K2->L2
 TEST_CHAIN_STREAM1_NAME = 'test_chain_stream_1'
 TEST_CHAIN_STREAM2_NAME = 'test_chain_stream_2'
@@ -55,10 +56,13 @@ class IntegrationTest(unittest.TestCase):
                 'RoleARN': aws_stack.iam_resource_arn('firehose'),
                 'BucketARN': aws_stack.s3_bucket_arn(TEST_BUCKET_NAME),
                 'Prefix': s3_prefix
-            }
+            },
+            Tags=TEST_TAGS
         )
         self.assertTrue(stream)
         self.assertIn(TEST_FIREHOSE_NAME, firehose.list_delivery_streams()['DeliveryStreamNames'])
+        tags = firehose.list_tags_for_delivery_stream(DeliveryStreamName=TEST_FIREHOSE_NAME)
+        self.assertEquals(TEST_TAGS, tags['Tags'])
         # create target S3 bucket
         s3_resource.create_bucket(Bucket=TEST_BUCKET_NAME)
 

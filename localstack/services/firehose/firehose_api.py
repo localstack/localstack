@@ -37,6 +37,18 @@ def get_delivery_stream_names():
     return names
 
 
+def get_delivery_stream_tags(stream_name, exclusive_start_tag_key=None, limit=50):
+    stream = DELIVERY_STREAMS[stream_name]
+    response = {}
+    start_i = -1
+    if exclusive_start_tag_key is not None:
+        start_i = next(iter([i for i, tag in enumerate(stream['Tags']) if tag['Key'] == exclusive_start_tag_key]))
+
+    response['Tags'] = [tag for i, tag in enumerate(stream['Tags']) if start_i < i < limit]
+    response['HasMore'] = len(response['Tags']) < len(stream['Tags'])
+    return response
+
+
 def put_record(stream_name, record):
     return put_records(stream_name, [record])
 
@@ -122,7 +134,8 @@ def process_records(records, shard_id, fh_d_stream):
 
 
 def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream_type_configuration=None,
-                  s3_destination=None, elasticsearch_destination=None):
+                  s3_destination=None, elasticsearch_destination=None, tags=None):
+    tags = tags or {}
     stream = {
         'DeliveryStreamType': delivery_stream_type,
         'KinesisStreamSourceConfiguration': delivery_stream_type_configuration,
@@ -132,7 +145,8 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
         'DeliveryStreamARN': firehose_stream_arn(stream_name),
         'DeliveryStreamStatus': 'ACTIVE',
         'DeliveryStreamName': stream_name,
-        'Destinations': []
+        'Destinations': [],
+        'Tags': tags
     }
     DELIVERY_STREAMS[stream_name] = stream
     if elasticsearch_destination:
@@ -198,7 +212,8 @@ def post_request():
                                  delivery_stream_type=data.get('DeliveryStreamType'),
                                  delivery_stream_type_configuration=data.get('KinesisStreamSourceConfiguration'),
                                  s3_destination=data.get('S3DestinationConfiguration'),
-                                 elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'))
+                                 elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'),
+                                 tags=data.get('Tags'))
     elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = delete_stream(stream_name)
@@ -236,6 +251,9 @@ def post_request():
         update_destination(stream_name=stream_name, destination_id=destination_id,
                            es_update=es_update, version_id=version_id)
         response = {}
+    elif action == '%s.ListTagsForDeliveryStream' % ACTION_HEADER_PREFIX:
+        response = get_delivery_stream_tags(data['DeliveryStreamName'], data.get('ExclusiveStartTagKey'),
+                                            data.get('Limit', 50))
     else:
         response = error_response('Unknown action "%s"' % action, code=400, error_type='InvalidAction')
 
