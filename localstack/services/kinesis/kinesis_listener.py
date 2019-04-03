@@ -61,30 +61,24 @@ class ProxyListenerKinesis(ProxyListener):
             stream_name = data['StreamName']
             lambda_api.process_kinesis_records(event_records, stream_name)
         elif action == ACTION_UPDATE_SHARD_COUNT:
-            # Currently kinealite, which backs the kinesis
-            # implementation for localstack does not
-            # support UpdateShardCount:
-            # https://github.com/localstack/localstack/issues/654#issuecomment-371659227
-            # the code that follows just returns a successfull response
-            # bypassing the 400 response that kinesalite has returned.
-            # References:
-            # https://github.com/mhart/kinesalite/tree/master/actions
+            # Currently kinesalite, which backs the Kinesis implementation for localstack, does
+            # not support UpdateShardCount:
             # https://github.com/mhart/kinesalite/issues/61
-            # [Terraform](https://www.terraform.io)
-            # Makes the call to UpdateShardCount when it applies Kinesis
-            # resources. A Terraform run fails when this is not present.
+            #
+            # [Terraform](https://www.terraform.io) makes the call to UpdateShardCount when it
+            # applies Kinesis resources. A Terraform run fails when this is not present.
+            #
+            # The code that follows just returns a successful response, bypassing the 400
+            # response that kinesalite returns.
+            #
             response = Response()
             response.status_code = 200
-
             content = {
                 'CurrentShardCount': 1,
                 'StreamName': data['StreamName'],
                 'TargetShardCount': data['TargetShardCount']
             }
-
             response.encoding = 'UTF-8'
-            response.headers = headers
-            del response.headers['Content-Length']
             response._content = json.dumps(content)
             return response
 
