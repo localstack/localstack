@@ -3,6 +3,7 @@ import unittest
 import uuid
 
 from nose.tools import assert_equal, assert_raises
+from requests import Response
 
 from localstack.services.sns import sns_listener
 
@@ -14,6 +15,8 @@ class SNSTests(unittest.TestCase):
             'RawMessageDelivery': 'false',
             'TopicArn': 'arn',
         }
+        # Reset subscriptions
+        sns_listener.SNS_SUBSCRIPTIONS = {}
 
     def test_unsubscribe_without_arn_should_error(self):
         sns = sns_listener.ProxyListenerSNS()
@@ -32,11 +35,79 @@ class SNSTests(unittest.TestCase):
             topic_arn,
             'http://localhost:1234/listen',
             'http',
-            sub_arn
+            sub_arn,
+            {}
         )
         self.assertTrue(sns_listener.get_subscription_by_arn(sub_arn))
         sns_listener.do_unsubscribe(sub_arn)
         self.assertFalse(sns_listener.get_subscription_by_arn(sub_arn))
+
+    def test_subscribe_should_parse_attributes(self):
+        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:abc'
+
+        req_data = b'Action=Subscribe&' \
+                   b'Version=2010-03-31' \
+                   b'&TopicArn=arn%3Aaws%3Asns%3Aus-east-1%3A123456789012%3Atest-topic' \
+                   b'&Protocol=sqs' \
+                   b'&Endpoint=arn%3Aaws%3Asqs%3Aus-east-1%3A123456789012%3Atest-sqs' \
+                   b'&Attributes.entry.1.key=RawMessageDelivery' \
+                   b'&Attributes.entry.1.value=true'
+        headers = {'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8'}
+        response = Response()
+        response._content = \
+            b'<SubscribeResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/">\n' \
+            b'  <SubscribeResult>\n' \
+            b'    <SubscriptionArn>arn:aws:sns:us-east-1:123456789012:test-topic:abc</SubscriptionArn>\n' \
+            b'  </SubscribeResult>\n' \
+            b'  <ResponseMetadata>\n' \
+            b'    <RequestId>c4407779-24a4-56fa-982c-3d927f93a775</RequestId>\n' \
+            b'  </ResponseMetadata>\n' \
+            b'</SubscribeResponse>'
+        response.status_code = 200
+
+        sns_listener.do_create_topic(topic_arn)
+
+        sns = sns_listener.ProxyListenerSNS()
+        sns.return_response('POST', '/', req_data, headers, response)
+
+        subscription = sns_listener.get_subscription_by_arn(sub_arn)
+        self.assertTrue(subscription)
+        self.assertTrue(subscription['RawMessageDelivery'])
+
+    def test_do_subscribe_with_attributes(self):
+        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+        attributes = {
+            'RawMessageDelivery': 'true',
+        }
+
+        sns_listener.do_create_topic(topic_arn)
+        sns_listener.do_subscribe(
+            topic_arn,
+            'http://localhost:1234/listen',
+            'http',
+            sub_arn,
+            attributes
+        )
+        self.assertTrue(sns_listener.get_subscription_by_arn(sub_arn))
+        self.assertTrue(sns_listener.get_subscription_by_arn(sub_arn)['RawMessageDelivery'])
+
+    def test_get_subscribe_attributes(self):
+        req_data = {
+            'Attribute.entry.1.key': ['RawMessageDelivery'],
+            'Attribute.entry.1.value': ['true'],
+            'Attribute.entry.2.key': ['FilterPolicy'],
+            'Attribute.entry.2.value': ['{"type": ["foo", "bar"]}']
+        }
+        attributes = sns_listener.get_subscribe_attributes(req_data)
+        self.assertDictEqual(
+            attributes,
+            {
+                'RawMessageDelivery': 'true',
+                'FilterPolicy': '{"type": ["foo", "bar"]}'
+            }
+        )
 
     def test_create_sns_message_body_raw_message_delivery(self):
         self.subscriber['RawMessageDelivery'] = 'true'

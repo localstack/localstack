@@ -80,8 +80,15 @@ class ProxyListenerSNS(ProxyListener):
             if req_action == 'Subscribe' and response.status_code < 400:
                 response_data = xmltodict.parse(response.content)
                 topic_arn = (req_data.get('TargetArn') or req_data.get('TopicArn'))[0]
+                attributes = get_subscribe_attributes(req_data)
                 sub_arn = response_data['SubscribeResponse']['SubscribeResult']['SubscriptionArn']
-                do_subscribe(topic_arn, req_data['Endpoint'][0], req_data['Protocol'][0], sub_arn)
+                do_subscribe(
+                    topic_arn,
+                    req_data['Endpoint'][0],
+                    req_data['Protocol'][0],
+                    sub_arn,
+                    attributes
+                )
 
 
 # instantiate listener
@@ -146,15 +153,16 @@ def do_delete_topic(topic_arn):
         del SNS_SUBSCRIPTIONS[topic_arn]
 
 
-def do_subscribe(topic_arn, endpoint, protocol, subscription_arn):
+def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes):
     subscription = {
         # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
         'TopicArn': topic_arn,
         'Endpoint': endpoint,
         'Protocol': protocol,
         'SubscriptionArn': subscription_arn,
-        'RawMessageDelivery': 'false'
     }
+    subscription.update(attributes)
+
     SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
 
 
@@ -281,6 +289,14 @@ def get_message_attributes(req_data):
         else:
             break
 
+    return attributes
+
+
+def get_subscribe_attributes(req_data):
+    attributes = {}
+    for key in req_data.keys():
+        if '.key' in key:
+            attributes[req_data[key][0]] = req_data[key.replace('key', 'value')][0]
     return attributes
 
 
