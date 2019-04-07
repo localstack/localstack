@@ -508,12 +508,14 @@ def start_infra_in_docker():
 # -------------
 
 
-def canonicalize_api_names(apis):
+def canonicalize_api_names(apis=None):
     """ Finalize the list of API names by
         (1) resolving and adding dependencies (e.g., "dynamodbstreams" requires "kinesis"),
         (2) resolving and adding composites (e.g., "serverless" describes an ensemble
                 including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
         (3) removing duplicates from the list. """
+    apis = apis or list(config.SERVICE_PORTS.keys())
+
     def contains(apis, api):
         for a in apis:
             if a == api:
@@ -552,8 +554,7 @@ def start_infra(asynchronous=False, apis=None):
         # set up logging
         setup_logging()
 
-        if not apis:
-            apis = list(config.SERVICE_PORTS.keys())
+        apis = apis or list(config.SERVICE_PORTS.keys())
         # prepare APIs
         apis = canonicalize_api_names(apis)
         # set environment
