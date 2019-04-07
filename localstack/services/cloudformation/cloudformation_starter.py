@@ -16,7 +16,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
-    get_service_protocol, start_proxy_for_service, do_run, setup_logging)
+    get_service_protocol, start_proxy_for_service, do_run, setup_logging, canonicalize_api_names)
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
@@ -417,6 +417,9 @@ def main():
 
     # add memory profiling endpoint
     inject_stats_endpoint()
+
+    # make sure all API names and ports are mapped properly
+    canonicalize_api_names()
 
     # start API
     sys.exit(moto_main())
