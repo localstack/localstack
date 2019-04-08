@@ -33,7 +33,6 @@ SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = (
 class ProxyListenerSQS(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-
         if method == 'POST':
             req_data = urlparse.parse_qs(to_str(data))
             if 'QueueName' in req_data:
@@ -44,7 +43,9 @@ class ProxyListenerSQS(ProxyListener):
                 queue_url = req_data.get('QueueUrl', [path])[0]
                 queue_name = queue_url[queue_url.rindex('/') + 1:]
                 message_body = req_data.get('MessageBody', [None])[0]
-                if lambda_api.process_sqs_message(message_body, queue_name):
+                message_attributes = self.format_message_attributes(req_data)
+
+                if lambda_api.process_sqs_message(message_body, message_attributes, queue_name):
                     # If a Lambda was listening, do not add the message to the queue
                     new_response = Response()
                     new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
@@ -57,6 +58,27 @@ class ProxyListenerSQS(ProxyListener):
                     return new_response
 
         return True
+
+    # Format of the message Name attribute is MessageAttribute.<int id>.<field>
+    # Format of the Value attributes is MessageAttribute.<int id>.Value.DataType
+    # and MessageAttribute.<int id>.Value.<Type>Value
+    def format_message_attributes(self, data):
+        names = []
+        for (k, name) in [(k, data[k]) for k in data if k.startswith('MessageAttribute') and k.endswith('.Name')]:
+            attr_name = name[0]
+            k_id = k.split('.')[1]
+            names.append((attr_name, k_id))
+
+        msg_attrs = {}
+        for (key_name, key_id) in names:
+            msg_attrs[key_name] = {}
+            # Find vals for each key_id
+            attrs = [(k, data[k]) for k in data
+                if k.startswith('MessageAttribute.{}.'.format(key_id)) and not k.endswith('.Name')]
+            for (attr_k, attr_v) in attrs:
+                msg_attrs[key_name][attr_k.split('.')[3]] = attr_v[0]
+
+        return msg_attrs
 
     def return_response(self, method, path, data, headers, response, request_handler):
         if method == 'OPTIONS' and path == '/':
