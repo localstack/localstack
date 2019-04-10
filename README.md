@@ -196,6 +196,7 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch, S3). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
+* `HOST_TMP_FOLDER`: Path to the temporary folder on the host when running Lambdas in Docker. Defaults to the value of `TMP_FOLDER` if not set. (Note: changing `HOST_TMP_FOLDER` may require adjusting the volume configuration, either in `docker-compose.yml` or via the `DOCKER_FLAGS` config variable when running `localstack start --docker`.)
 * `PORT_WEB_UI`: Port for the Web user interface (dashboard). Default is `8080`.
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
