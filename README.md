@@ -196,7 +196,6 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch, S3). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
-* `HOST_TMP_FOLDER`: Path to the temporary folder on the host when running Lambdas in Docker. Defaults to the value of `TMP_FOLDER` if not set. (Note: changing `HOST_TMP_FOLDER` may require adjusting the volume configuration, either in `docker-compose.yml` or via the `DOCKER_FLAGS` config variable when running `localstack start --docker`.)
 * `PORT_WEB_UI`: Port for the Web user interface (dashboard). Default is `8080`.
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
@@ -319,6 +318,18 @@ See the example test file `tests/test_integration.py` for more details.
 You can use the [`serverless-localstack`](https://www.npmjs.com/package/serverless-localstack) plugin to easily run [Serverless](https://serverless.com/framework/) applications on LocalStack.
 For more information, please check out the plugin repository here:
 https://github.com/localstack/serverless-localstack
+
+## Using local code with Lambda
+
+In order to mount a local folder, ensure that `LAMBDA_REMOTE_DOCKER` is set to `false` then set the S3 bucket name to `__local__` and the S3 key to your local path:
+
+```
+    awslocal lambda create-function --function-name myLambda \
+      --code S3Bucket="__local__",S3Key="/my/local/lambda/folder" \
+      --handler index.myHandler \
+      --runtime nodejs8.10 \
+      --role whatever
+```
 
 ## Integration with Java/JUnit
 
