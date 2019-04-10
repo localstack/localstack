@@ -1063,9 +1063,6 @@ def put_concurrency(version, function):
 
 @app.route('/<version>/tags/<arn>', methods=['GET'])
 def list_tags(version, arn):
-    # the version for put_concurrency != PATH_ROOT, at the time of this
-    # writing it's: /2017-10-31 for this endpoint
-    # https://docs.aws.amazon.com/lambda/latest/dg/API_ListTags.html
     func_details = arn_to_lambda.get(arn)
     if not func_details:
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
@@ -1075,12 +1072,9 @@ def list_tags(version, arn):
 
 @app.route('/<version>/tags/<arn>', methods=['POST'])
 def tag_resource(version, arn):
-    # the version for put_concurrency != PATH_ROOT, at the time of this
-    # writing it's: /2017-10-31 for this endpoint
-    # https://docs.aws.amazon.com/lambda/latest/dg/API_TagResource.html
     data = json.loads(request.data)
-    if data.get('Tags'):
-        tags = data.get('Tags', {})
+    tags = data.get('Tags', {})
+    if tags:
         func_details = arn_to_lambda.get(arn)
         if not func_details:
             return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
@@ -1091,17 +1085,12 @@ def tag_resource(version, arn):
 
 @app.route('/<version>/tags/<arn>', methods=['DELETE'])
 def untag_resource(version, arn):
-    # the version for put_concurrency != PATH_ROOT, at the time of this
-    # writing it's: /2017-10-31 for this endpoint
-    # https://docs.aws.amazon.com/lambda/latest/dg/API_UntagResource.html
     tag_keys = request.args.getlist('tagKeys')
     func_details = arn_to_lambda.get(arn)
-    if func_details:
-        for tag_key in tag_keys:
-            if tag_key in func_details.tags:
-                func_details.tags.pop(tag_key)
-    else:
+    if not func_details:
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    for tag_key in tag_keys:
+        func_details.tags.pop(tag_key, None)
     return jsonify({})
 
 
