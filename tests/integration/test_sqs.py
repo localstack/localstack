@@ -24,4 +24,4 @@ class SQSTest(unittest.TestCase):
         queue_url = queue_info['QueueUrl']
 
         # it should preserve .fifo in the queue name
-        assert fifo_queue in queue_url
+        self.assertIn(fifo_queue, queue_url)

@@ -223,7 +223,7 @@ def process_kinesis_records(records, stream_name):
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sqs_message(message_body, queue_name):
+def process_sqs_message(message_body, message_attributes, queue_name):
     # feed message into the first listening lambda
     try:
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
@@ -244,7 +244,7 @@ def process_sqs_message(message_body, queue_name):
                     'ApproximateReceiveCount': '1',
                     'SentTimestamp': '{}000'.format(int(time.time()))
                 },
-                'messageAttributes': {},
+                'messageAttributes': message_attributes,
                 'sqs': True,
             }]}
             run_lambda(event=event, context={}, func_arn=arn)
