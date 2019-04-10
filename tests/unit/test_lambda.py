@@ -19,6 +19,7 @@ class TestLambdaAPI(unittest.TestCase):
     ALIASNOTFOUND_EXCEPTION = 'ResourceNotFoundException'
     ALIASNOTFOUND_MESSAGE = 'Alias not found: %s'
     TEST_UUID = 'Test'
+    TAGS = {'hello': 'world', 'env': 'prod'}
 
     def setUp(self):
         lambda_api.cleanup()
@@ -281,11 +282,63 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertTrue('Concurrency' in result)
             self.assertDictEqual(concurrency_data, result['Concurrency'])
 
-    def _create_function(self, function_name):
+    def test_list_tags(self):
+        with self.app.test_request_context():
+            self._create_function(self.FUNCTION_NAME, self.TAGS)
+            arn = lambda_api.func_arn(self.FUNCTION_NAME)
+            response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
+            result = json.loads(response.get_data())
+            self.assertTrue('Tags' in result)
+            self.assertDictEqual(self.TAGS, result['Tags'])
+
+    def test_tag_resource(self):
+        with self.app.test_request_context():
+            self._create_function(self.FUNCTION_NAME)
+            arn = lambda_api.func_arn(self.FUNCTION_NAME)
+            response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
+            result = json.loads(response.get_data())
+            self.assertTrue('Tags' in result)
+            self.assertDictEqual({}, result['Tags'])
+
+            self.client.post('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn), data=json.dumps({'Tags': self.TAGS}))
+            response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
+            result = json.loads(response.get_data())
+            self.assertTrue('Tags' in result)
+            self.assertDictEqual(self.TAGS, result['Tags'])
+
+    def test_tag_non_existent_function_returns_error(self):
+        with self.app.test_request_context():
+            arn = lambda_api.func_arn('non-existent-function')
+            response = self.client.post(
+                '{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn),
+                data=json.dumps({'Tags': self.TAGS}))
+            result = json.loads(response.get_data())
+            self.assertEqual(self.RESOURCENOTFOUND_EXCEPTION, result['__type'])
+            self.assertEqual(
+                self.RESOURCENOTFOUND_MESSAGE % arn,
+                result['message'])
+
+    def test_untag_resource(self):
+        with self.app.test_request_context():
+            self._create_function(self.FUNCTION_NAME, tags=self.TAGS)
+            arn = lambda_api.func_arn(self.FUNCTION_NAME)
+            response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
+            result = json.loads(response.get_data())
+            self.assertTrue('Tags' in result)
+            self.assertDictEqual(self.TAGS, result['Tags'])
+
+            self.client.delete('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn), query_string={'tagKeys': 'env'})
+            response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
+            result = json.loads(response.get_data())
+            self.assertTrue('Tags' in result)
+            self.assertDictEqual({'hello': 'world'}, result['Tags'])
+
+    def _create_function(self, function_name, tags={}):
         arn = lambda_api.func_arn(function_name)
         lambda_api.arn_to_lambda[arn] = LambdaFunction(arn)
         lambda_api.arn_to_lambda[arn].versions = {'$LATEST': {'CodeSize': self.CODE_SIZE}}
         lambda_api.arn_to_lambda[arn].handler = self.HANDLER
         lambda_api.arn_to_lambda[arn].runtime = self.RUNTIME
         lambda_api.arn_to_lambda[arn].timeout = self.TIMEOUT
+        lambda_api.arn_to_lambda[arn].tags = tags
         lambda_api.arn_to_lambda[arn].envvars = {}

@@ -625,6 +625,7 @@ def create_function():
         func_details.handler = data['Handler']
         func_details.runtime = data['Runtime']
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
+        func_details.tags = data.get('Tags', {})
         func_details.timeout = data.get('Timeout')
         result = set_function_code(data['Code'], lambda_name)
         if isinstance(result, Response):
@@ -1058,6 +1059,39 @@ def put_concurrency(version, function):
         return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
     lambda_details.concurrency = data
     return jsonify(data)
+
+
+@app.route('/<version>/tags/<arn>', methods=['GET'])
+def list_tags(version, arn):
+    func_details = arn_to_lambda.get(arn)
+    if not func_details:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    result = {'Tags': func_details.tags}
+    return jsonify(result)
+
+
+@app.route('/<version>/tags/<arn>', methods=['POST'])
+def tag_resource(version, arn):
+    data = json.loads(request.data)
+    tags = data.get('Tags', {})
+    if tags:
+        func_details = arn_to_lambda.get(arn)
+        if not func_details:
+            return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        if func_details:
+            func_details.tags.update(tags)
+    return jsonify({})
+
+
+@app.route('/<version>/tags/<arn>', methods=['DELETE'])
+def untag_resource(version, arn):
+    tag_keys = request.args.getlist('tagKeys')
+    func_details = arn_to_lambda.get(arn)
+    if not func_details:
+        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+    for tag_key in tag_keys:
+        func_details.tags.pop(tag_key, None)
+    return jsonify({})
 
 
 def serve(port, quiet=True):
