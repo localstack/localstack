@@ -289,7 +289,7 @@ class TestLambdaAPI(unittest.TestCase):
             response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue('Tags' in result)
-            self.assertDictEqual(self.TAGS, result["Tags"])
+            self.assertDictEqual(self.TAGS, result['Tags'])
 
     def test_tag_resource(self):
         with self.app.test_request_context():
@@ -298,13 +298,13 @@ class TestLambdaAPI(unittest.TestCase):
             response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue('Tags' in result)
-            self.assertDictEqual({}, result["Tags"])
+            self.assertDictEqual({}, result['Tags'])
 
             self.client.post('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn), data=json.dumps({'Tags': self.TAGS}))
             response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue('Tags' in result)
-            self.assertDictEqual(self.TAGS, result["Tags"])
+            self.assertDictEqual(self.TAGS, result['Tags'])
 
     def test_tag_non_existent_function_returns_error(self):
         with self.app.test_request_context():
@@ -325,13 +325,13 @@ class TestLambdaAPI(unittest.TestCase):
             response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue('Tags' in result)
-            self.assertDictEqual(self.TAGS, result["Tags"])
+            self.assertDictEqual(self.TAGS, result['Tags'])
 
             self.client.delete('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn), query_string={'tagKeys': 'env'})
             response = self.client.get('{0}/tags/{1}'.format(lambda_api.PATH_ROOT, arn))
             result = json.loads(response.get_data())
             self.assertTrue('Tags' in result)
-            self.assertDictEqual({'hello': 'world'}, result["Tags"])
+            self.assertDictEqual({'hello': 'world'}, result['Tags'])
 
     def _create_function(self, function_name, tags={}):
         arn = lambda_api.func_arn(function_name)
