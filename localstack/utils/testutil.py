@@ -77,7 +77,7 @@ def create_zip_file(file_path, get_content=False):
 
 def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
         starting_position=LAMBDA_DEFAULT_STARTING_POSITION, runtime=LAMBDA_DEFAULT_RUNTIME,
-        envvars={}):
+        envvars={}, tags={}):
     """Utility method to create a new function via the Lambda API"""
 
     client = aws_stack.connect_to_service('lambda')
@@ -91,7 +91,8 @@ def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=L
             'ZipFile': zip_file
         },
         Timeout=LAMBDA_DEFAULT_TIMEOUT,
-        Environment=dict(Variables=envvars)
+        Environment=dict(Variables=envvars),
+        Tags=tags
     )
     # create event source mapping
     if event_source_arn:
