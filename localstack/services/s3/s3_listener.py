@@ -558,7 +558,7 @@ class ProxyListenerS3(ProxyListener):
             else:
                 parts = parsed.path[1:].split('/', 1)
                 object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
-            version_id = response.headers.get('x-amz-version-id', None);
+            version_id = response.headers.get('x-amz-version-id', None)
 
             send_notifications(method, bucket_name, object_path, version_id)
 
