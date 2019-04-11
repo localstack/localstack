@@ -57,13 +57,15 @@ class S3ListenerTest (unittest.TestCase):
 
         # create test bucket
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                             VersioningConfiguration={'Status': 'Enabled'})
         self.s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                                         NotificationConfiguration={'QueueConfigurations': [
                                                             {'QueueArn': queue_attributes['Attributes']['QueueArn'],
                                                              'Events': ['s3:ObjectCreated:*']}]})
 
         # put an object where the bucket_name is in the path
-        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body='something')
+        obj = self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body='something')
 
         # put an object where the bucket_name is in the host
         # it doesn't care about the authorization header as long as it's present
@@ -79,7 +81,15 @@ class S3ListenerTest (unittest.TestCase):
         # the ApproximateNumberOfMessages attribute is a string
         self.assertEqual(message_count, '2')
 
+        response = self.sqs_client.receive_message(QueueUrl=queue_url)
+        messages = [json.loads(to_str(m['Body'])) for m in response['Messages']]
+        record = messages[0]['Records'][0]
+        self.assertIsNotNone(record['s3']['object']['versionId'])
+        self.assertEquals(record['s3']['object']['versionId'], obj['VersionId'])
+
         # clean up
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                             VersioningConfiguration={'Status': 'Disabled'})
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self.s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                  Delete={'Objects': [{'Key': key_by_path}, {'Key': key_by_host}]})

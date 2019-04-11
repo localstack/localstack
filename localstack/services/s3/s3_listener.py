@@ -78,7 +78,7 @@ def prefix_with_slash(s):
     return s if s[0] == '/' else '/%s' % s
 
 
-def get_event_message(event_name, bucket_name, file_name='testfile.txt', file_size=1024):
+def get_event_message(event_name, bucket_name, file_name='testfile.txt', version_id=None, file_size=1024):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
     return {
         'Records': [{
@@ -111,7 +111,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', file_si
                     'key': file_name,
                     'size': file_size,
                     'eTag': 'd41d8cd98f00b204e9800998ecf8427e',
-                    'versionId': '096fKKXTRTtl3on89fVO.nfljtsv6qko',
+                    'versionId': version_id,
                     'sequencer': '0055AED6DCD90281E5'
                 }
             }
@@ -126,7 +126,7 @@ def queue_url_for_arn(queue_arn):
         QueueOwnerAWSAccountId=parts[4])['QueueUrl']
 
 
-def send_notifications(method, bucket_name, object_path):
+def send_notifications(method, bucket_name, object_path, version_id):
     for bucket, b_cfg in iteritems(S3_NOTIFICATIONS):
         if bucket == bucket_name:
             action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
@@ -143,7 +143,8 @@ def send_notifications(method, bucket_name, object_path):
                 # send notification
                 message = get_event_message(
                     event_name=event_name, bucket_name=bucket_name,
-                    file_name=urlparse.urlparse(object_path[1:]).path
+                    file_name=urlparse.urlparse(object_path[1:]).path,
+                    version_id=version_id
                 )
                 message = json.dumps(message)
                 if b_cfg.get('Queue'):
@@ -547,8 +548,9 @@ class ProxyListenerS3(ProxyListener):
             else:
                 parts = parsed.path[1:].split('/', 1)
                 object_path = parts[1] if parts[1][0] == '/' else '/%s' % parts[1]
+            version_id = response.headers.get('x-amz-version-id', None)
 
-            send_notifications(method, bucket_name, object_path)
+            send_notifications(method, bucket_name, object_path, version_id)
 
         # publish event for creation/deletion of buckets:
         if method in ('PUT', 'DELETE') and ('/' not in path[1:] or len(path[1:].split('/')[1]) <= 0):
