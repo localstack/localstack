@@ -62,6 +62,43 @@ class ProxyListenerSQS(ProxyListener):
     # Format of the message Name attribute is MessageAttribute.<int id>.<field>
     # Format of the Value attributes is MessageAttribute.<int id>.Value.DataType
     # and MessageAttribute.<int id>.Value.<Type>Value
+    #
+    # The data schema changes on transfer between SQS and Lambda (at least)
+    # JS functions in real AWS!
+    # It is unknown at this time whether this data structure change affects different
+    # languages in different ways.
+    #
+    # The MessageAttributes specified in the SQS payload (in JavaScript):
+    # var params = {
+    #   MessageBody: "body string",
+    #   MessageAttributes: {
+    #       "attr_1": {
+    #           DataType: "String",
+    #           StringValue: "attr_1_value"
+    #       },
+    #       "attr_2": {
+    #           DataType: "String",
+    #           StringValue: "attr_2_value"
+    #       }
+    #   }
+    # }
+    #
+    # The MessageAttributes specified above are massaged into the following structure:
+    # {
+    #    attr_1: {
+    #      stringValue: 'attr_1_value',
+    #      stringListValues: [],
+    #      binaryListValues: [],
+    #      dataType: 'String'
+    #    },
+    #    attr_2: {
+    #      stringValue: 'attr_2_value',
+    #      stringListValues: [],
+    #      binaryListValues: [],
+    #      dataType: 'String'
+    #    }
+    # }
+
     def format_message_attributes(self, data):
         names = []
         for (k, name) in [(k, data[k]) for k in data if k.startswith('MessageAttribute') and k.endswith('.Name')]:
@@ -76,7 +113,14 @@ class ProxyListenerSQS(ProxyListener):
             attrs = [(k, data[k]) for k in data
                 if k.startswith('MessageAttribute.{}.'.format(key_id)) and not k.endswith('.Name')]
             for (attr_k, attr_v) in attrs:
-                msg_attrs[key_name][attr_k.split('.')[3]] = attr_v[0]
+                attr_name = attr_k.split('.')[3]
+                msg_attrs[key_name][attr_name[0].lower() + attr_name[1:]] = attr_v[0]
+
+            # These fields are set in the payload sent to Lambda.
+            # It is extremely likely additional work will
+            # be required to support these fields
+            msg_attrs[key_name]['stringListValues'] = []
+            msg_attrs[key_name]['binaryListValues'] = []
 
         return msg_attrs
 
