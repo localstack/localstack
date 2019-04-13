@@ -19,12 +19,16 @@ class SQSListenerTest (unittest.TestCase):
 
         expected = {
             'attr_2': {
-                'DataType': 'Custom',
-                'StringValue': 'attr_2_value'
+                'dataType': 'Custom',
+                'stringValue': 'attr_2_value',
+                'stringListValues': [],
+                'binaryListValues': []
             },
             'attr_1': {
-                'DataType': 'String',
-                'StringValue': 'attr_1_value'
+                'dataType': 'String',
+                'stringValue': 'attr_1_value',
+                'stringListValues': [],
+                'binaryListValues': []
             }
         }
 
