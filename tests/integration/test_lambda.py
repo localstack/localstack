@@ -478,12 +478,12 @@ class TestJavaRuntimes(LambdaTestBase):
 
     def test_kinesis_event(self):
         result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA,
+            FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
             Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
         result_data = result['Payload'].read()
 
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertIn('KinesisEvent', to_str(result_data))
+        self.assertEqual(result['StatusCode'], 202)
+        self.assertEqual(to_str(result_data).strip(), '')
 
     def test_stream_handler(self):
         result = self.lambda_client.invoke(
