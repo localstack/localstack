@@ -9,7 +9,7 @@ boto3>=1.9.71
 botocore>=1.12.13
 coverage>=4.0.3
 docopt>=0.6.2
-elasticsearch==6.3.1
+elasticsearch>=6.0.0,<7.0.0
 flake8>=3.6.0
 flake8-quotes>=0.11.0
 flask==1.0.2
