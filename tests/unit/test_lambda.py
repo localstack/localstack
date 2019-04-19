@@ -49,6 +49,46 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
             self.assertEqual(0, len(lambda_api.event_source_mappings))
 
+    def test_create_event_source_mapping(self):
+        self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+                            data=json.dumps({'FunctionName': 'test-lambda-function', 'EventSourceArn': 'fake-arn'}))
+
+        listResponse = self.client.get('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT))
+        listResult = json.loads(listResponse.get_data())
+
+        eventSourceMappings = listResult.get('EventSourceMappings')
+
+        self.assertEqual(1, len(eventSourceMappings))
+        self.assertEqual('Enabled', eventSourceMappings[0]['State'])
+
+    def test_create_disabled_event_source_mapping(self):
+        createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+                            data=json.dumps({'FunctionName': 'test-lambda-function', 'EventSourceArn': 'fake-arn', 'Enabled': 'false'}))
+        createResult = json.loads(createResponse.get_data())
+
+        self.assertEqual('Disabled', createResult['State'])
+
+        getResponse = self.client.get('{0}/event-source-mappings/{1}'.format(lambda_api.PATH_ROOT, createResult.get('UUID')))
+        getResult = json.loads(createResponse.get_data())
+
+        self.assertEqual('Disabled', getResult['State'])
+
+    def test_update_event_source_mapping(self):
+        createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+                            data=json.dumps({'FunctionName': 'test-lambda-function', 'EventSourceArn': 'fake-arn', 'Enabled': 'true'}))
+        createResult = json.loads(createResponse.get_data())
+
+        putResponse = self.client.put('{0}/event-source-mappings/{1}'.format(lambda_api.PATH_ROOT, createResult.get('UUID')),
+                            data=json.dumps({'Enabled': 'false'}))
+        putResult = json.loads(putResponse.get_data())
+
+        self.assertEqual('Disabled', putResult['State'])
+
+        getResponse = self.client.get('{0}/event-source-mappings/{1}'.format(lambda_api.PATH_ROOT, createResult.get('UUID')))
+        getResult = json.loads(getResponse.get_data())
+
+        self.assertEqual('Disabled', getResult['State'])
+
     def test_publish_function_version(self):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)

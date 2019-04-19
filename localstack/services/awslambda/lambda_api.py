@@ -116,13 +116,13 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     arn_to_lambda[arn].cwd = lambda_cwd
 
 
-def add_event_source(function_name, source_arn):
+def add_event_source(function_name, source_arn, enabled):
     mapping = {
         'UUID': str(uuid.uuid4()),
         'StateTransitionReason': 'User action',
         'LastModified': float(time.mktime(datetime.utcnow().timetuple())),
         'BatchSize': 100,
-        'State': 'Enabled',
+        'State': 'Enabled' if enabled is True or enabled is None else 'Disabled',
         'FunctionArn': func_arn(function_name),
         'EventSourceArn': source_arn,
         'LastProcessingResult': 'OK',
@@ -138,7 +138,7 @@ def update_event_source(uuid_value, function_name, enabled, batch_size):
             if function_name:
                 m['FunctionArn'] = func_arn(function_name)
             m['BatchSize'] = batch_size
-            m['State'] = enabled and 'Enabled' or 'Disabled'
+            m['State'] = 'Enabled' if enabled is True else 'Disabled'
             m['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
             return m
     return {}
@@ -947,7 +947,7 @@ def create_event_source_mapping():
               in: body
     """
     data = json.loads(to_str(request.data))
-    mapping = add_event_source(data['FunctionName'], data['EventSourceArn'])
+    mapping = add_event_source(data['FunctionName'], data['EventSourceArn'], data.get('Enabled'))
     return jsonify(mapping)
 
 
@@ -964,7 +964,9 @@ def update_event_source_mapping(mapping_uuid):
     if not mapping_uuid:
         return jsonify({})
     function_name = data.get('FunctionName') or ''
-    enabled = data.get('Enabled') or True
+    enabled = data.get('Enabled')
+    if enabled is None:
+        enabled = True
     batch_size = data.get('BatchSize') or 100
     mapping = update_event_source(mapping_uuid, function_name, enabled, batch_size)
     return jsonify(mapping)
