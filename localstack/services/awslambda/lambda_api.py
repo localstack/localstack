@@ -964,9 +964,7 @@ def update_event_source_mapping(mapping_uuid):
     if not mapping_uuid:
         return jsonify({})
     function_name = data.get('FunctionName') or ''
-    enabled = data.get('Enabled')
-    if enabled is None:
-        enabled = True
+    enabled = data.get('Enabled', True)
     batch_size = data.get('BatchSize') or 100
     mapping = update_event_source(mapping_uuid, function_name, enabled, batch_size)
     return jsonify(mapping)

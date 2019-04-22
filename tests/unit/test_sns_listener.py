@@ -170,7 +170,7 @@ def test_filter_policy():
         (
             'exact string filter on an array',
             {'filter': 'soccer'},
-            {'filter': {'Type': 'String.Array', 'Value': '[\'soccer\', \'rugby\', \'hockey\']'}},
+            {'filter': {'Type': 'String.Array', 'Value': "['soccer', 'rugby', 'hockey']"}},
             True
         ),
         (
@@ -200,7 +200,7 @@ def test_filter_policy():
         (
             'or string filter match with an array',
             {'filter': ['soccer', 'basketball']},
-            {'filter': {'Type': 'String.Array', 'Value': '[\'soccer\', \'rugby\', \'hockey\']'}},
+            {'filter': {'Type': 'String.Array', 'Value': "['soccer', 'rugby', 'hockey']"}},
             True
         ),
         (
@@ -218,7 +218,7 @@ def test_filter_policy():
         (
             'or string filter no match with an array',
             {'filter': ['volleyball', 'basketball']},
-            {'filter': {'Type': 'String.Array', 'Value': '[\'soccer\', \'rugby\', \'hockey\']'}},
+            {'filter': {'Type': 'String.Array', 'Value': "['soccer', 'rugby', 'hockey']"}},
             False
         ),
         (
@@ -242,7 +242,7 @@ def test_filter_policy():
         (
             'prefix string filter match with an array',
             {'filter': [{'prefix': 'soc'}]},
-            {'filter': {'Type': 'String.Array', 'Value': '[\'soccer\', \'rugby\', \'hockey\']'}},
+            {'filter': {'Type': 'String.Array', 'Value': "['soccer', 'rugby', 'hockey']"}},
             True
         ),
         (
@@ -332,7 +332,7 @@ def test_filter_policy():
         (
             'logical OR with match on an array',
             {'filter': ['test1', 'test2', {'prefix': 'typ'}]},
-            {'filter': {'Type': 'String.Array', 'Value': '[\'test1\', \'other\']'}},
+            {'filter': {'Type': 'String.Array', 'Value': "['test1', 'other']"}},
             True
         ),
         (
@@ -344,7 +344,7 @@ def test_filter_policy():
         (
             'logical OR no match on an array',
             {'filter': ['test1', 'test2', {'prefix': 'typ'}]},
-            {'filter': {'Type': 'String.Array', 'Value': '[\'anything\', \'something\']'}},
+            {'filter': {'Type': 'String.Array', 'Value': "['anything', 'something']"}},
             False
         ),
         (
@@ -422,7 +422,7 @@ def test_filter_policy():
         (
             'multiple conditions on an array',
             {'filter': ['test1', 'test2', {'prefix': 'som'}]},
-            {'filter': {'Type': 'String.Array', 'Value': '[\'anything\', \'something\']'}},
+            {'filter': {'Type': 'String.Array', 'Value': "['anything', 'something']"}},
             True
         )
     ]

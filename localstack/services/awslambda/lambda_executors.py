@@ -420,7 +420,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             # Check if the container is already running
             # Note: filtering by *exact* name using regex filter '^...$' seems unstable on some
             # systems. Therefore, we use a combination of filter and grep to get the results.
-            cmd = ('docker ps -a --filter name=\'%s\' '
+            cmd = ("docker ps -a --filter name='%s' "
                    '--format "{{ .Status }} - {{ .Names }}" '
                    '| grep -w "%s" | cat') % (container_name, container_name)
             LOG.debug('Getting status for container "%s": %s' % (container_name, cmd))
