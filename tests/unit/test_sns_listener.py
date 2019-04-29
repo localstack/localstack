@@ -14,6 +14,8 @@ class SNSTests(unittest.TestCase):
             'RawMessageDelivery': 'false',
             'TopicArn': 'arn',
         }
+        # Reset subscriptions
+        sns_listener.SNS_SUBSCRIPTIONS = {}
 
     def test_unsubscribe_without_arn_should_error(self):
         sns = sns_listener.ProxyListenerSNS()
@@ -32,11 +34,28 @@ class SNSTests(unittest.TestCase):
             topic_arn,
             'http://localhost:1234/listen',
             'http',
-            sub_arn
+            sub_arn,
+            {}
         )
         self.assertTrue(sns_listener.get_subscription_by_arn(sub_arn))
         sns_listener.do_unsubscribe(sub_arn)
         self.assertFalse(sns_listener.get_subscription_by_arn(sub_arn))
+
+    def test_get_subscribe_attributes(self):
+        req_data = {
+            'Attribute.entry.1.key': ['RawMessageDelivery'],
+            'Attribute.entry.1.value': ['true'],
+            'Attribute.entry.2.key': ['FilterPolicy'],
+            'Attribute.entry.2.value': ['{"type": ["foo", "bar"]}']
+        }
+        attributes = sns_listener.get_subscribe_attributes(req_data)
+        self.assertDictEqual(
+            attributes,
+            {
+                'RawMessageDelivery': 'true',
+                'FilterPolicy': '{"type": ["foo", "bar"]}'
+            }
+        )
 
     def test_create_sns_message_body_raw_message_delivery(self):
         self.subscriber['RawMessageDelivery'] = 'true'
