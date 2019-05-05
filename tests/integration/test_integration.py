@@ -297,7 +297,7 @@ class IntegrationTest(unittest.TestCase):
             event_source_arn=get_event_source_arn(TEST_CHAIN_STREAM2_NAME), runtime=LAMBDA_RUNTIME_PYTHON27)
 
         # publish test record
-        test_data = {'test_data': 'forward_chain_data_%s' % short_uid()}
+        test_data = {'test_data': 'forward_chain_data_%s with \'quotes\\"' % short_uid()}
         data = clone(test_data)
         data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = 'kinesis:%s' % TEST_CHAIN_STREAM2_NAME
         kinesis.put_record(Data=to_bytes(json.dumps(data)), PartitionKey='testId', StreamName=TEST_CHAIN_STREAM1_NAME)
