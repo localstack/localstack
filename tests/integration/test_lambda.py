@@ -216,7 +216,7 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertIn('Version', response)
 
         # invoke lambda function
-        data_before = b'{"foo": "bar"}'
+        data_before = b'{"foo": "bar with \'quotes\\""}'
         result = self.lambda_client.invoke(
             FunctionName=lambda_name,
             Payload=data_before,
@@ -264,7 +264,7 @@ class TestPythonRuntimes(LambdaTestBase):
         )
 
         # invoke lambda function
-        data_before = b'{"foo": "bar"}'
+        data_before = b'{"foo": "bar with \'quotes\\""}'
         result = self.lambda_client.invoke(
             FunctionName=lambda_name, Payload=data_before)
         data_after = json.loads(result['Payload'].read())
@@ -346,13 +346,13 @@ class TestCustomRuntimes(LambdaTestBase):
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
-            Payload=b'{"text":"Hello"}')
+            Payload=b'{"text":"bar with \'quotes\\""}')
         result_data = result['Payload'].read()
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(
             to_str(result_data).strip(),
-            """Echoing request: '{"text": "Hello"}'""")
+            """Echoing request: '{"text": "bar with \'quotes\\""}'""")
 
         # assert that logs are present
         expected = ['.*Custom Runtime Lambda handler executing.']
