@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.9.1'
+VERSION = '0.9.2'
 
 # default AWS region
 if 'DEFAULT_REGION' not in os.environ:

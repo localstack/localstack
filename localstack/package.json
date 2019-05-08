@@ -1,6 +1,6 @@
 {
   "name": "localstack",
-  "author": "Waldemar Hummer (Atlassian) <whummer@atlassian.com>",
+  "author": "Waldemar Hummer (Atlassian) <waldemar.hummer@gmail.com>",
   "description": "Local Cloud Stack and Utilities",
   "version": "0.0.1",
   "dependencies": {

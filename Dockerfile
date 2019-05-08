@@ -60,9 +60,11 @@ RUN mkdir -p /.npm && \
     chmod -R 777 localstack/infra/elasticsearch/data && \
     chmod -R 777 localstack/infra/elasticsearch/logs && \
     chmod -R 777 /tmp/localstack && \
-    chown -R `id -un`:`id -gn` . && \
     adduser -D localstack && \
+    chown -R localstack:localstack . && \
     ln -s `pwd` /tmp/localstack_install_dir
+
+USER localstack
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
