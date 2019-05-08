@@ -66,6 +66,7 @@ public class LocalstackDocker {
                     dockerConfiguration.getExternalHostName(),
                     dockerConfiguration.isPullNewImage(),
                     dockerConfiguration.isRandomizePorts(),
+                    dockerConfiguration.getImageTag(),
                     dockerConfiguration.getEnvironmentVariables()
             );
             loadServiceToPortMap();
