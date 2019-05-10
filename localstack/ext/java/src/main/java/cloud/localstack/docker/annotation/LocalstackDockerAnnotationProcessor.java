@@ -32,6 +32,7 @@ public class LocalstackDockerAnnotationProcessor {
                 .externalHostName(this.getExternalHostName(properties))
                 .pullNewImage(properties.pullNewImage())
                 .randomizePorts(properties.randomizePorts())
+                .imageTag(StringUtils.isEmpty(properties.imageTag()) ? null : properties.imageTag())
                 .build();
     }
 

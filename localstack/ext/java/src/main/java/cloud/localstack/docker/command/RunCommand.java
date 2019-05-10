@@ -8,8 +8,15 @@ public class RunCommand extends Command {
 
     private final String imageName;
 
+    private final String imageTag;
+
     public RunCommand(String imageName) {
+        this(imageName, null);
+    }
+
+    public RunCommand(String imageName, String imageTag) {
         this.imageName = imageName;
+        this.imageTag = imageTag;
     }
 
     public String execute() {
@@ -18,7 +25,7 @@ public class RunCommand extends Command {
         args.add("-d");
         args.add("--rm");
         args.addAll(options);
-        args.add(imageName);
+        args.add(imageTag == null ? imageName : String.format("%s:%s", imageName, imageTag));
 
         return dockerExe.execute(args);
     }

@@ -22,6 +22,8 @@ public class LocalstackDockerConfiguration {
 
     private final boolean randomizePorts;
 
+    private final String imageTag;
+
     @Builder.Default
     private final String externalHostName = "localhost";
 

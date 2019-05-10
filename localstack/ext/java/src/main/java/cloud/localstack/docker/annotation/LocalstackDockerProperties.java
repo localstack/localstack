@@ -42,4 +42,9 @@ public @interface LocalstackDockerProperties {
      * up and running.
      */
     String[] services() default {};
+
+    /**
+     * Use a specific image tag for docker container
+     */
+    String imageTag() default "";
 }

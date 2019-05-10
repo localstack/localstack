@@ -45,14 +45,15 @@ public class Container {
      * @param environmentVariables map of environment variables to be passed to the docker container
      */
     public static Container createLocalstackContainer(String externalHostName, boolean pullNewImage,
-                                                      boolean randomizePorts, Map<String, String> environmentVariables) {
+                                                      boolean randomizePorts, String imageTag,
+                                                      Map<String, String> environmentVariables) {
 
         if(pullNewImage) {
             LOG.info("Pulling latest image...");
-            new PullCommand(LOCALSTACK_NAME).execute();
+            new PullCommand(LOCALSTACK_NAME, imageTag).execute();
         }
 
-        String containerId = new RunCommand(LOCALSTACK_NAME)
+        String containerId = new RunCommand(LOCALSTACK_NAME, imageTag)
                 .withExposedPorts(LOCALSTACK_PORTS, randomizePorts)
                 .withEnvironmentVariable(LOCALSTACK_EXTERNAL_HOSTNAME, externalHostName)
                 .withEnvironmentVariables(environmentVariables)
