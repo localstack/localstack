@@ -61,7 +61,7 @@ RUN mkdir -p /.npm && \
     chmod -R 777 localstack/infra/elasticsearch/logs && \
     chmod -R 777 /tmp/localstack && \
     adduser -D localstack && \
-    chown -R localstack:localstack . && \
+    chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
 USER localstack
