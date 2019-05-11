@@ -64,8 +64,7 @@ RUN mkdir -p /.npm && \
     chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
-USER localstack
-
 # run tests (to verify the build before pushing the image)
+USER localstack
 ADD tests/ tests/
 RUN make test
