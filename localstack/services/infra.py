@@ -423,6 +423,12 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
 
 
 def start_infra_in_docker():
+
+    container_name = 'localstack_main'
+
+    if docker_container_running(container_name):
+        raise Exception('LocalStack container named "%s" is already running' % container_name)
+
     # load plugins before starting the docker container
     plugin_configs = load_plugins()
     plugin_run_params = ' '.join([
@@ -481,8 +487,6 @@ def start_infra_in_docker():
     user_flags = '%s ' % user_flags if user_flags else user_flags
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
-
-    container_name = 'localstack_main'
 
     docker_cmd = ('docker run %s%s%s%s%s' +
         '--rm --privileged ' +

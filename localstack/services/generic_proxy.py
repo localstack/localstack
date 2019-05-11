@@ -5,6 +5,7 @@ import socket
 import inspect
 import logging
 import traceback
+import click
 import requests
 from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
@@ -342,10 +343,15 @@ def serve_flask_app(app, port, quiet=True, host=None, cors=True):
     if cors:
         CORS(app)
     if quiet:
-        log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
     if not host:
         host = '0.0.0.0'
     ssl_context = GenericProxy.get_flask_ssl_context()
+    app.config['ENV'] = 'development'
+
+    def noecho(*args, **kwargs):
+        pass
+
+    click.echo = noecho
     app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
     return app
