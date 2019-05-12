@@ -54,6 +54,9 @@ LOG = logging.getLogger(os.path.basename(__file__))
 # map of service plugins, mapping from service name to plugin details
 SERVICE_PLUGINS = {}
 
+# whether or not to manually fix permissions on /var/run/docker.sock (currently disabled)
+DO_CHMOD_DOCKER_SOCK = False
+
 # plugin scopes
 PLUGIN_SCOPE_SERVICES = 'services'
 PLUGIN_SCOPE_COMMANDS = 'commands'
@@ -508,12 +511,13 @@ def start_infra_in_docker():
     t.start()
     time.sleep(2)
 
-    # fix permissions on /var/run/docker.sock
-    for i in range(0, 100):
-        if docker_container_running(container_name):
-            break
-        time.sleep(2)
-    run('docker exec -u root "%s" chmod 777 /var/run/docker.sock' % container_name)
+    if DO_CHMOD_DOCKER_SOCK:
+        # fix permissions on /var/run/docker.sock
+        for i in range(0, 100):
+            if docker_container_running(container_name):
+                break
+            time.sleep(2)
+        run('docker exec -u root "%s" chmod 777 /var/run/docker.sock' % container_name)
 
     t.process.wait()
     sys.exit(t.process.returncode)

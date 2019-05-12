@@ -1,5 +1,7 @@
 import os
 import json
+import logging
+import click
 from flask import Flask, render_template, jsonify, send_from_directory, request
 from flask_swagger import swagger
 from localstack.constants import VERSION
@@ -98,4 +100,11 @@ def ensure_webapp_installed():
 
 def serve(port):
     ensure_webapp_installed()
+
+    def noecho(*args, **kwargs):
+        pass
+
+    click.echo = noecho
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+    app.config['ENV'] = 'development'
     app.run(port=int(port), debug=True, threaded=True, host='0.0.0.0')
