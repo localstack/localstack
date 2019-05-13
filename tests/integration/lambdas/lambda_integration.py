@@ -96,9 +96,16 @@ def deserialize_event(event):
     # Deserialize into Python dictionary and extract the "NewImage" (the new version of the full ddb document)
     ddb = event.get('dynamodb')
     if ddb:
+        result = {
+            '__action_type': event.get('eventName'),
+        }
+
         ddb_deserializer = TypeDeserializer()
-        result = ddb_deserializer.deserialize({'M': ddb.get('NewImage')})
-        result['__action_type'] = event.get('eventName')
+        if ddb.get('OldImage'):
+            result['old_image'] = ddb_deserializer.deserialize({'M': ddb.get('OldImage')})
+        if ddb.get('NewImage'):
+            result['new_image'] = ddb_deserializer.deserialize({'M': ddb.get('NewImage')})
+
         return result
     kinesis = event.get('kinesis')
     if kinesis:
