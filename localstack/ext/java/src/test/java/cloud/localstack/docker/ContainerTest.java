@@ -21,7 +21,7 @@ public class ContainerTest {
 
         HashMap<String, String> environmentVariables = new HashMap<>();
         environmentVariables.put(MY_PROPERTY, MY_VALUE);
-        Container localStackContainer = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, true, environmentVariables);
+        Container localStackContainer = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, true, null, environmentVariables);
 
         try {
             localStackContainer.waitForAllPorts(EXTERNAL_HOST_NAME);
@@ -49,7 +49,7 @@ public class ContainerTest {
 
     @Test
     public void createLocalstackContainerWithRandomPorts() throws Exception {
-        Container container = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, true, new HashMap<>());
+        Container container = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, true, null, new HashMap<>());
 
         try {
             container.waitForAllPorts(EXTERNAL_HOST_NAME);
@@ -66,7 +66,7 @@ public class ContainerTest {
 
     @Test
     public void createLocalstackContainerWithStaticPorts() throws Exception {
-        Container container = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, false, new HashMap<>());
+        Container container = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, false, null, new HashMap<>());
 
         try {
             container.waitForAllPorts(EXTERNAL_HOST_NAME);

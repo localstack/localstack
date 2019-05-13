@@ -82,6 +82,7 @@ if __name__ == '__main__':
             subcommand['function'](argv, args)
         except Exception as e:
             print('ERROR: %s' % e)
+            sys.exit(1)
     else:
         print('ERROR: Invalid command "%s"' % args['<command>'])
         sys.exit(1)

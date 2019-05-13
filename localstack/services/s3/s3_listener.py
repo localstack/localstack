@@ -451,7 +451,7 @@ class ProxyListenerS3(ProxyListener):
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
         to_find = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
         if data and data.startswith(to_bytes('<')) and to_find in data:
-            modified_data = data.replace(to_find, '')
+            modified_data = data.replace(to_find, to_bytes(''))
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98

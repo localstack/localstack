@@ -48,14 +48,6 @@ def install_elasticsearch():
             mkdir(dir_path)
             chmod_r(dir_path, 0o777)
 
-        # patch JVM options file - replace hardcoded heap size settings
-        jvm_options_file = os.path.join(INSTALL_DIR_ES, 'config', 'jvm.options')
-        if os.path.exists(jvm_options_file):
-            jvm_options = load_file(jvm_options_file)
-            jvm_options_replaced = re.sub(r'(^-Xm[sx][a-zA-Z0-9\.]+$)', r'# \1', jvm_options, flags=re.MULTILINE)
-            if jvm_options != jvm_options_replaced:
-                save_file(jvm_options_file, jvm_options_replaced)
-
         # install default plugins
         for plugin in ELASTICSEARCH_PLUGIN_LIST:
             if is_alpine():
@@ -63,6 +55,14 @@ def install_elasticsearch():
                 os.environ['ES_TMPDIR'] = '/tmp'
             plugin_binary = os.path.join(INSTALL_DIR_ES, 'bin', 'elasticsearch-plugin')
             run('%s install %s' % (plugin_binary, plugin))
+
+    # patch JVM options file - replace hardcoded heap size settings
+    jvm_options_file = os.path.join(INSTALL_DIR_ES, 'config', 'jvm.options')
+    if os.path.exists(jvm_options_file):
+        jvm_options = load_file(jvm_options_file)
+        jvm_options_replaced = re.sub(r'(^-Xm[sx][a-zA-Z0-9\.]+$)', r'# \1', jvm_options, flags=re.MULTILINE)
+        if jvm_options != jvm_options_replaced:
+            save_file(jvm_options_file, jvm_options_replaced)
 
 
 def install_elasticmq():

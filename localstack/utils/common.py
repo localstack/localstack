@@ -132,6 +132,8 @@ class ShellCommandThread(FuncThread):
                         for line in iter(instream.readline, None):
                             if line is None:
                                 break
+                            if not (line and line.strip()):
+                                time.sleep(0.1)
                             if not (line and line.strip()) and self.is_killed():
                                 break
                             line = convert_line(line)
@@ -592,6 +594,11 @@ def load_file(file_path, default=None, mode=None):
     with open(file_path, mode) as f:
         result = f.read()
     return result
+
+
+def docker_container_running(container_name):
+    container_names = re.split(r'\s+', run("docker ps --format '{{.Names}}'").replace('\n', ' '))
+    return container_name in container_names
 
 
 def to_str(obj, encoding=DEFAULT_ENCODING, errors='strict'):

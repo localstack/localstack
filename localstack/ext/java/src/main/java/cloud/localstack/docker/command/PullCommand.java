@@ -9,13 +9,20 @@ public class PullCommand extends Command {
 
     private final String imageName;
 
+    private final String imageTag;
+
     public PullCommand(String imageName) {
+        this(imageName, null);
+    }
+
+    public PullCommand(String imageName, String imageTag) {
         this.imageName = imageName;
+        this.imageTag = imageTag;
     }
 
 
     public void execute() {
-        String image = String.format("%s:%s", imageName, LATEST_TAG);
+        String image = String.format("%s:%s", imageName, imageTag == null ? LATEST_TAG : imageTag);
         dockerExe.execute(Arrays.asList("pull", image), PULL_COMMAND_TIMEOUT_MINUTES);
     }
 }

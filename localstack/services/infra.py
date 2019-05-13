@@ -19,7 +19,7 @@ from localstack.constants import (
 from localstack.config import USE_SSL
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_free_tcp_port,
-    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol)
+    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol, docker_container_running)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
@@ -53,6 +53,9 @@ LOG = logging.getLogger(os.path.basename(__file__))
 
 # map of service plugins, mapping from service name to plugin details
 SERVICE_PLUGINS = {}
+
+# whether or not to manually fix permissions on /var/run/docker.sock (currently disabled)
+DO_CHMOD_DOCKER_SOCK = False
 
 # plugin scopes
 PLUGIN_SCOPE_SERVICES = 'services'
@@ -423,6 +426,12 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
 
 
 def start_infra_in_docker():
+
+    container_name = 'localstack_main'
+
+    if docker_container_running(container_name):
+        raise Exception('LocalStack container named "%s" is already running' % container_name)
+
     # load plugins before starting the docker container
     plugin_configs = load_plugins()
     plugin_run_params = ' '.join([
@@ -483,12 +492,14 @@ def start_infra_in_docker():
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
 
     docker_cmd = ('docker run %s%s%s%s%s' +
+        '--rm --privileged ' +
+        '--name %s ' +
         '-p 8080:8080 %s %s' +
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-            interactive, entrypoint, env_str, user_flags, plugin_run_params, port_mappings, data_dir_mount,
-            config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
+            interactive, entrypoint, env_str, user_flags, plugin_run_params, container_name, port_mappings,
+            data_dir_mount, config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
             config.HOST_TMP_FOLDER, image_name, cmd
     )
 
@@ -499,6 +510,15 @@ def start_infra_in_docker():
     t = ShellCommandThread(docker_cmd, outfile=subprocess.PIPE)
     t.start()
     time.sleep(2)
+
+    if DO_CHMOD_DOCKER_SOCK:
+        # fix permissions on /var/run/docker.sock
+        for i in range(0, 100):
+            if docker_container_running(container_name):
+                break
+            time.sleep(2)
+        run('docker exec -u root "%s" chmod 777 /var/run/docker.sock' % container_name)
+
     t.process.wait()
     sys.exit(t.process.returncode)
 
