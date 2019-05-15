@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import io
 import os
 import re
@@ -130,10 +128,10 @@ class ShellCommandThread(FuncThread):
                     streams = ((self.process.stdout, sys.stdout), (self.process.stderr, sys.stderr))
                     for instream, outstream in streams:
                         for line in iter(instream.readline, None):
-                            if line is None:
+                            # `line` should contain a newline at the end as we're iterating,
+                            # hence we can safely break the loop if `line` is None or empty string
+                            if line in [None, '', b'']:
                                 break
-                            if not (line and line.strip()):
-                                time.sleep(0.1)
                             if not (line and line.strip()) and self.is_killed():
                                 break
                             line = convert_line(line)

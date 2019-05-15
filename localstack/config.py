@@ -58,6 +58,9 @@ DOCKER_SOCK = os.environ.get('DOCKER_SOCK', '').strip() or '/var/run/docker.sock
 # port of Web UI
 PORT_WEB_UI = int(os.environ.get('PORT_WEB_UI', '').strip() or DEFAULT_PORT_WEB_UI)
 
+# IP of the docker bridge used to enable access between containers
+DOCKER_BRIDGE_IP = os.environ.get('DOCKER_BRIDGE_IP', '').strip() or '172.17.0.1'
+
 # whether to use Lambda functions in a Docker container
 LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR', '').strip()
 if not LAMBDA_EXECUTOR:
@@ -79,7 +82,7 @@ LAMBDA_FALLBACK_URL = os.environ.get('LAMBDA_FALLBACK_URL', '').strip()
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME', 'LAMBDA_FALLBACK_URL',
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LICENSE_KEY', 'DEBUG',
-    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB']
+    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB', 'DOCKER_BRIDGE_IP']
 
 for key, value in iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -97,18 +100,21 @@ def in_docker():
         return 'docker' in ifh.read()
 
 
+is_in_docker = in_docker()
+
 # determine route to Docker host from container
-DOCKER_BRIDGE_IP = '172.17.0.1'
 try:
-    DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
+    DOCKER_HOST_FROM_CONTAINER = DOCKER_BRIDGE_IP
+    if not is_in_docker:
+        DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
     # update LOCALSTACK_HOSTNAME if host.docker.internal is available
-    if in_docker() and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
+    if is_in_docker and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
         LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
-    DOCKER_HOST_FROM_CONTAINER = DOCKER_BRIDGE_IP
+    pass
 
 # make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
-if in_docker() and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
+if is_in_docker and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
     LAMBDA_REMOTE_DOCKER = True
 
 # local config file path in home directory

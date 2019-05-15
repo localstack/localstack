@@ -15,11 +15,9 @@ from localstack.services.infra import start_proxy
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
-    LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_DOTNETCORE2,
-    LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
-    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_NODEJS810, use_docker,
-    LAMBDA_RUNTIME_CUSTOM_RUNTIME
+    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
+    use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_CUSTOM_RUNTIME
 )
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -313,7 +311,7 @@ class TestNodeJSRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_JS,
             zip_file=zip_file,
             handler='lambda_integration.handler',
-            runtime=LAMBDA_RUNTIME_NODEJS
+            runtime=LAMBDA_RUNTIME_NODEJS810
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')
