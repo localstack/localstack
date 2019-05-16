@@ -25,7 +25,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ProxyListenerDynamoDB(ProxyListener):
-
     thread_local = threading.local()
 
     def __init__(self):
@@ -149,82 +148,9 @@ class ProxyListenerDynamoDB(ProxyListener):
                 record['dynamodb']['NewImage'] = updated_item
                 record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
-            records = []
-            i = 0
-            for table_name in sorted(data['RequestItems'].keys()):
-                for request in data['RequestItems'][table_name]:
-                    put_request = request.get('PutRequest')
-                    if put_request:
-                        existing_item = self._thread_local('existing_items')[i]
-                        keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
-                        if isinstance(keys, Response):
-                            return keys
-                        new_record = clone(record)
-                        new_record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
-                        new_record['dynamodb']['Keys'] = keys
-                        new_record['dynamodb']['NewImage'] = put_request['Item']
-                        if existing_item:
-                            new_record['dynamodb']['OldImage'] = existing_item
-                        new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-                        records.append(new_record)
-                    delete_request = request.get('DeleteRequest')
-                    if delete_request:
-                        keys = delete_request['Key']
-                        if isinstance(keys, Response):
-                            return keys
-                        new_record = clone(record)
-                        new_record['eventName'] = 'REMOVE'
-                        new_record['dynamodb']['Keys'] = keys
-                        new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
-                        new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-                        records.append(new_record)
-                    i += 1
+            records = self.prepare_batch_write_item_records(record, data)
         elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
-            records = []
-            for i, request in enumerate(data['TransactItems']):
-                put_request = request.get('Put')
-                if put_request:
-                    existing_item = self._thread_local('existing_items')[i]
-                    table_name = put_request['TableName']
-                    keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
-                    if isinstance(keys, Response):
-                        return keys
-                    new_record = clone(record)
-                    new_record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
-                    new_record['dynamodb']['Keys'] = keys
-                    new_record['dynamodb']['NewImage'] = put_request['Item']
-                    if existing_item:
-                        new_record['dynamodb']['OldImage'] = existing_item
-                    new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-                    records.append(new_record)
-                update_request = request.get('Update')
-                if update_request:
-                    table_name = update_request['TableName']
-                    keys = update_request['Key']
-                    if isinstance(keys, Response):
-                        return keys
-                    updated_item = find_existing_item(update_request, table_name)
-                    if not updated_item:
-                        return
-                    new_record = clone(record)
-                    new_record['eventName'] = 'MODIFY'
-                    new_record['dynamodb']['Keys'] = keys
-                    new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
-                    new_record['dynamodb']['NewImage'] = updated_item
-                    new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-                    records.append(new_record)
-                delete_request = request.get('Delete')
-                if delete_request:
-                    table_name = delete_request['TableName']
-                    keys = delete_request['Key']
-                    if isinstance(keys, Response):
-                        return keys
-                    new_record = clone(record)
-                    new_record['eventName'] = 'REMOVE'
-                    new_record['dynamodb']['Keys'] = keys
-                    new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
-                    new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
-                    records.append(new_record)
+            records = self.prepare_transact_write_item_records(record, data)
         elif action == '%s.PutItem' % ACTION_PREFIX:
             if response.status_code == 200:
                 existing_item = self._thread_local('existing_item')
@@ -278,6 +204,87 @@ class ProxyListenerDynamoDB(ProxyListener):
                 records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
             forward_to_lambda(records)
             forward_to_ddb_stream(records)
+
+    def prepare_batch_write_item_records(self, record, data):
+        records = []
+        i = 0
+        for table_name in sorted(data['RequestItems'].keys()):
+            for request in data['RequestItems'][table_name]:
+                put_request = request.get('PutRequest')
+                if put_request:
+                    existing_item = self._thread_local('existing_items')[i]
+                    keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
+                    if isinstance(keys, Response):
+                        return keys
+                    new_record = clone(record)
+                    new_record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
+                    new_record['dynamodb']['Keys'] = keys
+                    new_record['dynamodb']['NewImage'] = put_request['Item']
+                    if existing_item:
+                        new_record['dynamodb']['OldImage'] = existing_item
+                    new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                    records.append(new_record)
+                delete_request = request.get('DeleteRequest')
+                if delete_request:
+                    keys = delete_request['Key']
+                    if isinstance(keys, Response):
+                        return keys
+                    new_record = clone(record)
+                    new_record['eventName'] = 'REMOVE'
+                    new_record['dynamodb']['Keys'] = keys
+                    new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
+                    new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                    records.append(new_record)
+                i += 1
+        return records
+
+    def prepare_transact_write_item_records(self, record, data):
+        records = []
+        for i, request in enumerate(data['TransactItems']):
+            put_request = request.get('Put')
+            if put_request:
+                existing_item = self._thread_local('existing_items')[i]
+                table_name = put_request['TableName']
+                keys = dynamodb_extract_keys(item=put_request['Item'], table_name=table_name)
+                if isinstance(keys, Response):
+                    return keys
+                new_record = clone(record)
+                new_record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
+                new_record['dynamodb']['Keys'] = keys
+                new_record['dynamodb']['NewImage'] = put_request['Item']
+                if existing_item:
+                    new_record['dynamodb']['OldImage'] = existing_item
+                new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                records.append(new_record)
+            update_request = request.get('Update')
+            if update_request:
+                table_name = update_request['TableName']
+                keys = update_request['Key']
+                if isinstance(keys, Response):
+                    return keys
+                updated_item = find_existing_item(update_request, table_name)
+                if not updated_item:
+                    return
+                new_record = clone(record)
+                new_record['eventName'] = 'MODIFY'
+                new_record['dynamodb']['Keys'] = keys
+                new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
+                new_record['dynamodb']['NewImage'] = updated_item
+                new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                records.append(new_record)
+            delete_request = request.get('Delete')
+            if delete_request:
+                table_name = delete_request['TableName']
+                keys = delete_request['Key']
+                if isinstance(keys, Response):
+                    return keys
+                new_record = clone(record)
+                new_record['eventName'] = 'REMOVE'
+                new_record['dynamodb']['Keys'] = keys
+                new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
+                new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
+                records.append(new_record)
+        return records
 
     def _thread_local(self, name, default=None):
         try:
