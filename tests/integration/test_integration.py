@@ -119,8 +119,9 @@ class IntegrationTest(unittest.TestCase):
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
     def test_kinesis_lambda_sns_ddb_sqs_streams(self):
-        ddb_lease_table_suffix = '-kclapp1'
-        table_name = TEST_TABLE_NAME + ddb_lease_table_suffix
+        ddb_lease_table_suffix = '-kclapp'
+        table_name = TEST_TABLE_NAME + 'klsdss' + ddb_lease_table_suffix
+        stream_name = TEST_STREAM_NAME
         dynamodb = aws_stack.connect_to_resource('dynamodb')
         dynamodb_service = aws_stack.connect_to_service('dynamodb')
         dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
@@ -130,8 +131,8 @@ class IntegrationTest(unittest.TestCase):
 
         LOGGER.info('Creating test streams...')
         run_safe(lambda: dynamodb_service.delete_table(
-            TableName=TEST_STREAM_NAME + ddb_lease_table_suffix), print_error=False)
-        aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
+            TableName=stream_name + ddb_lease_table_suffix), print_error=False)
+        aws_stack.create_kinesis_stream(stream_name, delete=True)
         aws_stack.create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
 
         events = []
@@ -141,7 +142,7 @@ class IntegrationTest(unittest.TestCase):
             events.extend(records)
 
         # start the KCL client process in the background
-        kinesis_connector.listen_to_kinesis(TEST_STREAM_NAME, listener_func=process_records,
+        kinesis_connector.listen_to_kinesis(stream_name, listener_func=process_records,
             wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
 
         LOGGER.info('Kinesis consumer initialized.')
@@ -283,15 +284,16 @@ class IntegrationTest(unittest.TestCase):
 
     def test_lambda_streams_batch_and_transactions(self):
         ddb_lease_table_suffix = '-kclapp2'
-        table_name = TEST_TABLE_NAME + ddb_lease_table_suffix
+        table_name = TEST_TABLE_NAME + 'lsbat' + ddb_lease_table_suffix
+        stream_name = TEST_STREAM_NAME
         dynamodb = aws_stack.connect_to_service('dynamodb', client=True)
         dynamodb_service = aws_stack.connect_to_service('dynamodb')
         dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
 
         LOGGER.info('Creating test streams...')
         run_safe(lambda: dynamodb_service.delete_table(
-            TableName=TEST_STREAM_NAME + ddb_lease_table_suffix), print_error=False)
-        aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
+            TableName=stream_name + ddb_lease_table_suffix), print_error=False)
+        aws_stack.create_kinesis_stream(stream_name, delete=True)
 
         events = []
 
@@ -300,7 +302,7 @@ class IntegrationTest(unittest.TestCase):
             events.extend(records)
 
         # start the KCL client process in the background
-        kinesis_connector.listen_to_kinesis(TEST_STREAM_NAME, listener_func=process_records,
+        kinesis_connector.listen_to_kinesis(stream_name, listener_func=process_records,
             wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
 
         LOGGER.info('Kinesis consumer initialized.')
