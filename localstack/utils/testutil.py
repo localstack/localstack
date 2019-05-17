@@ -77,10 +77,18 @@ def create_zip_file(file_path, get_content=False):
 
 def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
         starting_position=LAMBDA_DEFAULT_STARTING_POSITION, runtime=LAMBDA_DEFAULT_RUNTIME,
-        envvars={}, tags={}):
+        envvars={}, tags={}, delete=False):
     """Utility method to create a new function via the Lambda API"""
 
     client = aws_stack.connect_to_service('lambda')
+
+    if delete:
+        try:
+            # Delete function if one already exists
+            client.delete_function(FunctionName=func_name)
+        except Exception:
+            pass
+
     # create function
     client.create_function(
         FunctionName=func_name,

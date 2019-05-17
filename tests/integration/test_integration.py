@@ -32,8 +32,6 @@ TEST_CHAIN_STREAM2_NAME = 'test_chain_stream_2'
 TEST_CHAIN_LAMBDA1_NAME = 'test_chain_lambda_1'
 TEST_CHAIN_LAMBDA2_NAME = 'test_chain_lambda_2'
 
-EVENTS = []
-
 PARTITION_KEY = 'id'
 
 # set up logger
@@ -122,6 +120,8 @@ class IntegrationTest(unittest.TestCase):
 
     def test_kinesis_lambda_sns_ddb_sqs_streams(self):
         ddb_lease_table_suffix = '-kclapp'
+        table_name = TEST_TABLE_NAME + 'klsdss' + ddb_lease_table_suffix
+        stream_name = TEST_STREAM_NAME
         dynamodb = aws_stack.connect_to_resource('dynamodb')
         dynamodb_service = aws_stack.connect_to_service('dynamodb')
         dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
@@ -131,29 +131,31 @@ class IntegrationTest(unittest.TestCase):
 
         LOGGER.info('Creating test streams...')
         run_safe(lambda: dynamodb_service.delete_table(
-            TableName=TEST_STREAM_NAME + ddb_lease_table_suffix), print_error=False)
-        aws_stack.create_kinesis_stream(TEST_STREAM_NAME, delete=True)
+            TableName=stream_name + ddb_lease_table_suffix), print_error=False)
+        aws_stack.create_kinesis_stream(stream_name, delete=True)
         aws_stack.create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
+
+        events = []
 
         # subscribe to inbound Kinesis stream
         def process_records(records, shard_id):
-            EVENTS.extend(records)
+            events.extend(records)
 
         # start the KCL client process in the background
-        kinesis_connector.listen_to_kinesis(TEST_STREAM_NAME, listener_func=process_records,
+        kinesis_connector.listen_to_kinesis(stream_name, listener_func=process_records,
             wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
 
         LOGGER.info('Kinesis consumer initialized.')
 
         # create table with stream forwarding config
-        aws_stack.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY,
+        aws_stack.create_dynamodb_table(table_name, partition_key=PARTITION_KEY,
             stream_view_type='NEW_AND_OLD_IMAGES')
 
         # list DDB streams and make sure the table stream is there
         streams = dynamodbstreams.list_streams()
         ddb_event_source_arn = None
         for stream in streams['Streams']:
-            if stream['TableName'] == TEST_TABLE_NAME:
+            if stream['TableName'] == table_name:
                 ddb_event_source_arn = stream['StreamArn']
         self.assertTrue(ddb_event_source_arn)
 
@@ -161,7 +163,7 @@ class IntegrationTest(unittest.TestCase):
         zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
             libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
         testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
-            zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
+            zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27, delete=True)
         # make sure we cannot create Lambda with same name twice
         assert_raises(Exception, testutil.create_lambda_function, func_name=TEST_LAMBDA_NAME_DDB,
             zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27)
@@ -185,7 +187,7 @@ class IntegrationTest(unittest.TestCase):
         num_updates_ddb = num_events_ddb - num_put_new_items - num_put_existing_items - num_batch_items
 
         LOGGER.info('Putting %s items to table...' % num_events_ddb)
-        table = dynamodb.Table(TEST_TABLE_NAME)
+        table = dynamodb.Table(table_name)
         for i in range(0, num_put_new_items):
             table.put_item(Item={
                 PARTITION_KEY: 'testId%s' % i,
@@ -199,14 +201,14 @@ class IntegrationTest(unittest.TestCase):
             })
 
         # batch write some items containing non-ASCII characters
-        dynamodb.batch_write_item(RequestItems={TEST_TABLE_NAME: [
+        dynamodb.batch_write_item(RequestItems={table_name: [
             {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 ✓'}}},
             {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 £'}}},
             {'PutRequest': {'Item': {PARTITION_KEY: short_uid(), 'data': 'foobar123 ¢'}}}
         ]})
         # update some items, which also triggers notification events
         for i in range(0, num_updates_ddb):
-            dynamodb_service.update_item(TableName=TEST_TABLE_NAME,
+            dynamodb_service.update_item(TableName=table_name,
                 Key={PARTITION_KEY: {'S': 'testId%s' % i}},
                 AttributeUpdates={'data': {
                     'Action': 'PUT',
@@ -254,11 +256,11 @@ class IntegrationTest(unittest.TestCase):
         num_events = num_events_lambda + num_events_kinesis
 
         def check_events():
-            if len(EVENTS) != num_events:
+            if len(events) != num_events:
                 LOGGER.warning(('DynamoDB and Kinesis updates retrieved (actual/expected): %s/%s') %
-                    (len(EVENTS), num_events))
-            self.assertEqual(len(EVENTS), num_events)
-            event_items = [json.loads(base64.b64decode(e['data'])) for e in EVENTS]
+                    (len(events), num_events))
+            self.assertEqual(len(events), num_events)
+            event_items = [json.loads(base64.b64decode(e['data'])) for e in events]
             # make sure the we have the right amount of INSERT/MODIFY event types
             inserts = [e for e in event_items if e.get('__action_type') == 'INSERT']
             modifies = [e for e in event_items if e.get('__action_type') == 'MODIFY']
@@ -279,6 +281,151 @@ class IntegrationTest(unittest.TestCase):
         self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
         num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
         self.assertEqual(num_error_invocations, 1)
+
+    def test_lambda_streams_batch_and_transactions(self):
+        ddb_lease_table_suffix = '-kclapp2'
+        table_name = TEST_TABLE_NAME + 'lsbat' + ddb_lease_table_suffix
+        stream_name = TEST_STREAM_NAME
+        dynamodb = aws_stack.connect_to_service('dynamodb', client=True)
+        dynamodb_service = aws_stack.connect_to_service('dynamodb')
+        dynamodbstreams = aws_stack.connect_to_service('dynamodbstreams')
+
+        LOGGER.info('Creating test streams...')
+        run_safe(lambda: dynamodb_service.delete_table(
+            TableName=stream_name + ddb_lease_table_suffix), print_error=False)
+        aws_stack.create_kinesis_stream(stream_name, delete=True)
+
+        events = []
+
+        # subscribe to inbound Kinesis stream
+        def process_records(records, shard_id):
+            events.extend(records)
+
+        # start the KCL client process in the background
+        kinesis_connector.listen_to_kinesis(stream_name, listener_func=process_records,
+            wait_until_started=True, ddb_lease_table_suffix=ddb_lease_table_suffix)
+
+        LOGGER.info('Kinesis consumer initialized.')
+
+        # create table with stream forwarding config
+        aws_stack.create_dynamodb_table(table_name, partition_key=PARTITION_KEY,
+            stream_view_type='NEW_AND_OLD_IMAGES')
+
+        # list DDB streams and make sure the table stream is there
+        streams = dynamodbstreams.list_streams()
+        ddb_event_source_arn = None
+        for stream in streams['Streams']:
+            if stream['TableName'] == table_name:
+                ddb_event_source_arn = stream['StreamArn']
+        self.assertTrue(ddb_event_source_arn)
+
+        # deploy test lambda connected to DynamoDB Stream
+        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
+            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
+        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
+            zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27, delete=True)
+
+        # submit a batch with writes
+        dynamodb.batch_write_item(RequestItems={table_name: [
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'testId0'}, 'data': {'S': 'foobar123'}}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'testId1'}, 'data': {'S': 'foobar123'}}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'testId2'}, 'data': {'S': 'foobar123'}}}}
+        ]})
+
+        # submit a batch with writes and deletes
+        dynamodb.batch_write_item(RequestItems={table_name: [
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'testId3'}, 'data': {'S': 'foobar123'}}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'testId4'}, 'data': {'S': 'foobar123'}}}},
+            {'PutRequest': {'Item': {PARTITION_KEY: {'S': 'testId5'}, 'data': {'S': 'foobar123'}}}},
+            {'DeleteRequest': {'Key': {PARTITION_KEY: {'S': 'testId0'}}}},
+            {'DeleteRequest': {'Key': {PARTITION_KEY: {'S': 'testId1'}}}},
+            {'DeleteRequest': {'Key': {PARTITION_KEY: {'S': 'testId2'}}}},
+        ]})
+
+        # submit a transaction with writes and delete
+        dynamodb.transact_write_items(TransactItems=[
+            {'Put': {'TableName': table_name,
+                'Item': {PARTITION_KEY: {'S': 'testId6'}, 'data': {'S': 'foobar123'}}}},
+            {'Put': {'TableName': table_name,
+                'Item': {PARTITION_KEY: {'S': 'testId7'}, 'data': {'S': 'foobar123'}}}},
+            {'Put': {'TableName': table_name,
+                'Item': {PARTITION_KEY: {'S': 'testId8'}, 'data': {'S': 'foobar123'}}}},
+            {'Delete': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId3'}}}},
+            {'Delete': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId4'}}}},
+            {'Delete': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId5'}}}},
+        ])
+
+        # submit a batch with a put over existing item
+        dynamodb.transact_write_items(TransactItems=[
+            {'Put': {'TableName': table_name,
+                'Item': {PARTITION_KEY: {'S': 'testId6'}, 'data': {'S': 'foobar123_updated1'}}}},
+        ])
+
+        # submit a transaction with a put over existing item
+        dynamodb.transact_write_items(TransactItems=[
+            {'Put': {'TableName': table_name,
+                'Item': {PARTITION_KEY: {'S': 'testId7'}, 'data': {'S': 'foobar123_updated1'}}}},
+        ])
+
+        # submit a transaction with updates
+        dynamodb.transact_write_items(TransactItems=[
+            {'Update': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId6'}},
+                'UpdateExpression': 'SET #0 = :0',
+                'ExpressionAttributeNames': {'#0': 'data'},
+                'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
+            {'Update': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId7'}},
+                'UpdateExpression': 'SET #0 = :0',
+                'ExpressionAttributeNames': {'#0': 'data'},
+                'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
+            {'Update': {'TableName': table_name, 'Key': {PARTITION_KEY: {'S': 'testId8'}},
+                'UpdateExpression': 'SET #0 = :0',
+                'ExpressionAttributeNames': {'#0': 'data'},
+                'ExpressionAttributeValues': {':0': {'S': 'foobar123_updated2'}}}},
+        ])
+
+        LOGGER.info('Waiting some time before finishing test.')
+        time.sleep(2)
+
+        num_insert = 9
+        num_modify = 5
+        num_delete = 6
+        num_events = num_insert + num_modify + num_delete
+
+        def check_events():
+            if len(events) != num_events:
+                LOGGER.warning(('DynamoDB updates retrieved (actual/expected): %s/%s') %
+                    (len(events), num_events))
+            self.assertEqual(len(events), num_events)
+            event_items = [json.loads(base64.b64decode(e['data'])) for e in events]
+            # make sure the we have the right amount of expected event types
+            inserts = [e for e in event_items if e.get('__action_type') == 'INSERT']
+            modifies = [e for e in event_items if e.get('__action_type') == 'MODIFY']
+            removes = [e for e in event_items if e.get('__action_type') == 'REMOVE']
+            self.assertEqual(len(inserts), num_insert)
+            self.assertEqual(len(modifies), num_modify)
+            self.assertEqual(len(removes), num_delete)
+
+            for i, event in enumerate(inserts):
+                self.assertNotIn('old_image', event)
+                self.assertEqual(inserts[i]['new_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
+
+            self.assertEqual(modifies[0]['old_image'], {'id': 'testId6', 'data': 'foobar123'})
+            self.assertEqual(modifies[0]['new_image'], {'id': 'testId6', 'data': 'foobar123_updated1'})
+            self.assertEqual(modifies[1]['old_image'], {'id': 'testId7', 'data': 'foobar123'})
+            self.assertEqual(modifies[1]['new_image'], {'id': 'testId7', 'data': 'foobar123_updated1'})
+            self.assertEqual(modifies[2]['old_image'], {'id': 'testId6', 'data': 'foobar123_updated1'})
+            self.assertEqual(modifies[2]['new_image'], {'id': 'testId6', 'data': 'foobar123_updated2'})
+            self.assertEqual(modifies[3]['old_image'], {'id': 'testId7', 'data': 'foobar123_updated1'})
+            self.assertEqual(modifies[3]['new_image'], {'id': 'testId7', 'data': 'foobar123_updated2'})
+            self.assertEqual(modifies[4]['old_image'], {'id': 'testId8', 'data': 'foobar123'})
+            self.assertEqual(modifies[4]['new_image'], {'id': 'testId8', 'data': 'foobar123_updated2'})
+
+            for i, event in enumerate(removes):
+                self.assertEqual(event['old_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
+                self.assertNotIn('new_image', event)
+
+        # this can take a long time in CI, make sure we give it enough time/retries
+        retry(check_events, retries=9, sleep=3)
 
     def test_kinesis_lambda_forward_chain(self):
         kinesis = aws_stack.connect_to_service('kinesis')
