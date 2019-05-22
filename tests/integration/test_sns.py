@@ -83,3 +83,37 @@ class SNSTest(unittest.TestCase):
         response = self.sns_client.publish(PhoneNumber='+33000000000', Message='This is a SMS')
         self.assertTrue('MessageId' in response)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+    def test_tags(self):
+        self.sns_client.tag_resource(
+            ResourceArn=self.topic_arn,
+            Tags=[
+                {
+                    'Key': '123',
+                    'Value': 'abc'
+                },
+                {
+                    'Key': '456',
+                    'Value': 'def'
+                },
+            ]
+        )
+
+        tags = self.sns_client.list_tags_for_resource(ResourceArn=self.topic_arn)
+        self.assertEqual(len(tags['Tags']), 2)
+        self.assertEqual(tags['Tags'][0]['Key'], '123')
+        self.assertEqual(tags['Tags'][0]['Value'], 'abc')
+        self.assertEqual(tags['Tags'][1]['Key'], '456')
+        self.assertEqual(tags['Tags'][1]['Value'], 'def')
+
+        self.sns_client.untag_resource(
+            ResourceArn=self.topic_arn,
+            TagKeys=[
+                '123',
+            ]
+        )
+
+        tags = self.sns_client.list_tags_for_resource(ResourceArn=self.topic_arn)
+        self.assertEqual(len(tags['Tags']), 1)
+        self.assertEqual(tags['Tags'][0]['Key'], '456')
+        self.assertEqual(tags['Tags'][0]['Value'], 'def')

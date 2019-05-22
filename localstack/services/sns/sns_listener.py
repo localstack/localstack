@@ -17,6 +17,9 @@ from localstack.services.generic_proxy import ProxyListener
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
 
+# mappings for SNS tags
+SNS_TAGS = {}
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +79,35 @@ class ProxyListenerSNS(ProxyListener):
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
                     publish_message(topic_arn, req_data)
                 # return response here because we do not want the request to be forwarded to SNS backend
+                return make_response(req_action)
+            elif req_action == 'ListTagsForResource':
+                tags = do_list_tags_for_resource(topic_arn)
+                content = '<Tags/>'
+                if len(tags) > 0:
+                    content = '<Tags>'
+                    for tag in tags:
+                        content += '<member>'
+                        content += '<Key>%s</Key>' % tag['Key']
+                        content += '<Value>%s</Value>' % tag['Value']
+                        content += '</member>'
+                    content += '</Tags>'
+                return make_response(req_action, content=content)
+            elif req_action == 'TagResource':
+                tags = []
+                req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
+                for i in range(int(len(req_tags.keys()) / 2)):
+                    key = req_tags['Tags.member.' + str(i + 1) + '.Key'][0]
+                    value = req_tags['Tags.member.' + str(i + 1) + '.Value'][0]
+                    tags.append({'Key': key, 'Value': value})
+                do_tag_resource(topic_arn, tags)
+                return make_response(req_action)
+            elif req_action == 'UntagResource':
+                tags_to_remove = []
+                req_tags = {k: v for k, v in req_data.items() if k.startswith('TagKeys.member.')}
+                req_tags = req_tags.values()
+                for tag in req_tags:
+                    tags_to_remove.append(tag[0])
+                do_untag_resource(topic_arn, tags_to_remove)
                 return make_response(req_action)
 
             data = self._reset_account_id(data)
@@ -207,9 +239,27 @@ def do_unsubscribe(subscription_arn):
         ]
 
 
+def _get_tags(topic_arn):
+    if topic_arn not in SNS_TAGS:
+        SNS_TAGS[topic_arn] = []
+    return SNS_TAGS[topic_arn]
+
+
+def do_list_tags_for_resource(topic_arn):
+    return _get_tags(topic_arn)
+
+
+def do_tag_resource(topic_arn, tags):
+    _get_tags(topic_arn).extend(tags)
+
+
+def do_untag_resource(topic_arn, tag_keys):
+    SNS_TAGS[topic_arn] = [t for t in _get_tags(topic_arn) if t['Key'] not in tag_keys]
+
 # ---------------
 # HELPER METHODS
 # ---------------
+
 
 def get_topic_by_arn(topic_arn):
     return SNS_SUBSCRIPTIONS.get(topic_arn)
