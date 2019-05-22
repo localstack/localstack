@@ -26,4 +26,5 @@ function run_startup_scripts {
 run_startup_scripts &
 
 touch /tmp/localstack_infra.log
-tail -f /tmp/localstack_infra.log
+touch /tmp/localstack_infra.err
+tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err
