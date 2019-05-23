@@ -1,6 +1,5 @@
 package cloud.localstack.docker;
 
-import cloud.localstack.Localstack;
 import cloud.localstack.docker.annotation.LocalstackDockerAnnotationProcessor;
 import cloud.localstack.docker.annotation.LocalstackDockerConfiguration;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -24,22 +23,28 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  * @author Alan Bevier
  * @author Patrick Allain
  */
-public class LocalstackDockerExtension implements BeforeAllCallback, AfterAllCallback {
+public class LocalstackDockerExtension implements BeforeAllCallback {
 
     private static final LocalstackDockerAnnotationProcessor PROCESSOR = new LocalstackDockerAnnotationProcessor();
 
-    private LocalstackDocker localstackDocker = LocalstackDocker.INSTANCE;
-
     @Override
     public void beforeAll(final ExtensionContext context) throws Exception {
-        Localstack.teardownInfrastructure();
-        final LocalstackDockerConfiguration dockerConfig = PROCESSOR.process(context.getRequiredTestClass());
-        localstackDocker.startup(dockerConfig);
+        context.getStore(ExtensionContext.Namespace.create(LocalstackDockerExtension.class))
+                .getOrComputeIfAbsent("localstack", key -> new StartedLocalStack(context));
     }
 
-    @Override
-    public void afterAll(final ExtensionContext context) throws Exception {
-        localstackDocker.stop();
-    }
+    static class StartedLocalStack implements ExtensionContext.Store.CloseableResource {
 
+        private LocalstackDocker localstackDocker = LocalstackDocker.INSTANCE;
+
+        StartedLocalStack(ExtensionContext context) {
+            final LocalstackDockerConfiguration dockerConfig = PROCESSOR.process(context.getRequiredTestClass());
+            localstackDocker.startup(dockerConfig);
+        }
+
+        @Override
+        public void close() throws Throwable {
+            localstackDocker.stop();
+        }
+    }
 }
