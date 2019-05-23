@@ -36,7 +36,6 @@ class ProxyListenerSNS(ProxyListener):
 
             if topic_arn:
                 topic_arn = topic_arn[0]
-                do_create_topic(topic_arn)
 
             if req_action == 'SetSubscriptionAttributes':
                 sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
@@ -62,9 +61,13 @@ class ProxyListenerSNS(ProxyListener):
                 if 'SubscriptionArn' not in req_data:
                     return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
                 do_unsubscribe(req_data.get('SubscriptionArn')[0])
+            elif req_action == 'CreateTopic':
+                do_create_topic(topic_arn)
             elif req_action == 'DeleteTopic':
                 do_delete_topic(topic_arn)
             elif req_action == 'Publish':
+                if topic_arn not in SNS_SUBSCRIPTIONS.keys():
+                    return make_error(code=404, code_string='NotFound', message='Topic does not exist')
                 publish_message(topic_arn, req_data)
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action)
@@ -162,8 +165,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes):
         'SubscriptionArn': subscription_arn,
     }
     subscription.update(attributes)
-
-    SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+    SNS_SUBSCRIPTIONS.get(topic_arn).append(subscription)
 
 
 def do_unsubscribe(subscription_arn):

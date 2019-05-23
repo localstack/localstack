@@ -3,6 +3,8 @@
 import json
 import unittest
 
+from botocore.exceptions import ClientError
+
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 
@@ -72,3 +74,15 @@ class SNSTest(unittest.TestCase):
         msgs = sqs_client.receive_message(QueueUrl=queue_url)
         msg_received = msgs['Messages'][0]
         self.assertEqual(message, msg_received['Body'])
+
+    def test_unknown_topic_publish(self):
+        sns_client = aws_stack.connect_to_service('sns')
+        fake_arn = 'arn:aws:sns:us-east-1:123456789012:i_dont_exist'
+        message = u'This is a test message'
+        try:
+            sns_client.publish(TopicArn=fake_arn, Message=message)
+            self.fail('This call should not be successful as the topic does not exist')
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NotFound')
+            self.assertEqual(e.response['Error']['Message'], 'Topic does not exist')
+            self.assertEqual(e.response['ResponseMetadata']['HTTPStatusCode'], 404)
