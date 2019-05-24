@@ -475,7 +475,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         :return: None
         """
         LOG.info('Checking if there are idle containers.')
-        current_time = time.time()
+        current_time = int(time.time() * 1000)
         for func_arn, last_run_time in self.function_invoke_times.items():
             duration = current_time - last_run_time
 
