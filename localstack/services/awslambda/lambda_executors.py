@@ -36,6 +36,9 @@ LAMBDA_RUNTIME_CUSTOM_RUNTIME = 'provided'
 
 LAMBDA_EVENT_FILE = 'event_file.json'
 
+LAMBDA_SERVER_UNIQUE_PORTS = 500
+LAMBDA_SERVER_PORT_OFFSET = 5000
+
 # logger
 LOG = logging.getLogger(__name__)
 
@@ -216,8 +219,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         # least the lambci/lambda:go1.x container, which execs a go program that
         # attempts to bind to the same default port.
         self.next_port = 0
-        self.max_port = 500
-        self.port_offset = 5000
+        self.max_port = LAMBDA_SERVER_UNIQUE_PORTS
+        self.port_offset = LAMBDA_SERVER_PORT_OFFSET
 
     def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
 
