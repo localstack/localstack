@@ -61,8 +61,6 @@ class ProxyListenerSNS(ProxyListener):
                 if 'SubscriptionArn' not in req_data:
                     return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
                 do_unsubscribe(req_data.get('SubscriptionArn')[0])
-            elif req_action == 'CreateTopic':
-                do_create_topic(topic_arn)
             elif req_action == 'DeleteTopic':
                 do_delete_topic(topic_arn)
             elif req_action == 'Publish':
@@ -92,6 +90,10 @@ class ProxyListenerSNS(ProxyListener):
                     sub_arn,
                     attributes
                 )
+            if req_action == 'CreateTopic' and response.status_code < 400:
+                response_data = xmltodict.parse(response.content)
+                topic_arn = response_data['CreateTopicResponse']['CreateTopicResult']['TopicArn']
+                do_create_topic(topic_arn)
 
 
 # instantiate listener
