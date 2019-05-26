@@ -36,6 +36,9 @@ LAMBDA_RUNTIME_CUSTOM_RUNTIME = 'provided'
 
 LAMBDA_EVENT_FILE = 'event_file.json'
 
+LAMBDA_SERVER_UNIQUE_PORTS = 500
+LAMBDA_SERVER_PORT_OFFSET = 5000
+
 # logger
 LOG = logging.getLogger(__name__)
 
@@ -211,10 +214,23 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         # locking thread for creation/destruction of docker containers.
         self.docker_container_lock = threading.RLock()
 
+        # On each invocation we try to construct a port unlikely to conflict
+        # with a previously invoked lambda function. This is a problem with at
+        # least the lambci/lambda:go1.x container, which execs a go program that
+        # attempts to bind to the same default port.
+        self.next_port = 0
+        self.max_port = LAMBDA_SERVER_UNIQUE_PORTS
+        self.port_offset = LAMBDA_SERVER_PORT_OFFSET
+
     def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
 
         # check whether the Lambda has been invoked before
         has_been_invoked_before = func_arn in self.function_invoke_times
+
+        # Choose a port for this invocation
+        with self.docker_container_lock:
+            env_vars['_LAMBDA_SERVER_PORT'] = str(self.next_port + self.port_offset)
+            self.next_port = (self.next_port + 1) % self.max_port
 
         # create/verify the docker container is running.
         LOG.debug('Priming docker container with runtime "%s" and arn "%s".', runtime, func_arn)
