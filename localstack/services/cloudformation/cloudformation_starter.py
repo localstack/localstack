@@ -2,6 +2,7 @@ import sys
 import logging
 from moto.s3 import models as s3_models
 from moto.iam import models as iam_models
+from moto.sqs import models as sqs_models
 from moto.core import BaseModel
 from moto.server import main as moto_main
 from moto.dynamodb import models as dynamodb_models
@@ -75,6 +76,13 @@ def apply_patches():
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
 
     def parse_and_create_resource(logical_id, resource_json, resources_map, region_name):
+        try:
+            return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name)
+        except Exception as e:
+            LOG.error('Unable to parse and create resource "%s": %s' % (logical_id, e))
+            raise
+
+    def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name):
         stack_name = resources_map.get('AWS::StackName')
         resource_hash_key = (stack_name, logical_id)
 
@@ -89,6 +97,11 @@ def apply_patches():
         if not resource_tuple:
             return None
         _, resource_json, _ = resource_tuple
+
+        # add some missing default props which otherwise cause deployments to fail
+        props = resource_json['Properties'] = resource_json.get('Properties') or {}
+        if resource_json['Type'] == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
+            props['StartingPosition'] = 'LATEST'
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
@@ -121,8 +134,6 @@ def apply_patches():
         if not should_be_created:
             # skip the parts below for update requests
             return resource
-
-        props = resource_json.get('Properties') or {}
 
         def find_id(resource):
             """ Find ID of the given resource. """
@@ -241,6 +252,16 @@ def apply_patches():
 
     DynamoDB_Table_get_cfn_attribute_orig = dynamodb_models.Table.get_cfn_attribute
     dynamodb_models.Table.get_cfn_attribute = DynamoDB_Table_get_cfn_attribute
+
+    # Patch SQS get_cfn_attribute(..) method in moto
+
+    def SQS_Queue_get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'Arn':
+            return aws_stack.sqs_queue_arn(queue_name=self.name)
+        return SQS_Queue_get_cfn_attribute_orig(self, attribute_name)
+
+    SQS_Queue_get_cfn_attribute_orig = sqs_models.Queue.get_cfn_attribute
+    sqs_models.Queue.get_cfn_attribute = SQS_Queue_get_cfn_attribute
 
     # Patch Lambda get_cfn_attribute(..) method in moto
 

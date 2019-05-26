@@ -625,7 +625,7 @@ def is_deployable_resource(resource):
     entry = RESOURCE_TO_FUNCTION.get(resource_type)
     if entry is None:
         LOG.warning('Unknown resource type "%s": %s' % (resource_type, resource))
-    return entry and entry.get(ACTION_CREATE)
+    return bool(entry and entry.get(ACTION_CREATE))
 
 
 def is_deployed(resource_id, resources, stack_name):
