@@ -40,7 +40,7 @@ LAMBDA_EVENT_FILE = 'event_file.json'
 LOG = logging.getLogger(__name__)
 
 # maximum time a pre-allocated container can sit idle before getting killed
-MAX_CONTAINER_IDLE_TIME = 600
+MAX_CONTAINER_IDLE_TIME_MS = 600 * 1000
 
 
 class LambdaExecutor(object):
@@ -471,16 +471,16 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     def idle_container_destroyer(self):
         """
         Iterates though all the lambda containers and destroys any container that has
-        been inactive for longer than MAX_CONTAINER_IDLE_TIME.
+        been inactive for longer than MAX_CONTAINER_IDLE_TIME_MS.
         :return: None
         """
         LOG.info('Checking if there are idle containers.')
         current_time = int(time.time() * 1000)
-        for func_arn, last_run_time in self.function_invoke_times.items():
+        for func_arn, last_run_time in dict(self.function_invoke_times).items():
             duration = current_time - last_run_time
 
             # not enough idle time has passed
-            if duration < MAX_CONTAINER_IDLE_TIME:
+            if duration < MAX_CONTAINER_IDLE_TIME_MS:
                 continue
 
             # container has been idle, destroy it.

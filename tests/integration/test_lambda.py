@@ -644,6 +644,6 @@ class TestDockerBehaviour(LambdaTestBase):
         self.assertEqual(len(executor.get_all_container_names()), 1)
 
         # simulate an idle container
-        executor.function_invoke_times[func_arn] = time.time() - 610
+        executor.function_invoke_times[func_arn] = time.time() - lambda_executors.MAX_CONTAINER_IDLE_TIME_MS
         executor.idle_container_destroyer()
         self.assertEqual(len(executor.get_all_container_names()), 0)
