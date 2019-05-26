@@ -437,6 +437,9 @@ def start_infra_in_docker():
     plugin_run_params = ' '.join([
         entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
 
+    # prepare APIs
+    canonicalize_api_names()
+
     services = os.environ.get('SERVICES', '')
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
@@ -491,6 +494,8 @@ def start_infra_in_docker():
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
 
+    container_name = 'localstack_main'
+
     docker_cmd = ('docker run %s%s%s%s%s' +
         '--rm --privileged ' +
         '--name %s ' +
@@ -534,6 +539,7 @@ def canonicalize_api_names(apis=None):
         (2) resolving and adding composites (e.g., "serverless" describes an ensemble
                 including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
         (3) removing duplicates from the list. """
+
     apis = apis or list(config.SERVICE_PORTS.keys())
 
     def contains(apis, api):
@@ -545,6 +551,7 @@ def canonicalize_api_names(apis=None):
     for comp, deps in API_COMPOSITES.items():
         if contains(apis, comp):
             apis.extend(deps)
+            config.SERVICE_PORTS.pop(comp)
 
     # resolve dependencies
     for i, api in enumerate(apis):
@@ -574,7 +581,6 @@ def start_infra(asynchronous=False, apis=None):
         # set up logging
         setup_logging()
 
-        apis = apis or list(config.SERVICE_PORTS.keys())
         # prepare APIs
         apis = canonicalize_api_names(apis)
         # set environment
