@@ -54,7 +54,8 @@ def install_elasticsearch():
                 # https://github.com/pires/docker-elasticsearch/issues/56
                 os.environ['ES_TMPDIR'] = '/tmp'
             plugin_binary = os.path.join(INSTALL_DIR_ES, 'bin', 'elasticsearch-plugin')
-            run('%s install %s' % (plugin_binary, plugin))
+            print('install elasticsearch-plugin %s' % (plugin))
+            run('%s install -b  %s' % (plugin_binary, plugin))
 
     # patch JVM options file - replace hardcoded heap size settings
     jvm_options_file = os.path.join(INSTALL_DIR_ES, 'config', 'jvm.options')

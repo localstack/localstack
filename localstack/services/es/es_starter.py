@@ -46,6 +46,8 @@ def start_elasticsearch(port=None, delete_data=True, asynchronous=False, update_
     chmod_r('%s/infra/elasticsearch' % ROOT_PATH, 0o777)
     mkdir(es_data_dir)
     chmod_r(es_data_dir, 0o777)
+    mkdir(es_tmp_dir)
+    chmod_r(es_tmp_dir, 0o777)
     # start proxy and ES process
     start_proxy_for_service('elasticsearch', port, backend_port,
         update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})
