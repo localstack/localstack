@@ -66,4 +66,5 @@ RUN mkdir -p /.npm && \
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
+ENV TEST_PATH ./tests/unit
 RUN make test
