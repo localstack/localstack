@@ -8,6 +8,8 @@ import xmltodict
 import collections
 import botocore.config
 import six
+import datetime
+import dateutil.parser
 from six import iteritems
 from six.moves.urllib import parse as urlparse
 from botocore.client import ClientError
@@ -247,6 +249,32 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                         response.headers['Access-Control-Expose-Headers'] = \
                             ','.join(expose_headers) if isinstance(expose_headers, list) else expose_headers
                     break
+
+
+def append_last_modified_headers(response, content=None):
+    """Add Last-Modified header with current time
+    (if the response content is an XML containing <LastModified>, add that instead)"""
+
+    time_format = '%a, %d %b %Y %H:%M:%S GMT'  # TimeFormat
+    try:
+        last_modified_str = re.findall(r'<LastModified>(.*)</LastModified>', content)[0]
+        last_modified_time_format = dateutil.parser.parse(last_modified_str).strftime(time_format)
+        response.headers['Last-Modified'] = last_modified_time_format
+    except TypeError as err:
+        LOGGER.debug('No parsable content: %s' % err)
+    except IndexError as err:
+        LOGGER.debug('Found no <LastModified>(.*)</LastModified> inside response_content: %s' % err)
+    except ValueError as err:
+        LOGGER.error('Failed to parse LastModified: %s' % err)
+    except Exception as err:
+        LOGGER.error('Caught generic exception (parsing LastModified): %s' % err)
+    # if cannot parse any LastModified, just continue
+
+    try:
+        if response.headers.get('Last-Modified', '') == '':
+            response.headers['Last-Modified'] = datetime.datetime.now().strftime(time_format)
+    except Exception as err:
+        LOGGER.error('Caught generic exception (setting LastModified header): %s' % err)
 
 
 def get_lifecycle(bucket_name):
@@ -568,6 +596,8 @@ class ProxyListenerS3(ProxyListener):
             # append CORS headers to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
 
+            append_last_modified_headers(response=response)
+
             response_content_str = None
             try:
                 response_content_str = to_str(response._content)
@@ -580,6 +610,8 @@ class ProxyListenerS3(ProxyListener):
             # Note: yet, we need to make sure we have a newline after the first line: <?xml ...>\n
             if response_content_str and response_content_str.startswith('<'):
                 is_bytes = isinstance(response._content, six.binary_type)
+
+                append_last_modified_headers(response=response, content=response_content_str)
 
                 # un-pretty-print the XML
                 response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
