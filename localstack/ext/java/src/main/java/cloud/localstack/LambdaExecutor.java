@@ -68,7 +68,7 @@ public class LambdaExecutor {
 				inputObject = deserialisedInput.get();
 			}
 		} else {
-			if (records.stream().anyMatch(record -> record.containsKey("Kinesis"))) {
+			if (records.stream().anyMatch(record -> record.containsKey("kinesis") || record.containsKey("Kinesis"))) {
 				KinesisEvent kinesisEvent = new KinesisEvent();
 				inputObject = kinesisEvent;
 				kinesisEvent.setRecords(new LinkedList<>());
@@ -77,9 +77,9 @@ public class LambdaExecutor {
 					kinesisEvent.getRecords().add(r);
 					Record kinesisRecord = new Record();
 					Map<String, Object> kinesis = (Map<String, Object>) get(record, "Kinesis");
-				String dataString = new String(get(kinesis, "Data").toString().getBytes());
-				byte[] decodedData = Base64.getDecoder().decode(dataString);
-				kinesisRecord.setData(ByteBuffer.wrap(decodedData));
+					String dataString = new String(get(kinesis, "Data").toString().getBytes());
+					byte[] decodedData = Base64.getDecoder().decode(dataString);
+					kinesisRecord.setData(ByteBuffer.wrap(decodedData));
 					kinesisRecord.setPartitionKey((String) get(kinesis, "PartitionKey"));
 					kinesisRecord.setApproximateArrivalTimestamp(new Date());
 					r.setKinesis(kinesisRecord);
