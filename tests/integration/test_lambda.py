@@ -476,6 +476,15 @@ class TestJavaRuntimes(LambdaTestBase):
 
         self.assertEqual(result['StatusCode'], 202)
 
+    def test_kinesis_invocation(self):
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA,
+            Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertIn('KinesisEvent', to_str(result_data))
+
     def test_kinesis_event(self):
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JAVA, InvocationType='Event',
