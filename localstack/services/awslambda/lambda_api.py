@@ -276,8 +276,11 @@ def publish_new_function_version(arn):
         last_version = 0
     else:
         last_version = max([int(key) for key in versions.keys() if key != '$LATEST'])
-    versions[str(last_version + 1)] = {'CodeSize': versions.get('$LATEST').get('CodeSize'),
-                                    'Function': versions.get('$LATEST').get('Function')}
+    versions[str(last_version + 1)] = {
+        'CodeSize': versions.get('$LATEST').get('CodeSize'),
+        'CodeSha256': versions.get('$LATEST').get('CodeSha256'),
+        'Function': versions.get('$LATEST').get('Function')
+    }
     return get_function_version(arn, str(last_version + 1))
 
 
@@ -473,8 +476,8 @@ def set_function_code(code, lambda_name):
         zip_file_content = get_zip_bytes(code)
         if isinstance(zip_file_content, Response):
             return zip_file_content
-        lambda_details.code_size = len(zip_file_content)
-        lambda_details.code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
+        lambda_details.get_version('$LATEST')['CodeSize'] = len(zip_file_content)
+        lambda_details.get_version('$LATEST')['CodeSha256'] = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
         tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
         mkdir(tmp_dir)
         tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
@@ -553,6 +556,8 @@ def do_list_functions():
 def format_func_details(func_details, version=None, always_add_version=False):
     version = version or '$LATEST'
     result = {
+        'CodeSha256': func_details.get_version(version).get('CodeSha256'),
+        'Role': func_details.role,
         'Version': version,
         'FunctionArn': func_details.arn(),
         'FunctionName': func_details.name(),
@@ -560,12 +565,16 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'Handler': func_details.handler,
         'Runtime': func_details.runtime,
         'Timeout': func_details.timeout,
-        'Environment': {
-            'Variables': func_details.envvars
-        },
-        # 'Description': ''
-        # 'MemorySize': 192,
+        'Description': func_details.description,
+        'MemorySize': func_details.memory_size,
+        'LastModified': func_details.last_modified,
+        'TracingConfig': {"Mode": "PassThrough"},
+        'RevisionId': func_details.revision_id
     }
+    if func_details.envvars:
+        result['Environment'] = {
+            'Variables': func_details.envvars
+        }
     if (always_add_version or version != '$LATEST') and len(result['FunctionArn'].split(':')) <= 7:
         result['FunctionArn'] += ':%s' % (version)
     return result
@@ -626,7 +635,7 @@ def create_function():
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
-        func_details.versions = {'$LATEST': {'CodeSize': 50}}
+        func_details.versions = {'$LATEST': {}}
         func_details.last_modified = datetime.utcnow().isoformat(timespec="milliseconds") + "+0000"
         func_details.revision_id = generate_random_revision_id()
         func_details.description = data.get('Description', '')
@@ -635,30 +644,15 @@ def create_function():
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
         func_details.tags = data.get('Tags', {})
         func_details.timeout = data.get('Timeout', LAMBDA_DEFAULT_TIMEOUT)
+        func_details.role = data['Role']
+        func_details.memory_size = data.get('MemorySize')
         result = set_function_code(data['Code'], lambda_name)
         if isinstance(result, Response):
             del arn_to_lambda[arn]
             return result
-        result.update({
-            'DeadLetterConfig': data.get('DeadLetterConfig'),
-            'Description': func_details.description,
-            'FunctionArn': arn,
-            'FunctionName': lambda_name,
-            'Handler': func_details.handler,
-            'CodeSize': func_details.code_size,
-            'MemorySize': data.get('MemorySize'),
-            'LastModified': func_details.last_modified,
-            'CodeSha256': func_details.code_sha_256,
-            'Role': data.get('Role'),
-            'Runtime': func_details.runtime,
-            'Timeout': func_details.timeout,
-            'TracingConfig': {"Mode": "PassThrough"},
-            'RevisionId': func_details.revision_id
-        })
+        result.update(format_func_details(func_details))
         if data.get('Publish', False):
             result['Version'] = publish_new_function_version(arn)['Version']
-        else:
-            result['Version'] = '$LATEST'
         return jsonify(result or {})
     except Exception as e:
         arn_to_lambda.pop(arn, None)
@@ -751,6 +745,8 @@ def update_function_code(function):
     """
     data = json.loads(to_str(request.data))
     result = set_function_code(data, function)
+    if isinstance(result, Response):
+        return result
     return jsonify(result or {})
 
 
