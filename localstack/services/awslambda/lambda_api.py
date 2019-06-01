@@ -10,6 +10,7 @@ import logging
 import zipfile
 import threading
 import traceback
+import hashlib
 from io import BytesIO
 from datetime import datetime
 from six.moves import cStringIO as StringIO
@@ -33,7 +34,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests)
+    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, generate_random_revision_id)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -472,6 +473,8 @@ def set_function_code(code, lambda_name):
         zip_file_content = get_zip_bytes(code)
         if isinstance(zip_file_content, Response):
             return zip_file_content
+        lambda_details.code_size = len(zip_file_content)
+        lambda_details.code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
         tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
         mkdir(tmp_dir)
         tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
@@ -624,6 +627,9 @@ def create_function():
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
         func_details.versions = {'$LATEST': {'CodeSize': 50}}
+        func_details.last_modified = datetime.utcnow().isoformat(timespec="milliseconds") + "+0000"
+        func_details.revision_id = generate_random_revision_id()
+        func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
         func_details.runtime = data['Runtime']
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
@@ -635,20 +641,24 @@ def create_function():
             return result
         result.update({
             'DeadLetterConfig': data.get('DeadLetterConfig'),
-            'Description': data.get('Description'),
-            'Environment': {'Error': {}, 'Variables': func_details.envvars},
+            'Description': func_details.description,
             'FunctionArn': arn,
             'FunctionName': lambda_name,
             'Handler': func_details.handler,
+            'CodeSize': func_details.code_size,
             'MemorySize': data.get('MemorySize'),
+            'LastModified': func_details.last_modified,
+            'CodeSha256': func_details.code_sha_256,
             'Role': data.get('Role'),
             'Runtime': func_details.runtime,
             'Timeout': func_details.timeout,
-            'TracingConfig': {},
-            'VpcConfig': {'SecurityGroupIds': [None], 'SubnetIds': [None], 'VpcId': None}
+            'TracingConfig': {"Mode": "PassThrough"},
+            'RevisionId': func_details.revision_id
         })
         if data.get('Publish', False):
             result['Version'] = publish_new_function_version(arn)['Version']
+        else:
+            result['Version'] = '$LATEST'
         return jsonify(result or {})
     except Exception as e:
         arn_to_lambda.pop(arn, None)
