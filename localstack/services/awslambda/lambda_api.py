@@ -478,7 +478,7 @@ def set_function_code(code, lambda_name):
             return zip_file_content
         code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
         lambda_details.get_version('$LATEST')['CodeSize'] = len(zip_file_content)
-        lambda_details.get_version('$LATEST')['CodeSha256'] = code_sha_256.decode("utf-8")
+        lambda_details.get_version('$LATEST')['CodeSha256'] = code_sha_256.decode('utf-8')
         tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
         mkdir(tmp_dir)
         tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
