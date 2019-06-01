@@ -1,6 +1,6 @@
 import unittest
 from localstack.services.s3 import s3_listener, multipart_content
-from requests.models import CaseInsensitiveDict
+from requests.models import CaseInsensitiveDict, Response
 
 
 class S3ListenerTest (unittest.TestCase):
@@ -191,3 +191,37 @@ class S3ListenerTest (unittest.TestCase):
         self.assertFalse(s3_listener.ProxyListenerS3.is_query_allowable('DELETE', 'uploadId'))
         self.assertFalse(s3_listener.ProxyListenerS3.is_query_allowable('DELETE', 'differentQueryString'))
         self.assertFalse(s3_listener.ProxyListenerS3.is_query_allowable('PUT', 'uploadId'))
+
+    def test_append_last_modified_headers(self):
+        xml_with_last_modified = ('<?xml version="1.0" encoding="UTF-8"?>'
+                                  '<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+                                  '  <Name>thanos/Name>'
+                                  '  <Contents>'
+                                  '    <LastModified>2019-05-27T19:00:16.663Z</LastModified>'
+                                  '  </Contents>'
+                                  '</ListBucketResult>'
+                                  )
+        xml_without_last_modified = ('<?xml version="1.0" encoding="UTF-8"?>'
+                                     '<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+                                     '  <Name>thanos/Name>'
+                                     '  <Contents>'
+                                     '    <NotLastModified>2019-05-27T19:00:16.663Z</NotLastModified>'
+                                     '  </Contents>'
+                                     '</ListBucketResult>'
+                                     )
+
+        # if there is a parsable date in XML <LastModified>, use it
+        response = Response()
+        s3_listener.append_last_modified_headers(response, content=xml_with_last_modified)
+        self.assertEqual('Mon, 27 May 2019 19:00:16 GMT', response.headers.get('Last-Modified', ''))
+
+        # otherwise, just fill the header with the currentdate
+        # I will not test currentDate as it is not trivial without adding dependencies
+        # so, I'm testing for the presence of the header only
+        response = Response()
+        s3_listener.append_last_modified_headers(response, content=xml_without_last_modified)
+        self.assertNotEqual('No header', response.headers.get('Last-Modified', 'No header'))
+
+        response = Response()
+        s3_listener.append_last_modified_headers(response)
+        self.assertNotEqual('No header', response.headers.get('Last-Modified', 'No header'))
