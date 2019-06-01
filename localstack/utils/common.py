@@ -997,6 +997,7 @@ def parallelize(func, list, size=None):
 def generate_random_revision_id():
     revision_id_part_sizes = (4, 2, 2, 2, 6)
     revision_id_parts = (
-        binascii.hexlify(os.urandom(revision_id_part_size)).decode("utf-8") for revision_id_part_size in revision_id_part_sizes
+        binascii.hexlify(os.urandom(revision_id_part_size)).decode('utf-8')
+        for revision_id_part_size in revision_id_part_sizes
     )
-    return "-".join(revision_id_parts)
+    return '-'.join(revision_id_parts)

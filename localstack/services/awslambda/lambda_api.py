@@ -476,8 +476,9 @@ def set_function_code(code, lambda_name):
         zip_file_content = get_zip_bytes(code)
         if isinstance(zip_file_content, Response):
             return zip_file_content
+        code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
         lambda_details.get_version('$LATEST')['CodeSize'] = len(zip_file_content)
-        lambda_details.get_version('$LATEST')['CodeSha256'] = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
+        lambda_details.get_version('$LATEST')['CodeSha256'] = code_sha_256
         tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
         mkdir(tmp_dir)
         tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
@@ -568,7 +569,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'Description': func_details.description,
         'MemorySize': func_details.memory_size,
         'LastModified': func_details.last_modified,
-        'TracingConfig': {"Mode": "PassThrough"},
+        'TracingConfig': {'Mode': 'PassThrough'},
         'RevisionId': func_details.revision_id
     }
     if func_details.envvars:
@@ -636,7 +637,7 @@ def create_function():
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
         func_details.versions = {'$LATEST': {}}
-        func_details.last_modified = datetime.utcnow().isoformat(timespec="milliseconds") + "+0000"
+        func_details.last_modified = datetime.utcnow().isoformat(timespec='milliseconds') + '+0000'
         func_details.revision_id = generate_random_revision_id()
         func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
