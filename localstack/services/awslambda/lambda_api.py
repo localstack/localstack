@@ -745,6 +745,9 @@ def update_function_code(function):
     """
     data = json.loads(to_str(request.data))
     result = set_function_code(data, function)
+    arn = func_arn(function)
+    func_details = arn_to_lambda.get(arn)
+    result.update(format_func_details(func_details))
     if isinstance(result, Response):
         return result
     return jsonify(result or {})
