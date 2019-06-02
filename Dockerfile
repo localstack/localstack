@@ -64,6 +64,12 @@ RUN mkdir -p /.npm && \
     chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
+# clean up and prepare for squashing the image
+RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
+RUN rm -rf /tmp/* /root/.cache /opt/yarn-v1.15.2
+RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
+ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.6/site-packages
+
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 RUN make test

@@ -40,10 +40,9 @@ infra:             ## Manually start the local infrastructure for testing
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
-	# remove topmost layer ("make test") from image
-	LAST_BUT_ONE_LAYER=`docker history -q $(IMAGE_NAME) | head -n 3 | tail -n 1`; \
-		docker tag $$LAST_BUT_ONE_LAYER $(IMAGE_NAME); \
-		docker tag $$LAST_BUT_ONE_LAYER $(IMAGE_NAME):$(IMAGE_TAG)
+	# squash entire image
+	which docker-squash || $(PIP_CMD) install docker-squash; \
+		docker-squash -t $(IMAGE_NAME) $(IMAGE_NAME)
 
 docker-build-base:
 	docker build --squash -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
