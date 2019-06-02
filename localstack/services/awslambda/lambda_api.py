@@ -34,8 +34,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, generate_random_revision_id,
-    isoformat_milliseconds)
+    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, isoformat_milliseconds)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -281,7 +280,7 @@ def publish_new_function_version(arn):
         'CodeSize': versions.get('$LATEST').get('CodeSize'),
         'CodeSha256': versions.get('$LATEST').get('CodeSha256'),
         'Function': versions.get('$LATEST').get('Function'),
-        'RevisionId': generate_random_revision_id()
+        'RevisionId': str(uuid.uuid4())
     }
     return get_function_version(arn, str(last_version + 1))
 
@@ -297,7 +296,7 @@ def do_update_alias(arn, alias, version, description=None):
         'FunctionVersion': version,
         'Name': alias,
         'Description': description or '',
-        'RevisionId': generate_random_revision_id()
+        'RevisionId': str(uuid.uuid4())
     }
     arn_to_lambda.get(arn).aliases[alias] = new_alias
     return new_alias
@@ -639,7 +638,7 @@ def create_function():
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
-        func_details.versions = {'$LATEST': {'RevisionId': generate_random_revision_id()}}
+        func_details.versions = {'$LATEST': {'RevisionId': str(uuid.uuid4())}}
         func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
         func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
