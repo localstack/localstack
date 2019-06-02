@@ -172,7 +172,7 @@ class LambdaFunction(Component):
         self.timeout = None
         self.last_modified = None
         self.revision_id = None
-        self.description = None
+        self.description = ''
         self.role = None
         self.memory_size = None
 
