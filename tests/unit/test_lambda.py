@@ -107,6 +107,8 @@ class TestLambdaAPI(unittest.TestCase):
 
             result = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
             result2 = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
+            result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
+            result2.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
 
             expected_result = dict()
             expected_result['CodeSize'] = self.CODE_SIZE
@@ -121,7 +123,6 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Role'] = self.ROLE
             expected_result['LastModified'] = self.LAST_MODIFIED
             expected_result['TracingConfig'] = self.TRACING_CONFIG
-            expected_result['RevisionId'] = self.REVISION_ID
             expected_result['Version'] = '1'
             expected_result2 = dict(expected_result)
             expected_result2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
@@ -143,6 +144,7 @@ class TestLambdaAPI(unittest.TestCase):
             lambda_api.publish_version(self.FUNCTION_NAME)
 
             result = json.loads(lambda_api.list_versions(self.FUNCTION_NAME).get_data())
+            result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
 
             latest_version = dict()
             latest_version['CodeSize'] = self.CODE_SIZE
@@ -157,7 +159,6 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['Role'] = self.ROLE
             latest_version['LastModified'] = self.LAST_MODIFIED
             latest_version['TracingConfig'] = self.TRACING_CONFIG
-            latest_version['RevisionId'] = self.REVISION_ID
             latest_version['Version'] = '$LATEST'
             version1 = dict(latest_version)
             version1['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':1'
@@ -255,6 +256,7 @@ class TestLambdaAPI(unittest.TestCase):
         response = self.client.get('{0}/functions/{1}/aliases/{2}'.format(lambda_api.PATH_ROOT, self.FUNCTION_NAME,
                                                                           self.ALIAS_NAME))
         result = json.loads(response.get_data())
+        result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
 
         expected_result = {'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME,
                            'FunctionVersion': '1', 'Description': '',
@@ -288,6 +290,8 @@ class TestLambdaAPI(unittest.TestCase):
 
         response = self.client.get('{0}/functions/{1}/aliases'.format(lambda_api.PATH_ROOT, self.FUNCTION_NAME))
         result = json.loads(response.get_data())
+        for alias in result['Aliases']:
+            alias.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
         expected_result = {'Aliases': [
             {
                 'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME,
