@@ -144,7 +144,9 @@ class TestLambdaAPI(unittest.TestCase):
             lambda_api.publish_version(self.FUNCTION_NAME)
 
             result = json.loads(lambda_api.list_versions(self.FUNCTION_NAME).get_data())
-            result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
+            for version in result['Versions']:
+                # we need to remove this, since this is random, so we cannot know its value
+                version.pop('RevisionId', None)
 
             latest_version = dict()
             latest_version['CodeSize'] = self.CODE_SIZE
