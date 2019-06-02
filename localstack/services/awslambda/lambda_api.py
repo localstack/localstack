@@ -10,6 +10,7 @@ import logging
 import zipfile
 import threading
 import traceback
+import hashlib
 from io import BytesIO
 from datetime import datetime
 from six.moves import cStringIO as StringIO
@@ -33,7 +34,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests)
+    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, isoformat_milliseconds)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -275,8 +276,12 @@ def publish_new_function_version(arn):
         last_version = 0
     else:
         last_version = max([int(key) for key in versions.keys() if key != '$LATEST'])
-    versions[str(last_version + 1)] = {'CodeSize': versions.get('$LATEST').get('CodeSize'),
-                                    'Function': versions.get('$LATEST').get('Function')}
+    versions[str(last_version + 1)] = {
+        'CodeSize': versions.get('$LATEST').get('CodeSize'),
+        'CodeSha256': versions.get('$LATEST').get('CodeSha256'),
+        'Function': versions.get('$LATEST').get('Function'),
+        'RevisionId': str(uuid.uuid4())
+    }
     return get_function_version(arn, str(last_version + 1))
 
 
@@ -290,7 +295,8 @@ def do_update_alias(arn, alias, version, description=None):
         'AliasArn': arn + ':' + alias,
         'FunctionVersion': version,
         'Name': alias,
-        'Description': description or ''
+        'Description': description or '',
+        'RevisionId': str(uuid.uuid4())
     }
     arn_to_lambda.get(arn).aliases[alias] = new_alias
     return new_alias
@@ -472,6 +478,9 @@ def set_function_code(code, lambda_name):
         zip_file_content = get_zip_bytes(code)
         if isinstance(zip_file_content, Response):
             return zip_file_content
+        code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
+        lambda_details.get_version('$LATEST')['CodeSize'] = len(zip_file_content)
+        lambda_details.get_version('$LATEST')['CodeSha256'] = code_sha_256.decode('utf-8')
         tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
         mkdir(tmp_dir)
         tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
@@ -550,6 +559,8 @@ def do_list_functions():
 def format_func_details(func_details, version=None, always_add_version=False):
     version = version or '$LATEST'
     result = {
+        'CodeSha256': func_details.get_version(version).get('CodeSha256'),
+        'Role': func_details.role,
         'Version': version,
         'FunctionArn': func_details.arn(),
         'FunctionName': func_details.name(),
@@ -557,12 +568,16 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'Handler': func_details.handler,
         'Runtime': func_details.runtime,
         'Timeout': func_details.timeout,
-        'Environment': {
-            'Variables': func_details.envvars
-        },
-        # 'Description': ''
-        # 'MemorySize': 192,
+        'Description': func_details.description,
+        'MemorySize': func_details.memory_size,
+        'LastModified': func_details.last_modified,
+        'TracingConfig': {'Mode': 'PassThrough'},
+        'RevisionId': func_details.get_version(version).get('RevisionId')
     }
+    if func_details.envvars:
+        result['Environment'] = {
+            'Variables': func_details.envvars
+        }
     if (always_add_version or version != '$LATEST') and len(result['FunctionArn'].split(':')) <= 7:
         result['FunctionArn'] += ':%s' % (version)
     return result
@@ -623,30 +638,21 @@ def create_function():
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
-        func_details.versions = {'$LATEST': {'CodeSize': 50}}
+        func_details.versions = {'$LATEST': {'RevisionId': str(uuid.uuid4())}}
+        func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+        func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
         func_details.runtime = data['Runtime']
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
         func_details.tags = data.get('Tags', {})
         func_details.timeout = data.get('Timeout', LAMBDA_DEFAULT_TIMEOUT)
+        func_details.role = data['Role']
+        func_details.memory_size = data.get('MemorySize')
         result = set_function_code(data['Code'], lambda_name)
         if isinstance(result, Response):
             del arn_to_lambda[arn]
             return result
-        result.update({
-            'DeadLetterConfig': data.get('DeadLetterConfig'),
-            'Description': data.get('Description'),
-            'Environment': {'Error': {}, 'Variables': func_details.envvars},
-            'FunctionArn': arn,
-            'FunctionName': lambda_name,
-            'Handler': func_details.handler,
-            'MemorySize': data.get('MemorySize'),
-            'Role': data.get('Role'),
-            'Runtime': func_details.runtime,
-            'Timeout': func_details.timeout,
-            'TracingConfig': {},
-            'VpcConfig': {'SecurityGroupIds': [None], 'SubnetIds': [None], 'VpcId': None}
-        })
+        result.update(format_func_details(func_details))
         if data.get('Publish', False):
             result['Version'] = publish_new_function_version(arn)['Version']
         return jsonify(result or {})
@@ -741,6 +747,11 @@ def update_function_code(function):
     """
     data = json.loads(to_str(request.data))
     result = set_function_code(data, function)
+    arn = func_arn(function)
+    func_details = arn_to_lambda.get(arn)
+    result.update(format_func_details(func_details))
+    if isinstance(result, Response):
+        return result
     return jsonify(result or {})
 
 

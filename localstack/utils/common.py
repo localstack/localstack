@@ -992,3 +992,10 @@ def parallelize(func, list, size=None):
     pool.close()
     pool.join()
     return result
+
+
+def isoformat_milliseconds(t):
+    try:
+        return t.isoformat(timespec='milliseconds')
+    except TypeError:
+        return t.isoformat()[:-3]

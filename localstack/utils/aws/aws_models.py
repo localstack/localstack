@@ -170,6 +170,10 @@ class LambdaFunction(Component):
         self.handler = None
         self.cwd = None
         self.timeout = None
+        self.last_modified = None
+        self.description = ''
+        self.role = None
+        self.memory_size = None
 
     def get_version(self, version):
         return self.versions.get(version)
