@@ -184,6 +184,7 @@ class TestLambdaAPI(unittest.TestCase):
                          data=json.dumps({'Name': self.ALIAS_NAME, 'FunctionVersion': '1',
                              'Description': ''}))
         result = json.loads(response.get_data())
+        result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
 
         expected_result = {'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME,
                            'FunctionVersion': '1', 'Description': '', 'Name': self.ALIAS_NAME}
@@ -222,6 +223,7 @@ class TestLambdaAPI(unittest.TestCase):
                                                                           self.ALIAS_NAME),
                                    data=json.dumps({'FunctionVersion': '$LATEST', 'Description': 'Test-Description'}))
         result = json.loads(response.get_data())
+        result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
 
         expected_result = {'AliasArn': lambda_api.func_arn(self.FUNCTION_NAME) + ':' + self.ALIAS_NAME,
                            'FunctionVersion': '$LATEST', 'Description': 'Test-Description',
@@ -398,7 +400,7 @@ class TestLambdaAPI(unittest.TestCase):
         arn = lambda_api.func_arn(function_name)
         lambda_api.arn_to_lambda[arn] = LambdaFunction(arn)
         lambda_api.arn_to_lambda[arn].versions = {
-            '$LATEST': {'CodeSize': self.CODE_SIZE, 'CodeSha256': self.CODE_SHA_256}
+            '$LATEST': {'CodeSize': self.CODE_SIZE, 'CodeSha256': self.CODE_SHA_256, "RevisionId": self.REVISION_ID}
         }
         lambda_api.arn_to_lambda[arn].handler = self.HANDLER
         lambda_api.arn_to_lambda[arn].runtime = self.RUNTIME
@@ -406,6 +408,5 @@ class TestLambdaAPI(unittest.TestCase):
         lambda_api.arn_to_lambda[arn].tags = tags
         lambda_api.arn_to_lambda[arn].envvars = {}
         lambda_api.arn_to_lambda[arn].last_modified = self.LAST_MODIFIED
-        lambda_api.arn_to_lambda[arn].revision_id = self.REVISION_ID
         lambda_api.arn_to_lambda[arn].role = self.ROLE
         lambda_api.arn_to_lambda[arn].memory_size = self.MEMORY_SIZE

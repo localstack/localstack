@@ -280,7 +280,8 @@ def publish_new_function_version(arn):
     versions[str(last_version + 1)] = {
         'CodeSize': versions.get('$LATEST').get('CodeSize'),
         'CodeSha256': versions.get('$LATEST').get('CodeSha256'),
-        'Function': versions.get('$LATEST').get('Function')
+        'Function': versions.get('$LATEST').get('Function'),
+        'RevisionId': generate_random_revision_id()
     }
     return get_function_version(arn, str(last_version + 1))
 
@@ -295,7 +296,8 @@ def do_update_alias(arn, alias, version, description=None):
         'AliasArn': arn + ':' + alias,
         'FunctionVersion': version,
         'Name': alias,
-        'Description': description or ''
+        'Description': description or '',
+        'RevisionId': generate_random_revision_id()
     }
     arn_to_lambda.get(arn).aliases[alias] = new_alias
     return new_alias
@@ -571,7 +573,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'MemorySize': func_details.memory_size,
         'LastModified': func_details.last_modified,
         'TracingConfig': {'Mode': 'PassThrough'},
-        'RevisionId': func_details.revision_id
+        'RevisionId': func_details.get_version(version).get('RevisionId')
     }
     if func_details.envvars:
         result['Environment'] = {
@@ -637,9 +639,8 @@ def create_function():
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
-        func_details.versions = {'$LATEST': {}}
+        func_details.versions = {'$LATEST': {'RevisionId': generate_random_revision_id()}}
         func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
-        func_details.revision_id = generate_random_revision_id()
         func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
         func_details.runtime = data['Runtime']
