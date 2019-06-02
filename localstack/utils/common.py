@@ -1001,3 +1001,10 @@ def generate_random_revision_id():
         for revision_id_part_size in revision_id_part_sizes
     )
     return '-'.join(revision_id_parts)
+
+
+def isoformat_milliseconds(t):
+    try:
+        return t.isoformat(timespec='milliseconds')
+    except TypeError:
+        return t.isoformat()[:-3]

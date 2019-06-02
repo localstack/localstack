@@ -34,7 +34,8 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, generate_random_revision_id)
+    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, generate_random_revision_id,
+    isoformat_milliseconds)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -637,7 +638,7 @@ def create_function():
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
         func_details.versions = {'$LATEST': {}}
-        func_details.last_modified = datetime.utcnow().isoformat(timespec='milliseconds') + '+0000'
+        func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
         func_details.revision_id = generate_random_revision_id()
         func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
