@@ -400,7 +400,7 @@ class TestLambdaAPI(unittest.TestCase):
         arn = lambda_api.func_arn(function_name)
         lambda_api.arn_to_lambda[arn] = LambdaFunction(arn)
         lambda_api.arn_to_lambda[arn].versions = {
-            '$LATEST': {'CodeSize': self.CODE_SIZE, 'CodeSha256': self.CODE_SHA_256, "RevisionId": self.REVISION_ID}
+            '$LATEST': {'CodeSize': self.CODE_SIZE, 'CodeSha256': self.CODE_SHA_256, 'RevisionId': self.REVISION_ID}
         }
         lambda_api.arn_to_lambda[arn].handler = self.HANDLER
         lambda_api.arn_to_lambda[arn].runtime = self.RUNTIME
