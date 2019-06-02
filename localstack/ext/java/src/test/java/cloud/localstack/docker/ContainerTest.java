@@ -57,6 +57,7 @@ public class ContainerTest {
             assertNotEquals(4567, container.getExternalPortFor(4567));
             assertNotEquals(4575, container.getExternalPortFor(4575));
             assertNotEquals(4583, container.getExternalPortFor(4583));
+            assertNotEquals(4584, container.getExternalPortFor(4584));
         }
         finally {
             container.stop();
@@ -74,6 +75,7 @@ public class ContainerTest {
             assertEquals(4567, container.getExternalPortFor(4567));
             assertEquals(4575, container.getExternalPortFor(4575));
             assertEquals(4583, container.getExternalPortFor(4583));
+            assertEquals(4584, container.getExternalPortFor(4584));
         }
         finally {
             container.stop();

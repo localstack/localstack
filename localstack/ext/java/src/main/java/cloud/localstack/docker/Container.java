@@ -21,7 +21,7 @@ public class Container {
     private static final Logger LOG = Logger.getLogger(Container.class.getName());
 
     private static final String LOCALSTACK_NAME = "localstack/localstack";
-    private static final String LOCALSTACK_PORTS = "4567-4583";
+    private static final String LOCALSTACK_PORTS = "4567-4584";
 
     private static final int MAX_PORT_CONNECTION_ATTEMPTS = 10;
 
