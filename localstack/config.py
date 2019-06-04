@@ -10,6 +10,13 @@ from boto3 import Session
 from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI
 
 
+# Whether or not to handle lambda event sources as synchronous invocations
+SYNCHRONOUS_API_GATEWAY_EVENTS = os.environ.get('SYNCHRONOUS_API_GATEWAY_EVENTS', '').lower().strip() in ['true', '1']
+SYNCHRONOUS_SNS_EVENTS = os.environ.get('SYNCHRONOUS_SNS_EVENTS', '').lower().strip() in ['true', '1']
+SYNCHRONOUS_KINESIS_EVENTS = os.environ.get('SYNCHRONOUS_KINESIS_EVENTS', '').lower().strip() in ['true', '1']
+SYNCHRONOUS_DYNAMODB_EVENTS = os.environ.get('SYNCHRONOUS_DYNAMODB_EVENTS', '').lower().strip() in ['true', '1']
+SYNCHRONOUS_SQS_EVENTS = os.environ.get('SYNCHRONOUS_SQS_EVENTS', '').lower().strip() in ['true', '1']
+
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
 

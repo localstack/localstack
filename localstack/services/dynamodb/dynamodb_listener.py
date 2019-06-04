@@ -202,7 +202,7 @@ class ProxyListenerDynamoDB(ProxyListener):
         if len(records) > 0 and 'eventName' in records[0]:
             if 'TableName' in data:
                 records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
-            forward_to_lambda(records)
+            lambda_api.process_dynamodb_records(records)
             forward_to_ddb_stream(records)
 
     def prepare_batch_write_item_records(self, record, data):
@@ -346,16 +346,6 @@ def create_dynamodb_stream(data):
         view_type = stream['StreamViewType']
         dynamodbstreams_api.add_dynamodb_stream(table_name=table_name,
             view_type=view_type, enabled=enabled)
-
-
-def forward_to_lambda(records):
-    for record in records:
-        sources = lambda_api.get_event_sources(source_arn=record['eventSourceARN'])
-        event = {
-            'Records': [record]
-        }
-        for src in sources:
-            lambda_api.run_lambda(event=event, context={}, func_arn=src['FunctionArn'])
 
 
 def forward_to_ddb_stream(records):
