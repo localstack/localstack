@@ -50,7 +50,7 @@ any longer.
 * **CloudWatch Logs** at http://localhost:4586
 * **STS** at http://localhost:4592
 * **IAM** at http://localhost:4593
-
+* **EC2** at http://localhost:4597
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
 a fully featured KCL Kinesis client with Python binding, simple setup/teardown integration for nosetests, as
