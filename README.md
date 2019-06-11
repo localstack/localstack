@@ -371,7 +371,7 @@ duration of the test.  The container can be configured by using the @LocalstackD
 
 ```
 @RunWith(LocalstackDockerTestRunner.class)
-@LocalstackDockerProperties(randomizePorts = true, services = { "sqs", "kinesis:77077" })
+@LocalstackDockerProperties(services = { "sqs", "kinesis:77077" })
 public class MyDockerCloudAppTest {
 
   @Test
@@ -386,7 +386,7 @@ Or with JUnit 5 :
 
 ```
 @ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(randomizePorts = true, services = { "sqs", "kinesis:77077" })
+@LocalstackDockerProperties(services = { "sqs", "kinesis:77077" })
 public class MyDockerCloudAppTest {
    ...
 }
@@ -402,6 +402,19 @@ Simply add the following dependency to your `pom.xml` file:
     <version>0.1.22</version>
 </dependency>
 ```
+
+You can configure the Docker behaviour using the `@LocalstackDockerProperties` annotation with the following parameters:
+
+| property                    | usage                                                                                                                        | type                         | default value |
+|-----------------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------|---------------|
+| pullNewImage                | Determines if a new image is pulled from the docker repo before the tests are run.                                           | boolean                      | false         |
+| randomizePorts              | Determines if the container should expose the default local stack ports (4567-4583) or if it should expose randomized ports. | boolean                      | false         |
+| services                    | Determines which services should be run when the localstack starts.                                                          | String[]                     | All           |
+| imageTag                    | Use a specific image tag for docker container                                                                                | String                       | latest        |
+| hostNameResolver            | Used for determining the host name of the machine running the docker containers so that the containers can be addressed.     | IHostNameResolver            | localhost     |
+| environmentVariableProvider | Used for injecting environment variables into the container.                                                                 | IEnvironmentVariableProvider | Empty Map     |
+
+_NB : When specifying the port in the `services` property, you cannot use `randomizePorts = true`_
 
 ### Troubleshooting
 
