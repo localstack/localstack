@@ -263,8 +263,9 @@ def start_secretsmanager(port=None, asynchronous=False):
 
 
 def start_ec2(port=None, asynchronous=False):
-    port = port or config.PORT_EC2 
+    port = port or config.PORT_EC2
     return start_moto_server('ec2', port, name='EC2', asynchronous=asynchronous)
+
 
 # ---------------
 # HELPER METHODS
