@@ -262,6 +262,11 @@ def start_secretsmanager(port=None, asynchronous=False):
     return start_moto_server('secretsmanager', port, name='Secrets Manager', asynchronous=asynchronous)
 
 
+def start_ec2(port=None, asynchronous=False):
+    port = port or config.PORT_EC2
+    return start_moto_server('ec2', port, name='EC2', asynchronous=asynchronous)
+
+
 # ---------------
 # HELPER METHODS
 # ---------------

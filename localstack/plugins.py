@@ -7,7 +7,7 @@ from localstack.services.iam import iam_listener
 from localstack.services.infra import (register_plugin, Plugin,
     start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
     start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
-    start_ssm, start_sts, start_secretsmanager, start_iam, start_cloudwatch_logs)
+    start_ssm, start_sts, start_secretsmanager, start_iam, start_cloudwatch_logs, start_ec2)
 from localstack.services.kinesis import kinesis_listener, kinesis_starter
 from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
 from localstack.services.apigateway import apigateway_listener
@@ -76,6 +76,8 @@ def register_localstack_plugins():
         register_plugin(Plugin('stepfunctions',
             start=stepfunctions_starter.start_stepfunctions,
             listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS))
+        register_plugin(Plugin('ec2',
+            start=start_ec2))
     except Exception as e:
         print('Unable to register plugins: %s' % e)
         sys.stdout.flush()
