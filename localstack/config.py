@@ -1,11 +1,12 @@
 import re
 import os
 import socket
-import subprocess
-import tempfile
 import logging
+import platform
+import tempfile
+import subprocess
 from os.path import expanduser
-from six import iteritems
+import six
 from boto3 import Session
 from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI
 
@@ -59,17 +60,25 @@ DOCKER_SOCK = os.environ.get('DOCKER_SOCK', '').strip() or '/var/run/docker.sock
 PORT_WEB_UI = int(os.environ.get('PORT_WEB_UI', '').strip() or DEFAULT_PORT_WEB_UI)
 
 # IP of the docker bridge used to enable access between containers
-DOCKER_BRIDGE_IP = os.environ.get('DOCKER_BRIDGE_IP', '').strip() or '172.17.0.1'
+DOCKER_BRIDGE_IP = os.environ.get('DOCKER_BRIDGE_IP', '').strip()
+
+
+def is_linux():
+    try:
+        out = subprocess.check_output('uname -a', shell=True)
+        out = out.decode('utf-8') if isinstance(out, six.binary_type) else out
+        return 'Linux' in out
+    except subprocess.CalledProcessError:
+        return False
+
 
 # whether to use Lambda functions in a Docker container
 LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR', '').strip()
 if not LAMBDA_EXECUTOR:
     LAMBDA_EXECUTOR = 'local'
-    try:
-        if 'Linux' in subprocess.check_output('uname -a'):
-            LAMBDA_EXECUTOR = 'docker'
-    except Exception:
-        pass
+    if is_linux():
+        LAMBDA_EXECUTOR = 'docker'
+
 
 # Fallback URL to use when a non-existing Lambda is invoked. If this matches
 # `dynamodb://<table_name>`, then the invocation is recorded in the corresponding
@@ -84,7 +93,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LICENSE_KEY', 'DEBUG',
     'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB', 'DOCKER_BRIDGE_IP']
 
-for key, value in iteritems(DEFAULT_SERVICE_PORTS):
+for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
     CONFIG_ENV_VARS += [clean_key + '_BACKEND', clean_key + '_PORT_EXTERNAL']
 
@@ -92,8 +101,16 @@ for key, value in iteritems(DEFAULT_SERVICE_PORTS):
 CONFIG_ENV_VARS += ['LOCALSTACK_' + v for v in CONFIG_ENV_VARS]
 
 
+def ping(host):
+    """ Returns True if host responds to a ping request """
+    is_windows = platform.system().lower() == 'windows'
+    ping_opts = '-n 1' if is_windows else '-c 1'
+    args = 'ping %s %s' % (ping_opts, host)
+    return subprocess.call(args, shell=not is_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
+
+
 def in_docker():
-    """ Returns: True if running in a docker container, else False """
+    """ Returns True if running in a docker container, else False """
     if not os.path.exists('/proc/1/cgroup'):
         return False
     with open('/proc/1/cgroup', 'rt') as ifh:
@@ -101,6 +118,16 @@ def in_docker():
 
 
 is_in_docker = in_docker()
+
+# determine IP of Docker bridge
+if not DOCKER_BRIDGE_IP:
+    DOCKER_BRIDGE_IP = '172.17.0.1'
+    if is_in_docker:
+        candidates = (DOCKER_BRIDGE_IP, '172.18.0.1')
+        for ip in candidates:
+            if ping(ip):
+                DOCKER_BRIDGE_IP = ip
+                break
 
 # determine route to Docker host from container
 try:
@@ -116,6 +143,12 @@ except socket.error:
 # make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
 if is_in_docker and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
     LAMBDA_REMOTE_DOCKER = True
+
+# print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
+if not is_in_docker and 'docker' in LAMBDA_EXECUTOR and not is_linux():
+    print(('!WARNING! - Running outside of Docker with LAMBDA_EXECUTOR=%s can lead to '
+           'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
+           'be properly set in your Lambdas.') % LAMBDA_EXECUTOR)
 
 # local config file path in home directory
 CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
@@ -167,7 +200,7 @@ def populate_configs(service_ports=None):
     globs = globals()
 
     # define service ports and URLs as environment variables
-    for key, value in iteritems(DEFAULT_SERVICE_PORTS):
+    for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
         key_upper = key.upper().replace('-', '_')
 
         # define PORT_* variables with actual service ports as per configuration

@@ -72,4 +72,4 @@ ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.6/site-packages
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN make test
+RUN LAMBDA_EXECUTOR=local make test
