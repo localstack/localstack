@@ -1,3 +1,4 @@
+import re
 import ast
 import json
 import logging
@@ -5,7 +6,7 @@ import requests
 import uuid
 import xmltodict
 import six
-from requests.models import Response
+from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, to_str
@@ -30,6 +31,16 @@ class ProxyListenerSNS(ProxyListener):
             return make_error(message=str(e), code=400)
 
         if method == 'POST' and path == '/':
+
+            # Fix request ID in request. All external-facing responses contain our predefined
+            # account ID (defaults to 000000000000), whereas the backend endpoint from moto
+            # expects a different hardcoded account ID (123456789012).
+            regex = r'Arn=arn%3Aaws%3Asns%3A([^%]+)%3A([^%]+)%3A'
+            moto_account_id = '123456789012'
+            replace = r'Arn=arn%3Aaws%3Asns%3A\1%3A{}%3A'.format(moto_account_id)
+            data = re.sub(regex, replace, to_str(data))
+
+            # parse payload and extract fields
             req_data = urlparse.parse_qs(to_str(data))
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn')
@@ -73,6 +84,8 @@ class ProxyListenerSNS(ProxyListener):
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action)
 
+            return Request(data=data, headers=headers, method=method)
+
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -97,6 +110,9 @@ class ProxyListenerSNS(ProxyListener):
                 response_data = xmltodict.parse(response.content)
                 topic_arn = response_data['CreateTopicResponse']['CreateTopicResult']['TopicArn']
                 do_create_topic(topic_arn)
+
+        if response._content:
+            aws_stack.fix_account_id_in_arns(response)
 
 
 # instantiate listener

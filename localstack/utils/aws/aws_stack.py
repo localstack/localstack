@@ -8,7 +8,7 @@ import logging
 from six import iteritems
 from localstack import config
 from localstack.constants import (REGION_LOCAL, DEFAULT_REGION, LOCALHOST,
-    ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0)
+    ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
     run_safe, to_str, is_string, make_http_request, timestamp, is_port_open, get_service_protocol)
 from localstack.utils.aws.aws_models import KinesisStream
@@ -241,6 +241,17 @@ def check_valid_region(headers):
     region = parts[2]
     if region not in config.VALID_REGIONS:
         raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
+
+
+def fix_account_id_in_arns(response):
+    """ Fix the account ID in the ARNs returned in the given Flask response """
+    regex1 = r'arn:aws:([^:]+):([^:]+):123456789:'
+    regex2 = r'arn:aws:([^:]+):([^:]+):123456789012:'
+    replace = r'arn:aws:\1:\2:%s:' % TEST_AWS_ACCOUNT_ID
+    response._content = re.sub(regex1, replace, to_str(response._content))
+    response._content = re.sub(regex2, replace, to_str(response._content))
+    response.headers['content-length'] = len(response._content)
+    return response
 
 
 def get_s3_client():
