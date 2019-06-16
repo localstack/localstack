@@ -85,3 +85,6 @@ STEPFUNCTIONS_ZIP_URL = 'https://s3.amazonaws.com/stepfunctionslocal/StepFunctio
 
 # API endpoint for analytics events
 API_ENDPOINT = 'https://api.localstack.cloud/v1'
+
+# Hardcoded AWS account ID used by moto
+MOTO_ACCOUNT_ID = '123456789012'

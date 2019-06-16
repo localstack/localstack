@@ -5,12 +5,13 @@ import time
 import boto3
 import base64
 import logging
-from six import iteritems
+import six
 from localstack import config
-from localstack.constants import (REGION_LOCAL, DEFAULT_REGION, LOCALHOST,
+from localstack.constants import (REGION_LOCAL, DEFAULT_REGION, LOCALHOST, MOTO_ACCOUNT_ID,
     ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
-    run_safe, to_str, is_string, make_http_request, timestamp, is_port_open, get_service_protocol)
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
+    timestamp, is_port_open, get_service_protocol)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -243,15 +244,24 @@ def check_valid_region(headers):
         raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
 
 
-def fix_account_id_in_arns(response):
-    """ Fix the account ID in the ARNs returned in the given Flask response """
-    regex1 = r'arn:aws:([^:]+):([^:]+):123456789:'
-    regex2 = r'arn:aws:([^:]+):([^:]+):123456789012:'
-    replace = r'arn:aws:\1:\2:%s:' % TEST_AWS_ACCOUNT_ID
-    response._content = re.sub(regex1, replace, to_str(response._content))
-    response._content = re.sub(regex2, replace, to_str(response._content))
-    response.headers['content-length'] = len(response._content)
-    return response
+def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace=None):
+    """ Fix the account ID in the ARNs returned in the given Flask response or string """
+    existing = existing if isinstance(existing, list) else [existing]
+    existing = existing or ['123456789', MOTO_ACCOUNT_ID]
+    replace = replace or TEST_AWS_ACCOUNT_ID
+    is_str_obj = is_string_or_bytes(response)
+    content = to_str(response if is_str_obj else response._content)
+
+    replace = r'arn{col}aws{col}\1{col}\2{col}{acc}{col}'.format(col=colon_delimiter, acc=replace)
+    for acc_id in existing:
+        regex = r'arn{col}aws{col}([^:%]+){col}([^:%]+){col}{acc}{col}'.format(col=colon_delimiter, acc=acc_id)
+        content = re.sub(regex, replace, content)
+
+    if not is_str_obj:
+        response._content = content
+        response.headers['content-length'] = len(response._content)
+        return response
+    return content
 
 
 def get_s3_client():
@@ -501,7 +511,7 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
     resources_list = client.get_resources(restApiId=api_id)
     root_res_id = resources_list['items'][0]['id']
     # add API resources and methods
-    for path, methods in iteritems(resources):
+    for path, methods in six.iteritems(resources):
         # create resources recursively
         parent_id = root_res_id
         for path_part in path.split('/'):
