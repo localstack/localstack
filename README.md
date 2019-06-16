@@ -493,6 +493,7 @@ localstack web
 
 ## Change Log
 
+* v0.9.5: Reduce Docker image size by squashing; fix response body for presigned URL S3 PUT requests; fix CreateDate returned by IAM; fix account IDs for CF and SNS; fix topic checks for SMS using SNS; improve documentation around `@LocalstackDockerProperties`; add basic EC2 support; upgrade to ElasticSearch 6.7; set Last-Modified header in S3; preserve logic with uppercase event keys in Java; add support for nodejs 10.x Lambdas
 * v0.9.4: Fix ARNs in CloudFormation deployments; write stderr to file in supervisord; fix Lambda invocation times; fix canonicalization of service names when running in Docker; add support for `@Nested` in Junit5; add support for batch/transaction in DynamoDB; fix output buffering for subprocesses; assign unique ports under docker-reuse; check if topic ARN exists before publish
 * v0.9.3: Fix output buffering of child processes; new release of Java libs; add imageTag attribute for Java annotation
 * v0.9.2: Update to Python 3 in Dockerfile; preserve attributes when SNS Subscribe; fix event source mapping in Lambda; fix CORS ExposeHeaders; set Lambda timeout in secs; add tags support for Lambda/Firehose; add message attributes for SQS/Lambda; fix shard count support for Kinesis; fix port mappings for CloudFormation

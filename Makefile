@@ -40,9 +40,11 @@ infra:             ## Manually start the local infrastructure for testing
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
+
+docker-squash:
 	# squash entire image
 	which docker-squash || $(PIP_CMD) install docker-squash; \
-		docker-squash -t $(IMAGE_NAME) $(IMAGE_NAME)
+		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-build-base:
 	docker build --squash -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
@@ -50,6 +52,7 @@ docker-build-base:
 	docker tag $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):latest
 
 docker-push:       ## Push Docker image to registry
+	make docker-squash
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-push-master:## Push Docker image to registry IF we are currently on the master branch
@@ -62,12 +65,11 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		echo "This is a fork and not the main repo.") || \
 	( \
 		which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
-		which docker-squash || $(PIP_CMD) install docker-squash; \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-		BASE_IMAGE_ID=`docker history -q $(IMAGE_NAME):$(IMAGE_TAG) | tail -n 1`; \
-		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) -f $$BASE_IMAGE_ID $(IMAGE_NAME):$(IMAGE_TAG) && \
-			docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
-		((! (git diff HEAD~1 localstack/constants.py | grep '^+VERSION =') && echo "Only pushing tag 'latest' as version has not changed.") || \
+		make docker-squash && \
+		docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
+		((! (git diff HEAD~1 localstack/constants.py | grep '^+VERSION =') && \
+			echo "Only pushing tag 'latest' as version has not changed.") || \
 			docker push $(IMAGE_NAME):$(IMAGE_TAG)) && \
 		docker push $(IMAGE_NAME):latest \
 	)

@@ -17,6 +17,7 @@ from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
 from flask import Flask, Response, jsonify, request
 from localstack import config
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.lambda_executors import (
@@ -243,7 +244,7 @@ def process_sqs_message(message_body, message_attributes, queue_name):
                 'messageId': str(uuid.uuid4()),
                 'attributes': {
                     'ApproximateFirstReceiveTimestamp': '{}000'.format(int(time.time())),
-                    'SenderId': '123456789012',
+                    'SenderId': TEST_AWS_ACCOUNT_ID,
                     'ApproximateReceiveCount': '1',
                     'SentTimestamp': '{}000'.format(int(time.time()))
                 },

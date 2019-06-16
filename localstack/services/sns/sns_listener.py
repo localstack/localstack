@@ -1,12 +1,13 @@
 import ast
 import json
-import logging
-import requests
 import uuid
-import xmltodict
+import logging
 import six
-from requests.models import Response
+import requests
+import xmltodict
+from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
+from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, to_str
 from localstack.services.awslambda import lambda_api
@@ -30,12 +31,15 @@ class ProxyListenerSNS(ProxyListener):
             return make_error(message=str(e), code=400)
 
         if method == 'POST' and path == '/':
+
+            # parse payload and extract fields
             req_data = urlparse.parse_qs(to_str(data))
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn')
 
             if topic_arn:
                 topic_arn = topic_arn[0]
+                topic_arn = aws_stack.fix_account_id_in_arns(topic_arn)
 
             if req_action == 'SetSubscriptionAttributes':
                 sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
@@ -73,12 +77,26 @@ class ProxyListenerSNS(ProxyListener):
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action)
 
+            data = self._reset_account_id(data)
+            return Request(data=data, headers=headers, method=method)
+
         return True
 
+    def _reset_account_id(self, data):
+        """ Fix account ID in request payload. All external-facing responses contain our
+            predefined account ID (defaults to 000000000000), whereas the backend endpoint
+            from moto expects a different hardcoded account ID (123456789012). """
+        return aws_stack.fix_account_id_in_arns(
+            data, colon_delimiter='%3A', existing=TEST_AWS_ACCOUNT_ID, replace=MOTO_ACCOUNT_ID)
+
     def return_response(self, method, path, data, headers, response):
-        # This method is executed by the proxy after we've already received a
-        # response from the backend, hence we can utilize the "response" variable here
+
         if method == 'POST' and path == '/':
+            # convert account IDs in ARNs
+            data = aws_stack.fix_account_id_in_arns(data, colon_delimiter='%3A')
+            aws_stack.fix_account_id_in_arns(response)
+
+            # parse request and extract data
             req_data = urlparse.parse_qs(to_str(data))
             req_action = req_data['Action'][0]
             if req_action == 'Subscribe' and response.status_code < 400:
@@ -157,8 +175,7 @@ def do_create_topic(topic_arn):
 
 
 def do_delete_topic(topic_arn):
-    if topic_arn in SNS_SUBSCRIPTIONS:
-        del SNS_SUBSCRIPTIONS[topic_arn]
+    SNS_SUBSCRIPTIONS.pop(topic_arn, None)
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes):
@@ -170,7 +187,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes):
         'SubscriptionArn': subscription_arn,
     }
     subscription.update(attributes)
-    SNS_SUBSCRIPTIONS.get(topic_arn).append(subscription)
+    SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
 
 
 def do_unsubscribe(subscription_arn):
@@ -186,10 +203,7 @@ def do_unsubscribe(subscription_arn):
 # ---------------
 
 def get_topic_by_arn(topic_arn):
-    if topic_arn in SNS_SUBSCRIPTIONS:
-        return SNS_SUBSCRIPTIONS[topic_arn]
-    else:
-        return None
+    return SNS_SUBSCRIPTIONS.get(topic_arn)
 
 
 def get_subscription_by_arn(sub_arn):
