@@ -66,11 +66,11 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 	( \
 		which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
-		make docker-squash && \
-		docker tag $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):latest; \
+		IMAGE_TAG=latest make docker-squash && \
 		((! (git diff HEAD~1 localstack/constants.py | grep '^+VERSION =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
-			docker push $(IMAGE_NAME):$(IMAGE_TAG)) && \
+			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG) && \
+				docker push $(IMAGE_NAME):$(IMAGE_TAG))) && \
 		docker push $(IMAGE_NAME):latest \
 	)
 
