@@ -203,6 +203,11 @@ public class Localstack {
         return ensureInstallationAndGetEndpoint(ServiceName.STEPFUNCTIONS);
     }
 
+    public static String getEndpointEC2() {
+        return ensureInstallationAndGetEndpoint(ServiceName.EC2);
+    }
+
+
     /* UTILITY METHODS */
 
     /**

@@ -257,9 +257,10 @@ def append_last_modified_headers(response, content=None):
 
     time_format = '%a, %d %b %Y %H:%M:%S GMT'  # TimeFormat
     try:
-        last_modified_str = re.findall(r'<LastModified>(.*)</LastModified>', content)[0]
-        last_modified_time_format = dateutil.parser.parse(last_modified_str).strftime(time_format)
-        response.headers['Last-Modified'] = last_modified_time_format
+        if content:
+            last_modified_str = re.findall(r'<LastModified>(.*)</LastModified>', content)[0]
+            last_modified_time_format = dateutil.parser.parse(last_modified_str).strftime(time_format)
+            response.headers['Last-Modified'] = last_modified_time_format
     except TypeError as err:
         LOGGER.debug('No parsable content: %s' % err)
     except IndexError as err:
@@ -536,6 +537,8 @@ class ProxyListenerS3(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
 
+        path = to_str(path)
+        method = to_str(method)
         bucket_name = get_bucket_name(path, headers)
 
         # No path-name based bucket name? Try host-based
@@ -593,10 +596,17 @@ class ProxyListenerS3(ProxyListener):
             return response
 
         if response:
+            reset_content_length = False
+
             # append CORS headers to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
-
             append_last_modified_headers(response=response)
+
+            # Remove body from PUT response on presigned URL
+            # https://github.com/localstack/localstack/issues/1317
+            if method == 'PUT' and ('X-Amz-Security-Token=' in path or 'AWSAccessKeyId=' in path):
+                response._content = ''
+                reset_content_length = True
 
             response_content_str = None
             try:
@@ -628,10 +638,13 @@ class ProxyListenerS3(ProxyListener):
                 if 'text/html' in response.headers.get('Content-Type', ''):
                     response.headers['Content-Type'] = 'application/xml; charset=utf-8'
 
-                response.headers['content-length'] = len(response._content)
+                reset_content_length = True
 
             # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
             if method == 'DELETE':
+                reset_content_length = True
+
+            if reset_content_length:
                 response.headers['content-length'] = len(response._content)
 
     def _update_location(self, content, bucket_name):

@@ -2,6 +2,7 @@ import uuid
 import logging
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -75,6 +76,8 @@ class ProxyListenerCloudFormation(ProxyListener):
         if response.status_code >= 400:
             LOG.debug('Error response from CloudFormation (%s) %s %s: %s' %
                       (response.status_code, method, path, response.content))
+        if response._content:
+            aws_stack.fix_account_id_in_arns(response)
 
 
 # instantiate listener

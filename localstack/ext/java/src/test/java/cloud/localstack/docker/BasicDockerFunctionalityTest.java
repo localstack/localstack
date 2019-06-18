@@ -22,6 +22,9 @@ import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.secretsmanager.AWSSecretsManager;
+import com.amazonaws.services.secretsmanager.model.CreateSecretRequest;
+import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.ListQueuesResult;
@@ -48,6 +51,22 @@ public class BasicDockerFunctionalityTest {
 
     static {
         TestUtils.setEnv("AWS_CBOR_DISABLE", "1");
+    }
+
+    @org.junit.Test
+    @org.junit.jupiter.api.Test
+    public void testSecretsManager() throws Exception {
+        AWSSecretsManager secretsManager = DockerTestUtils.getClientSecretsManager();
+
+        CreateSecretRequest createSecretRequest = new CreateSecretRequest();
+        createSecretRequest.setName("my-secret-name");
+        createSecretRequest.setSecretString("this is a secret thing");
+        secretsManager.createSecret(createSecretRequest);
+
+        GetSecretValueRequest getSecretValueRequest = new GetSecretValueRequest().withSecretId("my-secret-name");
+        String result = secretsManager.getSecretValue(getSecretValueRequest).getSecretString();
+        Assertions.assertThat(result).isEqualTo("this is a secret thing");
+
     }
 
     @org.junit.Test

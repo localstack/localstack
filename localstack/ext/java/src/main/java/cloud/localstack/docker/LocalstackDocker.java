@@ -175,6 +175,10 @@ public class LocalstackDocker {
     public String getEndpointSecretsmanager() {
         return endpointForService(ServiceName.SECRETSMANAGER);
     }
+    
+    public String getEndpointEC2() {
+        return endpointForService(ServiceName.EC2);
+    }
 
     public String getEndpointStepFunctions() { return endpointForService(ServiceName.STEPFUNCTIONS); }
 

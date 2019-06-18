@@ -35,7 +35,7 @@ ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
 # expose service & web dashboard ports
-EXPOSE 4567-4593 8080
+EXPOSE 4567-4597 8080
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
@@ -72,4 +72,4 @@ ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.6/site-packages
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN make test
+RUN LAMBDA_EXECUTOR=local make test
