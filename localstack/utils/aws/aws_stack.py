@@ -8,7 +8,8 @@ import logging
 import six
 from localstack import config
 from localstack.constants import (REGION_LOCAL, DEFAULT_REGION, LOCALHOST, MOTO_ACCOUNT_ID,
-    ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0, TEST_AWS_ACCOUNT_ID)
+                                  ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0,
+                                  APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
     timestamp, is_port_open, get_service_protocol)
@@ -368,6 +369,13 @@ def s3_bucket_arn(bucket_name, account_id=None):
     return 'arn:aws:s3:::%s' % (bucket_name)
 
 
+def create_sqs_queue(queue_name, env=None):
+    env = get_environment(env)
+    # queue
+    conn = connect_to_service('sqs', env=env)
+    return conn.create_queue(QueueName=queue_name)
+
+
 def sqs_queue_arn(queue_name, account_id=None):
     account_id = get_account_id(account_id)
     # ElasticMQ sets a static region of "elasticmq"
@@ -385,10 +393,18 @@ def get_sqs_queue_url(queue_name):
     return response['QueueUrl']
 
 
+def sqs_receive_message(queue_name):
+    client = connect_to_service('sqs')
+    response = client.receive_message(QueueUrl=get_sqs_queue_url(queue_name))
+    return response
+
+
 def mock_aws_request_headers(service='dynamodb'):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == 'kinesis':
         ctype = APPLICATION_AMZ_JSON_1_1
+    elif service == 'sqs':
+        ctype = APPLICATION_X_WWW_FORM_URLENCODED
     access_key = get_boto3_credentials().access_key
     headers = {
         'Content-Type': ctype,

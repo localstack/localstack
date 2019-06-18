@@ -69,6 +69,7 @@ ENV_INTERNAL_TEST_RUN = 'LOCALSTACK_INTERNAL_TEST_RUN'
 APPLICATION_AMZ_JSON_1_0 = 'application/x-amz-json-1.0'
 APPLICATION_AMZ_JSON_1_1 = 'application/x-amz-json-1.1'
 APPLICATION_JSON = 'application/json'
+APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
 
 # Lambda defaults
 LAMBDA_TEST_ROLE = 'arn:aws:iam::%s:role/lambda-test-role' % TEST_AWS_ACCOUNT_ID

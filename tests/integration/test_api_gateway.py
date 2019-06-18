@@ -1,3 +1,4 @@
+import base64
 import re
 import json
 import unittest
@@ -34,6 +35,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             #end
         ]
     }"""
+    APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 
     # endpoint paths
     API_PATH_DATA_INBOUND = '/data'
@@ -46,6 +48,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
     # name of Kinesis stream connected to API Gateway
     TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
+    TEST_SQS_QUEUE = 'test-sqs-queue-api-gw'
     TEST_STAGE_NAME = 'testing'
     TEST_LAMBDA_PROXY_BACKEND = 'test_lambda_apigw_backend'
     TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = 'test_lambda_apigw_backend_path_param'
@@ -76,6 +79,28 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
         self.assertEqual(result['FailedRecordCount'], 0)
         self.assertEqual(len(result['Records']), len(test_data['records']))
+
+    def test_api_gateway_sqs_integration(self):
+        # create target SQS stream
+        aws_stack.create_sqs_queue(self.TEST_SQS_QUEUE)
+
+        # create API Gateway and connect it to the target queue
+        result = self.connect_api_gateway_to_sqs('test_gateway4')
+
+        # generate test data
+        test_data = {'spam': 'eggs'}
+
+        url = INBOUND_GATEWAY_URL_PATTERN.format(
+            api_id=result['id'],
+            stage_name=self.TEST_STAGE_NAME,
+            path=self.API_PATH_DATA_INBOUND
+        )
+        result = requests.post(url, data=json.dumps(test_data))
+        self.assertEqual(result.status_code, 200)
+
+        messages = aws_stack.sqs_receive_message(self.TEST_SQS_QUEUE)['Messages']
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(json.loads(base64.b64decode(messages[0]['Body'])), test_data)
 
     def test_api_gateway_http_integration(self):
         test_port = 12123
@@ -271,6 +296,29 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
                 'requestTemplates': {
                     'application/json': template
                 }
+            }]
+        }]
+        return aws_stack.create_api_gateway(
+            name=gateway_name,
+            resources=resources,
+            stage_name=self.TEST_STAGE_NAME
+        )
+
+    def connect_api_gateway_to_sqs(self, gateway_name):
+        resources = {}
+        template = self.APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE
+        resource_path = self.API_PATH_DATA_INBOUND.replace('/', '')
+        resources[resource_path] = [{
+            'httpMethod': 'POST',
+            'authorizationType': 'NONE',
+            'integrations': [{
+                'type': 'AWS',
+                'uri': 'arn:aws:apigateway:%s:sqs:path/%s/%s' % (
+                    DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, self.TEST_SQS_QUEUE
+                ),
+                'requestTemplates': {
+                    'application/json': template
+                },
             }]
         }]
         return aws_stack.create_api_gateway(
