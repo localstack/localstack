@@ -255,7 +255,7 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
 
     replace = r'arn{col}aws{col}\1{col}\2{col}{acc}{col}'.format(col=colon_delimiter, acc=replace)
     for acc_id in existing:
-        regex = r'arn{col}aws{col}([^:%]+){col}([^:%]+){col}{acc}{col}'.format(col=colon_delimiter, acc=acc_id)
+        regex = r'arn{col}aws{col}([^:%]+){col}([^:%]*){col}{acc}{col}'.format(col=colon_delimiter, acc=acc_id)
         content = re.sub(regex, replace, content)
 
     if not is_str_obj:
