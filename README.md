@@ -311,7 +311,7 @@ def my_app_test():
     # here goes your test logic
 ```
 
-See the example test file `tests/test_integration.py` for more details.
+See the example test file `tests/integration/test_integration.py` for more details.
 
 ## Integration with Serverless
 
