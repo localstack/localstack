@@ -14,6 +14,8 @@ from localstack.utils.common import to_str
 from localstack.constants import REGION_LOCAL, DEFAULT_REGION
 from six import iteritems
 
+# TODO: CLI commands in this file need to be replaced with SDK calls!
+
 
 AWS_CACHE_TIMEOUT = 5  # 5 seconds
 AWS_LAMBDA_CODE_CACHE_TIMEOUT = 5 * 60  # 5 minutes
@@ -39,8 +41,9 @@ def run_cached(cmd, cache_duration_secs=None):
         'AWS_DEFAULT_REGION': os.environ.get('AWS_DEFAULT_REGION') or DEFAULT_REGION,
         'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
     })
-    return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars,
-               stderr=open(os.devnull, 'w'))
+    print('cmd', cmd)
+    with open(os.devnull, 'w') as devnull:
+        return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars, stderr=devnull)
 
 
 def run_aws_cmd(service, cmd_params, env=None, cache_duration_secs=None):
@@ -299,6 +302,7 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
     result = []
     try:
         out = cmd_es('list-domain-names', env)
+        print('es domain-names', out)
         out = json.loads(out)
 
         def handle(domain):
