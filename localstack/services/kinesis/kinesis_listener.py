@@ -22,8 +22,9 @@ class ProxyListenerKinesis(ProxyListener):
         data = json.loads(to_str(data))
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
-            if headers.get('X-Amz-Target') in [ACTION_PUT_RECORD, ACTION_PUT_RECORDS]:
-                return kinesis_error_response(data)
+            action = headers.get('X-Amz-Target')
+            if action in [ACTION_PUT_RECORD, ACTION_PUT_RECORDS]:
+                return kinesis_error_response(data, action)
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -33,8 +34,9 @@ class ProxyListenerKinesis(ProxyListener):
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):
             event_type = (event_publisher.EVENT_KINESIS_CREATE_STREAM if action == ACTION_CREATE_STREAM
-                else event_publisher.EVENT_KINESIS_DELETE_STREAM)
-            event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(data.get('StreamName'))})
+                          else event_publisher.EVENT_KINESIS_DELETE_STREAM)
+            event_publisher.fire_event(
+                event_type, payload={'n': event_publisher.get_hash(data.get('StreamName'))})
         elif action == ACTION_PUT_RECORD:
             response_body = json.loads(to_str(response.content))
             event_record = {
@@ -87,14 +89,23 @@ class ProxyListenerKinesis(ProxyListener):
 UPDATE_KINESIS = ProxyListenerKinesis()
 
 
-def kinesis_error_response(data):
+def kinesis_error_response(data, action):
     error_response = Response()
-    error_response.status_code = 200
-    content = {'FailedRecordCount': 1, 'Records': []}
-    for record in data.get('Records', []):
-        content['Records'].append({
+
+    if action == ACTION_PUT_RECORD:
+        error_response.status_code = 400
+        content = {
             'ErrorCode': 'ProvisionedThroughputExceededException',
             'ErrorMessage': 'Rate exceeded for shard X in stream Y under account Z.'
-        })
+        }
+    else:
+        error_response.status_code = 200
+        content = {'FailedRecordCount': 1, 'Records': []}
+        for record in data.get('Records', []):
+            content['Records'].append({
+                'ErrorCode': 'ProvisionedThroughputExceededException',
+                'ErrorMessage': 'Rate exceeded for shard X in stream Y under account Z.'
+            })
+
     error_response._content = json.dumps(content)
     return error_response
