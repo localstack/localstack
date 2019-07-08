@@ -4,7 +4,7 @@ import json
 import logging
 import socket
 import tempfile
-from localstack.utils.common import (short_uid, parallelize, is_port_open,
+from localstack.utils.common import (short_uid, parallelize, is_port_open, new_tmp_file,
     rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, run, md5)
 from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
@@ -42,8 +42,16 @@ def run_cached(cmd, cache_duration_secs=None):
         'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
     })
     print('cmd', cmd)
-    with open(os.devnull, 'w') as devnull:
-        return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars, stderr=devnull)
+    tmp_file_path = new_tmp_file()
+    error = None
+    with open(tmp_file_path, 'w') as err_file:
+        try:
+            return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars, stderr=err_file)
+        except Exception as e:
+            error = e
+    if error:
+        print('Error running command:', cmd, error, load_file(tmp_file_path))
+        raise error
 
 
 def run_aws_cmd(service, cmd_params, env=None, cache_duration_secs=None):

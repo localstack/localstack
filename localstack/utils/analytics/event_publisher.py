@@ -3,10 +3,11 @@ import json
 import time
 from six.moves import queue
 from localstack.config import TMP_FOLDER, CONFIG_FILE_PATH
-from localstack.constants import API_ENDPOINT, ENV_INTERNAL_TEST_RUN
+from localstack.constants import ENV_INTERNAL_TEST_RUN, API_ENDPOINT
 from localstack.utils.common import (JsonObject, to_str,
     timestamp, short_uid, save_file, FuncThread, load_file)
 from localstack.utils.common import safe_requests as requests
+from localstack_ext.bootstrap.licensing import read_license_key
 
 PROCESS_ID = short_uid()
 MACHINE_ID = None
@@ -36,8 +37,9 @@ class AnalyticsEvent(JsonObject):
         self.t = kwargs.get('timestamp') or kwargs.get('t') or timestamp()
         self.m_id = kwargs.get('machine_id') or kwargs.get('m_id') or get_machine_id()
         self.p_id = kwargs.get('process_id') or kwargs.get('p_id') or get_process_id()
-        self.e_t = kwargs.get('event_type') or kwargs.get('e_t')
         self.p = kwargs.get('payload') if kwargs.get('payload') is not None else kwargs.get('p')
+        self.k = kwargs.get('api_key') or kwargs.get('k') or read_api_key_safe()
+        self.e_t = kwargs.get('event_type') or kwargs.get('e_t')
 
     def timestamp(self):
         return self.t
@@ -53,6 +55,17 @@ class AnalyticsEvent(JsonObject):
 
     def payload(self):
         return self.p
+
+    def api_key(self):
+        return self.k
+
+
+def read_api_key_safe():
+    try:
+        # TODO: rename to read_api_key
+        return read_license_key()
+    except Exception:
+        return None
 
 
 def get_or_create_file(config_file):
