@@ -37,6 +37,9 @@ class DynamoDBIntegrationTest (unittest.TestCase):
             item2 = json_safe(items[item_id])
             assert item1 == item2
 
+        # clean up
+        delete_table(TEST_DDB_TABLE_NAME)
+
     def test_large_data_download(self):
         dynamodb = aws_stack.connect_to_resource('dynamodb')
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
@@ -148,3 +151,11 @@ class DynamoDBIntegrationTest (unittest.TestCase):
 
         assert table.table_arn.startswith(expected_arn_prefix)
         assert table.latest_stream_arn.startswith(expected_arn_prefix)
+
+        # clean up
+        delete_table(TEST_DDB_TABLE_NAME_4)
+
+
+def delete_table(name):
+    dynamodb_client = aws_stack.connect_to_service('dynamodb')
+    dynamodb_client.delete_table(TableName=name)

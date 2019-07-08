@@ -41,7 +41,6 @@ def run_cached(cmd, cache_duration_secs=None):
         'AWS_DEFAULT_REGION': os.environ.get('AWS_DEFAULT_REGION') or DEFAULT_REGION,
         'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
     })
-    print('cmd', cmd)
     tmp_file_path = new_tmp_file()
     error = None
     with open(tmp_file_path, 'w') as err_file:
@@ -50,7 +49,7 @@ def run_cached(cmd, cache_duration_secs=None):
         except Exception as e:
             error = e
     if error:
-        print('Error running command:', cmd, error, load_file(tmp_file_path))
+        LOG.warning('Error running command: %s %s %s' % (cmd, error, load_file(tmp_file_path)))
         raise error
 
 
@@ -310,7 +309,6 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
     result = []
     try:
         out = cmd_es('list-domain-names', env)
-        print('es domain-names', out)
         out = json.loads(out)
 
         def handle(domain):
