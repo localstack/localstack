@@ -80,6 +80,10 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(result['FailedRecordCount'], 0)
         self.assertEqual(len(result['Records']), len(test_data['records']))
 
+        # clean up
+        kinesis = aws_stack.connect_to_service('kinesis')
+        kinesis.delete_stream(StreamName=self.TEST_STREAM_KINESIS_API_GW)
+
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream
         aws_stack.create_sqs_queue(self.TEST_SQS_QUEUE)

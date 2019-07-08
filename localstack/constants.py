@@ -85,7 +85,7 @@ STS_JAR_URL = 'https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.1
 STEPFUNCTIONS_ZIP_URL = 'https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip'
 
 # API endpoint for analytics events
-API_ENDPOINT = 'https://api.localstack.cloud/v1'
+API_ENDPOINT = os.environ.get('API_ENDPOINT') or 'https://api.localstack.cloud/v1'
 
 # Hardcoded AWS account ID used by moto
 MOTO_ACCOUNT_ID = '123456789012'

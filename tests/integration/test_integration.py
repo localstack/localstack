@@ -282,6 +282,10 @@ class IntegrationTest(unittest.TestCase):
         num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
         self.assertEqual(num_error_invocations, 1)
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_STREAM)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
+
     def test_lambda_streams_batch_and_transactions(self):
         ddb_lease_table_suffix = '-kclapp2'
         table_name = TEST_TABLE_NAME + 'lsbat' + ddb_lease_table_suffix
@@ -427,6 +431,9 @@ class IntegrationTest(unittest.TestCase):
         # this can take a long time in CI, make sure we give it enough time/retries
         retry(check_events, retries=9, sleep=3)
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
+
     def test_kinesis_lambda_forward_chain(self):
         kinesis = aws_stack.connect_to_service('kinesis')
         s3 = aws_stack.connect_to_service('s3')
@@ -454,10 +461,15 @@ class IntegrationTest(unittest.TestCase):
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(test_data, all_objects)
 
+        # clean up
+        kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
+        kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
+
 
 # ---------------
 # HELPER METHODS
 # ---------------
+
 
 def get_event_source_arn(stream_name):
     kinesis = aws_stack.connect_to_service('kinesis')
