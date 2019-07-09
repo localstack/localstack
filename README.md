@@ -494,7 +494,7 @@ localstack web
 ## Other UI Clients
 
 * [Commandeer desktop app](https://getcommandeer.com)
-* (DynamoDB Admin Web UI)(https://www.npmjs.com/package/dynamodb-admin)
+* [DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin)
 
 ## Change Log
 
