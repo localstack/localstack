@@ -491,6 +491,11 @@ components and the relationship between them.
 localstack web
 ```
 
+## Other UI Clients
+
+* [Commandeer desktop app](https://getcommandeer.com)
+* [DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin)
+
 ## Change Log
 
 * v0.9.5: Reduce Docker image size by squashing; fix response body for presigned URL S3 PUT requests; fix CreateDate returned by IAM; fix account IDs for CF and SNS; fix topic checks for SMS using SNS; improve documentation around `@LocalstackDockerProperties`; add basic EC2 support; upgrade to ElasticSearch 6.7; set Last-Modified header in S3; preserve logic with uppercase event keys in Java; add support for nodejs 10.x Lambdas
