@@ -46,8 +46,8 @@ class TestIAMIntegrations(unittest.TestCase):
         response = iam_client.create_policy(PolicyName='test-policy',
                                             PolicyDocument=json.dumps(test_policy_document))
         test_policy_arn = response['Policy']['Arn']
-        assert TEST_AWS_ACCOUNT_ID in test_policy_arn
+        self.assertIn(TEST_AWS_ACCOUNT_ID, test_policy_arn)
         iam_client.attach_user_policy(UserName=test_user_name, PolicyArn=test_policy_arn)
         attached_user_policies = iam_client.list_attached_user_policies(UserName=test_user_name)
-        assert len(attached_user_policies['AttachedPolicies']) == 1
-        assert attached_user_policies['AttachedPolicies'][0]['PolicyArn'] == test_policy_arn
+        self.assertEqual(len(attached_user_policies['AttachedPolicies']), 1)
+        self.assertEqual(attached_user_policies['AttachedPolicies'][0]['PolicyArn'], test_policy_arn)
