@@ -32,8 +32,8 @@ class ProxyListenerIAM(ProxyListener):
         self._replace(response, pattern, replacement)
 
     def _fix_account_id(self, response):
-        pattern = r'<Arn>\s*arn:aws:iam::([0-9]+):([^<]+)</Arn>'
-        replacement = r'<Arn>arn:aws:iam::%s:\2</Arn>' % TEST_AWS_ACCOUNT_ID
+        pattern = r'<([^>]*)Arn>\s*arn:aws:iam::([0-9]+):([^<]+)</\1Arn>'
+        replacement = r'<\1Arn>arn:aws:iam::%s:\3</\1Arn>' % TEST_AWS_ACCOUNT_ID
         self._replace(response, pattern, replacement)
 
     def _reset_account_id(self, data):
