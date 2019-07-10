@@ -35,7 +35,7 @@ def check_s3(expect_shutdown=False, print_error=False):
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_S3
     backend_port = DEFAULT_PORT_S3_BACKEND
-    cmd = 'python "%s" s3 -p %s -H 0.0.0.0' % (__file__, backend_port)
+    cmd = '%s "%s" s3 -p %s -H 0.0.0.0' % (sys.executable, __file__, backend_port)
     print('Starting mock S3 (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('s3', port, backend_port, update_listener)
     env_vars = {'PYTHONPATH': ':'.join(sys.path)}
