@@ -14,7 +14,7 @@ from six import iteritems
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS
+from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
 
@@ -32,10 +32,9 @@ if EXTRA_CORS_ALLOWED_HEADERS:
 
 CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
 
-extra_cors_expose_headers = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS')
 CORS_EXPOSE_HEADERS = ('x-amz-version-id',)
-if extra_cors_expose_headers:
-    CORS_EXPOSE_HEADERS = CORS_EXPOSE_HEADERS + tuple(extra_cors_expose_headers.split(','))
+if EXTRA_CORS_EXPOSE_HEADERS:
+    CORS_EXPOSE_HEADERS = CORS_EXPOSE_HEADERS + tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
