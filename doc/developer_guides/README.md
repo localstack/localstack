@@ -4,7 +4,23 @@ This document contains a few essential instructions for developing new features 
 
 ## General Application Architecture
 
-t.b.a.
+The coarse-grained system architecture is illustrated in the figure below. The LocalStack components are
+either installed on the local machine, or the entire application runs in a Docker container. The application
+exposes a set of external network ports (see defaults in
+[constants.py](https://github.com/localstack/localstack/blob/master/localstack/constants.py)).
+Client applications can use the standard AWS SDKs to connect to LocalStack; most SDKs have a configuration
+option to configure the endpoint URLs of the target services (e.g., configure `http://localhost:4572`
+as endpoint URL to connect to local DynamoDB).
+
+![architecture](architecture.png)
+
+To handle incoming requests on the external network ports, LocalStack uses proxy threads which inspect
+the incoming request message, forward the requests to corresponding backend service processes, and
+perform any additional processing. The additional processing is required because some of the backend
+services only provide the basic "CRUD" functionality for maintaining API state, and LocalStack
+provides integrations on top of these services. This makes the backend services easily replaceable
+with best-of-breed implementations.
+
 
 ## Proxy Interceptors
 

@@ -59,10 +59,10 @@ class S3ListenerTest (unittest.TestCase):
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
         self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                              VersioningConfiguration={'Status': 'Enabled'})
-        self.s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                                        NotificationConfiguration={'QueueConfigurations': [
-                                                            {'QueueArn': queue_attributes['Attributes']['QueueArn'],
-                                                             'Events': ['s3:ObjectCreated:*']}]})
+        notif_configs = {'QueueConfigurations': [
+            {'QueueArn': queue_attributes['Attributes']['QueueArn'], 'Events': ['s3:ObjectCreated:*']}]}
+        self.s3_client.put_bucket_notification_configuration(
+            Bucket=TEST_BUCKET_WITH_NOTIFICATION, NotificationConfiguration=notif_configs)
 
         # put an object where the bucket_name is in the path
         obj = self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body='something')
@@ -91,9 +91,7 @@ class S3ListenerTest (unittest.TestCase):
         self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                              VersioningConfiguration={'Status': 'Disabled'})
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self.s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                 Delete={'Objects': [{'Key': key_by_path}, {'Key': key_by_host}]})
-        self.s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path, key_by_host])
 
     def generate_large_file(self, size):
         # https://stackoverflow.com/questions/8816059/create-file-of-particular-size-in-python
@@ -141,8 +139,7 @@ class S3ListenerTest (unittest.TestCase):
 
             # clean up
             self.sqs_client.delete_queue(QueueUrl=queue_url)
-            self.s3_client.delete_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=large_file.name)
-            self.s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+            self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, large_file.name)
         finally:
             # clean up large files
             large_file.close()
@@ -176,9 +173,7 @@ class S3ListenerTest (unittest.TestCase):
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self.s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                 Delete={'Objects': [{'Key': key_by_path}]})
-        self.s3_client.delete_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
 
     def test_s3_get_response_default_content_type(self):
         # When no content type is provided by a PUT request
@@ -199,8 +194,7 @@ class S3ListenerTest (unittest.TestCase):
         response = requests.get(url, verify=False)
         self.assertEqual(response.headers['content-type'], 'binary/octet-stream')
         # clean up
-        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_get_response_content_type_same_as_upload(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -220,8 +214,7 @@ class S3ListenerTest (unittest.TestCase):
         response = requests.get(url, verify=False)
         self.assertEqual(response.headers['content-type'], 'text/html; charset=utf-8')
         # clean up
-        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_head_response_content_length_same_as_upload(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -233,14 +226,30 @@ class S3ListenerTest (unittest.TestCase):
         url = self.s3_client.generate_presigned_url(
             'head_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
-
         # get object and assert headers
         response = requests.head(url, verify=False)
-
         self.assertEqual(response.headers['content-length'], str(len(body)))
         # clean up
-        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_put_object_on_presigned_url(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        body = 'something body'
+        # get presigned URL
+        object_key = 'test-presigned-key'
+        url = self.s3_client.generate_presigned_url(
+            'put_object', Params={'Bucket': bucket_name, 'Key': object_key}
+        )
+        # put object
+        response = requests.put(url, data=body, verify=False)
+        self.assertEqual(to_str(response.content), '')
+        # get object and compare results
+        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        download_object = downloaded_object['Body'].read()
+        self.assertEqual(to_str(body), to_str(download_object))
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_delete_response_content_length_zero(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -261,8 +270,7 @@ class S3ListenerTest (unittest.TestCase):
 
         self.assertEqual(response.headers['content-length'], '0')
         # clean up
-        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        self._delete_bucket(bucket_name, [object_key])
 
     def test_bucket_exists(self):
         # Test setup
@@ -310,8 +318,7 @@ class S3ListenerTest (unittest.TestCase):
         response = requests.get(url, verify=False)
         self.assertEquals(response.headers['Access-Control-Expose-Headers'], 'ETag,x-amz-version-id')
         # clean up
-        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': object_key}]})
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_invalid_content_md5(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -381,6 +388,12 @@ class S3ListenerTest (unittest.TestCase):
     # ---------------
     # HELPER METHODS
     # ---------------
+
+    def _delete_bucket(self, bucket_name, keys):
+        keys = keys if isinstance(keys, list) else [keys]
+        objects = [{'Key': k} for k in keys]
+        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': objects})
+        self.s3_client.delete_bucket(Bucket=bucket_name)
 
     def _perform_multipart_upload(self, bucket, key, data=None, zip=False, acl=None):
         acl = acl or 'private'

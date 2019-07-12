@@ -50,7 +50,7 @@ any longer.
 * **CloudWatch Logs** at http://localhost:4586
 * **STS** at http://localhost:4592
 * **IAM** at http://localhost:4593
-
+* **EC2** at http://localhost:4597
 
 Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
 a fully featured KCL Kinesis client with Python binding, simple setup/teardown integration for nosetests, as
@@ -313,7 +313,7 @@ def my_app_test():
     # here goes your test logic
 ```
 
-See the example test file `tests/test_integration.py` for more details.
+See the example test file `tests/integration/test_integration.py` for more details.
 
 ## Integration with Serverless
 
@@ -373,7 +373,7 @@ duration of the test.  The container can be configured by using the @LocalstackD
 
 ```
 @RunWith(LocalstackDockerTestRunner.class)
-@LocalstackDockerProperties(randomizePorts = true, services = { "sqs", "kinesis:77077" })
+@LocalstackDockerProperties(services = { "sqs", "kinesis:77077" })
 public class MyDockerCloudAppTest {
 
   @Test
@@ -388,7 +388,7 @@ Or with JUnit 5 :
 
 ```
 @ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(randomizePorts = true, services = { "sqs", "kinesis:77077" })
+@LocalstackDockerProperties(services = { "sqs", "kinesis:77077" })
 public class MyDockerCloudAppTest {
    ...
 }
@@ -404,6 +404,19 @@ Simply add the following dependency to your `pom.xml` file:
     <version>0.1.22</version>
 </dependency>
 ```
+
+You can configure the Docker behaviour using the `@LocalstackDockerProperties` annotation with the following parameters:
+
+| property                    | usage                                                                                                                        | type                         | default value |
+|-----------------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------|---------------|
+| pullNewImage                | Determines if a new image is pulled from the docker repo before the tests are run.                                           | boolean                      | false         |
+| randomizePorts              | Determines if the container should expose the default local stack ports (4567-4583) or if it should expose randomized ports. | boolean                      | false         |
+| services                    | Determines which services should be run when the localstack starts.                                                          | String[]                     | All           |
+| imageTag                    | Use a specific image tag for docker container                                                                                | String                       | latest        |
+| hostNameResolver            | Used for determining the host name of the machine running the docker containers so that the containers can be addressed.     | IHostNameResolver            | localhost     |
+| environmentVariableProvider | Used for injecting environment variables into the container.                                                                 | IEnvironmentVariableProvider | Empty Map     |
+
+_NB : When specifying the port in the `services` property, you cannot use `randomizePorts = true`_
 
 ### Troubleshooting
 
@@ -480,8 +493,14 @@ components and the relationship between them.
 localstack web
 ```
 
+## Other UI Clients
+
+* [Commandeer desktop app](https://getcommandeer.com)
+* [DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin)
+
 ## Change Log
 
+* v0.9.5: Reduce Docker image size by squashing; fix response body for presigned URL S3 PUT requests; fix CreateDate returned by IAM; fix account IDs for CF and SNS; fix topic checks for SMS using SNS; improve documentation around `@LocalstackDockerProperties`; add basic EC2 support; upgrade to ElasticSearch 6.7; set Last-Modified header in S3; preserve logic with uppercase event keys in Java; add support for nodejs 10.x Lambdas
 * v0.9.4: Fix ARNs in CloudFormation deployments; write stderr to file in supervisord; fix Lambda invocation times; fix canonicalization of service names when running in Docker; add support for `@Nested` in Junit5; add support for batch/transaction in DynamoDB; fix output buffering for subprocesses; assign unique ports under docker-reuse; check if topic ARN exists before publish
 * v0.9.3: Fix output buffering of child processes; new release of Java libs; add imageTag attribute for Java annotation
 * v0.9.2: Update to Python 3 in Dockerfile; preserve attributes when SNS Subscribe; fix event source mapping in Lambda; fix CORS ExposeHeaders; set Lambda timeout in secs; add tags support for Lambda/Firehose; add message attributes for SQS/Lambda; fix shard count support for Kinesis; fix port mappings for CloudFormation

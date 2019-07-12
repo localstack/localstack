@@ -20,4 +20,6 @@ public class ServiceName {
     public static final String SSM = "ssm";
     public static final String SECRETSMANAGER = "secretsmanager";
     public static final String STEPFUNCTIONS = "stepfunctions";
+    public static final String EC2 = "ec2";
+
 }

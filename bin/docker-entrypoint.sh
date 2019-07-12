@@ -4,7 +4,12 @@ set -eo pipefail
 shopt -s nullglob
 
 # Strip `LOCALSTACK_` prefix in environment variables name (except LOCALSTACK_HOSTNAME)
-source <(env | grep -v -e '^LOCALSTACK_HOSTNAME' | sed -ne 's/^LOCALSTACK_\([^=]\+\)=.*/export \1=${LOCALSTACK_\1}/p')
+source <(
+  env |
+  grep -v -e '^LOCALSTACK_HOSTNAME' |
+  grep -v -e '^LOCALSTACK_[[:digit:]]' | # See issue #1387
+  sed -ne 's/^LOCALSTACK_\([^=]\+\)=.*/export \1=${LOCALSTACK_\1}/p'
+)
 
 supervisord -c /etc/supervisord.conf &
 

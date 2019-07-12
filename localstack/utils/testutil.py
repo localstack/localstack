@@ -47,6 +47,11 @@ def create_lambda_archive(script, get_content=False, libs=[], runtime=None):
     return create_zip_file(tmp_dir, get_content=get_content)
 
 
+def delete_lambda_function(name):
+    client = aws_stack.connect_to_service('lambda')
+    client.delete_function(FunctionName=name)
+
+
 def create_zip_file(file_path, get_content=False):
     base_dir = file_path
     if not os.path.isdir(file_path):

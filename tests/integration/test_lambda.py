@@ -130,7 +130,7 @@ class TestPythonRuntimes(LambdaTestBase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_PY)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_PY)
 
     def test_invocation_type_not_set(self):
         result = self.lambda_client.invoke(
@@ -184,6 +184,9 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual(result['StatusCode'], 200)
         self.assertDictEqual(json.load(result_data), {'Hello': 'World'})
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_ENV)
+
     def test_invocation_with_qualifier(self):
         lambda_name = 'test_lambda_%s' % short_uid()
         bucket_name = 'test_bucket_lambda2'
@@ -235,6 +238,9 @@ class TestPythonRuntimes(LambdaTestBase):
             expected.append('.*Lambda log message - logging module')
         self.check_lambda_logs(lambda_name, expected_lines=expected)
 
+        # clean up
+        testutil.delete_lambda_function(lambda_name)
+
     def test_upload_lambda_from_s3(self):
         lambda_name = 'test_lambda_%s' % short_uid()
         bucket_name = 'test_bucket_lambda'
@@ -272,6 +278,9 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual('$LATEST', context['function_version'])
         self.assertEqual(lambda_name, context['function_name'])
 
+        # clean up
+        testutil.delete_lambda_function(lambda_name)
+
     def test_python_lambda_running_in_docker(self):
         if not use_docker():
             return
@@ -294,6 +303,9 @@ class TestPythonRuntimes(LambdaTestBase):
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(to_str(result_data).strip(), '{}')
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_PY3)
 
 
 class TestNodeJSRuntimes(LambdaTestBase):
@@ -323,6 +335,9 @@ class TestNodeJSRuntimes(LambdaTestBase):
         # assert that logs are present
         expected = ['.*Node.js Lambda handler executing.']
         self.check_lambda_logs(TEST_LAMBDA_NAME_JS, expected_lines=expected)
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
 
 class TestCustomRuntimes(LambdaTestBase):
@@ -357,6 +372,9 @@ class TestCustomRuntimes(LambdaTestBase):
         self.check_lambda_logs(
             TEST_LAMBDA_NAME_CUSTOM_RUNTIME, expected_lines=expected)
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_CUSTOM_RUNTIME)
+
 
 class TestDotNetCoreRuntimes(LambdaTestBase):
     @classmethod
@@ -390,6 +408,9 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
         expected = ['Running .NET Core 2.0 Lambda']
         self.check_lambda_logs(TEST_LAMBDA_NAME_DOTNETCORE2, expected_lines=expected)
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE2)
+
 
 class TestRubyRuntimes(LambdaTestBase):
     @classmethod
@@ -414,6 +435,9 @@ class TestRubyRuntimes(LambdaTestBase):
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(to_str(result_data).strip(), '{}')
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_RUBY)
 
 
 class TestJavaRuntimes(LambdaTestBase):
@@ -451,6 +475,13 @@ class TestJavaRuntimes(LambdaTestBase):
             runtime=LAMBDA_RUNTIME_JAVA8,
             handler='cloud.localstack.sample.SerializedInputLambdaHandler'
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_STREAM)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_SERIALIZABLE)
 
     def test_java_runtime(self):
         self.assertIsNotNone(self.test_java_jar)
@@ -590,6 +621,9 @@ class TestDockerBehaviour(LambdaTestBase):
 
         self.assertEqual(len(executor.get_all_container_names()), 0)
 
+        # clean up
+        testutil.delete_lambda_function(func_name)
+
     def test_docker_command_for_separate_container_lambda_executor(self):
         # run these tests only for the "separate containers" Lambda executor
         if not isinstance(lambda_api.LAMBDA_EXECUTOR,
@@ -656,3 +690,6 @@ class TestDockerBehaviour(LambdaTestBase):
         executor.function_invoke_times[func_arn] = time.time() - lambda_executors.MAX_CONTAINER_IDLE_TIME_MS
         executor.idle_container_destroyer()
         self.assertEqual(len(executor.get_all_container_names()), 0)
+
+        # clean up
+        testutil.delete_lambda_function(func_name)

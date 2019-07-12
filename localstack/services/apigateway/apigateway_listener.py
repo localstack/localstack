@@ -1,11 +1,13 @@
 import re
 import logging
 import json
+from six.moves.urllib_parse import urljoin
+
 import requests
 from requests.models import Response
 from flask import Response as FlaskResponse
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
-from localstack.config import TEST_KINESIS_URL
+from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
@@ -71,6 +73,19 @@ class ProxyListenerApiGateway(ProxyListener):
                     result = common.make_http_request(url=TEST_KINESIS_URL,
                         method='POST', data=new_request, headers=headers)
                     return result
+
+                elif uri.startswith('arn:aws:apigateway:') and ':sqs:path' in uri:
+                    template = integration['requestTemplates'][APPLICATION_JSON]
+                    account_id, queue = uri.split('/')[-2:]
+
+                    new_request = aws_stack.render_velocity_template(template, data) + '&QueueName=%s' % queue
+
+                    headers = aws_stack.mock_aws_request_headers(service='sqs')
+
+                    url = urljoin(TEST_SQS_URL, '%s/%s?%s' % (account_id, queue, new_request))
+                    result = common.make_http_request(url, method='POST', headers=headers)
+                    return result
+
                 else:
                     msg = 'API Gateway action uri "%s" not yet implemented' % uri
                     LOGGER.warning(msg)
