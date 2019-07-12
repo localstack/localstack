@@ -14,7 +14,7 @@ from six import iteritems
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from localstack.config import TMP_FOLDER, USE_SSL
+from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
 
@@ -23,13 +23,12 @@ QUIET = False
 # path for test certificate
 SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
-# CORS settings
-extra_cors_allowed_headers = os.environ.get('EXTRA_CORS_ALLOWED_HEADERS')
+
 CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
     'x-amz-acl', 'x-amz-version-id')
-if extra_cors_allowed_headers:
-    CORS_ALLOWED_HEADERS = CORS_ALLOWED_HEADERS + tuple(extra_cors_allowed_headers.split(','))
+if EXTRA_CORS_ALLOWED_HEADERS:
+    CORS_ALLOWED_HEADERS = CORS_ALLOWED_HEADERS + tuple(EXTRA_CORS_ALLOWED_HEADERS.split(','))
 
 CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
 
