@@ -28,13 +28,13 @@ CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5', 'cache-c
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
     'x-amz-acl', 'x-amz-version-id')
 if EXTRA_CORS_ALLOWED_HEADERS:
-    CORS_ALLOWED_HEADERS +=   tuple(EXTRA_CORS_ALLOWED_HEADERS.split(','))
+    CORS_ALLOWED_HEADERS += tuple(EXTRA_CORS_ALLOWED_HEADERS.split(','))
 
 CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
 
 CORS_EXPOSE_HEADERS = ('x-amz-version-id',)
 if EXTRA_CORS_EXPOSE_HEADERS:
-    CORS_EXPOSE_HEADERS = CORS_EXPOSE_HEADERS + tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
+    CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
