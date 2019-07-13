@@ -14,7 +14,7 @@ from six import iteritems
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from localstack.config import TMP_FOLDER, USE_SSL
+from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
 
@@ -23,10 +23,18 @@ QUIET = False
 # path for test certificate
 SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
-# CORS settings
+
 CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5', 'cache-control',
-    'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent')
+    'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
+    'x-amz-acl', 'x-amz-version-id')
+if EXTRA_CORS_ALLOWED_HEADERS:
+    CORS_ALLOWED_HEADERS += tuple(EXTRA_CORS_ALLOWED_HEADERS.split(','))
+
 CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
+
+CORS_EXPOSE_HEADERS = ('x-amz-version-id',)
+if EXTRA_CORS_EXPOSE_HEADERS:
+    CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -261,6 +269,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.send_header('Access-Control-Allow-Methods', ','.join(CORS_ALLOWED_METHODS))
             if 'Access-Control-Allow-Headers' not in response.headers:
                 self.send_header('Access-Control-Allow-Headers', ','.join(CORS_ALLOWED_HEADERS))
+            if 'Access-Control-Expose-Headers' not in response.headers:
+                self.send_header('Access-Control-Expose-Headers', ','.join(CORS_EXPOSE_HEADERS))
 
             self.end_headers()
             if response.content and len(response.content):
