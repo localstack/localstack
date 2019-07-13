@@ -5,6 +5,7 @@ LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com), Gianluca Bortoli (gi
 
 # install basic tools
 RUN pip install awscli awscli-local requests --upgrade
+RUN apk add iputils
 
 # add files required to run "make install"
 ADD Makefile requirements.txt ./
