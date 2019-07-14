@@ -117,24 +117,27 @@ class LambdaExecutor(object):
 
     def run_lambda_executor(self, cmd, env_vars={}, asynchronous=False):
         process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars)
-        if asynchronous:
-            result = '{"asynchronous": "%s"}' % asynchronous
-            log_output = 'Lambda executed asynchronously'
-        else:
-            result, log_output = process.communicate()
-            result = to_str(result).strip()
-            log_output = to_str(log_output).strip()
-            return_code = process.returncode
-            # Note: The user's code may have been logging to stderr, in which case the logs
-            # will be part of the "result" variable here. Hence, make sure that we extract
-            # only the *last* line of "result" and consider anything above that as log output.
-            if '\n' in result:
-                additional_logs, _, result = result.rpartition('\n')
-                log_output += '\n%s' % additional_logs
 
-            if return_code != 0:
-                raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
-                    (return_code, log_output))
+        # The parameter `asynchronous` have no effect in the way on which the lambda executor
+        # is executed, but is important to inform users the mode of the lambda execution.
+        if asynchronous:
+            LOG.debug('Lambda executed in Event (asynchronous) mode, no response from this '
+                      'function will be returned to caller')
+
+        result, log_output = process.communicate()
+        result = to_str(result).strip()
+        log_output = to_str(log_output).strip()
+        return_code = process.returncode
+        # Note: The user's code may have been logging to stderr, in which case the logs
+        # will be part of the "result" variable here. Hence, make sure that we extract
+        # only the *last* line of "result" and consider anything above that as log output.
+        if '\n' in result:
+            additional_logs, _, result = result.rpartition('\n')
+            log_output += '\n%s' % additional_logs
+
+        if return_code != 0:
+            raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
+                (return_code, log_output))
         return result, log_output
 
 
