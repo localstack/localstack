@@ -11,6 +11,7 @@ from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
+from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.generic_proxy import ProxyListener
@@ -172,6 +173,17 @@ class ProxyListenerApiGateway(ProxyListener):
                 result = {'position': '1', 'items': []}
                 response._content = json.dumps(result)
                 return response
+
+        # publish event
+        if method == 'POST' and path == '/restapis':
+            content = json.loads(to_str(response.content))
+            event_publisher.fire_event(event_publisher.EVENT_APIGW_CREATE_API,
+                payload={'a': event_publisher.get_hash(content['id'])})
+        api_regex = r'^/restapis/([a-zA-Z0-9\-]+)$'
+        if method == 'DELETE' and re.match(api_regex, path):
+            api_id = re.sub(api_regex, r'\1', path)
+            event_publisher.fire_event(event_publisher.EVENT_APIGW_DELETE_API,
+                payload={'a': event_publisher.get_hash(api_id)})
 
 
 # instantiate listener

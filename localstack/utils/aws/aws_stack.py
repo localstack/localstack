@@ -7,9 +7,10 @@ import base64
 import logging
 import six
 from localstack import config
-from localstack.constants import (REGION_LOCAL, DEFAULT_REGION, LOCALHOST, MOTO_ACCOUNT_ID,
-                                  ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0,
-                                  APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
+from localstack.constants import (
+    REGION_LOCAL, DEFAULT_REGION, LOCALHOST, MOTO_ACCOUNT_ID,
+    ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0,
+    APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
     timestamp, is_port_open, get_service_protocol)
@@ -247,8 +248,8 @@ def check_valid_region(headers):
 
 def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace=None):
     """ Fix the account ID in the ARNs returned in the given Flask response or string """
-    existing = existing if isinstance(existing, list) else [existing]
     existing = existing or ['123456789', MOTO_ACCOUNT_ID]
+    existing = existing if isinstance(existing, list) else [existing]
     replace = replace or TEST_AWS_ACCOUNT_ID
     is_str_obj = is_string_or_bytes(response)
     content = to_str(response if is_str_obj else response._content)

@@ -20,8 +20,14 @@ EVENT_LAMBDA_CREATE_FUNC = 'lmb.cf'
 EVENT_LAMBDA_DELETE_FUNC = 'lmb.df'
 EVENT_SQS_CREATE_QUEUE = 'sqs.cq'
 EVENT_SQS_DELETE_QUEUE = 'sqs.dq'
+EVENT_SNS_CREATE_TOPIC = 'sns.ct'
+EVENT_SNS_DELETE_TOPIC = 'sns.dt'
 EVENT_S3_CREATE_BUCKET = 's3.cb'
 EVENT_S3_DELETE_BUCKET = 's3.db'
+EVENT_STEPFUNCTIONS_CREATE_SM = 'stf.cm'
+EVENT_STEPFUNCTIONS_DELETE_SM = 'stf.dm'
+EVENT_APIGW_CREATE_API = 'agw.ca'
+EVENT_APIGW_DELETE_API = 'agw.da'
 EVENT_DYNAMODB_CREATE_TABLE = 'ddb.ct'
 EVENT_DYNAMODB_DELETE_TABLE = 'ddb.dt'
 
@@ -153,6 +159,10 @@ def fire_event(event_type, payload=None):
     if not SENDER_THREAD:
         SENDER_THREAD = FuncThread(poll_and_send_messages, {})
         SENDER_THREAD.start()
+    api_key = read_api_key_safe()
+    if not api_key:
+        # only store events if API key has been specified
+        return
     if payload is None:
         payload = {}
     if isinstance(payload, dict):
@@ -161,5 +171,5 @@ def fire_event(event_type, payload=None):
         if os.environ.get(ENV_INTERNAL_TEST_RUN):
             payload['int'] = True
 
-    event = AnalyticsEvent(event_type=event_type, payload=payload)
+    event = AnalyticsEvent(event_type=event_type, payload=payload, api_key=api_key)
     EVENT_QUEUE.put_nowait(event)
