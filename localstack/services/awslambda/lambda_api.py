@@ -192,9 +192,9 @@ def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, mess
     try:
         event = {
             'Records': [{
-                "EventSource": "localstack:sns",
-                "EventVersion": "1.0",
-                "EventSubscriptionArn": subscriptionArn,
+                'EventSource': 'localstack:sns',
+                'EventVersion': '1.0',
+                'EventSubscriptionArn': subscriptionArn,
                 'Sns': {
                     'Type': 'Notification',
                     'TopicArn': topic_arn,
