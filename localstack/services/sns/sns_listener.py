@@ -10,6 +10,7 @@ from six.moves.urllib import parse as urlparse
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, to_str
+from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 
@@ -115,6 +116,14 @@ class ProxyListenerSNS(ProxyListener):
                 response_data = xmltodict.parse(response.content)
                 topic_arn = response_data['CreateTopicResponse']['CreateTopicResult']['TopicArn']
                 do_create_topic(topic_arn)
+                # publish event
+                event_publisher.fire_event(event_publisher.EVENT_SNS_CREATE_TOPIC,
+                    payload={'t': event_publisher.get_hash(topic_arn)})
+            if req_action == 'DeleteTopic' and response.status_code < 400:
+                # publish event
+                topic_arn = (req_data.get('TargetArn') or req_data.get('TopicArn'))[0]
+                event_publisher.fire_event(event_publisher.EVENT_SNS_DELETE_TOPIC,
+                    payload={'t': event_publisher.get_hash(topic_arn)})
 
 
 # instantiate listener
