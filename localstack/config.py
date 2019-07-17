@@ -56,6 +56,9 @@ DEFAULT_ENCODING = 'utf-8'
 # path to local Docker UNIX domain socket
 DOCKER_SOCK = os.environ.get('DOCKER_SOCK', '').strip() or '/var/run/docker.sock'
 
+# additional flags to pass to "docker run" when starting the stack in Docker
+DOCKER_FLAGS = os.environ.get('DOCKER_FLAGS', '').strip()
+
 # command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
 DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 

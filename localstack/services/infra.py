@@ -508,9 +508,9 @@ def start_infra_in_docker():
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-            config.DOCKER_CMD, interactive, entrypoint, env_str, user_flags, plugin_run_params, port_mappings,
-            container_name, data_dir_mount, config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK,
-            config.DOCKER_SOCK, config.HOST_TMP_FOLDER, image_name, cmd
+            config.DOCKER_CMD, interactive, entrypoint, env_str, user_flags, plugin_run_params,
+            container_name, port_mappings, data_dir_mount, config.TMP_FOLDER, config.DOCKER_SOCK,
+            config.DOCKER_SOCK, config.DOCKER_SOCK, config.HOST_TMP_FOLDER, image_name, cmd
     )
 
     mkdir(config.TMP_FOLDER)
