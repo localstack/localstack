@@ -56,6 +56,9 @@ DEFAULT_ENCODING = 'utf-8'
 # path to local Docker UNIX domain socket
 DOCKER_SOCK = os.environ.get('DOCKER_SOCK', '').strip() or '/var/run/docker.sock'
 
+# command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
+DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
+
 # port of Web UI
 PORT_WEB_UI = int(os.environ.get('PORT_WEB_UI', '').strip() or DEFAULT_PORT_WEB_UI)
 
@@ -64,7 +67,6 @@ DOCKER_BRIDGE_IP = os.environ.get('DOCKER_BRIDGE_IP', '').strip()
 
 # CORS settings
 EXTRA_CORS_ALLOWED_HEADERS = os.environ.get('EXTRA_CORS_ALLOWED_HEADERS', '').strip()
-
 EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').strip()
 
 

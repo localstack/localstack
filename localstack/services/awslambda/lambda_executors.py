@@ -153,6 +153,10 @@ class LambdaExecutorContainers(LambdaExecutor):
     def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
         raise Exception('Not implemented')
 
+    def _docker_cmd(self):
+        """ Return the string to be used for running Docker commands. """
+        return config.DOCKER_CMD
+
     def _execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
 
         lambda_cwd = func_details.cwd
@@ -247,21 +251,22 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         # determine files to be copied into the container
         copy_command = ''
+        docker_cmd = self._docker_cmd()
         event_file = os.path.join(lambda_cwd, LAMBDA_EVENT_FILE)
         if not has_been_invoked_before:
             # if this is the first invocation: copy the entire folder into the container
-            copy_command = 'docker cp "%s/." "%s:/var/task"; ' % (lambda_cwd, container_info.name)
+            copy_command = '%s cp "%s/." "%s:/var/task"; ' % (docker_cmd, lambda_cwd, container_info.name)
         elif os.path.exists(event_file):
             # otherwise, copy only the event file if it exists
-            copy_command = 'docker cp "%s" "%s:/var/task"; ' % (event_file, container_info.name)
+            copy_command = '%s cp "%s" "%s:/var/task"; ' % (docker_cmd, event_file, container_info.name)
 
         cmd = (
             '%s'  # copy files command
-            'docker exec'
+            '%s exec'
             ' %s'  # env variables
             ' %s'  # container name
             ' %s'  # run cmd
-        ) % (copy_command, exec_env_vars, container_info.name, command)
+        ) % (copy_command, docker_cmd, exec_env_vars, container_info.name, command)
         LOG.debug('Command for docker-reuse Lambda executor: %s' % cmd)
 
         return cmd
@@ -290,6 +295,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         with self.docker_container_lock:
             # Get the container name and id.
             container_name = self.get_container_name(func_arn)
+            docker_cmd = self._docker_cmd()
 
             status = self.get_docker_container_status(func_arn)
             LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
@@ -307,7 +313,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 # Create and start the container
                 LOG.debug('Creating container: %s' % container_name)
                 cmd = (
-                    'docker create'
+                    '%s create'
                     ' --rm'
                     ' --name "%s"'
                     ' --entrypoint /bin/bash'  # Load bash when it starts.
@@ -318,20 +324,20 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     '  %s'  # env_vars
                     '  %s'  # network
                     ' lambci/lambda:%s'
-                ) % (container_name, env_vars_str, network_str, runtime)
+                ) % (docker_cmd, container_name, env_vars_str, network_str, runtime)
                 LOG.debug(cmd)
                 run(cmd)
 
                 LOG.debug('Copying files to container "%s" from "%s".' % (container_name, lambda_cwd))
                 cmd = (
-                    'docker cp'
+                    '%s cp'
                     ' "%s/." "%s:/var/task"'
-                ) % (lambda_cwd, container_name)
+                ) % (docker_cmd, lambda_cwd, container_name)
                 LOG.debug(cmd)
                 run(cmd)
 
                 LOG.debug('Starting container: %s' % container_name)
-                cmd = 'docker start %s' % (container_name)
+                cmd = '%s start %s' % (docker_cmd, container_name)
                 LOG.debug(cmd)
                 run(cmd)
                 # give the container some time to start up
@@ -340,10 +346,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             # Get the entry point for the image.
             LOG.debug('Getting the entrypoint for image: lambci/lambda:%s' % runtime)
             cmd = (
-                'docker image inspect'
+                '%s image inspect'
                 ' --format="{{ .ContainerConfig.Entrypoint }}"'
                 ' lambci/lambda:%s'
-            ) % (runtime)
+            ) % (docker_cmd, runtime)
 
             LOG.debug(cmd)
             run_result = run(cmd)
@@ -365,6 +371,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         """
         with self.docker_container_lock:
             status = self.get_docker_container_status(func_arn)
+            docker_cmd = self._docker_cmd()
 
             # Get the container name and id.
             container_name = self.get_container_name(func_arn)
@@ -372,8 +379,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             if status == 1:
                 LOG.debug('Stopping container: %s' % container_name)
                 cmd = (
-                    'docker stop -t0 %s'
-                ) % (container_name)
+                    '%s stop -t0 %s'
+                ) % (docker_cmd, container_name)
 
                 LOG.debug(cmd)
                 run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
@@ -383,8 +390,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             if status == -1:
                 LOG.debug('Removing container: %s' % container_name)
                 cmd = (
-                    'docker rm %s'
-                ) % (container_name)
+                    '%s rm %s'
+                ) % (docker_cmd, container_name)
 
                 LOG.debug(cmd)
                 run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
@@ -396,7 +403,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         """
         with self.docker_container_lock:
             LOG.debug('Getting all lambda containers names.')
-            cmd = 'docker ps -a --filter="name=localstack_lambda_*" --format "{{.Names}}"'
+            cmd = '%s ps -a --filter="name=localstack_lambda_*" --format "{{.Names}}"' % self._docker_cmd()
             LOG.debug(cmd)
             cmd_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE).strip()
 
@@ -417,7 +424,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             LOG.debug('Removing %d containers.' % len(container_names))
             for container_name in container_names:
-                cmd = 'docker rm -f %s' % container_name
+                cmd = '%s rm -f %s' % (self._docker_cmd(), container_name)
                 LOG.debug(cmd)
                 run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
 
@@ -470,13 +477,14 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             # Get the container name.
             container_name = self.get_container_name(func_arn)
+            docker_cmd = self._docker_cmd()
 
             # Get the container network
             LOG.debug('Getting container network: %s' % container_name)
             cmd = (
-                'docker inspect %s'
+                '%s inspect %s'
                 ' --format "{{ .HostConfig.NetworkMode }}"'
-            ) % (container_name)
+            ) % (docker_cmd, container_name)
 
             LOG.debug(cmd)
             cmd_result = run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
@@ -534,6 +542,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = ' --network="%s" ' % network if network else ''
+        docker_cmd = self._docker_cmd()
 
         if config.LAMBDA_REMOTE_DOCKER:
             cmd = (
@@ -543,19 +552,19 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'  # network
                 ' "lambci/lambda:%s" %s'
                 ')";'
-                'docker cp "%s/." "$CONTAINER_ID:/var/task";'
-                'docker start -a "$CONTAINER_ID";'
-            ) % (entrypoint, env_vars_string, network_str, runtime, command, lambda_cwd)
+                '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
+                '%s start -a "$CONTAINER_ID";'
+            ) % (entrypoint, env_vars_string, network_str, runtime, command, docker_cmd, lambda_cwd, docker_cmd)
         else:
             lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
-                'docker run'
+                '%s run'
                 '%s -v "%s":/var/task'
                 ' %s'
                 ' %s'  # network
                 ' --rm'
                 ' "lambci/lambda:%s" %s'
-            ) % (entrypoint, lambda_cwd_on_host, env_vars_string, network_str, runtime, command)
+            ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string, network_str, runtime, command)
         return cmd
 
     def get_host_path_for_path_in_docker(self, path):
