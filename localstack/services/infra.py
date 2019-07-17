@@ -448,7 +448,7 @@ def start_infra_in_docker():
     services = os.environ.get('SERVICES', '')
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
-    user_flags = os.environ.get('DOCKER_FLAGS', '')
+    user_flags = config.DOCKER_FLAGS
     image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
     service_ports = config.SERVICE_PORTS
     force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
@@ -501,16 +501,16 @@ def start_infra_in_docker():
 
     container_name = 'localstack_main'
 
-    docker_cmd = ('docker run %s%s%s%s%s' +
+    docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +
         '--name %s ' +
         '-p 8080:8080 %s %s' +
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-            interactive, entrypoint, env_str, user_flags, plugin_run_params, container_name, port_mappings,
-            data_dir_mount, config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
-            config.HOST_TMP_FOLDER, image_name, cmd
+            config.DOCKER_CMD, interactive, entrypoint, env_str, user_flags, plugin_run_params, port_mappings,
+            container_name, data_dir_mount, config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK,
+            config.DOCKER_SOCK, config.HOST_TMP_FOLDER, image_name, cmd
     )
 
     mkdir(config.TMP_FOLDER)
@@ -527,7 +527,7 @@ def start_infra_in_docker():
             if docker_container_running(container_name):
                 break
             time.sleep(2)
-        run('docker exec -u root "%s" chmod 777 /var/run/docker.sock' % container_name)
+        run('%s exec -u root "%s" chmod 777 /var/run/docker.sock' % (config.DOCKER_CMD, container_name))
 
     t.process.wait()
     sys.exit(t.process.returncode)

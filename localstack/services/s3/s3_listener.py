@@ -258,13 +258,13 @@ def append_last_modified_headers(response, content=None):
     time_format = '%a, %d %b %Y %H:%M:%S GMT'  # TimeFormat
     try:
         if content:
-            last_modified_str = re.findall(r'<LastModified>(.*)</LastModified>', content)[0]
-            last_modified_time_format = dateutil.parser.parse(last_modified_str).strftime(time_format)
-            response.headers['Last-Modified'] = last_modified_time_format
+            last_modified_str = re.findall(r'<LastModified>(.*)</LastModified>', content)
+            if last_modified_str:
+                last_modified_str = last_modified_str[0]
+                last_modified_time_format = dateutil.parser.parse(last_modified_str).strftime(time_format)
+                response.headers['Last-Modified'] = last_modified_time_format
     except TypeError as err:
         LOGGER.debug('No parsable content: %s' % err)
-    except IndexError as err:
-        LOGGER.debug('Found no <LastModified>(.*)</LastModified> inside response_content: %s' % err)
     except ValueError as err:
         LOGGER.error('Failed to parse LastModified: %s' % err)
     except Exception as err:
