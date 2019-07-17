@@ -88,7 +88,7 @@ class CloudFormationTest(unittest.TestCase):
         # wait for deployment to finish
         def check_stack():
             stack = get_stack_details(TEST_STACK_NAME)
-            assert stack['StackStatus'] == 'CREATE_COMPLETE'
+            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
 
         retry(check_stack, retries=3, sleep=2)
 
@@ -102,11 +102,16 @@ class CloudFormationTest(unittest.TestCase):
         resource = describe_stack_resource(TEST_STACK_NAME, 'SQSQueueNoNameProperty')
         assert queue_exists(resource['PhysicalResourceId'])
 
+    def test_list_stack_events(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        response = cloudformation.describe_stack_events()
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
     def test_validate_template(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
         template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
         response = cloudformation.validate_template(TemplateBody=template)
-        assert response['ResponseMetadata']['HTTPStatusCode'] == 200
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_validate_invalid_json_template_should_fail(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
@@ -127,7 +132,7 @@ class CloudFormationTest(unittest.TestCase):
 
         def check_stack():
             stack = get_stack_details(TEST_STACK_NAME_2)
-            assert stack['StackStatus'] == 'CREATE_COMPLETE'
+            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
 
         retry(check_stack, retries=3, sleep=2)
 
