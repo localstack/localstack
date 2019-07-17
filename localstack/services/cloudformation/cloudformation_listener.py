@@ -1,9 +1,10 @@
+import re
 import uuid
 import logging
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, obj_to_xml
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
 
@@ -66,6 +67,27 @@ class ProxyListenerCloudFormation(ProxyListener):
             req_data = urlparse.parse_qs(to_str(data))
             action = req_data.get('Action')[0]
 
+            if action == 'DescribeStackEvents':
+                # fix an issue where moto cannot handle ARNs as stack names (or missing names)
+                stack_name = req_data.get('StackName')
+                run_fix = not stack_name
+                if stack_name:
+                    stack_name = stack_name[0]
+                    if stack_name.startswith('arn:aws:cloudformation'):
+                        run_fix = True
+                        stack_name = re.sub(r'arn:aws:cloudformation:[^:]+:[^:]+:stack/([^/]+)(/.+)?',
+                                            r'\1', stack_name)
+                if run_fix:
+                    stack_names = [stack_name] if stack_name else self._list_stack_names()
+                    client = aws_stack.connect_to_service('cloudformation')
+                    events = []
+                    for stack_name in stack_names:
+                        tmp = client.describe_stack_events(StackName=stack_name)['StackEvents'][:1]
+                        events.extend(tmp)
+                    events = [{'member': e} for e in events]
+                    response_content = '<StackEvents>%s</StackEvents>' % obj_to_xml(events)
+                    return make_response('DescribeStackEvents', response_content)
+
         if req_data:
             if action == 'ValidateTemplate':
                 return validate_template(req_data)
@@ -78,6 +100,11 @@ class ProxyListenerCloudFormation(ProxyListener):
                       (response.status_code, method, path, response.content))
         if response._content:
             aws_stack.fix_account_id_in_arns(response)
+
+    def _list_stack_names(self):
+        client = aws_stack.connect_to_service('cloudformation')
+        stack_names = [s['StackName'] for s in client.list_stacks()['StackSummaries']]
+        return stack_names
 
 
 # instantiate listener
