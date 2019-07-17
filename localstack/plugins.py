@@ -5,7 +5,7 @@ from localstack.services.sns import sns_listener
 from localstack.services.sqs import sqs_listener, sqs_starter
 from localstack.services.iam import iam_listener
 from localstack.services.infra import (register_plugin, Plugin,
-    start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
+    start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_events, start_lambda,
     start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
     start_ssm, start_sts, start_secretsmanager, start_iam, start_cloudwatch_logs, start_ec2)
 from localstack.services.kinesis import kinesis_listener, kinesis_starter
@@ -71,6 +71,8 @@ def register_localstack_plugins():
             listener=cloudformation_listener.UPDATE_CLOUDFORMATION))
         register_plugin(Plugin('cloudwatch',
             start=start_cloudwatch))
+        register_plugin(Plugin('events',
+            start=start_events))
         register_plugin(Plugin('logs',
             start=start_cloudwatch_logs))
         register_plugin(Plugin('stepfunctions',
