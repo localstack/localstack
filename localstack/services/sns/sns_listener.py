@@ -191,7 +191,11 @@ def publish_message(topic_arn, req_data):
         elif subscriber['Protocol'] == 'lambda':
             lambda_api.process_sns_notification(
                 subscriber['Endpoint'],
-                topic_arn, message, subject=req_data.get('Subject', [None])[0]
+                topic_arn,
+                subscriber['SubscriptionArn'],
+                message,
+                message_attributes,
+                subject=req_data.get('Subject', [None])[0]
             )
         elif subscriber['Protocol'] in ['http', 'https']:
             try:
