@@ -17,12 +17,14 @@ from localstack.utils.aws import aws_stack
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
 
 
-def create_lambda_archive(script, get_content=False, libs=[], runtime=None):
+def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file_name=None):
     """Utility method to create a Lambda function archive"""
     tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
     TMP_FILES.append(tmp_dir)
-    file_name = get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
+    file_name = file_name or get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
     script_file = os.path.join(tmp_dir, file_name)
+    if os.path.sep in script_file:
+        mkdir(os.path.dirname(script_file))
     save_file(script_file, script)
     # copy libs
     for lib in libs:
@@ -82,7 +84,7 @@ def create_zip_file(file_path, get_content=False):
 
 def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
         starting_position=LAMBDA_DEFAULT_STARTING_POSITION, runtime=LAMBDA_DEFAULT_RUNTIME,
-        envvars={}, tags={}, delete=False):
+        envvars={}, tags={}, delete=False, layers=None):
     """Utility method to create a new function via the Lambda API"""
 
     client = aws_stack.connect_to_service('lambda')
@@ -95,18 +97,21 @@ def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=L
             pass
 
     # create function
-    client.create_function(
-        FunctionName=func_name,
-        Runtime=runtime,
-        Handler=handler,
-        Role=LAMBDA_TEST_ROLE,
-        Code={
+    kwargs = {
+        'FunctionName': func_name,
+        'Runtime': runtime,
+        'Handler': handler,
+        'Role': LAMBDA_TEST_ROLE,
+        'Code': {
             'ZipFile': zip_file
         },
-        Timeout=LAMBDA_DEFAULT_TIMEOUT,
-        Environment=dict(Variables=envvars),
-        Tags=tags
-    )
+        'Timeout': LAMBDA_DEFAULT_TIMEOUT,
+        'Environment': dict(Variables=envvars),
+        'Tags': tags
+    }
+    if layers:
+        kwargs['Layers'] = layers
+    client.create_function(**kwargs)
     # create event source mapping
     if event_source_arn:
         client.create_event_source_mapping(

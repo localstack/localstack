@@ -35,8 +35,10 @@ class ProxyListenerKinesis(ProxyListener):
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):
             event_type = (event_publisher.EVENT_KINESIS_CREATE_STREAM if action == ACTION_CREATE_STREAM
                           else event_publisher.EVENT_KINESIS_DELETE_STREAM)
-            event_publisher.fire_event(
-                event_type, payload={'n': event_publisher.get_hash(data.get('StreamName'))})
+            payload = {'n': event_publisher.get_hash(data.get('StreamName'))}
+            if action == ACTION_CREATE_STREAM:
+                payload['s'] = data.get('ShardCount')
+            event_publisher.fire_event(event_type, payload=payload)
         elif action == ACTION_PUT_RECORD:
             response_body = json.loads(to_str(response.content))
             event_record = {
