@@ -559,7 +559,7 @@ def is_number(s):
     try:
         float(s)  # for int, long and float
         return True
-    except ValueError:
+    except (TypeError, ValueError):
         return False
 
 
@@ -646,10 +646,7 @@ def clear_list(l):
 def cleanup_tmp_files():
     for tmp in TMP_FILES:
         try:
-            if os.path.isdir(tmp):
-                run('rm -rf "%s"' % tmp)
-            else:
-                os.remove(tmp)
+            rm_rf(tmp)
         except Exception:
             pass  # file likely doesn't exist, or permission denied
     del TMP_FILES[:]
@@ -661,6 +658,13 @@ def new_tmp_file():
     os.close(tmp_file)
     TMP_FILES.append(tmp_path)
     return tmp_path
+
+
+def new_tmp_dir():
+    folder = new_tmp_file()
+    rm_rf(folder)
+    mkdir(folder)
+    return folder
 
 
 def is_ip_address(addr):

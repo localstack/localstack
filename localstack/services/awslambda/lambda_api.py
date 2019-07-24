@@ -86,6 +86,18 @@ LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTO
 BUCKET_MARKER_LOCAL = '__local__'
 
 
+class ClientError(Exception):
+    def __init__(self, msg, code=400):
+        super(ClientError, self).__init__(msg)
+        self.code = code
+        self.msg = msg
+
+    def get_response(self):
+        if isinstance(self.msg, Response):
+            return self.msg
+        return error_response(self.msg, self.code)
+
+
 class LambdaContext(object):
 
     def __init__(self, func_details, qualifier=None):
@@ -276,11 +288,9 @@ def get_function_version(arn, version):
 
 
 def publish_new_function_version(arn):
-    versions = arn_to_lambda.get(arn).versions
-    if len(versions) == 1:
-        last_version = 0
-    else:
-        last_version = max([int(key) for key in versions.keys() if key != '$LATEST'])
+    func_details = arn_to_lambda.get(arn)
+    versions = func_details.versions
+    last_version = func_details.max_version()
     versions[str(last_version + 1)] = {
         'CodeSize': versions.get('$LATEST').get('CodeSize'),
         'CodeSha256': versions.get('$LATEST').get('CodeSha256'),
@@ -411,12 +421,12 @@ def get_zip_bytes(function_code):
             s3_client.download_fileobj(function_code['S3Bucket'], function_code['S3Key'], bytes_io)
             zip_file_content = bytes_io.getvalue()
         except Exception as e:
-            return error_response('Unable to fetch Lambda archive from S3: %s' % e, 404)
+            raise ClientError('Unable to fetch Lambda archive from S3: %s' % e, 404)
     elif 'ZipFile' in function_code:
         zip_file_content = function_code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
     else:
-        return error_response('No valid Lambda archive specified.', 400)
+        raise ClientError('No valid Lambda archive specified.')
     return zip_file_content
 
 
@@ -436,7 +446,7 @@ def get_java_handler(zip_file_content, handler, main_file):
         with zipfile.ZipFile(BytesIO(zip_file_content)) as zip_ref:
             jar_entries = [e for e in zip_ref.infolist() if e.filename.endswith('.jar')]
             if len(jar_entries) != 1:
-                raise Exception('Expected exactly one *.jar entry in zip file, found %s' % len(jar_entries))
+                raise ClientError('Expected exactly one *.jar entry in zip file, found %s' % len(jar_entries))
             zip_file_content = zip_ref.read(jar_entries[0].filename)
             LOG.info('Found jar file %s with %s bytes in Lambda zip archive' %
                      (jar_entries[0].filename, len(zip_file_content)))
@@ -448,50 +458,62 @@ def get_java_handler(zip_file_content, handler, main_file):
                 event, context, handler=handler, main_file=main_file)
             return result
         return execute
-    return error_response(
-        'Unable to extract Java Lambda handler - file is not a valid zip/jar files', 400, error_type='ValidationError')
+    raise ClientError(error_response(
+        'Unable to extract Java Lambda handler - file is not a valid zip/jar files', 400, error_type='ValidationError'))
 
 
-def set_function_code(code, lambda_name):
+def set_archive_code(code, lambda_name, zip_file_content=None):
+    # get file content
+    zip_file_content = zip_file_content or get_zip_bytes(code)
 
-    def generic_handler(event, context):
-        raise Exception(('Unable to find executor for Lambda function "%s". ' +
-            'Note that Node.js and .NET Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
-
-    lambda_cwd = None
-    arn = func_arn(lambda_name)
-    lambda_details = arn_to_lambda[arn]
-    runtime = lambda_details.runtime
-    handler_name = lambda_details.handler
-    lambda_environment = lambda_details.envvars
-    if not handler_name:
-        handler_name = LAMBDA_DEFAULT_HANDLER
+    # get metadata
+    lambda_arn = func_arn(lambda_name)
+    lambda_details = arn_to_lambda[lambda_arn]
+    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
 
     # Stop/remove any containers that this arn uses.
-    LAMBDA_EXECUTOR.cleanup(arn)
-    zip_file_content = None
-    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
+    LAMBDA_EXECUTOR.cleanup(lambda_arn)
 
     if is_local_mount:
         # Mount or use a local folder lambda executors can reference
         # WARNING: this means we're pointing lambda_cwd to a local path in the user's
         # file system! We must ensure that there is no data loss (i.e., we must *not* add
         # this folder to TMP_FILES or similar).
-        lambda_cwd = code['S3Key']
-    else:
-        # Save the zip file to a temporary file that the lambda executors can reference
-        zip_file_content = get_zip_bytes(code)
-        if isinstance(zip_file_content, Response):
-            return zip_file_content
-        code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
-        lambda_details.get_version('$LATEST')['CodeSize'] = len(zip_file_content)
-        lambda_details.get_version('$LATEST')['CodeSha256'] = code_sha_256.decode('utf-8')
-        tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
-        mkdir(tmp_dir)
-        tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
-        save_file(tmp_file, zip_file_content)
-        TMP_FILES.append(tmp_dir)
-        lambda_cwd = tmp_dir
+        return code['S3Key']
+
+    # Save the zip file to a temporary file that the lambda executors can reference
+    code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
+    lambda_details.get_version('$LATEST')['CodeSize'] = len(zip_file_content)
+    lambda_details.get_version('$LATEST')['CodeSha256'] = code_sha_256.decode('utf-8')
+    tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
+    mkdir(tmp_dir)
+    tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
+    save_file(tmp_file, zip_file_content)
+    TMP_FILES.append(tmp_dir)
+    lambda_details.cwd = tmp_dir
+    return tmp_dir
+
+
+def set_function_code(code, lambda_name, lambda_cwd=None):
+
+    def generic_handler(event, context):
+        raise ClientError(('Unable to find executor for Lambda function "%s". ' +
+            'Note that Node.js and .NET Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
+
+    arn = func_arn(lambda_name)
+    lambda_details = arn_to_lambda[arn]
+    runtime = lambda_details.runtime
+    lambda_environment = lambda_details.envvars
+    handler_name = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
+    is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
+
+    lambda_cwd = lambda_cwd or set_archive_code(code, lambda_name)
+
+    # Save the zip file to a temporary file that the lambda executors can reference
+    zip_file_content = get_zip_bytes(code)
+
+    # get local lambda working directory
+    tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
@@ -502,7 +524,7 @@ def set_function_code(code, lambda_name):
         # save the zip_file_content as a .jar here.
         if is_jar_archive(zip_file_content):
             jar_tmp_file = '{working_dir}/{file_name}'.format(
-                working_dir=tmp_dir, file_name=LAMBDA_JAR_FILE_NAME)
+                working_dir=lambda_cwd, file_name=LAMBDA_JAR_FILE_NAME)
             save_file(jar_tmp_file, zip_file_content)
 
         lambda_handler = get_java_handler(zip_file_content, handler_name, tmp_file)
@@ -515,7 +537,7 @@ def set_function_code(code, lambda_name):
         if not is_local_mount:
             # Lambda code must be uploaded in Zip format
             if not is_zip_file(zip_file_content):
-                raise Exception(
+                raise ClientError(
                     'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
             unzip(tmp_file, lambda_cwd)
 
@@ -532,9 +554,9 @@ def set_function_code(code, lambda_name):
             if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
                 file_list = run('ls -la %s' % lambda_cwd)
                 LOG.debug('Lambda archive content:\n%s' % file_list)
-                return error_response(
+                raise ClientError(error_response(
                     'Unable to find handler script in Lambda archive.', 400,
-                    error_type='ValidationError')
+                    error_type='ValidationError'))
 
         if runtime.startswith('python') and not use_docker():
             try:
@@ -544,7 +566,7 @@ def set_function_code(code, lambda_name):
                     lambda_cwd=lambda_cwd,
                     lambda_env=lambda_environment)
             except Exception as e:
-                raise Exception('Unable to get handler function from lambda code.', e)
+                raise ClientError('Unable to get handler function from lambda code.', e)
 
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
 
@@ -554,6 +576,8 @@ def set_function_code(code, lambda_name):
 def do_list_functions():
     funcs = []
     for f_arn, func in arn_to_lambda.items():
+        if type(func) != LambdaFunction:
+            continue
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
         func_details = arn_to_lambda.get(arn)
@@ -607,7 +631,7 @@ def forward_to_fallback_url(func_arn, data):
     if re.match(r'^https?://.+', config.LAMBDA_FALLBACK_URL):
         response = safe_requests.post(config.LAMBDA_FALLBACK_URL, data)
         return response.content
-    raise Exception('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
+    raise ClientError('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
 
 
 # ------------
@@ -663,6 +687,8 @@ def create_function():
         return jsonify(result or {})
     except Exception as e:
         arn_to_lambda.pop(arn, None)
+        if isinstance(e, ClientError):
+            return e.get_response()
         return error_response('Unknown error: %s %s' % (e, traceback.format_exc()))
 
 

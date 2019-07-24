@@ -1,8 +1,9 @@
 from datetime import datetime
 from flask import Response
 from localstack import config
-from localstack.utils.common import now_utc
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import now_utc
+from localstack.utils.analytics import event_publisher
 
 
 # ---------------
@@ -10,9 +11,7 @@ from localstack.utils.aws import aws_stack
 # ---------------
 
 def dimension_lambda(kwargs):
-    func_name = kwargs.get('func_name')
-    if not func_name:
-        func_name = kwargs.get('func_arn').split(':function:')[1].split(':')[0]
+    func_name = _func_name(kwargs)
     return [{
         'Name': 'FunctionName',
         'Value': func_name
@@ -55,14 +54,29 @@ def publish_lambda_result(time_before, result, kwargs):
 # ---------------
 
 
+def _func_name(kwargs):
+    func_name = kwargs.get('func_name')
+    if not func_name:
+        func_name = kwargs.get('func_arn').split(':function:')[1].split(':')[0]
+    return func_name
+
+
+def publish_event(time_before, result, kwargs):
+    event_publisher.fire_event(
+        event_publisher.EVENT_LAMBDA_INVOKE_FUNC,
+        payload={'f': _func_name(kwargs), 'd': now_utc() - time_before, 'r': result[0]})
+
+
 def publish_result(ns, time_before, result, kwargs):
     if ns == 'lambda':
         publish_lambda_result(time_before, result, kwargs)
+        publish_event(time_before, 'success', kwargs)
 
 
 def publish_error(ns, time_before, e, kwargs):
     if ns == 'lambda':
         publish_lambda_error(time_before, kwargs)
+        publish_event(time_before, 'error', kwargs)
 
 
 def cloudwatched(ns):

@@ -317,12 +317,13 @@ def dynamodb_stream_arn(table_name, account_id=None):
 
 
 def lambda_function_arn(function_name, account_id=None):
-    pattern = 'arn:aws:lambda:.*:.*:function:.*'
+    pattern = 'arn:aws:lambda:.*:.*:(function|layer):.*'
     if re.match(pattern, function_name):
         return function_name
     if ':' in function_name:
         raise Exception('Lambda function name should not contain a colon ":"')
     account_id = get_account_id(account_id)
+    pattern = re.sub(r'\([^\|]+\|.+\)', 'function', pattern)
     return pattern.replace('.*', '%s') % (get_local_region(), account_id, function_name)
 
 

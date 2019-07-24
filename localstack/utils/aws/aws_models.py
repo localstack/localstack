@@ -178,6 +178,10 @@ class LambdaFunction(Component):
     def get_version(self, version):
         return self.versions.get(version)
 
+    def max_version(self):
+        versions = [int(key) for key in self.versions.keys() if key != '$LATEST']
+        return versions and max(versions) or 0
+
     def name(self):
         # Example ARN: arn:aws:lambda:aws-region:acct-id:function:helloworld:1
         return self.id.split(':')[6]
