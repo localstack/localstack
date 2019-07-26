@@ -24,7 +24,7 @@ psutil==5.4.8
 pympler>=0.6
 pyopenssl==17.5.0
 python-coveralls>=2.9.1
-pyyaml>=3.13
+pyyaml>=3.13,<=5.1
 requests>=2.20.0
 requests-aws4auth==0.9
 six>=1.12.0
