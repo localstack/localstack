@@ -73,6 +73,14 @@ EXTRA_CORS_ALLOWED_HEADERS = os.environ.get('EXTRA_CORS_ALLOWED_HEADERS', '').st
 EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').strip()
 
 
+def has_docker():
+    try:
+        subprocess.check_output('docker ps', shell=True)
+        return True
+    except Exception:
+        return False
+
+
 def is_linux():
     try:
         out = subprocess.check_output('uname -a', shell=True)
@@ -85,9 +93,9 @@ def is_linux():
 # whether to use Lambda functions in a Docker container
 LAMBDA_EXECUTOR = os.environ.get('LAMBDA_EXECUTOR', '').strip()
 if not LAMBDA_EXECUTOR:
-    LAMBDA_EXECUTOR = 'local'
-    if is_linux():
-        LAMBDA_EXECUTOR = 'docker'
+    LAMBDA_EXECUTOR = 'docker'
+    if not has_docker():
+        LAMBDA_EXECUTOR = 'local'
 
 
 # Fallback URL to use when a non-existing Lambda is invoked. If this matches

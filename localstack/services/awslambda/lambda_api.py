@@ -497,23 +497,31 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
 def set_function_code(code, lambda_name, lambda_cwd=None):
 
     def generic_handler(event, context):
-        raise ClientError(('Unable to find executor for Lambda function "%s". ' +
-            'Note that Node.js and .NET Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
+        raise ClientError(('Unable to find executor for Lambda function "%s". Note that ' +
+            'Node.js, Golang, and .Net Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
 
     arn = func_arn(lambda_name)
     lambda_details = arn_to_lambda[arn]
     runtime = lambda_details.runtime
     lambda_environment = lambda_details.envvars
     handler_name = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
+    code_passed = code
+    code = code or lambda_details.code
     is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
+    zip_file_content = None
 
-    lambda_cwd = lambda_cwd or set_archive_code(code, lambda_name)
-
-    # Save the zip file to a temporary file that the lambda executors can reference
-    zip_file_content = get_zip_bytes(code)
+    if code_passed:
+        lambda_cwd = lambda_cwd or set_archive_code(code_passed, lambda_name)
+        # Save the zip file to a temporary file that the lambda executors can reference
+        zip_file_content = get_zip_bytes(code_passed)
+    else:
+        lambda_cwd = lambda_cwd or lambda_details.cwd
 
     # get local lambda working directory
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
+
+    if not zip_file_content:
+        zip_file_content = load_file(tmp_file, mode='rb')
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
@@ -545,8 +553,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         if os.path.isfile(main_file):
             # make sure the file is actually readable, then read contents
             ensure_readable(main_file)
-            with open(main_file, 'rb') as file_obj:
-                zip_file_content = file_obj.read()
+            zip_file_content = load_file(main_file, mode='rb')
         else:
             # Raise an error if (1) this is not a local mount lambda, or (2) we're
             # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
@@ -677,10 +684,14 @@ def create_function():
         func_details.timeout = data.get('Timeout', LAMBDA_DEFAULT_TIMEOUT)
         func_details.role = data['Role']
         func_details.memory_size = data.get('MemorySize')
-        result = set_function_code(data['Code'], lambda_name)
+        func_details.code = data['Code']
+        result = set_function_code(func_details.code, lambda_name)
         if isinstance(result, Response):
             del arn_to_lambda[arn]
             return result
+        # remove content from code attribute, if present
+        func_details.code.pop('ZipFile', None)
+        # prepare result
         result.update(format_func_details(func_details))
         if data.get('Publish', False):
             result['Version'] = publish_new_function_version(arn)['Version']
@@ -896,7 +907,7 @@ def invoke_function(function):
                     details[key] = result[key]
         # Try to parse parse payload as JSON
         payload = details['Payload']
-        if payload and isinstance(payload, (str, bytes)) and payload[0] in ('[', '{'):
+        if payload and isinstance(payload, (str, bytes)) and payload[0] in ('[', '{', '"'):
             try:
                 details['Payload'] = json.loads(details['Payload'])
             except Exception:

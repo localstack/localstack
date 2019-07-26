@@ -55,7 +55,7 @@ CODEC_HANDLER_UNDERSCORE = 'underscore'
 DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
@@ -92,12 +92,12 @@ class FuncThread(threading.Thread):
             self.func(self.params)
         except Exception:
             if not self.quiet:
-                LOGGER.warning('Thread run method %s(%s) failed: %s' %
+                LOG.warning('Thread run method %s(%s) failed: %s' %
                     (self.func, self.params, traceback.format_exc()))
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:
-            LOGGER.warning('Not implemented: FuncThread.stop(..)')
+            LOG.warning('Not implemented: FuncThread.stop(..)')
 
 
 class ShellCommandThread(FuncThread):
@@ -142,9 +142,9 @@ class ShellCommandThread(FuncThread):
                 self.process.communicate()
         except Exception as e:
             if self.process and not self.quiet:
-                LOGGER.warning('Shell command error "%s": %s' % (e, self.cmd))
+                LOG.warning('Shell command error "%s": %s' % (e, self.cmd))
         if self.process and not self.quiet and self.process.returncode != 0:
-            LOGGER.warning('Shell command exit code "%s": %s' % (self.process.returncode, self.cmd))
+            LOG.warning('Shell command exit code "%s": %s' % (self.process.returncode, self.cmd))
 
     def is_killed(self):
         if not self.process:
@@ -164,7 +164,7 @@ class ShellCommandThread(FuncThread):
         import psutil
 
         if not self.process:
-            LOGGER.warning("No process found for command '%s'" % self.cmd)
+            LOG.warning("No process found for command '%s'" % self.cmd)
             return
 
         parent_pid = self.process.pid
@@ -176,7 +176,7 @@ class ShellCommandThread(FuncThread):
             self.process = None
         except Exception:
             if not quiet:
-                LOGGER.warning('Unable to kill process with pid %s' % parent_pid)
+                LOG.warning('Unable to kill process with pid %s' % parent_pid)
 
 
 class JsonObject(object):
@@ -332,6 +332,14 @@ def in_docker():
     return config.in_docker()
 
 
+def has_docker():
+    try:
+        run('docker ps')
+        return True
+    except Exception:
+        return False
+
+
 def is_port_open(port_or_url, http_path=None, expect_success=True):
     port = port_or_url
     host = 'localhost'
@@ -413,7 +421,7 @@ def merge_recursive(source, destination):
             merge_recursive(value, node)
         else:
             if not isinstance(destination, dict):
-                LOGGER.warning('Destination for merging %s=%s is not dict: %s' %
+                LOG.warning('Destination for merging %s=%s is not dict: %s' %
                     (key, value, destination))
             destination[key] = value
     return destination
@@ -475,7 +483,7 @@ def ensure_readable(file_path, default_perms=None):
         with open(file_path, 'rb'):
             pass
     except Exception:
-        LOGGER.info('Updating permissions as file is currently not readable: %s' % file_path)
+        LOG.info('Updating permissions as file is currently not readable: %s' % file_path)
         os.chmod(file_path, default_perms)
 
 
@@ -522,19 +530,19 @@ def download(url, path, verify_ssl=True):
     try:
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
-        LOGGER.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
+        LOG.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
         with open(path, 'wb') as f:
             for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
                 total += len(chunk)
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
-                    LOGGER.debug('Writing %s bytes (total %s) to %s' % (len(chunk), total, path))
+                    LOG.debug('Writing %s bytes (total %s) to %s' % (len(chunk), total, path))
                 else:
-                    LOGGER.debug('Empty chunk %s (total %s) from %s' % (chunk, total, url))
+                    LOG.debug('Empty chunk %s (total %s) from %s' % (chunk, total, url))
             f.flush()
             os.fsync(f)
     finally:
-        LOGGER.debug('Done downloading %s, response code %s' % (url, r.status_code))
+        LOG.debug('Done downloading %s, response code %s' % (url, r.status_code))
         r.close()
         s.close()
 
@@ -684,7 +692,7 @@ def unzip(path, target_dir):
     try:
         zip_ref = zipfile.ZipFile(path, 'r')
     except Exception as e:
-        LOGGER.warning('Unable to open zip file: %s: %s' % (path, e))
+        LOG.warning('Unable to open zip file: %s: %s' % (path, e))
         raise e
     # Make sure to preserve file permissions in the zip file
     # https://www.burgundywall.com/post/preserving-file-perms-with-python-zipfile-module
@@ -792,12 +800,12 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
     return file_content
 
 
-def run_safe(_python_lambda, print_error=True, **kwargs):
+def run_safe(_python_lambda, print_error=False, **kwargs):
     try:
         return _python_lambda(**kwargs)
     except Exception as e:
         if print_error:
-            print('Unable to execute function: %s' % e)
+            LOG.warning('Unable to execute function: %s' % e)
 
 
 def run_cmd_safe(**kwargs):

@@ -174,6 +174,7 @@ class LambdaFunction(Component):
         self.description = ''
         self.role = None
         self.memory_size = None
+        self.code = None
 
     def get_version(self, version):
         return self.versions.get(version)
