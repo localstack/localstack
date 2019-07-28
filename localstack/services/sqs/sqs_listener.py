@@ -9,43 +9,44 @@ from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.common import to_str, md5
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
+from localstack.utils.aws.aws_stack import extract_region_from_auth_header
 from localstack.services.generic_proxy import ProxyListener
 
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
 
-SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = (
-    '<?xml version="1.0"?>'  # noqa: W291
-    '<SendMessageResponse xmlns="' + XMLNS_SQS + '">'  # noqa: W291
-        '<SendMessageResult>'  # noqa: W291
-            '<MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>'  # noqa: W291
-            '<MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>'  # noqa: W291
-            '<MessageId>{message_id}</MessageId>'  # noqa: W291
-        '</SendMessageResult>'  # noqa: W291
-        '<ResponseMetadata>'  # noqa: W291
-            '<RequestId>00000000-0000-0000-0000-000000000000</RequestId>'  # noqa: W291
-        '</ResponseMetadata>'  # noqa: W291
-    '</SendMessageResponse>'  # noqa: W291
-)
+SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = """
+    <?xml version="1.0"?>
+    <SendMessageResponse xmlns="{XMLNS_SQS}">
+        <SendMessageResult>
+            <MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>
+            <MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>
+            <MessageId>{message_id}</MessageId>
+        </SendMessageResult>
+        <ResponseMetadata>
+            <RequestId>00000000-0000-0000-0000-000000000000</RequestId>
+        </ResponseMetadata>
+    </SendMessageResponse>
+"""
 
 
 class ProxyListenerSQS(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        if method == 'POST':
-            req_data = urlparse.parse_qs(to_str(data))
-            if 'QueueName' in req_data:
-                encoded_data = urlencode(req_data, doseq=True)
-                request = Request(data=encoded_data, headers=headers, method=method)
-                return request
-            elif req_data.get('Action', [None])[0] == 'SendMessage':
-                queue_url = req_data.get('QueueUrl', [path])[0]
+        req_data = self.parse_request_data(method, path, data)
+
+        if req_data:
+            if req_data.get('Action', [None])[0] == 'SendMessage':
+                queue_url = req_data.get('QueueUrl', [path.partition('?')[0]])[0]
                 queue_name = queue_url[queue_url.rindex('/') + 1:]
                 message_body = req_data.get('MessageBody', [None])[0]
                 message_attributes = self.format_message_attributes(req_data)
+                region_name = extract_region_from_auth_header(headers)
 
-                if lambda_api.process_sqs_message(message_body, message_attributes, queue_name):
+                process_result = lambda_api.process_sqs_message(message_body,
+                    message_attributes, queue_name, region_name=region_name)
+                if process_result:
                     # If a Lambda was listening, do not add the message to the queue
                     new_response = Response()
                     new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
@@ -56,8 +57,25 @@ class ProxyListenerSQS(ProxyListener):
                     new_response.status_code = 200
                     # TODO: Is it the correct behavior to return here - why not forward the message?
                     return new_response
+            if 'QueueName' in req_data:
+                encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
+                modified_url = None
+                if method == 'GET':
+                    base_path = path.partition('?')[0]
+                    modified_url = '%s?%s' % (base_path, urlencode(req_data, doseq=True))
+                request = Request(data=encoded_data, url=modified_url, headers=headers, method=method)
+                return request
 
         return True
+
+    def parse_request_data(self, method, path, data):
+        """ Extract request data either from query string (for GET) or request body (for POST). """
+        if method == 'POST':
+            return urlparse.parse_qs(to_str(data))
+        elif method == 'GET':
+            parsed_path = urlparse.urlparse(path)
+            return urlparse.parse_qs(parsed_path.query)
+        return {}
 
     # Format of the message Name attribute is MessageAttribute.<int id>.<field>
     # Format of the Value attributes is MessageAttribute.<int id>.Value.DataType

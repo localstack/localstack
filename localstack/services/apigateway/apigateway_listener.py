@@ -1,24 +1,23 @@
 import re
-import logging
 import json
-from six.moves.urllib_parse import urljoin
-
+import logging
 import requests
-from requests.models import Response
 from flask import Response as FlaskResponse
+from six.moves.urllib_parse import urljoin
+from requests.models import Response
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
 from localstack.utils.analytics import event_publisher
-from localstack.services.awslambda import lambda_api
 from localstack.services.kinesis import kinesis_listener
+from localstack.services.awslambda import lambda_api
+from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
-from .helpers import (get_rest_api_paths, get_resource_for_path,
-                      flask_to_requests_response, handle_authorizers,
-                      extract_query_string_params, extract_path_params,
-                      make_error, get_cors_response)
+from localstack.services.apigateway.helpers import (get_resource_for_path,
+    flask_to_requests_response, handle_authorizers, extract_query_string_params,
+    extract_path_params, make_error, get_cors_response)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -43,7 +42,7 @@ class ProxyListenerApiGateway(ProxyListener):
 
             relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
 
-            path_map = get_rest_api_paths(rest_api_id=api_id)
+            path_map = helpers.get_rest_api_paths(rest_api_id=api_id)
             try:
                 extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
             except Exception:
@@ -55,11 +54,9 @@ class ProxyListenerApiGateway(ProxyListener):
                 integration = integrations.get('ANY', {})
             integration = integration.get('methodIntegration')
             if not integration:
-
                 if method == 'OPTIONS' and 'Origin' in headers:
                     # default to returning CORS headers if this is an OPTIONS request
                     return get_cors_response(headers)
-
                 return make_error('Unable to find integration for path %s' % path, 404)
 
             uri = integration.get('uri')
@@ -78,13 +75,13 @@ class ProxyListenerApiGateway(ProxyListener):
                 elif uri.startswith('arn:aws:apigateway:') and ':sqs:path' in uri:
                     template = integration['requestTemplates'][APPLICATION_JSON]
                     account_id, queue = uri.split('/')[-2:]
+                    region_name = uri.split(':')[3]
 
                     new_request = aws_stack.render_velocity_template(template, data) + '&QueueName=%s' % queue
-
-                    headers = aws_stack.mock_aws_request_headers(service='sqs')
+                    headers = aws_stack.mock_aws_request_headers(service='sqs', region_name=region_name)
 
                     url = urljoin(TEST_SQS_URL, '%s/%s?%s' % (account_id, queue, new_request))
-                    result = common.make_http_request(url, method='POST', headers=headers)
+                    result = common.make_http_request(url, method='GET', headers=headers)
                     return result
 
                 else:

@@ -11,7 +11,8 @@ from localstack.utils.common import to_str, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_PYTHON27)
-from localstack.services.apigateway.helpers import get_rest_api_paths, get_resource_for_path
+from localstack.services.apigateway.helpers import (
+    get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 
@@ -35,7 +36,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             #end
         ]
     }"""
-    APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 
     # endpoint paths
     API_PATH_DATA_INBOUND = '/data'
@@ -89,7 +89,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         aws_stack.create_sqs_queue(self.TEST_SQS_QUEUE)
 
         # create API Gateway and connect it to the target queue
-        result = self.connect_api_gateway_to_sqs('test_gateway4')
+        result = connect_api_gateway_to_sqs('test_gateway4', stage_name=self.TEST_STAGE_NAME,
+            queue_arn=self.TEST_SQS_QUEUE, path=self.API_PATH_DATA_INBOUND)
 
         # generate test data
         test_data = {'spam': 'eggs'}
@@ -287,6 +288,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     # =====================================================================
     # Helper methods
     # =====================================================================
+
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
         template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % (kinesis_stream)
@@ -300,29 +302,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
                 'requestTemplates': {
                     'application/json': template
                 }
-            }]
-        }]
-        return aws_stack.create_api_gateway(
-            name=gateway_name,
-            resources=resources,
-            stage_name=self.TEST_STAGE_NAME
-        )
-
-    def connect_api_gateway_to_sqs(self, gateway_name):
-        resources = {}
-        template = self.APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE
-        resource_path = self.API_PATH_DATA_INBOUND.replace('/', '')
-        resources[resource_path] = [{
-            'httpMethod': 'POST',
-            'authorizationType': 'NONE',
-            'integrations': [{
-                'type': 'AWS',
-                'uri': 'arn:aws:apigateway:%s:sqs:path/%s/%s' % (
-                    DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, self.TEST_SQS_QUEUE
-                ),
-                'requestTemplates': {
-                    'application/json': template
-                },
             }]
         }]
         return aws_stack.create_api_gateway(

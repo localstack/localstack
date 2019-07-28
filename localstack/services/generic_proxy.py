@@ -37,7 +37,7 @@ if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -225,7 +225,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             # perform the actual invocation of the backend service
             if response is None:
                 if modified_request:
-                    response = self.method(proxy_url, data=modified_request.data,
+                    request_url = proxy_url
+                    if modified_request.url:
+                        request_url = '%s%s' % (self.proxy.forward_url, modified_request.url)
+                    response = self.method(request_url, data=modified_request.data,
                         headers=modified_request.headers, stream=True)
                 else:
                     response = self.method(proxy_url, data=self.data_bytes,
@@ -282,9 +285,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             conn_error = any(e in trace for e in conn_errors)
             error_msg = 'Error forwarding request: %s %s' % (e, trace)
             if 'Broken pipe' in trace:
-                LOGGER.warn('Connection prematurely closed by client (broken pipe).')
+                LOG.warn('Connection prematurely closed by client (broken pipe).')
             elif not self.proxy.quiet or not conn_error:
-                LOGGER.error(error_msg)
+                LOG.error(error_msg)
                 if os.environ.get(ENV_INTERNAL_TEST_RUN):
                     # During a test run, we also want to print error messages, because
                     # log messages are delayed until the entire test run is over, and
@@ -329,7 +332,7 @@ class GenericProxy(FuncThread):
             self.httpd.serve_forever()
         except Exception as e:
             if not self.quiet or not self.server_stopped:
-                LOGGER.error('Exception running proxy on port %s: %s %s' % (self.port, e, traceback.format_exc()))
+                LOG.error('Exception running proxy on port %s: %s %s' % (self.port, e, traceback.format_exc()))
 
     def stop(self, quiet=False):
         self.quiet = quiet

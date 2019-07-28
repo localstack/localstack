@@ -137,7 +137,7 @@ def get_domain_status(domain_name, deleted=False):
                 'ZoneAwarenessEnabled': False
             },
             'ElasticsearchVersion': '6.7',
-            'Endpoint': aws_stack.get_elasticsearch_endpoint(),
+            'Endpoint': aws_stack.get_elasticsearch_endpoint(domain_name),
             'Processing': False,
             'EBSOptions': {
                 'EBSEnabled': True,
