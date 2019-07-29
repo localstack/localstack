@@ -26,8 +26,7 @@ LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), 'kclipy.*.log')
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-kclapp'
 
 # define Java class names
-MULTI_LANG_DAEMON_CLASS = 'com.atlassian.KinesisStarter'
-# MULTI_LANG_DAEMON_CLASS = 'software.amazon.kinesis.multilang.MultiLangDaemon'
+MULTI_LANG_DAEMON_CLASS = 'cloud.localstack.KinesisStarter'
 
 # set up log levels
 logging.SEVERE = 60
@@ -116,11 +115,9 @@ class KinesisProcessorThread(ShellCommandThread):
         env_vars = params['env_vars']
         cmd = kclipy_helper.get_kcl_app_command('java',
             MULTI_LANG_DAEMON_CLASS, props_file)
-        print(cmd)
         if not params['log_file']:
             params['log_file'] = '%s.log' % props_file
             TMP_FILES.append(params['log_file'])
-        # print(cmd)
         env = aws_stack.get_environment()
         quiet = env.region == REGION_LOCAL
         ShellCommandThread.__init__(self, cmd, outfile=params['log_file'], env_vars=env_vars, quiet=quiet)
@@ -284,7 +281,7 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     if (('AWS_ASSUME_ROLE_ARN' in os.environ or 'AWS_ASSUME_ROLE_ARN' in env_vars) and
             ('AWS_ASSUME_ROLE_SESSION_NAME' in os.environ or 'AWS_ASSUME_ROLE_SESSION_NAME' in env_vars)):
         # use special credentials provider that can assume IAM roles and handle temporary STS auth tokens
-        credentialsProvider = 'com.atlassian.DefaultSTSAssumeRoleSessionCredentialsProvider'
+        credentialsProvider = 'cloud.localstack.DefaultSTSAssumeRoleSessionCredentialsProvider'
         # pass through env variables to child process
         for var_name in ['AWS_ASSUME_ROLE_ARN', 'AWS_ASSUME_ROLE_SESSION_NAME',
                 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']:

@@ -39,7 +39,12 @@ class ProxyListenerDynamoDB(ProxyListener):
             return error_response_throughput()
 
         action = headers.get('X-Amz-Target')
-        if action in ('%s.PutItem' % ACTION_PREFIX, '%s.UpdateItem' % ACTION_PREFIX, '%s.DeleteItem' % ACTION_PREFIX):
+        if action == '%s.CreateTable' % ACTION_PREFIX:
+            ddb_client = aws_stack.connect_to_service('dynamodb')
+            table_names = ddb_client.list_tables()['TableNames']
+            if to_str(data['TableName']) in table_names:
+                return 200
+        elif action in ('%s.PutItem' % ACTION_PREFIX, '%s.UpdateItem' % ACTION_PREFIX, '%s.DeleteItem' % ACTION_PREFIX):
             # find an existing item and store it in a thread-local, so we can access it in return_response,
             # in order to determine whether an item already existed (MODIFY) or not (INSERT)
             ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)

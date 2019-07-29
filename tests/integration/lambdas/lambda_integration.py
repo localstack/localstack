@@ -123,8 +123,6 @@ def forward_events(records):
     if not records:
         return
     kinesis = aws_stack.connect_to_service('kinesis')
-    import os
-    print('forwarding %s events to URL %s' % (len(records), os.environ.get('TEST_KINESIS_URL')))
     kinesis.put_records(StreamName=KINESIS_STREAM_NAME, Records=records)
 
 

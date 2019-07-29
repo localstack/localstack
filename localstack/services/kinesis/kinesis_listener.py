@@ -21,18 +21,18 @@ class ProxyListenerKinesis(ProxyListener):
     def forward_request(self, method, path, data, headers):
         data = json.loads(to_str(data))
         action = headers.get('X-Amz-Target')
-        print('data', data, action)
 
         if action == '%s.DescribeStreamSummary' % ACTION_PREFIX:
+            stream_arn = data.get('StreamARN') or data['StreamName']
+            # TODO fix values below
             result = {
                 'StreamDescriptionSummary': {
                     'ConsumerCount': 0,
-                    'EncryptionType': 'string',
                     'EnhancedMonitoring': [],
                     'KeyId': 'string',
                     'OpenShardCount': 0,
                     'RetentionPeriodHours': 1,
-                    'StreamARN': 'test123_TODO',
+                    'StreamARN': stream_arn,
                     # 'StreamCreationTimestamp': number,
                     'StreamName': data['StreamName'],
                     'StreamStatus': 'ACTIVE'
@@ -62,7 +62,6 @@ class ProxyListenerKinesis(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target')
         data = json.loads(to_str(data))
-        print('return data', data, action, response.status_code, response.content)
 
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):

@@ -209,7 +209,6 @@ def post_request():
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         region_name = extract_region_from_auth_header(request.headers)
-        print('!!!', region_name)
         response = create_stream(
             stream_name, delivery_stream_type=data.get('DeliveryStreamType'),
             delivery_stream_type_configuration=data.get('KinesisStreamSourceConfiguration'),

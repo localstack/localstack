@@ -1,7 +1,7 @@
-import time
 import logging
 import unittest
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import retry
 from localstack.utils.kinesis import kinesis_connector
 
 
@@ -11,7 +11,6 @@ class TestKinesisPythonClient(unittest.TestCase):
         result = []
 
         def process_records(records):
-            print('process_records', records)
             result.extend(records)
 
         # start Kinesis client
@@ -32,5 +31,7 @@ class TestKinesisPythonClient(unittest.TestCase):
             } for i in range(0, num_events_kinesis)
         ], StreamName=stream_name)
 
-        time.sleep(10)
-        print(result)
+        def check_events():
+            self.assertEqual(len(result), num_events_kinesis)
+
+        retry(check_events, retries=4, sleep=2)

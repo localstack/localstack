@@ -103,5 +103,4 @@ def create_config_file(config_file, executableName, streamName, applicationName,
         content += """
             %s = %s""" % (key, value)
     content = content.replace('    ', '')
-    print(config_file, content)
     save_file(config_file, content)

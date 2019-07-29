@@ -140,8 +140,8 @@ def install_amazon_kinesis_client_libs():
     # Compile Java files
     from localstack.utils.kinesis import kclipy_helper
     classpath = kclipy_helper.get_kcl_classpath()
-    java_files = '%s/utils/kinesis/java/com/atlassian/*.java' % ROOT_PATH
-    class_files = '%s/utils/kinesis/java/com/atlassian/*.class' % ROOT_PATH
+    java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % ROOT_PATH
+    class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % ROOT_PATH
     if not glob.glob(class_files):
         run('javac -cp "%s" %s' % (classpath, java_files))
 

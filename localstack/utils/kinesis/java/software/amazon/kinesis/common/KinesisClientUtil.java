@@ -32,12 +32,10 @@ public class KinesisClientUtil {
      * @return
      */
     public static KinesisAsyncClient createKinesisAsyncClient(KinesisAsyncClientBuilder clientBuilder) {
-        System.out.println("!!! KinesisAsyncClientBuilder " + clientBuilder);
         return adjustKinesisClientBuilder(clientBuilder).build();
     }
 
     public static KinesisAsyncClientBuilder adjustKinesisClientBuilder(KinesisAsyncClientBuilder builder) {
-        System.out.println("!!! adjustKinesisClientBuilder " + builder);
         return builder.httpClientBuilder(NettyNioAsyncHttpClient.builder()
                 .maxConcurrency(Integer.MAX_VALUE).protocol(Protocol.HTTP1_1));
     }

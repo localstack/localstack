@@ -114,6 +114,10 @@ def get_environment(env=None, region_name=None):
     return env
 
 
+def is_local_env(env):
+    return not env or env.region == REGION_LOCAL or env.prefix == ENV_DEV
+
+
 def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=None):
     """
     Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
@@ -171,18 +175,15 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
-    is_local = not env
     env = get_environment(env, region_name=region_name)
     my_session = get_boto3_session()
     method = my_session.client if client else my_session.resource
     verify = True
     if not endpoint_url:
-        if is_local or env.region == REGION_LOCAL:
+        if is_local_env(env):
             endpoint_url = get_local_service_url(service_name)
             verify = False
     region = env.region if env.region != REGION_LOCAL else get_local_region()
-    if service_name == 'kinesis':
-        print('connect_to_service', service_name, region, endpoint_url)
     return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify, config=config)
 
 
@@ -292,9 +293,8 @@ def extract_region_from_arn(arn):
 def get_account_id(account_id=None, env=None):
     if account_id:
         return account_id
-    is_local = not env
     env = get_environment(env)
-    if is_local or env.region == REGION_LOCAL:
+    if is_local_env(env):
         return os.environ['TEST_AWS_ACCOUNT_ID']
     raise Exception('Unable to determine AWS account ID (%s, %s)' % (account_id, env))
 
@@ -631,7 +631,7 @@ def apigateway_invocations_arn(lambda_uri):
 
 def get_elasticsearch_endpoint(domain=None, region_name=None):
     env = get_environment(region_name=region_name)
-    if env.region == REGION_LOCAL:
+    if is_local_env(env):
         return os.environ['TEST_ELASTICSEARCH_URL']
     # get endpoint from API
     es_client = connect_to_service(service_name='es', region_name=env.region)
@@ -647,7 +647,7 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
     env = get_environment(env, region_name=region_name)
     verify_certs = False
     use_ssl = False
-    if not endpoint and env.region == REGION_LOCAL:
+    if not endpoint and is_local_env(env):
         endpoint = os.environ['TEST_ELASTICSEARCH_URL']
     if not endpoint and env.region != REGION_LOCAL and domain:
         endpoint = get_elasticsearch_endpoint(domain=domain, region_name=env.region)

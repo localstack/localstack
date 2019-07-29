@@ -200,6 +200,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
         forward_headers['X-Forwarded-For'] = self.build_x_forwarded_for(forward_headers)
 
+        # force close connection
+        if forward_headers.get('Connection', '').lower() != 'keep-alive':
+            self.close_connection = 1
+
         try:
             response = None
             modified_request = None
@@ -225,20 +229,23 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 elif listener_result is not True:
                     # get status code from response, or use Bad Gateway status code
                     code = listener_result if isinstance(listener_result, int) else 503
+                    self.send_header('Content-Length', '0')
                     self.send_response(code)
                     self.end_headers()
                     return
             # perform the actual invocation of the backend service
             if response is None:
+                forward_headers['Connection'] = forward_headers.get('Connection') or 'close'
+                data_to_send = self.data_bytes
+                request_url = proxy_url
                 if modified_request:
-                    request_url = proxy_url
                     if modified_request.url:
                         request_url = '%s%s' % (self.proxy.forward_url, modified_request.url)
-                    response = self.method(request_url, data=modified_request.data,
-                        headers=modified_request.headers, stream=True)
-                else:
-                    response = self.method(proxy_url, data=self.data_bytes,
-                        headers=forward_headers, stream=True)
+                    data_to_send = modified_request.data
+
+                response = self.method(request_url, data=data_to_send,
+                    headers=forward_headers, stream=True)
+
                 # prevent requests from processing response body
                 if not response._content_consumed and response.raw:
                     response._content = response.raw.read()
