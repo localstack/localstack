@@ -181,6 +181,8 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
             endpoint_url = get_local_service_url(service_name)
             verify = False
     region = env.region if env.region != REGION_LOCAL else get_local_region()
+    if service_name == 'kinesis':
+        print('connect_to_service', service_name, region, endpoint_url)
     return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify, config=config)
 
 

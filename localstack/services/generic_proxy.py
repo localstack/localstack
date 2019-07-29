@@ -1,6 +1,7 @@
 import os
 import sys
 import ssl
+import json
 import socket
 import inspect
 import logging
@@ -210,6 +211,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     path=path, data=data, headers=forward_headers)
                 if isinstance(listener_result, Response):
                     response = listener_result
+                    break
+                if isinstance(listener_result, dict):
+                    response = Response()
+                    response._content = json.dumps(listener_result)
+                    response.status_code = 200
                     break
                 elif isinstance(listener_result, Request):
                     modified_request = listener_result

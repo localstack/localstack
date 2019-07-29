@@ -20,6 +20,38 @@ class ProxyListenerKinesis(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
         data = json.loads(to_str(data))
+        action = headers.get('X-Amz-Target')
+        print('data', data, action)
+
+        if action == '%s.DescribeStreamSummary' % ACTION_PREFIX:
+            result = {
+                'StreamDescriptionSummary': {
+                    'ConsumerCount': 0,
+                    'EncryptionType': 'string',
+                    'EnhancedMonitoring': [],
+                    'KeyId': 'string',
+                    'OpenShardCount': 0,
+                    'RetentionPeriodHours': 1,
+                    'StreamARN': 'test123_TODO',
+                    # 'StreamCreationTimestamp': number,
+                    'StreamName': data['StreamName'],
+                    'StreamStatus': 'ACTIVE'
+                }
+            }
+            return result
+        if action == '%s.DescribeStreamConsumer' % ACTION_PREFIX:
+            consumer_arn = data.get('ConsumerARN') or data['ConsumerName']
+            consumer_name = data.get('ConsumerName') or data['ConsumerARN']
+            result = {
+                'ConsumerDescription': {
+                    'ConsumerARN': consumer_arn,
+                    # 'ConsumerCreationTimestamp': number,
+                    'ConsumerName': consumer_name,
+                    'ConsumerStatus': 'ACTIVE',
+                    'StreamARN': data.get('StreamARN')
+                }
+            }
+            return result
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             action = headers.get('X-Amz-Target')
@@ -30,6 +62,7 @@ class ProxyListenerKinesis(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target')
         data = json.loads(to_str(data))
+        print('return data', data, action, response.status_code, response.content)
 
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):

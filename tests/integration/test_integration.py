@@ -118,6 +118,7 @@ class IntegrationTest(unittest.TestCase):
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
+    # TODO fix duplication with test_lambda_streams_batch_and_transactions(..)!
     def test_kinesis_lambda_sns_ddb_sqs_streams(self):
         ddb_lease_table_suffix = '-kclapp'
         table_name = TEST_TABLE_NAME + 'klsdss' + ddb_lease_table_suffix

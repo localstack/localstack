@@ -22,7 +22,8 @@ localstack/infra/
 *.sw*
 ~*
 *~
-/.idea
+.idea
 **/obj/**
 **/bin/**
 !bin/docker-entrypoint.sh
+

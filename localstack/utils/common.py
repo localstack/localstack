@@ -506,7 +506,9 @@ def rm_rf(path):
         return
     # Make sure all files are writeable and dirs executable to remove
     chmod_r(path, 0o777)
-    if os.path.isfile(path):
+    # check if the file is either a normal file, or, e.g., a fifo
+    exists_but_non_dir = os.path.exists(path) and not os.path.isdir(path)
+    if os.path.isfile(path) or exists_but_non_dir:
         os.remove(path)
     else:
         shutil.rmtree(path)

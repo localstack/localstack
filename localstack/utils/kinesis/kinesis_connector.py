@@ -27,6 +27,7 @@ DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-kclapp'
 
 # define Java class names
 MULTI_LANG_DAEMON_CLASS = 'com.atlassian.KinesisStarter'
+# MULTI_LANG_DAEMON_CLASS = 'software.amazon.kinesis.multilang.MultiLangDaemon'
 
 # set up log levels
 logging.SEVERE = 60
@@ -115,6 +116,7 @@ class KinesisProcessorThread(ShellCommandThread):
         env_vars = params['env_vars']
         cmd = kclipy_helper.get_kcl_app_command('java',
             MULTI_LANG_DAEMON_CLASS, props_file)
+        print(cmd)
         if not params['log_file']:
             params['log_file'] = '%s.log' % props_file
             TMP_FILES.append(params['log_file'])
@@ -274,7 +276,7 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
 
 
 def start_kcl_client_process(stream_name, listener_script, log_file=None, env=None, configs={},
-        endpoint_url=None, ddb_lease_table_suffix=None, env_vars={},
+        endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}, region_name=None,
         kcl_log_level=DEFAULT_KCL_LOG_LEVEL, log_subscribers=[]):
     env = aws_stack.get_environment(env)
     # decide which credentials provider to use
@@ -323,7 +325,7 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     # create config file
     kclipy_helper.create_config_file(config_file=props_file, executableName=listener_script,
         streamName=stream_name, applicationName=stream_info['app_name'],
-        credentialsProvider=credentialsProvider, **kwargs)
+        credentialsProvider=credentialsProvider, region_name=region_name, **kwargs)
     TMP_FILES.append(props_file)
     # start stream consumer
     stream = KinesisStream(id=stream_name, params=stream_info)
@@ -395,7 +397,7 @@ if __name__ == '__main__':
 def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         events_file=None, endpoint_url=None, log_file=None, configs={}, env=None,
         ddb_lease_table_suffix=None, env_vars={}, kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
-        log_subscribers=[], wait_until_started=False, fh_d_stream=None):
+        log_subscribers=[], wait_until_started=False, fh_d_stream=None, region_name=None):
     """
     High-level function that allows to subscribe to a Kinesis stream
     and receive events in a listener function. A KCL client process is
@@ -426,7 +428,7 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     process = start_kcl_client_process(stream_name, processor_script,
         endpoint_url=endpoint_url, log_file=log_file, configs=configs, env=env,
         ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars, kcl_log_level=kcl_log_level,
-        log_subscribers=log_subscribers)
+        log_subscribers=log_subscribers, region_name=region_name)
 
     if wait_until_started:
         # Wait at most 90 seconds for initialization. Note that creating the DDB table can take quite a bit
