@@ -48,6 +48,7 @@ any longer.
 * **SecretsManager** at http://localhost:4584
 * **StepFunctions** at http://localhost:4585
 * **CloudWatch Logs** at http://localhost:4586
+* **EventBridge (CloudWatch Events)** at http://localhost:4587
 * **STS** at http://localhost:4592
 * **IAM** at http://localhost:4593
 * **EC2** at http://localhost:4597
