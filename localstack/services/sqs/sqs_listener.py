@@ -18,7 +18,7 @@ XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
 SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = """
     <?xml version="1.0"?>
-    <SendMessageResponse xmlns="{XMLNS_SQS}">
+    <SendMessageResponse xmlns="%s">
         <SendMessageResult>
             <MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>
             <MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>
@@ -28,7 +28,7 @@ SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = """
             <RequestId>00000000-0000-0000-0000-000000000000</RequestId>
         </ResponseMetadata>
     </SendMessageResponse>
-"""
+""".strip() % XMLNS_SQS
 
 
 class ProxyListenerSQS(ProxyListener):
@@ -52,10 +52,9 @@ class ProxyListenerSQS(ProxyListener):
                     new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
                         message_attr_hash=md5(data),
                         message_body_hash=md5(message_body),
-                        message_id=str(uuid.uuid4()),
+                        message_id=str(uuid.uuid4())
                     )
                     new_response.status_code = 200
-                    # TODO: Is it the correct behavior to return here - why not forward the message?
                     return new_response
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
@@ -145,11 +144,10 @@ class ProxyListenerSQS(ProxyListener):
     def return_response(self, method, path, data, headers, response, request_handler):
         if method == 'OPTIONS' and path == '/':
             # Allow CORS preflight requests to succeed.
-            new_response = Response()
-            new_response.status_code = 200
-            return new_response
+            return 200
 
         if method == 'POST' and path == '/':
+            region_name = extract_region_from_auth_header(headers)
             req_data = urlparse.parse_qs(to_str(data))
             action = req_data.get('Action', [None])[0]
             event_type = None
@@ -166,8 +164,8 @@ class ProxyListenerSQS(ProxyListener):
             if event_type and queue_url:
                 event_publisher.fire_event(event_type, payload={'u': event_publisher.get_hash(queue_url)})
 
-            # patch the response and return the correct endpoint URLs
-            if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues'):
+            # patch the response and return the correct endpoint URLs / ARNs
+            if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes'):
                 content_str = content_str_original = to_str(response.content)
                 new_response = Response()
                 new_response.status_code = response.status_code
@@ -179,6 +177,9 @@ class ProxyListenerSQS(ProxyListener):
                 external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
                 content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
                     r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port), content_str)
+                # fix queue ARN
+                content_str = re.sub(r'<([a-zA-Z0-9]+)>\s*arn:aws:sqs:elasticmq:([^<]+)</([a-zA-Z0-9]+)>',
+                    r'<\1>arn:aws:sqs:%s:\2</\3>' % (region_name), content_str)
                 new_response._content = content_str
                 if content_str_original != new_response._content:
                     # if changes have been made, return patched response
@@ -190,27 +191,27 @@ class ProxyListenerSQS(ProxyListener):
             if action == 'TagQueue':
                 new_response = Response()
                 new_response.status_code = 200
-                new_response._content = (
-                    '<?xml version="1.0"?>'
-                    '<TagQueueResponse>'
-                        '<ResponseMetadata>'  # noqa: W291
-                            '<RequestId>{}</RequestId>'  # noqa: W291
-                        '</ResponseMetadata>'  # noqa: W291
-                    '</TagQueueResponse>'
-                ).format(uuid.uuid4())
+                new_response._content = ("""
+                    <?xml version="1.0"?>
+                    <TagQueueResponse>
+                        <ResponseMetadata>
+                            <RequestId>{}</RequestId>
+                        </ResponseMetadata>
+                    </TagQueueResponse>
+                """).strip().format(uuid.uuid4())
                 return new_response
             elif action == 'ListQueueTags':
                 new_response = Response()
                 new_response.status_code = 200
-                new_response._content = (
-                    '<?xml version="1.0"?>'
-                    '<ListQueueTagsResponse xmlns="{}">'
-                        '<ListQueueTagsResult/>'  # noqa: W291
-                        '<ResponseMetadata>'  # noqa: W291
-                            '<RequestId>{}</RequestId>'  # noqa: W291
-                        '</ResponseMetadata>'  # noqa: W291
-                    '</ListQueueTagsResponse>'
-                ).format(XMLNS_SQS, uuid.uuid4())
+                new_response._content = ("""
+                    <?xml version="1.0"?>
+                    <ListQueueTagsResponse xmlns="{}">
+                        <ListQueueTagsResult/>
+                        <ResponseMetadata>
+                            <RequestId>{}</RequestId>
+                        </ResponseMetadata>
+                    </ListQueueTagsResponse>
+                """).strip().format(XMLNS_SQS, uuid.uuid4())
                 return new_response
 
 

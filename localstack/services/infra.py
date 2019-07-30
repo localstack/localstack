@@ -19,7 +19,8 @@ from localstack.constants import (
 from localstack.config import USE_SSL
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_free_tcp_port,
-    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol, docker_container_running)
+    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol,
+    docker_container_running, in_docker)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
@@ -581,7 +582,7 @@ def start_infra(asynchronous=False, apis=None):
         # load plugins
         load_plugins()
 
-        event_publisher.fire_event(event_publisher.EVENT_START_INFRA)
+        event_publisher.fire_event(event_publisher.EVENT_START_INFRA, {'d': in_docker() and 1 or 0})
 
         # set up logging
         setup_logging()

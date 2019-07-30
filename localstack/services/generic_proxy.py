@@ -291,7 +291,6 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             if response.content and len(response.content):
                 self.wfile.write(to_bytes(response.content))
-            self.wfile.flush()
         except Exception as e:
             trace = str(traceback.format_exc())
             conn_errors = ('ConnectionRefusedError', 'NewConnectionError')
@@ -310,6 +309,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             # force close connection
             self.close_connection = 1
+        finally:
+            try:
+                self.wfile.flush()
+            except Exception as e:
+                LOG.warning('Unable to flush write file: %s' % e)
 
     def log_message(self, format, *args):
         return
