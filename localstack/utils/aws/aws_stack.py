@@ -649,12 +649,12 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
     use_ssl = False
     if not endpoint and is_local_env(env):
         endpoint = os.environ['TEST_ELASTICSEARCH_URL']
-    if not endpoint and env.region != REGION_LOCAL and domain:
+    if not endpoint and not is_local_env(env) and domain:
         endpoint = get_elasticsearch_endpoint(domain=domain, region_name=env.region)
     # use ssl?
     if 'https://' in endpoint:
         use_ssl = True
-        if env.region != REGION_LOCAL:
+        if not is_local_env(env):
             verify_certs = True
 
     if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):
