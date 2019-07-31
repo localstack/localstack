@@ -8,6 +8,7 @@ import logging
 import traceback
 import click
 import requests
+from ssl import SSLError
 from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
@@ -91,7 +92,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.proxy = server.my_object
         self.data_bytes = None
         self.protocol_version = self.proxy.protocol_version
-        BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        try:
+            BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        except SSLError as e:
+            LOG.warning('SSL error when handling request: %s' % e)
 
     def parse_request(self):
         result = BaseHTTPRequestHandler.parse_request(self)
@@ -293,7 +297,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(to_bytes(response.content))
         except Exception as e:
             trace = str(traceback.format_exc())
-            conn_errors = ('ConnectionRefusedError', 'NewConnectionError')
+            conn_errors = ('ConnectionRefusedError', 'NewConnectionError', 'Connection aborted')
             conn_error = any(e in trace for e in conn_errors)
             error_msg = 'Error forwarding request: %s %s' % (e, trace)
             if 'Broken pipe' in trace:

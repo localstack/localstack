@@ -16,6 +16,7 @@ import logging
 import zipfile
 import binascii
 import tempfile
+import warnings
 import threading
 import traceback
 import subprocess
@@ -56,6 +57,9 @@ DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 # set up logger
 LOG = logging.getLogger(__name__)
+# log format strings
+LOG_FORMAT = '%(asctime)s:%(levelname)s:%(name)s: %(message)s'
+LOG_DATE_FORMAT = TIMESTAMP_FORMAT
 
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
@@ -74,7 +78,10 @@ class CustomEncoder(json.JSONEncoder):
             return str(o)
         if isinstance(o, six.binary_type):
             return to_str(o)
-        return super(CustomEncoder, self).default(o)
+        try:
+            return super(CustomEncoder, self).default(o)
+        except Exception:
+            return None
 
 
 class FuncThread(threading.Thread):
@@ -119,6 +126,10 @@ class ShellCommandThread(FuncThread):
             line = to_str(line or '')
             return line.strip() + '\r\n'
 
+        def filter_line(line):
+            """ Return True if this line should be filtered, i.e., not printed """
+            return '(Press CTRL+C to quit)' in line
+
         try:
             self.process = run(self.cmd, asynchronous=True, stdin=self.stdin, outfile=self.outfile,
                 env_vars=self.env_vars, inherit_cwd=self.inherit_cwd)
@@ -135,6 +146,8 @@ class ShellCommandThread(FuncThread):
                             if not (line and line.strip()) and self.is_killed():
                                 break
                             line = convert_line(line)
+                            if filter_line(line):
+                                continue
                             outstream.write(line)
                             outstream.flush()
                 self.process.wait()
@@ -338,6 +351,43 @@ def has_docker():
         return True
     except Exception:
         return False
+
+
+def setup_logging():
+    # determine and set log level
+    log_level = logging.DEBUG if is_debug() else logging.INFO
+    logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+
+    # set up werkzeug logger
+
+    class WerkzeugLogFilter(logging.Filter):
+        def filter(self, record):
+            return record.name != 'werkzeug'
+
+    root_handlers = logging.getLogger().handlers
+    if len(root_handlers) > 0:
+        root_handlers[0].addFilter(WerkzeugLogFilter())
+        if is_debug():
+            format = '%(asctime)s:API: %(message)s'
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.INFO)
+            handler.setFormatter(logging.Formatter(format))
+            logging.getLogger('werkzeug').addHandler(handler)
+
+    # disable some logs and warnings
+    warnings.filterwarnings('ignore')
+    logging.captureWarnings(True)
+    logging.getLogger('boto3').setLevel(logging.INFO)
+    logging.getLogger('s3transfer').setLevel(logging.INFO)
+    logging.getLogger('docker').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+    logging.getLogger('botocore').setLevel(logging.ERROR)
+    logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+
+
+def is_debug():
+    return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
 
 
 def is_port_open(port_or_url, http_path=None, expect_success=True):

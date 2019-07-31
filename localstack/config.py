@@ -247,6 +247,9 @@ if os.environ.get('DEBUG', '').lower() in ('1', 'true'):
     logging.getLogger('').setLevel(logging.DEBUG)
     logging.getLogger('localstack').setLevel(logging.DEBUG)
 
+# whether to bundle multiple APIs into a single process, where possible
+BUNDLE_API_PROCESSES = True
+
 # set URL pattern of inbound API gateway
 INBOUND_GATEWAY_URL_PATTERN = ('%s/restapis/{api_id}/{stage_name}/%s{path}' %
     (TEST_APIGATEWAY_URL, PATH_USER_REQUEST))  # noqa
