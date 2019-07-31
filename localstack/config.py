@@ -75,7 +75,7 @@ EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').stri
 
 def has_docker():
     try:
-        subprocess.check_output('docker ps', shell=True)
+        subprocess.check_output('docker ps', stdout=os.devnull, stderr=os.devnull, shell=True)
         return True
     except Exception:
         return False

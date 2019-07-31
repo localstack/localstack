@@ -111,13 +111,14 @@ class ShellCommandThread(FuncThread):
     """ Helper class to run a shell command in a background thread. """
 
     def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
-            quiet=True, inherit_cwd=False):
+            quiet=True, inherit_cwd=False, inherit_env=True):
         self.cmd = cmd
         self.process = None
         self.outfile = outfile or os.devnull
         self.stdin = stdin
         self.env_vars = env_vars
         self.inherit_cwd = inherit_cwd
+        self.inherit_env = inherit_env
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
@@ -132,7 +133,7 @@ class ShellCommandThread(FuncThread):
 
         try:
             self.process = run(self.cmd, asynchronous=True, stdin=self.stdin, outfile=self.outfile,
-                env_vars=self.env_vars, inherit_cwd=self.inherit_cwd)
+                env_vars=self.env_vars, inherit_cwd=self.inherit_cwd, inherit_env=self.inherit_env)
             if self.outfile:
                 if self.outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
@@ -865,7 +866,8 @@ def run_cmd_safe(**kwargs):
 
 
 def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=False,
-        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False, tty=False):
+        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
+        inherit_env=True, tty=False):
     # don't use subprocess module inn Python 2 as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
     if six.PY2:
@@ -873,7 +875,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=
     else:
         import subprocess
 
-    env_dict = os.environ.copy()
+    env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
 

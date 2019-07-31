@@ -85,8 +85,12 @@ def start_server_process(port):
     port = port or MULTI_SERVER_PORT
     API_SERVERS['__server__'] = config = {'port': port}
     LOG.info('Starting multi API server process on port %s' % port)
-    cmd = '%s "%s" %s' % (sys.executable, __file__, port)
-    thread = ShellCommandThread(cmd, outfile=subprocess.PIPE)
+    cmd = '"%s" "%s" %s' % (sys.executable, __file__, port)
+    env_vars = {
+        'PYTHONPATH': '.:%s' % constants.LOCALSTACK_ROOT_FOLDER
+    }
+    thread = ShellCommandThread(cmd, outfile=subprocess.PIPE, env_vars=env_vars,
+        inherit_cwd=True)
     thread.start()
     TMP_THREADS.append(thread)
     config['thread'] = thread

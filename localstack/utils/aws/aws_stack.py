@@ -37,6 +37,9 @@ CREATE_NEW_SESSION_PER_BOTO3_CONNECTION = False
 # Used in AWS assume role function
 INITIAL_BOTO3_SESSION = None
 
+# Boto clients cache
+BOTO_CLIENTS_CACHE = {}
+
 # Assume role loop seconds
 DEFAULT_TIMER_LOOP_SECONDS = 60 * 50
 
@@ -175,16 +178,23 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
-    env = get_environment(env, region_name=region_name)
-    my_session = get_boto3_session()
-    method = my_session.client if client else my_session.resource
-    verify = True
-    if not endpoint_url:
-        if is_local_env(env):
-            endpoint_url = get_local_service_url(service_name)
-            verify = False
-    region = env.region if env.region != REGION_LOCAL else get_local_region()
-    return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify, config=config)
+    key_elements = [service_name, client, env, region_name, endpoint_url, config]
+    cache_key = '/'.join([str(k) for k in key_elements])
+    if cache_key not in BOTO_CLIENTS_CACHE:
+        # Cache clients, as this is a relatively expensive operation
+        env = get_environment(env, region_name=region_name)
+        my_session = get_boto3_session()
+        method = my_session.client if client else my_session.resource
+        verify = True
+        if not endpoint_url:
+            if is_local_env(env):
+                endpoint_url = get_local_service_url(service_name)
+                verify = False
+        region = env.region if env.region != REGION_LOCAL else get_local_region()
+        BOTO_CLIENTS_CACHE[cache_key] = method(service_name, region_name=region,
+            endpoint_url=endpoint_url, verify=verify, config=config)
+
+    return BOTO_CLIENTS_CACHE[cache_key]
 
 
 class VelocityInput:
