@@ -33,6 +33,11 @@ install:
   - make reinstall-p3
   - make init
   - make prepare-java-tests-if-changed
+  - nohup docker pull lambci/lambda:nodejs8.10 &
+  - nohup docker pull lambci/lambda:ruby2.5 &
+  - nohup docker pull lambci/lambda:python3.6 &
+  - nohup docker pull lambci/lambda:dotnetcore2.0 &
+  - nohup docker pull lambci/lambda:java8 &
 
 script:
   - set -e # fail fast

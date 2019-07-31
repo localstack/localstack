@@ -297,7 +297,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.wfile.write(to_bytes(response.content))
         except Exception as e:
             trace = str(traceback.format_exc())
-            conn_errors = ('ConnectionRefusedError', 'NewConnectionError', 'Connection aborted')
+            conn_errors = ('ConnectionRefusedError', 'NewConnectionError',
+                           'Connection aborted', 'Unexpected EOF')
             conn_error = any(e in trace for e in conn_errors)
             error_msg = 'Error forwarding request: %s %s' % (e, trace)
             if 'Broken pipe' in trace:
