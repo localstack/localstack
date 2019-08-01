@@ -14,7 +14,7 @@ from requests.models import Response
 from localstack import constants, config
 from localstack.config import USE_SSL
 from localstack.constants import (
-    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER,
+    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_free_tcp_port,
@@ -575,7 +575,8 @@ def start_infra(asynchronous=False, apis=None):
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
         # register signal handlers
-        register_signal_handlers()
+        if not os.environ.get(ENV_INTERNAL_TEST_RUN):
+            register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
         # install libs if not present

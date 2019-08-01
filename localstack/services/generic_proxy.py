@@ -154,23 +154,27 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         content_length = self.headers.get('Content-Length')
         if content_length:
             self.data_bytes = self.rfile.read(int(content_length))
-        else:
-            self.data_bytes = None
-            if self.method in (requests.post, requests.put):
-                # If the Content-Length header is missing, try to read
-                # content from the socket using a socket timeout.
-                socket_timeout_secs = 0.5
-                self.request.settimeout(socket_timeout_secs)
-                while True:
-                    try:
-                        # TODO find a more efficient way to do this!
-                        tmp = self.rfile.read(1)
-                        if self.data_bytes is None:
-                            self.data_bytes = tmp
-                        else:
-                            self.data_bytes += tmp
-                    except socket.timeout:
-                        break
+            return
+
+        self.data_bytes = None
+        if self.method in (requests.post, requests.put):
+            LOG.warning('Expected Content-Length header not found in POST/PUT request')
+
+            # If the Content-Length header is missing, try to read
+            # content from the socket using a socket timeout.
+            socket_timeout_secs = 0.5
+            self.request.settimeout(socket_timeout_secs)
+            block_length = 1
+            while True:
+                try:
+                    # TODO find a more efficient way to do this!
+                    tmp = self.rfile.read(block_length)
+                    if self.data_bytes is None:
+                        self.data_bytes = tmp
+                    else:
+                        self.data_bytes += tmp
+                except socket.timeout:
+                    break
 
     def build_x_forwarded_for(self, headers):
         x_forwarded_for = headers.get('X-Forwarded-For')

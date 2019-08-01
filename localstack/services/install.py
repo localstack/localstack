@@ -58,13 +58,8 @@ def install_elasticsearch():
             run('%s install -b  %s' % (plugin_binary, plugin))
 
     # disable x-pack-ml plugin (not working on Alpine)
-    config_file = os.path.join(INSTALL_DIR_ES, 'config', 'elasticsearch.yml')
-    config_content = load_file(config_file)
-    xpack_config = 'xpack.ml.enabled: false'
-    if xpack_config not in config_content:
-        config_content += '\n%s' % xpack_config
-        save_file(config_file, config_content)
-        rm_rf(os.path.join(INSTALL_DIR_ES, 'modules', 'x-pack-ml', 'platform'))
+    xpack_dir = os.path.join(INSTALL_DIR_ES, 'modules', 'x-pack-ml', 'platform')
+    rm_rf(xpack_dir)
 
     # patch JVM options file - replace hardcoded heap size settings
     jvm_options_file = os.path.join(INSTALL_DIR_ES, 'config', 'jvm.options')

@@ -2,10 +2,9 @@
 
 import os
 import re
-import tempfile
-import time
-import threading
 import logging
+import tempfile
+import threading
 from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
@@ -131,6 +130,8 @@ class KinesisProcessorThread(ShellCommandThread):
 
 
 class OutputReaderThread(FuncThread):
+    OUTPUT_LINES_COUNT = 0
+
     def __init__(self, params):
         FuncThread.__init__(self, self.start_reading, params)
         self.buffer = []
@@ -182,6 +183,11 @@ class OutputReaderThread(FuncThread):
 
     def start_reading(self, params):
         for line in self._tail(params['file']):
+            OutputReaderThread.OUTPUT_LINES_COUNT += 1
+            if OutputReaderThread.OUTPUT_LINES_COUNT % 100 == 0:
+                print('Received %s log lines from Kinesis clients' %
+                      OutputReaderThread.OUTPUT_LINES_COUNT)
+
             # notify subscribers
             self.notify_subscribers(line)
             if self.log_level > 0:
@@ -202,10 +208,10 @@ class OutputReaderThread(FuncThread):
         with open(file) as f:
             while self.running:
                 line = f.readline()
-                if line:  # empty if at EOF
-                    yield line.replace('\n', '')
-                else:
-                    time.sleep(0.1)
+                if not line:
+                    # empty if at EOF (non-empty, including newline, if not at EOF)
+                    return
+                yield line.replace('\n', '')
 
     def stop(self, quiet=True):
         self._stop_event.set()

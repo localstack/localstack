@@ -37,25 +37,24 @@ class EventFileReaderThread(FuncThread):
         socket_file = conn.makefile()
         while self.running:
             line = socket_file.readline()
-            line = line[:-1]
-            if line == '':
+            if not line:
                 # end of socket input stream
                 break
-            else:
-                try:
-                    event = json.loads(line)
-                    records = event['records']
-                    shard_id = event['shard_id']
-                    method_args = inspect.getargspec(self.callback)[0]
-                    if len(method_args) > 2:
-                        self.callback(records, shard_id=shard_id, fh_d_stream=self.fh_d_stream)
-                    elif len(method_args) > 1:
-                        self.callback(records, shard_id=shard_id)
-                    else:
-                        self.callback(records)
-                except Exception as e:
-                    LOGGER.warning("Unable to process JSON line: '%s': %s %s. Callback: %s" %
-                                   (truncate(line), e, traceback.format_exc(), self.callback))
+            line = line[:-1]
+            try:
+                event = json.loads(line)
+                records = event['records']
+                shard_id = event['shard_id']
+                method_args = inspect.getargspec(self.callback)[0]
+                if len(method_args) > 2:
+                    self.callback(records, shard_id=shard_id, fh_d_stream=self.fh_d_stream)
+                elif len(method_args) > 1:
+                    self.callback(records, shard_id=shard_id)
+                else:
+                    self.callback(records)
+            except Exception as e:
+                LOGGER.warning("Unable to process JSON line: '%s': %s %s. Callback: %s" %
+                               (truncate(line), e, traceback.format_exc(), self.callback))
         conn.close()
 
     def stop(self, quiet=True):
