@@ -8,14 +8,12 @@ import uuid
 import time
 import glob
 import base64
-import pstats
 import select
 import socket
 import hashlib
 import decimal
 import logging
 import zipfile
-import cProfile
 import binascii
 import tempfile
 import warnings
@@ -26,16 +24,15 @@ import six
 import shutil
 import requests
 from io import BytesIO
-from functools import wraps
 from contextlib import closing
 from datetime import datetime
-from six.moves.urllib.parse import urlparse
-from six.moves import cStringIO as StringIO
 from six import with_metaclass
+from six.moves import cStringIO as StringIO
+from six.moves.urllib.parse import urlparse
 from multiprocessing.dummy import Pool
-from localstack.constants import ENV_DEV, LOCALSTACK_ROOT_FOLDER
-from localstack.config import DEFAULT_ENCODING
 from localstack import config
+from localstack.config import DEFAULT_ENCODING
+from localstack.constants import ENV_DEV
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -1008,132 +1005,6 @@ class SafeStringIO(io.StringIO):
         if six.PY2 and isinstance(obj, str):
             obj = obj.decode('unicode-escape')
         return super(SafeStringIO, self).write(obj)
-
-
-def profiled(lines=50):
-    """ Function decorator that profiles code execution. """
-    # return profiled_via_yappi(lines)
-    return profiled_via_cprofile(lines)
-
-
-def profiled_via_cprofile(lines=50):
-    skipped_lines = ['site-packages', 'lib/python']
-    Thread = threading.Thread
-    import _io
-    import _socket
-    profiled_methods = [
-        # (str, 'lower'),
-        (str, 'rpartition', False),
-        (_socket.socket, 'recv_into', True),
-        (_io.BufferedReader, 'readline', True)]
-    method_invocations = {}
-
-    for m_entry in profiled_methods:
-
-        def _patch(entry):
-            m_obj = getattr(entry[0], entry[1])
-            m_str = str(m_obj)
-            method_invocations[m_str] = {'__count__': 0}
-
-            def m_patched(*args, **kwargs):
-                entry = method_invocations[m_str]
-                stack = traceback.format_stack()
-                last_frame = str(stack[-2]).strip()
-                entry[last_frame] = entry.get(last_frame, 0) + 1
-                if entry['__count__'] % 1000 == 0:
-                    # print('m_patched', args)
-                    # print('last_frame', last_frame)
-                    print('entry', m_str, entry)
-                    if entry['__count__'] >= 5000:
-                        print(''.join(stack))
-                    # print('args', args, kwargs)
-                entry['__count__'] += 1
-                return m_obj(*args, **kwargs)
-
-            try:
-                from forbiddenfruit import curse
-                curse(entry[0], entry[1], m_patched)
-            except Exception as e:
-                print('Unable to set attr:', entry[0], entry[1], m_patched, e)
-
-        _patch(m_entry)
-
-    def enable_thread_profiling():
-        if getattr(Thread, '_profiling_patched', None):
-            return
-        setattr(Thread, '_profiling_patched', True)
-        Thread.stats = None
-        thread_run = Thread.run
-
-        def profile_run(self):
-            self._prof = cProfile.Profile()
-            self._prof.enable()
-            thread_run(self)
-            self._prof.disable()
-
-            if Thread.stats is None:
-                Thread.stats = pstats.Stats(self._prof)
-            else:
-                Thread.stats.add(self._prof)
-
-        Thread.run = profile_run
-
-    def get_thread_stats():
-        stats = getattr(Thread, 'stats', None)
-        if stats is None:
-            LOG.warning('Thread profiling was not enabled, or no threads finished running.')
-        return stats
-
-    def wrapper(f):
-        @wraps(f)
-        def wrapped(*args, **kwargs):
-            enable_thread_profiling()
-            try:
-                return f(*args, **kwargs)
-            finally:
-                result = get_thread_stats()
-                list_orig = result.fcn_list
-                for sort in ('tottime', 'cumulative', 'ncalls'):
-                    result.fcn_list = list_orig
-                    result.sort_stats(sort)
-                    result.fcn_list = [e for e in result.fcn_list
-                        if not any([s in str(e) for s in skipped_lines])]
-                    result.print_stats(lines)
-        return wrapped
-    return wrapper
-
-
-def profiled_via_yappi(lines=50):
-    skipped_lines = ['site-packages', 'lib/python']
-    skipped_lines = []
-
-    def wrapper(f):
-        @wraps(f)
-        def wrapped(*args, **kwargs):
-            import yappi
-            yappi.start()
-            try:
-                return f(*args, **kwargs)
-            finally:
-                result = list(yappi.get_func_stats())
-                yappi.stop()
-                yappi.clear_stats()
-                result = [l for l in result if all([s not in l.full_name for s in skipped_lines])]
-                entries = result[:lines]
-                prefix = LOCALSTACK_ROOT_FOLDER
-                result = []
-                result.append('ncall\tttot\ttsub\ttavg\tname')
-
-                def c(num):
-                    return str(num)[:7]
-
-                for e in entries:
-                    name = e.full_name.replace(prefix, '')
-                    result.append('%s\t%s\t%s\t%s\t%s' % (c(e.ncall), c(e.ttot), c(e.tsub), c(e.tavg), name))
-                result = '\n'.join(result)
-                print(result)
-        return wrapped
-    return wrapper
 
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,

@@ -237,8 +237,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 elif listener_result is not True:
                     # get status code from response, or use Bad Gateway status code
                     code = listener_result if isinstance(listener_result, int) else 503
-                    self.send_header('Content-Length', '0')
                     self.send_response(code)
+                    self.send_header('Content-Length', '0')
                     self.end_headers()
                     return
             # perform the actual invocation of the backend service

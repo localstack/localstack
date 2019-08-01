@@ -77,12 +77,15 @@ def get_kcl_app_command(java, multi_lang_daemon_class, properties, paths=[]):
     :return: A command that will run the MultiLangDaemon with your
              properties and custom paths and java.
     """
-    return '{java} -cp {cp} {daemon} {props}'.format(
+    logging_config = os.path.join(get_dir_of_file(__file__), 'java', 'logging.properties')
+    sys_props = '"-Djava.util.logging.config.file=%s"' % logging_config
+    return '{java} -cp {cp} {sys_props} {daemon} {props}'.format(
         java=java,
         cp=get_kcl_classpath(properties, paths),
         daemon=multi_lang_daemon_class,
-        # Just need the basename becasue the path is added to the classpath
-        props=os.path.basename(properties))
+        # Just need the basename because the path is added to the classpath
+        props=os.path.basename(properties),
+        sys_props=sys_props)
 
 
 def create_config_file(config_file, executableName, streamName, applicationName,
@@ -96,6 +99,7 @@ def create_config_file(config_file, executableName, streamName, applicationName,
         applicationName = %s
         AWSCredentialsProvider = %s
         processingLanguage = python/2.7
+        parentShardPollIntervalMillis = 2000
         regionName = %s
     """ % (executableName, streamName, applicationName, credentialsProvider, region_name)
     # optional properties

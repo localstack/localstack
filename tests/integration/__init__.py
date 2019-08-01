@@ -1,9 +1,11 @@
 import os
 import signal
 import threading
-from localstack.constants import ENV_INTERNAL_TEST_RUN
+from localstack import config
 from localstack.services import infra
-from localstack.utils.common import cleanup, safe_requests, profiled, FuncThread
+from localstack.constants import ENV_INTERNAL_TEST_RUN
+from localstack.utils.common import cleanup, safe_requests, FuncThread
+from localstack.utils.analytics.profiler import profiled
 
 mutex = threading.Semaphore(0)
 
@@ -13,10 +15,10 @@ def setup_package():
         os.environ[ENV_INTERNAL_TEST_RUN] = '1'
         # disable SSL verification for local tests
         safe_requests.verify_ssl = False
-        # start infrastructure services
-        infra.start_infra(asynchronous=True)
         # start profiling
         FuncThread(start_profiling).start()
+        # start infrastructure services
+        infra.start_infra(asynchronous=True)
     except Exception as e:
         # make sure to tear down the infrastructure
         infra.stop_infra()
@@ -31,6 +33,9 @@ def teardown_package():
 
 
 def start_profiling(*args):
+    if not config.USE_PROFILER:
+        return
+
     @profiled()
     def profile_func():
         # keep profiler active until tests have finished
