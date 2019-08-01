@@ -30,6 +30,7 @@ env:
     - JAVA_HOME=/usr/lib/jvm/java-8-oracle
 
 install:
+  - set -e
   - make reinstall-p3
   - make init
   - make prepare-java-tests-if-changed
