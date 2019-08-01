@@ -9,17 +9,18 @@ import logging
 import boto3
 import subprocess
 import six
-import warnings
 import pkgutil
 from requests.models import Response
 from localstack import constants, config
-from localstack.constants import (
-    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER,
-    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
 from localstack.config import USE_SSL
+from localstack.constants import (
+    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
+    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
 from localstack.utils import common, persistence
 from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_free_tcp_port,
-    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol, docker_container_running)
+    FuncThread, ShellCommandThread, mkdir, get_service_protocol, docker_container_running,
+    in_docker, is_debug, setup_logging)
+from localstack.utils.server import multiserver
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
@@ -60,10 +61,6 @@ DO_CHMOD_DOCKER_SOCK = False
 # plugin scopes
 PLUGIN_SCOPE_SERVICES = 'services'
 PLUGIN_SCOPE_COMMANDS = 'commands'
-
-# log format strings
-LOG_FORMAT = '%(asctime)s:%(levelname)s:%(name)s: %(message)s'
-LOG_DATE_FORMAT = TIMESTAMP_FORMAT
 
 
 # -----------------
@@ -276,21 +273,6 @@ def start_ec2(port=None, asynchronous=False):
 # HELPER METHODS
 # ---------------
 
-def setup_logging():
-    # determine and set log level
-    log_level = logging.DEBUG if is_debug() else logging.INFO
-    logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
-    # disable some logs and warnings
-    warnings.filterwarnings('ignore')
-    logging.captureWarnings(True)
-    logging.getLogger('boto3').setLevel(logging.INFO)
-    logging.getLogger('s3transfer').setLevel(logging.INFO)
-    logging.getLogger('docker').setLevel(logging.WARNING)
-    logging.getLogger('urllib3').setLevel(logging.WARNING)
-    logging.getLogger('requests').setLevel(logging.WARNING)
-    logging.getLogger('botocore').setLevel(logging.ERROR)
-    logging.getLogger('elasticsearch').setLevel(logging.ERROR)
-
 
 def restore_persisted_data(apis):
     for api in apis:
@@ -311,10 +293,6 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def is_debug():
-    return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
-
-
 def do_run(cmd, asynchronous, print_output=False, env_vars={}):
     sys.stdout.flush()
     if asynchronous:
@@ -325,8 +303,7 @@ def do_run(cmd, asynchronous, print_output=False, env_vars={}):
         t.start()
         TMP_THREADS.append(t)
         return t
-    else:
-        return run(cmd)
+    return run(cmd)
 
 
 def start_proxy_for_service(service_name, port, default_backend_port, update_listener, quiet=False, params={}):
@@ -345,17 +322,23 @@ def start_proxy(port, backend_url, update_listener, quiet=False, params={}):
 
 
 def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
-    moto_server_cmd = '%s/bin/moto_server' % LOCALSTACK_VENV_FOLDER
-    if not os.path.exists(moto_server_cmd):
-        moto_server_cmd = run('which moto_server').strip()
-    if USE_SSL and not backend_port:
-        backend_port = get_free_tcp_port()
-    cmd = 'VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s' % (moto_server_cmd, key, backend_port or port, constants.BIND_HOST)
     if not name:
         name = key
     print('Starting mock %s (%s port %s)...' % (name, get_service_protocol(), port))
+    if USE_SSL and not backend_port:
+        backend_port = get_free_tcp_port()
     if backend_port:
         start_proxy_for_service(key, port, backend_port, update_listener)
+    if config.BUNDLE_API_PROCESSES:
+        return multiserver.start_api_server(key, backend_port or port)
+    return start_moto_server_separate(key, port, name=name, backend_port=backend_port, asynchronous=asynchronous)
+
+
+def start_moto_server_separate(key, port, name=None, backend_port=None, asynchronous=False):
+    moto_server_cmd = '%s/bin/moto_server' % LOCALSTACK_VENV_FOLDER
+    if not os.path.exists(moto_server_cmd):
+        moto_server_cmd = run('which moto_server').strip()
+    cmd = 'VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s' % (moto_server_cmd, key, backend_port or port, constants.BIND_HOST)
     return do_run(cmd, asynchronous)
 
 
@@ -586,7 +569,7 @@ def start_infra(asynchronous=False, apis=None):
         # load plugins
         load_plugins()
 
-        event_publisher.fire_event(event_publisher.EVENT_START_INFRA)
+        event_publisher.fire_event(event_publisher.EVENT_START_INFRA, {'d': in_docker() and 1 or 0})
 
         # set up logging
         setup_logging()
@@ -597,7 +580,8 @@ def start_infra(asynchronous=False, apis=None):
         os.environ['AWS_REGION'] = DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
         # register signal handlers
-        register_signal_handlers()
+        if not os.environ.get(ENV_INTERNAL_TEST_RUN):
+            register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
         # install libs if not present

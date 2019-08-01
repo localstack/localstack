@@ -1,10 +1,12 @@
 {
   "name": "localstack",
-  "author": "Waldemar Hummer (Atlassian) <waldemar.hummer@gmail.com>",
+  "author": "Waldemar Hummer <waldemar.hummer@gmail.com>",
   "description": "Local Cloud Stack and Utilities",
   "version": "0.0.1",
   "dependencies": {
-    "kinesalite": "1.14.0",
-    "leveldown": "3.0.1"
+    "kinesalite": "1.15.0"
+  },
+  "optionalDependencies": {
+    "leveldown": "^4.0.1"
   }
 }

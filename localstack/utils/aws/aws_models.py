@@ -289,7 +289,7 @@ class EventSource(Component):
         inst = None
         if obj.startswith('arn:aws:kinesis:'):
             inst = KinesisStream(obj)
-        if obj.startswith('arn:aws:lambda:'):
+        elif obj.startswith('arn:aws:lambda:'):
             inst = LambdaFunction(obj)
         elif obj.startswith('arn:aws:dynamodb:'):
             if '/stream/' in obj:

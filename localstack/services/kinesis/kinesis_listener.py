@@ -20,6 +20,38 @@ class ProxyListenerKinesis(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
         data = json.loads(to_str(data))
+        action = headers.get('X-Amz-Target')
+
+        if action == '%s.DescribeStreamSummary' % ACTION_PREFIX:
+            stream_arn = data.get('StreamARN') or data['StreamName']
+            # TODO fix values below
+            result = {
+                'StreamDescriptionSummary': {
+                    'ConsumerCount': 0,
+                    'EnhancedMonitoring': [],
+                    'KeyId': 'string',
+                    'OpenShardCount': 0,
+                    'RetentionPeriodHours': 1,
+                    'StreamARN': stream_arn,
+                    # 'StreamCreationTimestamp': number,
+                    'StreamName': data['StreamName'],
+                    'StreamStatus': 'ACTIVE'
+                }
+            }
+            return result
+        if action == '%s.DescribeStreamConsumer' % ACTION_PREFIX:
+            consumer_arn = data.get('ConsumerARN') or data['ConsumerName']
+            consumer_name = data.get('ConsumerName') or data['ConsumerARN']
+            result = {
+                'ConsumerDescription': {
+                    'ConsumerARN': consumer_arn,
+                    # 'ConsumerCreationTimestamp': number,
+                    'ConsumerName': consumer_name,
+                    'ConsumerStatus': 'ACTIVE',
+                    'StreamARN': data.get('StreamARN')
+                }
+            }
+            return result
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
             action = headers.get('X-Amz-Target')

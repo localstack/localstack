@@ -28,13 +28,17 @@ def start_elasticsearch(port=None, delete_data=True, asynchronous=False, update_
     backend_port = DEFAULT_PORT_ELASTICSEARCH_BACKEND
     es_data_dir = '%s/infra/elasticsearch/data' % (ROOT_PATH)
     es_tmp_dir = '%s/infra/elasticsearch/tmp' % (ROOT_PATH)
+    es_mods_dir = '%s/infra/elasticsearch/modules' % (ROOT_PATH)
     if config.DATA_DIR:
         es_data_dir = '%s/elasticsearch' % config.DATA_DIR
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
     cmd = (('%s/infra/elasticsearch/bin/elasticsearch ' +
-        '-E http.port=%s -E http.publish_port=%s -E http.compression=false -E path.data=%s') %
+        '-E http.port=%s -E http.publish_port=%s -E http.compression=false ' +
+        '-E path.data=%s') %
         (ROOT_PATH, backend_port, backend_port, es_data_dir))
+    if os.path.exists(os.path.join(es_mods_dir, 'x-pack-ml')):
+        cmd += ' -E xpack.ml.enabled=false'
     env_vars = {
         'ES_JAVA_OPTS': os.environ.get('ES_JAVA_OPTS', '-Xms200m -Xmx600m'),
         'ES_TMPDIR': es_tmp_dir
@@ -52,7 +56,7 @@ def start_elasticsearch(port=None, delete_data=True, asynchronous=False, update_
     start_proxy_for_service('elasticsearch', port, backend_port,
         update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})
     if is_root():
-        cmd = "su -c '%s' localstack" % cmd
+        cmd = "su localstack -c '%s'" % cmd
     thread = do_run(cmd, asynchronous, env_vars=env_vars)
     return thread
 

@@ -1,15 +1,17 @@
 import re
 import json
-
-from localstack.utils import common
 from requests.models import Response
-from localstack.utils.aws import aws_stack
 from six.moves.urllib import parse as urlparse
-from localstack.constants import APPLICATION_JSON
+from localstack.utils import common
+from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, APPLICATION_JSON
+from localstack.utils.aws import aws_stack
 
 # regex path patterns
 PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
 PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
+
+# template for SQS inbound data
+APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 
 # maps API ids to authorizers
 AUTHORIZERS = {}
@@ -128,12 +130,12 @@ def get_cors_response(headers):
     return response
 
 
-def get_rest_api_paths(rest_api_id):
-    apigateway = aws_stack.connect_to_service(service_name='apigateway')
+def get_rest_api_paths(rest_api_id, region_name=None):
+    apigateway = aws_stack.connect_to_service(service_name='apigateway', region_name=region_name)
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
     resource_map = {}
     for resource in resources['items']:
-        path = aws_stack.get_apigateway_path_for_resource(rest_api_id, resource['id'])
+        path = aws_stack.get_apigateway_path_for_resource(rest_api_id, resource['id'], region_name=region_name)
         resource_map[path] = resource
     return resource_map
 
@@ -154,3 +156,27 @@ def get_resource_for_path(path, path_map):
                 return match
         raise Exception('Ambiguous API path %s - matches found: %s' % (path, matches))
     return matches[0]
+
+
+def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region_name=None):
+    resources = {}
+    template = APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE
+    resource_path = path.replace('/', '')
+    region_name = region_name or DEFAULT_REGION
+    queue_name = aws_stack.sqs_queue_name(queue_arn)
+    sqs_region = aws_stack.extract_region_from_arn(queue_arn) or region_name
+    resources[resource_path] = [{
+        'httpMethod': 'POST',
+        'authorizationType': 'NONE',
+        'integrations': [{
+            'type': 'AWS',
+            'uri': 'arn:aws:apigateway:%s:sqs:path/%s/%s' % (
+                sqs_region, TEST_AWS_ACCOUNT_ID, queue_name
+            ),
+            'requestTemplates': {
+                'application/json': template
+            },
+        }]
+    }]
+    return aws_stack.create_api_gateway(
+        name=gateway_name, resources=resources, stage_name=stage_name, region_name=region_name)

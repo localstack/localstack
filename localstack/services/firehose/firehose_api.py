@@ -12,7 +12,8 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
 from localstack.utils.common import short_uid, to_str
 from localstack.utils.aws import aws_responses
-from localstack.utils.aws.aws_stack import get_s3_client, firehose_stream_arn, connect_elasticsearch
+from localstack.utils.aws.aws_stack import (
+    get_s3_client, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
 from boto3.dynamodb.types import TypeDeserializer
 from localstack.utils.kinesis import kinesis_connector
 
@@ -134,7 +135,7 @@ def process_records(records, shard_id, fh_d_stream):
 
 
 def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream_type_configuration=None,
-                  s3_destination=None, elasticsearch_destination=None, tags=None):
+                  s3_destination=None, elasticsearch_destination=None, tags=None, region_name=None):
     tags = tags or {}
     stream = {
         'DeliveryStreamType': delivery_stream_type,
@@ -158,11 +159,10 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
 
     if delivery_stream_type == 'KinesisStreamAsSource':
         kinesis_stream_name = delivery_stream_type_configuration.get('KinesisStreamARN').split('/')[1]
-        kinesis_connector.listen_to_kinesis(stream_name=kinesis_stream_name,
-                                            fh_d_stream=stream_name,
-                                            listener_func=process_records,
-                                            wait_until_started=True,
-                                            ddb_lease_table_suffix='-firehose')
+        kinesis_connector.listen_to_kinesis(
+            stream_name=kinesis_stream_name, fh_d_stream=stream_name,
+            listener_func=process_records, wait_until_started=True,
+            ddb_lease_table_suffix='-firehose', region_name=region_name)
     return stream
 
 
@@ -208,12 +208,13 @@ def post_request():
         }
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
-        response = create_stream(stream_name,
-                                 delivery_stream_type=data.get('DeliveryStreamType'),
-                                 delivery_stream_type_configuration=data.get('KinesisStreamSourceConfiguration'),
-                                 s3_destination=data.get('S3DestinationConfiguration'),
-                                 elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'),
-                                 tags=data.get('Tags'))
+        region_name = extract_region_from_auth_header(request.headers)
+        response = create_stream(
+            stream_name, delivery_stream_type=data.get('DeliveryStreamType'),
+            delivery_stream_type_configuration=data.get('KinesisStreamSourceConfiguration'),
+            s3_destination=data.get('S3DestinationConfiguration'),
+            elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'),
+            tags=data.get('Tags'), region_name=region_name)
     elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = delete_stream(stream_name)

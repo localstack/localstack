@@ -1,24 +1,26 @@
-package com.atlassian;
+package cloud.localstack;
 
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
 import com.amazonaws.services.kinesis.multilang.MultiLangDaemon;
 import com.amazonaws.services.kinesis.multilang.MultiLangDaemonConfig;
 
 /**
- * Custom extensions to <code>MultiLangDaemon</code> class from amazon-kinesis-client
- * project, introducing the following additional configuration properties:
- *
- * - dynamodbEndpoint: endpoint host (hostname:port) for DynamoDB API
- * - dynamodbProtocol: protocol for DynamoDB API (http or https)
- * - kinesisProtocol: protocol for Kinesis API (http or https)
- * - metricsLevel: level of CloudWatch metrics to report (e.g., SUMMARY or NONE)
- *
- * @author Waldemar Hummer
- */
+* Custom extensions to <code>MultiLangDaemon</code> class from amazon-kinesis-client
+* project, introducing the following additional configuration properties:
+*
+* - dynamodbEndpoint: endpoint host (hostname:port) for DynamoDB API
+* - dynamodbProtocol: protocol for DynamoDB API (http or https)
+* - kinesisProtocol: protocol for Kinesis API (http or https)
+* - metricsLevel: level of CloudWatch metrics to report (e.g., SUMMARY or NONE)
+*
+* @author Waldemar Hummer
+*/
 public class KinesisStarter {
 
 	private static final String PROP_DYNAMODB_ENDPOINT = "dynamodbEndpoint";
@@ -69,7 +71,7 @@ public class KinesisStarter {
 		Future<Integer> future = executorService.submit(daemon);
 		System.exit(future.get());
 	}
-	
+
 	private static Properties loadProps(String file) throws Exception {
 		Properties props = new Properties();
 		props.load(Thread.currentThread().getContextClassLoader().getResourceAsStream(file));

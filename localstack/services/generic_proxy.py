@@ -1,12 +1,14 @@
 import os
 import sys
 import ssl
+import json
 import socket
 import inspect
 import logging
 import traceback
 import click
 import requests
+from ssl import SSLError
 from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
@@ -37,7 +39,7 @@ if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -90,7 +92,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.proxy = server.my_object
         self.data_bytes = None
         self.protocol_version = self.proxy.protocol_version
-        BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        try:
+            BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        except SSLError as e:
+            LOG.warning('SSL error when handling request: %s' % e)
 
     def parse_request(self):
         result = BaseHTTPRequestHandler.parse_request(self)
@@ -149,23 +154,27 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         content_length = self.headers.get('Content-Length')
         if content_length:
             self.data_bytes = self.rfile.read(int(content_length))
-        else:
-            self.data_bytes = None
-            if self.method in (requests.post, requests.put):
-                # If the Content-Length header is missing, try to read
-                # content from the socket using a socket timeout.
-                socket_timeout_secs = 0.5
-                self.request.settimeout(socket_timeout_secs)
-                while True:
-                    try:
-                        # TODO find a more efficient way to do this!
-                        tmp = self.rfile.read(1)
-                        if self.data_bytes is None:
-                            self.data_bytes = tmp
-                        else:
-                            self.data_bytes += tmp
-                    except socket.timeout:
-                        break
+            return
+
+        self.data_bytes = None
+        if self.method in (requests.post, requests.put):
+            LOG.warning('Expected Content-Length header not found in POST/PUT request')
+
+            # If the Content-Length header is missing, try to read
+            # content from the socket using a socket timeout.
+            socket_timeout_secs = 0.5
+            self.request.settimeout(socket_timeout_secs)
+            block_length = 1
+            while True:
+                try:
+                    # TODO find a more efficient way to do this!
+                    tmp = self.rfile.read(block_length)
+                    if self.data_bytes is None:
+                        self.data_bytes = tmp
+                    else:
+                        self.data_bytes += tmp
+                except socket.timeout:
+                    break
 
     def build_x_forwarded_for(self, headers):
         x_forwarded_for = headers.get('X-Forwarded-For')
@@ -199,6 +208,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
         forward_headers['X-Forwarded-For'] = self.build_x_forwarded_for(forward_headers)
 
+        # force close connection
+        if forward_headers.get('Connection', '').lower() != 'keep-alive':
+            self.close_connection = 1
+
         try:
             response = None
             modified_request = None
@@ -211,6 +224,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 if isinstance(listener_result, Response):
                     response = listener_result
                     break
+                if isinstance(listener_result, dict):
+                    response = Response()
+                    response._content = json.dumps(listener_result)
+                    response.status_code = 200
+                    break
                 elif isinstance(listener_result, Request):
                     modified_request = listener_result
                     data = modified_request.data
@@ -220,16 +238,22 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     # get status code from response, or use Bad Gateway status code
                     code = listener_result if isinstance(listener_result, int) else 503
                     self.send_response(code)
+                    self.send_header('Content-Length', '0')
                     self.end_headers()
                     return
             # perform the actual invocation of the backend service
             if response is None:
+                forward_headers['Connection'] = forward_headers.get('Connection') or 'close'
+                data_to_send = self.data_bytes
+                request_url = proxy_url
                 if modified_request:
-                    response = self.method(proxy_url, data=modified_request.data,
-                        headers=modified_request.headers, stream=True)
-                else:
-                    response = self.method(proxy_url, data=self.data_bytes,
-                        headers=forward_headers, stream=True)
+                    if modified_request.url:
+                        request_url = '%s%s' % (self.proxy.forward_url, modified_request.url)
+                    data_to_send = modified_request.data
+
+                response = self.method(request_url, data=data_to_send,
+                    headers=forward_headers, stream=True)
+
                 # prevent requests from processing response body
                 if not response._content_consumed and response.raw:
                     response._content = response.raw.read()
@@ -275,16 +299,16 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             if response.content and len(response.content):
                 self.wfile.write(to_bytes(response.content))
-            self.wfile.flush()
         except Exception as e:
             trace = str(traceback.format_exc())
-            conn_errors = ('ConnectionRefusedError', 'NewConnectionError')
+            conn_errors = ('ConnectionRefusedError', 'NewConnectionError',
+                           'Connection aborted', 'Unexpected EOF')
             conn_error = any(e in trace for e in conn_errors)
             error_msg = 'Error forwarding request: %s %s' % (e, trace)
             if 'Broken pipe' in trace:
-                LOGGER.warn('Connection prematurely closed by client (broken pipe).')
+                LOG.warn('Connection prematurely closed by client (broken pipe).')
             elif not self.proxy.quiet or not conn_error:
-                LOGGER.error(error_msg)
+                LOG.error(error_msg)
                 if os.environ.get(ENV_INTERNAL_TEST_RUN):
                     # During a test run, we also want to print error messages, because
                     # log messages are delayed until the entire test run is over, and
@@ -294,6 +318,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             # force close connection
             self.close_connection = 1
+        finally:
+            try:
+                self.wfile.flush()
+            except Exception as e:
+                LOG.warning('Unable to flush write file: %s' % e)
 
     def log_message(self, format, *args):
         return
@@ -329,7 +358,7 @@ class GenericProxy(FuncThread):
             self.httpd.serve_forever()
         except Exception as e:
             if not self.quiet or not self.server_stopped:
-                LOGGER.error('Exception running proxy on port %s: %s %s' % (self.port, e, traceback.format_exc()))
+                LOG.error('Exception running proxy on port %s: %s %s' % (self.port, e, traceback.format_exc()))
 
     def stop(self, quiet=False):
         self.quiet = quiet

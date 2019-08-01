@@ -30,12 +30,19 @@ env:
     - JAVA_HOME=/usr/lib/jvm/java-8-oracle
 
 install:
+  - set -e
   - make reinstall-p3
   - make init
   - make prepare-java-tests-if-changed
+  - nohup docker pull lambci/lambda:nodejs8.10 > /dev/null &
+  - nohup docker pull lambci/lambda:ruby2.5 > /dev/null &
+  - nohup docker pull lambci/lambda:python3.6 > /dev/null &
+  - nohup docker pull lambci/lambda:dotnetcore2.0 > /dev/null &
+  - nohup docker pull lambci/lambda:java8 > /dev/null &
 
 script:
   - set -e # fail fast
+  - (while [ 1 ]; do top -o %MEM -n1 | grep 'KiB Mem'; sleep 30; done) &
   # run tests using Python 3
   - DEBUG=1 LAMBDA_EXECUTOR=docker TEST_ERROR_INJECTION=1 make test
   # run tests using Python 2

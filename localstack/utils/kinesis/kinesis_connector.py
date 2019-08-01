@@ -2,19 +2,20 @@
 
 import os
 import re
-import tempfile
-import time
-import threading
 import logging
+import tempfile
+import threading
+import subprocess32 as subprocess
 from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
 from localstack import config
 from localstack.config import HOSTNAME, USE_SSL
-from localstack.constants import LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, REGION_LOCAL, DEFAULT_REGION
+from localstack.constants import (
+    LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, DEFAULT_REGION)
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid,
+    run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid, to_str,
     chmod_r, rm_rf, ShellCommandThread, FuncThread)
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.aws.aws_models import KinesisStream
@@ -26,7 +27,7 @@ LOG_FILE_PATTERN = os.path.join(tempfile.gettempdir(), 'kclipy.*.log')
 DEFAULT_DDB_LEASE_TABLE_SUFFIX = '-kclapp'
 
 # define Java class names
-MULTI_LANG_DAEMON_CLASS = 'com.atlassian.KinesisStarter'
+MULTI_LANG_DAEMON_CLASS = 'cloud.localstack.KinesisStarter'
 
 # set up log levels
 logging.SEVERE = 60
@@ -118,9 +119,8 @@ class KinesisProcessorThread(ShellCommandThread):
         if not params['log_file']:
             params['log_file'] = '%s.log' % props_file
             TMP_FILES.append(params['log_file'])
-        # print(cmd)
         env = aws_stack.get_environment()
-        quiet = env.region == REGION_LOCAL
+        quiet = aws_stack.is_local_env(env)
         ShellCommandThread.__init__(self, cmd, outfile=params['log_file'], env_vars=env_vars, quiet=quiet)
 
     @staticmethod
@@ -131,6 +131,7 @@ class KinesisProcessorThread(ShellCommandThread):
 
 
 class OutputReaderThread(FuncThread):
+
     def __init__(self, params):
         FuncThread.__init__(self, self.start_reading, params)
         self.buffer = []
@@ -199,13 +200,23 @@ class OutputReaderThread(FuncThread):
                     self.buffer = []
 
     def _tail(self, file):
+        p = subprocess.Popen(['tail', '-f', file], stdout=subprocess.PIPE)
+        while True:
+            line = p.stdout.readline()
+            if not line:
+                break
+            line = to_str(line)
+            yield line.replace('\n', '')
+
+    def _tail_native(self, file):
+        # deprecated
         with open(file) as f:
             while self.running:
                 line = f.readline()
-                if line:  # empty if at EOF
-                    yield line.replace('\n', '')
-                else:
-                    time.sleep(0.1)
+                if not line:
+                    # empty if at EOF (non-empty, including newline, if not at EOF)
+                    return
+                yield line.replace('\n', '')
 
     def stop(self, quiet=True):
         self._stop_event.set()
@@ -257,7 +268,7 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
         'env_vars': env_vars
     }
     # set local connection
-    if env.region == REGION_LOCAL:
+    if aws_stack.is_local_env(env):
         stream_info['conn_kwargs'] = {
             'host': HOSTNAME,
             'port': config.PORT_KINESIS,
@@ -274,7 +285,7 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
 
 
 def start_kcl_client_process(stream_name, listener_script, log_file=None, env=None, configs={},
-        endpoint_url=None, ddb_lease_table_suffix=None, env_vars={},
+        endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}, region_name=None,
         kcl_log_level=DEFAULT_KCL_LOG_LEVEL, log_subscribers=[]):
     env = aws_stack.get_environment(env)
     # decide which credentials provider to use
@@ -282,13 +293,13 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     if (('AWS_ASSUME_ROLE_ARN' in os.environ or 'AWS_ASSUME_ROLE_ARN' in env_vars) and
             ('AWS_ASSUME_ROLE_SESSION_NAME' in os.environ or 'AWS_ASSUME_ROLE_SESSION_NAME' in env_vars)):
         # use special credentials provider that can assume IAM roles and handle temporary STS auth tokens
-        credentialsProvider = 'com.atlassian.DefaultSTSAssumeRoleSessionCredentialsProvider'
+        credentialsProvider = 'cloud.localstack.DefaultSTSAssumeRoleSessionCredentialsProvider'
         # pass through env variables to child process
         for var_name in ['AWS_ASSUME_ROLE_ARN', 'AWS_ASSUME_ROLE_SESSION_NAME',
                 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_SESSION_TOKEN']:
             if var_name in os.environ and var_name not in env_vars:
                 env_vars[var_name] = os.environ[var_name]
-    if env.region == REGION_LOCAL:
+    if aws_stack.is_local_env(env):
         # need to disable CBOR protocol, enforce use of plain JSON,
         # see https://github.com/mhart/kinesalite/issues/31
         env_vars['AWS_CBOR_DISABLE'] = 'true'
@@ -313,7 +324,7 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
         'initialPositionInStream': 'LATEST'
     }
     # set parameters for local connection
-    if env.region == REGION_LOCAL:
+    if aws_stack.is_local_env(env):
         kwargs['kinesisEndpoint'] = '%s:%s' % (HOSTNAME, config.PORT_KINESIS)
         kwargs['dynamodbEndpoint'] = '%s:%s' % (HOSTNAME, config.PORT_DYNAMODB)
         kwargs['kinesisProtocol'] = 'http%s' % ('s' if USE_SSL else '')
@@ -323,7 +334,7 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     # create config file
     kclipy_helper.create_config_file(config_file=props_file, executableName=listener_script,
         streamName=stream_name, applicationName=stream_info['app_name'],
-        credentialsProvider=credentialsProvider, **kwargs)
+        credentialsProvider=credentialsProvider, region_name=region_name, **kwargs)
     TMP_FILES.append(props_file)
     # start stream consumer
     stream = KinesisStream(id=stream_name, params=stream_info)
@@ -340,11 +351,11 @@ def generate_processor_script(events_file, log_file=None):
         log_file = 'None'
     content = """#!/usr/bin/env python
 import os, sys, glob, json, socket, time, logging, tempfile
-import subprocess32 as subprocess
 logging.basicConfig(level=logging.INFO)
 for path in glob.glob('%s/lib/python*/site-packages'):
     sys.path.insert(0, path)
 sys.path.insert(0, '%s')
+import subprocess32 as subprocess
 from localstack.config import DEFAULT_ENCODING
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.common import timestamp
@@ -395,7 +406,7 @@ if __name__ == '__main__':
 def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
         events_file=None, endpoint_url=None, log_file=None, configs={}, env=None,
         ddb_lease_table_suffix=None, env_vars={}, kcl_log_level=DEFAULT_KCL_LOG_LEVEL,
-        log_subscribers=[], wait_until_started=False, fh_d_stream=None):
+        log_subscribers=[], wait_until_started=False, fh_d_stream=None, region_name=None):
     """
     High-level function that allows to subscribe to a Kinesis stream
     and receive events in a listener function. A KCL client process is
@@ -426,7 +437,7 @@ def listen_to_kinesis(stream_name, listener_func=None, processor_script=None,
     process = start_kcl_client_process(stream_name, processor_script,
         endpoint_url=endpoint_url, log_file=log_file, configs=configs, env=env,
         ddb_lease_table_suffix=ddb_lease_table_suffix, env_vars=env_vars, kcl_log_level=kcl_log_level,
-        log_subscribers=log_subscribers)
+        log_subscribers=log_subscribers, region_name=region_name)
 
     if wait_until_started:
         # Wait at most 90 seconds for initialization. Note that creating the DDB table can take quite a bit

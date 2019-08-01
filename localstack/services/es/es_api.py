@@ -37,18 +37,19 @@ def get_domain_config_status():
 
 
 def get_domain_config(domain_name):
+    config_status = get_domain_config_status()
     return {
         'DomainConfig': {
             'AccessPolicies': {
                 'Options': '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::%s:root"},"Action":"es:*","Resource":"arn:aws:es:%s:%s:domain/%s/*"}]}' % (TEST_AWS_ACCOUNT_ID, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),  # noqa: E501
-                'Status': get_domain_config_status()
+                'Status': config_status
             },
             'AdvancedOptions': {
                 'Options': {
                     'indices.fielddata.cache.size': '',
                     'rest.action.multi.allow_explicit_index': 'true'
                 },
-                'Status': get_domain_config_status()
+                'Status': config_status
             },
             'EBSOptions': {
                 'Options': {
@@ -58,7 +59,7 @@ def get_domain_config(domain_name):
                     'VolumeSize': 10,
                     'VolumeType': 'gp2'
                 },
-                'Status': get_domain_config_status()
+                'Status': config_status
             },
             'ElasticsearchClusterConfig': {
                 'Options': {
@@ -69,21 +70,20 @@ def get_domain_config(domain_name):
                     'InstanceType': 'm3.medium.elasticsearch',
                     'ZoneAwarenessEnabled': False
                 },
-                'Status': get_domain_config_status()
+                'Status': config_status
             },
             'ElasticsearchVersion': {
                 'Options': '5.3',
-                'Status': get_domain_config_status()
+                'Status': config_status
             },
             'EncryptionAtRestOptions': {
                 'Options': {
                     'Enabled': False,
                     'KmsKeyId': ''
                 },
-                'Status': get_domain_config_status()
+                'Status': config_status
             },
             'LogPublishingOptions': {
-                'Status': get_domain_config_status(),
                 'Options': {
                     'INDEX_SLOW_LOGS': {
                         'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
@@ -93,13 +93,14 @@ def get_domain_config(domain_name):
                         'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
                         'Enabled': False,
                     }
-                }
+                },
+                'Status': config_status
             },
             'SnapshotOptions': {
                 'Options': {
                     'AutomatedSnapshotStartHour': randint(0, 23)
                 },
-                'Status': get_domain_config_status()
+                'Status': config_status
             },
             'VPCOptions': {
                 'Options': {
@@ -114,7 +115,7 @@ def get_domain_config(domain_name):
                     ],
                     'VPCId': 'vpc-12345678'
                 },
-                'Status': get_domain_config_status()
+                'Status': config_status
             }
         }
     }
@@ -137,7 +138,7 @@ def get_domain_status(domain_name, deleted=False):
                 'ZoneAwarenessEnabled': False
             },
             'ElasticsearchVersion': '6.7',
-            'Endpoint': aws_stack.get_elasticsearch_endpoint(),
+            'Endpoint': aws_stack.get_elasticsearch_endpoint(domain_name),
             'Processing': False,
             'EBSOptions': {
                 'EBSEnabled': True,

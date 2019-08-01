@@ -10,6 +10,8 @@ import six
 from boto3 import Session
 from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI
 
+TRUE_VALUES = ('1', 'true')
+
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
@@ -30,7 +32,7 @@ SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
 
 # whether to remotely copy the lambda or locally mount a volume
-LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').lower().strip() in ['true', '1']
+LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').lower().strip() in TRUE_VALUES
 
 # network that the docker lambda container will be joining
 LAMBDA_DOCKER_NETWORK = os.environ.get('LAMBDA_DOCKER_NETWORK', '').strip()
@@ -75,7 +77,7 @@ EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').stri
 
 def has_docker():
     try:
-        subprocess.check_output('docker ps', shell=True)
+        subprocess.check_output('docker ps', stdout=os.devnull, stderr=os.devnull, shell=True)
         return True
     except Exception:
         return False
@@ -243,9 +245,15 @@ def service_port(service_key):
 populate_configs()
 
 # set log level
-if os.environ.get('DEBUG', '').lower() in ('1', 'true'):
+if os.environ.get('DEBUG', '').lower() in TRUE_VALUES:
     logging.getLogger('').setLevel(logging.DEBUG)
     logging.getLogger('localstack').setLevel(logging.DEBUG)
+
+# whether to bundle multiple APIs into a single process, where possible
+BUNDLE_API_PROCESSES = True
+
+# whether to use a CPU/memory profiler when running the integration tests
+USE_PROFILER = os.environ.get('USE_PROFILER', '').lower() in TRUE_VALUES
 
 # set URL pattern of inbound API gateway
 INBOUND_GATEWAY_URL_PATTERN = ('%s/restapis/{api_id}/{stage_name}/%s{path}' %

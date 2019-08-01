@@ -11,7 +11,7 @@ from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     KinesisShard, KinesisStream, LambdaFunction)
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str
-from localstack.constants import REGION_LOCAL, DEFAULT_REGION
+from localstack.constants import DEFAULT_REGION
 from six import iteritems
 
 # TODO: CLI commands in this file need to be replaced with SDK calls!
@@ -94,7 +94,7 @@ def aws_cmd(service, env):
     cmd = '{ test `which aws` || . .venv/bin/activate; }; aws'
     endpoint_url = None
     env = aws_stack.get_environment(env)
-    if env.region == REGION_LOCAL:
+    if aws_stack.is_local_env(env):
         endpoint_url = aws_stack.get_local_service_url(service)
     if endpoint_url:
         if endpoint_url.startswith('https://'):
@@ -261,7 +261,7 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     if MOCK_OBJ:
         return ''
     env = aws_stack.get_environment(env)
-    if cache_time is None and env.region != REGION_LOCAL:
+    if cache_time is None and not aws_stack.is_local_env(env):
         cache_time = AWS_LAMBDA_CODE_CACHE_TIMEOUT
     out = cmd_lambda('get-function --function-name %s' % func_name, env, cache_time)
     out = json.loads(out)

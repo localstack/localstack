@@ -16,6 +16,7 @@ import logging
 import zipfile
 import binascii
 import tempfile
+import warnings
 import threading
 import traceback
 import subprocess
@@ -23,16 +24,15 @@ import six
 import shutil
 import requests
 from io import BytesIO
-from functools import wraps
 from contextlib import closing
 from datetime import datetime
-from six.moves.urllib.parse import urlparse
-from six.moves import cStringIO as StringIO
 from six import with_metaclass
+from six.moves import cStringIO as StringIO
+from six.moves.urllib.parse import urlparse
 from multiprocessing.dummy import Pool
-from localstack.constants import ENV_DEV, LOCALSTACK_ROOT_FOLDER
-from localstack.config import DEFAULT_ENCODING
 from localstack import config
+from localstack.config import DEFAULT_ENCODING
+from localstack.constants import ENV_DEV
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -56,6 +56,9 @@ DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 # set up logger
 LOG = logging.getLogger(__name__)
+# log format strings
+LOG_FORMAT = '%(asctime)s:%(levelname)s:%(name)s: %(message)s'
+LOG_DATE_FORMAT = TIMESTAMP_FORMAT
 
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
@@ -74,7 +77,10 @@ class CustomEncoder(json.JSONEncoder):
             return str(o)
         if isinstance(o, six.binary_type):
             return to_str(o)
-        return super(CustomEncoder, self).default(o)
+        try:
+            return super(CustomEncoder, self).default(o)
+        except Exception:
+            return None
 
 
 class FuncThread(threading.Thread):
@@ -104,24 +110,29 @@ class ShellCommandThread(FuncThread):
     """ Helper class to run a shell command in a background thread. """
 
     def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
-            quiet=True, inherit_cwd=False):
+            quiet=True, inherit_cwd=False, inherit_env=True):
         self.cmd = cmd
         self.process = None
         self.outfile = outfile or os.devnull
         self.stdin = stdin
         self.env_vars = env_vars
         self.inherit_cwd = inherit_cwd
+        self.inherit_env = inherit_env
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
 
         def convert_line(line):
             line = to_str(line or '')
-            return line.strip() + '\r\n'
+            return '%s\r\n' % line.strip()
+
+        def filter_line(line):
+            """ Return True if this line should be filtered, i.e., not printed """
+            return '(Press CTRL+C to quit)' in line
 
         try:
             self.process = run(self.cmd, asynchronous=True, stdin=self.stdin, outfile=self.outfile,
-                env_vars=self.env_vars, inherit_cwd=self.inherit_cwd)
+                env_vars=self.env_vars, inherit_cwd=self.inherit_cwd, inherit_env=self.inherit_env)
             if self.outfile:
                 if self.outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
@@ -135,6 +146,8 @@ class ShellCommandThread(FuncThread):
                             if not (line and line.strip()) and self.is_killed():
                                 break
                             line = convert_line(line)
+                            if filter_line(line):
+                                continue
                             outstream.write(line)
                             outstream.flush()
                 self.process.wait()
@@ -340,6 +353,43 @@ def has_docker():
         return False
 
 
+def setup_logging():
+    # determine and set log level
+    log_level = logging.DEBUG if is_debug() else logging.INFO
+    logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
+
+    # set up werkzeug logger
+
+    class WerkzeugLogFilter(logging.Filter):
+        def filter(self, record):
+            return record.name != 'werkzeug'
+
+    root_handlers = logging.getLogger().handlers
+    if len(root_handlers) > 0:
+        root_handlers[0].addFilter(WerkzeugLogFilter())
+        if is_debug():
+            format = '%(asctime)s:API: %(message)s'
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.INFO)
+            handler.setFormatter(logging.Formatter(format))
+            logging.getLogger('werkzeug').addHandler(handler)
+
+    # disable some logs and warnings
+    warnings.filterwarnings('ignore')
+    logging.captureWarnings(True)
+    logging.getLogger('boto3').setLevel(logging.INFO)
+    logging.getLogger('s3transfer').setLevel(logging.INFO)
+    logging.getLogger('docker').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+    logging.getLogger('botocore').setLevel(logging.ERROR)
+    logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+
+
+def is_debug():
+    return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
+
+
 def is_port_open(port_or_url, http_path=None, expect_success=True):
     port = port_or_url
     host = 'localhost'
@@ -506,7 +556,9 @@ def rm_rf(path):
         return
     # Make sure all files are writeable and dirs executable to remove
     chmod_r(path, 0o777)
-    if os.path.isfile(path):
+    # check if the file is either a normal file, or, e.g., a fifo
+    exists_but_non_dir = os.path.exists(path) and not os.path.isdir(path)
+    if os.path.isfile(path) or exists_but_non_dir:
         os.remove(path)
     else:
         shutil.rmtree(path)
@@ -813,7 +865,8 @@ def run_cmd_safe(**kwargs):
 
 
 def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=False,
-        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False, tty=False):
+        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
+        inherit_env=True, tty=False):
     # don't use subprocess module inn Python 2 as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
     if six.PY2:
@@ -821,7 +874,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=
     else:
         import subprocess
 
-    env_dict = os.environ.copy()
+    env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
 
@@ -877,6 +930,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=
 
     if cache_duration_secs <= 0:
         return do_run(cmd)
+
     hash = md5(cmd)
     cache_file = CACHE_FILE_PATTERN.replace('*', hash)
     if os.path.isfile(cache_file):
@@ -951,40 +1005,6 @@ class SafeStringIO(io.StringIO):
         if six.PY2 and isinstance(obj, str):
             obj = obj.decode('unicode-escape')
         return super(SafeStringIO, self).write(obj)
-
-
-def profiled(lines=50):
-    """ Function decorator that profiles code execution. """
-    skipped_lines = ['site-packages', 'lib/python']
-    skipped_lines = []
-
-    def wrapper(f):
-        @wraps(f)
-        def wrapped(*args, **kwargs):
-            import yappi
-            yappi.start()
-            try:
-                return f(*args, **kwargs)
-            finally:
-                result = list(yappi.get_func_stats())
-                yappi.stop()
-                yappi.clear_stats()
-                result = [l for l in result if all([s not in l.full_name for s in skipped_lines])]
-                entries = result[:lines]
-                prefix = LOCALSTACK_ROOT_FOLDER
-                result = []
-                result.append('ncall\tttot\ttsub\ttavg\tname')
-
-                def c(num):
-                    return str(num)[:7]
-
-                for e in entries:
-                    name = e.full_name.replace(prefix, '')
-                    result.append('%s\t%s\t%s\t%s\t%s' % (c(e.ncall), c(e.ttot), c(e.tsub), c(e.tavg), name))
-                result = '\n'.join(result)
-                print(result)
-        return wrapped
-    return wrapper
 
 
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,

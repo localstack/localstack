@@ -243,11 +243,13 @@ def process_kinesis_records(records, stream_name):
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sqs_message(message_body, message_attributes, queue_name):
-    # feed message into the first listening lambda
+def process_sqs_message(message_body, message_attributes, queue_name, region_name=None):
+    # feed message into the first listening lambda (message should only get processed once)
     try:
-        queue_arn = aws_stack.sqs_queue_arn(queue_name)
-        source = next(iter(get_event_sources(source_arn=queue_arn)), None)
+        queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=region_name)
+        sources = get_event_sources(source_arn=queue_arn)
+        LOG.debug('Found %s source mappings for event from SQS queue %s' % (len(sources), queue_arn))
+        source = next(iter(sources), None)
         if source:
             arn = source['FunctionArn']
             event = {'Records': [{
@@ -256,7 +258,7 @@ def process_sqs_message(message_body, message_attributes, queue_name):
                 'md5OfBody': md5(message_body),
                 'eventSourceARN': queue_arn,
                 'eventSource': 'aws:sqs',
-                'awsRegion': aws_stack.get_local_region(),
+                'awsRegion': region_name,
                 'messageId': str(uuid.uuid4()),
                 'attributes': {
                     'ApproximateFirstReceiveTimestamp': '{}000'.format(int(time.time())),
@@ -276,8 +278,8 @@ def process_sqs_message(message_body, message_attributes, queue_name):
 def get_event_sources(func_name=None, source_arn=None):
     result = []
     for m in event_source_mappings:
-        if not func_name or m['FunctionArn'] in [func_name, func_arn(func_name)]:
-            if not source_arn or m['EventSourceArn'].startswith(source_arn):
+        if not func_name or (m['FunctionArn'] in [func_name, func_arn(func_name)]):
+            if not source_arn or (m['EventSourceArn'].startswith(source_arn)):
                 result.append(m)
     return result
 
