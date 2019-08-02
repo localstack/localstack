@@ -7,8 +7,8 @@ from requests.models import Response
 from moto.server import main as moto_main
 from localstack import constants
 from localstack.utils.common import (
-    FuncThread, ShellCommandThread, TMP_THREADS, to_str, wait_for_port_open,
-    json_safe, setup_logging)
+    FuncThread, ShellCommandThread, TMP_THREADS, to_str, wait_for_port_open, json_safe)
+from localstack.utils.bootstrap import setup_logging
 from localstack.services.generic_proxy import ProxyListener, GenericProxy
 
 LOG = logging.getLogger('localstack.multiserver')

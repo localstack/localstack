@@ -8,8 +8,6 @@ import traceback
 import logging
 import boto3
 import subprocess
-import six
-import pkgutil
 from requests.models import Response
 from localstack import constants, config
 from localstack.config import USE_SSL
@@ -17,11 +15,12 @@ from localstack.constants import (
     ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
 from localstack.utils import common, persistence
-from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_free_tcp_port,
-    FuncThread, ShellCommandThread, mkdir, get_service_protocol, docker_container_running,
-    in_docker, is_debug, setup_logging)
+from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port,
+    FuncThread, ShellCommandThread, get_service_protocol, in_docker)
 from localstack.utils.server import multiserver
+from localstack.utils.bootstrap import setup_logging, is_debug, canonicalize_api_names
 from localstack.utils.analytics import event_publisher
+from localstack.utils.bootstrap import load_plugins
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
 from localstack.services.firehose import firehose_api
@@ -32,20 +31,6 @@ from localstack.services.dynamodbstreams import dynamodbstreams_api
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
 
-# maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
-PLUGINS_LOADED = {}
-
-# maps from API names to list of other API names that they depend on
-API_DEPENDENCIES = {
-    'dynamodbstreams': ['kinesis'],
-    'lambda': ['logs'],
-    'es': ['elasticsearch']
-}
-# composites define an abstract name like "serverless" that maps to a set of services
-API_COMPOSITES = {
-    'serverless': ['iam', 'lambda', 'dynamodb', 'apigateway', 's3', 'sns']
-}
-
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
@@ -54,13 +39,6 @@ LOG = logging.getLogger(os.path.basename(__file__))
 
 # map of service plugins, mapping from service name to plugin details
 SERVICE_PLUGINS = {}
-
-# whether or not to manually fix permissions on /var/run/docker.sock (currently disabled)
-DO_CHMOD_DOCKER_SOCK = False
-
-# plugin scopes
-PLUGIN_SCOPE_SERVICES = 'services'
-PLUGIN_SCOPE_COMMANDS = 'commands'
 
 
 # -----------------
@@ -95,53 +73,6 @@ class Plugin(object):
 
 def register_plugin(plugin):
     SERVICE_PLUGINS[plugin.name()] = plugin
-
-
-def load_plugin_from_path(file_path, scope=None):
-    if os.path.exists(file_path):
-        module = re.sub(r'(^|.+/)([^/]+)/plugins.py', r'\2', file_path)
-        method_name = 'register_localstack_plugins'
-        scope = scope or PLUGIN_SCOPE_SERVICES
-        if scope == PLUGIN_SCOPE_COMMANDS:
-            method_name = 'register_localstack_commands'
-        try:
-            namespace = {}
-            exec('from %s.plugins import %s' % (module, method_name), namespace)
-            method_to_execute = namespace[method_name]
-        except Exception as e:
-            if not re.match(r'.*cannot import name .*%s.*' % method_name, str(e)):
-                LOG.debug('Unable to load plugins from module %s: %s' % (module, e))
-            return
-        try:
-            return method_to_execute()
-        except Exception as e:
-            LOG.warning('Unable to load plugins from file %s: %s' % (file_path, e))
-
-
-def load_plugins(scope=None):
-    scope = scope or PLUGIN_SCOPE_SERVICES
-    if PLUGINS_LOADED.get(scope):
-        return PLUGINS_LOADED[scope]
-
-    setup_logging()
-
-    loaded_files = []
-    result = []
-    for module in pkgutil.iter_modules():
-        file_path = None
-        if six.PY3 and not isinstance(module, tuple):
-            file_path = '%s/%s/plugins.py' % (module.module_finder.path, module.name)
-        elif six.PY3 or isinstance(module[0], pkgutil.ImpImporter):
-            if hasattr(module[0], 'path'):
-                file_path = '%s/%s/plugins.py' % (module[0].path, module[1])
-        if file_path and file_path not in loaded_files:
-            plugin_config = load_plugin_from_path(file_path, scope=scope)
-            if plugin_config:
-                result.append(plugin_config)
-            loaded_files.append(file_path)
-    # set global flag
-    PLUGINS_LOADED[scope] = result
-    return result
 
 
 # -----------------------
@@ -414,154 +345,8 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
 
 
 # -------------
-# DOCKER STARTUP
-# -------------
-
-
-def start_infra_in_docker():
-
-    container_name = 'localstack_main'
-
-    if docker_container_running(container_name):
-        raise Exception('LocalStack container named "%s" is already running' % container_name)
-
-    # load plugins before starting the docker container
-    plugin_configs = load_plugins()
-    plugin_run_params = ' '.join([
-        entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
-
-    # prepare APIs
-    canonicalize_api_names()
-
-    services = os.environ.get('SERVICES', '')
-    entrypoint = os.environ.get('ENTRYPOINT', '')
-    cmd = os.environ.get('CMD', '')
-    user_flags = config.DOCKER_FLAGS
-    image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
-    service_ports = config.SERVICE_PORTS
-    force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
-
-    # construct port mappings
-    ports_list = sorted(service_ports.values())
-    start_port = 0
-    last_port = 0
-    port_ranges = []
-    for i in range(0, len(ports_list)):
-        if not start_port:
-            start_port = ports_list[i]
-        if not last_port:
-            last_port = ports_list[i]
-        if ports_list[i] > last_port + 1:
-            port_ranges.append([start_port, last_port])
-            start_port = ports_list[i]
-        elif i >= len(ports_list) - 1:
-            port_ranges.append([start_port, ports_list[i]])
-        last_port = ports_list[i]
-    port_mappings = ' '.join(
-        '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
-        if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
-        for entry in port_ranges)
-
-    if services:
-        port_mappings = ''
-        for service, port in service_ports.items():
-            port_mappings += ' -p {port}:{port}'.format(port=port)
-
-    env_str = ''
-    for env_var in config.CONFIG_ENV_VARS:
-        value = os.environ.get(env_var, None)
-        if value is not None:
-            env_str += '-e %s="%s" ' % (env_var, value)
-
-    data_dir_mount = ''
-    data_dir = os.environ.get('DATA_DIR', None)
-    if data_dir is not None:
-        container_data_dir = '/tmp/localstack_data'
-        data_dir_mount = '-v "%s:%s" ' % (data_dir, container_data_dir)
-        env_str += '-e DATA_DIR="%s" ' % container_data_dir
-
-    interactive = '' if force_noninteractive or in_ci() else '-it '
-
-    # append space if parameter is set
-    user_flags = '%s ' % user_flags if user_flags else user_flags
-    entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
-    plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
-
-    container_name = 'localstack_main'
-
-    docker_cmd = ('%s run %s%s%s%s%s' +
-        '--rm --privileged ' +
-        '--name %s ' +
-        '-p 8080:8080 %s %s' +
-        '-v "%s:/tmp/localstack" -v "%s:%s" ' +
-        '-e DOCKER_HOST="unix://%s" ' +
-        '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-            config.DOCKER_CMD, interactive, entrypoint, env_str, user_flags, plugin_run_params,
-            container_name, port_mappings, data_dir_mount, config.TMP_FOLDER, config.DOCKER_SOCK,
-            config.DOCKER_SOCK, config.DOCKER_SOCK, config.HOST_TMP_FOLDER, image_name, cmd
-    )
-
-    mkdir(config.TMP_FOLDER)
-    run_cmd_safe(cmd='chmod -R 777 "%s"' % config.TMP_FOLDER)
-
-    print(docker_cmd)
-    t = ShellCommandThread(docker_cmd, outfile=subprocess.PIPE)
-    t.start()
-    time.sleep(2)
-
-    if DO_CHMOD_DOCKER_SOCK:
-        # fix permissions on /var/run/docker.sock
-        for i in range(0, 100):
-            if docker_container_running(container_name):
-                break
-            time.sleep(2)
-        run('%s exec -u root "%s" chmod 777 /var/run/docker.sock' % (config.DOCKER_CMD, container_name))
-
-    t.process.wait()
-    sys.exit(t.process.returncode)
-
-
-# -------------
 # MAIN STARTUP
 # -------------
-
-
-def canonicalize_api_names(apis=None):
-    """ Finalize the list of API names by
-        (1) resolving and adding dependencies (e.g., "dynamodbstreams" requires "kinesis"),
-        (2) resolving and adding composites (e.g., "serverless" describes an ensemble
-                including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
-        (3) removing duplicates from the list. """
-
-    apis = apis or list(config.SERVICE_PORTS.keys())
-
-    def contains(apis, api):
-        for a in apis:
-            if a == api:
-                return True
-
-    # resolve composites
-    for comp, deps in API_COMPOSITES.items():
-        if contains(apis, comp):
-            apis.extend(deps)
-            config.SERVICE_PORTS.pop(comp)
-
-    # resolve dependencies
-    for i, api in enumerate(apis):
-        for dep in API_DEPENDENCIES.get(api, []):
-            if not contains(apis, dep):
-                apis.append(dep)
-
-    # remove duplicates and composite names
-    apis = list(set([a for a in apis if a not in API_COMPOSITES.keys()]))
-
-    # make sure we have port mappings for each API
-    for api in apis:
-        if api not in config.SERVICE_PORTS:
-            config.SERVICE_PORTS[api] = config.DEFAULT_SERVICE_PORTS.get(api)
-    config.populate_configs(config.SERVICE_PORTS)
-
-    return apis
 
 
 def start_infra(asynchronous=False, apis=None):

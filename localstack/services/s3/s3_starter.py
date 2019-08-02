@@ -8,7 +8,8 @@ from localstack.constants import DEFAULT_PORT_S3_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import wait_for_port_open
 from localstack.services.infra import (
-    get_service_protocol, start_proxy_for_service, do_run, setup_logging)
+    get_service_protocol, start_proxy_for_service, do_run)
+from localstack.utils.bootstrap import setup_logging
 
 LOGGER = logging.getLogger(__name__)
 

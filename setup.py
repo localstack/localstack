@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
 import re
 from setuptools import find_packages, setup
 
-# marker for extended/ignored libs in requirements.txt
+# marker for extended/ignored and basic libs in requirements.txt
 IGNORED_LIB_MARKER = '#extended-lib'
+BASIC_LIB_MARKER = '#basic-lib'
 
 # parameter variables
 install_requires = []
@@ -27,22 +26,28 @@ for line in re.split('\n', requirements):
     if line and line[0] == '#' and '#egg=' in line:
         line = re.search(r'#\s*(.*)', line).group(1)
     if line and line[0] != '#':
-        if '://' not in line and IGNORED_LIB_MARKER not in line:
+        # include only basic requirements here
+        if '://' not in line and BASIC_LIB_MARKER in line and IGNORED_LIB_MARKER not in line:
             install_requires.append(line)
+
+# copy requirements file, to make it available inside the package at runtime
+with open('localstack/requirements.copy.txt', 'w') as f:
+    f.write(requirements)
 
 
 package_data = {
     '': ['Makefile', '*.md'],
     'localstack': [
         'package.json',
+        'requirements*.txt',
         'dashboard/web/*.*',
         'dashboard/web/css/*',
         'dashboard/web/img/*',
         'dashboard/web/js/*',
         'dashboard/web/views/*',
         'ext/java/*.*',
-        'ext/java/src/main/java/com/atlassian/localstack/*.*',
-        'utils/kinesis/java/com/atlassian/*.*'
+        'ext/java/src/main/java/cloud/localstack/*.*',
+        'utils/kinesis/java/cloud/localstack/*.*'
     ]}
 
 
@@ -52,7 +57,7 @@ if __name__ == '__main__':
         name='localstack',
         version=version,
         description='An easy-to-use test/mocking framework for developing Cloud applications',
-        author='Waldemar Hummer (Atlassian)',
+        author='Waldemar Hummer',
         author_email='waldemar.hummer@gmail.com',
         url='https://github.com/localstack/localstack',
         scripts=['bin/localstack'],
