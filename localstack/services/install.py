@@ -7,9 +7,13 @@ import glob
 import shutil
 import logging
 import tempfile
+from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION,
     STEPFUNCTIONS_ZIP_URL)
+if __name__ == '__main__':
+    bootstrap.bootstrap_installation()
+# flake8: noqa: E402
 from localstack.utils.common import (
     download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r)
 

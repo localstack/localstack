@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import pip as pip_mod
 import time
 import pkgutil
 import logging
@@ -21,6 +22,7 @@ PLUGINS_LOADED = {}
 
 # marker for extended/ignored libs in requirements.txt
 IGNORED_LIB_MARKER = '#extended-lib'
+BASIC_LIB_MARKER = '#basic-lib'
 
 # whether or not to manually fix permissions on /var/run/docker.sock (currently disabled)
 DO_CHMOD_DOCKER_SOCK = False
@@ -46,7 +48,11 @@ API_COMPOSITES = {
 
 
 def bootstrap_installation():
-    pass
+    try:
+        from localstack.services import infra
+        assert infra
+    except Exception:
+        install_dependencies()
 
 
 def install_dependencies():
@@ -55,13 +61,18 @@ def install_dependencies():
         requirements = f.read()
     install_requires = []
     for line in re.split('\n', requirements):
-        if line and line[0] == '#' and '#egg=' in line:
-            line = re.search(r'#\s*(.*)', line).group(1)
         if line and line[0] != '#':
-            if '://' not in line and IGNORED_LIB_MARKER not in line:
+            if BASIC_LIB_MARKER not in line and IGNORED_LIB_MARKER not in line:
+                line = line.split(' #')[0].strip()
                 install_requires.append(line)
-    for dep in install_requires:
-        pass  # TODO
+    LOG.info('Lazily installing missing pip dependencies, this could take a while: %s' %
+             ', '.join(install_requires))
+    args = ['install'] + install_requires
+    if hasattr(pip_mod, 'main'):
+        pip_mod.main(args)
+    else:
+        import pip._internal
+        pip._internal.main(args)
 
 
 def load_plugin_from_path(file_path, scope=None):
@@ -112,7 +123,8 @@ def load_plugins(scope=None):
 
 
 def docker_container_running(container_name):
-    container_names = re.split(r'\s+', run("docker ps --format '{{.Names}}'").replace('\n', ' '))
+    output = to_str(run("docker ps --format '{{.Names}}'"))
+    container_names = re.split(r'\s+', output.replace('\n', ' '))
     return container_name in container_names
 
 
@@ -316,6 +328,10 @@ def start_infra_in_docker():
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
+
+
+def to_str(obj, errors='strict'):
+    return obj.decode('utf-8', errors) if isinstance(obj, six.binary_type) else obj
 
 
 def in_ci():
