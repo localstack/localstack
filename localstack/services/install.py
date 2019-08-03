@@ -31,6 +31,9 @@ INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_IN
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 
+# Target version for javac, to ensure compatibility with earlier JREs
+JAVAC_TARGET_VERSION = '1.8'
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -151,7 +154,7 @@ def install_amazon_kinesis_client_libs():
     java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % ROOT_PATH
     class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % ROOT_PATH
     if not glob.glob(class_files):
-        run('javac -cp "%s" %s' % (classpath, java_files))
+        run('javac -target %s -cp "%s" %s' % (JAVAC_TARGET_VERSION, classpath, java_files))
 
 
 def install_lambda_java_libs():
@@ -225,7 +228,7 @@ if __name__ == '__main__':
             logging.basicConfig(level=logging.INFO)
             logging.getLogger('requests').setLevel(logging.WARNING)
             install_all_components()
-            print('Done.')
-        elif sys.argv[1] == 'testlibs':
+        if sys.argv[1] in ('libs', 'testlibs'):
             # Install additional libraries for testing
             install_amazon_kinesis_client_libs()
+        print('Done.')

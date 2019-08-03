@@ -465,8 +465,6 @@ def get_java_handler(zip_file_content, handler, main_file):
 
 
 def set_archive_code(code, lambda_name, zip_file_content=None):
-    # get file content
-    zip_file_content = zip_file_content or get_zip_bytes(code)
 
     # get metadata
     lambda_arn = func_arn(lambda_name)
@@ -482,6 +480,9 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
         # file system! We must ensure that there is no data loss (i.e., we must *not* add
         # this folder to TMP_FILES or similar).
         return code['S3Key']
+
+    # get file content
+    zip_file_content = zip_file_content or get_zip_bytes(code)
 
     # Save the zip file to a temporary file that the lambda executors can reference
     code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
@@ -514,8 +515,9 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
 
     if code_passed:
         lambda_cwd = lambda_cwd or set_archive_code(code_passed, lambda_name)
-        # Save the zip file to a temporary file that the lambda executors can reference
-        zip_file_content = get_zip_bytes(code_passed)
+        if not is_local_mount:
+            # Save the zip file to a temporary file that the lambda executors can reference
+            zip_file_content = get_zip_bytes(code_passed)
     else:
         lambda_cwd = lambda_cwd or lambda_details.cwd
 

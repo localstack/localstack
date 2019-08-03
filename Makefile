@@ -44,7 +44,7 @@ init:              ## Initialize the infrastructure, make sure all libs are down
 	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py libs
 
 infra:             ## Manually start the local infrastructure for testing
-	($(VENV_RUN); exec bin/localstack start)
+	($(VENV_RUN); exec bin/localstack start --host)
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .
