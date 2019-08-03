@@ -19,17 +19,20 @@ Options:
 
 import os
 import sys
+import glob
 import json
 import traceback
 
-PARENT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
-if os.path.isdir(os.path.join(PARENT_FOLDER, '.venv')):
+PARENT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
+venv_dir = os.path.join(PARENT_FOLDER, '.venv')
+if os.path.isdir(venv_dir):
+    for path in glob.glob(os.path.join(venv_dir, 'lib/python*/site-packages')):
+        sys.path.insert(0, path)
     sys.path.insert(0, PARENT_FOLDER)
 
 from docopt import docopt
 from localstack import config, constants
-from localstack.utils import cli
-from localstack.services import infra
+from localstack.utils import cli, bootstrap
 
 
 if __name__ == '__main__':
@@ -53,7 +56,7 @@ if __name__ == '__main__':
     }
 
     # load CLI plugins
-    infra.load_plugins(scope=infra.PLUGIN_SCOPE_COMMANDS)
+    bootstrap.load_plugins(scope=bootstrap.PLUGIN_SCOPE_COMMANDS)
 
     # create final usage string
     additional_params = []

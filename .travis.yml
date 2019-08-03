@@ -31,7 +31,8 @@ env:
 
 install:
   - set -e
-  - make reinstall-p3
+  - # install under python 3
+  - PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
   - make init
   - make prepare-java-tests-if-changed
   - nohup docker pull lambci/lambda:nodejs8.10 > /dev/null &
@@ -42,7 +43,6 @@ install:
 
 script:
   - set -e # fail fast
-  - (while [ 1 ]; do top -o %MEM -n1 | grep 'KiB Mem'; sleep 30; done) &
   # run tests using Python 3
   - DEBUG=1 LAMBDA_EXECUTOR=docker TEST_ERROR_INJECTION=1 make test
   # run tests using Python 2

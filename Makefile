@@ -10,11 +10,19 @@ TEST_PATH ?= .
 usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
-install:           ## Install dependencies in virtualenv
+setup-venv:
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
-		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR)) && \
+		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR))
+
+install:           ## Install full dependencies in virtualenv
+	make setup-venv && \
 		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt && \
 			PYTHONPATH=. exec python localstack/services/install.py testlibs)) || exit 1
+
+install-basic:     ## Install basic dependencies for CLI usage in virtualenv
+	make setup-venv && \
+		($(VENV_RUN); cat requirements.txt | grep -ve '^#' | grep '#basic' | sed 's/ #.*//' \
+			| xargs $(PIP_CMD) install)
 
 install-web:       ## Install npm dependencies for dashboard Web UI
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))
@@ -36,7 +44,7 @@ init:              ## Initialize the infrastructure, make sure all libs are down
 	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py libs
 
 infra:             ## Manually start the local infrastructure for testing
-	($(VENV_RUN); exec bin/localstack start)
+	($(VENV_RUN); exec bin/localstack start --host)
 
 docker-build:      ## Build Docker image
 	docker build -t $(IMAGE_NAME) .

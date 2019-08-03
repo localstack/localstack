@@ -7,9 +7,13 @@ import glob
 import shutil
 import logging
 import tempfile
+from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION,
     STEPFUNCTIONS_ZIP_URL)
+if __name__ == '__main__':
+    bootstrap.bootstrap_installation()
+# flake8: noqa: E402
 from localstack.utils.common import (
     download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r)
 
@@ -26,6 +30,9 @@ INSTALL_DIR_ELASTICMQ = '%s/elasticmq' % INSTALL_DIR_INFRA
 INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_INFRA
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
+
+# Target version for javac, to ensure compatibility with earlier JREs
+JAVAC_TARGET_VERSION = '1.8'
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -147,7 +154,7 @@ def install_amazon_kinesis_client_libs():
     java_files = '%s/utils/kinesis/java/cloud/localstack/*.java' % ROOT_PATH
     class_files = '%s/utils/kinesis/java/cloud/localstack/*.class' % ROOT_PATH
     if not glob.glob(class_files):
-        run('javac -cp "%s" %s' % (classpath, java_files))
+        run('javac -target %s -cp "%s" %s' % (JAVAC_TARGET_VERSION, classpath, java_files))
 
 
 def install_lambda_java_libs():
@@ -221,7 +228,7 @@ if __name__ == '__main__':
             logging.basicConfig(level=logging.INFO)
             logging.getLogger('requests').setLevel(logging.WARNING)
             install_all_components()
-            print('Done.')
-        elif sys.argv[1] == 'testlibs':
+        if sys.argv[1] in ('libs', 'testlibs'):
             # Install additional libraries for testing
             install_amazon_kinesis_client_libs()
+        print('Done.')

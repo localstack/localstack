@@ -26,7 +26,7 @@ any longer.
 
 # Overview
 
-*LocalStack* spins up the following core Cloud APIs on your local machine:
+LocalStack spins up the following core Cloud APIs on your local machine:
 
 * **API Gateway** at http://localhost:4567
 * **Kinesis** at http://localhost:4568
@@ -53,71 +53,64 @@ any longer.
 * **IAM** at http://localhost:4593
 * **EC2** at http://localhost:4597
 
-Additionally, *LocalStack* provides a powerful set of tools to interact with the cloud services, including
+Additionally, LocalStack provides a powerful set of tools to interact with the cloud services, including
 a fully featured KCL Kinesis client with Python binding, simple setup/teardown integration for nosetests, as
 well as an Environment abstraction that allows to easily switch between local and remote Cloud execution.
 
-## Why *LocalStack*?
+## Why LocalStack?
 
-*LocalStack* builds on existing best-of-breed mocking/testing tools, most notably
+LocalStack builds on existing best-of-breed mocking/testing tools, most notably
 [kinesalite](https://github.com/mhart/kinesalite)/[dynalite](https://github.com/mhart/dynalite)
 and [moto](https://github.com/spulec/moto). While these tools are *awesome* (!), they lack functionality
-for certain use cases. *LocalStack* combines the tools, makes them interoperable, and adds important
+for certain use cases. LocalStack combines the tools, makes them interoperable, and adds important
 missing functionality on top of them:
 
-* **Error injection:** *LocalStack* allows to inject errors frequently occurring in real Cloud environments,
+* **Error injection:** LocalStack allows to inject errors frequently occurring in real Cloud environments,
   for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
   read/write throughput is exceeded.
-* **Isolated processes**: All services in *LocalStack* run in separate processes. The overhead of additional
+* **Isolated processes**: All services in LocalStack run in separate processes. The overhead of additional
   processes is negligible, and the entire stack can easily be executed on any developer machine and CI server.
   In moto, components are often hard-wired in RAM (e.g., when forwarding a message on an SNS topic to an SQS queue,
-  the queue endpoint is looked up in a local hash map). In contrast, *LocalStack* services live in isolation
+  the queue endpoint is looked up in a local hash map). In contrast, LocalStack services live in isolation
   (separate processes available via HTTP), which fosters true decoupling and more closely resembles the real
   cloud environment.
-* **Pluggable services**: All services in *LocalStack* are easily pluggable (and replaceable), due to the fact that
+* **Pluggable services**: All services in LocalStack are easily pluggable (and replaceable), due to the fact that
   we are using isolated processes for each service. This allows us to keep the framework up-to-date and select
   best-of-breed mocks for each individual service.
 
 
 ## Requirements
 
-* `make`
 * `python` (both Python 2.x and 3.x supported)
 * `pip` (python package manager)
-* `npm` (node.js package manager)
-* `java`/`javac` (Java 8 runtime environment and compiler)
-* `mvn` (Maven, the build system for Java)
+* `Docker`
 
 ## Installing
 
-The easiest way to install *LocalStack* is via `pip`:
+The easiest way to install LocalStack is via `pip`:
 
 ```
 pip install localstack
 ```
 
-Once installed, run the infrastructure using the following command:
-```
-localstack start
-```
-
-**Note**: Please do **not** use `sudo` or the `root` user - *LocalStack*
-should be installed and started entirely under a local non-root user.
-If you have problems with permissions in MacOS X Sierra,
-install with `pip install --user localstack`
+**Note**: Please do **not** use `sudo` or the `root` user - LocalStack
+should be installed and started entirely under a local non-root user. If you have problems
+with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
 ## Running in Docker
 
-You can also spin up *LocalStack* in Docker:
+By default, LocalStack gets started inside a Docker container using this command:
 
 ```
-localstack start --docker
+localstack start
 ```
 
 (Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR localstack start --docker` if
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
 
-Or using docker-compose (you need to clone the repository first, currently requires docker-compose version 2.1+):
+### Using `docker-compose`
+
+You can also use the `docker-compose.yml` file from the repository and use this command (currently requires `docker-compose` version 2.1+):
 
 ```
 docker-compose up
@@ -151,6 +144,22 @@ services:
 
 To facilitate interoperability, configuration variables can be prefixed with `LOCALSTACK_` in docker. For instance, setting `LOCALSTACK_SERVICES=s3` is equivalent to `SERVICES=s3`.
 
+## Starting locally (non-Docker mode)
+
+Alternatively, the infrastructure can be spun up on the local host machine (without using Docker) using the following command:
+
+```
+localstack start --host
+```
+
+(Note that this will require [additional dependencies](#Developing), and currently is not supported on some operating systems, including Windows.)
+
+LocalStack will attempt to automatically fetch the missing dependencies when you first start it up in "host" mode; alternatively, you can use the `full` profile to install all dependencies at `pip` installation time:
+
+```
+pip install localstack[full]
+```
+
 ## Configurations
 
 You can pass the following environment variables to LocalStack:
@@ -181,7 +190,7 @@ You can pass the following environment variables to LocalStack:
     - `docker`: run each function invocation in a separate Docker container
     - `docker-reuse`: create one Docker container per function and reuse it across invocations
 
-  For `docker` and `docker-reuse`, if *LocalStack* itself is started inside Docker, then
+  For `docker` and `docker-reuse`, if LocalStack itself is started inside Docker, then
   the `docker` command needs to be available inside the container (usually requires to run the
   container in privileged mode). Default is `docker`, fallback to `local` if Docker is not available.
 * `LAMBDA_REMOTE_DOCKER` determines whether Lambda code is copied or mounted into containers.
@@ -278,8 +287,9 @@ aws --endpoint-url=http://localhost:4568 kinesis list-streams
 }
 ```
 
-**NEW**: Check out [awslocal](https://github.com/localstack/awscli-local), a thin CLI wrapper that runs commands directly against *LocalStack* (no need to
-specify `--endpoint-url` anymore). Install it via `pip install awscli-local`, and then use it as follows:
+**NEW**: Check out [awslocal](https://github.com/localstack/awscli-local), a thin CLI wrapper
+that runs commands directly against LocalStack (no need to specify `--endpoint-url` anymore).
+Install it via `pip install awscli-local`, and then use it as follows:
 
 ```
 awslocal kinesis list-streams
@@ -299,7 +309,7 @@ inside your Lambda function. See [Configurations](#Configurations) section for m
 
 ## Integration with nosetests
 
-If you want to use *LocalStack* in your integration tests (e.g., nosetests), simply fire up the
+If you want to use LocalStack in your integration tests (e.g., nosetests), simply fire up the
 infrastructure in your test setup method and then clean up everything in your teardown method:
 
 ```
@@ -337,7 +347,7 @@ In order to mount a local folder, ensure that `LAMBDA_REMOTE_DOCKER` is set to `
 
 ## Integration with Java/JUnit
 
-In order to use *LocalStack* with Java, the project ships with a simple JUnit runner and a JUnit 5 extension. Take a look
+In order to use LocalStack with Java, the project ships with a simple JUnit runner and a JUnit 5 extension. Take a look
 at the example JUnit test in `ext/java`. When you run the test, all dependencies are automatically
 downloaded and installed to a temporary directory in your system.
 
@@ -368,8 +378,8 @@ public class MyCloudAppTest {
 }
 ```
 
-Additionally, there is a version of the *LocalStack* Test Runner which runs in a docker container
-instead of installing *LocalStack* on the current machine. The only dependency is to have docker
+Additionally, there is a version of the LocalStack Test Runner which runs in a docker container
+instead of installing LocalStack on the current machine. The only dependency is to have docker
 installed locally. The test runner will automatically pull the image and start the container for the
 duration of the test.  The container can be configured by using the @LocalstackDockerProperties annotation.
 
@@ -396,7 +406,7 @@ public class MyDockerCloudAppTest {
 }
 ```
 
-The *LocalStack* JUnit test runner is published as an artifact in Maven Central.
+The LocalStack JUnit test runner is published as an artifact in Maven Central.
 Simply add the following dependency to your `pom.xml` file:
 
 ```
@@ -443,7 +453,7 @@ with the `--user` flag: `pip install --user localstack`
 
 * If you are deploying within OpenShift, please be aware: the pod must run as `root`, and the user must have capabilities added to the running pod, in order to allow Elasticsearch to be run as the non-root `localstack` user.
 
-* The environment variable `no_proxy` is rewritten by *LocalStack*.
+* The environment variable `no_proxy` is rewritten by LocalStack.
 (Internal requests will go straight via localhost, bypassing any proxy configuration).
 
 * For troubleshooting LocalStack start issues, you can check debug logs by running `DEBUG=1 localstack start`
@@ -453,6 +463,17 @@ with the `--user` flag: `pip install --user localstack`
 * If you are using AWS Java libraries and need to disable SSL certificate checking, add `-Dcom.amazonaws.sdk.disableCertChecking` to the java invocation.
 
 ## Developing
+
+### Requirements for developing or starting locally
+
+To develop new features, or to start the stack locally (outside of Docker), the following additional tools are required:
+
+* `make`
+* `npm` (node.js package manager)
+* `java`/`javac` (Java 8 runtime environment and compiler)
+* `mvn` (Maven, the build system for Java)
+
+### Development Environment
 
 If you pull the repo in order to extend/modify LocalStack, run this command to install
 all the dependencies:
@@ -502,6 +523,7 @@ localstack web
 
 ## Change Log
 
+* v0.10.0: Lazy loading of libraries; fix handling of regions; add API multiserver; improve CPU profiling; fix ES xpack installation; add basic EventBridge support; refactor Lambda API and executor; add MessageAttributes on SNS payloads; tagging for SNS; ability to customize docker command
 * v0.9.6: Add API Gateway SQS proxy; fix command to push Docker image; fix Docker bridge IP configuration; fix SSL issue in dashboard infra; updates to README
 * v0.9.5: Reduce Docker image size by squashing; fix response body for presigned URL S3 PUT requests; fix CreateDate returned by IAM; fix account IDs for CF and SNS; fix topic checks for SMS using SNS; improve documentation around `@LocalstackDockerProperties`; add basic EC2 support; upgrade to ElasticSearch 6.7; set Last-Modified header in S3; preserve logic with uppercase event keys in Java; add support for nodejs 10.x Lambdas
 * v0.9.4: Fix ARNs in CloudFormation deployments; write stderr to file in supervisord; fix Lambda invocation times; fix canonicalization of service names when running in Docker; add support for `@Nested` in Junit5; add support for batch/transaction in DynamoDB; fix output buffering for subprocesses; assign unique ports under docker-reuse; check if topic ARN exists before publish
@@ -618,11 +640,11 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 
 ## License
 
-Copyright (c) 2017-2019 *LocalStack* maintainers and contributors.
+Copyright (c) 2017-2019 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
-This version of *LocalStack* is released under the Apache License, Version 2.0 (see LICENSE.txt).
+This version of LocalStack is released under the Apache License, Version 2.0 (see LICENSE.txt).
 By downloading and using this software you agree to the
 [End-User License Agreement (EULA)](doc/end_user_license_agreement).
 
