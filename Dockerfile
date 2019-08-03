@@ -13,7 +13,7 @@ RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
   touch localstack/__init__.py localstack/utils/__init__.py localstack/services/__init__.py localstack/utils/kinesis/__init__.py
 ADD localstack/constants.py localstack/config.py localstack/
 ADD localstack/services/install.py localstack/services/
-ADD localstack/utils/common.py localstack/utils/
+ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
 ADD localstack/ext/ localstack/ext/
 

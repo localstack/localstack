@@ -9,6 +9,7 @@ BASIC_LIB_MARKER = '#basic-lib'
 
 # parameter variables
 install_requires = []
+extra_requires = []
 dependency_links = []
 package_data = {}
 
@@ -27,8 +28,12 @@ for line in re.split('\n', requirements):
         line = re.search(r'#\s*(.*)', line).group(1)
     if line and line[0] != '#':
         # include only basic requirements here
-        if '://' not in line and BASIC_LIB_MARKER in line and IGNORED_LIB_MARKER not in line:
-            install_requires.append(line)
+        if IGNORED_LIB_MARKER not in line:
+            line = line.split(' #')[0].strip()
+            if BASIC_LIB_MARKER in line:
+                install_requires.append(line)
+            else:
+                extra_requires.append(line)
 
 # copy requirements file, to make it available inside the package at runtime
 with open('localstack/requirements.copy.txt', 'w') as f:
@@ -64,6 +69,9 @@ if __name__ == '__main__':
         packages=find_packages(exclude=('tests', 'tests.*')),
         package_data=package_data,
         install_requires=install_requires,
+        extra_requires={
+            'full': extra_requires
+        },
         dependency_links=dependency_links,
         test_suite='tests',
         license='Apache License 2.0',

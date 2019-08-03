@@ -1,11 +1,11 @@
-# Lines annotated with "#extended-lib" are excluded
+# (1) Lines annotated with "#extended-lib" are excluded
 # from the dependencies when we build the pip package
 
-# Lines annotated with "#basic-lib" are included in the basic
+# (2) Lines annotated with "#basic-lib" are included in the basic
 # version of the pip package (i.e., for "pip install localstack").
 
-# The remaining dependencies (without markers) are only included in the
-# "full" version of the pip package (i.e., "pip install localstack[full]").
+# (3) The remaining dependencies (those without markers) are only included in
+# the "full" version of the pip package (i.e., "pip install localstack[full]").
 
 airspeed==0.5.10
 # Use this version until this bug is fixed: https://github.com/awslabs/amazon-kinesis-client-python/issues/99
