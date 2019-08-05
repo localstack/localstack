@@ -57,7 +57,8 @@ def bootstrap_installation():
 
 def install_dependencies():
     # determine requirements
-    with open('requirements.txt') as f:
+    reqs_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'requirements.copy.txt')
+    with open(reqs_file) as f:
         requirements = f.read()
     install_requires = []
     for line in re.split('\n', requirements):
