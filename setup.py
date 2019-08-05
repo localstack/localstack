@@ -29,11 +29,11 @@ for line in re.split('\n', requirements):
     if line and line[0] != '#':
         # include only basic requirements here
         if IGNORED_LIB_MARKER not in line:
-            line = line.split(' #')[0].strip()
+            lib_stripped = line.split(' #')[0].strip()
             if BASIC_LIB_MARKER in line:
-                install_requires.append(line)
+                install_requires.append(lib_stripped)
             else:
-                extra_requires.append(line)
+                extra_requires.append(lib_stripped)
 
 # copy requirements file, to make it available inside the package at runtime
 with open('localstack/requirements.copy.txt', 'w') as f:
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         packages=find_packages(exclude=('tests', 'tests.*')),
         package_data=package_data,
         install_requires=install_requires,
-        extra_requires={
+        extras_require={
             'full': extra_requires
         },
         dependency_links=dependency_links,

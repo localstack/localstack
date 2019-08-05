@@ -3,6 +3,7 @@ import re
 import sys
 import pip as pip_mod
 import time
+import shutil
 import pkgutil
 import logging
 import warnings
@@ -57,7 +58,12 @@ def bootstrap_installation():
 
 def install_dependencies():
     # determine requirements
-    with open('requirements.txt') as f:
+    root_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..')
+    reqs_file = os.path.join(root_folder, 'requirements.txt')
+    reqs_copy_file = os.path.join(root_folder, 'localstack', 'requirements.copy.txt')
+    if not os.path.exists(reqs_copy_file):
+        shutil.copy(reqs_file, reqs_copy_file)
+    with open(reqs_file) as f:
         requirements = f.read()
     install_requires = []
     for line in re.split('\n', requirements):
