@@ -53,12 +53,26 @@ class ProxyListenerDynamoDB(ProxyListener):
             # Check if table exists, to avoid error log output from DynamoDBLocal
             table_names = ddb_client.list_tables()['TableNames']
             if to_str(data['TableName']) not in table_names:
-                return 404
+                response = Response()
+                response.status_code = 400
+                response._content = json.dumps({
+                    '__type': 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException',
+                    'message': 'Cannot do operations on a non-existent table'
+                })
+                fix_headers_for_updated_response(response)
+                return response
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
             table_names = ddb_client.list_tables()['TableNames']
             if to_str(data['TableName']) not in table_names:
-                return 404
+                response = Response()
+                response.status_code = 400
+                response._content = json.dumps({
+                    '__type': 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException',
+                    'message': 'Cannot do operations on a non-existent table'
+                })
+                fix_headers_for_updated_response(response)
+                return response
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             existing_items = []
             for table_name in sorted(data['RequestItems'].keys()):
