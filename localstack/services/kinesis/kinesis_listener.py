@@ -84,18 +84,19 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == ACTION_PUT_RECORDS:
             event_records = []
             response_body = json.loads(to_str(response.content))
-            response_records = response_body['Records']
-            records = data['Records']
-            for index in range(0, len(records)):
-                record = records[index]
-                event_record = {
-                    'data': record['Data'],
-                    'partitionKey': record['PartitionKey'],
-                    'sequenceNumber': response_records[index].get('SequenceNumber')
-                }
-                event_records.append(event_record)
-            stream_name = data['StreamName']
-            lambda_api.process_kinesis_records(event_records, stream_name)
+            if 'Records' in response_body:
+                response_records = response_body['Records']
+                records = data['Records']
+                for index in range(0, len(records)):
+                    record = records[index]
+                    event_record = {
+                        'data': record['Data'],
+                        'partitionKey': record['PartitionKey'],
+                        'sequenceNumber': response_records[index].get('SequenceNumber')
+                    }
+                    event_records.append(event_record)
+                stream_name = data['StreamName']
+                lambda_api.process_kinesis_records(event_records, stream_name)
         elif action == ACTION_UPDATE_SHARD_COUNT:
             # Currently kinesalite, which backs the Kinesis implementation for localstack, does
             # not support UpdateShardCount:
