@@ -13,7 +13,8 @@ except ImportError:
     from pipes import quote as cmd_quote
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import run, TMP_FILES, short_uid, save_file, to_str, cp_r, CaptureOutput
+from localstack.utils.common import (
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, to_str, run, cp_r)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 
 # constants
@@ -55,19 +56,30 @@ class LambdaExecutor(object):
         self.function_invoke_times = {}
 
     def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
-        # set the invocation time in milliseconds
-        invocation_time = int(time.time() * 1000)
-        # start the execution
-        try:
-            result, log_output = self._execute(func_arn, func_details, event, context, version, asynchronous)
-        finally:
-            self.function_invoke_times[func_arn] = invocation_time
-        # forward log output to cloudwatch logs
-        self._store_logs(func_details, log_output, invocation_time)
-        # return final result
-        return result, log_output
 
-    def _execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
+        def do_execute(*args):
+            # set the invocation time in milliseconds
+            invocation_time = int(time.time() * 1000)
+            # start the execution
+            try:
+                result, log_output = self._execute(func_arn, func_details, event, context, version)
+            finally:
+                self.function_invoke_times[func_arn] = invocation_time
+            # forward log output to cloudwatch logs
+            self._store_logs(func_details, log_output, invocation_time)
+            # return final result
+            return result, log_output
+
+        # Inform users about asynchronous mode of the lambda execution.
+        if asynchronous:
+            LOG.debug('Lambda executed in Event (asynchronous) mode, no response from this '
+                      'function will be returned to caller')
+            FuncThread(do_execute).start()
+            return None, 'Lambda executed asynchronously.'
+
+        return do_execute()
+
+    def _execute(self, func_arn, func_details, event, context=None, version=None):
         """ This method must be overwritten by subclasses. """
         raise Exception('Not implemented.')
 
@@ -115,26 +127,23 @@ class LambdaExecutor(object):
             logEvents=log_events
         )
 
-    def run_lambda_executor(self, cmd, env_vars={}, asynchronous=False):
+    def run_lambda_executor(self, cmd, env_vars={}):
         process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars)
-        if asynchronous:
-            result = '{"asynchronous": "%s"}' % asynchronous
-            log_output = 'Lambda executed asynchronously'
-        else:
-            result, log_output = process.communicate()
-            result = to_str(result).strip()
-            log_output = to_str(log_output).strip()
-            return_code = process.returncode
-            # Note: The user's code may have been logging to stderr, in which case the logs
-            # will be part of the "result" variable here. Hence, make sure that we extract
-            # only the *last* line of "result" and consider anything above that as log output.
-            if '\n' in result:
-                additional_logs, _, result = result.rpartition('\n')
-                log_output += '\n%s' % additional_logs
+        result, log_output = process.communicate()
+        result = to_str(result).strip()
+        log_output = to_str(log_output).strip()
+        return_code = process.returncode
+        # Note: The user's code may have been logging to stderr, in which case the logs
+        # will be part of the "result" variable here. Hence, make sure that we extract
+        # only the *last* line of "result" and consider anything above that as log output.
+        if '\n' in result:
+            additional_logs, _, result = result.rpartition('\n')
+            log_output += '\n%s' % additional_logs
 
-            if return_code != 0:
-                raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
-                    (return_code, log_output))
+        if return_code != 0:
+            raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
+                (return_code, log_output))
+
         return result, log_output
 
 
@@ -157,7 +166,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         """ Return the string to be used for running Docker commands. """
         return config.DOCKER_CMD
 
-    def _execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
+    def _execute(self, func_arn, func_details, event, context=None, version=None):
 
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
@@ -205,7 +214,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.debug('Running lambda cmd: %s' % cmd)
-        result, log_output = self.run_lambda_executor(cmd, environment, asynchronous)
+        result, log_output = self.run_lambda_executor(cmd, environment)
         log_formatted = log_output.strip().replace('\n', '\n> ')
         LOG.debug('Lambda %s result / log output:\n%s\n>%s' % (func_arn, result.strip(), log_formatted))
         return result, log_output
@@ -574,7 +583,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 class LambdaExecutorLocal(LambdaExecutor):
 
-    def _execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
+    def _execute(self, func_arn, func_details, event, context=None, version=None):
         lambda_cwd = func_details.cwd
         environment = func_details.envvars.copy()
 
@@ -610,16 +619,9 @@ class LambdaExecutorLocal(LambdaExecutor):
         class_name = handler.split('::')[0]
         classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
         cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
-        asynchronous = False
-        # flip asynchronous flag depending on origin
-        if 'Records' in event:
-            # TODO: add more event supporting asynchronous lambda execution
-            if 'Sns' in event['Records'][0]:
-                asynchronous = True
-            if 'dynamodb' in event['Records'][0]:
-                asynchronous = True
-        result, log_output = self.run_lambda_executor(cmd, asynchronous=asynchronous)
-        LOG.debug('Lambda result / log output:\n%s\n> %s' % (result.strip(), log_output.strip().replace('\n', '\n> ')))
+        result, log_output = self.run_lambda_executor(cmd)
+        LOG.debug('Lambda result / log output:\n%s\n> %s' % (
+            result.strip(), log_output.strip().replace('\n', '\n> ')))
         return result, log_output
 
 
