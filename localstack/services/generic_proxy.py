@@ -302,7 +302,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         except Exception as e:
             trace = str(traceback.format_exc())
             conn_errors = ('ConnectionRefusedError', 'NewConnectionError',
-                           'Connection aborted', 'Unexpected EOF')
+                           'Connection aborted', 'Unexpected EOF', 'Connection reset by peer')
             conn_error = any(e in trace for e in conn_errors)
             error_msg = 'Error forwarding request: %s %s' % (e, trace)
             if 'Broken pipe' in trace:
