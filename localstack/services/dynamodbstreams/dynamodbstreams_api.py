@@ -135,9 +135,8 @@ def stream_name_from_stream_arn(stream_arn):
 
 def random_id(stream_arn, kinesis_shard_id):
     if six.PY2:
-        stream_arn = stream_arn.encode('utf-8')
-        kinesis_shard_id = kinesis_shard_id('utf-8')
-    namespace = uuid.UUID(bytes=hashlib.sha1(stream_arn).digest()[:16])
+        kinesis_shard_id = kinesis_shard_id.encode('utf-8')
+    namespace = uuid.UUID(bytes=hashlib.sha1(stream_arn.encode('utf-8')).digest()[:16])
     return uuid.uuid5(namespace, kinesis_shard_id).hex
 
 
