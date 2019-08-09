@@ -127,9 +127,10 @@ class LambdaExecutor(object):
             logEvents=log_events
         )
 
-    def run_lambda_executor(self, cmd, env_vars={}):
-        process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars)
-        result, log_output = process.communicate()
+    def run_lambda_executor(self, cmd, event=None, env_vars={}):
+        process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars,
+                      stdin=True)
+        result, log_output = process.communicate(input=event)
         result = to_str(result).strip()
         log_output = to_str(log_output).strip()
         return_code = process.returncode
@@ -182,11 +183,12 @@ class LambdaExecutorContainers(LambdaExecutor):
             LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
             event = {}
         event_body = json.dumps(event)
+        stdin = event_body.encode()
 
         docker_host = config.DOCKER_HOST_FROM_CONTAINER
 
-        # amend the environment variables for execution
-        environment['AWS_LAMBDA_EVENT_BODY'] = event_body
+        # Tell Lambci to use STDIN for the event
+        environment['DOCKER_LAMBDA_USE_STDIN'] = '1'
         environment['HOSTNAME'] = docker_host
         environment['LOCALSTACK_HOSTNAME'] = docker_host
         if context:
@@ -199,6 +201,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # if running a Java Lambda, set up classpath arguments
         if runtime == LAMBDA_RUNTIME_JAVA8:
+            stdin = None
             # copy executor jar into temp directory
             target_file = os.path.join(lambda_cwd, os.path.basename(LAMBDA_EXECUTOR_JAR))
             if not os.path.exists(target_file):
@@ -214,7 +217,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.debug('Running lambda cmd: %s' % cmd)
-        result, log_output = self.run_lambda_executor(cmd, environment)
+        result, log_output = self.run_lambda_executor(cmd, stdin, environment)
         log_formatted = log_output.strip().replace('\n', '\n> ')
         LOG.debug('Lambda %s result / log output:\n%s\n>%s' % (func_arn, result.strip(), log_formatted))
         return result, log_output
@@ -259,23 +262,25 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             command = '%s %s' % (container_info.entry_point, handler)
 
         # determine files to be copied into the container
-        copy_command = ''
+        copy_command = None
         docker_cmd = self._docker_cmd()
         event_file = os.path.join(lambda_cwd, LAMBDA_EVENT_FILE)
         if not has_been_invoked_before:
             # if this is the first invocation: copy the entire folder into the container
-            copy_command = '%s cp "%s/." "%s:/var/task"; ' % (docker_cmd, lambda_cwd, container_info.name)
+            copy_command = '%s cp "%s/." "%s:/var/task";' % (docker_cmd, lambda_cwd, container_info.name)
         elif os.path.exists(event_file):
             # otherwise, copy only the event file if it exists
-            copy_command = '%s cp "%s" "%s:/var/task"; ' % (docker_cmd, event_file, container_info.name)
+            copy_command = '%s cp "%s" "%s:/var/task";' % (docker_cmd, event_file, container_info.name)
+
+        if copy_command is not None:
+            self.run_lambda_executor(copy_command)
 
         cmd = (
-            '%s'  # copy files command
-            '%s exec'
+            '%s exec -i'
             ' %s'  # env variables
             ' %s'  # container name
             ' %s'  # run cmd
-        ) % (copy_command, docker_cmd, exec_env_vars, container_info.name, command)
+        ) % (docker_cmd, exec_env_vars, container_info.name, command)
         LOG.debug('Command for docker-reuse Lambda executor: %s' % cmd)
 
         return cmd
@@ -555,7 +560,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
         if config.LAMBDA_REMOTE_DOCKER:
             cmd = (
-                'CONTAINER_ID="$(docker create'
+                'CONTAINER_ID="$(docker create -i'
                 ' %s'
                 ' %s'
                 ' %s'  # network
@@ -567,8 +572,8 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         else:
             lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
-                '%s run'
-                '%s -v "%s":/var/task'
+                '%s run -i'
+                ' %s -v "%s":/var/task'
                 ' %s'
                 ' %s'  # network
                 ' --rm'

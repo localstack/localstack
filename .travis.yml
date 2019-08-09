@@ -1,4 +1,4 @@
-sudo: required
+dist: xenial
 
 language: python
 
@@ -6,13 +6,14 @@ services:
   - docker
 
 python:
-  - "3.6"
+  - "3.7"
 
 branches:
   only:
     - master
 
 before_install:
+  - "sudo apt-get update -q"
   - "sudo apt-get purge openjdk-6*"
   - "sudo apt-get purge openjdk-7*"
   - "sudo apt-get purge oracle-java7-*"
@@ -23,11 +24,11 @@ before_install:
 addons:
   apt:
     packages:
-    - oracle-java8-installer
+    - openjdk-8-jre-headless
 
 env:
   global:
-    - JAVA_HOME=/usr/lib/jvm/java-8-oracle
+    - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
 install:
   - set -e
@@ -50,7 +51,7 @@ script:
   #   but instead reinstall using 2.x here, as that allows us to re-use some cached libs etc.
   - "make reinstall-p2 > /dev/null"
   - make init
-  - LAMBDA_EXECUTOR=docker-reuse USE_SSL=1 make test
+  - DEBUG=1 LAMBDA_EXECUTOR=docker-reuse USE_SSL=1 make test
   # build Docker image
   - make docker-build
   # run Java tests
