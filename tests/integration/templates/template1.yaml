@@ -6,10 +6,22 @@ Resources:
     Properties:
       AccessControl: PublicRead
       BucketName: cf-test-bucket-1
+      Tags:
+        - Key: foobar
+          Value:
+            Ref: SQSQueue
   SQSQueue:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: cf-test-queue-1
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: cf-test-topic-1-1
+      Tags:
+        - Key: foobar
+          Value:
+            Ref: S3Bucket
   KinesisStream:
     Type: AWS::Kinesis::Stream
     Properties:
