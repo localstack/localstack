@@ -273,13 +273,14 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             copy_command = '%s cp "%s" "%s:/var/task";' % (docker_cmd, event_file, container_info.name)
 
         if copy_command is not None:
+            LOG.debug('Running lambda copy cmd: %s' % copy_command)
             self.run_lambda_executor(copy_command)
 
         cmd = (
             '%s exec -i'
             ' %s'  # env variables
             ' %s'  # container name
-            ' %s'  # run cmd
+            ' %s "$(</dev/stdin)"'  # run cmd
         ) % (docker_cmd, exec_env_vars, container_info.name, command)
         LOG.debug('Command for docker-reuse Lambda executor: %s' % cmd)
 
