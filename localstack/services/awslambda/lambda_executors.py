@@ -167,6 +167,12 @@ class LambdaExecutorContainers(LambdaExecutor):
         """ Return the string to be used for running Docker commands. """
         return config.DOCKER_CMD
 
+    def prepare_event(self, environment, event_body):
+        """ Return the event as a stdin string. """
+        # amend the environment variables for execution
+        environment['AWS_LAMBDA_EVENT_BODY'] = event_body
+        return None
+
     def _execute(self, func_arn, func_details, event, context=None, version=None):
 
         lambda_cwd = func_details.cwd
@@ -183,12 +189,10 @@ class LambdaExecutorContainers(LambdaExecutor):
             LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
             event = {}
         event_body = json.dumps(event)
-        stdin = event_body.encode()
+        stdin = self.prepare_event(environment, event)
 
         docker_host = config.DOCKER_HOST_FROM_CONTAINER
 
-        # Tell Lambci to use STDIN for the event
-        environment['DOCKER_LAMBDA_USE_STDIN'] = '1'
         environment['HOSTNAME'] = docker_host
         environment['LOCALSTACK_HOSTNAME'] = docker_host
         if context:
@@ -262,7 +266,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             command = '%s %s' % (container_info.entry_point, handler)
 
         # determine files to be copied into the container
-        copy_command = None
+        copy_command = ''
         docker_cmd = self._docker_cmd()
         event_file = os.path.join(lambda_cwd, LAMBDA_EVENT_FILE)
         if not has_been_invoked_before:
@@ -272,16 +276,13 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             # otherwise, copy only the event file if it exists
             copy_command = '%s cp "%s" "%s:/var/task";' % (docker_cmd, event_file, container_info.name)
 
-        if copy_command is not None:
-            LOG.debug('Running lambda copy cmd: %s' % copy_command)
-            self.run_lambda_executor(copy_command)
-
         cmd = (
-            '%s exec -i'
+            '%s'
+            ' %s exec'
             ' %s'  # env variables
             ' %s'  # container name
-            ' %s "$(</dev/stdin)"'  # run cmd
-        ) % (docker_cmd, exec_env_vars, container_info.name, command)
+            ' %s'  # run cmd
+        ) % (copy_command, docker_cmd, exec_env_vars, container_info.name, command)
         LOG.debug('Command for docker-reuse Lambda executor: %s' % cmd)
 
         return cmd
@@ -545,6 +546,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
 
 class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
+
+    def prepare_event(self, environment, event_body):
+
+        # Tell Lambci to use STDIN for the event
+        environment['DOCKER_LAMBDA_USE_STDIN'] = '1'
+        return event_body.encode()
 
     def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
         entrypoint = ''

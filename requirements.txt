@@ -12,7 +12,6 @@ airspeed==0.5.10
 amazon_kclpy-ext==1.5.1
 # amazon-kclpy==1.5.1
 awscli>=1.14.18
-google-compute-engine>=2.8.13,<3.0.0
 boto>=2.49.0
 boto3>=1.9.71                  #basic-lib
 botocore>=1.12.13

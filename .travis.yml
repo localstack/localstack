@@ -29,6 +29,7 @@ addons:
 env:
   global:
     - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    - BOTO_CONFIG=/dev/null
 
 install:
   - set -e
