@@ -189,7 +189,7 @@ class LambdaExecutorContainers(LambdaExecutor):
             LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
             event = {}
         event_body = json.dumps(event)
-        stdin = self.prepare_event(environment, event)
+        stdin = self.prepare_event(environment, event_body)
 
         docker_host = config.DOCKER_HOST_FROM_CONTAINER
 
