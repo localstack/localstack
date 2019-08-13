@@ -82,7 +82,7 @@ def start_api_server(api, port, server_port=None):
 
 def start_server_process(port):
     if '__server__' in API_SERVERS:
-        return
+        return API_SERVERS['__server__']['thread']
     port = port or MULTI_SERVER_PORT
     API_SERVERS['__server__'] = config = {'port': port}
     LOG.info('Starting multi API server process on port %s' % port)

@@ -386,7 +386,7 @@ def start_infra(asynchronous=False, apis=None):
                 thread = thread or t1
 
         time.sleep(sleep_time)
-        # check that all infra components are up and running
+        # ensure that all infra components are up and running
         check_infra(apis=apis)
         # restore persisted data
         restore_persisted_data(apis=apis)
