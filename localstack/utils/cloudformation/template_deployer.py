@@ -43,7 +43,8 @@ RESOURCE_TO_FUNCTION = {
             'boto_client': 'client',
             'function': 'create_topic',
             'parameters': {
-                'Name': 'TopicName'
+                'Name': 'TopicName',
+                'Tags': 'Tags'
             }
         }
     },
@@ -457,16 +458,24 @@ def resolve_ref(stack_name, ref, resources, attribute):
 def resolve_refs_recursively(stack_name, value, resources):
     if isinstance(value, dict):
         if len(value) == 1 and 'Ref' in value:
-            return resolve_ref(stack_name, value['Ref'],
+            result = resolve_ref(stack_name, value['Ref'],
                 resources, attribute='PhysicalResourceId')
+            return result
         elif len(value) == 1 and 'Fn::GetAtt' in value:
             return resolve_ref(stack_name, value['Fn::GetAtt'][0],
                 resources, attribute=value['Fn::GetAtt'][1])
         else:
             for key, val in iteritems(value):
                 value[key] = resolve_refs_recursively(stack_name, val, resources)
+        # process special operators
         if len(value) == 1 and 'Fn::Join' in value:
             return value['Fn::Join'][0].join(value['Fn::Join'][1])
+        if len(value) == 1 and 'Fn::Sub' in value:
+            result = value['Fn::Sub'][0]
+            for key, val in value['Fn::Sub'][1].items():
+                val = resolve_refs_recursively(stack_name, val, resources)
+                result = result.replace('${%s}' % key, val)
+            return result
     if isinstance(value, list):
         for i in range(0, len(value)):
             value[i] = resolve_refs_recursively(stack_name, value[i], resources)
@@ -514,6 +523,7 @@ def deploy_resource(resource_id, resources, stack_name):
     if not func_details:
         LOG.warning('Resource type not yet implemented: %s' % resource_type)
         return
+
     LOG.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
     func_details = func_details[ACTION_CREATE]
     function = getattr(client, func_details['function'])
@@ -522,6 +532,7 @@ def deploy_resource(resource_id, resources, stack_name):
     if 'Properties' not in resource:
         resource['Properties'] = {}
     resource_props = resource['Properties']
+
     for param_key, prop_keys in iteritems(dict(params)):
         params.pop(param_key, None)
         if not isinstance(prop_keys, list):
@@ -556,6 +567,7 @@ def deploy_resource(resource_id, resources, stack_name):
             params[param_key] = params.get(param_key) == 'True'
     # assign default value if empty
     params = common.merge_recursive(defaults, params)
+
     # invoke function
     try:
         LOG.debug('Request for creating resource type "%s": %s' % (resource_type, params))
@@ -563,6 +575,7 @@ def deploy_resource(resource_id, resources, stack_name):
     except Exception as e:
         LOG.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
         raise e
+
     # some resources have attached/nested resources which we need to create recursively now
     if resource_type == 'ApiGateway::Method':
         integration = resource_props.get('Integration')
@@ -583,6 +596,12 @@ def deploy_resource(resource_id, resources, stack_name):
             topic_arn = retrieve_topic_arn(params['Name'])
             aws_stack.connect_to_service('sns').subscribe(
                 TopicArn=topic_arn, Protocol=subscription['Protocol'], Endpoint=endpoint)
+    elif resource_type == 'S3::Bucket':
+        tags = resource_props.get('Tags')
+        if tags:
+            aws_stack.connect_to_service('s3').put_bucket_tagging(
+                Bucket=params['Bucket'], Tagging={'TagSet': tags})
+
     return result
 
 

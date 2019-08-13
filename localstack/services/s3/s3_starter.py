@@ -46,9 +46,10 @@ def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=No
 def apply_patches():
     s3_models.DEFAULT_KEY_BUFFER_SIZE = S3_MAX_FILE_SIZE_MB * 1024 * 1024
 
-    def init(self, name, value, storage='STANDARD', etag=None, is_versioned=False, version_id=0, max_buffer_size=None):
+    def init(self, name, value, storage='STANDARD', etag=None,
+            is_versioned=False, version_id=0, max_buffer_size=None, *args, **kwargs):
         return original_init(self, name, value, storage=storage, etag=etag, is_versioned=is_versioned,
-            version_id=version_id, max_buffer_size=s3_models.DEFAULT_KEY_BUFFER_SIZE)
+            version_id=version_id, max_buffer_size=s3_models.DEFAULT_KEY_BUFFER_SIZE, *args, **kwargs)
 
     original_init = s3_models.FakeKey.__init__
     s3_models.FakeKey.__init__ = init

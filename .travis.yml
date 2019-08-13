@@ -1,30 +1,27 @@
-dist: xenial
-
 language: python
+dist: xenial
+python:
+  - "3.7"
 
 services:
   - docker
-
-python:
-  - "3.7"
 
 branches:
   only:
     - master
 
+addons:
+  apt:
+    packages:
+      - openjdk-8-jre-headless
+
 before_install:
-  - "sudo apt-get update -q"
   - "sudo apt-get purge openjdk-6*"
   - "sudo apt-get purge openjdk-7*"
   - "sudo apt-get purge oracle-java7-*"
   - "sudo apt-get purge python2.7"
   - "nvm install 6; nvm alias default node"
   - "sudo useradd localstack -s /bin/bash"
-
-addons:
-  apt:
-    packages:
-    - openjdk-8-jre-headless
 
 env:
   global:

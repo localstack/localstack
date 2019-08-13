@@ -4,7 +4,7 @@ import hashlib
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, to_bytes
 
 APP_NAME = 'ddb_streams_api'
 
@@ -134,7 +134,7 @@ def stream_name_from_stream_arn(stream_arn):
 
 def random_id(stream_arn, kinesis_shard_id):
     namespace = uuid.UUID(bytes=hashlib.sha1(stream_arn.encode('utf-8')).digest()[:16])
-    return uuid.uuid5(namespace, kinesis_shard_id.encode('utf-8')).hex
+    return uuid.uuid5(namespace, to_bytes(kinesis_shard_id)).hex
 
 
 def shard_id(stream_arn, kinesis_shard_id):
