@@ -36,6 +36,7 @@ from localstack.constants import ENV_DEV
 # arrays for temporary files and resources
 TMP_FILES = []
 TMP_THREADS = []
+TMP_PROCESSES = []
 
 # cache clean variables
 CACHE_CLEAN_TIMEOUT = 60 * 5
@@ -640,8 +641,14 @@ def cleanup(files=True, env=ENV_DEV, quiet=True):
 def cleanup_threads_and_processes(quiet=True):
     for t in TMP_THREADS:
         t.stop(quiet=quiet)
-    # clear list
+    for p in TMP_PROCESSES:
+        try:
+            p.terminate()
+        except Exception as e:
+            print(e)
+    # clear lists
     clear_list(TMP_THREADS)
+    clear_list(TMP_PROCESSES)
 
 
 def clear_list(l):

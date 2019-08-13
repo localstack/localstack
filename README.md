@@ -523,6 +523,7 @@ localstack web
 
 ## Change Log
 
+* v0.10.2: Fix logging issue with async Lambdas; fix kinesis records processing; add basic support for `Ref` in CloudFormation; fix ddb streams uuid generation; upgrade travis CI setup; fix DynamoDB error messages; cache server processes
 * v0.10.0: Lazy loading of libraries; fix handling of regions; add API multiserver; improve CPU profiling; fix ES xpack installation; add basic EventBridge support; refactor Lambda API and executor; add MessageAttributes on SNS payloads; tagging for SNS; ability to customize docker command
 * v0.9.6: Add API Gateway SQS proxy; fix command to push Docker image; fix Docker bridge IP configuration; fix SSL issue in dashboard infra; updates to README
 * v0.9.5: Reduce Docker image size by squashing; fix response body for presigned URL S3 PUT requests; fix CreateDate returned by IAM; fix account IDs for CF and SNS; fix topic checks for SMS using SNS; improve documentation around `@LocalstackDockerProperties`; add basic EC2 support; upgrade to ElasticSearch 6.7; set Last-Modified header in S3; preserve logic with uppercase event keys in Java; add support for nodejs 10.x Lambdas
