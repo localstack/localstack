@@ -67,7 +67,7 @@ def start_server(port):
 
 def start_api_server(api, port, server_port=None):
     server_port = server_port or MULTI_SERVER_PORT
-    start_server_process(server_port)
+    thread = start_server_process(server_port)
     url = 'http://localhost:%s%s' % (server_port, API_PATH_SERVERS)
     payload = {
         'api': api,
@@ -77,6 +77,7 @@ def start_api_server(api, port, server_port=None):
     if result.status_code >= 400:
         raise Exception('Unable to start API in multi server (%s): %s' %
                         (result.status_code, result.content))
+    return thread
 
 
 def start_server_process(port):
