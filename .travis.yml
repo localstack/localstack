@@ -25,7 +25,7 @@ before_install:
 
 env:
   global:
-    - JAVA_HOME=/usr/lib/jvm/java-8-oracle
+    - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
     - BOTO_CONFIG=/dev/null
 
 install:
@@ -49,7 +49,7 @@ script:
   #   but instead reinstall using 2.x here, as that allows us to re-use some cached libs etc.
   - "make reinstall-p2 > /dev/null"
   - make init
-  - LAMBDA_EXECUTOR=docker-reuse USE_SSL=1 make test
+  - DEBUG=1 LAMBDA_EXECUTOR=docker-reuse USE_SSL=1 make test
   # build Docker image
   - make docker-build
   # run Java tests

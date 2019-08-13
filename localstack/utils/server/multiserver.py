@@ -95,7 +95,7 @@ def start_server_process(port):
     thread.start()
     TMP_THREADS.append(thread)
     config['thread'] = thread
-    wait_for_port_open(port, retries=10, sleep_time=1)
+    wait_for_port_open(port, retries=20, sleep_time=1)
     return thread
 
 
