@@ -210,6 +210,13 @@ def canonicalize_api_names(apis=None):
     return apis
 
 
+def is_api_enabled(api):
+    apis = canonicalize_api_names()
+    for a in apis:
+        if a == api or a.startswith('%s:' % api):
+            return True
+
+
 def start_infra_locally():
     bootstrap_installation()
     from localstack.services import infra

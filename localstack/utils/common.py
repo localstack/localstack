@@ -41,7 +41,7 @@ TMP_PROCESSES = []
 # cache clean variables
 CACHE_CLEAN_TIMEOUT = 60 * 5
 CACHE_MAX_AGE = 60 * 60
-CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), 'cache.*.json')
+CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), '_random_dir_', 'cache.*.json')
 last_cache_clean_time = {'time': 0}
 mutex_clean = threading.Semaphore(1)
 mutex_popen = threading.Semaphore(1)
@@ -886,6 +886,7 @@ def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=
 
     hash = md5(cmd)
     cache_file = CACHE_FILE_PATTERN.replace('*', hash)
+    mkdir(os.path.dirname(CACHE_FILE_PATTERN))
     if os.path.isfile(cache_file):
         # check file age
         mod_time = os.path.getmtime(cache_file)
@@ -999,3 +1000,7 @@ def isoformat_milliseconds(t):
         return t.isoformat(timespec='milliseconds')
     except TypeError:
         return t.isoformat()[:-3]
+
+
+# Code that requires util functions from above
+CACHE_FILE_PATTERN = CACHE_FILE_PATTERN.replace('_random_dir_', short_uid())
