@@ -27,7 +27,7 @@ forbiddenfruit==0.1.3
 jsonpath-rw==1.4.0
 localstack-ext[full]>=0.10.2
 localstack-ext>=0.10.2         #basic-lib
-localstack-client==0.9         #basic-lib
+localstack-client>=0.10        #basic-lib
 moto-ext==1.3.14.dev0
 nose>=1.3.7
 nose-timer>=0.7.5
