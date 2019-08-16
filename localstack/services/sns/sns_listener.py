@@ -291,6 +291,7 @@ def make_response(op_name, content=''):
     return response
 
 
+# TODO move to utils!
 def make_error(message, code=400, code_string='InvalidParameter'):
     response = Response()
     response._content = """<ErrorResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/"><Error>

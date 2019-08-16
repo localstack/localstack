@@ -66,6 +66,7 @@ RUN mkdir -p /.npm && \
     ln -s `pwd` /tmp/localstack_install_dir
 
 # clean up and prepare for squashing the image
+RUN apk del --purge git
 RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
 RUN rm -rf /tmp/* /root/.cache /opt/yarn-v1.15.2
 RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws

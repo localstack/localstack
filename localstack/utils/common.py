@@ -575,6 +575,30 @@ def is_number(s):
         return False
 
 
+def is_mac_os():
+    try:
+        out = to_str(subprocess.check_output('uname -a', shell=True))
+        return 'Darwin' in out
+    except subprocess.CalledProcessError:
+        return False
+
+
+def is_alpine():
+    try:
+        out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
+        return 'Alpine' in out
+    except subprocess.CalledProcessError:
+        return False
+
+
+def is_linux():
+    try:
+        out = to_str(subprocess.check_output('uname -a', shell=True))
+        return 'Linux' in out
+    except subprocess.CalledProcessError:
+        return False
+
+
 def short_uid():
     return str(uuid.uuid4())[0:8]
 
