@@ -14,7 +14,7 @@ from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTem
 from localstack import config
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, DEFAULT_REGION
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, FuncThread
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names)
@@ -27,15 +27,24 @@ LOG = logging.getLogger(__name__)
 # Maps (stack_name,resource_logical_id) -> Bool to indicate which resources are currently being updated
 CURRENTLY_UPDATING_RESOURCES = {}
 
+# whether to start the API in a separate process
+RUN_SERVER_IN_PROCESS = False
+
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_CLOUDFORMATION
     backend_port = DEFAULT_PORT_CLOUDFORMATION_BACKEND
-    cmd = 'python "%s" cloudformation -p %s -H 0.0.0.0' % (__file__, backend_port)
     print('Starting mock CloudFormation (%s port %s)...' % (get_service_protocol(), port))
-    start_proxy_for_service('dynamodb', port, backend_port, update_listener)
-    env_vars = {'PYTHONPATH': ':'.join(sys.path)}
-    return do_run(cmd, asynchronous, env_vars=env_vars)
+    start_proxy_for_service('cloudformation', port, backend_port, update_listener)
+    if RUN_SERVER_IN_PROCESS:
+        cmd = 'python "%s" cloudformation -p %s -H 0.0.0.0' % (__file__, backend_port)
+        env_vars = {'PYTHONPATH': ':'.join(sys.path)}
+        return do_run(cmd, asynchronous, env_vars=env_vars)
+    else:
+        argv = ['cloudformation', '-p', str(backend_port), '-H', '0.0.0.0']
+        thread = FuncThread(start_up, argv)
+        thread.start()
+        return thread
 
 
 def apply_patches():
@@ -120,6 +129,10 @@ def apply_patches():
         if not resource:
             # create resource definition and store CloudFormation metadata in moto
             resource = parse_and_create_resource_orig(logical_id, resource_json, resources_map, region_name)
+            # Fix for moto which sometimes hard-codes region name as 'us-east-1'
+            if hasattr(resource, 'region_name') and resource.region_name != region_name:
+                LOG.debug('Updating incorrect region from %s to %s' % (resource.region_name, region_name))
+                resource.region_name = region_name
 
         # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
         update_resource_name(resource, resource_json)
@@ -148,7 +161,7 @@ def apply_patches():
             new_res_id = find_id(result)
             LOG.debug('Updating resource id: %s - %s, %s - %s' % (existing_id, new_res_id, resource, resource_json))
             if new_res_id:
-                LOG.info('Updating resource ID from %s to %s' % (existing_id, new_res_id))
+                LOG.info('Updating resource ID from %s to %s (%s)' % (existing_id, new_res_id, region_name))
                 update_resource_id(resource, new_res_id, props, region_name)
             else:
                 LOG.warning('Unable to extract id for resource %s: %s' % (logical_id, result))
@@ -431,20 +444,24 @@ def inject_stats_endpoint():
         moto_server.create_backend_app = create_backend_app
 
 
-def main():
-    setup_logging()
-
+def start_up(*args):
     # patch moto implementation
     apply_patches()
 
     # add memory profiling endpoint
     inject_stats_endpoint()
 
+    return moto_main(*args)
+
+
+def main():
+    setup_logging()
+
     # make sure all API names and ports are mapped properly
     canonicalize_api_names()
 
     # start API
-    sys.exit(moto_main())
+    sys.exit(start_up())
 
 
 if __name__ == '__main__':
