@@ -22,6 +22,9 @@ MULTI_SERVER_PORT = 51492
 # API paths
 API_PATH_SERVERS = '/servers'
 
+# whether to start the multiserver in a separate process
+RUN_SERVER_IN_PROCESS = False
+
 
 def start_api_server_locally(request):
     api = request.get('api')
@@ -41,7 +44,7 @@ def start_api_server_locally(request):
     return result
 
 
-def start_server(port):
+def start_server(port, asynchronous=False):
 
     class ConfigListener(ProxyListener):
         def forward_request(self, method, path, data, **kwargs):
@@ -62,6 +65,8 @@ def start_server(port):
 
     proxy = GenericProxy(port, update_listener=ConfigListener())
     proxy.start()
+    if asynchronous:
+        return proxy
     proxy.join()
 
 
@@ -86,13 +91,17 @@ def start_server_process(port):
     port = port or MULTI_SERVER_PORT
     API_SERVERS['__server__'] = config = {'port': port}
     LOG.info('Starting multi API server process on port %s' % port)
-    cmd = '"%s" "%s" %s' % (sys.executable, __file__, port)
-    env_vars = {
-        'PYTHONPATH': '.:%s' % constants.LOCALSTACK_ROOT_FOLDER
-    }
-    thread = ShellCommandThread(cmd, outfile=subprocess.PIPE, env_vars=env_vars,
-        inherit_cwd=True)
-    thread.start()
+    if RUN_SERVER_IN_PROCESS:
+        cmd = '"%s" "%s" %s' % (sys.executable, __file__, port)
+        env_vars = {
+            'PYTHONPATH': '.:%s' % constants.LOCALSTACK_ROOT_FOLDER
+        }
+        thread = ShellCommandThread(cmd, outfile=subprocess.PIPE, env_vars=env_vars,
+            inherit_cwd=True)
+        thread.start()
+    else:
+        thread = start_server(port, asynchronous=True)
+
     TMP_THREADS.append(thread)
     config['thread'] = thread
     wait_for_port_open(port, retries=20, sleep_time=1)
