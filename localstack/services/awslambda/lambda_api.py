@@ -330,6 +330,8 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
     try:
         func_arn = aws_stack.fix_arn(func_arn)
         func_details = arn_to_lambda.get(func_arn)
+        if not func_details:
+            return not_found_error(msg='The resource specified in the request does not exist.')
         if not context:
             context = LambdaContext(func_details, version)
         result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
@@ -645,6 +647,14 @@ def forward_to_fallback_url(func_arn, data):
     raise ClientError('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
 
 
+def not_found_error(ref=None, msg=None):
+    if not msg:
+        msg = 'The resource you requested does not exist.'
+        if ref:
+            msg = '%s not found: %s' % ('Function' if ':function:' in ref else 'Resource', ref)
+    return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+
 # ------------
 # API METHODS
 # ------------
@@ -731,8 +741,7 @@ def get_function(function):
             if lambda_details.concurrency is not None:
                 result['Concurrency'] = lambda_details.concurrency
             return jsonify(result)
-    return error_response(
-        'Function not found: %s' % func_arn(function), 404, error_type='ResourceNotFoundException')
+    return not_found_error(func_arn(function))
 
 
 @app.route('%s/functions/' % PATH_ROOT, methods=['GET'])
@@ -767,7 +776,7 @@ def delete_function(function):
     try:
         arn_to_lambda.pop(arn)
     except KeyError:
-        return error_response('Function does not exist: %s' % function, 404, error_type='ResourceNotFoundException')
+        return not_found_error(func_arn(function))
 
     event_publisher.fire_event(event_publisher.EVENT_LAMBDA_DELETE_FUNC,
         payload={'n': event_publisher.get_hash(function)})
@@ -826,7 +835,7 @@ def get_function_configuration(function):
     arn = func_arn(function)
     lambda_details = arn_to_lambda.get(arn)
     if not lambda_details:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     result = format_func_details(lambda_details)
     return jsonify(result)
 
@@ -932,10 +941,9 @@ def invoke_function(function):
     # check if this lambda function exists
     not_found = None
     if arn not in arn_to_lambda:
-        not_found = error_response('Function does not exist: %s' % arn, 404, error_type='ResourceNotFoundException')
+        not_found = not_found_error(arn)
     if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
-        not_found = error_response('Function does not exist: {0}:{1}'.format(arn, qualifier), 404,
-                              error_type='ResourceNotFoundException')
+        not_found = not_found_error('{0}:{1}'.format(arn, qualifier))
     if not_found:
         forward_result = forward_to_fallback_url(func_arn, data)
         if forward_result is not None:
@@ -990,7 +998,7 @@ def get_event_source_mapping(mapping_uuid):
     mappings = [m for m in mappings if mapping_uuid == m.get('UUID')]
 
     if len(mappings) == 0:
-        return error_response('The resource you requested does not exist.', 404, error_type='ResourceNotFoundException')
+        return not_found_error()
     return jsonify(mappings[0])
 
 
@@ -1044,7 +1052,7 @@ def delete_event_source_mapping(mapping_uuid):
 def publish_version(function):
     arn = func_arn(function)
     if arn not in arn_to_lambda:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     return jsonify(publish_new_function_version(arn))
 
 
@@ -1052,7 +1060,7 @@ def publish_version(function):
 def list_versions(function):
     arn = func_arn(function)
     if arn not in arn_to_lambda:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     return jsonify({'Versions': do_list_versions(arn)})
 
 
@@ -1060,7 +1068,7 @@ def list_versions(function):
 def create_alias(function):
     arn = func_arn(function)
     if arn not in arn_to_lambda:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     data = json.loads(request.data)
     alias = data.get('Name')
     if alias in arn_to_lambda.get(arn).aliases:
@@ -1075,10 +1083,9 @@ def create_alias(function):
 def update_alias(function, name):
     arn = func_arn(function)
     if arn not in arn_to_lambda:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     if name not in arn_to_lambda.get(arn).aliases:
-        return error_response('Alias not found: %s' % arn + ':' + name, 404,
-                              error_type='ResourceNotFoundException')
+        return not_found_error(msg='Alias not found: %s:%s' % (arn, name))
     current_alias = arn_to_lambda.get(arn).aliases.get(name)
     data = json.loads(request.data)
     version = data.get('FunctionVersion') or current_alias.get('FunctionVersion')
@@ -1090,10 +1097,9 @@ def update_alias(function, name):
 def get_alias(function, name):
     arn = func_arn(function)
     if arn not in arn_to_lambda:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     if name not in arn_to_lambda.get(arn).aliases:
-        return error_response('Alias not found: %s' % arn + ':' + name, 404,
-                              error_type='ResourceNotFoundException')
+        return not_found_error(msg='Alias not found: %s:%s' % (arn, name))
     return jsonify(arn_to_lambda.get(arn).aliases.get(name))
 
 
@@ -1101,7 +1107,7 @@ def get_alias(function, name):
 def list_aliases(function):
     arn = func_arn(function)
     if arn not in arn_to_lambda:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     return jsonify({'Aliases': sorted(arn_to_lambda.get(arn).aliases.values(),
                                       key=lambda x: x['Name'])})
 
@@ -1115,7 +1121,7 @@ def put_concurrency(version, function):
     data = json.loads(request.data)
     lambda_details = arn_to_lambda.get(arn)
     if not lambda_details:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     lambda_details.concurrency = data
     return jsonify(data)
 
@@ -1124,7 +1130,7 @@ def put_concurrency(version, function):
 def list_tags(version, arn):
     func_details = arn_to_lambda.get(arn)
     if not func_details:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     result = {'Tags': func_details.tags}
     return jsonify(result)
 
@@ -1136,7 +1142,7 @@ def tag_resource(version, arn):
     if tags:
         func_details = arn_to_lambda.get(arn)
         if not func_details:
-            return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+            return not_found_error(arn)
         if func_details:
             func_details.tags.update(tags)
     return jsonify({})
@@ -1147,7 +1153,7 @@ def untag_resource(version, arn):
     tag_keys = request.args.getlist('tagKeys')
     func_details = arn_to_lambda.get(arn)
     if not func_details:
-        return error_response('Function not found: %s' % arn, 404, error_type='ResourceNotFoundException')
+        return not_found_error(arn)
     for tag_key in tag_keys:
         func_details.tags.pop(tag_key, None)
     return jsonify({})

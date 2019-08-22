@@ -25,17 +25,17 @@ LOGGER = logging.getLogger(__name__)
 # regex path patterns
 PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 
+# Paths to match
+PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
+
 
 class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
         data = data and json.loads(to_str(data))
 
-        # Paths to match
-        regex2 = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
-
-        if re.match(regex2, path):
-            search_match = re.search(regex2, path)
+        if re.match(PATH_REGEX_USER_REQUEST, path):
+            search_match = re.search(PATH_REGEX_USER_REQUEST, path)
             api_id = search_match.group(1)
             stage = search_match.group(2)
             relative_path_w_query_params = '/%s' % search_match.group(3)

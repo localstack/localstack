@@ -14,7 +14,7 @@ except ImportError:
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, to_str, run, cp_r)
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, to_str, run, cp_r, json_safe)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 
 # constants
@@ -188,7 +188,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         if not event:
             LOG.warning('Empty event body specified for invocation of Lambda "%s"' % func_arn)
             event = {}
-        event_body = json.dumps(event)
+        event_body = json.dumps(json_safe(event))
         stdin = self.prepare_event(environment, event_body)
 
         docker_host = config.DOCKER_HOST_FROM_CONTAINER
