@@ -241,9 +241,15 @@ def get_resource_type(resource):
 
 
 def get_service_name(resource):
-    parts = resource.get('Type', '').split('::')
+    res_type = resource.get('Type', '')
+    parts = res_type.split('::')
     if len(parts) == 1:
         return None
+    if res_type.endswith('Cognito::UserPool'):
+        return 'cognito-idp'
+    if parts[-2] == 'Cognito':
+        # TODO add mappings for "cognito-identity"
+        return 'cognito-idp'
     return parts[1].lower()
 
 
@@ -259,6 +265,8 @@ def get_resource_name(resource):
         name = properties.get('BucketName')
     elif res_type == 'SQS::Queue':
         name = properties.get('QueueName')
+    elif res_type == 'Cognito::UserPool':
+        name = properties.get('PoolName')
     else:
         LOG.warning('Unable to extract name for resource type "%s"' % res_type)
 

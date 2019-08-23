@@ -410,6 +410,12 @@ def sqs_queue_arn(queue_name, account_id=None, region_name=None):
     return ('arn:aws:sqs:%s:%s:%s' % (region_name, account_id, queue_name))
 
 
+def apigateway_restapi_arn(api_id, account_id=None, region_name=None):
+    account_id = get_account_id(account_id)
+    region_name = region_name or DEFAULT_REGION
+    return ('arn:aws:apigateway:%s:%s:/restapis/%s' % (region_name, account_id, api_id))
+
+
 def sqs_queue_name(queue_arn):
     parts = queue_arn.split(':')
     return queue_arn if len(parts) == 1 else parts[5]
