@@ -453,6 +453,7 @@ class TestJavaRuntimes(LambdaTestBase):
         # Lambda supports single JAR deployments without the zip,
         # so we upload the JAR directly.
         cls.test_java_jar = load_file(TEST_LAMBDA_JAVA, mode='rb')
+        cls.test_java_zip = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JAVA,
             zip_file=cls.test_java_jar,
@@ -471,7 +472,7 @@ class TestJavaRuntimes(LambdaTestBase):
         # deploy lambda - Java with serializable input object
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
-            zip_file=cls.test_java_jar,
+            zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
             handler='cloud.localstack.sample.SerializedInputLambdaHandler'
         )
