@@ -6,6 +6,7 @@ from moto.sqs import models as sqs_models
 from moto.core import BaseModel
 from moto.server import main as moto_main
 from moto.dynamodb import models as dynamodb_models
+from moto.dynamodb2 import models as dynamodb2_models
 from moto.awslambda import models as lambda_models
 from moto.apigateway import models as apigw_models
 from moto.cloudformation import parsing, responses
@@ -279,6 +280,14 @@ def apply_patches():
 
     DynamoDB_Table_get_cfn_attribute_orig = dynamodb_models.Table.get_cfn_attribute
     dynamodb_models.Table.get_cfn_attribute = DynamoDB_Table_get_cfn_attribute
+
+    # Patch DynamoDB get_cfn_attribute(..) method in moto
+
+    def DynamoDB2_Table_get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'Arn':
+            return aws_stack.dynamodb_table_arn(table_name=self.name)
+
+    dynamodb2_models.Table.get_cfn_attribute = DynamoDB2_Table_get_cfn_attribute
 
     # Patch SQS get_cfn_attribute(..) method in moto
 
