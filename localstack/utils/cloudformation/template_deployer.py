@@ -192,6 +192,16 @@ RESOURCE_TO_FUNCTION = {
                 'roleArn': lambda params, **kwargs: get_role_arn(params.get('RoleArn'), **kwargs)
             }
         }
+    },
+    'StepFunctions::Activity': {
+        'create': {
+            'boto_client': 'client',
+            'function': 'create_activity',
+            'parameters': {
+                'name': ['Name', PLACEHOLDER_RESOURCE_NAME],
+                'tags': 'Tags'
+            }
+        }
     }
 }
 
@@ -404,6 +414,15 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                 return None
             result = sfn_client.describe_state_machine(stateMachineArn=sm_arn[0])
             return result
+        elif resource_type == 'StepFunctions::Activity':
+            act_name = resource_props.get('Name') or resource_id
+            act_name = resolve_refs_recursively(stack_name, act_name, resources)
+            sfn_client = aws_stack.connect_to_service('stepfunctions')
+            activities = sfn_client.list_activities()['activities']
+            result = [a['activityArn'] for a in activities if a['name'] == act_name]
+            if not result:
+                return None
+            return result[0]
         if is_deployable_resource(resource):
             LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
                         (resource_type, resource_id, resource))
