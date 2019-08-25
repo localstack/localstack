@@ -461,7 +461,7 @@ def get_java_handler(zip_file_content, handler, main_file):
             result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
                 event, context, handler=handler, main_file=main_file)
             return result
-        return execute
+        return execute, zip_file_content
     raise ClientError(error_response(
         'Unable to extract Java Lambda handler - file is not a valid zip/jar files', 400, error_type='ValidationError'))
 
@@ -536,14 +536,12 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         # which runs Lambda in Docker by passing all *.jar files in the function
         # working directory as part of the classpath. Because of this, we need to
         # save the zip_file_content as a .jar here.
+        lambda_handler, zip_file_content = get_java_handler(zip_file_content, handler_name, tmp_file)
         if is_jar_archive(zip_file_content):
             jar_tmp_file = '{working_dir}/{file_name}'.format(
                 working_dir=lambda_cwd, file_name=LAMBDA_JAR_FILE_NAME)
             save_file(jar_tmp_file, zip_file_content)
 
-        lambda_handler = get_java_handler(zip_file_content, handler_name, tmp_file)
-        if isinstance(lambda_handler, Response):
-            return lambda_handler
     else:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)

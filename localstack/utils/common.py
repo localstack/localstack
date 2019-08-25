@@ -741,20 +741,17 @@ def _unzip_file_entry(zip_ref, file_entry, target_dir):
 
 
 def is_jar_archive(content):
-    has_class_content = False
-    try:
-        has_class_content = 'class' in content
-    except TypeError:
-        # in Python 3 we need to use byte strings for byte-based file content
-        has_class_content = b'class' in content
-    if not has_class_content:
-        return False
+    """ Determine whether `content` contains valid zip bytes representing a JAR archive
+        that contains at least one *.class file and a META-INF/MANIFEST.MF file. """
     try:
         with tempfile.NamedTemporaryFile() as tf:
             tf.write(content)
             tf.flush()
             with zipfile.ZipFile(tf.name, 'r') as zf:
-                zf.infolist()
+                class_files = [e for e in zf.infolist() if e.filename.endswith('.class')]
+                manifest_file = [e for e in zf.infolist() if e.filename.upper() == 'META-INF/MANIFEST.MF']
+                if not class_files or not manifest_file:
+                    return False
     except Exception:
         return False
     return True
