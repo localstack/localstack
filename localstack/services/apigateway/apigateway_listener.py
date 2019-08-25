@@ -122,6 +122,8 @@ class ProxyListenerApiGateway(ProxyListener):
 
                     if isinstance(result, FlaskResponse):
                         return flask_to_requests_response(result)
+                    if isinstance(result, Response):
+                        return result
 
                     response = Response()
                     parsed_result = result if isinstance(result, dict) else json.loads(result)
