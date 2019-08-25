@@ -20,6 +20,7 @@ from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names)
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer
+from localstack.services.cloudformation import service_models
 from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
 LOG = logging.getLogger(__name__)
@@ -29,6 +30,11 @@ CURRENTLY_UPDATING_RESOURCES = {}
 
 # whether to start the API in a separate process
 RUN_SERVER_IN_PROCESS = False
+
+# map of additional model classes
+MODEL_MAP = {
+    'AWS::StepFunctions::Activity': service_models.StepFunctionsActivity
+}
 
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
@@ -82,6 +88,10 @@ def apply_patches():
 
     clean_json_orig = parsing.clean_json
     parsing.clean_json = clean_json
+
+    # add model mappings to moto
+
+    parsing.MODEL_MAP.update(MODEL_MAP)
 
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
 
@@ -233,6 +243,9 @@ def apply_patches():
             elif isinstance(resource, sfn_models.StateMachine):
                 sm_arn = aws_stack.state_machine_arn(resource.name)
                 resource.physical_resource_id = sm_arn
+            elif isinstance(resource, service_models.StepFunctionsActivity):
+                act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
+                resource.physical_resource_id = act_arn
             else:
                 LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 

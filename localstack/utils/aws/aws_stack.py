@@ -331,9 +331,9 @@ def get_iam_role(resource, env=None):
     return 'role-%s' % resource
 
 
-def dynamodb_table_arn(table_name, account_id=None):
-    account_id = get_account_id(account_id)
-    return 'arn:aws:dynamodb:%s:%s:table/%s' % (get_local_region(), account_id, table_name)
+def dynamodb_table_arn(table_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:dynamodb:%s:%s:table/%s'
+    return _resource_arn(table_name, pattern, account_id=account_id, region_name=region_name)
 
 
 def dynamodb_stream_arn(table_name, account_id=None):
@@ -361,12 +361,14 @@ def lambda_function_name(name_or_arn):
     return parts[6]
 
 
-def state_machine_arn(name, account_id=None):
-    if ':' in name:
-        return name
-    account_id = get_account_id(account_id)
+def state_machine_arn(name, account_id=None, region_name=None):
     pattern = 'arn:aws:states:%s:%s:stateMachine:%s'
-    return pattern % (get_local_region(), account_id, name)
+    return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
+
+
+def stepfunctions_activity_arn(name, account_id=None, region_name=None):
+    pattern = 'arn:aws:states:%s:%s:activity:%s'
+    return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
 def fix_arn(arn):
@@ -378,9 +380,9 @@ def fix_arn(arn):
     return arn
 
 
-def cognito_user_pool_arn(user_pool_id, account_id=None):
-    account_id = get_account_id(account_id)
-    return 'arn:aws:cognito-idp:%s:%s:userpool/%s' % (get_local_region(), account_id, user_pool_id)
+def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
+    pattern = 'arn:aws:cognito-idp:%s:%s:userpool/%s'
+    return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
 def kinesis_stream_arn(stream_name, account_id=None):
@@ -395,6 +397,14 @@ def firehose_stream_arn(stream_name, account_id=None):
 
 def s3_bucket_arn(bucket_name, account_id=None):
     return 'arn:aws:s3:::%s' % (bucket_name)
+
+
+def _resource_arn(name, pattern, account_id=None, region_name=None):
+    if ':' in name:
+        return name
+    account_id = get_account_id(account_id)
+    region_name = region_name or get_local_region()
+    return pattern % (region_name, account_id, name)
 
 
 def create_sqs_queue(queue_name, env=None):
