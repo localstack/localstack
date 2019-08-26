@@ -554,23 +554,25 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
             unzip(tmp_file, lambda_cwd)
 
         main_file = '%s/%s' % (lambda_cwd, handler_file)
-        if os.path.isfile(main_file):
-            # make sure the file is actually readable, then read contents
-            ensure_readable(main_file)
-            zip_file_content = load_file(main_file, mode='rb')
-        else:
+        if not os.path.exists(main_file):
             # Raise an error if (1) this is not a local mount lambda, or (2) we're
             # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
             # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
             if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
-                file_list = run('ls -la %s' % lambda_cwd)
+                file_list = run('cd %s; du -d 3 .' % lambda_cwd)
+                config_debug = ('Config for local, docker, remote: "%s", "%s", "%s"' %
+                    (is_local_mount, use_docker(), config.LAMBDA_REMOTE_DOCKER))
                 LOG.debug('Lambda archive content:\n%s' % file_list)
                 raise ClientError(error_response(
-                    'Unable to find handler script in Lambda archive.', 400,
-                    error_type='ValidationError'))
+                    'Unable to find handler script in Lambda archive. %s' % config_debug,
+                    400, error_type='ValidationError'))
 
         if runtime.startswith('python') and not use_docker():
             try:
+                # make sure the file is actually readable, then read contents
+                ensure_readable(main_file)
+                zip_file_content = load_file(main_file, mode='rb')
+                # extract handler
                 lambda_handler = exec_lambda_code(
                     zip_file_content,
                     handler_function=handler_function,
