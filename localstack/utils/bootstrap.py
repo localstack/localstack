@@ -283,7 +283,7 @@ def start_infra_in_docker():
     data_dir = os.environ.get('DATA_DIR', None)
     if data_dir is not None:
         container_data_dir = '/tmp/localstack_data'
-        data_dir_mount = '-v "%s:%s" ' % (data_dir, container_data_dir)
+        data_dir_mount = '-v "%s:%s"' % (data_dir, container_data_dir)
         env_str += '-e DATA_DIR="%s" ' % container_data_dir
 
     interactive = '' if force_noninteractive or in_ci() else '-it '
@@ -292,19 +292,21 @@ def start_infra_in_docker():
     user_flags = '%s ' % user_flags if user_flags else user_flags
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
+    web_ui_flags = '-p {p}:{p} '.format(p=config.PORT_WEB_UI)
 
     container_name = 'localstack_main'
 
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +
         '--name %s ' +
-        '-p 8080:8080 %s %s' +
+        '%s %s %s ' +
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
             config.DOCKER_CMD, interactive, entrypoint, env_str, user_flags, plugin_run_params,
-            container_name, port_mappings, data_dir_mount, config.TMP_FOLDER, config.DOCKER_SOCK,
-            config.DOCKER_SOCK, config.DOCKER_SOCK, config.HOST_TMP_FOLDER, image_name, cmd
+            container_name, web_ui_flags, port_mappings, data_dir_mount,
+            config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
+            config.HOST_TMP_FOLDER, image_name, cmd
     )
 
     mkdir(config.TMP_FOLDER)
