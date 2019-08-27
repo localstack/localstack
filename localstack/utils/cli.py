@@ -65,17 +65,14 @@ Commands:
 
 Options:
     """
-    bootstrap.bootstrap_installation()
-    from localstack.utils.common import run
-
     args.update(docopt(cmd_ssh.__doc__.strip(), argv=argv))
-    lines = run('docker ps').split('\n')[1:]
+    lines = bootstrap.run('docker ps').split('\n')[1:]
     lines = [l for l in lines if 'localstack' in l]
     if len(lines) != 1:
         raise Exception('Expected 1 running "localstack" container, but found %s' % len(lines))
     cid = re.split(r'\s', lines[0])[0]
     try:
-        process = run('docker exec -it %s bash' % cid, tty=True)
+        process = bootstrap.run('docker exec -it %s bash' % cid, tty=True)
         process.wait()
     except KeyboardInterrupt:
         pass
