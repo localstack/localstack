@@ -64,7 +64,7 @@ def install_dependencies():
     reqs_copy_file = os.path.join(root_folder, 'localstack', 'requirements.copy.txt')
     if not os.path.exists(reqs_copy_file):
         shutil.copy(reqs_file, reqs_copy_file)
-    with open(reqs_file) as f:
+    with open(reqs_copy_file) as f:
         requirements = f.read()
     install_requires = []
     for line in re.split('\n', requirements):
@@ -358,9 +358,14 @@ def in_ci():
     return False
 
 
-def run(cmd, asynchronous=False):
+def run(cmd, asynchronous=False, tty=False):
+    stdin = None
+    if tty:
+        asynchronous = True
+        stdin = subprocess.PIPE
+
     if asynchronous:
-        return subprocess.Popen(cmd, shell=True)
+        return subprocess.Popen(cmd, shell=True, stdin=stdin)
     return subprocess.check_output(cmd, shell=True)
 
 
