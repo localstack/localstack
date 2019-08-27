@@ -462,6 +462,9 @@ def handle_notification_request(bucket, method, data):
 
 class ProxyListenerS3(ProxyListener):
 
+    def is_s3_copy_request(self, headers, path):
+        return 'x-amz-copy-source' in headers or 'x-amz-copy-source' in path
+
     def forward_request(self, method, path, data, headers):
 
         # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
@@ -469,8 +472,8 @@ class ProxyListenerS3(ProxyListener):
         if 's3.amazonaws.com' not in headers.get('host', ''):
             headers['host'] = 'localhost'
 
-        # check content md5 hash integrity
-        if 'Content-MD5' in headers:
+        # check content md5 hash integrity if not a copy request
+        if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path):
             response = check_content_md5(data, headers)
             if response is not None:
                 return response

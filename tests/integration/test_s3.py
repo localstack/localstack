@@ -320,6 +320,33 @@ class S3ListenerTest (unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_s3_copy_md5(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put object
+        src_key = 'src'
+        self.s3_client.put_object(Bucket=bucket_name, Key=src_key, Body='something')
+
+        # copy object
+        dest_key = 'dest'
+        response = self.s3_client.copy_object(Bucket=bucket_name, CopySource={'Bucket': bucket_name, 'Key': src_key},
+                                              Key=dest_key)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        # Create copy object to try to match s3a setting Content-MD5
+        dest_key2 = 'dest'
+        url = self.s3_client.generate_presigned_url(
+            'copy_object', Params={'Bucket': bucket_name, 'CopySource': {'Bucket': bucket_name, 'Key': src_key},
+                                   'Key': dest_key2}
+        )
+        # Set a Content-MD5 header that should be ignored on a copy request
+        request_response = requests.put(url, verify=False, headers={'Content-MD5': 'ignored_md5'})
+        self.assertEqual(request_response.status_code, 200)
+
+        # Cleanup
+        self._delete_bucket(bucket_name, [src_key, dest_key, dest_key2])
+
     def test_s3_invalid_content_md5(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
@@ -334,6 +361,9 @@ class S3ListenerTest (unittest.TestCase):
                 raised = True
             if not raised:
                 raise Exception('Invalid MD5 hash "%s" should have raised an error' % hash)
+
+        # Cleanup
+        self.s3_client.delete_bucket(Bucket=bucket_name)
 
     def test_s3_upload_download_gzip(self):
         bucket_name = 'test-bucket-%s' % short_uid()
