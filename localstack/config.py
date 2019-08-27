@@ -116,7 +116,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
-    CONFIG_ENV_VARS += [clean_key + '_BACKEND', clean_key + '_PORT_EXTERNAL']
+    CONFIG_ENV_VARS += [clean_key + '_BACKEND', clean_key + '_PORT', clean_key + '_PORT_EXTERNAL']
 
 # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
 CONFIG_ENV_VARS += ['LOCALSTACK_' + v for v in CONFIG_ENV_VARS]
@@ -210,7 +210,22 @@ def parse_service_ports():
     for service_port in re.split(r'\s*,\s*', service_ports):
         parts = re.split(r'[:=]', service_port)
         service = parts[0]
-        result[service] = int(parts[-1]) if len(parts) > 1 else DEFAULT_SERVICE_PORTS.get(service)
+        key_upper = service.upper().replace('-', '_')
+        port_env_name = '%s_PORT' % key_upper
+        # (1) set default port number
+        port_number = DEFAULT_SERVICE_PORTS.get(service)
+        # (2) set port number from <SERVICE>_PORT environment, if present
+        if os.environ.get(port_env_name):
+            port_number = os.environ.get(port_env_name)
+        # (3) set port number from <service>:<port> portion in $SERVICES, if present
+        if len(parts) > 1:
+            port_number = int(parts[-1])
+        # (4) try to parse as int, fall back to 0 (invalid port)
+        try:
+            port_number = int(port_number)
+        except Exception:
+            port_number = 0
+        result[service] = port_number
     return result
 
 
@@ -225,9 +240,10 @@ def populate_configs(service_ports=None):
         key_upper = key.upper().replace('-', '_')
 
         # define PORT_* variables with actual service ports as per configuration
-        port_key = 'PORT_%s' % key_upper
-        globs[port_key] = SERVICE_PORTS.get(key, 0)
-        url = 'http%s://%s:%s' % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, SERVICE_PORTS.get(key, 0))
+        port_var_name = 'PORT_%s' % key_upper
+        port_number = SERVICE_PORTS.get(key, 0)
+        globs[port_var_name] = port_number
+        url = 'http%s://%s:%s' % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, port_number)
         # define TEST_*_URL variables with mock service endpoints
         url_key = 'TEST_%s_URL' % key_upper
         globs[url_key] = url
