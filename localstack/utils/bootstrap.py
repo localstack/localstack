@@ -1,13 +1,16 @@
 import os
 import re
 import sys
-import pip as pip_mod
+import pty
 import time
-import shutil
+import select
 import pkgutil
 import logging
 import warnings
 import threading
+import traceback
+import pip as pip_mod
+import shutil
 try:
     import subprocess32 as subprocess
 except Exception:
@@ -47,6 +50,11 @@ API_COMPOSITES = {
     'serverless': ['iam', 'lambda', 'dynamodb', 'apigateway', 's3', 'sns'],
     'cognito': ['cognito-idp', 'cognito-identity']
 }
+
+# name of main Docker container
+MAIN_CONTAINER_NAME = 'localstack_main'
+
+mutex_popen = threading.Semaphore(1)
 
 
 def bootstrap_installation():
@@ -226,7 +234,7 @@ def start_infra_locally():
 
 def start_infra_in_docker():
 
-    container_name = 'localstack_main'
+    container_name = MAIN_CONTAINER_NAME
 
     if docker_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
@@ -294,8 +302,6 @@ def start_infra_in_docker():
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
     web_ui_flags = '-p {p}:{p} '.format(p=config.PORT_WEB_UI)
 
-    container_name = 'localstack_main'
-
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +
         '--name %s ' +
@@ -358,15 +364,91 @@ def in_ci():
     return False
 
 
-def run(cmd, asynchronous=False, tty=False):
-    stdin = None
+class FuncThread(threading.Thread):
+    """ Helper class to run a Python function in a background thread. """
+
+    def __init__(self, func, params=None, quiet=False):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.params = params
+        self.func = func
+        self.quiet = quiet
+
+    def run(self):
+        try:
+            self.func(self.params)
+        except Exception:
+            if not self.quiet:
+                LOG.warning('Thread run method %s(%s) failed: %s' %
+                    (self.func, self.params, traceback.format_exc()))
+
+    def stop(self, quiet=False):
+        if not quiet and not self.quiet:
+            LOG.warning('Not implemented: FuncThread.stop(..)')
+
+
+def run(cmd, print_error=True, asynchronous=False, stdin=False,
+        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
+        inherit_env=True, tty=False):
+    # don't use subprocess module inn Python 2 as it is not thread-safe
+    # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
+    if six.PY2:
+        import subprocess32 as subprocess
+    else:
+        import subprocess
+
+    env_dict = os.environ.copy() if inherit_env else {}
+    if env_vars:
+        env_dict.update(env_vars)
+
     if tty:
         asynchronous = True
-        stdin = subprocess.PIPE
+        stdin = True
 
-    if asynchronous:
-        return subprocess.Popen(cmd, shell=True, stdin=stdin)
-    return subprocess.check_output(cmd, shell=True)
+    try:
+        cwd = os.getcwd() if inherit_cwd else None
+        if not asynchronous:
+            if stdin:
+                return subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict,
+                    stdin=subprocess.PIPE, cwd=cwd)
+            output = subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict, cwd=cwd)
+            return output.decode(config.DEFAULT_ENCODING)
+
+        # subprocess.Popen is not thread-safe, hence use a mutex here.. (TODO: mutex still needed?)
+        with mutex_popen:
+            stdin_arg = subprocess.PIPE if stdin else None
+            stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
+            stderr_arg = stderr
+            if tty:
+                master_fd, slave_fd = pty.openpty()
+                stdin_arg = slave_fd
+                stdout_arg = stderr_arg = None
+
+            # start the actual sub process
+            process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
+                stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, preexec_fn=os.setsid)
+
+            if tty:
+                # based on: https://stackoverflow.com/questions/41542960
+                def pipe_streams(*args):
+                    while process.poll() is None:
+                        r, w, e = select.select([sys.stdin, master_fd], [], [])
+                        if sys.stdin in r:
+                            d = os.read(sys.stdin.fileno(), 10240)
+                            os.write(master_fd, d)
+                        elif master_fd in r:
+                            o = os.read(master_fd, 10240)
+                            if o:
+                                os.write(sys.stdout.fileno(), o)
+
+                FuncThread(pipe_streams).start()
+
+            return process
+    except subprocess.CalledProcessError as e:
+        if print_error:
+            print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
+            sys.stdout.flush()
+        raise e
 
 
 def mkdir(folder):

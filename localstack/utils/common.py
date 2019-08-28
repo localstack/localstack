@@ -2,13 +2,11 @@ import io
 import os
 import re
 import sys
-import pty
 import json
 import uuid
 import time
 import glob
 import base64
-import select
 import socket
 import hashlib
 import decimal
@@ -17,7 +15,6 @@ import zipfile
 import binascii
 import tempfile
 import threading
-import traceback
 import subprocess
 import six
 import shutil
@@ -32,6 +29,8 @@ from multiprocessing.dummy import Pool
 from localstack import config
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
+from localstack.utils import bootstrap
+from localstack.utils.bootstrap import FuncThread
 
 # arrays for temporary files and resources
 TMP_FILES = []
@@ -44,7 +43,6 @@ CACHE_MAX_AGE = 60 * 60
 CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), '_random_dir_', 'cache.*.json')
 last_cache_clean_time = {'time': 0}
 mutex_clean = threading.Semaphore(1)
-mutex_popen = threading.Semaphore(1)
 
 # misc. constants
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -78,29 +76,6 @@ class CustomEncoder(json.JSONEncoder):
             return super(CustomEncoder, self).default(o)
         except Exception:
             return None
-
-
-class FuncThread(threading.Thread):
-    """ Helper class to run a Python function in a background thread. """
-
-    def __init__(self, func, params=None, quiet=False):
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self.params = params
-        self.func = func
-        self.quiet = quiet
-
-    def run(self):
-        try:
-            self.func(self.params)
-        except Exception:
-            if not self.quiet:
-                LOG.warning('Thread run method %s(%s) failed: %s' %
-                    (self.func, self.params, traceback.format_exc()))
-
-    def stop(self, quiet=False):
-        if not quiet and not self.quiet:
-            LOG.warning('Not implemented: FuncThread.stop(..)')
 
 
 class ShellCommandThread(FuncThread):
@@ -838,69 +813,10 @@ def run_cmd_safe(**kwargs):
     return run_safe(run, print_error=False, **kwargs)
 
 
-def run(cmd, cache_duration_secs=0, print_error=True, asynchronous=False, stdin=False,
-        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
-        inherit_env=True, tty=False):
-    # don't use subprocess module inn Python 2 as it is not thread-safe
-    # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
-    if six.PY2:
-        import subprocess32 as subprocess
-    else:
-        import subprocess
-
-    env_dict = os.environ.copy() if inherit_env else {}
-    if env_vars:
-        env_dict.update(env_vars)
-
-    if tty:
-        asynchronous = True
-        stdin = True
+def run(cmd, cache_duration_secs=0, **kwargs):
 
     def do_run(cmd):
-        try:
-            cwd = os.getcwd() if inherit_cwd else None
-            if not asynchronous:
-                if stdin:
-                    return subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict,
-                        stdin=subprocess.PIPE, cwd=cwd)
-                output = subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict, cwd=cwd)
-                return output.decode(DEFAULT_ENCODING)
-
-            # subprocess.Popen is not thread-safe, hence use a mutex here.. (TODO: mutex still needed?)
-            with mutex_popen:
-                stdin_arg = subprocess.PIPE if stdin else None
-                stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
-                stderr_arg = stderr
-                if tty:
-                    master_fd, slave_fd = pty.openpty()
-                    stdin_arg = slave_fd
-                    stdout_arg = stderr_arg = None
-
-                # start the actual sub process
-                process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
-                    stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, preexec_fn=os.setsid)
-
-                if tty:
-                    # based on: https://stackoverflow.com/questions/41542960
-                    def pipe_streams(*args):
-                        while process.poll() is None:
-                            r, w, e = select.select([sys.stdin, master_fd], [], [])
-                            if sys.stdin in r:
-                                d = os.read(sys.stdin.fileno(), 10240)
-                                os.write(master_fd, d)
-                            elif master_fd in r:
-                                o = os.read(master_fd, 10240)
-                                if o:
-                                    os.write(sys.stdout.fileno(), o)
-
-                    FuncThread(pipe_streams).start()
-
-                return process
-        except subprocess.CalledProcessError as e:
-            if print_error:
-                print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
-                sys.stdout.flush()
-            raise e
+        return bootstrap.run(cmd, **kwargs)
 
     if cache_duration_secs <= 0:
         return do_run(cmd)
