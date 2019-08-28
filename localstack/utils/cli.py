@@ -1,7 +1,8 @@
 import re
 from docopt import docopt
 from localstack import config
-from localstack.utils import bootstrap
+from localstack.utils.bootstrap import (
+    start_infra_in_docker, start_infra_locally, run, to_str, MAIN_CONTAINER_NAME)
 
 # Note: make sure we don't have imports at the root level here
 
@@ -29,9 +30,9 @@ Options:
         print('Starting local dev environment. CTRL-C to quit.')
         in_docker = args['--docker'] or not args['--host']
         if in_docker:
-            bootstrap.start_infra_in_docker()
+            start_infra_in_docker()
         else:
-            bootstrap.start_infra_locally()
+            start_infra_locally()
 
 
 def cmd_web(argv, args):
@@ -66,13 +67,13 @@ Commands:
 Options:
     """
     args.update(docopt(cmd_ssh.__doc__.strip(), argv=argv))
-    lines = bootstrap.run('docker ps').split('\n')[1:]
-    lines = [l for l in lines if 'localstack' in l]
+    lines = to_str(run('docker ps')).split('\n')[1:]
+    lines = [l for l in lines if MAIN_CONTAINER_NAME in l]
     if len(lines) != 1:
-        raise Exception('Expected 1 running "localstack" container, but found %s' % len(lines))
+        raise Exception('Expected 1 running "%s" container, but found %s' % (MAIN_CONTAINER_NAME, len(lines)))
     cid = re.split(r'\s', lines[0])[0]
     try:
-        process = bootstrap.run('docker exec -it %s bash' % cid, tty=True)
+        process = run('docker exec -it %s bash' % cid, tty=True)
         process.wait()
     except KeyboardInterrupt:
         pass
