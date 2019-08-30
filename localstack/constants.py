@@ -26,6 +26,7 @@ DEFAULT_PORT_ELASTICSEARCH_BACKEND = 4560
 DEFAULT_PORT_CLOUDFORMATION_BACKEND = 4559
 DEFAULT_PORT_STEPFUNCTIONS_BACKEND = 4558
 DEFAULT_PORT_IAM_BACKEND = 4557
+DEFAULT_PORT_EC2_BACKEND = 4556
 
 DEFAULT_PORT_WEB_UI = 8080
 
@@ -79,6 +80,8 @@ ELASTICSEARCH_JAR_URL = 'https://artifacts.elastic.co/downloads/elasticsearch/el
 # See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
 ELASTICSEARCH_PLUGIN_LIST = ['analysis-icu', 'ingest-attachment', 'analysis-kuromoji',
  'mapper-murmur3', 'mapper-size', 'analysis-phonetic', 'analysis-smartcn', 'analysis-stempel', 'analysis-ukrainian']
+# Default ES modules to exclude (save apprx 66MB in the final image)
+ELASTICSEARCH_DELETE_MODULES = ['ingest-geoip']
 DYNAMODB_JAR_URL = 'https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip'
 ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.14.2.jar'
 STS_JAR_URL = 'https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
