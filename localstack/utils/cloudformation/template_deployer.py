@@ -226,9 +226,9 @@ def get_role_arn(role_arn, **kwargs):
     return aws_stack.role_arn(role_arn)
 
 
-# ----------------
+# ---------------------
 # CF TEMPLATE HANDLING
-# ----------------
+# ---------------------
 
 def parse_template(template):
     try:
@@ -427,12 +427,16 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
                         (resource_type, resource_id, resource))
     except Exception as e:
-        # we expect this to be a "not found" exception
-        markers = ['NoSuchBucket', 'ResourceNotFound', '404']
-        if not list(filter(lambda marker, e=e: marker in str(e), markers)):
-            LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
-                (resource_type, e, traceback.format_exc(), resource, resource_status))
+        check_not_found_exception(e, resource_type, resource, resource_status)
     return None
+
+
+def check_not_found_exception(e, resource_type, resource, resource_status):
+    # we expect this to be a "not found" exception
+    markers = ['NoSuchBucket', 'ResourceNotFound', '404']
+    if not list(filter(lambda marker, e=e: marker in str(e), markers)):
+        LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
+            (resource_type, e, traceback.format_exc(), resource, resource_status))
 
 
 def extract_resource_attribute(resource_type, resource, attribute):

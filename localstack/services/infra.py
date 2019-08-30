@@ -13,7 +13,8 @@ from localstack import constants, config
 from localstack.config import USE_SSL
 from localstack.constants import (
     ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
-    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
+    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
+    DEFAULT_PORT_IAM_BACKEND, DEFAULT_PORT_EC2_BACKEND)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker)
@@ -195,9 +196,10 @@ def start_secretsmanager(port=None, asynchronous=False):
     return start_moto_server('secretsmanager', port, name='Secrets Manager', asynchronous=asynchronous)
 
 
-def start_ec2(port=None, asynchronous=False):
+def start_ec2(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_EC2
-    return start_moto_server('ec2', port, name='EC2', asynchronous=asynchronous)
+    return start_moto_server('ec2', port, name='EC2', asynchronous=asynchronous,
+        backend_port=DEFAULT_PORT_EC2_BACKEND, update_listener=update_listener)
 
 
 # ---------------
