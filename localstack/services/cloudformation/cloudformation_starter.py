@@ -1,5 +1,6 @@
 import sys
 import logging
+import traceback
 from moto.s3 import models as s3_models
 from moto.iam import models as iam_models
 from moto.sqs import models as sqs_models
@@ -100,7 +101,8 @@ def apply_patches():
         try:
             return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name)
         except Exception as e:
-            LOG.error('Unable to parse and create resource "%s": %s' % (logical_id, e))
+            LOG.error('Unable to parse and create resource "%s": %s %s' %
+                      (logical_id, e, traceback.format_exc()))
             raise
 
     def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name):

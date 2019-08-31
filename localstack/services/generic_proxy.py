@@ -79,6 +79,12 @@ class ProxyListener(object):
         """
         return None
 
+    def get_forward_url(self, method, path, data, headers):
+        """ Return a custom URL to forward the given request to. If a falsy value is returned,
+            then the default URL will be used.
+        """
+        return None
+
 
 class GenericProxyHandler(BaseHTTPRequestHandler):
 
@@ -190,33 +196,38 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         return ', '.join(x_forwarded_for_list)
 
     def forward(self, method):
-        path = self.path
-        if '://' in path:
-            path = '/' + path.split('://', 1)[1].split('/', 1)[1]
-        proxy_url = '%s%s' % (self.proxy.forward_url, path)
-        target_url = self.path
-        if '://' not in target_url:
-            target_url = '%s%s' % (self.proxy.forward_url, target_url)
         data = self.data_bytes
-
         forward_headers = CaseInsensitiveDict(self.headers)
-        # update original "Host" header (moto s3 relies on this behavior)
-        if not forward_headers.get('Host'):
-            forward_headers['host'] = urlparse(target_url).netloc
-        if 'localhost.atlassian.io' in forward_headers.get('Host'):
-            forward_headers['host'] = 'localhost'
-
-        forward_headers['X-Forwarded-For'] = self.build_x_forwarded_for(forward_headers)
 
         # force close connection
         if forward_headers.get('Connection', '').lower() != 'keep-alive':
             self.close_connection = 1
 
+        path = self.path
+        if '://' in path:
+            path = '/' + path.split('://', 1)[1].split('/', 1)[1]
+        forward_url = self.proxy.forward_url
+        for listener in self._listeners():
+            if listener:
+                forward_url = listener.get_forward_url(method, path, data, forward_headers) or forward_url
+
+        proxy_url = '%s%s' % (forward_url, path)
+        target_url = self.path
+        if '://' not in target_url:
+            target_url = '%s%s' % (forward_url, target_url)
+
+        # update original "Host" header (moto s3 relies on this behavior)
+        if not forward_headers.get('Host'):
+            forward_headers['host'] = urlparse(target_url).netloc
+        if 'localhost.atlassian.io' in forward_headers.get('Host'):
+            forward_headers['host'] = 'localhost'
+        forward_headers['X-Forwarded-For'] = self.build_x_forwarded_for(forward_headers)
+
         try:
             response = None
             modified_request = None
             # update listener (pre-invocation)
-            for listener in self.DEFAULT_LISTENERS + [self.proxy.update_listener]:
+            for listener in self._listeners():
                 if not listener:
                     continue
                 listener_result = listener.forward_request(method=method,
@@ -248,7 +259,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 request_url = proxy_url
                 if modified_request:
                     if modified_request.url:
-                        request_url = '%s%s' % (self.proxy.forward_url, modified_request.url)
+                        request_url = '%s%s' % (forward_url, modified_request.url)
                     data_to_send = modified_request.data
 
                 response = self.method(request_url, data=data_to_send,
@@ -323,6 +334,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
             except Exception as e:
                 LOG.warning('Unable to flush write file: %s' % e)
+
+    def _listeners(self):
+        return self.DEFAULT_LISTENERS + [self.proxy.update_listener]
 
     def log_message(self, format, *args):
         return

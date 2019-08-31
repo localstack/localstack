@@ -26,7 +26,7 @@ from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import GenericProxy, GenericProxyHandler
+from localstack.services.generic_proxy import GenericProxy, GenericProxyHandler, ProxyListener
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 
 # flag to indicate whether signal handlers have been set up already
@@ -81,7 +81,7 @@ def register_plugin(plugin):
 # -----------------------
 
 
-class ConfigUpdateProxyListener(object):
+class ConfigUpdateProxyListener(ProxyListener):
     """ Default proxy listener that intercepts requests to retrieve or update config variables. """
 
     def forward_request(self, method, path, data, headers):
