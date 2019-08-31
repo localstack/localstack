@@ -137,8 +137,9 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         if response._content:
             # fix the table and latest stream ARNs (DynamoDBLocal hardcodes "ddblocal" as the region)
-            content_replaced = re.sub(r'("TableArn"|"LatestStreamArn")\s*:\s*"arn:aws:dynamodb:ddblocal:([^"]+)"',
-                r'\1: "arn:aws:dynamodb:%s:\2"' % aws_stack.get_local_region(), to_str(response._content))
+            content_replaced = re.sub(r'("TableArn"|"LatestStreamArn"|"StreamArn")\s*:\s*"arn:aws:dynamodb:' +
+            'ddblocal:([^"]+)"', r'\1: "arn:aws:dynamodb:%s:\2"' % aws_stack.get_local_region(),
+            to_str(response._content))
             if content_replaced != response._content:
                 response._content = content_replaced
                 fix_headers_for_updated_response(response)
