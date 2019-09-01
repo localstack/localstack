@@ -185,7 +185,12 @@ def download_s3_object(s3, bucket, path):
     with tempfile.SpooledTemporaryFile() as tmpfile:
         s3.Bucket(bucket).download_fileobj(path, tmpfile)
         tmpfile.seek(0)
-        return to_str(tmpfile.read())
+        result = tmpfile.read()
+        try:
+            result = to_str(result)
+        except Exception:
+            pass
+        return result
 
 
 def map_all_s3_objects(to_json=True):
@@ -194,9 +199,13 @@ def map_all_s3_objects(to_json=True):
     for bucket in s3_client.buckets.all():
         for key in bucket.objects.all():
             value = download_s3_object(s3_client, key.bucket_name, key.key)
-            if to_json:
-                value = json.loads(value)
-            result['%s/%s' % (key.bucket_name, key.key)] = value
+            try:
+                if to_json:
+                    value = json.loads(value)
+                result['%s/%s' % (key.bucket_name, key.key)] = value
+            except Exception:
+                # skip non-JSON or binary objects
+                pass
     return result
 
 
