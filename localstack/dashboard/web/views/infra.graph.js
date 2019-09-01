@@ -30,14 +30,15 @@
         var templates = {};
         $http({
             url: "/views/templates.html"
-        }).success(function (data, status, headers, config) {
+        }).then(function (response) {
+
+          let { data, status, headers, config } = response;
 
           /* map of elements to render */
           var components = {};
           /* graph margins */
           var marginLeft = 20;
           var marginTop = 20;
-
 
           data = $.parseHTML(data);
           $(data).children().each(function(i,c) {
@@ -143,29 +144,6 @@
             /* repainting a single time does not seem to work */
             setTimeout(function(){ for(var i = 0; i < 5; i ++) { j.repaintEverything(); } });
           }
-
-
-          // var m1 = render('micros', {name: 'Feeder 1'});
-          // var k1 = render('kinesis', {'name': 'Kinesis 1'});
-          // var ks1 = render('kinesis_shard', {'name': 'Shard 1'}, true);
-          // var ks2 = render('kinesis_shard', {'name': 'Shard 2'}, true);
-          // $(k1).select('.shards').append(ks1);
-          // $(k1).select('.shards').append(ks2);
-          // var l1 = render('lambda', {'name': 'Lambda (raw)'});
-          // var l2 = render('lambda', {'name': 'Lambda (conformed)'});
-          // var b1 = render('s3', {'name': 'Raw Bucket'});
-          // var b2 = render('s3', {'name': 'Conformed Bucket'});
-          // var e1 = render('es', {'name': 'Search Index'});
-
-          // connect(m1, ks1);
-          // connect(m1, ks2);
-          // connect(k1, l1, true);
-          // connect(ks1, l1);
-          // connect(ks2, l1);
-          // connect(l1, b1);
-          // connect(b1, l2);
-          // connect(l2, b2);
-          // connect(l2, e1);
 
           layout();
 
