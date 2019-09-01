@@ -178,7 +178,7 @@ class ProxyListenerSQS(ProxyListener):
     #      dataType: 'String'
     #    }
     # }
-    def _format_message_attributes(self, data):
+    def format_message_attributes(self, data):
         prefix = 'MessageAttribute'
         names = []
         for (k, name) in [(k, data[k]) for k in data if k.startswith(prefix) and k.endswith('.Name')]:
@@ -225,7 +225,7 @@ class ProxyListenerSQS(ProxyListener):
         queue_url = req_data.get('QueueUrl', [path.partition('?')[0]])[0]
         queue_name = queue_url[queue_url.rindex('/') + 1:]
         message_body = req_data.get('MessageBody', [None])[0]
-        message_attributes = self._format_message_attributes(req_data)
+        message_attributes = self.format_message_attributes(req_data)
         region_name = extract_region_from_auth_header(headers)
 
         process_result = lambda_api.process_sqs_message(message_body,
