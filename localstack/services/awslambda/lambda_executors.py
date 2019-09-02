@@ -5,6 +5,7 @@ import time
 import logging
 import threading
 import subprocess
+from random import randint
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
@@ -54,6 +55,7 @@ class LambdaExecutor(object):
     def __init__(self):
         # keeps track of each function arn and the last time it was invoked
         self.function_invoke_times = {}
+        self.port = str(randint(10000, 12000))
 
     def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
 
@@ -147,6 +149,10 @@ class LambdaExecutor(object):
 
         return result, log_output
 
+    def port(self):
+        """ Return a randomly container port"""
+        return self.port
+
 
 class ContainerInfo:
     """
@@ -200,6 +206,12 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
 
+        java_opts = ''
+        if config.JAVA_OPTS:
+            address = ',address=%s' % self.port
+            java_opts = config.JAVA_OPTS + address
+            LOG.debug(java_opts)
+
         # custom command to execute in the container
         command = ''
 
@@ -213,8 +225,8 @@ class LambdaExecutorContainers(LambdaExecutor):
             # TODO cleanup once we have custom Java Docker image
             taskdir = '/var/task'
             save_file(os.path.join(lambda_cwd, LAMBDA_EVENT_FILE), event_body)
-            command = ("bash -c 'cd %s; java -cp \".:`ls *.jar | tr \"\\n\" \":\"`\" \"%s\" \"%s\" \"%s\"'" %
-                (taskdir, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
+            command = ("bash -c 'cd %s; java %s -cp \".:`ls *.jar | tr \"\\n\" \":\"`\" \"%s\" \"%s\" \"%s\"'" %
+                (taskdir, java_opts, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
 
         # determine the command to be executed (implemented by subclasses)
         cmd = self.prepare_execution(func_arn, environment, runtime, command, handler, lambda_cwd)
@@ -561,7 +573,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             command = '"%s"' % handler
 
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
-
+        ports = ' -p "%s":"%s"' % (self.port, self.port)
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = ' --network="%s" ' % network if network else ''
         docker_cmd = self._docker_cmd()
@@ -571,12 +583,13 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 'CONTAINER_ID="$(docker create -i'
                 ' %s'
                 ' %s'
+                ' %s'
                 ' %s'  # network
                 ' "lambci/lambda:%s" %s'
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (entrypoint, env_vars_string, network_str, runtime, command, docker_cmd, lambda_cwd, docker_cmd)
+            ) % (entrypoint, ports, env_vars_string, network_str, runtime, command, docker_cmd, lambda_cwd, docker_cmd)
         else:
             lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
