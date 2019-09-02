@@ -88,6 +88,8 @@ missing functionality on top of them:
 
 ## Installing
 
+### Manual
+
 The easiest way to install LocalStack is via `pip`:
 
 ```
@@ -97,6 +99,12 @@ pip install localstack
 **Note**: Please do **not** use `sudo` or the `root` user - LocalStack
 should be installed and started entirely under a local non-root user. If you have problems
 with permissions in MacOS X Sierra, install with `pip install --user localstack`
+
+### Automatic
+
+You can install LocalStack automatically by clicking the install button in the LocalStack section of [Commandeer](https://getcommandeer.com) app. It'll check if you have all pre-requisites and install LocalStack if necessary.
+
+![Install LocalStack through Commandeer](img/localstack_commandeer_install.gif)
 
 ## Running in Docker
 
