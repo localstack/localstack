@@ -22,8 +22,9 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone, md5, get_service_protocol)
 from localstack.utils.analytics import event_publisher
-from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.aws.aws_responses import requests_response
 from localstack.services.s3 import multipart_content
+from localstack.services.generic_proxy import ProxyListener
 
 # mappings for S3 bucket notifications
 S3_NOTIFICATIONS = {}
@@ -279,7 +280,6 @@ def append_last_modified_headers(response, content=None):
 
 
 def get_lifecycle(bucket_name):
-    response = Response()
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
     if not lifecycle:
         # TODO: check if bucket exists, otherwise return 404-like error
@@ -287,9 +287,36 @@ def get_lifecycle(bucket_name):
             'LifecycleConfiguration': {}
         }
     body = xmltodict.unparse(lifecycle)
-    response._content = body
-    response.status_code = 200
-    return response
+    return requests_response(body)
+
+
+def get_replication(bucket_name):
+    # TODO return actual value
+
+    # result = {
+    #     'Error': {
+    #         'Code': 'NoSuchReplicationConfiguration',
+    #         'Message': 'There is no replication configuration with that name.'
+    #     }
+    # }
+    # content = xmltodict.unparse(result)
+    # return requests_response(content, status_code=404)
+    # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGETreplication.html
+    config = {}
+    result = {
+        'ReplicationConfiguration': config
+    }
+    body = xmltodict.unparse(result)
+    return requests_response(body)
+
+
+def get_encryption(bucket_name):
+    # TODO return actual value
+    result = {
+        'ServerSideEncryptionConfiguration': {}
+    }
+    body = xmltodict.unparse(result)
+    return requests_response(body)
 
 
 def set_lifecycle(bucket_name, lifecycle):
@@ -345,16 +372,14 @@ def check_content_md5(data, headers):
     except Exception:
         expected = '__invalid__'
     if actual != expected:
-        response = Response()
         result = {
             'Error': {
                 'Code': 'InvalidDigest',
                 'Message': 'The Content-MD5 you specified was invalid'
             }
         }
-        response._content = xmltodict.unparse(result)
-        response.status_code = 400
-        return response
+        content = xmltodict.unparse(result)
+        return requests_response(content, status_code=400)
 
 
 def expand_redirect_url(starting_url, key, bucket):
@@ -533,6 +558,14 @@ class ProxyListenerS3(ProxyListener):
                 return get_lifecycle(bucket)
             if method == 'PUT':
                 return set_lifecycle(bucket, data)
+
+        if query == 'replication' or 'replication' in query_map:
+            if method == 'GET':
+                return get_replication(bucket)
+
+        if query == 'encryption' or 'encryption' in query_map:
+            if method == 'GET':
+                return get_encryption(bucket)
 
         if modified_data is not None:
             return Request(data=modified_data, headers=headers, method=method)
