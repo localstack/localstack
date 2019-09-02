@@ -534,8 +534,23 @@ localstack web
 
 ## Other UI Clients
 
-* [Commandeer desktop app](https://getcommandeer.com)
-* [DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin)
+### Commandeer
+[Commandeer desktop app](https://getcommandeer.com) allows you to do the following:
+* Install LocalStack on your machine
+* Visually see your LocalStack data in S3, DynamoDB, Lambda, API Gateway, CloudWatch Logs, CloudWatch Rules, EC2, IAM, SNS, SQS and more.
+* Manage your resources in LocalStack, create tables, files, messages, etc.
+* See the status of each LocalStack service with its port number.
+* Start and stop individual LocalStack services.
+
+Here are some screenshots of what it looks like:
+
+<img src="/doc/img/localstack-install.gif" alt="Install LocalStack" width="200">
+<img src="/doc/img/localstack-start.png" alt="Start individual service" width="200">
+<img src="/doc/img/localstack-stop.gif" alt="Stop individual service" width="200">
+<img src="/doc/img/dashboard.png" alt="Commandeer Dashboard" width="200">
+
+### DynamoDB Admin
+[DynamoDB Admin Web UI](https://www.npmjs.com/package/dynamodb-admin) allows you to manage your DynamoDB data in LocalStack.
 
 ## Change Log
 
