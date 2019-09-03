@@ -93,7 +93,7 @@ def post_request():
             ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
     elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
         kinesis_records = kinesis.get_records(**data)
-        result = {'Records': []}
+        result = {'Records': [], 'NextShardIterator': kinesis_records.get('NextShardIterator')}
         for record in kinesis_records['Records']:
             result['Records'].append(json.loads(to_str(record['Data'])))
     else:
