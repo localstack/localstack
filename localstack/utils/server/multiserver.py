@@ -7,7 +7,7 @@ from requests.models import Response
 from moto.server import main as moto_main
 from localstack import constants
 from localstack.utils.common import (
-    FuncThread, ShellCommandThread, TMP_THREADS, to_str, wait_for_port_open, json_safe)
+    FuncThread, ShellCommandThread, TMP_THREADS, to_str, json_safe, wait_for_port_open, is_port_open)
 from localstack.utils.bootstrap import setup_logging
 from localstack.services.generic_proxy import ProxyListener, GenericProxy
 
@@ -45,6 +45,10 @@ def start_api_server_locally(request):
 
 
 def start_server(port, asynchronous=False):
+
+    if is_port_open(port):
+        LOG.debug('API Multiserver appears to be already running.')
+        return
 
     class ConfigListener(ProxyListener):
         def forward_request(self, method, path, data, **kwargs):

@@ -201,7 +201,7 @@ VALID_REGIONS = set(Session().get_available_regions('sns'))
 
 
 def parse_service_ports():
-    """ Parses the environment variable $SERVICE_PORTS with a comma-separated list of services
+    """ Parses the environment variable $SERVICES with a comma-separated list of services
         and (optional) ports they should run on: 'service1:port1,service2,service3:port3' """
     service_ports = os.environ.get('SERVICES', '').strip()
     if not service_ports:

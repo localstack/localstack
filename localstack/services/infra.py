@@ -14,14 +14,13 @@ from localstack.config import USE_SSL
 from localstack.constants import (
     ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
-    DEFAULT_PORT_IAM_BACKEND, DEFAULT_PORT_EC2_BACKEND)
+    DEFAULT_PORT_IAM_BACKEND, DEFAULT_PORT_EC2_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port,
-    FuncThread, ShellCommandThread, get_service_protocol, in_docker)
+    FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
 from localstack.utils.server import multiserver
-from localstack.utils.bootstrap import setup_logging, is_debug, canonicalize_api_names
+from localstack.utils.bootstrap import setup_logging, is_debug, canonicalize_api_names, load_plugins
 from localstack.utils.analytics import event_publisher
-from localstack.utils.bootstrap import load_plugins
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
 from localstack.services.firehose import firehose_api
@@ -81,6 +80,12 @@ def register_plugin(plugin):
 # -----------------------
 
 
+def update_config_variable(variable, new_value):
+    if new_value is not None:
+        LOG.info('Updating value of config variable "%s": %s' % (variable, new_value))
+        setattr(config, variable, new_value)
+
+
 class ConfigUpdateProxyListener(ProxyListener):
     """ Default proxy listener that intercepts requests to retrieve or update config variables. """
 
@@ -96,9 +101,7 @@ class ConfigUpdateProxyListener(ProxyListener):
             response.status_code = 400
             return response
         new_value = data.get('value')
-        if new_value is not None:
-            LOG.info('Updating value of config variable "%s": %s' % (variable, new_value))
-            setattr(config, variable, new_value)
+        update_config_variable(variable, new_value)
         value = getattr(config, variable, None)
         result = {'variable': variable, 'value': value}
         response._content = json.dumps(result)
@@ -205,6 +208,50 @@ def start_ec2(port=None, asynchronous=False, update_listener=None):
 # ---------------
 # HELPER METHODS
 # ---------------
+
+
+def set_service_status(data):
+    command = data.get('command')
+    service = data.get('service')
+    service_ports = config.parse_service_ports()
+    if command == 'start':
+        existing = service_ports.get(service)
+        port = DEFAULT_SERVICE_PORTS.get(service)
+        if existing:
+            status = get_service_status(service, port)
+            if status == 'running':
+                return
+        key_upper = service.upper().replace('-', '_')
+        port_variable = 'PORT_%s' % key_upper
+        service_list = os.environ.get('SERVICES', '').strip()
+        services = [e for e in re.split(r'[\s,]+', service_list) if e]
+        contained = [s for s in services if s.startswith(service)]
+        if not contained:
+            services.append(service)
+        update_config_variable(port_variable, port)
+        new_service_list = ','.join(services)
+        os.environ['SERVICES'] = new_service_list
+        config.populate_configs()
+        LOG.info('Starting service %s on port %s' % (service, port))
+        SERVICE_PLUGINS[service].start(asynchronous=True)
+    return {}
+
+
+def get_services_status():
+    result = {}
+    for service, port in config.parse_service_ports().items():
+        status = get_service_status(service, port)
+        result[service] = {
+            'port': port,
+            'status': status
+        }
+    return result
+
+
+def get_service_status(service, port=None):
+    port = port or config.parse_service_ports().get(service)
+    status = 'disabled' if (port or 0) <= 0 else 'running' if is_port_open(port) else 'stopped'
+    return status
 
 
 def restore_persisted_data(apis):
