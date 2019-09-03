@@ -241,8 +241,6 @@ def start_infra_in_docker():
 
     # load plugins before starting the docker container
     plugin_configs = load_plugins()
-    plugin_run_params = ' '.join([
-        entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
 
     # prepare APIs
     canonicalize_api_names()
@@ -254,6 +252,22 @@ def start_infra_in_docker():
     image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
     service_ports = config.SERVICE_PORTS
     force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
+
+    # get run params
+    plugin_run_params = ' '.join([
+        entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
+
+    # get port ranges defined via DOCKER_FLAGS (if any)
+    regex = r'.*-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-[0-9]+)?.*'
+    match = re.match(regex, user_flags)
+    start = end = 0
+    if match:
+        start = int(match.group(1))
+        end = int(match.group(3) or match.group(1))
+
+    def is_mapped(start_port, end_port=None):
+        existing_range = range(start, end)
+        return (int(start_port) in existing_range) or (start_port and int(start_port) in existing_range)
 
     # construct port mappings
     ports_list = sorted(service_ports.values())
@@ -271,15 +285,16 @@ def start_infra_in_docker():
         elif i >= len(ports_list) - 1:
             port_ranges.append([start_port, ports_list[i]])
         last_port = ports_list[i]
-    port_mappings = ' '.join(
+    port_mappings = ' '.join([
         '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
         if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
-        for entry in port_ranges)
+        for entry in port_ranges if not is_mapped(entry[0], entry[1])])
 
     if services:
         port_mappings = ''
         for service, port in service_ports.items():
-            port_mappings += ' -p {port}:{port}'.format(port=port)
+            if not is_mapped(port):
+                port_mappings += ' -p {port}:{port}'.format(port=port)
 
     env_str = ''
     for env_var in config.CONFIG_ENV_VARS:
