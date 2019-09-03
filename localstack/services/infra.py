@@ -10,9 +10,9 @@ import boto3
 import subprocess
 from requests.models import Response
 from localstack import constants, config
-from localstack.config import USE_SSL
+from localstack.config import USE_SSL, DEFAULT_REGION
 from localstack.constants import (
-    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
+    ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
     DEFAULT_PORT_IAM_BACKEND, DEFAULT_PORT_EC2_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence

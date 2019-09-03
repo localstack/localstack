@@ -5,7 +5,7 @@ import os
 from glob import glob
 from six import iteritems
 from amazon_kclpy import kcl
-from localstack.constants import DEFAULT_REGION
+from localstack.config import DEFAULT_REGION
 from localstack.utils.common import save_file
 
 

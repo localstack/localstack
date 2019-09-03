@@ -15,8 +15,7 @@ from six.moves.urllib import parse as urlparse
 from botocore.client import ClientError
 from requests.models import Response, Request
 from localstack import config
-from localstack.constants import DEFAULT_REGION
-from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
+from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, DEFAULT_REGION
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (

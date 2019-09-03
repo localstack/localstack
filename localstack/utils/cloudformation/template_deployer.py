@@ -6,8 +6,8 @@ import traceback
 from six import iteritems
 from six import string_types
 from localstack.utils import common
+from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
-from localstack.constants import DEFAULT_REGION
 
 ACTION_CREATE = 'create'
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'

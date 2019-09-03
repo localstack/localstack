@@ -6,12 +6,13 @@ import requests
 import shutil
 import zipfile
 from six import iteritems
+from localstack.config import DEFAULT_REGION
+from localstack.utils.aws import aws_stack
 from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
-    LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, DEFAULT_REGION)
+    LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
+from localstack.utils.common import mkdir, to_str, save_file, TMP_FILES
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
-from localstack.utils.common import mkdir, to_str, save_file, TMP_FILES
-from localstack.utils.aws import aws_stack
 
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'

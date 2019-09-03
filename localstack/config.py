@@ -13,6 +13,11 @@ from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQ
 TRUE_VALUES = ('1', 'true')
 
 
+# default AWS region
+if 'DEFAULT_REGION' not in os.environ:
+    os.environ['DEFAULT_REGION'] = 'us-east-1'
+DEFAULT_REGION = os.environ['DEFAULT_REGION']
+
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
 
@@ -112,7 +117,8 @@ LAMBDA_FALLBACK_URL = os.environ.get('LAMBDA_FALLBACK_URL', '').strip()
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME', 'LAMBDA_FALLBACK_URL',
     'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LOCALSTACK_API_KEY', 'DEBUG',
-    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB', 'DOCKER_BRIDGE_IP']
+    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB', 'DOCKER_BRIDGE_IP',
+    'DEFAULT_REGION']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')

@@ -3,7 +3,8 @@ import json
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.utils import common
-from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, APPLICATION_JSON
+from localstack.config import DEFAULT_REGION
+from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON
 from localstack.utils.aws import aws_stack
 
 # regex path patterns
