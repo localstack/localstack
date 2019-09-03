@@ -3,8 +3,8 @@ import re
 import json
 import unittest
 from requests.models import Response
-from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID
-from localstack.config import INBOUND_GATEWAY_URL_PATTERN
+from localstack.config import INBOUND_GATEWAY_URL_PATTERN, DEFAULT_REGION
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, load_file
