@@ -133,8 +133,8 @@ def stream_name_from_stream_arn(stream_arn):
 
 
 def random_id(stream_arn, kinesis_shard_id):
-    namespace = uuid.UUID(bytes=hashlib.sha1(stream_arn.encode('utf-8')).digest()[:16])
-    return uuid.uuid5(namespace, to_bytes(kinesis_shard_id)).hex
+    namespace = uuid.UUID(bytes=hashlib.sha1(to_bytes(stream_arn)).digest()[:16])
+    return uuid.uuid5(namespace, kinesis_shard_id).hex
 
 
 def shard_id(stream_arn, kinesis_shard_id):
