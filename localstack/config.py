@@ -12,6 +12,11 @@ from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQ
 
 TRUE_VALUES = ('1', 'true')
 
+# limit in which to kinesalite will start throwing exceptions
+KINESIS_SHARD_LIMIT = os.environ.get('KINESIS_SHARD_LIMIT', '').strip() or '100'
+
+# delay in kinesalite response when making changes to streams
+KINESIS_LATENCY = os.environ.get('KINESIS_LATENCY', '').strip() or '500'
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)

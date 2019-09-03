@@ -184,6 +184,8 @@ You can pass the following environment variables to LocalStack:
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (defaults to `false`).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
+* `KINESIS_SHARD_LIMIT`: Integer value (defaults to `100`) or `Infinity` (to disable), in which to kinesalite will start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
+* `KINESIS_LATENCY`: Integer value (defaults to `500`) or `0` (to disable), in which to kinesalite will delay returning a response in order to mimick latency from a live AWS call.
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
 * `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Possible values are:
