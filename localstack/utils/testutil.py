@@ -6,12 +6,13 @@ import requests
 import shutil
 import zipfile
 from six import iteritems
+from localstack.config import DEFAULT_REGION
+from localstack.utils.aws import aws_stack
 from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
-    LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, DEFAULT_REGION)
+    LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
+from localstack.utils.common import mkdir, to_str, save_file, TMP_FILES
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
-from localstack.utils.common import mkdir, to_str, save_file, TMP_FILES
-from localstack.utils.aws import aws_stack
 
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
@@ -185,7 +186,12 @@ def download_s3_object(s3, bucket, path):
     with tempfile.SpooledTemporaryFile() as tmpfile:
         s3.Bucket(bucket).download_fileobj(path, tmpfile)
         tmpfile.seek(0)
-        return to_str(tmpfile.read())
+        result = tmpfile.read()
+        try:
+            result = to_str(result)
+        except Exception:
+            pass
+        return result
 
 
 def map_all_s3_objects(to_json=True):
@@ -194,9 +200,13 @@ def map_all_s3_objects(to_json=True):
     for bucket in s3_client.buckets.all():
         for key in bucket.objects.all():
             value = download_s3_object(s3_client, key.bucket_name, key.key)
-            if to_json:
-                value = json.loads(value)
-            result['%s/%s' % (key.bucket_name, key.key)] = value
+            try:
+                if to_json:
+                    value = json.loads(value)
+                result['%s/%s' % (key.bucket_name, key.key)] = value
+            except Exception:
+                # skip non-JSON or binary objects
+                pass
     return result
 
 

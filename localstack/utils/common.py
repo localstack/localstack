@@ -416,6 +416,19 @@ def merge_dicts(*dicts, **kwargs):
     return result
 
 
+def recurse_object(obj, func):
+    """ Recursively apply `func` to `obj` (may be a list, dict, or other object). """
+    obj = func(obj)
+    if isinstance(obj, list):
+        for i in range(len(obj)):
+            obj[i] = recurse_object(obj[i], func)
+    elif isinstance(obj, dict):
+        obj = func(obj)
+        for k, v in obj.items():
+            obj[k] = recurse_object(v, func)
+    return obj
+
+
 def base64_to_hex(b64_string):
     return binascii.hexlify(base64.b64decode(b64_string))
 

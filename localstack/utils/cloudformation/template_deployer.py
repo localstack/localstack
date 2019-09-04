@@ -6,8 +6,8 @@ import traceback
 from six import iteritems
 from six import string_types
 from localstack.utils import common
+from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
-from localstack.constants import DEFAULT_REGION
 
 ACTION_CREATE = 'create'
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
@@ -226,9 +226,9 @@ def get_role_arn(role_arn, **kwargs):
     return aws_stack.role_arn(role_arn)
 
 
-# ----------------
+# ---------------------
 # CF TEMPLATE HANDLING
-# ----------------
+# ---------------------
 
 def parse_template(template):
     try:
@@ -427,12 +427,16 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
                         (resource_type, resource_id, resource))
     except Exception as e:
-        # we expect this to be a "not found" exception
-        markers = ['NoSuchBucket', 'ResourceNotFound', '404']
-        if not list(filter(lambda marker, e=e: marker in str(e), markers)):
-            LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
-                (resource_type, e, traceback.format_exc(), resource, resource_status))
+        check_not_found_exception(e, resource_type, resource, resource_status)
     return None
+
+
+def check_not_found_exception(e, resource_type, resource, resource_status):
+    # we expect this to be a "not found" exception
+    markers = ['NoSuchBucket', 'ResourceNotFound', '404']
+    if not list(filter(lambda marker, e=e: marker in str(e), markers)):
+        LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
+            (resource_type, e, traceback.format_exc(), resource, resource_status))
 
 
 def extract_resource_attribute(resource_type, resource, attribute):
@@ -540,6 +544,31 @@ def update_resource(resource_id, resources, stack_name):
         return client.put_method(**kwargs)
 
 
+def convert_data_types(func_details, params):
+    """ Convert data types in the "params" object, with the type defs
+        specified in the 'types' attribute of "func_details". """
+    types = func_details.get('types') or {}
+    attr_names = types.keys() or []
+
+    def cast(_obj, _type):
+        if _type == bool:
+            return _obj in ['True', 'true', True]
+        if _type == str:
+            return str(_obj)
+        if _type == int:
+            return int(_obj)
+        return _obj
+
+    def fix_types(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k in attr_names:
+                    o[k] = cast(v, types[k])
+        return o
+    result = common.recurse_object(params, fix_types)
+    return result
+
+
 def deploy_resource(resource_id, resources, stack_name):
     resource = resources[resource_id]
     client = get_client(resource)
@@ -594,6 +623,8 @@ def deploy_resource(resource_id, resources, stack_name):
             params[param_key] = params.get(param_key) == 'True'
     # assign default value if empty
     params = common.merge_recursive(defaults, params)
+    # convert data types (e.g., boolean strings to bool)
+    params = convert_data_types(func_details, params)
 
     # invoke function
     try:

@@ -1,5 +1,6 @@
 import sys
 import logging
+import traceback
 from moto.s3 import models as s3_models
 from moto.iam import models as iam_models
 from moto.sqs import models as sqs_models
@@ -13,7 +14,7 @@ from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
-from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, DEFAULT_REGION
+from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, FuncThread
 from localstack.stepfunctions import models as sfn_models
@@ -100,7 +101,8 @@ def apply_patches():
         try:
             return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name)
         except Exception as e:
-            LOG.error('Unable to parse and create resource "%s": %s' % (logical_id, e))
+            LOG.error('Unable to parse and create resource "%s": %s %s' %
+                      (logical_id, e, traceback.format_exc()))
             raise
 
     def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name):
@@ -364,7 +366,7 @@ def apply_patches():
     def RestAPI_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
         name = props['Name']
-        region_name = props.get('Region') or DEFAULT_REGION
+        region_name = props.get('Region') or config.DEFAULT_REGION
         description = props.get('Description') or ''
         id = props.get('Id') or short_uid()
         return apigw_models.RestAPI(id, region_name, name, description)
@@ -396,7 +398,7 @@ def apply_patches():
     @classmethod
     def Resource_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
-        region_name = props.get('Region') or DEFAULT_REGION
+        region_name = props.get('Region') or config.DEFAULT_REGION
         path_part = props.get('PathPart')
         api_id = props.get('RestApiId')
         parent_id = props.get('ParentId')

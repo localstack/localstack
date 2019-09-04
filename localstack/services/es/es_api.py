@@ -2,10 +2,11 @@ import json
 import time
 from random import randint
 from flask import Flask, jsonify, request, make_response
+from localstack.config import DEFAULT_REGION
 from localstack.services import generic_proxy
-from localstack.constants import TEST_AWS_ACCOUNT_ID, DEFAULT_REGION
-from localstack.utils.common import to_str
 from localstack.utils.aws import aws_stack
+from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.utils.common import to_str
 
 APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'

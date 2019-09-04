@@ -8,7 +8,7 @@ import logging
 import six
 from localstack import config
 from localstack.constants import (
-    REGION_LOCAL, DEFAULT_REGION, LOCALHOST, MOTO_ACCOUNT_ID,
+    REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID,
     ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0,
     APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
@@ -151,7 +151,7 @@ def get_local_region():
     if LOCAL_REGION is None:
         session = boto3.session.Session()
         LOCAL_REGION = session.region_name or ''
-    return LOCAL_REGION or DEFAULT_REGION
+    return LOCAL_REGION or config.DEFAULT_REGION
 
 
 def get_local_service_url(service_name_or_port):
@@ -416,13 +416,13 @@ def create_sqs_queue(queue_name, env=None):
 
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
-    region_name = region_name or DEFAULT_REGION
+    region_name = region_name or config.DEFAULT_REGION
     return ('arn:aws:sqs:%s:%s:%s' % (region_name, account_id, queue_name))
 
 
 def apigateway_restapi_arn(api_id, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
-    region_name = region_name or DEFAULT_REGION
+    region_name = region_name or config.DEFAULT_REGION
     return ('arn:aws:apigateway:%s:%s:/restapis/%s' % (region_name, account_id, api_id))
 
 
@@ -459,7 +459,7 @@ def mock_aws_request_headers(service='dynamodb', region_name=None):
     elif service == 'sqs':
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
     access_key = get_boto3_credentials().access_key
-    region_name = region_name or DEFAULT_REGION
+    region_name = region_name or config.DEFAULT_REGION
     headers = {
         'Content-Type': ctype,
         'Accept-Encoding': 'identity',
@@ -652,7 +652,8 @@ def create_api_gateway_integrations(api_id, resource_id, method,
 
 
 def apigateway_invocations_arn(lambda_uri):
-    return 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' % (DEFAULT_REGION, lambda_uri)
+    return ('arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' %
+        (config.DEFAULT_REGION, lambda_uri))
 
 
 def get_elasticsearch_endpoint(domain=None, region_name=None):

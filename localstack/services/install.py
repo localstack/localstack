@@ -9,8 +9,8 @@ import logging
 import tempfile
 from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
-    ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION,
-    STEPFUNCTIONS_ZIP_URL)
+    ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, ELASTICSEARCH_DELETE_MODULES,
+    DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
@@ -63,6 +63,11 @@ def install_elasticsearch():
             plugin_binary = os.path.join(INSTALL_DIR_ES, 'bin', 'elasticsearch-plugin')
             print('install elasticsearch-plugin %s' % (plugin))
             run('%s install -b  %s' % (plugin_binary, plugin))
+
+    # delete some plugins to free up space
+    for plugin in ELASTICSEARCH_DELETE_MODULES:
+        module_dir = os.path.join(INSTALL_DIR_ES, 'modules', plugin)
+        rm_rf(module_dir)
 
     # disable x-pack-ml plugin (not working on Alpine)
     xpack_dir = os.path.join(INSTALL_DIR_ES, 'modules', 'x-pack-ml', 'platform')

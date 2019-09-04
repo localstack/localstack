@@ -560,7 +560,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
             # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
             if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
                 file_list = run('cd %s; du -d 3 .' % lambda_cwd)
-                config_debug = ('Config for local, docker, remote: "%s", "%s", "%s"' %
+                config_debug = ('Config for local mount, docker, remote: "%s", "%s", "%s"' %
                     (is_local_mount, use_docker(), config.LAMBDA_REMOTE_DOCKER))
                 LOG.debug('Lambda archive content:\n%s' % file_list)
                 raise ClientError(error_response(

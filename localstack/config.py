@@ -13,8 +13,18 @@ from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQ
 TRUE_VALUES = ('1', 'true')
 
 # java options to Lambda
-
 LAMBDA_JAVA_OPTS = os.environ.get('LAMBDA_JAVA_OPTS', '').strip()
+
+# limit in which to kinesalite will start throwing exceptions
+KINESIS_SHARD_LIMIT = os.environ.get('KINESIS_SHARD_LIMIT', '').strip() or '100'
+
+# delay in kinesalite response when making changes to streams
+KINESIS_LATENCY = os.environ.get('KINESIS_LATENCY', '').strip() or '500'
+
+# default AWS region
+if 'DEFAULT_REGION' not in os.environ:
+    os.environ['DEFAULT_REGION'] = 'us-east-1'
+DEFAULT_REGION = os.environ['DEFAULT_REGION']
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
@@ -117,6 +127,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'DEBUG',
                    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB',
                    'DOCKER_BRIDGE_IP',
+                   'DEFAULT_REGION',
                    'LAMBDA_JAVA_OPTS']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -206,7 +217,7 @@ VALID_REGIONS = set(Session().get_available_regions('sns'))
 
 
 def parse_service_ports():
-    """ Parses the environment variable $SERVICE_PORTS with a comma-separated list of services
+    """ Parses the environment variable $SERVICES with a comma-separated list of services
         and (optional) ports they should run on: 'service1:port1,service2,service3:port3' """
     service_ports = os.environ.get('SERVICES', '').strip()
     if not service_ports:
