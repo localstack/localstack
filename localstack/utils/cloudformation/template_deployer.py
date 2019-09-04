@@ -17,6 +17,19 @@ LOG = logging.getLogger(__name__)
 # list of resource types that can be updated
 UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method']
 
+
+def str_or_none(o):
+    return o if o is None else json.dumps(o) if isinstance(o, (dict, list)) else str(o)
+
+
+def select_attributes(obj, attrs):
+    result = {}
+    for attr in attrs:
+        if obj.get(attr) is not None:
+            result[attr] = str_or_none(obj.get(attr))
+    return result
+
+
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -34,7 +47,12 @@ RESOURCE_TO_FUNCTION = {
             'boto_client': 'client',
             'function': 'create_queue',
             'parameters': {
-                'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME]
+                'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME],
+                'Attributes': lambda params, **kwargs: select_attributes(params,
+                    ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
+                     'VisibilityTimeout', 'RedrivePolicy']
+                ),
+                'tags': 'Tags'
             }
         }
     },
@@ -614,6 +632,7 @@ def deploy_resource(resource_id, resources, stack_name):
                     prop_value = resource_props.get(prop_key)
                 if prop_value is not None:
                     params[param_key] = prop_value
+
             tmp_value = params.get(param_key)
             if tmp_value is not None:
                 params[param_key] = resolve_refs_recursively(stack_name, tmp_value, resources)
@@ -621,6 +640,7 @@ def deploy_resource(resource_id, resources, stack_name):
         # hack: convert to boolean
         if params.get(param_key) in ['True', 'False']:
             params[param_key] = params.get(param_key) == 'True'
+
     # assign default value if empty
     params = common.merge_recursive(defaults, params)
     # convert data types (e.g., boolean strings to bool)

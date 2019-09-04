@@ -1,6 +1,7 @@
 import sys
 import logging
 import traceback
+import six
 from moto.s3 import models as s3_models
 from moto.iam import models as iam_models
 from moto.sqs import models as sqs_models
@@ -14,9 +15,9 @@ from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
-from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND
+from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, FuncThread
+from localstack.utils.common import FuncThread, short_uid, recurse_object, clone
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names)
@@ -53,6 +54,17 @@ def start_cloudformation(port=None, asynchronous=False, update_listener=None):
         thread = FuncThread(start_up, argv)
         thread.start()
         return thread
+
+
+def set_moto_account_ids(resource_json):
+    def fix_ids(obj):
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if 'arn' in key.lower() and isinstance(value, six.string_types):
+                    obj[key] = value.replace(TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID)
+        return obj
+
+    return recurse_object(resource_json, fix_ids)
 
 
 def apply_patches():
@@ -140,8 +152,12 @@ def apply_patches():
                     return resource
 
         if not resource:
+            # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
+            resource_json_arns_fixed = clone(resource_json)
+            set_moto_account_ids(resource_json_arns_fixed)
             # create resource definition and store CloudFormation metadata in moto
-            resource = parse_and_create_resource_orig(logical_id, resource_json, resources_map, region_name)
+            resource = parse_and_create_resource_orig(logical_id,
+                resource_json_arns_fixed, resources_map, region_name)
             # Fix for moto which sometimes hard-codes region name as 'us-east-1'
             if hasattr(resource, 'region_name') and resource.region_name != region_name:
                 LOG.debug('Updating incorrect region from %s to %s' % (resource.region_name, region_name))
@@ -238,7 +254,7 @@ def apply_patches():
             LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
 
     def update_physical_resource_id(resource):
-        phys_res_id = getattr(resource, 'physical_resource_id') if hasattr(resource, 'physical_resource_id') else None
+        phys_res_id = getattr(resource, 'physical_resource_id', None)
         if not phys_res_id:
             if isinstance(resource, lambda_models.LambdaFunction):
                 func_arn = aws_stack.lambda_function_arn(resource.function_name)
