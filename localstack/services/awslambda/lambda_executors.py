@@ -582,7 +582,10 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (entrypoint, debug_docker_java_port, env_vars_string, network_str, runtime, command, docker_cmd, lambda_cwd, docker_cmd)
+            ) % (entrypoint, debug_docker_java_port, env_vars_string, network_str, runtime, command,
+                 docker_cmd,
+                 lambda_cwd,
+                 docker_cmd)
         else:
             lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
