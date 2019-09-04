@@ -37,8 +37,9 @@ DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
 BIND_HOST = '0.0.0.0'
 
 # AWS user account ID used for tests
-TEST_AWS_ACCOUNT_ID = '000000000000'
-os.environ['TEST_AWS_ACCOUNT_ID'] = TEST_AWS_ACCOUNT_ID
+if 'TEST_AWS_ACCOUNT_ID' not in os.environ:
+    os.environ['TEST_AWS_ACCOUNT_ID'] = '000000000000'
+TEST_AWS_ACCOUNT_ID = os.environ['TEST_AWS_ACCOUNT_ID']
 
 # root code folder
 LOCALSTACK_ROOT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
