@@ -218,6 +218,8 @@ You can pass the following environment variables to LocalStack:
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
+* `LAMBDA_JAVA_OPTS`: Allow to pass custom options(-Xmx512M) and/or for debugging(-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=) to JVM executed as docker in LAMBDA_EXECUTOR variable. 
+   Pay attention, you shouldn't add a port in address argument, it should empty(address=)                       
 
 
 Additionally, the following *read-only* environment variables are available:

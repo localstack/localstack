@@ -14,7 +14,7 @@ TRUE_VALUES = ('1', 'true')
 
 # java options to Lambda
 
-JAVA_OPTS = os.environ.get('JAVA_OPTS', '').strip()
+LAMBDA_JAVA_OPTS = os.environ.get('LAMBDA_JAVA_OPTS', '').strip()
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
@@ -117,7 +117,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'DEBUG',
                    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB',
                    'DOCKER_BRIDGE_IP',
-                   'JAVA_OPTS']
+                   'LAMBDA_JAVA_OPTS']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
