@@ -9,7 +9,6 @@ from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_bytes, to_str, clone
 from localstack.utils.analytics import event_publisher
-from localstack.constants import DEFAULT_REGION
 from localstack.services.awslambda import lambda_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.services.generic_proxy import ProxyListener
@@ -155,7 +154,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                 'StreamViewType': 'NEW_AND_OLD_IMAGES',
                 'SizeBytes': -1
             },
-            'awsRegion': DEFAULT_REGION,
+            'awsRegion': config.DEFAULT_REGION,
             'eventSource': 'aws:dynamodb'
         }
         records = [record]

@@ -6,8 +6,8 @@ import traceback
 from six import iteritems
 from six import string_types
 from localstack.utils import common
+from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
-from localstack.constants import DEFAULT_REGION
 
 ACTION_CREATE = 'create'
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
@@ -544,6 +544,31 @@ def update_resource(resource_id, resources, stack_name):
         return client.put_method(**kwargs)
 
 
+def convert_data_types(func_details, params):
+    """ Convert data types in the "params" object, with the type defs
+        specified in the 'types' attribute of "func_details". """
+    types = func_details.get('types') or {}
+    attr_names = types.keys() or []
+
+    def cast(_obj, _type):
+        if _type == bool:
+            return _obj in ['True', 'true', True]
+        if _type == str:
+            return str(_obj)
+        if _type == int:
+            return int(_obj)
+        return _obj
+
+    def fix_types(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k in attr_names:
+                    o[k] = cast(v, types[k])
+        return o
+    result = common.recurse_object(params, fix_types)
+    return result
+
+
 def deploy_resource(resource_id, resources, stack_name):
     resource = resources[resource_id]
     client = get_client(resource)
@@ -598,6 +623,8 @@ def deploy_resource(resource_id, resources, stack_name):
             params[param_key] = params.get(param_key) == 'True'
     # assign default value if empty
     params = common.merge_recursive(defaults, params)
+    # convert data types (e.g., boolean strings to bool)
+    params = convert_data_types(func_details, params)
 
     # invoke function
     try:

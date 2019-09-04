@@ -10,9 +10,8 @@ from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
 from localstack import config
-from localstack.config import HOSTNAME, USE_SSL
-from localstack.constants import (
-    LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER, DEFAULT_REGION)
+from localstack.config import HOSTNAME, USE_SSL, DEFAULT_REGION
+from localstack.constants import LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid, to_str,

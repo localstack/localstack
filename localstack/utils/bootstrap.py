@@ -292,7 +292,7 @@ def start_infra_in_docker():
 
     if services:
         port_mappings = ''
-        for service, port in service_ports.items():
+        for port in set(service_ports.values()):
             if not is_mapped(port):
                 port_mappings += ' -p {port}:{port}'.format(port=port)
 

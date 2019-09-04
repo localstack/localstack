@@ -1,8 +1,9 @@
 import logging
 from localstack import config
+from localstack.config import DEFAULT_REGION
 from localstack.services import install
 from localstack.utils.aws import aws_stack
-from localstack.constants import DEFAULT_PORT_STEPFUNCTIONS_BACKEND, TEST_AWS_ACCOUNT_ID, DEFAULT_REGION
+from localstack.constants import DEFAULT_PORT_STEPFUNCTIONS_BACKEND, TEST_AWS_ACCOUNT_ID
 from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 
 LOG = logging.getLogger(__name__)

@@ -4,11 +4,6 @@ import localstack_client.config
 # LocalStack version
 VERSION = '0.10.2'
 
-# default AWS region
-if 'DEFAULT_REGION' not in os.environ:
-    os.environ['DEFAULT_REGION'] = 'us-east-1'
-DEFAULT_REGION = os.environ['DEFAULT_REGION']
-
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
 
