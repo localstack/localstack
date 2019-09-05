@@ -402,6 +402,32 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertTrue('Tags' in result)
             self.assertDictEqual({'hello': 'world'}, result['Tags'])
 
+    def test_java_options_without_port_specified(self):
+        expected = '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=10000'
+        result = self.prepareJavaOpts('-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_')
+        self.assertEqual(expected, result)
+
+    def test_java_options_empty_return_empty_value(self):
+        lambda_executors.config.LAMBDA_JAVA_OPTS = ''
+        result = lambda_executors.Util.get_java_opts(10000)
+        self.assertFalse(result)
+
+    def test_java_options_with_only_memory_options(self):
+        expected = '-Xmx512M'
+        result = self.prepareJavaOpts(expected)
+        self.assertEqual(expected, result)
+
+    def test_java_options_with_memory_options_and_agentlib_option(self):
+        expected = '-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=10000'
+        result = self.prepareJavaOpts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
+                                      ',suspend=y,address=_debug_port_')
+        self.assertEqual(expected, result)
+
+    def prepareJavaOpts(self, java_opts):
+        lambda_executors.config.LAMBDA_JAVA_OPTS = java_opts
+        result = lambda_executors.Util.get_java_opts(10000)
+        return result
+
     def _create_function(self, function_name, tags={}):
         arn = lambda_api.func_arn(function_name)
         lambda_api.arn_to_lambda[arn] = LambdaFunction(arn)

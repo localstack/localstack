@@ -12,6 +12,9 @@ from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQ
 
 TRUE_VALUES = ('1', 'true')
 
+# java options to Lambda
+LAMBDA_JAVA_OPTS = os.environ.get('LAMBDA_JAVA_OPTS', '').strip()
+
 # limit in which to kinesalite will start throwing exceptions
 KINESIS_SHARD_LIMIT = os.environ.get('KINESIS_SHARD_LIMIT', '').strip() or '100'
 
@@ -110,7 +113,6 @@ if not LAMBDA_EXECUTOR:
     if not has_docker():
         LAMBDA_EXECUTOR = 'local'
 
-
 # Fallback URL to use when a non-existing Lambda is invoked. If this matches
 # `dynamodb://<table_name>`, then the invocation is recorded in the corresponding
 # DynamoDB table. If this matches `http(s)://...`, then the Lambda invocation is
@@ -121,9 +123,12 @@ LAMBDA_FALLBACK_URL = os.environ.get('LAMBDA_FALLBACK_URL', '').strip()
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME', 'LAMBDA_FALLBACK_URL',
-    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LOCALSTACK_API_KEY', 'DEBUG',
-    'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB', 'DOCKER_BRIDGE_IP',
-    'DEFAULT_REGION']
+                   'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'LOCALSTACK_API_KEY',
+                   'DEBUG',
+                   'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB',
+                   'DOCKER_BRIDGE_IP',
+                   'DEFAULT_REGION',
+                   'LAMBDA_JAVA_OPTS']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -285,4 +290,4 @@ USE_PROFILER = os.environ.get('USE_PROFILER', '').lower() in TRUE_VALUES
 
 # set URL pattern of inbound API gateway
 INBOUND_GATEWAY_URL_PATTERN = ('%s/restapis/{api_id}/{stage_name}/%s{path}' %
-    (TEST_APIGATEWAY_URL, PATH_USER_REQUEST))  # noqa
+                               (TEST_APIGATEWAY_URL, PATH_USER_REQUEST))  # noqa

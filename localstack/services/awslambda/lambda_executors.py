@@ -5,6 +5,8 @@ import time
 import logging
 import threading
 import subprocess
+from localstack.utils.common import (
+    get_free_tcp_port)
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
@@ -54,6 +56,7 @@ class LambdaExecutor(object):
     def __init__(self):
         # keeps track of each function arn and the last time it was invoked
         self.function_invoke_times = {}
+        self.debug_java_port = get_free_tcp_port()
 
     def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
 
@@ -200,6 +203,8 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
 
+        java_opts = Util.get_java_opts(self.debug_java_port)
+
         # custom command to execute in the container
         command = ''
 
@@ -213,8 +218,8 @@ class LambdaExecutorContainers(LambdaExecutor):
             # TODO cleanup once we have custom Java Docker image
             taskdir = '/var/task'
             save_file(os.path.join(lambda_cwd, LAMBDA_EVENT_FILE), event_body)
-            command = ("bash -c 'cd %s; java -cp \".:`ls *.jar | tr \"\\n\" \":\"`\" \"%s\" \"%s\" \"%s\"'" %
-                (taskdir, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
+            command = ("bash -c 'cd %s; java %s -cp \".:`ls *.jar | tr \"\\n\" \":\"`\" \"%s\" \"%s\" \"%s\"'" %
+                (taskdir, java_opts, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
 
         # determine the command to be executed (implemented by subclasses)
         cmd = self.prepare_execution(func_arn, environment, runtime, command, handler, lambda_cwd)
@@ -561,7 +566,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             command = '"%s"' % handler
 
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
-
+        debug_docker_java_port = ' -p "%s":"%s"' % (self.debug_java_port, self.debug_java_port)
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = ' --network="%s" ' % network if network else ''
         docker_cmd = self._docker_cmd()
@@ -571,12 +576,16 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 'CONTAINER_ID="$(docker create -i'
                 ' %s'
                 ' %s'
+                ' %s'
                 ' %s'  # network
                 ' "lambci/lambda:%s" %s'
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (entrypoint, env_vars_string, network_str, runtime, command, docker_cmd, lambda_cwd, docker_cmd)
+            ) % (entrypoint, debug_docker_java_port, env_vars_string, network_str, runtime, command,
+                 docker_cmd,
+                 lambda_cwd,
+                 docker_cmd)
         else:
             lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
@@ -636,6 +645,18 @@ class LambdaExecutorLocal(LambdaExecutor):
         LOG.debug('Lambda result / log output:\n%s\n> %s' % (
             result.strip(), log_output.strip().replace('\n', '\n> ')))
         return result, log_output
+
+
+class Util:
+
+    @staticmethod
+    def get_java_opts(port):
+        opts = config.LAMBDA_JAVA_OPTS
+        if opts.find('_debug_port_'):
+            java_opts = opts.replace('_debug_port_', ('%s' % port))
+            return java_opts
+
+        return opts
 
 
 # --------------
