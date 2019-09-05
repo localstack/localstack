@@ -404,7 +404,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_java_options_without_port_specified(self):
         expected = '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=10000'
-        result = self.prepareJavaOpts('-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,_debug_port_')
+        result = self.prepareJavaOpts('-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_')
         self.assertEqual(expected, result)
 
     def test_java_options_empty_return_empty_value(self):
@@ -419,7 +419,8 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_java_options_with_memory_options_and_agentlib_option(self):
         expected = '-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=10000'
-        result = self.prepareJavaOpts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,_debug_port_')
+        result = self.prepareJavaOpts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
+                                      ',suspend=y,address=_debug_port_')
         self.assertEqual(expected, result)
 
     def prepareJavaOpts(self, java_opts):

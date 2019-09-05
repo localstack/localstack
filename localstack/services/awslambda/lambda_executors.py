@@ -653,7 +653,7 @@ class Util:
     def get_java_opts(port):
         opts = config.LAMBDA_JAVA_OPTS
         if opts.find('_debug_port_'):
-            java_opts = opts.replace('_debug_port_', ('address=%s' % port))
+            java_opts = opts.replace('_debug_port_', ('%s' % port))
             return java_opts
 
         return opts

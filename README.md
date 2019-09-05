@@ -221,7 +221,8 @@ You can pass the following environment variables to LocalStack:
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
 * `LAMBDA_JAVA_OPTS`: Allow to pass custom options(-Xmx512M) and/or for debugging(-agentlib:jdwp=transport=dt_socket,server=y,suspend=y) to JVM executed as docker in LAMBDA_EXECUTOR variable. 
-   Pay attention, use __debug_port_ placeholder like port address if you want debug with your IDE (-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,__debug_port_)                
+   Pay attention, use __debug_port_ placeholder like port if you want debug with your IDE.
+   `I.e: (-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_) `               
 
 
 Additionally, the following *read-only* environment variables are available:
