@@ -16,7 +16,8 @@ setup-venv:
 
 install:           ## Install full dependencies in virtualenv
 	make setup-venv && \
-		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt && \
+		(test ! -e requirements.txt || ($(VENV_RUN); \
+			$(PIP_CMD) -q install pathlib; $(PIP_CMD) -q install -r requirements.txt && \
 			PYTHONPATH=. exec python localstack/services/install.py testlibs)) || exit 1
 
 install-basic:     ## Install basic dependencies for CLI usage in virtualenv
