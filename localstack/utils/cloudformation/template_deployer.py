@@ -596,7 +596,8 @@ def deploy_resource(resource_id, resources, stack_name):
     if callable(params):
         params = params(resource_props, stack_name=stack_name, resources=resources)
     else:
-        for param_key, prop_keys in iteritems(dict(params)):
+        params = dict(params)
+        for param_key, prop_keys in dict(params).items():
             params.pop(param_key, None)
             if not isinstance(prop_keys, list):
                 prop_keys = [prop_keys]
@@ -623,7 +624,7 @@ def deploy_resource(resource_id, resources, stack_name):
                         params[param_key] = prop_value
 
     # convert refs and boolean strings
-    for param_key, prop_keys in iteritems(dict(params)):
+    for param_key, prop_keys in dict(params).items():
         tmp_value = params.get(param_key)
         if tmp_value is not None:
             params[param_key] = resolve_refs_recursively(stack_name, tmp_value, resources)
@@ -690,7 +691,7 @@ def deploy_template(template, stack_name):
     for i in range(0, iters):
 
         # get resource details
-        for resource_id, resource in iteritems(next):
+        for resource_id, resource in next.items():
             stack_resource = describe_stack_resource(stack_name, resource_id)
             resource['__details__'] = stack_resource
 
@@ -698,7 +699,7 @@ def deploy_template(template, stack_name):
         if not next:
             return
 
-        for resource_id, resource in iteritems(next):
+        for resource_id, resource in next.items():
             deploy_resource(resource_id, resource_map, stack_name=stack_name)
 
     LOG.warning('Unable to resolve all dependencies and deploy all resources ' +
