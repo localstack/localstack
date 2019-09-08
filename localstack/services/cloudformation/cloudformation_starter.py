@@ -17,7 +17,7 @@ from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTem
 from localstack import config
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import FuncThread, short_uid, recurse_object, clone
+from localstack.utils.common import FuncThread, short_uid, recurse_object, clone, json_safe
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names)
@@ -57,11 +57,51 @@ def start_cloudformation(port=None, asynchronous=False, update_listener=None):
 
 
 def set_moto_account_ids(resource_json):
-    def fix_ids(obj):
+    def fix_ids(obj, **kwargs):
         if isinstance(obj, dict):
             for key, value in obj.items():
                 if 'arn' in key.lower() and isinstance(value, six.string_types):
                     obj[key] = value.replace(TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID)
+        return obj
+
+    return recurse_object(resource_json, fix_ids)
+
+
+def get_entity_id(entity, resource_json=None):
+    # check if physical_resource_id is present
+    if hasattr(entity, 'physical_resource_id'):
+        return entity.physical_resource_id
+    # check ID attribute candidates
+    types_with_ref_as_id_or_name = (apigw_models.RestAPI, apigw_models.Resource)
+    attr_candidates = ['function_arn', 'Arn', 'id', 'name', 'Id', 'Name']
+    for attr in attr_candidates:
+        if hasattr(entity, attr):
+            if attr in ['id', 'name'] and not isinstance(entity, types_with_ref_as_id_or_name):
+                LOG.warning('Unable to find ARN, using "%s" instead: %s - %s',
+                            attr, resource_json, entity)
+            return getattr(entity, attr)
+        if hasattr(entity, 'get_cfn_attribute'):
+            try:
+                result = entity.get_cfn_attribute(attr)
+                if result:
+                    return result
+            except Exception:
+                pass
+    # fall back to classes that use params as the dict of entity parameters
+    if hasattr(entity, 'params'):
+        for key, value in (entity.params or {}).items():
+            if key.endswith('Name'):
+                return value
+
+
+def convert_objs_to_ids(resource_json):
+    def fix_ids(obj, **kwargs):
+        if isinstance(obj, dict):
+            obj = dict(obj)
+            for key, value in obj.items():
+                if isinstance(value, BaseModel):
+                    entity_id = get_entity_id(value)
+                    obj[key] = entity_id or value
         return obj
 
     return recurse_object(resource_json, fix_ids)
@@ -88,14 +128,9 @@ def apply_patches():
         result = clean_json_orig(resource_json, resources_map)
         if isinstance(result, BaseModel):
             if isinstance(resource_json, dict) and 'Ref' in resource_json:
-                types_with_ref_as_id_or_name = (apigw_models.RestAPI, apigw_models.Resource)
-                attr_candidates = ['function_arn', 'id', 'name']
-                for attr in attr_candidates:
-                    if hasattr(result, attr):
-                        if attr in ['id', 'name'] and not isinstance(result, types_with_ref_as_id_or_name):
-                            LOG.warning('Unable to find ARN, using "%s" instead: %s - %s',
-                                        attr, resource_json, result)
-                        return getattr(result, attr)
+                entity_id = get_entity_id(result, resource_json)
+                if entity_id:
+                    return entity_id
                 LOG.warning('Unable to resolve "Ref" attribute for: %s - %s - %s',
                             resource_json, result, type(result))
         return result
@@ -153,7 +188,7 @@ def apply_patches():
 
         if not resource:
             # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
-            resource_json_arns_fixed = clone(resource_json)
+            resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
             set_moto_account_ids(resource_json_arns_fixed)
             # create resource definition and store CloudFormation metadata in moto
             resource = parse_and_create_resource_orig(logical_id,

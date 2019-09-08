@@ -416,16 +416,17 @@ def merge_dicts(*dicts, **kwargs):
     return result
 
 
-def recurse_object(obj, func):
+def recurse_object(obj, func, path=''):
     """ Recursively apply `func` to `obj` (may be a list, dict, or other object). """
-    obj = func(obj)
+    obj = func(obj, path=path)
     if isinstance(obj, list):
         for i in range(len(obj)):
-            obj[i] = recurse_object(obj[i], func)
+            path = '%s[%s]' % (path or '.', i)
+            obj[i] = recurse_object(obj[i], func, path)
     elif isinstance(obj, dict):
-        obj = func(obj)
         for k, v in obj.items():
-            obj[k] = recurse_object(v, func)
+            path = '%s%s' % ((path + '.') if path else '', k)
+            obj[k] = recurse_object(v, func, path)
     return obj
 
 

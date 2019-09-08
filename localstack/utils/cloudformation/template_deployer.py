@@ -34,7 +34,6 @@ def select_attributes(obj, attrs):
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_bucket',
             'parameters': {
                 'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
@@ -44,7 +43,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'SQS::Queue': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_queue',
             'parameters': {
                 'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME],
@@ -58,7 +56,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'SNS::Topic': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_topic',
             'parameters': {
                 'Name': 'TopicName',
@@ -71,7 +68,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'Lambda::Function': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_function',
             'parameters': {
                 'FunctionName': 'FunctionName',
@@ -92,7 +88,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'Lambda::Version': {
         'create': {
-            'boto_client': 'client',
             'function': 'publish_version',
             'parameters': {
                 # TODO
@@ -102,7 +97,6 @@ RESOURCE_TO_FUNCTION = {
     'Lambda::Permission': {},
     'Lambda::EventSourceMapping': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_event_source_mapping',
             'parameters': {
                 'FunctionName': 'FunctionName',
@@ -116,7 +110,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'DynamoDB::Table': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_table',
             'parameters': {
                 'TableName': 'TableName',
@@ -141,7 +134,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'ApiGateway::RestApi': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_rest_api',
             'parameters': {
                 'name': 'Name',
@@ -151,7 +143,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'ApiGateway::Resource': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_resource',
             'parameters': {
                 'restApiId': 'RestApiId',
@@ -162,7 +153,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'ApiGateway::Method': {
         'create': {
-            'boto_client': 'client',
             'function': 'put_method',
             'parameters': {
                 'restApiId': 'RestApiId',
@@ -177,7 +167,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'ApiGateway::Deployment': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_deployment',
             'parameters': {
                 'restApiId': 'RestApiId',
@@ -189,7 +178,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'Kinesis::Stream': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_stream',
             'parameters': {
                 'StreamName': 'Name',
@@ -202,7 +190,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'StepFunctions::StateMachine': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_state_machine',
             'parameters': {
                 'name': ['StateMachineName', PLACEHOLDER_RESOURCE_NAME],
@@ -213,7 +200,6 @@ RESOURCE_TO_FUNCTION = {
     },
     'StepFunctions::Activity': {
         'create': {
-            'boto_client': 'client',
             'function': 'create_activity',
             'parameters': {
                 'name': ['Name', PLACEHOLDER_RESOURCE_NAME],
@@ -577,7 +563,7 @@ def convert_data_types(func_details, params):
             return int(_obj)
         return _obj
 
-    def fix_types(o):
+    def fix_types(o, **kwargs):
         if isinstance(o, dict):
             for k, v in o.items():
                 if k in attr_names:
@@ -601,42 +587,48 @@ def deploy_resource(resource_id, resources, stack_name):
     LOG.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
     func_details = func_details[ACTION_CREATE]
     function = getattr(client, func_details['function'])
-    params = dict(func_details['parameters'])
+    params = func_details['parameters']
     defaults = func_details.get('defaults', {})
     if 'Properties' not in resource:
         resource['Properties'] = {}
     resource_props = resource['Properties']
 
-    for param_key, prop_keys in iteritems(dict(params)):
-        params.pop(param_key, None)
-        if not isinstance(prop_keys, list):
-            prop_keys = [prop_keys]
-        for prop_key in prop_keys:
-            if prop_key == PLACEHOLDER_RESOURCE_NAME:
-                params[param_key] = resource_id
-                resource_name = get_resource_name(resource)
-                if resource_name:
-                    params[param_key] = resource_name
-                else:
-                    # try to obtain physical resource name from stack resources
-                    try:
-                        return resolve_ref(stack_name, resource_id, resources,
-                            attribute='PhysicalResourceId')
-                    except Exception as e:
-                        LOG.debug('Unable to extract physical id for resource %s: %s' % (resource_id, e))
+    if callable(params):
+        params = params(resource_props, stack_name=stack_name, resources=resources)
+    else:
+        params = dict(params)
+        for param_key, prop_keys in dict(params).items():
+            params.pop(param_key, None)
+            if not isinstance(prop_keys, list):
+                prop_keys = [prop_keys]
+            for prop_key in prop_keys:
+                if prop_key == PLACEHOLDER_RESOURCE_NAME:
+                    params[param_key] = resource_id
+                    resource_name = get_resource_name(resource)
+                    if resource_name:
+                        params[param_key] = resource_name
+                    else:
+                        # try to obtain physical resource name from stack resources
+                        try:
+                            return resolve_ref(stack_name, resource_id, resources,
+                                attribute='PhysicalResourceId')
+                        except Exception as e:
+                            LOG.debug('Unable to extract physical id for resource %s: %s' % (resource_id, e))
 
-            else:
-                if callable(prop_key):
-                    prop_value = prop_key(resource_props, stack_name=stack_name, resources=resources)
                 else:
-                    prop_value = resource_props.get(prop_key)
-                if prop_value is not None:
-                    params[param_key] = prop_value
+                    if callable(prop_key):
+                        prop_value = prop_key(resource_props, stack_name=stack_name, resources=resources)
+                    else:
+                        prop_value = resource_props.get(prop_key)
+                    if prop_value is not None:
+                        params[param_key] = prop_value
 
-            tmp_value = params.get(param_key)
-            if tmp_value is not None:
-                params[param_key] = resolve_refs_recursively(stack_name, tmp_value, resources)
-                break
+    # convert refs and boolean strings
+    for param_key, prop_keys in dict(params).items():
+        tmp_value = params.get(param_key)
+        if tmp_value is not None:
+            params[param_key] = resolve_refs_recursively(stack_name, tmp_value, resources)
+            break
         # hack: convert to boolean
         if params.get(param_key) in ['True', 'False']:
             params[param_key] = params.get(param_key) == 'True'
@@ -648,7 +640,8 @@ def deploy_resource(resource_id, resources, stack_name):
 
     # invoke function
     try:
-        LOG.debug('Request for creating resource type "%s": %s' % (resource_type, params))
+        LOG.debug('Request for creating resource type "%s": %s %s' % (
+            resource_type, func_details['function'], params))
         result = function(**params)
     except Exception as e:
         LOG.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
@@ -698,7 +691,7 @@ def deploy_template(template, stack_name):
     for i in range(0, iters):
 
         # get resource details
-        for resource_id, resource in iteritems(next):
+        for resource_id, resource in next.items():
             stack_resource = describe_stack_resource(stack_name, resource_id)
             resource['__details__'] = stack_resource
 
@@ -706,7 +699,7 @@ def deploy_template(template, stack_name):
         if not next:
             return
 
-        for resource_id, resource in iteritems(next):
+        for resource_id, resource in next.items():
             deploy_resource(resource_id, resource_map, stack_name=stack_name)
 
     LOG.warning('Unable to resolve all dependencies and deploy all resources ' +
