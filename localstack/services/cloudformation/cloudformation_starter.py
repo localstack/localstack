@@ -57,7 +57,7 @@ def start_cloudformation(port=None, asynchronous=False, update_listener=None):
 
 
 def set_moto_account_ids(resource_json):
-    def fix_ids(obj):
+    def fix_ids(obj, **kwargs):
         if isinstance(obj, dict):
             for key, value in obj.items():
                 if 'arn' in key.lower() and isinstance(value, six.string_types):

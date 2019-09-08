@@ -563,7 +563,7 @@ def convert_data_types(func_details, params):
             return int(_obj)
         return _obj
 
-    def fix_types(o):
+    def fix_types(o, **kwargs):
         if isinstance(o, dict):
             for k, v in o.items():
                 if k in attr_names:
