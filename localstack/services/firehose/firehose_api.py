@@ -8,14 +8,15 @@ import base64
 import traceback
 from six import iteritems
 from flask import Flask, jsonify, request
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from boto3.dynamodb.types import TypeDeserializer
 from localstack.services import generic_proxy
-from localstack.utils.common import short_uid, to_str
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_responses
+from localstack.utils.common import short_uid, to_str
 from localstack.utils.aws.aws_stack import (
     get_s3_client, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
-from boto3.dynamodb.types import TypeDeserializer
 from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.analytics import event_publisher
 
 APP_NAME = 'firehose_api'
 app = Flask(APP_NAME)
@@ -157,6 +158,10 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
 
+    # record event
+    event_publisher.fire_event(event_publisher.EVENT_FIREHOSE_CREATE_STREAM,
+        payload={'n': event_publisher.get_hash(stream_name)})
+
     if delivery_stream_type == 'KinesisStreamAsSource':
         kinesis_stream_name = delivery_stream_type_configuration.get('KinesisStreamARN').split('/')[1]
         kinesis_connector.listen_to_kinesis(
@@ -170,6 +175,11 @@ def delete_stream(stream_name):
     stream = DELIVERY_STREAMS.pop(stream_name, {})
     if not stream:
         return error_not_found(stream_name)
+
+    # record event
+    event_publisher.fire_event(event_publisher.EVENT_FIREHOSE_DELETE_STREAM,
+        payload={'n': event_publisher.get_hash(stream_name)})
+
     return {}
 
 

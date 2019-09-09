@@ -7,6 +7,7 @@ from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import to_str
+from localstack.utils.analytics import event_publisher
 
 APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'
@@ -167,6 +168,9 @@ def create_domain():
         return error_response(error_type='ResourceAlreadyExistsException')
     ES_DOMAINS[domain_name] = data
     result = get_domain_status(domain_name)
+    # record event
+    event_publisher.fire_event(event_publisher.EVENT_ES_CREATE_DOMAIN,
+        payload={'n': event_publisher.get_hash(domain_name)})
     return jsonify(result)
 
 
@@ -190,6 +194,9 @@ def delete_domain(domain_name):
         return error_response(error_type='ResourceNotFoundException')
     result = get_domain_status(domain_name, deleted=True)
     ES_DOMAINS.pop(domain_name)
+    # record event
+    event_publisher.fire_event(event_publisher.EVENT_ES_DELETE_DOMAIN,
+        payload={'n': event_publisher.get_hash(domain_name)})
     return jsonify(result)
 
 
