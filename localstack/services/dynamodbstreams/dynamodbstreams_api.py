@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, to_bytes
+from localstack.utils.analytics import event_publisher
 
 APP_NAME = 'ddb_streams_api'
 
@@ -34,6 +35,9 @@ def add_dynamodb_stream(table_name, view_type='NEW_AND_OLD_IMAGES', enabled=True
         }
         table_arn = aws_stack.dynamodb_table_arn(table_name)
         DDB_STREAMS[table_arn] = stream
+        # record event
+        event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_STREAM,
+            payload={'n': event_publisher.get_hash(table_name)})
 
 
 def forward_events(records):

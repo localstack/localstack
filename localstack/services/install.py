@@ -189,6 +189,9 @@ def install_components(names):
 
 
 def install_all_components():
+    # load plugins
+    bootstrap.load_plugins()
+    # install all components
     install_components(DEFAULT_SERVICE_PORTS.keys())
 
 

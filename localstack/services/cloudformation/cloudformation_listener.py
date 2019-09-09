@@ -5,6 +5,7 @@ from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, obj_to_xml
+from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
 
@@ -66,6 +67,11 @@ class ProxyListenerCloudFormation(ProxyListener):
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
             action = req_data.get('Action')[0]
+
+            if action == 'CreateStack':
+                stack_name = req_data.get('StackName')[0]
+                event_publisher.fire_event(event_publisher.EVENT_CLOUDFORMATION_CREATE_STACK,
+                    payload={'n': event_publisher.get_hash(stack_name)})
 
             if action == 'DescribeStackEvents':
                 # fix an issue where moto cannot handle ARNs as stack names (or missing names)

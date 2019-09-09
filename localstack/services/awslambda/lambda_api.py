@@ -38,8 +38,8 @@ from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, en
     md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, isoformat_milliseconds)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
-from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 from localstack.utils.aws.aws_models import LambdaFunction
+from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
 APP_NAME = 'lambda_api'
 PATH_ROOT = '/2015-03-31'
