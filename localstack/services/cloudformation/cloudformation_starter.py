@@ -352,6 +352,19 @@ def apply_patches():
     SQS_Queue_get_cfn_attribute_orig = sqs_models.Queue.get_cfn_attribute
     sqs_models.Queue.get_cfn_attribute = SQS_Queue_get_cfn_attribute
 
+    # Patch SQS physical_resource_id(..) method in moto
+
+    @property
+    def SQS_Queue_physical_resource_id(self):
+        result = SQS_Queue_physical_resource_id_orig.fget(self)
+        if '://' not in result:
+            # convert ID to queue URL
+            return aws_stack.get_sqs_queue_url(result)
+        return result
+
+    SQS_Queue_physical_resource_id_orig = sqs_models.Queue.physical_resource_id
+    sqs_models.Queue.physical_resource_id = SQS_Queue_physical_resource_id
+
     # Patch Lambda get_cfn_attribute(..) method in moto
 
     def Lambda_Function_get_cfn_attribute(self, attribute_name):

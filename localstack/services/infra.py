@@ -19,7 +19,8 @@ from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
 from localstack.utils.server import multiserver
-from localstack.utils.bootstrap import setup_logging, is_debug, canonicalize_api_names, load_plugins
+from localstack.utils.bootstrap import (
+    setup_logging, is_debug, canonicalize_api_names, load_plugins, in_ci)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
@@ -403,7 +404,8 @@ def start_infra(asynchronous=False, apis=None):
         # load plugins
         load_plugins()
 
-        event_publisher.fire_event(event_publisher.EVENT_START_INFRA, {'d': in_docker() and 1 or 0})
+        event_publisher.fire_event(event_publisher.EVENT_START_INFRA,
+            {'d': in_docker() and 1 or 0, 'c': in_ci() and 1 or 0})
 
         # set up logging
         setup_logging()

@@ -25,8 +25,9 @@ def bucket_exists(name):
 def queue_exists(name):
     sqs_client = aws_stack.connect_to_service('sqs')
     queues = sqs_client.list_queues()
+    url = name if '://' in name else aws_stack.get_sqs_queue_url(name)
     for queue_url in queues['QueueUrls']:
-        if queue_url.endswith('/%s' % name):
+        if queue_url == url:
             return True
 
 
@@ -116,7 +117,7 @@ class CloudFormationTest(unittest.TestCase):
 
         # assert that topic tags have been created
         tags = s3.get_bucket_tagging(Bucket='cf-test-bucket-1')['TagSet']
-        self.assertEqual(tags, [{'Key': 'foobar', 'Value': 'cf-test-queue-1'}])
+        self.assertEqual(tags, [{'Key': 'foobar', 'Value': aws_stack.get_sqs_queue_url('cf-test-queue-1')}])
 
     def test_list_stack_events(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
@@ -152,15 +153,14 @@ class CloudFormationTest(unittest.TestCase):
 
         retry(check_stack, retries=3, sleep=2)
 
-        list_stack_summaries = list_stack_resources(TEST_STACK_NAME_2)
+        stack_summaries = list_stack_resources(TEST_STACK_NAME_2)
         queue_urls = get_queue_urls()
         topic_arns = get_topic_arns()
 
-        stack_queues = [r for r in list_stack_summaries if r['ResourceType'] == 'AWS::SQS::Queue']
+        stack_queues = [r for r in stack_summaries if r['ResourceType'] == 'AWS::SQS::Queue']
         for resource in stack_queues:
-            url = aws_stack.get_sqs_queue_url(resource['PhysicalResourceId'])
-            self.assertIn(url, queue_urls)
+            self.assertIn(resource['PhysicalResourceId'], queue_urls)
 
-        stack_topics = [r for r in list_stack_summaries if r['ResourceType'] == 'AWS::SNS::Topic']
+        stack_topics = [r for r in stack_summaries if r['ResourceType'] == 'AWS::SNS::Topic']
         for resource in stack_topics:
             self.assertIn(resource['PhysicalResourceId'], topic_arns)
