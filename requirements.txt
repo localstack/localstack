@@ -27,7 +27,7 @@ forbiddenfruit==0.1.3
 jsonpath-rw==1.4.0
 localstack-ext[full]>=0.10.2
 localstack-ext>=0.10.2         #basic-lib
-localstack-client>=0.10        #basic-lib
+localstack-client>=0.12        #basic-lib
 moto-ext>=1.3.14.1
 nose>=1.3.7
 nose-timer>=0.7.5
@@ -39,6 +39,6 @@ pyyaml>=3.13,<=5.1
 requests>=2.20.0
 requests-aws4auth==0.9
 six>=1.12.0                    #basic-lib
-subprocess32-ext==3.2.8.2      #basic-lib
+subprocess32==3.5.4            #basic-lib
 xmltodict>=0.11.0
 # yappi==1.0
