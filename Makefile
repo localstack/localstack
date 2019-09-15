@@ -83,7 +83,7 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 	)
 
 docker-run:        ## Run Docker image locally
-	($(VENV_RUN); bin/localstack start --docker)
+	($(VENV_RUN); bin/localstack start)
 
 docker-mount-run:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \

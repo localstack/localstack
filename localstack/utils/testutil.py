@@ -5,6 +5,7 @@ import tempfile
 import requests
 import shutil
 import zipfile
+import importlib
 from six import iteritems
 from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
@@ -30,6 +31,11 @@ def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file
     # copy libs
     for lib in libs:
         paths = [lib, '%s.py' % lib]
+        try:
+            module = importlib.import_module(lib)
+            paths.append(module.__file__)
+        except Exception:
+            pass
         target_dir = tmp_dir
         root_folder = os.path.join(LOCALSTACK_VENV_FOLDER, 'lib/python*/site-packages')
         if lib == 'localstack':
@@ -38,7 +44,7 @@ def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file
             target_dir = os.path.join(tmp_dir, lib)
             mkdir(target_dir)
         for path in paths:
-            file_to_copy = os.path.join(root_folder, path)
+            file_to_copy = path if path.startswith('/') else os.path.join(root_folder, path)
             for file_path in glob.glob(file_to_copy):
                 name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
                 if os.path.isdir(file_path):

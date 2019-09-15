@@ -156,6 +156,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.method = requests.options
         self.forward('OPTIONS')
 
+    def do_CONNECT(self):
+        self.method = None
+        self.headers['Connection'] = self.headers.get('Connection') or 'keep-alive'
+        self.forward('CONNECT')
+
     def read_content(self):
         content_length = self.headers.get('Content-Length')
         if content_length:
