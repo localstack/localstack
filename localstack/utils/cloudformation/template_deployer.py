@@ -628,10 +628,9 @@ def deploy_resource(resource_id, resources, stack_name):
         tmp_value = params.get(param_key)
         if tmp_value is not None:
             params[param_key] = resolve_refs_recursively(stack_name, tmp_value, resources)
-            break
-        # hack: convert to boolean
-        if params.get(param_key) in ['True', 'False']:
-            params[param_key] = params.get(param_key) == 'True'
+        # Convert to boolean (TODO: do this recursively?)
+        if str(tmp_value).lower() in ['true', 'false']:
+            params[param_key] = str(tmp_value).lower() == 'true'
 
     # assign default value if empty
     params = common.merge_recursive(defaults, params)

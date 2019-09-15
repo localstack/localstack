@@ -220,9 +220,7 @@ You can pass the following environment variables to LocalStack:
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
-* `LAMBDA_JAVA_OPTS`: Allow to pass custom options(-Xmx512M) and/or for debugging(-agentlib:jdwp=transport=dt_socket,server=y,suspend=y) to JVM executed as docker in LAMBDA_EXECUTOR variable. 
-   Pay attention, use __debug_port_ placeholder like port if you want debug with your IDE.
-   `I.e: (-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_) `               
+* `LAMBDA_JAVA_OPTS`: Allow passing custom JVM options (e.g., `-Xmx512M`) to Java Lambdas executed in Docker. Use `_debug_port_` placeholder to configure the debug port (e.g., `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_`).
 
 
 Additionally, the following *read-only* environment variables are available:
@@ -529,6 +527,7 @@ localstack web
 
 ## Change Log
 
+* v0.10.3: Allow specifying data types for CF attributes; add API for service status and starting services at runtime; support NextShardIterator in DDB streams; add mock responses for S3 encryption and replication; fix rendering of resources in web UI; custom SQS queue attributes; fix Lambda docker command and imports; fix SQS queue physical ID in CF; allow proxy listener to define custom backend per request; support Lambda event body over stdin; exclude `ingest-geoip` ES module to optimize image size; skip checking MD5 on S3 copy; fix DynamoDB table ARN for CF; fix CF deployment of StepFunction activities; fix uploading of Java Lambda as JAR in ZIP; fix installing libs for plugins; added `LAMBDA_JAVA_OPTS` for Java Lambda debugging; bump Maven dependency versions; refactor Lambda API; fix boolean strings in CF templates; allow overriding AWS account id with `TEST_AWS_ACCOUNT_ID`; fix incorrect region for API GW resources created via CF; fix permissions for cache files in `/tmp`
 * v0.10.2: Fix logging issue with async Lambdas; fix kinesis records processing; add basic support for `Ref` in CloudFormation; fix ddb streams uuid generation; upgrade travis CI setup; fix DynamoDB error messages; cache server processes
 * v0.10.0: Lazy loading of libraries; fix handling of regions; add API multiserver; improve CPU profiling; fix ES xpack installation; add basic EventBridge support; refactor Lambda API and executor; add MessageAttributes on SNS payloads; tagging for SNS; ability to customize docker command
 * v0.9.6: Add API Gateway SQS proxy; fix command to push Docker image; fix Docker bridge IP configuration; fix SSL issue in dashboard infra; updates to README
