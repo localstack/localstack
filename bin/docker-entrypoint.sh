@@ -11,6 +11,9 @@ source <(
   sed -ne 's/^LOCALSTACK_\([^=]\+\)=.*/export \1=${LOCALSTACK_\1}/p'
 )
 
+cat /dev/null > /tmp/localstack_infra.log
+cat /dev/null > /tmp/localstack_infra.err
+
 supervisord -c /etc/supervisord.conf &
 
 function run_startup_scripts {
@@ -30,6 +33,4 @@ function run_startup_scripts {
 
 run_startup_scripts &
 
-touch /tmp/localstack_infra.log
-touch /tmp/localstack_infra.err
 tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err
