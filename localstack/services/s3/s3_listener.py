@@ -649,6 +649,22 @@ class ProxyListenerS3(ProxyListener):
             except Exception:
                 pass
 
+            # Honor response header overrides
+            # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
+            if method == 'GET':
+                query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
+                allowed_overrides = {
+                    'response-content-type': 'Content-Type',
+                    'response-content-language': 'Content-Language',
+                    'response-expires': 'Expires',
+                    'response-cache-control': 'Cache-Control',
+                    'response-content-disposition': 'Content-Disposition',
+                    'response-content-encoding': 'Content-Encoding',
+                }
+                for param_name, header_name in allowed_overrides.items():
+                    if param_name in query_map:
+                        response.headers[header_name] = query_map[param_name][0]
+
             # We need to un-pretty-print the XML, otherwise we run into this issue with Spark:
             # https://github.com/jserver/mock-s3/pull/9/files
             # https://github.com/localstack/localstack/issues/183

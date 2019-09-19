@@ -320,6 +320,40 @@ class S3ListenerTest (unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_s3_get_response_header_overrides(self):
+        # Signed requests may include certain header overrides in the querystring
+        # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
+
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put object
+        object_key = 'key-by-hostname'
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+
+        # get object and assert headers
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={
+                'Bucket': bucket_name,
+                'Key': object_key,
+                'ResponseCacheControl': 'max-age=74',
+                'ResponseContentDisposition': 'attachment; filename="foo.jpg"',
+                'ResponseContentEncoding': 'identity',
+                'ResponseContentLanguage': 'de-DE',
+                'ResponseContentType': 'image/jpeg',
+                'ResponseExpires': 'Wed, 21 Oct 2015 07:28:00 GMT'}
+        )
+        response = requests.get(url, verify=False)
+
+        self.assertEqual(response.headers['cache-control'], 'max-age=74')
+        self.assertEqual(response.headers['content-disposition'], 'attachment; filename="foo.jpg"')
+        self.assertEqual(response.headers['content-encoding'], 'identity')
+        self.assertEqual(response.headers['content-language'], 'de-DE')
+        self.assertEqual(response.headers['content-type'], 'image/jpeg')
+        self.assertEqual(response.headers['expires'], '2015-10-21T07:28:00Z')
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
     def test_s3_copy_md5(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
