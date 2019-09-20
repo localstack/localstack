@@ -43,6 +43,16 @@ XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
 
+# response header overrides the client may request
+ALLOWED_HEADER_OVERRIDES = {
+    'response-content-type': 'Content-Type',
+    'response-content-language': 'Content-Language',
+    'response-expires': 'Expires',
+    'response-cache-control': 'Cache-Control',
+    'response-content-disposition': 'Content-Disposition',
+    'response-content-encoding': 'Content-Encoding',
+}
+
 
 def event_type_matches(events, action, api_method):
     """ check whether any of the event types in `events` matches the
@@ -653,15 +663,7 @@ class ProxyListenerS3(ProxyListener):
             # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
             if method == 'GET':
                 query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
-                allowed_overrides = {
-                    'response-content-type': 'Content-Type',
-                    'response-content-language': 'Content-Language',
-                    'response-expires': 'Expires',
-                    'response-cache-control': 'Cache-Control',
-                    'response-content-disposition': 'Content-Disposition',
-                    'response-content-encoding': 'Content-Encoding',
-                }
-                for param_name, header_name in allowed_overrides.items():
+                for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:
                         response.headers[header_name] = query_map[param_name][0]
 
