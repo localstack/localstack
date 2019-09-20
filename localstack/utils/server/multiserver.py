@@ -3,8 +3,9 @@ import json
 import logging
 import subprocess
 import requests
+from flask_cors import CORS
+from moto import server as moto_server
 from requests.models import Response
-from moto.server import main as moto_main
 from localstack import constants
 from localstack.utils.common import (
     FuncThread, ShellCommandThread, TMP_THREADS, to_str, json_safe, wait_for_port_open, is_port_open)
@@ -26,6 +27,16 @@ API_PATH_SERVERS = '/servers'
 RUN_SERVER_IN_PROCESS = False
 
 
+def patch_moto_server():
+    def create_backend_app(service):
+        backend_app = create_backend_app_orig(service)
+        CORS(backend_app)
+        return backend_app
+
+    create_backend_app_orig = moto_server.create_backend_app
+    moto_server.create_backend_app = create_backend_app
+
+
 def start_api_server_locally(request):
     api = request.get('api')
     port = request.get('port')
@@ -34,7 +45,7 @@ def start_api_server_locally(request):
     result = API_SERVERS[api] = {}
 
     def thread_func(params):
-        return moto_main([api, '-p', str(port), '-H', constants.BIND_HOST])
+        return moto_server.main([api, '-p', str(port), '-H', constants.BIND_HOST])
 
     thread = FuncThread(thread_func)
     thread.start()
@@ -100,8 +111,7 @@ def start_server_process(port):
         env_vars = {
             'PYTHONPATH': '.:%s' % constants.LOCALSTACK_ROOT_FOLDER
         }
-        thread = ShellCommandThread(cmd, outfile=subprocess.PIPE, env_vars=env_vars,
-            inherit_cwd=True)
+        thread = ShellCommandThread(cmd, outfile=subprocess.PIPE, env_vars=env_vars, inherit_cwd=True)
         thread.start()
     else:
         thread = start_server(port, asynchronous=True)
@@ -116,6 +126,9 @@ def main():
     setup_logging()
     port = int(sys.argv[1]) if len(sys.argv) > 0 else MULTI_SERVER_PORT
     start_server(port)
+
+
+patch_moto_server()
 
 
 if __name__ == '__main__':

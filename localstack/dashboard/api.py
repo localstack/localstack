@@ -1,14 +1,14 @@
 import os
 import json
-import logging
-import click
 from flask import Flask, render_template, jsonify, send_from_directory, request
 from flask_swagger import swagger
-from localstack.constants import VERSION
+from localstack import config
 from localstack.utils import common
+from localstack.services import generic_proxy
 from localstack.services import infra as services_infra
+from localstack.constants import VERSION
 from localstack.dashboard import infra
-from localstack.utils.bootstrap import load_plugins
+from localstack.utils.bootstrap import load_plugins, canonicalize_api_names
 from localstack.utils.aws.aws_stack import Environment
 
 
@@ -99,6 +99,12 @@ def get_lambda_code(functionName):
     return jsonify(result)
 
 
+@app.route('/health')
+def health():
+    result = {'status': 'OK'}
+    return jsonify(result)
+
+
 @app.route('/')
 def hello():
     return render_template('index.html')
@@ -124,10 +130,10 @@ def ensure_webapp_installed():
 def serve(port):
     ensure_webapp_installed()
     load_plugins()
+    canonicalize_api_names()
 
-    def noecho(*args, **kwargs):
-        pass
+    backend_url = 'http://localhost:%s' % port
+    config.USE_SSL = True
+    services_infra.start_proxy(config.PORT_WEB_UI_SSL, backend_url)
 
-    click.echo = noecho
-    logging.getLogger('werkzeug').setLevel(logging.ERROR)
-    app.run(port=int(port), threaded=True, host='0.0.0.0')
+    generic_proxy.serve_flask_app(app=app, port=port, quiet=True)

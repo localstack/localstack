@@ -786,7 +786,8 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
     subj.O = 'LocalStack Org'  # noqa
     subj.OU = 'Testing'
     subj.CN = 'LocalStack'
-    cert.set_serial_number(1000)
+    serial_number = 1001
+    cert.set_serial_number(serial_number)
     cert.gmtime_adj_notBefore(0)
     cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
     cert.set_issuer(cert.get_subject())

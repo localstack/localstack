@@ -315,7 +315,7 @@ def start_infra_in_docker():
     user_flags = '%s ' % user_flags if user_flags else user_flags
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
-    web_ui_flags = '-p {p}:{p} '.format(p=config.PORT_WEB_UI)
+    web_ui_flags = '-p {p}:{p} -p {p1}:{p1} '.format(p=config.PORT_WEB_UI, p1=config.PORT_WEB_UI_SSL)
 
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +

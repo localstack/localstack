@@ -79,6 +79,7 @@ DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 
 # port of Web UI
 PORT_WEB_UI = int(os.environ.get('PORT_WEB_UI', '').strip() or DEFAULT_PORT_WEB_UI)
+PORT_WEB_UI_SSL = PORT_WEB_UI + 1
 
 # IP of the docker bridge used to enable access between containers
 DOCKER_BRIDGE_IP = os.environ.get('DOCKER_BRIDGE_IP', '').strip()
