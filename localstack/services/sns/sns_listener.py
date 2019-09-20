@@ -1,4 +1,5 @@
 import ast
+import datetime
 import json
 import uuid
 import logging
@@ -326,6 +327,7 @@ def create_sns_message_body(subscriber, req_data):
     data = {}
     data['MessageId'] = str(uuid.uuid4())
     data['Type'] = 'Notification'
+    data['Timestamp'] = datetime.datetime.utcnow().isoformat(timespec='milliseconds') + 'Z'
     data['Message'] = message
     data['TopicArn'] = subscriber['TopicArn']
     if subject is not None:

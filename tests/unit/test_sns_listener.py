@@ -1,6 +1,7 @@
 import json
 import unittest
 import uuid
+import dateutil.parser
 
 from nose.tools import assert_equal, assert_raises
 
@@ -77,6 +78,13 @@ class SNSTests(unittest.TestCase):
             assert False, 'MessageId missing in SNS response message body'
         except ValueError:
             assert False, 'SNS response MessageId not a valid UUID'
+
+        try:
+            dateutil.parser.parse(result.pop('Timestamp'))
+        except KeyError:
+            assert False, 'Timestamp missing in SNS response message body'
+        except ValueError:
+            assert False, 'SNS response Timestamp not a valid ISO 8601 date'
         assert_equal(result, {'Message': 'msg', 'Type': 'Notification', 'TopicArn': 'arn'})
 
         # Now add a subject
@@ -95,6 +103,7 @@ class SNSTests(unittest.TestCase):
         result_str = sns_listener.create_sns_message_body(self.subscriber, action)
         result = json.loads(result_str)
         del result['MessageId']
+        del result['Timestamp']
         expected = json.dumps({'Message': 'msg',
                                'TopicArn': 'arn',
                                'Type': 'Notification',
