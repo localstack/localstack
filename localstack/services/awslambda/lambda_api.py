@@ -942,8 +942,9 @@ def invoke_function(function):
     not_found = None
     if arn not in arn_to_lambda:
         not_found = not_found_error(arn)
-    if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
+    elif qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
         not_found = not_found_error('{0}:{1}'.format(arn, qualifier))
+
     if not_found:
         forward_result = forward_to_fallback_url(func_arn, data)
         if forward_result is not None:
