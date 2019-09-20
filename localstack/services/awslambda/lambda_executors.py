@@ -578,6 +578,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'
                 ' %s'
                 ' %s'  # network
+                ' --rm'
                 ' "lambci/lambda:%s" %s'
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
