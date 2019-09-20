@@ -10,7 +10,6 @@ import boto3
 import subprocess
 from requests.models import Response
 from localstack import constants, config
-from localstack.config import USE_SSL, DEFAULT_REGION
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
@@ -294,9 +293,9 @@ def start_proxy_for_service(service_name, port, default_backend_port, update_lis
     return start_proxy(port, backend_url=backend_url, update_listener=update_listener, quiet=quiet, params=params)
 
 
-def start_proxy(port, backend_url, update_listener, quiet=False, params={}):
+def start_proxy(port, backend_url, update_listener=None, quiet=False, params={}):
     proxy_thread = GenericProxy(port=port, forward_url=backend_url,
-        ssl=USE_SSL, update_listener=update_listener, quiet=quiet, params=params)
+        ssl=config.USE_SSL, update_listener=update_listener, quiet=quiet, params=params)
     proxy_thread.start()
     TMP_THREADS.append(proxy_thread)
     return proxy_thread
@@ -306,7 +305,7 @@ def start_moto_server(key, port, name=None, backend_port=None, asynchronous=Fals
     if not name:
         name = key
     print('Starting mock %s (%s port %s)...' % (name, get_service_protocol(), port))
-    if USE_SSL and not backend_port:
+    if config.USE_SSL and not backend_port:
         backend_port = get_free_tcp_port()
     if backend_port:
         start_proxy_for_service(key, port, backend_port, update_listener)
@@ -413,7 +412,7 @@ def start_infra(asynchronous=False, apis=None):
         # prepare APIs
         apis = canonicalize_api_names(apis)
         # set environment
-        os.environ['AWS_REGION'] = DEFAULT_REGION
+        os.environ['AWS_REGION'] = config.DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
         # register signal handlers
         if not os.environ.get(ENV_INTERNAL_TEST_RUN):

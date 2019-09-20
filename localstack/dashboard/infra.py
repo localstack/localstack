@@ -96,11 +96,11 @@ def aws_cmd(service, env):
     if aws_stack.is_local_env(env):
         endpoint_url = aws_stack.get_local_service_url(service)
     if endpoint_url:
+        if not is_port_open(endpoint_url):
+            raise socket.error()
         if endpoint_url.startswith('https://'):
             cmd += ' --no-verify-ssl'
         cmd = '%s --endpoint-url="%s"' % (cmd, endpoint_url)
-        if not is_port_open(endpoint_url):
-            raise socket.error()
     cmd = '%s %s' % (cmd, service)
     return cmd
 
@@ -149,8 +149,7 @@ def get_sqs_queues(filter='.*', pool={}, env=None):
         queues = json.loads(out)['QueueUrls']
         for q in queues:
             name = q.split('/')[-1]
-            account = q.split('/')[-2]
-            arn = 'arn:aws:sqs:%s:%s:%s' % (DEFAULT_REGION, account, name)
+            arn = aws_stack.sqs_queue_arn(name)
             if re.match(filter, name):
                 queue = SqsQueue(arn)
                 result.append(queue)
