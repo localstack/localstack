@@ -13,7 +13,7 @@ from localstack.constants import (
     APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
-    timestamp, is_port_open, get_service_protocol)
+    is_port_open, get_service_protocol)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -336,10 +336,10 @@ def dynamodb_table_arn(table_name, account_id=None, region_name=None):
     return _resource_arn(table_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def dynamodb_stream_arn(table_name, account_id=None):
+def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
     account_id = get_account_id(account_id)
     return ('arn:aws:dynamodb:%s:%s:table/%s/stream/%s' %
-        (get_local_region(), account_id, table_name, timestamp()))
+        (get_local_region(), account_id, table_name, latest_stream_label))
 
 
 def lambda_function_arn(function_name, account_id=None):
