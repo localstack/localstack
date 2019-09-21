@@ -6,7 +6,7 @@ from localstack import config
 from localstack.utils import common
 from localstack.services import generic_proxy
 from localstack.services import infra as services_infra
-from localstack.constants import VERSION
+from localstack.constants import VERSION, LOCALSTACK_WEB_PROCESS
 from localstack.dashboard import infra
 from localstack.utils.bootstrap import load_plugins, canonicalize_api_names
 from localstack.utils.aws.aws_stack import Environment
@@ -128,6 +128,7 @@ def ensure_webapp_installed():
 
 
 def serve(port):
+    os.environ[LOCALSTACK_WEB_PROCESS] = '1'
     ensure_webapp_installed()
     load_plugins()
     canonicalize_api_names()
