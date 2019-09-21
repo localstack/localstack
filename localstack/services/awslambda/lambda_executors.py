@@ -5,8 +5,6 @@ import time
 import logging
 import threading
 import subprocess
-from localstack.utils.common import (
-    get_free_tcp_port)
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
@@ -16,7 +14,8 @@ except ImportError:
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, to_str, run, cp_r, json_safe)
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file,
+    to_str, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 
 # constants
@@ -56,7 +55,6 @@ class LambdaExecutor(object):
     def __init__(self):
         # keeps track of each function arn and the last time it was invoked
         self.function_invoke_times = {}
-        self.debug_java_port = get_free_tcp_port()
 
     def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
 
@@ -203,13 +201,12 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
 
-        java_opts = Util.get_java_opts(self.debug_java_port)
-
         # custom command to execute in the container
         command = ''
 
         # if running a Java Lambda, set up classpath arguments
         if runtime == LAMBDA_RUNTIME_JAVA8:
+            java_opts = Util.get_java_opts()
             stdin = None
             # copy executor jar into temp directory
             target_file = os.path.join(lambda_cwd, os.path.basename(LAMBDA_EXECUTOR_JAR))
@@ -329,7 +326,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 env_vars_str = ' '.join(['-e {}={}'.format(k, cmd_quote(v)) for (k, v) in env_vars])
 
                 network = config.LAMBDA_DOCKER_NETWORK
-                network_str = ' --network="%s" ' % network if network else ''
+                network_str = '--network="%s"' % network if network else ''
 
                 # Create and start the container
                 LOG.debug('Creating container: %s' % container_name)
@@ -566,9 +563,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             command = '"%s"' % handler
 
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
-        debug_docker_java_port = ' -p "%s":"%s"' % (self.debug_java_port, self.debug_java_port)
+        debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
         network = config.LAMBDA_DOCKER_NETWORK
-        network_str = ' --network="%s" ' % network if network else ''
+        network_str = '--network="%s"' % network if network else ''
         docker_cmd = self._docker_cmd()
 
         if config.LAMBDA_REMOTE_DOCKER:
@@ -648,14 +645,15 @@ class LambdaExecutorLocal(LambdaExecutor):
 
 
 class Util:
+    debug_java_port = False
 
-    @staticmethod
-    def get_java_opts(port):
-        opts = config.LAMBDA_JAVA_OPTS
-        if opts.find('_debug_port_'):
-            java_opts = opts.replace('_debug_port_', ('%s' % port))
-            return java_opts
-
+    @classmethod
+    def get_java_opts(cls):
+        opts = config.LAMBDA_JAVA_OPTS or ''
+        if '_debug_port_' in opts:
+            if not cls.debug_java_port:
+                cls.debug_java_port = get_free_tcp_port()
+            opts = opts.replace('_debug_port_', ('%s' % cls.debug_java_port))
         return opts
 
 

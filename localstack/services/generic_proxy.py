@@ -1,3 +1,4 @@
+import re
 import os
 import sys
 import ssl
@@ -26,15 +27,15 @@ QUIET = False
 SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
 
-CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5', 'cache-control',
+CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
-    'x-amz-acl', 'x-amz-version-id')
+    'x-amz-target', 'x-amz-acl', 'x-amz-version-id', 'x-localstack-target']
 if EXTRA_CORS_ALLOWED_HEADERS:
-    CORS_ALLOWED_HEADERS += tuple(EXTRA_CORS_ALLOWED_HEADERS.split(','))
+    CORS_ALLOWED_HEADERS += EXTRA_CORS_ALLOWED_HEADERS.split(',')
 
 CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
 
-CORS_EXPOSE_HEADERS = ('x-amz-version-id',)
+CORS_EXPOSE_HEADERS = ('x-amz-version-id', )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
 
@@ -255,6 +256,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     code = listener_result if isinstance(listener_result, int) else 503
                     self.send_response(code)
                     self.send_header('Content-Length', '0')
+                    # allow pre-flight CORS headers by default
+                    self._send_cors_headers()
                     self.end_headers()
                     return
             # perform the actual invocation of the backend service
@@ -303,14 +306,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Length', '%s' % len(response.content) if response.content else 0)
 
             # allow pre-flight CORS headers by default
-            if 'Access-Control-Allow-Origin' not in response.headers:
-                self.send_header('Access-Control-Allow-Origin', '*')
-            if 'Access-Control-Allow-Methods' not in response.headers:
-                self.send_header('Access-Control-Allow-Methods', ','.join(CORS_ALLOWED_METHODS))
-            if 'Access-Control-Allow-Headers' not in response.headers:
-                self.send_header('Access-Control-Allow-Headers', ','.join(CORS_ALLOWED_HEADERS))
-            if 'Access-Control-Expose-Headers' not in response.headers:
-                self.send_header('Access-Control-Expose-Headers', ','.join(CORS_EXPOSE_HEADERS))
+            self._send_cors_headers(response)
 
             self.end_headers()
             if response.content and len(response.content):
@@ -339,6 +335,19 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
             except Exception as e:
                 LOG.warning('Unable to flush write file: %s' % e)
+
+    def _send_cors_headers(self, response=None):
+        headers = response and response.headers or {}
+        if 'Access-Control-Allow-Origin' not in headers:
+            self.send_header('Access-Control-Allow-Origin', '*')
+        if 'Access-Control-Allow-Methods' not in headers:
+            self.send_header('Access-Control-Allow-Methods', ','.join(CORS_ALLOWED_METHODS))
+        if 'Access-Control-Allow-Headers' not in headers:
+            requested_headers = self.headers.get('Access-Control-Request-Headers', '')
+            requested_headers = re.split(r'[,\s]+', requested_headers) + CORS_ALLOWED_HEADERS
+            self.send_header('Access-Control-Allow-Headers', ','.join(requested_headers))
+        if 'Access-Control-Expose-Headers' not in headers:
+            self.send_header('Access-Control-Expose-Headers', ','.join(CORS_EXPOSE_HEADERS))
 
     def _listeners(self):
         return self.DEFAULT_LISTENERS + [self.proxy.update_listener]
@@ -370,7 +379,7 @@ class GenericProxy(FuncThread):
             self.httpd = ThreadedHTTPServer((self.listen_host, self.port), GenericProxyHandler)
             if self.ssl:
                 # make sure we have a cert generated
-                combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert()
+                combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=self.port)
                 self.httpd.socket = ssl.wrap_socket(self.httpd.socket,
                     server_side=True, certfile=combined_file)
             self.httpd.my_object = self
@@ -386,13 +395,13 @@ class GenericProxy(FuncThread):
             self.server_stopped = True
 
     @classmethod
-    def create_ssl_cert(cls, random=True):
-        return generate_ssl_cert(SERVER_CERT_PEM_FILE, random=random)
+    def create_ssl_cert(cls, serial_number=None):
+        return generate_ssl_cert(SERVER_CERT_PEM_FILE, serial_number=serial_number)
 
     @classmethod
-    def get_flask_ssl_context(cls):
+    def get_flask_ssl_context(cls, serial_number=None):
         if USE_SSL:
-            combined_file, cert_file_name, key_file_name = cls.create_ssl_cert()
+            combined_file, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
             return (cert_file_name, key_file_name)
         return None
 
@@ -404,7 +413,7 @@ def serve_flask_app(app, port, quiet=True, host=None, cors=True):
         logging.getLogger('werkzeug').setLevel(logging.ERROR)
     if not host:
         host = '0.0.0.0'
-    ssl_context = GenericProxy.get_flask_ssl_context()
+    ssl_context = GenericProxy.get_flask_ssl_context(serial_number=port)
     app.config['ENV'] = 'development'
 
     def noecho(*args, **kwargs):

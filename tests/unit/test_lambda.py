@@ -1,5 +1,6 @@
-import unittest
+import re
 import json
+import unittest
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
 
@@ -402,14 +403,9 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertTrue('Tags' in result)
             self.assertDictEqual({'hello': 'world'}, result['Tags'])
 
-    def test_java_options_without_port_specified(self):
-        expected = '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=10000'
-        result = self.prepareJavaOpts('-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_')
-        self.assertEqual(expected, result)
-
     def test_java_options_empty_return_empty_value(self):
         lambda_executors.config.LAMBDA_JAVA_OPTS = ''
-        result = lambda_executors.Util.get_java_opts(10000)
+        result = lambda_executors.Util.get_java_opts()
         self.assertFalse(result)
 
     def test_java_options_with_only_memory_options(self):
@@ -418,14 +414,14 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def test_java_options_with_memory_options_and_agentlib_option(self):
-        expected = '-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=10000'
+        expected = '.*transport=dt_socket,server=y,suspend=y,address=[0-9]+'
         result = self.prepareJavaOpts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
                                       ',suspend=y,address=_debug_port_')
-        self.assertEqual(expected, result)
+        self.assertTrue(re.match(expected, result))
 
     def prepareJavaOpts(self, java_opts):
         lambda_executors.config.LAMBDA_JAVA_OPTS = java_opts
-        result = lambda_executors.Util.get_java_opts(10000)
+        result = lambda_executors.Util.get_java_opts()
         return result
 
     def _create_function(self, function_name, tags={}):

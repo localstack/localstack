@@ -756,12 +756,12 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
-def generate_ssl_cert(target_file=None, overwrite=False, random=False):
+def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_content=False, serial_number=None):
     # Note: Do NOT import "OpenSSL" at the root scope
     # (Our test Lambdas are importing this file but don't have the module installed)
     from OpenSSL import crypto
 
-    if os.path.exists(target_file):
+    if target_file and not overwrite and os.path.exists(target_file):
         key_file_name = '%s.key' % target_file
         cert_file_name = '%s.crt' % target_file
         return target_file, cert_file_name, key_file_name
@@ -770,8 +770,6 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
             target_file = target_file.replace('.', '.%s.' % short_uid(), 1)
         else:
             target_file = '%s.%s' % (target_file, short_uid())
-    if target_file and not overwrite and os.path.exists(target_file):
-        return
 
     # create a key pair
     k = crypto.PKey()
@@ -786,7 +784,7 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
     subj.O = 'LocalStack Org'  # noqa
     subj.OU = 'Testing'
     subj.CN = 'LocalStack'
-    serial_number = 1001
+    serial_number = serial_number or 1001
     cert.set_serial_number(serial_number)
     cert.gmtime_adj_notBefore(0)
     cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
@@ -810,9 +808,8 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False):
         TMP_FILES.append(target_file)
         TMP_FILES.append(key_file_name)
         TMP_FILES.append(cert_file_name)
-        if random:
+        if not return_content:
             return target_file, cert_file_name, key_file_name
-        return file_content
     return file_content
 
 
