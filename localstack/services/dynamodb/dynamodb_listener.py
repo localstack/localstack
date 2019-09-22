@@ -205,7 +205,9 @@ class ProxyListenerDynamoDB(ProxyListener):
                 record['dynamodb']['OldImage'] = old_item
         elif action == '%s.CreateTable' % ACTION_PREFIX:
             if 'StreamSpecification' in data:
-                create_dynamodb_stream(data)
+                if response.status_code == 200:
+                    content = json.loads(to_str(response._content))
+                    create_dynamodb_stream(data, content['TableDescription']['LatestStreamLabel'])
             event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
                 payload={'n': event_publisher.get_hash(data['TableName'])})
             return
@@ -215,7 +217,9 @@ class ProxyListenerDynamoDB(ProxyListener):
             return
         elif action == '%s.UpdateTable' % ACTION_PREFIX:
             if 'StreamSpecification' in data:
-                create_dynamodb_stream(data)
+                if response.status_code == 200:
+                    content = json.loads(to_str(response._content))
+                    create_dynamodb_stream(data, content['TableDescription']['LatestStreamLabel'])
             return
         else:
             # nothing to do
@@ -360,14 +364,14 @@ def calculate_crc32(response):
     return crc32(to_bytes(response.content)) & 0xffffffff
 
 
-def create_dynamodb_stream(data):
+def create_dynamodb_stream(data, latest_stream_label):
     stream = data['StreamSpecification']
     enabled = stream.get('StreamEnabled')
     if enabled not in [False, 'False']:
         table_name = data['TableName']
         view_type = stream['StreamViewType']
         dynamodbstreams_api.add_dynamodb_stream(table_name=table_name,
-            view_type=view_type, enabled=enabled)
+            latest_stream_label=latest_stream_label, view_type=view_type, enabled=enabled)
 
 
 def forward_to_lambda(records):
