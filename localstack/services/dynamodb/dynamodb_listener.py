@@ -32,6 +32,9 @@ class ProxyListenerDynamoDB(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if path.startswith('/shell'):
             return True
+        if method == 'OPTIONS':
+            return 200
+
         data = json.loads(to_str(data))
         ddb_client = aws_stack.connect_to_service('dynamodb')
 

@@ -29,6 +29,9 @@ class ProxyListenerSNS(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
 
+        if method == 'OPTIONS':
+            return 200
+
         # check region
         try:
             aws_stack.check_valid_region(headers)
