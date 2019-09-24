@@ -41,6 +41,9 @@ QUEUE_ATTRIBUTES = {}
 class ProxyListenerSQS(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
+        if method == 'OPTIONS':
+            return 200
+
         req_data = self.parse_request_data(method, path, data)
 
         if req_data:
