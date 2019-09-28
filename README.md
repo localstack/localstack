@@ -262,7 +262,7 @@ server.test.pem.crt
 server.test.pem.key
 ```
 
-- the file `server.test.pem` must contains your key file content, your certificat and chain certificate files contents (do a cat in this order)
+- the file `server.test.pem` must contains your key file content, your certificate and chain certificate files contents (do a cat in this order)
  - the file `server.test.pem.crt` must contains your certificate and chains files contents (do a 'cat' in this order)
 - the file server.test.pem.key must contains your key file content
 ***
