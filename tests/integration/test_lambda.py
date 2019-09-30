@@ -46,7 +46,7 @@ TEST_LAMBDA_JAR_URL = ('{url}/cloud/localstack/{name}/{version}/{name}-{version}
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name='localstack-utils')
 
 TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests',
-    'psutil', 'urllib3', 'chardet', 'certifi', 'idna', 'pip']
+    'psutil', 'urllib3', 'chardet', 'certifi', 'idna', 'pip', 'dns']
 
 
 class LambdaTestBase(unittest.TestCase):

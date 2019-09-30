@@ -8,7 +8,8 @@ import subprocess
 from os.path import expanduser
 import six
 from boto3 import Session
-from localstack.constants import DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI
+from localstack.constants import (
+    DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS)
 
 TRUE_VALUES = ('1', 'true')
 
@@ -52,9 +53,6 @@ LAMBDA_DOCKER_NETWORK = os.environ.get('LAMBDA_DOCKER_NETWORK', '').strip()
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), 'localstack')
-# fix for Mac OS, to be able to mount /var/folders in Docker
-if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_FOLDER):
-    TMP_FOLDER = '/private%s' % TMP_FOLDER
 
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
@@ -63,7 +61,7 @@ HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
 DATA_DIR = os.environ.get('DATA_DIR', '').strip()
 
 # whether to use SSL encryption for the services
-USE_SSL = os.environ.get('USE_SSL', '').strip() not in ('0', 'false', '')
+USE_SSL = os.environ.get('USE_SSL', '').strip() in TRUE_STRINGS
 
 # default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
 DEFAULT_ENCODING = 'utf-8'
@@ -76,6 +74,9 @@ DOCKER_FLAGS = os.environ.get('DOCKER_FLAGS', '').strip()
 
 # command used to run Docker containers (e.g., set to "sudo docker" to run as sudo)
 DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
+
+# whether to start the web API
+START_WEB = os.environ.get('START_WEB', '').strip() not in FALSE_STRINGS
 
 # port of Web UI
 PORT_WEB_UI = int(os.environ.get('PORT_WEB_UI', '').strip() or DEFAULT_PORT_WEB_UI)
@@ -197,6 +198,10 @@ for folder in [DATA_DIR, TMP_FOLDER]:
             # this can happen due to a race condition when starting
             # multiple processes in parallel. Should be safe to ignore
             pass
+
+# fix for Mac OS, to be able to mount /var/folders in Docker
+if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_FOLDER):
+    TMP_FOLDER = '/private%s' % TMP_FOLDER
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, '127.0.0.1', '[::1]')))
