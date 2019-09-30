@@ -1,10 +1,12 @@
+import os
+import ssl
 import gzip
 import json
-import os
-import requests
-import unittest
 import uuid
+import unittest
+import requests
 from io import BytesIO
+from six.moves.urllib.request import Request, urlopen
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -13,6 +15,16 @@ from localstack.utils.common import (
 TEST_BUCKET_NAME_WITH_POLICY = 'test_bucket_policy_1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test_bucket_notification_1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
+
+
+class PutRequest(Request):
+    """ Class to handle putting with urllib """
+
+    def __init__(self, *args, **kwargs):
+        return Request.__init__(self, *args, **kwargs)
+
+    def get_method(self, *args, **kwargs):
+        return 'PUT'
 
 
 class S3ListenerTest (unittest.TestCase):
@@ -219,7 +231,7 @@ class S3ListenerTest (unittest.TestCase):
     def test_s3_head_response_content_length_same_as_upload(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
-        body = 'something body'
+        body = 'something body \n \n\r'
         # put object
         object_key = 'key-by-hostname'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body, ContentType='text/html; charset=utf-8')
@@ -229,6 +241,35 @@ class S3ListenerTest (unittest.TestCase):
         # get object and assert headers
         response = requests.head(url, verify=False)
         self.assertEqual(response.headers['content-length'], str(len(body)))
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_put_object_chunked_newlines(self):
+        # Test for https://github.com/localstack/localstack/issues/1571
+        bucket_name = 'test-bucket-%s' % short_uid()
+        object_key = 'data'
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        body = 'Hello\r\n\r\n\r\n\r\n'
+        headers = """
+            Authorization: foobar
+            Content-Type: audio/mpeg
+            X-Amz-Content-Sha256: STREAMING-AWS4-HMAC-SHA256-PAYLOAD
+            X-Amz-Date: 20190918T051509Z
+            X-Amz-Decoded-Content-Length: %s
+        """ % len(body)
+        headers = dict([[field.strip() for field in pair.strip().split(':', 1)]
+            for pair in headers.strip().split('\n')])
+        data = ('d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n' +
+            '%s0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n') % body
+        # put object
+        url = '%s/%s/%s' % (os.environ['TEST_S3_URL'], bucket_name, object_key)
+        req = PutRequest(url, to_bytes(data), headers)
+        urlopen(req, context=ssl.SSLContext()).read()
+        # get object and assert content length
+        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        download_file_object = to_str(downloaded_object['Body'].read())
+        self.assertEqual(len(str(download_file_object)), len(body))
+        self.assertEqual(str(download_file_object), body)
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -243,7 +284,7 @@ class S3ListenerTest (unittest.TestCase):
         )
         # put object
         response = requests.put(url, data=body, verify=False)
-        self.assertEqual(to_str(response.content), '')
+        self.assertEqual(response.status_code, 200)
         # get object and compare results
         downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
         download_object = downloaded_object['Body'].read()

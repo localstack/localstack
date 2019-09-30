@@ -16,6 +16,7 @@ boto>=2.49.0
 boto3>=1.9.71                  #basic-lib
 botocore>=1.12.13
 coverage>=4.0.3
+dnspython==1.16.0              #basic-lib
 docopt>=0.6.2                  #basic-lib
 elasticsearch>=6.0.0,<7.0.0
 flake8>=3.6.0
