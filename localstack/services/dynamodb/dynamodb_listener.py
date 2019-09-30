@@ -210,7 +210,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             if 'StreamSpecification' in data:
                 if response.status_code == 200:
                     content = json.loads(to_str(response._content))
-                    create_dynamodb_stream(data, content['TableDescription']['LatestStreamLabel'])
+                    create_dynamodb_stream(data, content['TableDescription'].get('LatestStreamLabel'))
             event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
                 payload={'n': event_publisher.get_hash(data['TableName'])})
             return
@@ -222,7 +222,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             if 'StreamSpecification' in data:
                 if response.status_code == 200:
                     content = json.loads(to_str(response._content))
-                    create_dynamodb_stream(data, content['TableDescription']['LatestStreamLabel'])
+                    create_dynamodb_stream(data, content['TableDescription'].get('LatestStreamLabel'))
             return
         else:
             # nothing to do

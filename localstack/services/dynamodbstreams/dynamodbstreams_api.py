@@ -20,14 +20,15 @@ ACTION_HEADER_PREFIX = 'DynamoDBStreams_20120810'
 SEQUENCE_NUMBER_COUNTER = 1
 
 
-def add_dynamodb_stream(table_name, latest_stream_label, view_type='NEW_AND_OLD_IMAGES', enabled=True):
+def add_dynamodb_stream(table_name, latest_stream_label=None, view_type='NEW_AND_OLD_IMAGES', enabled=True):
     if enabled:
         # create kinesis stream as a backend
         stream_name = get_kinesis_stream_name(table_name)
         aws_stack.create_kinesis_stream(stream_name)
+        latest_stream_label = latest_stream_label or 'latest'
         stream = {
-            'StreamArn': aws_stack.dynamodb_stream_arn(table_name=table_name,
-                                                       latest_stream_label=latest_stream_label),
+            'StreamArn': aws_stack.dynamodb_stream_arn(
+                table_name=table_name, latest_stream_label=latest_stream_label),
             'TableName': table_name,
             'StreamLabel': latest_stream_label,
             'StreamStatus': 'ENABLED',
