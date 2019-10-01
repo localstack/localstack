@@ -1,6 +1,7 @@
 import json
 import uuid
 import hashlib
+import six
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
@@ -140,7 +141,9 @@ def stream_name_from_stream_arn(stream_arn):
 
 def random_id(stream_arn, kinesis_shard_id):
     namespace = uuid.UUID(bytes=hashlib.sha1(to_bytes(stream_arn)).digest()[:16])
-    return uuid.uuid5(namespace, to_bytes(kinesis_shard_id)).hex
+    if six.PY2:
+        kinesis_shard_id = to_bytes(kinesis_shard_id, 'utf-8')
+    return uuid.uuid5(namespace, kinesis_shard_id).hex
 
 
 def shard_id(stream_arn, kinesis_shard_id):
