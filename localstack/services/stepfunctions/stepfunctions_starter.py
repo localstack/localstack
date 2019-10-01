@@ -1,6 +1,5 @@
 import logging
 from localstack import config
-from localstack.config import DEFAULT_REGION
 from localstack.services import install
 from localstack.utils.aws import aws_stack
 from localstack.constants import DEFAULT_PORT_STEPFUNCTIONS_BACKEND, TEST_AWS_ACCOUNT_ID
@@ -26,7 +25,7 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
            '--lambda-endpoint %s --dynamodb-endpoint %s --sns-endpoint %s '
            '--sqs-endpoint %s --aws-region %s --aws-account %s') % (
         install.INSTALL_DIR_STEPFUNCTIONS, MAX_HEAP_SIZE, lambda_endpoint, dynamodb_endpoint,
-        sns_endpoint, sqs_endpoint, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID)
+        sns_endpoint, sqs_endpoint, aws_stack.get_region(), TEST_AWS_ACCOUNT_ID)
     print('Starting mock StepFunctions (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('stepfunctions', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)

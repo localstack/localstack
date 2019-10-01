@@ -430,7 +430,7 @@ def apply_patches():
     def RestAPI_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
         name = props['Name']
-        region_name = props.get('Region') or config.DEFAULT_REGION
+        region_name = props.get('Region') or aws_stack.get_region()
         description = props.get('Description') or ''
         id = props.get('Id') or short_uid()
         return apigw_models.RestAPI(id, region_name, name, description)
@@ -462,7 +462,7 @@ def apply_patches():
     @classmethod
     def Resource_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
-        region_name = props.get('Region') or config.DEFAULT_REGION
+        region_name = props.get('Region') or aws_stack.get_region()
         path_part = props.get('PathPart')
         api_id = props.get('RestApiId')
         parent_id = props.get('ParentId')

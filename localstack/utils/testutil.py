@@ -7,7 +7,6 @@ import shutil
 import zipfile
 import importlib
 from six import iteritems
-from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
 from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
     LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
@@ -217,7 +216,7 @@ def map_all_s3_objects(to_json=True):
 
 
 def get_sample_arn(service, resource):
-    return 'arn:aws:%s:%s:%s:%s' % (service, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, resource)
+    return 'arn:aws:%s:%s:%s:%s' % (service, aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, resource)
 
 
 def send_describe_dynamodb_ttl_request(table_name):

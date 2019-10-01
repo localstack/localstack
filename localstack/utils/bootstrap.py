@@ -47,7 +47,7 @@ API_DEPENDENCIES = {
 }
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {
-    'serverless': ['iam', 'lambda', 'dynamodb', 'apigateway', 's3', 'sns'],
+    'serverless': ['cloudformation', 'iam', 'sts', 'lambda', 'dynamodb', 'apigateway', 's3'],
     'cognito': ['cognito-idp', 'cognito-identity']
 }
 

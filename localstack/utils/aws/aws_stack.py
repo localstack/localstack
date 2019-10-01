@@ -146,6 +146,11 @@ def get_boto3_session():
     return boto3
 
 
+def get_region():
+    # TODO look up region from context
+    return get_local_region()
+
+
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
@@ -179,7 +184,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
     env = get_environment(env, region_name=region_name)
-    region = env.region if env.region != REGION_LOCAL else get_local_region()
+    region = env.region if env.region != REGION_LOCAL else get_region()
     key_elements = [service_name, client, env, region, endpoint_url, config]
     cache_key = '/'.join([str(k) for k in key_elements])
     if cache_key not in BOTO_CLIENTS_CACHE:
@@ -291,7 +296,7 @@ def get_s3_client():
 def extract_region_from_auth_header(headers):
     auth = headers.get('Authorization') or ''
     region = re.sub(r'.*Credential=[^/]+/[^/]+/([^/]+)/.*', r'\1', auth)
-    region = region or get_local_region()
+    region = region or get_region()
     return region
 
 
@@ -339,7 +344,7 @@ def dynamodb_table_arn(table_name, account_id=None, region_name=None):
 def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
     account_id = get_account_id(account_id)
     return ('arn:aws:dynamodb:%s:%s:table/%s/stream/%s' %
-        (get_local_region(), account_id, table_name, latest_stream_label))
+        (get_region(), account_id, table_name, latest_stream_label))
 
 
 def lambda_function_arn(function_name, account_id=None):
@@ -350,7 +355,7 @@ def lambda_function_arn(function_name, account_id=None):
         raise Exception('Lambda function name should not contain a colon ":"')
     account_id = get_account_id(account_id)
     pattern = re.sub(r'\([^\|]+\|.+\)', 'function', pattern)
-    return pattern.replace('.*', '%s') % (get_local_region(), account_id, function_name)
+    return pattern.replace('.*', '%s') % (get_region(), account_id, function_name)
 
 
 def lambda_function_name(name_or_arn):
@@ -387,12 +392,12 @@ def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
 
 def kinesis_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
-    return 'arn:aws:kinesis:%s:%s:stream/%s' % (get_local_region(), account_id, stream_name)
+    return 'arn:aws:kinesis:%s:%s:stream/%s' % (get_region(), account_id, stream_name)
 
 
 def firehose_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (get_local_region(), account_id, stream_name))
+    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (get_region(), account_id, stream_name))
 
 
 def s3_bucket_arn(bucket_name, account_id=None):
@@ -403,7 +408,7 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
     if ':' in name:
         return name
     account_id = get_account_id(account_id)
-    region_name = region_name or get_local_region()
+    region_name = region_name or get_region()
     return pattern % (region_name, account_id, name)
 
 
@@ -416,13 +421,13 @@ def create_sqs_queue(queue_name, env=None):
 
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
-    region_name = region_name or config.DEFAULT_REGION
+    region_name = region_name or get_region()
     return ('arn:aws:sqs:%s:%s:%s' % (region_name, account_id, queue_name))
 
 
 def apigateway_restapi_arn(api_id, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
-    region_name = region_name or config.DEFAULT_REGION
+    region_name = region_name or get_region()
     return ('arn:aws:apigateway:%s:%s:/restapis/%s' % (region_name, account_id, api_id))
 
 
@@ -433,7 +438,7 @@ def sqs_queue_name(queue_arn):
 
 def sns_topic_arn(topic_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ('arn:aws:sns:%s:%s:%s' % (get_local_region(), account_id, topic_name))
+    return ('arn:aws:sns:%s:%s:%s' % (get_region(), account_id, topic_name))
 
 
 def get_sqs_queue_url(queue_arn):
@@ -459,7 +464,7 @@ def mock_aws_request_headers(service='dynamodb', region_name=None):
     elif service == 'sqs':
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
     access_key = get_boto3_credentials().access_key
-    region_name = region_name or config.DEFAULT_REGION
+    region_name = region_name or get_region()
     headers = {
         'Content-Type': ctype,
         'Accept-Encoding': 'identity',
@@ -653,7 +658,7 @@ def create_api_gateway_integrations(api_id, resource_id, method,
 
 def apigateway_invocations_arn(lambda_uri):
     return ('arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' %
-        (config.DEFAULT_REGION, lambda_uri))
+        (get_region(), lambda_uri))
 
 
 def get_elasticsearch_endpoint(domain=None, region_name=None):

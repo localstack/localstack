@@ -10,7 +10,7 @@ from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
 from localstack import config
-from localstack.config import HOSTNAME, USE_SSL, DEFAULT_REGION
+from localstack.config import HOSTNAME, USE_SSL
 from localstack.constants import LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -259,7 +259,7 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
     app_name = '%s%s' % (stream_name, ddb_lease_table_suffix)
     stream_info = {
         'name': stream_name,
-        'region': DEFAULT_REGION,
+        'region': aws_stack.get_region(),
         'shards': shards,
         'properties_file': props_file,
         'log_file': log_file,

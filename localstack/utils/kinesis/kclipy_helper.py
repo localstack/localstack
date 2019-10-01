@@ -5,7 +5,7 @@ import os
 from glob import glob
 from six import iteritems
 from amazon_kclpy import kcl
-from localstack.config import DEFAULT_REGION
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import save_file
 
 
@@ -92,7 +92,7 @@ def create_config_file(config_file, executableName, streamName, applicationName,
         credentialsProvider=None, region_name=None, **kwargs):
     if not credentialsProvider:
         credentialsProvider = 'DefaultAWSCredentialsProviderChain'
-    region_name = region_name or DEFAULT_REGION
+    region_name = region_name or aws_stack.get_region()
     content = """
         executableName = %s
         streamName = %s
