@@ -53,6 +53,9 @@ LAMBDA_DOCKER_NETWORK = os.environ.get('LAMBDA_DOCKER_NETWORK', '').strip()
 
 # folder for temporary files and data
 TMP_FOLDER = os.path.join(tempfile.gettempdir(), 'localstack')
+# fix for Mac OS, to be able to mount /var/folders in Docker
+if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_FOLDER):
+    TMP_FOLDER = '/private%s' % TMP_FOLDER
 
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
@@ -198,10 +201,6 @@ for folder in [DATA_DIR, TMP_FOLDER]:
             # this can happen due to a race condition when starting
             # multiple processes in parallel. Should be safe to ignore
             pass
-
-# fix for Mac OS, to be able to mount /var/folders in Docker
-if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_FOLDER):
-    TMP_FOLDER = '/private%s' % TMP_FOLDER
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, '127.0.0.1', '[::1]')))
