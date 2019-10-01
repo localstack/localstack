@@ -2,7 +2,6 @@ import json
 import time
 from random import randint
 from flask import Flask, jsonify, request, make_response
-from localstack.config import DEFAULT_REGION
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -43,7 +42,7 @@ def get_domain_config(domain_name):
     return {
         'DomainConfig': {
             'AccessPolicies': {
-                'Options': '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::%s:root"},"Action":"es:*","Resource":"arn:aws:es:%s:%s:domain/%s/*"}]}' % (TEST_AWS_ACCOUNT_ID, DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),  # noqa: E501
+                'Options': '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"arn:aws:iam::%s:root"},"Action":"es:*","Resource":"arn:aws:es:%s:%s:domain/%s/*"}]}' % (TEST_AWS_ACCOUNT_ID, aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),  # noqa: E501
                 'Status': config_status
             },
             'AdvancedOptions': {
@@ -88,11 +87,11 @@ def get_domain_config(domain_name):
             'LogPublishingOptions': {
                 'Options': {
                     'INDEX_SLOW_LOGS': {
-                        'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
+                        'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID),  # noqa: E501
                         'Enabled': False
                     },
                     'SEARCH_SLOW_LOGS': {
-                        'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID),  # noqa: E501
+                        'CloudWatchLogsLogGroupArn': 'arn:aws:logs:%s:%s:log-group:sample-domain' % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID),  # noqa: E501
                         'Enabled': False,
                     }
                 },
@@ -126,7 +125,7 @@ def get_domain_config(domain_name):
 def get_domain_status(domain_name, deleted=False):
     return {
         'DomainStatus': {
-            'ARN': 'arn:aws:es:%s:%s:domain/%s' % (DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, domain_name),
+            'ARN': 'arn:aws:es:%s:%s:domain/%s' % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),
             'Created': True,
             'Deleted': deleted,
             'DomainId': '%s/%s' % (TEST_AWS_ACCOUNT_ID, domain_name),

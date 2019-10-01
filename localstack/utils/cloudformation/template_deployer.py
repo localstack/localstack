@@ -6,7 +6,6 @@ import traceback
 from six import iteritems
 from six import string_types
 from localstack.utils import common
-from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
 
 ACTION_CREATE = 'create'
@@ -469,7 +468,7 @@ def extract_resource_attribute(resource_type, resource, attribute):
 
 def resolve_ref(stack_name, ref, resources, attribute):
     if ref == 'AWS::Region':
-        return DEFAULT_REGION
+        return aws_stack.get_region()
     resource_status = {}
     if stack_name:
         resource_status = describe_stack_resource(stack_name, ref)

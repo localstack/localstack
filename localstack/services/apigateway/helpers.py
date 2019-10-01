@@ -3,7 +3,6 @@ import json
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.utils import common
-from localstack.config import DEFAULT_REGION
 from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON
 from localstack.utils.aws import aws_stack
 
@@ -163,7 +162,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region
     resources = {}
     template = APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE
     resource_path = path.replace('/', '')
-    region_name = region_name or DEFAULT_REGION
+    region_name = region_name or aws_stack.get_region()
     queue_name = aws_stack.sqs_queue_name(queue_arn)
     sqs_region = aws_stack.extract_region_from_arn(queue_arn) or region_name
     resources[resource_path] = [{

@@ -15,7 +15,7 @@ from six.moves.urllib import parse as urlparse
 from botocore.client import ClientError
 from requests.models import Response, Request
 from localstack import config
-from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, DEFAULT_REGION
+from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -96,7 +96,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', version
         'Records': [{
             'eventVersion': '2.0',
             'eventSource': 'aws:s3',
-            'awsRegion': DEFAULT_REGION,
+            'awsRegion': aws_stack.get_region(),
             'eventTime': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
             'eventName': event_name,
             'userIdentity': {
