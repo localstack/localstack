@@ -14,6 +14,7 @@ RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
 ADD localstack/constants.py localstack/config.py localstack/
 ADD localstack/services/install.py localstack/services/
 ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
+ADD localstack/utils/aws/ localstack/utils/aws/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
 ADD localstack/ext/ localstack/ext/
 
