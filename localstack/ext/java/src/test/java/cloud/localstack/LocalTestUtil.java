@@ -2,6 +2,7 @@ package cloud.localstack;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.jar.JarEntry;
@@ -35,10 +36,15 @@ public class LocalTestUtil {
 		addClassToJar(clazz, jarStream);
 		addClassToJar(Record.class, jarStream);
 		addClassToJar(SQSEvent.class, jarStream);
+		// write MANIFEST into jar stream
+		JarEntry mfEntry = new JarEntry("META-INF/MANIFEST.MF");
+		jarStream.putNextEntry(mfEntry);
+		jarStream.closeEntry();
 		jarStream.close();
+
 		// write jar into zip stream
-		ZipEntry zipEntry = new ZipEntry("LambdaCode.jar");
-		zipStream.putNextEntry(zipEntry);
+		ZipEntry codeEntry = new ZipEntry("LambdaCode.jar");
+		zipStream.putNextEntry(codeEntry);
 		zipStream.write(jarOut.toByteArray());
 		zipStream.closeEntry();
 

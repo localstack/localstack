@@ -463,7 +463,7 @@ def get_java_handler(zip_file_content, handler, main_file):
             return result
         return execute, zip_file_content
     raise ClientError(error_response(
-        'Unable to extract Java Lambda handler - file is not a valid zip/jar files', 400, error_type='ValidationError'))
+        'Unable to extract Java Lambda handler - file is not a valid zip/jar file', 400, error_type='ValidationError'))
 
 
 def set_archive_code(code, lambda_name, zip_file_content=None):
