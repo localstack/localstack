@@ -46,6 +46,10 @@ public class TestUtils {
     public static final String TEST_SECRET_KEY = "test";
     public static final AWSCredentials TEST_CREDENTIALS = new BasicAWSCredentials(TEST_ACCESS_KEY, TEST_SECRET_KEY);
 
+    private static final String[] EXCLUDED_DIRECTORIES = {
+      ".github", ".git", ".idea", ".venv", "target", "node_modules"
+    };
+
     public static void setEnv(String key, String value) {
         Map<String, String> newEnv = new HashMap<String, String>(System.getenv());
         newEnv.put(key, value);
@@ -230,22 +234,24 @@ public class TestUtils {
 
     public static void copyFolder(Path src, Path dest) throws IOException {
         try(Stream<Path> stream = Files.walk(src)) {
-            stream.forEach(source -> copy(source, dest.resolve(src.relativize(source))));
+            stream.forEach(source -> {
+                boolean isExcluded = Arrays.stream(EXCLUDED_DIRECTORIES)
+                    .anyMatch( excluded -> source.toAbsolutePath().toString().contains(excluded));
+                if (!isExcluded) {
+                    copy(source, dest.resolve(src.relativize(source)));
+                }
+            });
         }
     }
-
-    private static String[] excludedDirectories = {".github", ".git", ".idea", ".venv", "target", "node_modules"};
 
     public static void copy(Path source, Path dest) {
         try {
             CopyOption[] options = new CopyOption[] {StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING};
+            if(Files.isDirectory(dest)) {
+                // continue without copying
+                return;
+            }
             if (Files.exists(dest)) {
-                if(Files.isDirectory(dest)
-                        || Arrays.stream(excludedDirectories)
-                            .anyMatch( excluded -> source.toAbsolutePath().toString().contains(excluded))) {
-                    // continue without copying
-                    return;
-                }
                 try(FileChannel sourceFile = FileChannel.open(source)) {
                     try (FileChannel destFile = FileChannel.open(dest)) {
                         if (!Files.getLastModifiedTime(source).equals(Files.getLastModifiedTime(dest))

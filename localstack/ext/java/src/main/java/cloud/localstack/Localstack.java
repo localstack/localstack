@@ -79,9 +79,7 @@ public class Localstack {
         }
     }
 
-    private Localstack() {
-
-    }
+    private Localstack() { }
 
     public static boolean isDevEnvironment() {
         return DEV_ENVIRONMENT;

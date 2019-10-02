@@ -29,6 +29,8 @@ public class Container {
     private static final long POLL_INTERVAL = 1000;
     private static final int NUM_LOG_LINES = 10;
 
+    private static final String ENV_DEBUG = "DEBUG";
+    private static final String ENV_DEBUG_DEFAULT = "1";
     public static final String LOCALSTACK_EXTERNAL_HOSTNAME = "HOSTNAME_EXTERNAL";
 
 
@@ -56,6 +58,7 @@ public class Container {
         String containerId = new RunCommand(LOCALSTACK_NAME, imageTag)
                 .withExposedPorts(LOCALSTACK_PORTS, randomizePorts)
                 .withEnvironmentVariable(LOCALSTACK_EXTERNAL_HOSTNAME, externalHostName)
+                .withEnvironmentVariable(ENV_DEBUG, ENV_DEBUG_DEFAULT)
                 .withEnvironmentVariables(environmentVariables)
                 .execute();
         LOG.info("Started container: " + containerId);

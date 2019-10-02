@@ -106,6 +106,7 @@ public class BasicFunctionalityTest {
         request.setRuntime(Runtime.Java8);
         request.setCode(LocalTestUtil.createFunctionCode(KinesisLambdaHandler.class));
         request.setHandler(KinesisLambdaHandler.class.getName());
+        request.setRole("r1");
         lambda.createFunction(request);
 
         // create stream
@@ -138,6 +139,7 @@ public class BasicFunctionalityTest {
         CreateFunctionRequest request = new CreateFunctionRequest();
         request.setFunctionName(functionName);
         request.setRuntime(Runtime.Java8);
+        request.setRole("r1");
         if(Localstack.useSSL()){
             request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandlerSSL.class));
             request.setHandler(SQSLambdaHandlerSSL.class.getName());

@@ -260,7 +260,7 @@ class S3ListenerTest (unittest.TestCase):
         headers = dict([[field.strip() for field in pair.strip().split(':', 1)]
             for pair in headers.strip().split('\n')])
         data = ('d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n' +
-            '%s0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n') % body
+            '%s\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n') % body
         # put object
         url = '%s/%s/%s' % (os.environ['TEST_S3_URL'], bucket_name, object_key)
         req = PutRequest(url, to_bytes(data), headers)
