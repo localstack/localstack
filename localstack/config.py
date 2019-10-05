@@ -185,7 +185,7 @@ try:
     if not is_in_docker:
         DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
     # update LOCALSTACK_HOSTNAME if host.docker.internal is available
-    if is_in_docker and not os.environ.get('LOCALSTACK_HOSTNAME'):
+    if is_in_docker and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
         LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
     pass
@@ -193,12 +193,6 @@ except socket.error:
 # make sure we default to LAMBDA_REMOTE_DOCKER=true if running in Docker
 if is_in_docker and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
     LAMBDA_REMOTE_DOCKER = True
-
-# print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
-if not is_in_docker and 'docker' in LAMBDA_EXECUTOR and not is_linux():
-    print(('!WARNING! - Running outside of Docker with LAMBDA_EXECUTOR=%s can lead to '
-           'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
-           'be properly set in your Lambdas.') % LAMBDA_EXECUTOR)
 
 # local config file path in home directory
 CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')

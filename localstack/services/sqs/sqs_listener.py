@@ -285,7 +285,7 @@ class ProxyListenerSQS(ProxyListener):
     def _queue_url(self, path, req_data, headers):
         queue_url = req_data.get('QueueUrl')
         if queue_url:
-            return queue_url
+            return queue_url[0]
         url = config.TEST_SQS_URL
         if headers.get('Host'):
             url = 'http%s://%s' % ('s' if config.USE_SSL else '', headers['Host'])
