@@ -822,14 +822,17 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     key_file_content = key_file.getvalue().strip()
     file_content = '%s\n%s' % (key_file_content, cert_file_content)
     if target_file:
-        save_file(target_file, file_content)
-        key_file_name = '%s.key' % target_file
-        cert_file_name = '%s.crt' % target_file
-        save_file(key_file_name, key_file_content)
-        save_file(cert_file_name, cert_file_content)
-        TMP_FILES.append(target_file)
-        TMP_FILES.append(key_file_name)
-        TMP_FILES.append(cert_file_name)
+        # check existence to avoid permission denied issues:
+        # https://github.com/localstack/localstack/issues/1607
+        if not os.path.exists(target_file):
+            save_file(target_file, file_content)
+            key_file_name = '%s.key' % target_file
+            cert_file_name = '%s.crt' % target_file
+            save_file(key_file_name, key_file_content)
+            save_file(cert_file_name, cert_file_content)
+            TMP_FILES.append(target_file)
+            TMP_FILES.append(key_file_name)
+            TMP_FILES.append(cert_file_name)
         if not return_content:
             return target_file, cert_file_name, key_file_name
     return file_content

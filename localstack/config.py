@@ -185,7 +185,7 @@ try:
     if not is_in_docker:
         DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
     # update LOCALSTACK_HOSTNAME if host.docker.internal is available
-    if is_in_docker and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
+    if is_in_docker and not os.environ.get('LOCALSTACK_HOSTNAME'):
         LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
     pass
