@@ -31,7 +31,7 @@ RUN apk add --no-cache nss
 
 # Install Maven - taken from official repo:
 # https://github.com/carlossg/docker-maven/blob/master/jdk-8/Dockerfile)
-ARG MAVEN_VERSION=3.5.4
+ARG MAVEN_VERSION=3.6.2
 ARG USER_HOME_DIR="/root"
 ARG SHA=ce50b1c91364cb77efe3776f756a6d92b76d9038b0a0782f7d53acf1e997a14d
 ARG BASE_URL=https://apache.osuosl.org/maven/maven-3/${MAVEN_VERSION}/binaries
