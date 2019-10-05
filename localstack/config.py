@@ -194,12 +194,6 @@ except socket.error:
 if is_in_docker and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
     LAMBDA_REMOTE_DOCKER = True
 
-# print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
-if not is_in_docker and 'docker' in LAMBDA_EXECUTOR and not is_linux():
-    print(('!WARNING! - Running outside of Docker with LAMBDA_EXECUTOR=%s can lead to '
-           'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
-           'be properly set in your Lambdas.') % LAMBDA_EXECUTOR)
-
 # local config file path in home directory
 CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
 

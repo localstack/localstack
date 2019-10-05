@@ -345,7 +345,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         if 'Access-Control-Allow-Headers' not in headers:
             requested_headers = self.headers.get('Access-Control-Request-Headers', '')
             requested_headers = re.split(r'[,\s]+', requested_headers) + CORS_ALLOWED_HEADERS
-            self.send_header('Access-Control-Allow-Headers', ','.join(requested_headers))
+            self.send_header('Access-Control-Allow-Headers', ','.join([h for h in requested_headers if h]))
         if 'Access-Control-Expose-Headers' not in headers:
             self.send_header('Access-Control-Expose-Headers', ','.join(CORS_EXPOSE_HEADERS))
 

@@ -53,7 +53,7 @@ class ProxyListenerSQS(ProxyListener):
                 if new_response:
                     return new_response
             elif action == 'SetQueueAttributes':
-                self._set_queue_attributes(req_data)
+                self._set_queue_attributes(path, req_data, headers)
 
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
@@ -80,67 +80,69 @@ class ProxyListenerSQS(ProxyListener):
             # Allow CORS preflight requests to succeed.
             return 200
 
-        if method == 'POST' and path == '/':
-            region_name = extract_region_from_auth_header(headers)
-            req_data = urlparse.parse_qs(to_str(data))
-            action = req_data.get('Action', [None])[0]
-            content_str = content_str_original = to_str(response.content)
+        if method != 'POST':
+            return
 
-            self._fire_event(req_data, response)
+        region_name = extract_region_from_auth_header(headers)
+        req_data = urlparse.parse_qs(to_str(data))
+        action = req_data.get('Action', [None])[0]
+        content_str = content_str_original = to_str(response.content)
 
-            # patch the response and add missing attributes
-            if action == 'GetQueueAttributes':
-                content_str = self._add_queue_attributes(req_data, content_str)
+        self._fire_event(req_data, response)
 
-            # patch the response and return the correct endpoint URLs / ARNs
-            if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes'):
-                if config.USE_SSL and '<QueueUrl>http://' in content_str:
-                    # return https://... if we're supposed to use SSL
-                    content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
-                # expose external hostname:port
-                external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
-                content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
-                    r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port), content_str)
-                # fix queue ARN
-                content_str = re.sub(r'<([a-zA-Z0-9]+)>\s*arn:aws:sqs:elasticmq:([^<]+)</([a-zA-Z0-9]+)>',
-                    r'<\1>arn:aws:sqs:%s:\2</\3>' % (region_name), content_str)
+        # patch the response and add missing attributes
+        if action == 'GetQueueAttributes':
+            content_str = self._add_queue_attributes(path, req_data, content_str, headers)
 
-            if content_str_original != content_str:
-                # if changes have been made, return patched response
-                new_response = Response()
-                new_response.status_code = response.status_code
-                new_response.headers = response.headers
-                new_response._content = content_str
-                new_response.headers['content-length'] = len(new_response._content)
-                return new_response
+        # patch the response and return the correct endpoint URLs / ARNs
+        if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes'):
+            if config.USE_SSL and '<QueueUrl>http://' in content_str:
+                # return https://... if we're supposed to use SSL
+                content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
+            # expose external hostname:port
+            external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
+            content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
+                r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port), content_str)
+            # fix queue ARN
+            content_str = re.sub(r'<([a-zA-Z0-9]+)>\s*arn:aws:sqs:elasticmq:([^<]+)</([a-zA-Z0-9]+)>',
+                r'<\1>arn:aws:sqs:%s:\2</\3>' % (region_name), content_str)
 
-            # Since the following 2 API calls are not implemented in ElasticMQ, we're mocking them
-            # and letting them to return an empty response
-            if action == 'TagQueue':
-                new_response = Response()
-                new_response.status_code = 200
-                new_response._content = ("""
-                    <?xml version="1.0"?>
-                    <TagQueueResponse>
-                        <ResponseMetadata>
-                            <RequestId>{}</RequestId>
-                        </ResponseMetadata>
-                    </TagQueueResponse>
-                """).strip().format(uuid.uuid4())
-                return new_response
-            elif action == 'ListQueueTags':
-                new_response = Response()
-                new_response.status_code = 200
-                new_response._content = ("""
-                    <?xml version="1.0"?>
-                    <ListQueueTagsResponse xmlns="{}">
-                        <ListQueueTagsResult/>
-                        <ResponseMetadata>
-                            <RequestId>{}</RequestId>
-                        </ResponseMetadata>
-                    </ListQueueTagsResponse>
-                """).strip().format(XMLNS_SQS, uuid.uuid4())
-                return new_response
+        if content_str_original != content_str:
+            # if changes have been made, return patched response
+            new_response = Response()
+            new_response.status_code = response.status_code
+            new_response.headers = response.headers
+            new_response._content = content_str
+            new_response.headers['content-length'] = len(new_response._content)
+            return new_response
+
+        # Since the following 2 API calls are not implemented in ElasticMQ, we're mocking them
+        # and letting them to return an empty response
+        if action == 'TagQueue':
+            new_response = Response()
+            new_response.status_code = 200
+            new_response._content = ("""
+                <?xml version="1.0"?>
+                <TagQueueResponse>
+                    <ResponseMetadata>
+                        <RequestId>{}</RequestId>
+                    </ResponseMetadata>
+                </TagQueueResponse>
+            """).strip().format(uuid.uuid4())
+            return new_response
+        elif action == 'ListQueueTags':
+            new_response = Response()
+            new_response.status_code = 200
+            new_response._content = ("""
+                <?xml version="1.0"?>
+                <ListQueueTagsResponse xmlns="{}">
+                    <ListQueueTagsResult/>
+                    <ResponseMetadata>
+                        <RequestId>{}</RequestId>
+                    </ResponseMetadata>
+                </ListQueueTagsResponse>
+            """).strip().format(XMLNS_SQS, uuid.uuid4())
+            return new_response
 
     # Format of the message Name attribute is MessageAttribute.<int id>.<field>
     # Format of the Value attributes is MessageAttribute.<int id>.Value.DataType
@@ -225,7 +227,7 @@ class ProxyListenerSQS(ProxyListener):
         return result
 
     def _send_message(self, path, data, req_data, headers):
-        queue_url = req_data.get('QueueUrl', [path.partition('?')[0]])[0]
+        queue_url = self._queue_url(path, req_data, headers)
         queue_name = queue_url[queue_url.rindex('/') + 1:]
         message_body = req_data.get('MessageBody', [None])[0]
         message_attributes = self.format_message_attributes(req_data)
@@ -244,17 +246,17 @@ class ProxyListenerSQS(ProxyListener):
             new_response.status_code = 200
             return new_response
 
-    def _set_queue_attributes(self, req_data):
-        queue_url = req_data['QueueUrl'][0]
+    def _set_queue_attributes(self, path, req_data, headers):
+        queue_url = self._queue_url(path, req_data, headers)
         attrs = self._format_attributes(req_data)
         # select only the attributes in UNSUPPORTED_ATTRIBUTE_NAMES
         attrs = dict([(k, v) for k, v in attrs.items() if k in UNSUPPORTED_ATTRIBUTE_NAMES])
         QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
         QUEUE_ATTRIBUTES[queue_url].update(attrs)
 
-    def _add_queue_attributes(self, req_data, content_str):
+    def _add_queue_attributes(self, path, req_data, content_str, headers):
         flags = re.MULTILINE | re.DOTALL
-        queue_url = req_data['QueueUrl'][0]
+        queue_url = self._queue_url(path, req_data, headers)
         regex = r'(.*<GetQueueAttributesResult>)(.*)(</GetQueueAttributesResult>.*)'
         attrs = re.sub(regex, r'\2', content_str, flags=flags)
         for key, value in QUEUE_ATTRIBUTES.get(queue_url, {}).items():
@@ -279,6 +281,16 @@ class ProxyListenerSQS(ProxyListener):
 
         if event_type and queue_url:
             event_publisher.fire_event(event_type, payload={'u': event_publisher.get_hash(queue_url)})
+
+    def _queue_url(self, path, req_data, headers):
+        queue_url = req_data.get('QueueUrl')
+        if queue_url:
+            return queue_url[0]
+        url = config.TEST_SQS_URL
+        if headers.get('Host'):
+            url = 'http%s://%s' % ('s' if config.USE_SSL else '', headers['Host'])
+        queue_url = '%s%s' % (url, path.partition('?')[0])
+        return queue_url
 
 
 # extract the external port used by the client to make the request

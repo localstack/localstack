@@ -15,7 +15,7 @@ from localstack.constants import (
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
     DEFAULT_PORT_IAM_BACKEND, DEFAULT_PORT_EC2_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
-from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port,
+from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
 from localstack.utils.server import multiserver
 from localstack.utils.bootstrap import (
@@ -400,11 +400,18 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
 
 def start_infra(asynchronous=False, apis=None):
     try:
+        is_in_docker = in_docker()
+        # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
+        if not is_in_docker and 'docker' in config.LAMBDA_EXECUTOR and not is_linux():
+            print(('!WARNING! - Running outside of Docker with LAMBDA_EXECUTOR=%s can lead to '
+                   'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
+                   'be properly set in your Lambdas.') % config.LAMBDA_EXECUTOR)
+
         # load plugins
         load_plugins()
 
         event_publisher.fire_event(event_publisher.EVENT_START_INFRA,
-            {'d': in_docker() and 1 or 0, 'c': in_ci() and 1 or 0})
+            {'d': is_in_docker and 1 or 0, 'c': in_ci() and 1 or 0})
 
         # set up logging
         setup_logging()

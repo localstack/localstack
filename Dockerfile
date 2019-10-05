@@ -47,6 +47,13 @@ ENV MAVEN_CONFIG=/opt/code/localstack \
     USER=localstack \
     PYTHONUNBUFFERED=1
 
+# clean up and prepare for squashing the image
+RUN apk del --purge git
+RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
+RUN rm -rf /tmp/* /root/.cache /opt/yarn-v1.15.2; mkdir -p /tmp/localstack
+RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
+ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.6/site-packages
+
 # add rest of the code
 ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
@@ -65,13 +72,6 @@ RUN mkdir -p /.npm && \
     adduser -D localstack && \
     chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
-
-# clean up and prepare for squashing the image
-RUN apk del --purge git
-RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
-RUN rm -rf /tmp/* /root/.cache /opt/yarn-v1.15.2
-RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
-ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.6/site-packages
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
