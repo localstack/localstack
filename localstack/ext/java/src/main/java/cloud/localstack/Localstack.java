@@ -350,7 +350,7 @@ public class Localstack {
         }
     }
 
-    protected void setupInfrastructure() {
+    public void setupInfrastructure() {
         synchronized (INFRA_STARTED) {
             // make sure everything is installed locally
             ensureInstallation(true);
