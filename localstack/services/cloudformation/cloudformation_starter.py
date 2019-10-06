@@ -339,6 +339,11 @@ def apply_patches():
     def DynamoDB2_Table_get_cfn_attribute(self, attribute_name):
         if attribute_name == 'Arn':
             return aws_stack.dynamodb_table_arn(table_name=self.name)
+        elif attribute_name == 'StreamArn':
+            if (self.stream_specification or {}).get('StreamEnabled'):
+                return aws_stack.dynamodb_stream_arn(self.name, 'latest')
+            return None
+        raise UnformattedGetAttTemplateException()
 
     dynamodb2_models.Table.get_cfn_attribute = DynamoDB2_Table_get_cfn_attribute
 

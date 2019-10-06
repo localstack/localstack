@@ -29,6 +29,10 @@ def select_attributes(obj, attrs):
     return result
 
 
+def get_bucket_location_config(**kwargs):
+    return {'LocationConstraint': aws_stack.get_region()}
+
+
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -36,7 +40,8 @@ RESOURCE_TO_FUNCTION = {
             'function': 'create_bucket',
             'parameters': {
                 'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
-                'ACL': lambda params, **kwargs: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead'))
+                'ACL': lambda params, **kwargs: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead')),
+                'CreateBucketConfiguration': lambda params, **kwargs: get_bucket_location_config()
             }
         }
     },
