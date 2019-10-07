@@ -10,12 +10,12 @@ import tempfile
 from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, ELASTICSEARCH_DELETE_MODULES,
-    DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL)
+    DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL, LOCALSTACK_INFRA_PROCESS)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
 from localstack.utils.common import (
-    download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r)
+    download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r, is_alpine)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -190,6 +190,7 @@ def install_components(names):
 
 def install_all_components():
     # load plugins
+    os.environ[LOCALSTACK_INFRA_PROCESS] = '1'
     bootstrap.load_plugins()
     # install all components
     install_components(DEFAULT_SERVICE_PORTS.keys())
@@ -202,14 +203,6 @@ def install_all_components():
 def log_install_msg(component, verbatim=False):
     component = component if verbatim else 'local %s server' % component
     LOGGER.info('Downloading and installing %s. This may take some time.' % component)
-
-
-def is_alpine():
-    try:
-        run('cat /etc/issue | grep Alpine', print_error=False)
-        return True
-    except Exception:
-        return False
 
 
 def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):

@@ -63,6 +63,9 @@ def validate_template(req_data):
 class ProxyListenerCloudFormation(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
+        if method == 'OPTIONS':
+            return 200
+
         req_data = None
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
