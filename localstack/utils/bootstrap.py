@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import pty
 import time
 import select
 import pkgutil
@@ -437,13 +436,18 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
             stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
             stderr_arg = stderr
             if tty:
+                # Note: leave the "pty" import here (not supported in Windows)
+                import pty
                 master_fd, slave_fd = pty.openpty()
                 stdin_arg = slave_fd
                 stdout_arg = stderr_arg = None
 
             # start the actual sub process
+            kwargs = {}
+            if is_linux() or is_mac_os():
+                kwargs['preexec_fn'] = os.setsid
             process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
-                stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, preexec_fn=os.setsid)
+                stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, **kwargs)
 
             if tty:
                 # based on: https://stackoverflow.com/questions/41542960
@@ -466,6 +470,22 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
             print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
             sys.stdout.flush()
         raise e
+
+
+def is_mac_os():
+    try:
+        out = to_str(subprocess.check_output('uname -a', shell=True))
+        return 'Darwin' in out
+    except subprocess.CalledProcessError:
+        return False
+
+
+def is_linux():
+    try:
+        out = to_str(subprocess.check_output('uname -a', shell=True))
+        return 'Linux' in out
+    except subprocess.CalledProcessError:
+        return False
 
 
 def mkdir(folder):

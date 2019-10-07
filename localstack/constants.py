@@ -92,6 +92,7 @@ API_ENDPOINT = os.environ.get('API_ENDPOINT') or 'https://api.localstack.cloud/v
 
 # environment variable to indicates that this process is running the Web UI
 LOCALSTACK_WEB_PROCESS = 'LOCALSTACK_WEB_PROCESS'
+LOCALSTACK_INFRA_PROCESS = 'LOCALSTACK_INFRA_PROCESS'
 
 # Hardcoded AWS account ID used by moto
 MOTO_ACCOUNT_ID = '123456789012'

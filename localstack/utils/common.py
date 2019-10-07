@@ -587,25 +587,17 @@ def is_number(s):
 
 
 def is_mac_os():
-    try:
-        out = to_str(subprocess.check_output('uname -a', shell=True))
-        return 'Darwin' in out
-    except subprocess.CalledProcessError:
-        return False
+    return bootstrap.is_mac_os()
+
+
+def is_linux():
+    return bootstrap.is_linux()
 
 
 def is_alpine():
     try:
         out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
         return 'Alpine' in out
-    except subprocess.CalledProcessError:
-        return False
-
-
-def is_linux():
-    try:
-        out = to_str(subprocess.check_output('uname -a', shell=True))
-        return 'Linux' in out
     except subprocess.CalledProcessError:
         return False
 

@@ -65,7 +65,7 @@ if __name__ == '__main__':
         author='Waldemar Hummer',
         author_email='waldemar.hummer@gmail.com',
         url='https://github.com/localstack/localstack',
-        scripts=['bin/localstack'],
+        scripts=['bin/localstack', 'bin/localstack.bat'],
         packages=find_packages(exclude=('tests', 'tests.*')),
         package_data=package_data,
         install_requires=install_requires,

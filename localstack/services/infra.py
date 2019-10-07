@@ -11,7 +11,7 @@ import subprocess
 from requests.models import Response
 from localstack import constants, config
 from localstack.constants import (
-    ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN,
+    ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
     DEFAULT_PORT_IAM_BACKEND, DEFAULT_PORT_EC2_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
@@ -400,6 +400,8 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
 
 def start_infra(asynchronous=False, apis=None):
     try:
+        os.environ[LOCALSTACK_INFRA_PROCESS] = '1'
+
         is_in_docker = in_docker()
         # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
         if not is_in_docker and 'docker' in config.LAMBDA_EXECUTOR and not is_linux():
