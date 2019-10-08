@@ -244,7 +244,7 @@ curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhos
 
 ### Initializing a fresh instance
 
-When a container is started for the first time, it will execute files with extensions .sh that are found in /docker-entrypoint-initaws.d. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
+When a container is started for the first time, it will execute files with extensions .sh that are found in `/docker-entrypoint-initaws.d`. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
 
 ## A note about using custom SSL certificates (for `USE_SSL=1`)
 
