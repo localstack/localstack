@@ -29,7 +29,7 @@ SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
 CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
-    'x-amz-target', 'x-amz-acl', 'x-amz-version-id', 'x-localstack-target']
+    'x-amz-target', 'x-amz-acl', 'x-amz-version-id', 'x-localstack-target', 'x-amz-tagging']
 if EXTRA_CORS_ALLOWED_HEADERS:
     CORS_ALLOWED_HEADERS += EXTRA_CORS_ALLOWED_HEADERS.split(',')
 
