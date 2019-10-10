@@ -1,8 +1,7 @@
-import re
 from docopt import docopt
 from localstack import config
 from localstack.utils.bootstrap import (
-    start_infra_in_docker, start_infra_locally, run, to_str, MAIN_CONTAINER_NAME)
+    start_infra_in_docker, start_infra_locally, run, MAIN_CONTAINER_NAME, docker_container_running)
 
 # Note: make sure we don't have imports at the root level here
 
@@ -67,13 +66,10 @@ Commands:
 Options:
     """
     args.update(docopt(cmd_ssh.__doc__.strip(), argv=argv))
-    lines = to_str(run('docker ps')).split('\n')[1:]
-    lines = [l for l in lines if MAIN_CONTAINER_NAME in l]
-    if len(lines) != 1:
-        raise Exception('Expected 1 running "%s" container, but found %s' % (MAIN_CONTAINER_NAME, len(lines)))
-    cid = re.split(r'\s', lines[0])[0]
+    if not docker_container_running(MAIN_CONTAINER_NAME):
+        raise Exception('Expected 1 running "%s" container, but found none' % MAIN_CONTAINER_NAME)
     try:
-        process = run('docker exec -it %s bash' % cid, tty=True)
+        process = run('docker exec -it %s bash' % MAIN_CONTAINER_NAME, tty=True)
         process.wait()
     except KeyboardInterrupt:
         pass

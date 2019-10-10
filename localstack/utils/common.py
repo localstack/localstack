@@ -318,6 +318,10 @@ def has_docker():
         return False
 
 
+def get_docker_container_names():
+    return bootstrap.get_docker_container_names()
+
+
 def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=['tcp']):
     port = port_or_url
     host = 'localhost'
