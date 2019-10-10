@@ -706,8 +706,9 @@ class ProxyListenerS3(ProxyListener):
         # Generally if there is a query (some/path/with?query) we don't want to send notifications
         if not query:
             return True
-        # Except we do want to notify on a multipart upload completion, which does use a query.
-        elif method == 'POST' and query.startswith('uploadId'):
+        # Except we do want to notify on multipart and presigned url upload completion
+        elif (method == 'POST' and query.startswith('uploadId')) or \
+                ('X-Amz-Credential' in query and 'X-Amz-Signature' in query):
             return True
 
 
