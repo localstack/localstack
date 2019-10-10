@@ -137,9 +137,14 @@ def load_plugins(scope=None):
 
 
 def docker_container_running(container_name):
-    output = to_str(run("docker ps --format '{{.Names}}'"))
-    container_names = re.split(r'\s+', output.replace('\n', ' '))
+    container_names = get_docker_container_names()
     return container_name in container_names
+
+
+def get_docker_container_names():
+    output = to_str(run("docker ps --format '{{.Names}}'"))
+    container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
+    return container_names
 
 
 def setup_logging():
