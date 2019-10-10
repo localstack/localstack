@@ -62,19 +62,10 @@ class S3ListenerTest (unittest.TestCase):
     def test_s3_put_object_notification(self):
         key_by_path = 'key-by-hostname'
         key_by_host = 'key-by-host'
-
-        # create test queue
-        queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)['QueueUrl']
-        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
-
-        # create test bucket
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+        queue_url, queue_attributes = self._create_test_queue()
+        self._create_test_notification_bucket(queue_attributes)
         self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                              VersioningConfiguration={'Status': 'Enabled'})
-        notif_configs = {'QueueConfigurations': [
-            {'QueueArn': queue_attributes['Attributes']['QueueArn'], 'Events': ['s3:ObjectCreated:*']}]}
-        self.s3_client.put_bucket_notification_configuration(
-            Bucket=TEST_BUCKET_WITH_NOTIFICATION, NotificationConfiguration=notif_configs)
 
         # put an object where the bucket_name is in the path
         obj = self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body='something')
@@ -87,11 +78,7 @@ class S3ListenerTest (unittest.TestCase):
         response = requests.put(url, data='something else', headers=headers, verify=False)
         self.assertTrue(response.ok)
 
-        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url,
-                                                           AttributeNames=['ApproximateNumberOfMessages'])
-        message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
-        # the ApproximateNumberOfMessages attribute is a string
-        self.assertEqual(message_count, '2')
+        self.assertEqual(self._get_test_queue_message_count(queue_url), '2')
 
         response = self.sqs_client.receive_message(QueueUrl=queue_url)
         messages = [json.loads(to_str(m['Body'])) for m in response['Messages']]
@@ -115,16 +102,8 @@ class S3ListenerTest (unittest.TestCase):
         return open(filename, 'r')
 
     def test_s3_upload_fileobj_with_large_file_notification(self):
-        # create test queue
-        queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)['QueueUrl']
-        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
-
-        # create test bucket
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
-        self.s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-            NotificationConfiguration={'QueueConfigurations': [
-                {'QueueArn': queue_attributes['Attributes']['QueueArn'],
-                 'Events': ['s3:ObjectCreated:*']}]})
+        queue_url, queue_attributes = self._create_test_queue()
+        self._create_test_notification_bucket(queue_attributes)
 
         # has to be larger than 64MB to be broken up into a multipart upload
         file_size = 75000000
@@ -133,11 +112,8 @@ class S3ListenerTest (unittest.TestCase):
         try:
             self.s3_client.upload_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                        Key=large_file.name, Filename=large_file.name)
-            queue_attributes = self.sqs_client.get_queue_attributes(
-                QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
-            message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
-            # the ApproximateNumberOfMessages attribute is a string
-            self.assertEqual(message_count, '1')
+
+            self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
             # ensure that the first message's eventName is ObjectCreated:CompleteMultipartUpload
             messages = self.sqs_client.receive_message(QueueUrl=queue_url, AttributeNames=['All'])
@@ -163,25 +139,26 @@ class S3ListenerTest (unittest.TestCase):
         # https://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
 
         key_by_path = 'key-by-hostname'
-
-        # create test queue
-        queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)['QueueUrl']
-        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
-
-        # create test bucket
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
-        self.s3_client.put_bucket_notification_configuration(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-            NotificationConfiguration={'QueueConfigurations': [
-                {'QueueArn': queue_attributes['Attributes']['QueueArn'], 'Events': ['s3:ObjectCreated:*']}]})
+        queue_url, queue_attributes = self._create_test_queue()
+        self._create_test_notification_bucket(queue_attributes)
 
         # perform upload
         self._perform_multipart_upload(bucket=TEST_BUCKET_WITH_NOTIFICATION, key=key_by_path, zip=True)
 
-        queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
-        message_count = queue_attributes['Attributes']['ApproximateNumberOfMessages']
-        # the ApproximateNumberOfMessages attribute is a string
-        self.assertEqual(message_count, '1')
+        self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
+
+        # clean up
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+
+    def test_s3_presigned_url_upload(self):
+        key_by_path = 'key-by-hostname'
+        queue_url, queue_attributes = self._create_test_queue()
+        self._create_test_notification_bucket(queue_attributes)
+
+        self._perform_presigned_url_upload(bucket=TEST_BUCKET_WITH_NOTIFICATION, key=key_by_path)
+
+        self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
@@ -494,6 +471,30 @@ class S3ListenerTest (unittest.TestCase):
     # HELPER METHODS
     # ---------------
 
+    def _create_test_queue(self):
+        queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)['QueueUrl']
+        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+        return queue_url, queue_attributes
+
+    def _create_test_notification_bucket(self, queue_attributes):
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+        self.s3_client.put_bucket_notification_configuration(
+            Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+            NotificationConfiguration={
+                'QueueConfigurations': [
+                    {
+                        'QueueArn': queue_attributes['Attributes']['QueueArn'],
+                        'Events': ['s3:ObjectCreated:*']
+                    }
+                ]
+            }
+        )
+
+    def _get_test_queue_message_count(self, queue_url):
+        queue_attributes = self.sqs_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
+        return queue_attributes['Attributes']['ApproximateNumberOfMessages']
+
     def _delete_bucket(self, bucket_name, keys):
         keys = keys if isinstance(keys, list) else [keys]
         objects = [{'Key': k} for k in keys]
@@ -521,3 +522,10 @@ class S3ListenerTest (unittest.TestCase):
 
         return self.s3_client.complete_multipart_upload(Bucket=bucket,
             Key=key, MultipartUpload={'Parts': multipart_upload_parts}, UploadId=uploadId)
+
+    def _perform_presigned_url_upload(self, bucket, key):
+        url = self.s3_client.generate_presigned_url(
+            'put_object', Params={'Bucket': bucket, 'Key': key}
+        )
+        url = url + '&X-Amz-Credential=x&X-Amz-Signature=y'
+        requests.put(url, data='something', verify=False)
