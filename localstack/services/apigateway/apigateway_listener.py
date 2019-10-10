@@ -80,8 +80,8 @@ class ProxyListenerApiGateway(ProxyListener):
                     new_request = aws_stack.render_velocity_template(template, data) + '&QueueName=%s' % queue
                     headers = aws_stack.mock_aws_request_headers(service='sqs', region_name=region_name)
 
-                    url = urljoin(TEST_SQS_URL, '%s/%s?%s' % (account_id, queue, new_request))
-                    result = common.make_http_request(url, method='GET', headers=headers)
+                    url = urljoin(TEST_SQS_URL, '%s/%s' % (account_id, queue))
+                    result = common.make_http_request(url, method='POST', headers=headers, data=new_request)
                     return result
 
                 else:

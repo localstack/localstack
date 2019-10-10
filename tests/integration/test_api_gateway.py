@@ -3,6 +3,7 @@ import re
 import json
 import unittest
 from requests.models import Response
+from xml.dom.minidom import parseString
 from localstack.config import INBOUND_GATEWAY_URL_PATTERN, DEFAULT_REGION
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
@@ -10,7 +11,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, load_file
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_PYTHON27)
+from localstack.services.awslambda.lambda_api import (
+    LAMBDA_RUNTIME_PYTHON27, add_event_source)
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
@@ -54,6 +56,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = 'test_lambda_apigw_backend_path_param'
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_ARMlambda_apigw_backend_any_method'
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_ARMlambda_apigw_backend_any_method_path_param'
+    TEST_LAMBDA_HANDLER_NAME = 'lambda_sqs_handler'
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
@@ -83,6 +86,43 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         # clean up
         kinesis = aws_stack.connect_to_service('kinesis')
         kinesis.delete_stream(StreamName=self.TEST_STREAM_KINESIS_API_GW)
+
+    def test_api_gateway_sqs_integration_with_event_source(self):
+        # create target SQS stream
+        aws_stack.create_sqs_queue(self.TEST_SQS_QUEUE)
+
+        # create API Gateway and connect it to the target queue
+        result = connect_api_gateway_to_sqs(
+            'test_gateway4',
+            stage_name=self.TEST_STAGE_NAME,
+            queue_arn=self.TEST_SQS_QUEUE, path=self.API_PATH_DATA_INBOUND)
+
+        # create event source for sqs lambda processor
+        self.create_lambda_function(self.TEST_LAMBDA_HANDLER_NAME)
+        add_event_source(
+            self.TEST_LAMBDA_HANDLER_NAME,
+            aws_stack.sqs_queue_arn(self.TEST_SQS_QUEUE),
+            True)
+
+        # generate test data
+        test_data = {'spam': 'eggs & beans'}
+
+        url = INBOUND_GATEWAY_URL_PATTERN.format(
+            api_id=result['id'],
+            stage_name=self.TEST_STAGE_NAME,
+            path=self.API_PATH_DATA_INBOUND
+        )
+        result = requests.post(url, data=json.dumps(test_data))
+        self.assertEqual(result.status_code, 200)
+
+        parsed_content = parseString(result.content)
+        root = parsed_content.documentElement.childNodes[1]
+
+        attr_md5 = root.childNodes[1].lastChild.nodeValue
+        body_md5 = root.childNodes[3].lastChild.nodeValue
+
+        self.assertEqual(attr_md5, '4141913720225b35a836dd9e19fc1e55')
+        self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')
 
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream
@@ -167,19 +207,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM)
 
     def _test_api_gateway_lambda_proxy_integration(self, fn_name, path):
-        # create lambda function
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
-        testutil.create_lambda_function(
-            func_name=fn_name,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
 
+        self.create_lambda_function(fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
         invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
@@ -245,18 +274,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM)
 
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
-        # create lambda function
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
-        testutil.create_lambda_function(
-            func_name=fn_name,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
+        self.create_lambda_function(fn_name)
 
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
@@ -352,4 +370,18 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             name=gateway_name,
             resources=resources,
             stage_name=self.TEST_STAGE_NAME
+        )
+
+    def create_lambda_function(self, fn_name):
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
+
+        testutil.create_lambda_function(
+            func_name=fn_name,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON27
         )
