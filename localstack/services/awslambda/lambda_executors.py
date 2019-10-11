@@ -5,12 +5,12 @@ import time
 import logging
 import threading
 import subprocess
+import botocore.errorfactory
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
 except ImportError:
-    # for Python 2.7
-    from pipes import quote as cmd_quote
+    from pipes import quote as cmd_quote  # for Python 2.7
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
@@ -102,7 +102,11 @@ class LambdaExecutor(object):
         log_groups = logs_client.describe_log_groups()['logGroups']
         log_groups = [lg['logGroupName'] for lg in log_groups]
         if log_group_name not in log_groups:
-            logs_client.create_log_group(logGroupName=log_group_name)
+            try:
+                logs_client.create_log_group(logGroupName=log_group_name)
+            except botocore.errorfactory.ResourceAlreadyExistsException:
+                # this can happen in certain cases, possibly due to a race condition
+                pass
 
         # create a new log stream for this lambda invocation
         logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)

@@ -152,7 +152,16 @@ def apply_patches():
                       (logical_id, e, traceback.format_exc()))
             raise
 
-    def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name):
+    def parse_and_update_resource(logical_id, resource_json, resources_map, region_name):
+        try:
+            return _parse_and_create_resource(logical_id,
+                resource_json, resources_map, region_name, update=True)
+        except Exception as e:
+            LOG.error('Unable to parse and update resource "%s": %s %s' %
+                      (logical_id, e, traceback.format_exc()))
+            raise
+
+    def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=False):
         stack_name = resources_map.get('AWS::StackName')
         resource_hash_key = (stack_name, logical_id)
 
@@ -175,6 +184,8 @@ def apply_patches():
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
+        if resource and not update:
+            return resource
 
         # check whether this resource needs to be deployed
         resource_wrapped = {logical_id: resource_json}
@@ -186,17 +197,20 @@ def apply_patches():
                 if resource:
                     return resource
 
-        if not resource:
-            # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
-            resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
-            set_moto_account_ids(resource_json_arns_fixed)
-            # create resource definition and store CloudFormation metadata in moto
+        # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
+        resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
+        set_moto_account_ids(resource_json_arns_fixed)
+        # create resource definition and store CloudFormation metadata in moto
+        if resource or update:
+            parse_and_update_resource_orig(logical_id,
+                resource_json_arns_fixed, resources_map, region_name)
+        elif not resource:
             resource = parse_and_create_resource_orig(logical_id,
                 resource_json_arns_fixed, resources_map, region_name)
-            # Fix for moto which sometimes hard-codes region name as 'us-east-1'
-            if hasattr(resource, 'region_name') and resource.region_name != region_name:
-                LOG.debug('Updating incorrect region from %s to %s' % (resource.region_name, region_name))
-                resource.region_name = region_name
+        # Fix for moto which sometimes hard-codes region name as 'us-east-1'
+        if hasattr(resource, 'region_name') and resource.region_name != region_name:
+            LOG.debug('Updating incorrect region from %s to %s' % (resource.region_name, region_name))
+            resource.region_name = region_name
 
         # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
         update_resource_name(resource, resource_json)
@@ -204,7 +218,7 @@ def apply_patches():
 
         try:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
-            deploy_func = template_deployer.deploy_resource if should_be_created else template_deployer.update_resource
+            deploy_func = template_deployer.update_resource if update else template_deployer.deploy_resource
             result = deploy_func(logical_id, resource_wrapped, stack_name=stack_name)
         finally:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = False
@@ -305,6 +319,8 @@ def apply_patches():
 
     parse_and_create_resource_orig = parsing.parse_and_create_resource
     parsing.parse_and_create_resource = parse_and_create_resource
+    parse_and_update_resource_orig = parsing.parse_and_update_resource
+    parsing.parse_and_update_resource = parse_and_update_resource
 
     # Patch CloudFormation parse_output(..) method to fix a bug in moto
 
@@ -422,6 +438,37 @@ def apply_patches():
 
     Lambda_create_from_cloudformation_json_orig = lambda_models.LambdaFunction.create_from_cloudformation_json
     lambda_models.LambdaFunction.create_from_cloudformation_json = Lambda_create_from_cloudformation_json
+
+    # Patch LambdaFunction update_from_cloudformation_json(..) method in moto
+
+    @classmethod
+    def Lambda_update_from_cloudformation_json(cls,
+            original_resource, new_resource_name, cloudformation_json, region_name):
+        resource_name = cloudformation_json.get('Properties', {}).get('FunctionName') or new_resource_name
+        return Lambda_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+
+    if not hasattr(lambda_models.LambdaFunction, 'update_from_cloudformation_json'):
+        lambda_models.LambdaFunction.update_from_cloudformation_json = Lambda_update_from_cloudformation_json
+
+    # patch ApiGateway Deployment
+
+    def depl_delete_from_cloudformation_json(
+            resource_name, resource_json, region_name):
+        properties = resource_json['Properties']
+        LOG.info('TODO: apigateway.Deployment.delete_from_cloudformation_json %s' % properties)
+
+    if not hasattr(apigw_models.Deployment, 'delete_from_cloudformation_json'):
+        apigw_models.Deployment.delete_from_cloudformation_json = depl_delete_from_cloudformation_json
+
+    # patch Lambda Version
+
+    def vers_delete_from_cloudformation_json(
+            resource_name, resource_json, region_name):
+        properties = resource_json['Properties']
+        LOG.info('TODO: apigateway.Deployment.delete_from_cloudformation_json %s' % properties)
+
+    if not hasattr(lambda_models.LambdaVersion, 'delete_from_cloudformation_json'):
+        lambda_models.LambdaVersion.delete_from_cloudformation_json = vers_delete_from_cloudformation_json
 
     # add CloudWatch types
 
