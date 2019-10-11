@@ -94,7 +94,9 @@ RESOURCE_TO_FUNCTION = {
         'create': {
             'function': 'publish_version',
             'parameters': {
-                # TODO
+                'FunctionName': 'FunctionName',
+                'CodeSha256': 'CodeSha256',
+                'Description': 'Description'
             }
         }
     },
