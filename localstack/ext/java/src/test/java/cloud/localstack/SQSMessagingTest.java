@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 
 import javax.jms.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,7 @@ public class SQSMessagingTest {
 
     private static final String JMS_QUEUE_NAME = "aws_develop_class_jms";
     private static final String SAMPLE_QUEUE_NAME = "aws_develop_class";
+    private static final String SAMPLE_MULTI_BYTE_CHAR_QUEUE_NAME = "aws_develop_multi_byte";
 
     @BeforeClass
     public static void setup() {
@@ -97,4 +99,37 @@ public class SQSMessagingTest {
         Assert.assertEquals(receivedMessage.get(3, TimeUnit.SECONDS).getBody(), "message");
     }
 
+    /**
+     * Test calculate md5 correct
+     * Based on: https://github.com/localstack/localstack/issues/1619
+     */
+    @Test
+    public void testSendMultiByteCharactersMessage() throws JMSException {
+        final AmazonSQS clientSQS = TestUtils.getClientSQS();
+        final String queueUrl = clientSQS.createQueue(SAMPLE_MULTI_BYTE_CHAR_QUEUE_NAME).getQueueUrl();
+
+        /*
+         * send a message to the queue
+         */
+        final String messageBody = "foo";
+        final Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+        messageAttributes.put("XXX", new MessageAttributeValue()
+                .withDataType("String")
+                .withStringValue("😇"));
+        final SendMessageRequest sendMessageRequest = new SendMessageRequest();
+        sendMessageRequest.withMessageBody(messageBody);
+        sendMessageRequest.withQueueUrl(queueUrl);
+        sendMessageRequest.withMessageAttributes(messageAttributes);
+        final SendMessageResult sendMessageResult = clientSQS.sendMessage(sendMessageRequest);
+
+        Assert.assertNotNull(sendMessageResult);
+        Assert.assertEquals("acbd18db4cc2f85cedef654fccc4a4d8", sendMessageResult.getMD5OfMessageBody());
+        Assert.assertEquals("23bf3e5b587065b0cfbe95761641595a", sendMessageResult.getMD5OfMessageAttributes());
+
+        /*
+         * receive the message from the queue
+         */
+        final ReceiveMessageResult messageResult = clientSQS.receiveMessage(queueUrl);
+        Assert.assertNotNull(messageResult);
+    }
 }
