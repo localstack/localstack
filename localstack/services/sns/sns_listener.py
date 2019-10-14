@@ -228,6 +228,12 @@ def do_delete_topic(topic_arn):
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes):
+    # An endpoint may only be subscribed to a topic once. Subsequent
+    # subscribe calls do nothing (subscribe is idempotent).
+    for existing_topic_subscription in SNS_SUBSCRIPTIONS.get(topic_arn, []):
+        if existing_topic_subscription.get('Endpoint') == endpoint:
+            return
+
     subscription = {
         # http://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
         'TopicArn': topic_arn,
