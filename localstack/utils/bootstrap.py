@@ -82,11 +82,17 @@ def install_dependencies():
     LOG.info('Lazily installing missing pip dependencies, this could take a while: %s' %
              ', '.join(install_requires))
     args = ['install'] + install_requires
+    return run_pip_main(args)
+
+
+def run_pip_main(args):
     if hasattr(pip_mod, 'main'):
-        pip_mod.main(args)
-    else:
-        import pip._internal
-        pip._internal.main(args)
+        return pip_mod.main(args)
+    import pip._internal
+    if hasattr(pip._internal, 'main'):
+        return pip._internal.main(args)
+    import pip._internal.main
+    return pip._internal.main.main(args)
 
 
 def load_plugin_from_path(file_path, scope=None):
