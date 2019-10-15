@@ -174,6 +174,31 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(result['attr3']['DataType'], 'Number')
         self.assertEqual(result['attr3']['StringValue'], 'value3')
 
+    def test_only_one_subscription_per_topic_per_endpoint(self):
+        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+
+        self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
+        sns_listener.do_create_topic(topic_arn)
+        self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
+        sns_listener.do_subscribe(
+            topic_arn,
+            'http://localhost:1234/listen',
+            'http',
+            sub_arn,
+            {}
+        )
+
+        self.assertEqual(len(sns_listener.SNS_SUBSCRIPTIONS[topic_arn]), 1)
+        sns_listener.do_subscribe(
+            topic_arn,
+            'http://localhost:1234/listen',
+            'http',
+            sub_arn,
+            {}
+        )
+        self.assertEqual(len(sns_listener.SNS_SUBSCRIPTIONS[topic_arn]), 1)
+
 
 def test_filter_policy():
     test_data = [
