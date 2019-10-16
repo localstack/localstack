@@ -33,6 +33,15 @@ def start_sqs(port=None, asynchronous=False, update_listener=None):
         sqs-limits = strict
     }
     """ % (LOCALSTACK_HOSTNAME, port, backend_port)
+    # NOTE: elasticmq 0.14.15 ~ accepts region and accountId configuration changes
+    #       default accountId is set 000000000 in elasticmq 0.14.15 ~ 0.15.1
+    # TODO: when accountId returns to 000000000000, remove this assignment
+    config_params += """
+    aws {
+        region = "elasticmq"
+        accountId = "000000000000"
+    }
+    """
     config_file = os.path.join(TMP_FOLDER, 'sqs.%s.conf' % short_uid())
     TMP_FILES.append(config_file)
     save_file(config_file, config_params)
