@@ -22,3 +22,11 @@ def requests_response(content, status_code=200, headers={}):
     resp.status_code = status_code
     resp.headers = headers
     return resp
+
+
+def flask_to_requests_response(r):
+    return requests_response(r.data, status_code=r.status_code, headers=r.headers)
+
+
+def requests_to_flask_response(r):
+    return Response(r.content, status=r.status_code, headers=dict(r.headers))
