@@ -15,8 +15,9 @@ from localstack.services.kinesis import kinesis_listener
 from localstack.services.awslambda import lambda_api
 from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response
 from localstack.services.apigateway.helpers import (get_resource_for_path,
-    flask_to_requests_response, handle_authorizers, extract_query_string_params,
+    handle_authorizers, extract_query_string_params,
     extract_path_params, make_error, get_cors_response)
 
 # set up logger
@@ -50,11 +51,7 @@ class ProxyListenerApiGateway(ProxyListener):
         # fix backend issue (missing support for API documentation)
         if re.match(r'/restapis/[^/]+/documentation/versions', path):
             if response.status_code == 404:
-                response = Response()
-                response.status_code = 200
-                result = {'position': '1', 'items': []}
-                response._content = json.dumps(result)
-                return response
+                return requests_response({'position': '1', 'items': []})
 
         # publish event
         if method == 'POST' and path == '/restapis':

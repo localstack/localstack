@@ -5,6 +5,7 @@ from six.moves.urllib import parse as urlparse
 from localstack.utils import common
 from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_responses import requests_response
 
 # regex path patterns
 PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
@@ -17,20 +18,8 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.bas
 AUTHORIZERS = {}
 
 
-def _create_response_object(content, code, headers):
-    response = Response()
-    response.status_code = code
-    response.headers = headers
-    response._content = content
-    return response
-
-
 def make_response(message):
-    return _create_response_object(json.dumps(message), code=200, headers={'Content-Type': APPLICATION_JSON})
-
-
-def flask_to_requests_response(r):
-    return _create_response_object(r.data, code=r.status_code, headers=r.headers)
+    return requests_response(json.dumps(message), headers={'Content-Type': APPLICATION_JSON})
 
 
 def make_error(message, code=400):
