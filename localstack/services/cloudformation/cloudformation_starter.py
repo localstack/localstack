@@ -36,7 +36,8 @@ RUN_SERVER_IN_PROCESS = False
 
 # map of additional model classes
 MODEL_MAP = {
-    'AWS::StepFunctions::Activity': service_models.StepFunctionsActivity
+    'AWS::StepFunctions::Activity': service_models.StepFunctionsActivity,
+    'AWS::SNS::Subscription': service_models.SNSSubscription
 }
 
 
@@ -366,7 +367,7 @@ def apply_patches():
     # Patch SQS get_cfn_attribute(..) method in moto
 
     def SQS_Queue_get_cfn_attribute(self, attribute_name):
-        if attribute_name == 'Arn':
+        if attribute_name in ['Arn', 'QueueArn']:
             return aws_stack.sqs_queue_arn(queue_name=self.name)
         return SQS_Queue_get_cfn_attribute_orig(self, attribute_name)
 
@@ -425,6 +426,17 @@ def apply_patches():
             if attribute_name == 'Arn':
                 return aws_stack.role_arn(self.name)
             raise
+
+    IAM_Role_get_cfn_attribute_orig = iam_models.Role.get_cfn_attribute
+    iam_models.Role.get_cfn_attribute = IAM_Role_get_cfn_attribute
+
+    # Patch SNS Topic get_cfn_attribute(..) method in moto
+
+    def SNS_Topic_get_cfn_attribute(self, attribute_name):
+        result = SNS_Topic_get_cfn_attribute(self, attribute_name)
+        if attribute_name.lower() in ['arn', 'topicarn']:
+            result = aws_stack.fix_account_id_in_arns(result)
+        return result
 
     IAM_Role_get_cfn_attribute_orig = iam_models.Role.get_cfn_attribute
     iam_models.Role.get_cfn_attribute = IAM_Role_get_cfn_attribute

@@ -3,6 +3,7 @@ import json
 import yaml
 import logging
 import traceback
+import moto.cloudformation.utils
 from six import iteritems
 from six import string_types
 from localstack.utils import common
@@ -212,6 +213,16 @@ RESOURCE_TO_FUNCTION = {
                 'tags': 'Tags'
             }
         }
+    },
+    'SNS::Subscription': {
+        'create': {
+            'function': 'subscribe',
+            'parameters': {
+                'TopicArn': 'TopicArn',
+                'Protocol': 'Protocol',
+                'Endpoint': 'Endpoint'
+            }
+        }
     }
 }
 
@@ -244,7 +255,11 @@ def parse_template(template):
     try:
         return json.loads(template)
     except Exception:
-        return yaml.safe_load(template)
+        yaml.add_multi_constructor('', moto.cloudformation.utils.yaml_tag_constructor)
+        try:
+            return yaml.safe_load(template)
+        except Exception:
+            return yaml.load(template, Loader=yaml.Loader)
 
 
 def template_to_json(template):
@@ -638,6 +653,8 @@ def deploy_resource(resource_id, resources, stack_name):
         if str(tmp_value).lower() in ['true', 'false']:
             params[param_key] = str(tmp_value).lower() == 'true'
 
+    # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
+    params = json.loads(aws_stack.fix_account_id_in_arns(json.dumps(params)))
     # assign default value if empty
     params = common.merge_recursive(defaults, params)
     # convert data types (e.g., boolean strings to bool)

@@ -248,7 +248,8 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
     try:
         queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=region_name)
         sources = get_event_sources(source_arn=queue_arn)
-        LOG.debug('Found %s source mappings for event from SQS queue %s' % (len(sources), queue_arn))
+        arns = [s.get('FunctionArn') for s in sources]
+        LOG.debug('Found %s source mappings for event from SQS queue %s: %s' % (len(arns), queue_arn, arns))
         source = next(iter(sources), None)
         if source:
             arn = source['FunctionArn']

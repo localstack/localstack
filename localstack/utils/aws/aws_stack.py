@@ -8,12 +8,10 @@ import logging
 import six
 from localstack import config
 from localstack.constants import (
-    REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID,
-    ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0,
-    APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
+    REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
+    APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
-    run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
-    is_port_open, get_service_protocol)
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names

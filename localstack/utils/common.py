@@ -600,6 +600,8 @@ def is_linux():
 
 def is_alpine():
     try:
+        if not os.path.exists('cat /etc/issue'):
+            return False
         out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
         return 'Alpine' in out
     except subprocess.CalledProcessError:

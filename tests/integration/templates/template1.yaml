@@ -22,6 +22,12 @@ Resources:
         - Key: foobar
           Value:
             Ref: S3Bucket
+  TopicSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      TopicArn: !Ref SNSTopic
+      Endpoint: !GetAtt SQSQueue.QueueArn
   KinesisStream:
     Type: AWS::Kinesis::Stream
     Properties:

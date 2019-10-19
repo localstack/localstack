@@ -1,5 +1,6 @@
 import os
 import unittest
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry
 from localstack.utils.cloudformation import template_deployer
@@ -91,6 +92,7 @@ class CloudFormationTest(unittest.TestCase):
     def test_apply_template(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         s3 = aws_stack.connect_to_service('s3')
+        sns = aws_stack.connect_to_service('sns')
         template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
 
         # deploy template
@@ -118,6 +120,11 @@ class CloudFormationTest(unittest.TestCase):
         # assert that topic tags have been created
         tags = s3.get_bucket_tagging(Bucket='cf-test-bucket-1')['TagSet']
         self.assertEqual(tags, [{'Key': 'foobar', 'Value': aws_stack.get_sqs_queue_url('cf-test-queue-1')}])
+        # assert that subscriptions have been created
+        subs = sns.list_subscriptions()['Subscriptions']
+        subs = [s for s in subs if (':%s:cf-test-queue-1' % TEST_AWS_ACCOUNT_ID) in s['Endpoint']]
+        self.assertEqual(len(subs), 1)
+        self.assertIn(':%s:cf-test-topic-1-1' % TEST_AWS_ACCOUNT_ID, subs[0]['TopicArn'])
 
     def test_list_stack_events(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
