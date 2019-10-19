@@ -247,9 +247,12 @@ def post_request():
         stream_name = data['DeliveryStreamName']
         records = data['Records']
         put_records(stream_name, records)
+        request_responses = []
+        for i in records:
+            request_responses.append({'RecordId': str(uuid.uuid4())})
         response = {
             'FailedPutCount': 0,
-            'RequestResponses': []
+            'RequestResponses': request_responses
         }
     elif action == '%s.UpdateDestination' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
