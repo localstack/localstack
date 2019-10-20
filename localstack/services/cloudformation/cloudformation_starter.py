@@ -108,6 +108,22 @@ def convert_objs_to_ids(resource_json):
     return recurse_object(resource_json, fix_ids)
 
 
+def update_physical_resource_id(resource):
+    phys_res_id = getattr(resource, 'physical_resource_id', None)
+    if not phys_res_id:
+        if isinstance(resource, lambda_models.LambdaFunction):
+            func_arn = aws_stack.lambda_function_arn(resource.function_name)
+            resource.function_arn = resource.physical_resource_id = func_arn
+        elif isinstance(resource, sfn_models.StateMachine):
+            sm_arn = aws_stack.state_machine_arn(resource.name)
+            resource.physical_resource_id = sm_arn
+        elif isinstance(resource, service_models.StepFunctionsActivity):
+            act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
+            resource.physical_resource_id = act_arn
+        else:
+            LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
+
+
 def apply_patches():
     """ Apply patches to make LocalStack seamlessly interact with the moto backend.
         TODO: Eventually, these patches should be contributed to the upstream repo! """
@@ -302,21 +318,6 @@ def apply_patches():
             resource['id'] = new_id
         else:
             LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
-
-    def update_physical_resource_id(resource):
-        phys_res_id = getattr(resource, 'physical_resource_id', None)
-        if not phys_res_id:
-            if isinstance(resource, lambda_models.LambdaFunction):
-                func_arn = aws_stack.lambda_function_arn(resource.function_name)
-                resource.function_arn = resource.physical_resource_id = func_arn
-            elif isinstance(resource, sfn_models.StateMachine):
-                sm_arn = aws_stack.state_machine_arn(resource.name)
-                resource.physical_resource_id = sm_arn
-            elif isinstance(resource, service_models.StepFunctionsActivity):
-                act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
-                resource.physical_resource_id = act_arn
-            else:
-                LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
     parse_and_create_resource_orig = parsing.parse_and_create_resource
     parsing.parse_and_create_resource = parse_and_create_resource
