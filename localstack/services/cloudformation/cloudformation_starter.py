@@ -215,7 +215,7 @@ def apply_patches():
 
         # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
         update_resource_name(resource, resource_json)
-        LOG.debug('Deploying CloudFormation resource: %s' % resource_json)
+        LOG.debug('Deploying CloudFormation resource (update=%s): %s' % (update, resource_json))
 
         try:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True

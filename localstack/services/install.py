@@ -34,6 +34,11 @@ URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
 
+# As of 2019-10-09, the DDB fix (see below) doesn't seem to be required anymore
+APPLY_DDB_ALPINE_FIX = False
+# TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
+OVERWRITE_DDB_FILES = True
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -109,6 +114,8 @@ def install_stepfunctions_local():
 
 
 def install_dynamodb_local():
+    if OVERWRITE_DDB_FILES:
+        rm_rf(INSTALL_DIR_DDB)
     if not os.path.exists(INSTALL_DIR_DDB):
         log_install_msg('DynamoDB')
         # download and extract archive
@@ -120,7 +127,7 @@ def install_dynamodb_local():
     if is_alpine():
         ddb_libs_dir = '%s/DynamoDBLocal_lib' % INSTALL_DIR_DDB
         patched_marker = '%s/alpine_fix_applied' % ddb_libs_dir
-        if not os.path.exists(patched_marker):
+        if APPLY_DDB_ALPINE_FIX and not os.path.exists(patched_marker):
             patched_lib = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
                 'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/libsqlite4java-linux-amd64.so')
             patched_jar = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
