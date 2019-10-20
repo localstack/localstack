@@ -283,7 +283,6 @@ def get_service_name(resource):
     if res_type.endswith('Cognito::UserPool'):
         return 'cognito-idp'
     if parts[-2] == 'Cognito':
-        # TODO add mappings for "cognito-identity"
         return 'cognito-idp'
     return parts[1].lower()
 
