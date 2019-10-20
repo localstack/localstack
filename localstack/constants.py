@@ -86,9 +86,9 @@ ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elas
 STS_JAR_URL = 'https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
 STEPFUNCTIONS_ZIP_URL = 'https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip'
 
-# TODO: Temporarily using a fixed version of DDB, as we're hitting a SIGSEGV JVM crash with the latest version
-# DYNAMODB_JAR_URL = 'https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip'
-DYNAMODB_JAR_URL = 'https://github.com/whummer/dynamodb-local/raw/master/etc/DynamoDBLocal.zip'
+# TODO: Temporarily using a fixed version of DDB in Alpine, as we're hitting a SIGSEGV JVM crash with latest
+DYNAMODB_JAR_URL_ALPINE = 'https://github.com/whummer/dynamodb-local/raw/master/etc/DynamoDBLocal.zip'
+DYNAMODB_JAR_URL = 'https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip'
 
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get('API_ENDPOINT') or 'https://api.localstack.cloud/v1'
