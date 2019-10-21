@@ -38,7 +38,7 @@ JAVAC_TARGET_VERSION = '1.8'
 # As of 2019-10-09, the DDB fix (see below) doesn't seem to be required anymore
 APPLY_DDB_ALPINE_FIX = False
 # TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
-OVERWRITE_DDB_FILES_IN_DOCKER = True
+OVERWRITE_DDB_FILES_IN_DOCKER = False
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
