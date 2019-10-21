@@ -211,7 +211,9 @@ def apply_patches():
             # This resource is either not deployable or already exists. Check if it can be updated
             if not template_deployer.is_updateable(logical_id, resource_wrapped, stack_name):
                 LOG.debug('Resource %s need not be deployed: %s' % (logical_id, resource_json))
-                return resource
+                # Note: leave this check here, otherwise breaks things (e.g., serverless lambda deploy fails)
+                if resource:
+                    return resource
 
         # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
         resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))

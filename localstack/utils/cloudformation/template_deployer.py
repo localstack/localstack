@@ -343,7 +343,9 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             resource_id = resource_props['FunctionName'] if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
         elif resource_type == 'Lambda::Version':
-            name = resource_props['FunctionName']
+            name = resource_props.get('FunctionName')
+            if not name:
+                return None
             func_name = aws_stack.lambda_function_name(name)
             func_version = name.split(':')[7] if len(name.split(':')) > 7 else '$LATEST'
             versions = aws_stack.connect_to_service('lambda').list_versions_by_function(FunctionName=func_name)
