@@ -54,7 +54,7 @@ class SNSTest(unittest.TestCase):
         def received():
             assert records[0]['Type'] == 'SubscriptionConfirmation'
 
-        retry(received)
+        retry(received, retries=5, sleep=1)
         proxy.stop()
 
     def test_attribute_raw_subscribe(self):

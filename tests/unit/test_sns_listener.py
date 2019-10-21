@@ -33,8 +33,8 @@ class SNSTests(unittest.TestCase):
         self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
         sns_listener.do_subscribe(
             topic_arn,
-            'http://localhost:1234/listen',
-            'http',
+            'arn:aws:sqs:us-east-1:123456789012:test-queue',
+            'sqs',
             sub_arn,
             {}
         )
@@ -181,23 +181,15 @@ class SNSTests(unittest.TestCase):
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
         sns_listener.do_create_topic(topic_arn)
         self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
-        sns_listener.do_subscribe(
-            topic_arn,
-            'http://localhost:1234/listen',
-            'http',
-            sub_arn,
-            {}
-        )
-
-        self.assertEqual(len(sns_listener.SNS_SUBSCRIPTIONS[topic_arn]), 1)
-        sns_listener.do_subscribe(
-            topic_arn,
-            'http://localhost:1234/listen',
-            'http',
-            sub_arn,
-            {}
-        )
-        self.assertEqual(len(sns_listener.SNS_SUBSCRIPTIONS[topic_arn]), 1)
+        for i in [1, 2]:
+            sns_listener.do_subscribe(
+                topic_arn,
+                'arn:aws:sqs:us-east-1:123456789012:test-queue-1',
+                'sqs',
+                sub_arn,
+                {}
+            )
+            self.assertEqual(len(sns_listener.SNS_SUBSCRIPTIONS[topic_arn]), 1)
 
 
 def test_filter_policy():
