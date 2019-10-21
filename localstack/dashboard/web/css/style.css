@@ -8,8 +8,8 @@ body {
 }
 
 #logo {
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding-top: 7px;
+    padding-bottom: 8px;
     padding-left: 20px;
 }
 
@@ -50,7 +50,7 @@ sidebar div {
     top: 0px;
     bottom: 0px;
     position: absolute;
-    margin-top: 83px;
+    margin-top: 55px;
 }
 
 /* elements */

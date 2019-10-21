@@ -283,7 +283,6 @@ def get_service_name(resource):
     if res_type.endswith('Cognito::UserPool'):
         return 'cognito-idp'
     if parts[-2] == 'Cognito':
-        # TODO add mappings for "cognito-identity"
         return 'cognito-idp'
     return parts[1].lower()
 
@@ -544,11 +543,14 @@ def update_resource(resource_id, resources, stack_name):
     if resource_type not in UPDATEABLE_RESOURCES:
         LOG.warning('Unable to update resource type "%s", id "%s"' % (resource_type, resource_id))
         return
+    LOG.info('Updating resource %s of type %s' % (resource_id, resource_type))
     props = resource['Properties']
     if resource_type == 'Lambda::Function':
         client = aws_stack.connect_to_service('lambda')
         keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
         update_props = dict([(k, props[k]) for k in keys if k in props])
+        if 'Code' in props:
+            client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
         return client.update_function_configuration(**update_props)
     if resource_type == 'ApiGateway::Method':
         client = aws_stack.connect_to_service('apigateway')

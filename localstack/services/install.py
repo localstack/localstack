@@ -10,12 +10,13 @@ import tempfile
 from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, ELASTICSEARCH_DELETE_MODULES,
-    DYNAMODB_JAR_URL, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL, LOCALSTACK_INFRA_PROCESS)
+    DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL,
+    LOCALSTACK_INFRA_PROCESS)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
 from localstack.utils.common import (
-    download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r, is_alpine)
+    download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r, is_alpine, in_docker)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -33,6 +34,11 @@ URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
+
+# As of 2019-10-09, the DDB fix (see below) doesn't seem to be required anymore
+APPLY_DDB_ALPINE_FIX = False
+# TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
+OVERWRITE_DDB_FILES_IN_DOCKER = True
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -109,18 +115,21 @@ def install_stepfunctions_local():
 
 
 def install_dynamodb_local():
+    if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
+        rm_rf(INSTALL_DIR_DDB)
     if not os.path.exists(INSTALL_DIR_DDB):
         log_install_msg('DynamoDB')
         # download and extract archive
         tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
-        download_and_extract_with_retry(DYNAMODB_JAR_URL, tmp_archive, INSTALL_DIR_DDB)
+        dynamodb_url = DYNAMODB_JAR_URL_ALPINE if in_docker() else DYNAMODB_JAR_URL
+        download_and_extract_with_retry(dynamodb_url, tmp_archive, INSTALL_DIR_DDB)
 
     # fix for Alpine, otherwise DynamoDBLocal fails with:
     # DynamoDBLocal_lib/libsqlite4java-linux-amd64.so: __memcpy_chk: symbol not found
     if is_alpine():
         ddb_libs_dir = '%s/DynamoDBLocal_lib' % INSTALL_DIR_DDB
         patched_marker = '%s/alpine_fix_applied' % ddb_libs_dir
-        if not os.path.exists(patched_marker):
+        if APPLY_DDB_ALPINE_FIX and not os.path.exists(patched_marker):
             patched_lib = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +
                 'rootfs/usr/local/dynamodb/DynamoDBLocal_lib/libsqlite4java-linux-amd64.so')
             patched_jar = ('https://rawgit.com/bhuisgen/docker-alpine/master/alpine-dynamodb/' +

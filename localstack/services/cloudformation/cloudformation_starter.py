@@ -108,6 +108,22 @@ def convert_objs_to_ids(resource_json):
     return recurse_object(resource_json, fix_ids)
 
 
+def update_physical_resource_id(resource):
+    phys_res_id = getattr(resource, 'physical_resource_id', None)
+    if not phys_res_id:
+        if isinstance(resource, lambda_models.LambdaFunction):
+            func_arn = aws_stack.lambda_function_arn(resource.function_name)
+            resource.function_arn = resource.physical_resource_id = func_arn
+        elif isinstance(resource, sfn_models.StateMachine):
+            sm_arn = aws_stack.state_machine_arn(resource.name)
+            resource.physical_resource_id = sm_arn
+        elif isinstance(resource, service_models.StepFunctionsActivity):
+            act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
+            resource.physical_resource_id = act_arn
+        else:
+            LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
+
+
 def apply_patches():
     """ Apply patches to make LocalStack seamlessly interact with the moto backend.
         TODO: Eventually, these patches should be contributed to the upstream repo! """
@@ -195,8 +211,7 @@ def apply_patches():
             # This resource is either not deployable or already exists. Check if it can be updated
             if not template_deployer.is_updateable(logical_id, resource_wrapped, stack_name):
                 LOG.debug('Resource %s need not be deployed: %s' % (logical_id, resource_json))
-                if resource:
-                    return resource
+                return resource
 
         # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
         resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
@@ -215,7 +230,7 @@ def apply_patches():
 
         # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
         update_resource_name(resource, resource_json)
-        LOG.debug('Deploying CloudFormation resource: %s' % resource_json)
+        LOG.debug('Deploying CloudFormation resource (update=%s): %s' % (update, resource_json))
 
         try:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
@@ -302,21 +317,6 @@ def apply_patches():
             resource['id'] = new_id
         else:
             LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
-
-    def update_physical_resource_id(resource):
-        phys_res_id = getattr(resource, 'physical_resource_id', None)
-        if not phys_res_id:
-            if isinstance(resource, lambda_models.LambdaFunction):
-                func_arn = aws_stack.lambda_function_arn(resource.function_name)
-                resource.function_arn = resource.physical_resource_id = func_arn
-            elif isinstance(resource, sfn_models.StateMachine):
-                sm_arn = aws_stack.state_machine_arn(resource.name)
-                resource.physical_resource_id = sm_arn
-            elif isinstance(resource, service_models.StepFunctionsActivity):
-                act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
-                resource.physical_resource_id = act_arn
-            else:
-                LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
     parse_and_create_resource_orig = parsing.parse_and_create_resource
     parsing.parse_and_create_resource = parse_and_create_resource
