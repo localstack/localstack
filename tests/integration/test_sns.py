@@ -2,11 +2,11 @@
 
 import json
 import unittest
-
 from botocore.exceptions import ClientError
-
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol
+from localstack.services.infra import start_proxy
+from localstack.services.generic_proxy import ProxyListener
 
 TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
@@ -37,6 +37,26 @@ class SNSTest(unittest.TestCase):
         msg_received = json.loads(to_str(msg_received['Body']))
         msg_received = msg_received['Message']
         self.assertEqual(message, msg_received)
+
+    def test_subscribe_http_endpoint(self):
+        # create HTTP endpoint and connect it to SNS topic
+        class MyUpdateListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                records.append(json.loads(to_str(data)))
+                return 200
+
+        records = []
+        local_port = get_free_tcp_port()
+        proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
+        wait_for_port_open(local_port)
+        queue_arn = '%s://localhost:%s' % (get_service_protocol(), local_port)
+        self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='http', Endpoint=queue_arn)
+
+        def received():
+            assert records[0]['Type'] == 'SubscriptionConfirmation'
+
+        retry(received, retries=5, sleep=1)
+        proxy.stop()
 
     def test_attribute_raw_subscribe(self):
         # create SNS topic and connect it to an SQS queue
@@ -115,9 +135,7 @@ class SNSTest(unittest.TestCase):
 
         self.sns_client.untag_resource(
             ResourceArn=self.topic_arn,
-            TagKeys=[
-                '123',
-            ]
+            TagKeys=['123']
         )
 
         tags = self.sns_client.list_tags_for_resource(ResourceArn=self.topic_arn)

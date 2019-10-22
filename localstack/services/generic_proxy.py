@@ -67,7 +67,7 @@ class ProxyListener(object):
         """
         return True
 
-    def return_response(self, method, path, data, headers, response):
+    def return_response(self, method, path, data, headers, response, request_handler=None):
         """ This interceptor method is called by the proxy when returning a response
             (*after* having forwarded the request and received a response from the backend
             service). It receives details of the incoming request as well as the response

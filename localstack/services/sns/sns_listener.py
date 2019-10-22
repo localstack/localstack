@@ -1,5 +1,4 @@
 import ast
-import datetime
 import json
 import uuid
 import logging
@@ -8,9 +7,10 @@ import requests
 import xmltodict
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
+from localstack.config import TEST_SNS_URL
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_str
+from localstack.utils.common import short_uid, to_str, timestamp, TIMESTAMP_FORMAT_MILLIS
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -166,10 +166,12 @@ class ProxyListenerSNS(ProxyListener):
 UPDATE_SNS = ProxyListenerSNS()
 
 
-def publish_message(topic_arn, req_data):
+def publish_message(topic_arn, req_data, subscription_arn=None):
     message = req_data['Message'][0]
     sqs_client = aws_stack.connect_to_service('sqs')
     for subscriber in SNS_SUBSCRIPTIONS.get(topic_arn, []):
+        if subscription_arn not in [None, subscriber['SubscriptionArn']]:
+            continue
         filter_policy = json.loads(subscriber.get('FilterPolicy', '{}'))
         message_attributes = get_message_attributes(req_data)
         if not check_filter_policy(filter_policy, message_attributes):
@@ -212,8 +214,8 @@ def publish_message(topic_arn, req_data):
                     'Content-Type': 'text/plain',
                     'x-amz-sns-message-type': 'Notification'
                 },
-                data=message_body
-            )
+                data=message_body,
+                verify=False)
         else:
             LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
@@ -243,6 +245,18 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes):
     }
     subscription.update(attributes)
     SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+
+    # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
+    if protocol in ['http', 'https']:
+        token = short_uid()
+        confirmation = {
+            'Type': ['SubscriptionConfirmation'],
+            'Token': [token],
+            'Message': [('You have chosen to subscribe to the topic %s.\n' % topic_arn) +
+                'To confirm the subscription, visit the SubscribeURL included in this message.'],
+            'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (TEST_SNS_URL, topic_arn, token)]
+        }
+        publish_message(topic_arn, confirmation, subscription_arn)
 
 
 def do_unsubscribe(subscription_arn):
@@ -335,8 +349,8 @@ def create_sns_message_body(subscriber, req_data):
 
     data = {}
     data['MessageId'] = str(uuid.uuid4())
-    data['Type'] = 'Notification'
-    data['Timestamp'] = datetime.datetime.utcnow().isoformat(timespec='milliseconds') + 'Z'
+    data['Type'] = req_data.get('Type', ['Notification'])[0]
+    data['Timestamp'] = timestamp(format=TIMESTAMP_FORMAT_MILLIS)
     data['Message'] = message
     data['TopicArn'] = subscriber['TopicArn']
     if subject is not None:
@@ -344,6 +358,10 @@ def create_sns_message_body(subscriber, req_data):
     attributes = get_message_attributes(req_data)
     if attributes:
         data['MessageAttributes'] = attributes
+    for attr in ['Token', 'SubscribeURL']:
+        value = req_data.get(attr, [None])[0]
+        if value:
+            data[attr] = value
     result = json.dumps(data)
     return result
 
