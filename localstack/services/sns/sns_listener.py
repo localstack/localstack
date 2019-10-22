@@ -215,8 +215,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                     'x-amz-sns-message-type': 'Notification'
                 },
                 data=message_body,
-                verify=False
-            )
+                verify=False)
         else:
             LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
