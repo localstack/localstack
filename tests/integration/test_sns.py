@@ -86,7 +86,7 @@ class SNSTest(unittest.TestCase):
 
     def test_publish_target(self):
         response = self.sns_client.publish(
-            TargetArn='arn:aws:sns:us-east-1:000000000000:endpoint/APNS/abcdef/0f7d5971-aa8b-4bd5-b585-0826e9f93a66', 
+            TargetArn='arn:aws:sns:us-east-1:000000000000:endpoint/APNS/abcdef/0f7d5971-aa8b-4bd5-b585-0826e9f93a66',
             Message='This is a push notification')
         self.assertTrue('MessageId' in response)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
