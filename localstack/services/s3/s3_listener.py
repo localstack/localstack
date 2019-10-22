@@ -681,7 +681,9 @@ class ProxyListenerS3(ProxyListener):
 
                 # fix content-type: https://github.com/localstack/localstack/issues/618
                 #                   https://github.com/localstack/localstack/issues/549
-                if 'text/html' in response.headers.get('Content-Type', ''):
+                #                   https://github.com/localstack/localstack/issues/854
+                if 'text/html' in response.headers.get('Content-Type', '') \
+                        and not response_content_str.startswith('<!doctype html'):
                     response.headers['Content-Type'] = 'application/xml; charset=utf-8'
 
                 reset_content_length = True

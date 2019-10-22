@@ -42,7 +42,7 @@ class SNSTest(unittest.TestCase):
         # create HTTP endpoint and connect it to SNS topic
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
-                records.append(json.loads(to_str(data)))
+                records.append((json.loads(to_str(data)), headers))
                 return 200
 
         records = []
@@ -53,7 +53,8 @@ class SNSTest(unittest.TestCase):
         self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='http', Endpoint=queue_arn)
 
         def received():
-            assert records[0]['Type'] == 'SubscriptionConfirmation'
+            assert records[0][0]['Type'] == 'SubscriptionConfirmation'
+            assert records[0][1]['x-amz-sns-message-type'] == 'SubscriptionConfirmation'
 
         retry(received, retries=5, sleep=1)
         proxy.stop()
