@@ -76,9 +76,9 @@ class ProxyListenerSNS(ProxyListener):
             elif req_action == 'DeleteTopic':
                 do_delete_topic(topic_arn)
             elif req_action == 'Publish':
-                # No need to create a topic to send SMS with SNS
+                # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well
-                if 'PhoneNumber' not in req_data:
+                if 'PhoneNumber' not in req_data and 'TargetArn' not in req_data:
                     if topic_arn not in SNS_SUBSCRIPTIONS.keys():
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
                     publish_message(topic_arn, req_data)
