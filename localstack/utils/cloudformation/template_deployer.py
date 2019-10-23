@@ -136,6 +136,25 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
+    'Events::Rule': {
+        'create': [{
+            'function': 'put_rule',
+            'parameters': {
+                'Name': PLACEHOLDER_RESOURCE_NAME,
+                'ScheduleExpression': 'ScheduleExpression',
+                'EventPattern': 'EventPattern',
+                'State': 'State',
+                'Description': 'Description'
+            }
+        }, {
+            'function': 'put_targets',
+            'parameters': {
+                'Rule': PLACEHOLDER_RESOURCE_NAME,
+                'EventBusName': 'EventBusName',
+                'Targets': 'Targets'
+            }
+        }]
+    },
     'IAM::Role': {
         # TODO implement
     },
@@ -307,7 +326,7 @@ def get_resource_name(resource):
     return name
 
 
-def get_client(resource):
+def get_client(resource, func_config):
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
     resource_config = RESOURCE_TO_FUNCTION.get(resource_type)
@@ -317,7 +336,7 @@ def get_client(resource):
         # nothing to do for this resource
         return
     try:
-        if resource_config[ACTION_CREATE].get('boto_client') == 'resource':
+        if func_config.get('boto_client') == 'resource':
             return aws_stack.connect_to_resource(service)
         return aws_stack.connect_to_service(service)
     except Exception as e:
@@ -600,9 +619,6 @@ def convert_data_types(func_details, params):
 
 def deploy_resource(resource_id, resources, stack_name):
     resource = resources[resource_id]
-    client = get_client(resource)
-    if not client:
-        return False
     resource_type = get_resource_type(resource)
     func_details = RESOURCE_TO_FUNCTION.get(resource_type)
     if not func_details:
@@ -611,6 +627,16 @@ def deploy_resource(resource_id, resources, stack_name):
 
     LOG.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
     func_details = func_details[ACTION_CREATE]
+    func_details = func_details if isinstance(func_details, list) else [func_details]
+    for func in func_details:
+        client = get_client(resource, func)
+        if client:
+            deploy_resource_via_sdk_function(resource_id, resources, resource_type, func, stack_name)
+
+
+def deploy_resource_via_sdk_function(resource_id, resources, resource_type, func_details, stack_name):
+    resource = resources[resource_id]
+    client = get_client(resource, func_details)
     function = getattr(client, func_details['function'])
     params = func_details['parameters']
     defaults = func_details.get('defaults', {})
