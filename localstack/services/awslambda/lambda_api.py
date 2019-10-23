@@ -595,19 +595,23 @@ def do_list_functions():
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
         func_details = arn_to_lambda.get(arn)
+        if not func_details:
+            # this can happen if we're accessing Lambdas from a different region (ARN mismatch)
+            continue
         funcs.append(format_func_details(func_details))
     return funcs
 
 
 def format_func_details(func_details, version=None, always_add_version=False):
     version = version or '$LATEST'
+    func_version = func_details.get_version(version)
     result = {
-        'CodeSha256': func_details.get_version(version).get('CodeSha256'),
+        'CodeSha256': func_version.get('CodeSha256'),
         'Role': func_details.role,
         'Version': version,
         'FunctionArn': func_details.arn(),
         'FunctionName': func_details.name(),
-        'CodeSize': func_details.get_version(version).get('CodeSize'),
+        'CodeSize': func_version.get('CodeSize'),
         'Handler': func_details.handler,
         'Runtime': func_details.runtime,
         'Timeout': func_details.timeout,
@@ -615,7 +619,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'MemorySize': func_details.memory_size,
         'LastModified': func_details.last_modified,
         'TracingConfig': {'Mode': 'PassThrough'},
-        'RevisionId': func_details.get_version(version).get('RevisionId')
+        'RevisionId': func_version.get('RevisionId')
     }
     if func_details.envvars:
         result['Environment'] = {

@@ -346,14 +346,25 @@ def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
 
 
 def lambda_function_arn(function_name, account_id=None):
+    return lambda_function_or_layer_arn('function', function_name, account_id=account_id)
+
+
+def lambda_layer_arn(layer_name, version=None, account_id=None):
+    return lambda_function_or_layer_arn('layer', layer_name, version=None, account_id=account_id)
+
+
+def lambda_function_or_layer_arn(type, entity_name, version=None, account_id=None):
     pattern = 'arn:aws:lambda:.*:.*:(function|layer):.*'
-    if re.match(pattern, function_name):
-        return function_name
-    if ':' in function_name:
-        raise Exception('Lambda function name should not contain a colon ":"')
+    if re.match(pattern, entity_name):
+        return entity_name
+    if ':' in entity_name:
+        raise Exception('Lambda %s name should not contain a colon ":": %s' % (type, entity_name))
     account_id = get_account_id(account_id)
-    pattern = re.sub(r'\([^\|]+\|.+\)', 'function', pattern)
-    return pattern.replace('.*', '%s') % (get_region(), account_id, function_name)
+    pattern = re.sub(r'\([^\|]+\|.+\)', type, pattern)
+    result = pattern.replace('.*', '%s') % (get_region(), account_id, entity_name)
+    if version:
+        result = '%s:%s' (result, version)
+    return result
 
 
 def lambda_function_name(name_or_arn):
