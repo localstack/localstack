@@ -204,6 +204,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 subject=req_data.get('Subject', [None])[0]
             )
         elif subscriber['Protocol'] in ['http', 'https']:
+            msg_type = (req_data.get('Type') or ['Notification'])[0]
             try:
                 message_body = create_sns_message_body(subscriber, req_data)
             except Exception as exc:
@@ -212,7 +213,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 subscriber['Endpoint'],
                 headers={
                     'Content-Type': 'text/plain',
-                    'x-amz-sns-message-type': 'Notification'
+                    'x-amz-sns-message-type': msg_type
                 },
                 data=message_body,
                 verify=False)
