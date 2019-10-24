@@ -162,24 +162,25 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual(result['StatusCode'], 204)
 
     def test_lambda_environment(self):
+        vars = {'Hello': 'World'}
         zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_ENV),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
+            load_file(TEST_LAMBDA_ENV), get_content=True,
+            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
         testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_ENV,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27,
-            envvars={'Hello': 'World'}
-        )
+            func_name=TEST_LAMBDA_NAME_ENV, zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON27, envvars=vars)
+
+        # invoke function and assert result contains env vars
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_ENV, Payload=b'{}')
         result_data = result['Payload']
-
         self.assertEqual(result['StatusCode'], 200)
-        self.assertDictEqual(json.load(result_data), {'Hello': 'World'})
+        self.assertDictEqual(json.load(result_data), vars)
+
+        # get function config and assert result contains env vars
+        result = self.lambda_client.get_function_configuration(
+            FunctionName=TEST_LAMBDA_NAME_ENV)
+        self.assertEqual(result['Environment'], {'Variables': vars})
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_ENV)
