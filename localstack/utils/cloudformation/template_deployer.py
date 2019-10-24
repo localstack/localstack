@@ -628,10 +628,13 @@ def deploy_resource(resource_id, resources, stack_name):
     LOG.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
     func_details = func_details[ACTION_CREATE]
     func_details = func_details if isinstance(func_details, list) else [func_details]
+    results = []
     for func in func_details:
         client = get_client(resource, func)
         if client:
-            deploy_resource_via_sdk_function(resource_id, resources, resource_type, func, stack_name)
+            result = deploy_resource_via_sdk_function(resource_id, resources, resource_type, func, stack_name)
+            results.append(result)
+    return (results or [None])[0]
 
 
 def deploy_resource_via_sdk_function(resource_id, resources, resource_type, func_details, stack_name):
@@ -692,8 +695,8 @@ def deploy_resource_via_sdk_function(resource_id, resources, resource_type, func
 
     # invoke function
     try:
-        LOG.debug('Request for creating resource type "%s": %s %s' % (
-            resource_type, func_details['function'], params))
+        LOG.debug('Request for creating resource type "%s" in region %s: %s %s' % (
+            resource_type, aws_stack.get_region(), func_details['function'], params))
         result = function(**params)
     except Exception as e:
         LOG.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
