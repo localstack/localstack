@@ -447,12 +447,12 @@ def recurse_object(obj, func, path=''):
     obj = func(obj, path=path)
     if isinstance(obj, list):
         for i in range(len(obj)):
-            path = '%s[%s]' % (path or '.', i)
-            obj[i] = recurse_object(obj[i], func, path)
+            tmp_path = '%s[%s]' % (path or '.', i)
+            obj[i] = recurse_object(obj[i], func, tmp_path)
     elif isinstance(obj, dict):
         for k, v in obj.items():
-            path = '%s%s' % ((path + '.') if path else '', k)
-            obj[k] = recurse_object(v, func, path)
+            tmp_path = '%s%s' % ((path + '.') if path else '', k)
+            obj[k] = recurse_object(v, func, tmp_path)
     return obj
 
 
