@@ -15,6 +15,11 @@ def flask_error_response(msg, code=500, error_type='InternalFailure'):
     return Response(json.dumps(result), status=code, headers=headers)
 
 
+def requests_error_response(msg, code=500, error_type='InternalFailure'):
+    response = flask_error_response(msg, code=code, error_type=error_type)
+    return flask_to_requests_response(response)
+
+
 def requests_response(content, status_code=200, headers={}):
     resp = RequestsResponse()
     content = json.dumps(content) if isinstance(content, dict) else content

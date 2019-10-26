@@ -74,7 +74,7 @@ def get_entity_id(entity, resource_json=None):
         return entity.physical_resource_id
     # check ID attribute candidates
     types_with_ref_as_id_or_name = (apigw_models.RestAPI, apigw_models.Resource)
-    attr_candidates = ['function_arn', 'Arn', 'id', 'name', 'Id', 'Name']
+    attr_candidates = ['function_arn', 'Arn', 'Ref', 'id', 'Id', 'name', 'Name']
     for attr in attr_candidates:
         if hasattr(entity, attr):
             if attr in ['id', 'name'] and not isinstance(entity, types_with_ref_as_id_or_name):

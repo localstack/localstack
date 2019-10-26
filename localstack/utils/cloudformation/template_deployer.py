@@ -34,6 +34,10 @@ def get_bucket_location_config(**kwargs):
     return {'LocationConstraint': aws_stack.get_region()}
 
 
+def lambda_get_params():
+    return lambda params, **kwargs: params
+
+
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -346,8 +350,12 @@ def get_client(resource, func_config):
 
 def describe_stack_resource(stack_name, logical_resource_id):
     client = aws_stack.connect_to_service('cloudformation')
-    result = client.describe_stack_resource(StackName=stack_name, LogicalResourceId=logical_resource_id)
-    return result['StackResourceDetail']
+    try:
+        result = client.describe_stack_resource(StackName=stack_name, LogicalResourceId=logical_resource_id)
+        return result['StackResourceDetail']
+    except Exception as e:
+        LOG.warning('Unable to get details for resource "%s" in CloudFormation stack "%s": %s' %
+                    (logical_resource_id, stack_name, e))
 
 
 def retrieve_resource_details(resource_id, resource_status, resources, stack_name):
@@ -514,6 +522,8 @@ def resolve_ref(stack_name, ref, resources, attribute):
     resource_status = {}
     if stack_name:
         resource_status = describe_stack_resource(stack_name, ref)
+        if not resource_status:
+            return
         attr_value = resource_status.get(attribute)
         if attr_value not in [None, '']:
             return attr_value
@@ -641,7 +651,7 @@ def deploy_resource_via_sdk_function(resource_id, resources, resource_type, func
     resource = resources[resource_id]
     client = get_client(resource, func_details)
     function = getattr(client, func_details['function'])
-    params = func_details['parameters']
+    params = func_details.get('parameters') or lambda_get_params()
     defaults = func_details.get('defaults', {})
     if 'Properties' not in resource:
         resource['Properties'] = {}
