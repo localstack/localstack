@@ -337,7 +337,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 LOG.warning('Unable to flush write file: %s' % e)
 
     def _send_cors_headers(self, response=None):
-        headers = response and response.headers or {}
+        # Note: Use "response is not None" here instead of "not response"!
+        headers = response is not None and response.headers or {}
         if 'Access-Control-Allow-Origin' not in headers:
             self.send_header('Access-Control-Allow-Origin', '*')
         if 'Access-Control-Allow-Methods' not in headers:
