@@ -206,6 +206,18 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
+    'ApiGateway::GatewayResponse': {
+        'create': {
+            'function': 'put_gateway_response',
+            'parameters': {
+                'restApiId': 'RestApiId',
+                'responseType': 'ResponseType',
+                'statusCode': 'StatusCode',
+                'responseParameters': 'ResponseParameters',
+                'responseTemplates': 'ResponseTemplates'
+            }
+        }
+    },
     'Kinesis::Stream': {
         'create': {
             'function': 'create_stream',

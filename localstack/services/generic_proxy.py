@@ -18,7 +18,7 @@ from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
-from localstack.constants import ENV_INTERNAL_TEST_RUN
+from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
 
 QUIET = False
@@ -244,6 +244,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 if isinstance(listener_result, dict):
                     response = Response()
                     response._content = json.dumps(listener_result)
+                    response.headers['Content-Type'] = APPLICATION_JSON
                     response.status_code = 200
                     break
                 elif isinstance(listener_result, Request):

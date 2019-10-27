@@ -93,6 +93,7 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         s3 = aws_stack.connect_to_service('s3')
         sns = aws_stack.connect_to_service('sns')
+        apigateway = aws_stack.connect_to_service('apigateway')
         template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
 
         # deploy template
@@ -125,6 +126,14 @@ class CloudFormationTest(unittest.TestCase):
         subs = [s for s in subs if (':%s:cf-test-queue-1' % TEST_AWS_ACCOUNT_ID) in s['Endpoint']]
         self.assertEqual(len(subs), 1)
         self.assertIn(':%s:cf-test-topic-1-1' % TEST_AWS_ACCOUNT_ID, subs[0]['TopicArn'])
+
+        # assert that Gateway responses have been created
+        test_api_name = 'test-api'
+        api = [a for a in apigateway.get_rest_apis()['items'] if a['name'] == test_api_name][0]
+        responses = apigateway.get_gateway_responses(restApiId=api['id'])['items']
+        self.assertEqual(len(responses), 2)
+        types = [r['responseType'] for r in responses]
+        self.assertEqual(set(types), set(['UNAUTHORIZED', 'DEFAULT_5XX']))
 
     def test_list_stack_events(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')

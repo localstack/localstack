@@ -25,9 +25,11 @@ LOGGER = logging.getLogger(__name__)
 
 # regex path patterns
 PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
-
-# Paths to match
+PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
+
+# Maps API IDs to list of gateway responses
+GATEWAY_RESPONSES = {}
 
 
 class ProxyListenerApiGateway(ProxyListener):
@@ -44,6 +46,15 @@ class ProxyListenerApiGateway(ProxyListener):
 
         if re.match(PATH_REGEX_AUTHORIZERS, path):
             return handle_authorizers(method, path, data, headers)
+
+        if re.match(PATH_REGEX_RESPONSES, path):
+            search_match = re.search(PATH_REGEX_RESPONSES, path)
+            api_id = search_match.group(1)
+            if method == 'GET':
+                return get_gateway_responses(api_id)
+            if method == 'PUT':
+                response_type = search_match.group(2).lstrip('/')
+                return put_gateway_response(api_id, response_type, data)
 
         return True
 
@@ -63,6 +74,64 @@ class ProxyListenerApiGateway(ProxyListener):
             api_id = re.sub(api_regex, r'\1', path)
             event_publisher.fire_event(event_publisher.EVENT_APIGW_DELETE_API,
                 payload={'a': event_publisher.get_hash(api_id)})
+
+
+# ------------
+# API METHODS
+# ------------
+
+def get_gateway_responses(api_id):
+    result = GATEWAY_RESPONSES.get(api_id, [])
+    base_path = '/restapis/%s/gatewayresponses' % api_id
+    href = 'http://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-gatewayresponse-{rel}.html'
+
+    def item(i):
+        i['_links'] = {
+            'self': {
+                'href': '%s/%s' % (base_path, i['responseType'])
+            },
+            'gatewayresponse:put': {
+                'href': '%s/{response_type}' % base_path,
+                'templated': True
+            },
+            'gatewayresponse:update': {
+                'href': '%s/%s' % (base_path, i['responseType'])
+            }
+        }
+        i['responseParameters'] = i.get('responseParameters', {})
+        i['responseTemplates'] = i.get('responseTemplates', {})
+        return i
+
+    result = {
+        '_links': {
+            'curies': {
+                'href': href,
+                'name': 'gatewayresponse',
+                'templated': True
+            },
+            'self': {'href': base_path},
+            'first': {'href': base_path},
+            'gatewayresponse:by-type': {
+                'href': '%s/{response_type}' % base_path,
+                'templated': True
+            },
+            'item': [{'href': '%s/%s' % (base_path, r['responseType'])} for r in result]
+        },
+        '_embedded': {
+            'item': [item(i) for i in result]
+        },
+        # Note: Looks like the format required by aws CLI ("item" at top level) differs from the docs:
+        # https://docs.aws.amazon.com/apigateway/api-reference/resource/gateway-responses/
+        'item': [item(i) for i in result]
+    }
+    return result
+
+
+def put_gateway_response(api_id, response_type, data):
+    GATEWAY_RESPONSES[api_id] = GATEWAY_RESPONSES.get(api_id, [])
+    data['responseType'] = response_type
+    GATEWAY_RESPONSES[api_id].append(data)
+    return data
 
 
 def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None):

@@ -37,7 +37,13 @@ RUN_SERVER_IN_PROCESS = False
 # map of additional model classes
 MODEL_MAP = {
     'AWS::StepFunctions::Activity': service_models.StepFunctionsActivity,
-    'AWS::SNS::Subscription': service_models.SNSSubscription
+    'AWS::SNS::Subscription': service_models.SNSSubscription,
+    'AWS::ApiGateway::GatewayResponse': service_models.GatewayResponse,
+    'AWS::ApiGateway::Deployment': apigw_models.Deployment,
+    'AWS::ApiGateway::Method': apigw_models.Method,
+    'AWS::ApiGateway::Resource': apigw_models.Resource,
+    'AWS::ApiGateway::RestApi': apigw_models.RestAPI,
+    'AWS::StepFunctions::StateMachine': sfn_models.StateMachine
 }
 
 
@@ -247,6 +253,8 @@ def apply_patches():
 
         def find_id(resource):
             """ Find ID of the given resource. """
+            if not resource:
+                return
             for id_attr in ('Id', 'id', 'ResourceId', 'RestApiId', 'DeploymentId'):
                 if id_attr in resource:
                     return resource[id_attr]
@@ -484,13 +492,7 @@ def apply_patches():
     if not hasattr(lambda_models.LambdaVersion, 'delete_from_cloudformation_json'):
         lambda_models.LambdaVersion.delete_from_cloudformation_json = vers_delete_from_cloudformation_json
 
-    # add CloudWatch types
-
-    parsing.MODEL_MAP['AWS::ApiGateway::Deployment'] = apigw_models.Deployment
-    parsing.MODEL_MAP['AWS::ApiGateway::Method'] = apigw_models.Method
-    parsing.MODEL_MAP['AWS::ApiGateway::Resource'] = apigw_models.Resource
-    parsing.MODEL_MAP['AWS::ApiGateway::RestApi'] = apigw_models.RestAPI
-    parsing.MODEL_MAP['AWS::StepFunctions::StateMachine'] = sfn_models.StateMachine
+    # add CloudFormation types
 
     @classmethod
     def RestAPI_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
