@@ -34,3 +34,24 @@ Resources:
       Name: cf-test-stream-1
   SQSQueueNoNameProperty:
     Type: AWS::SQS::Queue
+
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: test-api
+  GatewayResponseUnauthorized:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      ResponseType: UNAUTHORIZED
+      ResponseTemplates:
+        application/json: '{"errors":[{"message":"Custom text!", "extra":"Some extra info"}]}'
+  GatewayResponseDefault500:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId:
+        Ref: ApiGatewayRestApi
+      ResponseType: DEFAULT_5XX
+      ResponseTemplates:
+        application/json: '{"errors":[{"message":$context.error.messageString}]}'
