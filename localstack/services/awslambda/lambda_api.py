@@ -81,6 +81,9 @@ DO_USE_DOCKER = None
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
 
+# IAM version number
+IAM_POLICY_VERSION = '2012-10-17'
+
 # Marker name to indicate that a bucket represents the local file system. This is used for testing
 # Serverless applications where we mount the Lambda code directly into the container from the host OS.
 BUCKET_MARKER_LOCAL = '__local__'
@@ -871,6 +874,29 @@ def update_function_configuration(function):
     if data.get('Timeout'):
         lambda_details.timeout = data['Timeout']
     result = {}
+    return jsonify(result)
+
+
+@app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['POST'])
+def add_permission(function):
+    data = json.loads(to_str(request.data))
+    iam_client = aws_stack.connect_to_service('iam')
+    sid = short_uid()
+    policy = {
+        'Version': IAM_POLICY_VERSION,
+        'Id': 'LambdaFuncAccess-%s' % sid,
+        'Statement': [{
+            'Sid': sid,
+            'Effect': 'Allow',
+            # TODO: 'Principal' in policies not yet supported in upstream moto
+            # 'Principal': data.get('Principal') or {'AWS': TEST_AWS_ACCOUNT_ID},
+            'Action': data.get('Action'),
+            'Resource': func_arn(function)
+        }]
+    }
+    iam_client.create_policy(PolicyName='lambda_policy_%s' % function,
+        PolicyDocument=json.dumps(policy), Description='Policy for Lambda function "%s"' % function)
+    result = {'Statement': sid}
     return jsonify(result)
 
 
