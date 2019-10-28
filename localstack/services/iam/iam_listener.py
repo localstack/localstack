@@ -32,9 +32,8 @@ class ProxyListenerIAM(ProxyListener):
         self._replace(response, pattern, replacement)
 
     def _fix_account_id(self, response):
-        pattern = r'<([^>]*)Arn>\s*arn:aws:iam::([0-9]+):([^<]+)</\1Arn>'
-        replacement = r'<\1Arn>arn:aws:iam::%s:\3</\1Arn>' % TEST_AWS_ACCOUNT_ID
-        self._replace(response, pattern, replacement)
+        return aws_stack.fix_account_id_in_arns(
+            response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
 
     def _reset_account_id(self, data):
         """ Fix account ID in request payload. All external-facing responses contain our

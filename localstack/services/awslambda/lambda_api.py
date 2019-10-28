@@ -900,6 +900,25 @@ def add_permission(function):
     return jsonify(result)
 
 
+@app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['GET'])
+def get_policy(function):
+    iam_client = aws_stack.connect_to_service('iam')
+    policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
+    docs = []
+    for p in policies:
+        # TODO: Cache policy documents instead of running N+1 API calls here!
+        versions = iam_client.list_policy_versions(PolicyArn=p['Arn'])['Versions']
+        default_version = [v for v in versions if v.get('IsDefaultVersion')]
+        versions = default_version or versions
+        doc = versions[0]['Document']
+        doc = doc if isinstance(doc, dict) else json.loads(doc)
+        docs.append(doc)
+    policy = [d for d in docs if d['Statement'][0]['Resource'] == func_arn(function)]
+    if not policy:
+        return jsonify({}), 404
+    return jsonify({'Policy': policy[0]})
+
+
 @app.route('%s/functions/<function>/invocations' % PATH_ROOT, methods=['POST'])
 def invoke_function(function):
     """ Invoke an existing function

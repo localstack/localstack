@@ -163,9 +163,16 @@ class TestPythonRuntimes(LambdaTestBase):
 
     def test_add_lambda_permission(self):
         iam_client = aws_stack.connect_to_service('iam')
-        resp = self.lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action='lambda:InvokeFunction',
+        # create lambda permission
+        action = 'lambda:InvokeFunction'
+        resp = self.lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
             StatementId='s3', Principal='s3.amazonaws.com', SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
         self.assertIn('Statement', resp)
+        # fetch lambda policy
+        policy = self.lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
+        self.assertEqual(policy['Statement'][0]['Action'], action)
+        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
+        # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
         matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
         self.assertEqual(len(matching), 1)
