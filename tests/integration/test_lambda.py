@@ -76,7 +76,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             return len((run_safe(ddb_client.scan, TableName=db_table) or {'Items': []})['Items'])
 
         items_before = num_items()
-        self.run_forward_to_fallback_url('dynamodb://%s' % db_table)
+        self._run_forward_to_fallback_url('dynamodb://%s' % db_table)
         items_after = num_items()
         self.assertEqual(items_after, items_before + 3)
 
@@ -91,12 +91,12 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
 
         items_before = len(records)
-        self.run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
+        self._run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
         items_after = len(records)
         self.assertEqual(items_after, items_before + 3)
         proxy.stop()
 
-    def run_forward_to_fallback_url(self, url, num_requests=3):
+    def _run_forward_to_fallback_url(self, url, num_requests=3):
         lambda_client = aws_stack.connect_to_service('lambda')
         config.LAMBDA_FALLBACK_URL = url
         try:
@@ -160,6 +160,23 @@ class TestPythonRuntimes(LambdaTestBase):
             InvocationType='DryRun')
 
         self.assertEqual(result['StatusCode'], 204)
+
+    def test_add_lambda_permission(self):
+        iam_client = aws_stack.connect_to_service('iam')
+        # create lambda permission
+        action = 'lambda:InvokeFunction'
+        resp = self.lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+            StatementId='s3', Principal='s3.amazonaws.com', SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+        self.assertIn('Statement', resp)
+        # fetch lambda policy
+        policy = self.lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
+        self.assertEqual(policy['Statement'][0]['Action'], action)
+        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
+        # fetch IAM policy
+        policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
+        self.assertEqual(len(matching), 1)
+        self.assertIn(':policy/', matching[0]['Arn'])
 
     def test_lambda_environment(self):
         vars = {'Hello': 'World'}
