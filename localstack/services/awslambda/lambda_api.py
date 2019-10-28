@@ -912,6 +912,8 @@ def get_policy(function):
         versions = default_version or versions
         doc = versions[0]['Document']
         doc = doc if isinstance(doc, dict) else json.loads(doc)
+        if not isinstance(doc['Statement'], list):
+            doc['Statement'] = [doc['Statement']]
         docs.append(doc)
     policy = [d for d in docs if d['Statement'][0]['Resource'] == func_arn(function)]
     if not policy:
