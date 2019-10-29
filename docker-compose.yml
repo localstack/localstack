@@ -2,6 +2,7 @@ version: '2.1'
 
 services:
   localstack:
+    container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
     image: localstack/localstack
     ports:
       - "4567-4597:4567-4597"
