@@ -106,7 +106,7 @@ class S3ListenerTest (unittest.TestCase):
         self._create_test_notification_bucket(queue_attributes)
 
         # has to be larger than 64MB to be broken up into a multipart upload
-        file_size = 75000000
+        file_size = 400 * 1024 * 1024
         large_file = self.generate_large_file(file_size)
         download_file = new_tmp_file()
         try:
