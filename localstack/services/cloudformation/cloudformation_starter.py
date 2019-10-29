@@ -217,7 +217,7 @@ def apply_patches():
         if not should_be_created:
             # This resource is either not deployable or already exists. Check if it can be updated
             if not template_deployer.is_updateable(logical_id, resource_wrapped, stack_name):
-                LOG.debug('Resource %s need not be deployed: %s' % (logical_id, resource_json))
+                LOG.debug('Resource %s need not be deployed: %s %s' % (logical_id, resource_json, bool(resource)))
                 # Note: leave this check here, otherwise breaks things (e.g., serverless lambda deploy fails)
                 if resource:
                     return resource
@@ -241,16 +241,16 @@ def apply_patches():
         update_resource_name(resource, resource_json)
         LOG.debug('Deploying CloudFormation resource (update=%s): %s' % (update, resource_json))
 
+        if not should_be_created:
+            # skip the parts below for update requests
+            return resource
+
         try:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
             deploy_func = template_deployer.update_resource if update else template_deployer.deploy_resource
             result = deploy_func(logical_id, resource_wrapped, stack_name=stack_name)
         finally:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = False
-
-        if not should_be_created:
-            # skip the parts below for update requests
-            return resource
 
         def find_id(resource):
             """ Find ID of the given resource. """
