@@ -107,7 +107,8 @@ class LambdaExecutor(object):
                 if 'ResourceAlreadyExistsException' in str(e):
                     # this can happen in certain cases, possibly due to a race condition
                     pass
-                raise e
+                else:
+                    raise e
 
         # create a new log stream for this lambda invocation
         logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)

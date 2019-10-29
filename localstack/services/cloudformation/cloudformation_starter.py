@@ -1,4 +1,5 @@
 import sys
+import json
 import logging
 import traceback
 import six
@@ -16,7 +17,7 @@ from boto.cloudformation.stack import Output
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import FuncThread, short_uid, recurse_object, clone, json_safe
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
@@ -557,6 +558,14 @@ def apply_patches():
         stack_name = self._get_param('StackName')
         stack = self.cloudformation_backend.get_stack(stack_name)
         logical_resource_id = self._get_param('LogicalResourceId')
+        if not stack:
+            msg = ('Unable to find CloudFormation stack "%s" in region %s' %
+                   (stack_name, aws_stack.get_region()))
+            if aws_stack.get_region() != self.region:
+                msg = '%s/%s' % (msg, self.region)
+            LOG.warning(msg)
+            response = aws_responses.flask_error_response(msg, code=404, error_type='ResourceNotFoundException')
+            return 404, response.headers, response.data
 
         for stack_resource in stack.stack_resources:
             # Note: Line below has been patched
@@ -577,7 +586,6 @@ def apply_patches():
 def inject_stats_endpoint():
     """ Inject a simple /_stats endpoint into the moto server backend Web app. """
     # TODO: move this utility method to a shared file and enable it for all API endpoints
-    import json
     from moto import server as moto_server
 
     def _get_stats():
