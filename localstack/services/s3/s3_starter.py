@@ -14,7 +14,7 @@ from localstack.utils.bootstrap import setup_logging
 LOGGER = logging.getLogger(__name__)
 
 # max file size for S3 objects (in MB)
-S3_MAX_FILE_SIZE_MB = 128
+S3_MAX_FILE_SIZE_MB = 2048
 
 
 def check_s3(expect_shutdown=False, print_error=False):
