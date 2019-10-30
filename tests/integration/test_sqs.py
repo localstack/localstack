@@ -1,3 +1,4 @@
+import json
 import unittest
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
@@ -22,7 +23,7 @@ TEST_POLICY = """
     }
   ]
 }
- """
+"""
 
 
 class SQSTest(unittest.TestCase):
@@ -40,6 +41,9 @@ class SQSTest(unittest.TestCase):
         # Apparently, if there are no tags, then `Tags` should NOT appear in the response.
         assert 'Tags' not in res
 
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_create_fifo_queue(self):
         fifo_queue = 'my-queue.fifo'
         queue_info = self.client.create_queue(QueueName=fifo_queue, Attributes={'FifoQueue': 'true'})
@@ -47,6 +51,9 @@ class SQSTest(unittest.TestCase):
 
         # it should preserve .fifo in the queue name
         self.assertIn(fifo_queue, queue_url)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
 
     def test_set_queue_policy(self):
         fifo_queue = 'queue-%s' % short_uid()
@@ -62,3 +69,21 @@ class SQSTest(unittest.TestCase):
         self.assertIn('sqs:SendMessage', attrs['Policy'])
         attrs = self.client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['Policy'])['Attributes']
         self.assertIn('sqs:SendMessage', attrs['Policy'])
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
+    def test_dead_letter_queue(self):
+        queue_name = 'queue-%s' % short_uid()
+        dlq_name = 'queue-%s' % short_uid()
+
+        dlq_info = self.client.create_queue(QueueName=dlq_name)
+        dlq_arn = aws_stack.sqs_queue_arn(dlq_name)
+
+        attributes = {'RedrivePolicy': json.dumps({'deadLetterTargetArn': dlq_arn, 'maxReceiveCount': 100})}
+        queue_info = self.client.create_queue(QueueName=queue_name, Attributes=attributes)
+        queue_url = queue_info['QueueUrl']
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+        self.client.delete_queue(QueueUrl=dlq_info['QueueUrl'])
