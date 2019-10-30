@@ -462,6 +462,19 @@ def apply_patches():
     Lambda_create_from_cloudformation_json_orig = lambda_models.LambdaFunction.create_from_cloudformation_json
     lambda_models.LambdaFunction.create_from_cloudformation_json = Lambda_create_from_cloudformation_json
 
+    # Patch EventSourceMapping create_from_cloudformation_json(..) method in moto
+
+    @classmethod
+    def Mapping_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
+        props = cloudformation_json.get('Properties', {})
+        func_name = props.get('FunctionName') or ''
+        if ':lambda:' in func_name:
+            props['FunctionName'] = aws_stack.lambda_function_name(func_name)
+        return Mapping_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+
+    Mapping_create_from_cloudformation_json_orig = lambda_models.EventSourceMapping.create_from_cloudformation_json
+    lambda_models.EventSourceMapping.create_from_cloudformation_json = Mapping_create_from_cloudformation_json
+
     # Patch LambdaFunction update_from_cloudformation_json(..) method in moto
 
     @classmethod
