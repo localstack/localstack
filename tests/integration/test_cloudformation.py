@@ -2,7 +2,7 @@ import os
 import unittest
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import load_file, retry
+from localstack.utils.common import load_file, retry, short_uid
 from localstack.utils.cloudformation import template_deployer
 from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
@@ -10,9 +10,15 @@ from botocore.parsers import ResponseParserError
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_TEMPLATE_1 = os.path.join(THIS_FOLDER, 'templates', 'template1.yaml')
 TEST_TEMPLATE_2 = os.path.join(THIS_FOLDER, 'templates', 'template2.yaml')
-
-TEST_STACK_NAME = 'test-cf-stack-1'
-TEST_STACK_NAME_2 = 'test-cf-stack-2'
+TEST_TEMPLATE_3 = """
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  S3Setup:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: test-%s
+""" % short_uid()
 
 
 def bucket_exists(name):
@@ -97,11 +103,12 @@ class CloudFormationTest(unittest.TestCase):
         template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
 
         # deploy template
-        cloudformation.create_stack(StackName=TEST_STACK_NAME, TemplateBody=template)
+        stack_name = 'stack-%s' % short_uid()
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
         # wait for deployment to finish
         def check_stack():
-            stack = get_stack_details(TEST_STACK_NAME)
+            stack = get_stack_details(stack_name)
             self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
 
         retry(check_stack, retries=3, sleep=2)
@@ -115,7 +122,7 @@ class CloudFormationTest(unittest.TestCase):
         # assert that stream has been created
         assert stream_exists('cf-test-stream-1')
         # assert that queue has been created
-        resource = describe_stack_resource(TEST_STACK_NAME, 'SQSQueueNoNameProperty')
+        resource = describe_stack_resource(stack_name, 'SQSQueueNoNameProperty')
         assert queue_exists(resource['PhysicalResourceId'])
 
         # assert that topic tags have been created
@@ -161,15 +168,16 @@ class CloudFormationTest(unittest.TestCase):
     def test_list_stack_resources_returns_queue_urls(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_2))
-        cloudformation.create_stack(StackName=TEST_STACK_NAME_2, TemplateBody=template)
+        stack_name = 'stack-%s' % short_uid()
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
         def check_stack():
-            stack = get_stack_details(TEST_STACK_NAME_2)
+            stack = get_stack_details(stack_name)
             self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
 
         retry(check_stack, retries=3, sleep=2)
 
-        stack_summaries = list_stack_resources(TEST_STACK_NAME_2)
+        stack_summaries = list_stack_resources(stack_name)
         queue_urls = get_queue_urls()
         topic_arns = get_topic_arns()
 
@@ -180,3 +188,16 @@ class CloudFormationTest(unittest.TestCase):
         stack_topics = [r for r in stack_summaries if r['ResourceType'] == 'AWS::SNS::Topic']
         for resource in stack_topics:
             self.assertIn(resource['PhysicalResourceId'], topic_arns)
+
+    def test_create_change_set(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        # deploy template
+        stack_name = 'stack-%s' % short_uid()
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_3)
+
+        # create change set with the same template (no changes)
+        response = cloudformation.create_change_set(StackName=stack_name,
+            TemplateBody=TEST_TEMPLATE_3, ChangeSetName='nochanges')
+        self.assertIn(':%s:changeSet/nochanges/' % TEST_AWS_ACCOUNT_ID, response['Id'])
+        self.assertIn(':%s:stack/' % TEST_AWS_ACCOUNT_ID, response['StackId'])
