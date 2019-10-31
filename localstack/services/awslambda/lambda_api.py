@@ -81,8 +81,9 @@ DO_USE_DOCKER = None
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
 
-# IAM version number
+# IAM policy constants
 IAM_POLICY_VERSION = '2012-10-17'
+POLICY_NAME_PATTERN = 'lambda_policy_%s'
 
 # Marker name to indicate that a bucket represents the local file system. This is used for testing
 # Serverless applications where we mount the Lambda code directly into the container from the host OS.
@@ -655,6 +656,25 @@ def forward_to_fallback_url(func_arn, data):
     raise ClientError('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
 
 
+def get_lambda_policy(function):
+    iam_client = aws_stack.connect_to_service('iam')
+    policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
+    docs = []
+    for p in policies:
+        # !TODO: Cache policy documents instead of running N+1 API calls here!
+        versions = iam_client.list_policy_versions(PolicyArn=p['Arn'])['Versions']
+        default_version = [v for v in versions if v.get('IsDefaultVersion')]
+        versions = default_version or versions
+        doc = versions[0]['Document']
+        doc = doc if isinstance(doc, dict) else json.loads(doc)
+        if not isinstance(doc['Statement'], list):
+            doc['Statement'] = [doc['Statement']]
+        doc['PolicyArn'] = p['Arn']
+        docs.append(doc)
+    policy = [d for d in docs if d['Statement'][0]['Resource'] == func_arn(function)]
+    return (policy or [None])[0]
+
+
 def not_found_error(ref=None, msg=None):
     if not msg:
         msg = 'The resource you requested does not exist.'
@@ -894,31 +914,35 @@ def add_permission(function):
             'Resource': func_arn(function)
         }]
     }
-    iam_client.create_policy(PolicyName='lambda_policy_%s' % function,
+    iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % function,
         PolicyDocument=json.dumps(policy), Description='Policy for Lambda function "%s"' % function)
     result = {'Statement': sid}
     return jsonify(result)
 
 
+@app.route('%s/functions/<function>/policy/<statement>' % PATH_ROOT, methods=['DELETE'])
+def remove_permission(function, statement):
+    qualifier = request.args.get('Qualifier')
+    iam_client = aws_stack.connect_to_service('iam')
+    policy = get_lambda_policy(function)
+    if not policy:
+        return error_response('Unable to find policy for Lambda function "%s"' % function,
+            404, error_type='ResourceNotFoundException')
+    iam_client.delete_policy(PolicyArn=policy['PolicyArn'])
+    result = {
+        'FunctionName': function,
+        'Qualifier': qualifier,
+        'StatementId': policy['Statement'][0]['Sid'],
+    }
+    return jsonify(result)
+
+
 @app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['GET'])
 def get_policy(function):
-    iam_client = aws_stack.connect_to_service('iam')
-    policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
-    docs = []
-    for p in policies:
-        # TODO: Cache policy documents instead of running N+1 API calls here!
-        versions = iam_client.list_policy_versions(PolicyArn=p['Arn'])['Versions']
-        default_version = [v for v in versions if v.get('IsDefaultVersion')]
-        versions = default_version or versions
-        doc = versions[0]['Document']
-        doc = doc if isinstance(doc, dict) else json.loads(doc)
-        if not isinstance(doc['Statement'], list):
-            doc['Statement'] = [doc['Statement']]
-        docs.append(doc)
-    policy = [d for d in docs if d['Statement'][0]['Resource'] == func_arn(function)]
+    policy = get_lambda_policy(function)
     if not policy:
         return jsonify({}), 404
-    return jsonify({'Policy': policy[0]})
+    return jsonify({'Policy': policy})
 
 
 @app.route('%s/functions/<function>/invocations' % PATH_ROOT, methods=['POST'])
