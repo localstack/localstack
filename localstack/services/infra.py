@@ -13,7 +13,7 @@ from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
-    DEFAULT_PORT_IAM_BACKEND, DEFAULT_PORT_EC2_BACKEND, DEFAULT_SERVICE_PORTS)
+    DEFAULT_PORT_EC2_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
@@ -146,12 +146,6 @@ def start_events(port=None, asynchronous=False):
 def start_sts(port=None, asynchronous=False):
     port = port or config.PORT_STS
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
-
-
-def start_iam(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_IAM
-    return start_moto_server('iam', port, name='IAM', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_IAM_BACKEND, update_listener=update_listener)
 
 
 def start_redshift(port=None, asynchronous=False):

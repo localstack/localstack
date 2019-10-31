@@ -163,6 +163,7 @@ class TestPythonRuntimes(LambdaTestBase):
 
     def test_add_lambda_permission(self):
         iam_client = aws_stack.connect_to_service('iam')
+
         # create lambda permission
         action = 'lambda:InvokeFunction'
         resp = self.lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
@@ -177,6 +178,11 @@ class TestPythonRuntimes(LambdaTestBase):
         matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
         self.assertEqual(len(matching), 1)
         self.assertIn(':policy/', matching[0]['Arn'])
+
+        # remove permission that we just added
+        resp = self.lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
+            StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_lambda_environment(self):
         vars = {'Hello': 'World'}
