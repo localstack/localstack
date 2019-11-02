@@ -9,6 +9,11 @@ LOG = logging.getLogger(__name__)
 
 class ProxyListenerStepFunctions(ProxyListener):
 
+    def forward_request(self, method, path, data, headers):
+        if method == 'OPTIONS':
+            return 200
+        return True
+
     def return_response(self, method, path, data, headers, response):
         data = json.loads(to_str(data or '{}'))
         name = data.get('name') or (data.get('stateMachineArn') or '').split(':')[-1]

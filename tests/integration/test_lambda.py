@@ -106,6 +106,30 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         finally:
             config.LAMBDA_FALLBACK_URL = ''
 
+    def test_add_lambda_permission(self):
+        iam_client = aws_stack.connect_to_service('iam')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # create lambda permission
+        action = 'lambda:InvokeFunction'
+        resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+            StatementId='s3', Principal='s3.amazonaws.com', SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+        self.assertIn('Statement', resp)
+        # fetch lambda policy
+        policy = lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
+        self.assertEqual(policy['Statement'][0]['Action'], action)
+        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
+        # fetch IAM policy
+        policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
+        self.assertEqual(len(matching), 1)
+        self.assertIn(':policy/', matching[0]['Arn'])
+
+        # remove permission that we just added
+        resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
+            StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
@@ -160,29 +184,6 @@ class TestPythonRuntimes(LambdaTestBase):
             InvocationType='DryRun')
 
         self.assertEqual(result['StatusCode'], 204)
-
-    def test_add_lambda_permission(self):
-        iam_client = aws_stack.connect_to_service('iam')
-
-        # create lambda permission
-        action = 'lambda:InvokeFunction'
-        resp = self.lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
-            StatementId='s3', Principal='s3.amazonaws.com', SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
-        self.assertIn('Statement', resp)
-        # fetch lambda policy
-        policy = self.lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
-        self.assertEqual(policy['Statement'][0]['Action'], action)
-        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
-        # fetch IAM policy
-        policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
-        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
-        self.assertEqual(len(matching), 1)
-        self.assertIn(':policy/', matching[0]['Arn'])
-
-        # remove permission that we just added
-        resp = self.lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
-            StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
-        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_lambda_environment(self):
         vars = {'Hello': 'World'}
@@ -327,6 +328,21 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_PY3)
+
+    def test_handler_in_submodule(self):
+        func_name = 'lambda-%s' % short_uid()
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON), get_content=True,
+            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36,
+            file_name='abc/def/main.py')
+        testutil.create_lambda_function(func_name=func_name, zip_file=zip_file,
+            handler='abc.def.main.handler', runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        # invoke function and assert result
+        result = self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
+        result_data = json.loads(result['Payload'].read())
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(result_data['event'], json.loads('{}'))
 
 
 class TestNodeJSRuntimes(LambdaTestBase):
