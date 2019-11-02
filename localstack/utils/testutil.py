@@ -29,7 +29,7 @@ def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file
         # create __init__.py files along the path to allow Python imports
         path = file_name.split(os.path.sep)
         for i in range(1, len(path)):
-            save_file(os.path.join(tmp_dir, *path[:i], '__init__.py'), '')
+            save_file(os.path.join(tmp_dir, *(path[:i] + ['__init__.py'])), '')
     save_file(script_file, script)
     # copy libs
     for lib in libs:
