@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import base64
 import re
 import json
@@ -215,10 +217,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         target_uri = invocation_uri % (DEFAULT_REGION, lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
-            'test_gateway2',
-            target_uri,
-            path=path
-        )
+            'test_gateway2', target_uri, path=path)
 
         api_id = result['id']
         path_map = get_rest_api_paths(api_id)
@@ -229,17 +228,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         path = path + '?foo=foo&bar=bar&bar=baz'
 
         url = INBOUND_GATEWAY_URL_PATTERN.format(
-            api_id=api_id,
-            stage_name=self.TEST_STAGE_NAME,
-            path=path
-        )
+            api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path)
 
         data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
-        result = requests.post(
-            url,
-            data=json.dumps(data),
-            headers={'User-Agent': 'python-requests/testing'}
-        )
+        result = requests.post(url, data=json.dumps(data),
+            headers={'User-Agent': 'python-requests/testing'})
 
         self.assertEqual(result.status_code, 203)
         self.assertEqual(result.headers.get('foo'), 'bar123')
@@ -263,6 +256,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         result = requests.delete(url, data=json.dumps(data))
         self.assertEqual(result.status_code, 404)
 
+        # send message with non-ASCII chars
+        body_msg = '🙀 - 参よ'
+        result = requests.post(url, data=json.dumps({'return_raw_body': body_msg}))
+        self.assertEqual(to_str(result.content), body_msg)
+
     def test_api_gateway_lambda_proxy_integration_any_method(self):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD,
@@ -281,19 +279,12 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
-            'test_gateway3',
-            target_uri,
-            methods=['ANY'],
-            path=path
-        )
+            'test_gateway3', target_uri, methods=['ANY'], path=path)
 
         # make test request to gateway and check response
         path = path.replace('{test_param1}', 'foo1')
         url = INBOUND_GATEWAY_URL_PATTERN.format(
-            api_id=result['id'],
-            stage_name=self.TEST_STAGE_NAME,
-            path=path
-        )
+            api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=path)
         data = {}
 
         for method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'):
@@ -379,7 +370,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             libs=TEST_LAMBDA_LIBS,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
-
         testutil.create_lambda_function(
             func_name=fn_name,
             zip_file=zip_file,

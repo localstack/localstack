@@ -9,7 +9,7 @@ from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, to_bytes
 from localstack.utils.analytics import event_publisher
 from localstack.services.kinesis import kinesis_listener
 from localstack.services.awslambda import lambda_api
@@ -230,9 +230,10 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 if isinstance(parsed_result['body'], dict):
                     response._content = json.dumps(parsed_result['body'])
                 else:
-                    response._content = parsed_result['body']
+                    response._content = to_bytes(parsed_result['body'])
             except Exception:
                 response._content = '{}'
+            response.headers['Content-Length'] = len(response._content)
             return response
         else:
             msg = 'API Gateway action uri "%s" not yet implemented' % uri
