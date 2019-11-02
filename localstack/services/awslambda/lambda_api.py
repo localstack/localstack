@@ -399,6 +399,7 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     elif runtime.startswith(LAMBDA_RUNTIME_CUSTOM_RUNTIME):
         file_ext = '.sh'
     else:
+        handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
         file_ext = '.py'
     return '%s%s' % (handler_name.split(delimiter)[0], file_ext)
 
@@ -569,7 +570,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
                     (is_local_mount, use_docker(), config.LAMBDA_REMOTE_DOCKER))
                 LOG.debug('Lambda archive content:\n%s' % file_list)
                 raise ClientError(error_response(
-                    'Unable to find handler script in Lambda archive. %s' % config_debug,
+                    'Unable to find handler script (%s) in Lambda archive. %s' % (main_file, config_debug),
                     400, error_type='ValidationError'))
 
         if runtime.startswith('python') and not use_docker():
