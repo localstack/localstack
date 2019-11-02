@@ -277,7 +277,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         copy_command = ''
         docker_cmd = self._docker_cmd()
         event_file = os.path.join(lambda_cwd, LAMBDA_EVENT_FILE)
-        if not has_been_invoked_before:
+        if not has_been_invoked_before and config.LAMBDA_REMOTE_DOCKER:
             # if this is the first invocation: copy the entire folder into the container
             copy_command = '%s cp "%s/." "%s:/var/task";' % (docker_cmd, lambda_cwd, container_info.name)
         elif os.path.exists(event_file):
@@ -334,6 +334,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 network = config.LAMBDA_DOCKER_NETWORK
                 network_str = '--network="%s"' % network if network else ''
 
+                mount_volume = not config.LAMBDA_REMOTE_DOCKER
+                lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
+                mount_volume_str = '-v "%s":/var/task' % lambda_cwd_on_host if mount_volume else ''
+
                 # Create and start the container
                 LOG.debug('Creating container: %s' % container_name)
                 cmd = (
@@ -341,6 +345,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' --rm'
                     ' --name "%s"'
                     ' --entrypoint /bin/bash'  # Load bash when it starts.
+                    ' %s'
                     ' --interactive'  # Keeps the container running bash.
                     ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
@@ -348,17 +353,18 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     '  %s'  # env_vars
                     '  %s'  # network
                     ' lambci/lambda:%s'
-                ) % (docker_cmd, container_name, env_vars_str, network_str, runtime)
+                ) % (docker_cmd, container_name, mount_volume_str, env_vars_str, network_str, runtime)
                 LOG.debug(cmd)
                 run(cmd)
 
-                LOG.debug('Copying files to container "%s" from "%s".' % (container_name, lambda_cwd))
-                cmd = (
-                    '%s cp'
-                    ' "%s/." "%s:/var/task"'
-                ) % (docker_cmd, lambda_cwd, container_name)
-                LOG.debug(cmd)
-                run(cmd)
+                if not mount_volume:
+                    LOG.debug('Copying files to container "%s" from "%s".' % (container_name, lambda_cwd))
+                    cmd = (
+                        '%s cp'
+                        ' "%s/." "%s:/var/task"'
+                    ) % (docker_cmd, lambda_cwd, container_name)
+                    LOG.debug(cmd)
+                    run(cmd)
 
                 LOG.debug('Starting container: %s' % container_name)
                 cmd = '%s start %s' % (docker_cmd, container_name)
@@ -590,7 +596,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                  docker_cmd, lambda_cwd,
                  docker_cmd)
         else:
-            lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
+            lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
                 '%s run -i'
                 ' %s -v "%s":/var/task'
@@ -600,10 +606,6 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' "lambci/lambda:%s" %s'
             ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string, network_str, runtime, command)
         return cmd
-
-    def get_host_path_for_path_in_docker(self, path):
-        return re.sub(r'^%s/(.*)$' % config.TMP_FOLDER,
-                    r'%s/\1' % config.HOST_TMP_FOLDER, path)
 
 
 class LambdaExecutorLocal(LambdaExecutor):
@@ -661,6 +663,11 @@ class Util:
                 cls.debug_java_port = get_free_tcp_port()
             opts = opts.replace('_debug_port_', ('%s' % cls.debug_java_port))
         return opts
+
+    @classmethod
+    def get_host_path_for_path_in_docker(cls, path):
+        return re.sub(r'^%s/(.*)$' % config.TMP_FOLDER,
+                      r'%s/\1' % config.HOST_TMP_FOLDER, path)
 
 
 # --------------
