@@ -335,7 +335,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 network_str = '--network="%s"' % network if network else ''
 
                 mount_volume = not config.LAMBDA_REMOTE_DOCKER
-                lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
+                lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
                 mount_volume_str = '-v "%s":/var/task' % lambda_cwd_on_host if mount_volume else ''
 
                 # Create and start the container
@@ -392,10 +392,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 % (entry_point, container_name, container_network))
 
             return ContainerInfo(container_name, entry_point)
-
-    def get_host_path_for_path_in_docker(self, path):
-        return re.sub(r'^%s/(.*)$' % config.TMP_FOLDER,
-                      r'%s/\1' % config.HOST_TMP_FOLDER, path)
 
     def destroy_docker_container(self, func_arn):
         """
@@ -600,7 +596,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                  docker_cmd, lambda_cwd,
                  docker_cmd)
         else:
-            lambda_cwd_on_host = self.get_host_path_for_path_in_docker(lambda_cwd)
+            lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
                 '%s run -i'
                 ' %s -v "%s":/var/task'
@@ -610,10 +606,6 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' "lambci/lambda:%s" %s'
             ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string, network_str, runtime, command)
         return cmd
-
-    def get_host_path_for_path_in_docker(self, path):
-        return re.sub(r'^%s/(.*)$' % config.TMP_FOLDER,
-                    r'%s/\1' % config.HOST_TMP_FOLDER, path)
 
 
 class LambdaExecutorLocal(LambdaExecutor):
@@ -671,6 +663,11 @@ class Util:
                 cls.debug_java_port = get_free_tcp_port()
             opts = opts.replace('_debug_port_', ('%s' % cls.debug_java_port))
         return opts
+
+    @classmethod
+    def get_host_path_for_path_in_docker(cls, path):
+        return re.sub(r'^%s/(.*)$' % config.TMP_FOLDER,
+                      r'%s/\1' % config.HOST_TMP_FOLDER, path)
 
 
 # --------------
