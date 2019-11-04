@@ -591,7 +591,9 @@ def update_resource(resource_id, resources, stack_name):
     if resource_type == 'Lambda::Function':
         client = aws_stack.connect_to_service('lambda')
         keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
-        update_props = dict([(k, props[k]) for k in keys if k in props])
+        update_props = dict([
+            (k, resolve_refs_recursively(stack_name, props[k], resources)) for k in keys if k in props
+        ])
         if 'Code' in props:
             client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
         return client.update_function_configuration(**update_props)
