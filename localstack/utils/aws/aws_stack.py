@@ -181,8 +181,9 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
+    region_name = region_name or get_region()
     env = get_environment(env, region_name=region_name)
-    region = env.region if env.region != REGION_LOCAL else get_region()
+    region = env.region if env.region != REGION_LOCAL else region_name
     key_elements = [service_name, client, env, region, endpoint_url, config]
     cache_key = '/'.join([str(k) for k in key_elements])
     if cache_key not in BOTO_CLIENTS_CACHE:

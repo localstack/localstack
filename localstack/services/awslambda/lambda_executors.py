@@ -5,6 +5,7 @@ import time
 import logging
 import threading
 import subprocess
+import six
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
@@ -138,13 +139,16 @@ class LambdaExecutor(object):
         process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars,
                       stdin=True)
         result, log_output = process.communicate(input=event)
-        result = to_str(result).strip()
+        try:
+            result = to_str(result).strip()
+        except Exception:
+            pass
         log_output = to_str(log_output).strip()
         return_code = process.returncode
         # Note: The user's code may have been logging to stderr, in which case the logs
         # will be part of the "result" variable here. Hence, make sure that we extract
         # only the *last* line of "result" and consider anything above that as log output.
-        if '\n' in result:
+        if isinstance(result, six.string_types) and '\n' in result:
             additional_logs, _, result = result.rpartition('\n')
             log_output += '\n%s' % additional_logs
 

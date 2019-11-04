@@ -555,25 +555,26 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
 def resolve_refs_recursively(stack_name, value, resources):
     if isinstance(value, dict):
-        if len(value) == 1 and 'Ref' in value:
+        keys_list = list(value.keys())
+        # process special operators
+        if keys_list == ['Ref']:
             result = resolve_ref(stack_name, value['Ref'],
                 resources, attribute='PhysicalResourceId')
             return result
-        elif len(value) == 1 and 'Fn::GetAtt' in value:
-            return resolve_ref(stack_name, value['Fn::GetAtt'][0],
-                resources, attribute=value['Fn::GetAtt'][1])
-        else:
-            for key, val in iteritems(value):
-                value[key] = resolve_refs_recursively(stack_name, val, resources)
-        # process special operators
-        if len(value) == 1 and 'Fn::Join' in value:
-            return value['Fn::Join'][0].join(value['Fn::Join'][1])
-        if len(value) == 1 and 'Fn::Sub' in value:
-            result = value['Fn::Sub'][0]
-            for key, val in value['Fn::Sub'][1].items():
+        if keys_list and keys_list[0].lower() == 'fn::getatt':
+            return resolve_ref(stack_name, value[keys_list[0]][0],
+                resources, attribute=value[keys_list[0]][1])
+        if keys_list and keys_list[0].lower() == 'fn::join':
+            return value[keys_list[0]][0].join(value[keys_list[0]][1])
+        if keys_list and keys_list[0].lower() == 'fn::sub':
+            result = value[keys_list[0]][0]
+            for key, val in value[keys_list[0]][1].items():
                 val = resolve_refs_recursively(stack_name, val, resources)
                 result = result.replace('${%s}' % key, val)
             return result
+        else:
+            for key, val in iteritems(value):
+                value[key] = resolve_refs_recursively(stack_name, val, resources)
     if isinstance(value, list):
         for i in range(0, len(value)):
             value[i] = resolve_refs_recursively(stack_name, value[i], resources)
@@ -592,6 +593,7 @@ def update_resource(resource_id, resources, stack_name):
         client = aws_stack.connect_to_service('lambda')
         keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
         update_props = dict([(k, props[k]) for k in keys if k in props])
+        update_props = resolve_refs_recursively(stack_name, update_props, resources)
         if 'Code' in props:
             client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
         return client.update_function_configuration(**update_props)
@@ -636,6 +638,18 @@ def convert_data_types(func_details, params):
                     o[k] = cast(v, types[k])
         return o
     result = common.recurse_object(params, fix_types)
+    return result
+
+
+def remove_none_values(params):
+    """ Remove None values recursively in the given object. """
+    def remove_nones(o, **kwargs):
+        if isinstance(o, dict):
+            for k, v in dict(o).items():
+                if v is None:
+                    o.pop(k)
+        return o
+    result = common.recurse_object(params, remove_nones)
     return result
 
 
@@ -699,21 +713,23 @@ def deploy_resource_via_sdk_function(resource_id, resources, resource_type, func
                     if prop_value is not None:
                         params[param_key] = prop_value
 
+    # assign default value if empty
+    params = common.merge_recursive(defaults, params)
+
     # convert refs and boolean strings
-    for param_key, prop_keys in dict(params).items():
-        tmp_value = params.get(param_key)
-        if tmp_value is not None:
-            params[param_key] = resolve_refs_recursively(stack_name, tmp_value, resources)
+    for param_key, param_value in dict(params).items():
+        if param_value is not None:
+            param_value = params[param_key] = resolve_refs_recursively(stack_name, param_value, resources)
         # Convert to boolean (TODO: do this recursively?)
-        if str(tmp_value).lower() in ['true', 'false']:
-            params[param_key] = str(tmp_value).lower() == 'true'
+        if str(param_value).lower() in ['true', 'false']:
+            params[param_key] = str(param_value).lower() == 'true'
 
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
     params = json.loads(aws_stack.fix_account_id_in_arns(json.dumps(params)))
-    # assign default value if empty
-    params = common.merge_recursive(defaults, params)
     # convert data types (e.g., boolean strings to bool)
     params = convert_data_types(func_details, params)
+    # remove None values, as they usually raise boto3 errors
+    params = remove_none_values(params)
 
     # invoke function
     try:

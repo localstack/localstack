@@ -214,27 +214,38 @@ def apply_patches():
         # check whether this resource needs to be deployed
         resource_wrapped = {logical_id: resource_json}
         should_be_created = template_deployer.should_be_deployed(logical_id, resource_wrapped, stack_name)
+
+        # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
+        resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
+        set_moto_account_ids(resource_json_arns_fixed)
+
+        # create resource definition and store CloudFormation metadata in moto
+        if resource or update:
+            parse_and_update_resource_orig(logical_id,
+                resource_json_arns_fixed, resources_map, region_name)
+        elif not resource:
+            try:
+                resource = parse_and_create_resource_orig(logical_id,
+                    resource_json_arns_fixed, resources_map, region_name)
+            except Exception as e:
+                if should_be_created:
+                    raise
+                else:
+                    LOG.info('Error on moto CF resource creation. Ignoring, as should_be_created=%s: %s' %
+                             (should_be_created, e))
+
+        # Fix for moto which sometimes hard-codes region name as 'us-east-1'
+        if hasattr(resource, 'region_name') and resource.region_name != region_name:
+            LOG.debug('Updating incorrect region from %s to %s' % (resource.region_name, region_name))
+            resource.region_name = region_name
+
+        # check whether this resource needs to be deployed
         if not should_be_created:
             # This resource is either not deployable or already exists. Check if it can be updated
             if not template_deployer.is_updateable(logical_id, resource_wrapped, stack_name):
                 LOG.debug('Resource %s need not be deployed: %s %s' % (logical_id, resource_json, bool(resource)))
                 # Return if this resource already exists and cannot be updated
                 return resource
-
-        # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
-        resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
-        set_moto_account_ids(resource_json_arns_fixed)
-        # create resource definition and store CloudFormation metadata in moto
-        if resource or update:
-            parse_and_update_resource_orig(logical_id,
-                resource_json_arns_fixed, resources_map, region_name)
-        elif not resource:
-            resource = parse_and_create_resource_orig(logical_id,
-                resource_json_arns_fixed, resources_map, region_name)
-        # Fix for moto which sometimes hard-codes region name as 'us-east-1'
-        if hasattr(resource, 'region_name') and resource.region_name != region_name:
-            LOG.debug('Updating incorrect region from %s to %s' % (resource.region_name, region_name))
-            resource.region_name = region_name
 
         # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
         update_resource_name(resource, resource_json)
