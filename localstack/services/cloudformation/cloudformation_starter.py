@@ -240,16 +240,19 @@ def apply_patches():
             resource.region_name = region_name
 
         # check whether this resource needs to be deployed
+        is_updateable = False
         if not should_be_created:
             # This resource is either not deployable or already exists. Check if it can be updated
-            if not template_deployer.is_updateable(logical_id, resource_wrapped, stack_name):
+            is_updateable = template_deployer.is_updateable(logical_id, resource_wrapped, stack_name)
+            if not update or not is_updateable:
                 LOG.debug('Resource %s need not be deployed: %s %s' % (logical_id, resource_json, bool(resource)))
-                # Return if this resource already exists and cannot be updated
+                # Return if this resource already exists and can/need not be updated
                 return resource
 
         # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
         update_resource_name(resource, resource_json)
-        LOG.debug('Deploying CloudFormation resource (update=%s): %s' % (update, resource_json))
+        LOG.debug('Deploying CloudFormation resource (update=%s, exists=%s, updateable=%s): %s' %
+                  (update, not should_be_created, is_updateable, resource_json))
 
         try:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
