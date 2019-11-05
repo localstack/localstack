@@ -168,7 +168,7 @@ localstack start --host
 LocalStack will attempt to automatically fetch the missing dependencies when you first start it up in "host" mode; alternatively, you can use the `full` profile to install all dependencies at `pip` installation time:
 
 ```
-pip install localstack[full]
+pip install "localstack[full]"
 ```
 
 ## Configurations
