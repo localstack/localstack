@@ -359,7 +359,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     '  %s'  # env_vars
                     '  %s'  # network
                     ' %s:%s'
-                ) % (docker_cmd, container_name, mount_volume_str, env_vars_str, network_str, 
+                ) % (docker_cmd, container_name, mount_volume_str, env_vars_str, network_str,
                      lambda_container_registry, runtime)
                 LOG.debug(cmd)
                 run(cmd)
@@ -600,7 +600,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str, 
+            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str,
                  lambda_container_registry, runtime, command,
                  docker_cmd, lambda_cwd,
                  docker_cmd)
@@ -613,7 +613,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'  # network
                 ' --rm'
                 ' "%s:%s" %s'
-            ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string, network_str, 
+            ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string, network_str,
                  lambda_container_registry, runtime, command)
         return cmd
 
