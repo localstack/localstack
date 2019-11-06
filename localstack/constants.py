@@ -99,3 +99,6 @@ LOCALSTACK_INFRA_PROCESS = 'LOCALSTACK_INFRA_PROCESS'
 
 # Hardcoded AWS account ID used by moto
 MOTO_ACCOUNT_ID = '123456789012'
+
+# Default lambda registry
+DEFAULT_LAMBDA_CONTAINER_REGISTRY = 'lambci/lambda'

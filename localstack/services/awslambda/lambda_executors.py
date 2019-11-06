@@ -328,6 +328,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             status = self.get_docker_container_status(func_arn)
             LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
 
+            lambda_container_registry = config.LAMBDA_CONTAINER_REGISTRY
+
             # Container is not running or doesn't exist.
             if status < 1:
                 # Make sure the container does not exist in any form/state.
@@ -356,8 +358,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     '  %s'  # env_vars
                     '  %s'  # network
-                    ' lambci/lambda:%s'
-                ) % (docker_cmd, container_name, mount_volume_str, env_vars_str, network_str, runtime)
+                    ' %s:%s'
+                ) % (docker_cmd, container_name, mount_volume_str, env_vars_str, network_str,
+                     lambda_container_registry, runtime)
                 LOG.debug(cmd)
                 run(cmd)
 
@@ -378,12 +381,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 time.sleep(1)
 
             # Get the entry point for the image.
-            LOG.debug('Getting the entrypoint for image: lambci/lambda:%s' % runtime)
+            LOG.debug('Getting the entrypoint for image: %s:%s' % (lambda_container_registry, runtime))
             cmd = (
                 '%s image inspect'
                 ' --format="{{ .ContainerConfig.Entrypoint }}"'
-                ' lambci/lambda:%s'
-            ) % (docker_cmd, runtime)
+                ' %s:%s'
+            ) % (docker_cmd, lambda_container_registry, runtime)
 
             LOG.debug(cmd)
             run_result = run(cmd)
@@ -583,6 +586,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
         docker_cmd = self._docker_cmd()
+        lambda_container_registry = config.LAMBDA_CONTAINER_REGISTRY
 
         if config.LAMBDA_REMOTE_DOCKER:
             cmd = (
@@ -592,11 +596,12 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'
                 ' %s'  # network
                 ' --rm'
-                ' "lambci/lambda:%s" %s'
+                ' "%s:%s" %s'
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str, runtime, command,
+            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str,
+                 lambda_container_registry, runtime, command,
                  docker_cmd, lambda_cwd,
                  docker_cmd)
         else:
@@ -607,8 +612,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'
                 ' %s'  # network
                 ' --rm'
-                ' "lambci/lambda:%s" %s'
-            ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string, network_str, runtime, command)
+                ' "%s:%s" %s'
+            ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string, network_str,
+                 lambda_container_registry, runtime, command)
         return cmd
 
 
