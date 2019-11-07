@@ -443,7 +443,12 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
             match = [v for (k, v) in res_obj['resourceMethods'].items()
                      if resource_props['HttpMethod'] in (v.get('httpMethod'), k)]
-            return match or None
+            int_props = resource_props.get('Integration')
+            if int_props:
+                match = [m for m in match if
+                    m.get('methodIntegration', {}).get('type') == int_props.get('Type') and
+                    m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
+            return any(match) or None
         elif resource_type == 'SQS::Queue':
             sqs_client = aws_stack.connect_to_service('sqs')
             queues = sqs_client.list_queues()
