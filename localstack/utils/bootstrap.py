@@ -107,7 +107,8 @@ def load_plugin_from_path(file_path, scope=None):
             exec('from %s.plugins import %s' % (module, method_name), namespace)
             method_to_execute = namespace[method_name]
         except Exception as e:
-            if not re.match(r'.*cannot import name .*%s.*' % method_name, str(e)):
+            if (not re.match(r'.*cannot import name .*%s.*' % method_name, str(e)) and
+                    ('No module named' not in str(e))):
                 LOG.debug('Unable to load plugins from module %s: %s' % (module, e))
             return
         try:

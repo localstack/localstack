@@ -717,8 +717,9 @@ class ProxyListenerS3(ProxyListener):
         if not query:
             return True
         # Except we do want to notify on multipart and presigned url upload completion
-        elif (method == 'POST' and query.startswith('uploadId')) or \
-                ('X-Amz-Credential' in query and 'X-Amz-Signature' in query):
+        contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
+        contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
+        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
             return True
 
 
