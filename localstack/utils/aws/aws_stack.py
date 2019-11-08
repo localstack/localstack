@@ -264,6 +264,14 @@ def check_valid_region(headers):
         raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
 
 
+def set_default_region_in_headers(headers):
+    auth_header = headers.get('Authorization')
+    if not auth_header:
+        return
+    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % get_region(), auth_header)
+    headers['Authorization'] = replaced
+
+
 def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace=None):
     """ Fix the account ID in the ARNs returned in the given Flask response or string """
     existing = existing or ['123456789', MOTO_ACCOUNT_ID]

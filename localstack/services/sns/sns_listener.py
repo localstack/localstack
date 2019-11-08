@@ -35,6 +35,7 @@ class ProxyListenerSNS(ProxyListener):
         # check region
         try:
             aws_stack.check_valid_region(headers)
+            aws_stack.set_default_region_in_headers(headers)
         except Exception as e:
             return make_error(message=str(e), code=400)
 
