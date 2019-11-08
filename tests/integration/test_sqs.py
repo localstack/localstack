@@ -44,6 +44,25 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_publish_get_delete_message(self):
+        queue_name = 'queue-%s' % short_uid()
+        queue_info = self.client.create_queue(QueueName=queue_name)
+        queue_url = queue_info['QueueUrl']
+        self.assertIn(queue_name, queue_url)
+
+        # publish/receive message
+        self.client.send_message(QueueUrl=queue_url, MessageBody='msg123')
+        messages = self.client.receive_message(QueueUrl=queue_url)['Messages']
+        self.assertEquals(len(messages), 1)
+
+        # delete/receive message
+        self.client.delete_message(QueueUrl=queue_url, ReceiptHandle=messages[0]['ReceiptHandle'])
+        response = self.client.receive_message(QueueUrl=queue_url)
+        self.assertFalse(response.get('Messages'))
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_create_fifo_queue(self):
         fifo_queue = 'my-queue.fifo'
         queue_info = self.client.create_queue(QueueName=fifo_queue, Attributes={'FifoQueue': 'true'})
@@ -56,8 +75,8 @@ class SQSTest(unittest.TestCase):
         self.client.delete_queue(QueueUrl=queue_url)
 
     def test_set_queue_policy(self):
-        fifo_queue = 'queue-%s' % short_uid()
-        queue_info = self.client.create_queue(QueueName=fifo_queue)
+        queue_name = 'queue-%s' % short_uid()
+        queue_info = self.client.create_queue(QueueName=queue_name)
         queue_url = queue_info['QueueUrl']
 
         attributes = {
