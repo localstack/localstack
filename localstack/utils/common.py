@@ -803,7 +803,7 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     subj.L = 'Some-Locality'
     subj.O = 'LocalStack Org'  # noqa
     subj.OU = 'Testing'
-    subj.CN = 'LocalStack'
+    subj.CN = 'localhost'
     serial_number = serial_number or 1001
     cert.set_serial_number(serial_number)
     cert.gmtime_adj_notBefore(0)
