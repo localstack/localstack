@@ -4,7 +4,7 @@ import logging
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, obj_to_xml
+from localstack.utils.common import to_str, obj_to_xml, safe_requests
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -43,6 +43,7 @@ def make_response(operation_name, content='', code=200):
 
 def validate_template(req_data):
     LOG.debug('Validate CloudFormation template: %s' % req_data)
+    # TODO implement actual validation logic
     response_content = """
         <Capabilities></Capabilities>
         <CapabilitiesReason></CapabilitiesReason>
@@ -52,12 +53,26 @@ def validate_template(req_data):
         </Parameters>
     """
     try:
-        template_deployer.template_to_json(req_data.get('TemplateBody')[0])
+        template_body = get_template_body(req_data)
+        template_deployer.template_to_json(template_body)
         response = make_response('ValidateTemplate', response_content)
         return response
     except Exception as err:
         response = error_response('Template Validation Error: %s' % err)
         return response
+
+
+def get_template_body(req_data):
+    body = req_data.get('TemplateBody')
+    if body:
+        return body[0]
+    url = req_data.get('TemplateURL')
+    if url:
+        response = safe_requests.get(url[0])
+        if response.status_code >= 400:
+            raise Exception('Unable to fetch template body (code %s) from URL %s' % (response.status_code, url[0]))
+        return response.content
+    raise Exception('Unable to get template body from input: %s' % req_data)
 
 
 class ProxyListenerCloudFormation(ProxyListener):
