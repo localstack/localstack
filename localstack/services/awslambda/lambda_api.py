@@ -670,7 +670,10 @@ def get_lambda_policy(function):
         doc = doc if isinstance(doc, dict) else json.loads(doc)
         if not isinstance(doc['Statement'], list):
             doc['Statement'] = [doc['Statement']]
+        for stmt in doc['Statement']:
+            stmt['Principal'] = stmt.get('Principal') or {'AWS': TEST_AWS_ACCOUNT_ID}
         doc['PolicyArn'] = p['Arn']
+        doc['Id'] = 'default'
         docs.append(doc)
     policy = [d for d in docs if d['Statement'][0]['Resource'] == func_arn(function)]
     return (policy or [None])[0]
@@ -894,8 +897,7 @@ def update_function_configuration(function):
         lambda_details.envvars = env_vars
     if data.get('Timeout'):
         lambda_details.timeout = data['Timeout']
-    result = {}
-    return jsonify(result)
+    return jsonify(data)
 
 
 @app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['POST'])
@@ -943,7 +945,7 @@ def get_policy(function):
     policy = get_lambda_policy(function)
     if not policy:
         return jsonify({}), 404
-    return jsonify({'Policy': policy})
+    return jsonify({'Policy': json.dumps(policy), 'RevisionId': 'test1234'})
 
 
 @app.route('%s/functions/<function>/invocations' % PATH_ROOT, methods=['POST'])
