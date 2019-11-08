@@ -295,6 +295,17 @@ def append_last_modified_headers(response, content=None):
         LOGGER.error('Caught generic exception (setting LastModified header): %s' % err)
 
 
+def append_list_objects_marker(method, path, data, response):
+    if 'marker=' in path:
+        content = to_str(response.content)
+        if '<ListBucketResult' in content and '<Marker>' not in content:
+            parsed = urlparse.urlparse(path)
+            query_map = urlparse.parse_qs(parsed.query)
+            insert = '<Marker>%s</Marker>' % query_map.get('marker')[0]
+            response._content = content.replace('</ListBucketResult>', '%s</ListBucketResult>' % insert)
+            response.headers['Content-Length'] = str(len(response._content))
+
+
 def get_lifecycle(bucket_name):
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
     if not lifecycle:
@@ -644,9 +655,10 @@ class ProxyListenerS3(ProxyListener):
         if response:
             reset_content_length = False
 
-            # append CORS headers to response
+            # append CORS headers and other annotations to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
             append_last_modified_headers(response=response)
+            append_list_objects_marker(method, path, data, response)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
