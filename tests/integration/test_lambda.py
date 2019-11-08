@@ -3,6 +3,7 @@ import os
 import json
 import time
 import unittest
+import six
 from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSION
@@ -117,6 +118,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertIn('Statement', resp)
         # fetch lambda policy
         policy = lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
+        self.assertIsInstance(policy, six.string_types)
+        policy = json.loads(to_str(policy))
         self.assertEqual(policy['Statement'][0]['Action'], action)
         self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
         # fetch IAM policy
