@@ -201,7 +201,9 @@ class S3ListenerTest (unittest.TestCase):
 
         # get object and assert metadata is present
         response = requests.put(url, data='content 123', verify=False)
-        self.assertIn('<PutObjectResponse', to_str(response.content))
+        self.assertLess(response.status_code, 400)
+        # response body should be empty, see https://github.com/localstack/localstack/issues/1317
+        self.assertEqual('', to_str(response.content))
         response = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)
         self.assertEquals('bar', response.get('Metadata', {}).get('foo'))
 
