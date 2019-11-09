@@ -42,6 +42,9 @@ XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
 
+# prefix for object metadata keys in headers and query params
+OBJECT_METADATA_KEY_PREFIX = 'x-amz-meta-'
+
 # response header overrides the client may request
 ALLOWED_HEADER_OVERRIDES = {
     'response-content-type': 'Content-Type',
@@ -306,6 +309,13 @@ def append_list_objects_marker(method, path, data, response):
             response.headers['Content-Length'] = str(len(response._content))
 
 
+def append_metadata_headers(method, query_map, headers):
+    for key, value in query_map.items():
+        if key.lower().startswith(OBJECT_METADATA_KEY_PREFIX):
+            if headers.get(key) is None:
+                headers[key] = value[0]
+
+
 def get_lifecycle(bucket_name):
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
     if not lifecycle:
@@ -561,6 +571,10 @@ class ProxyListenerS3(ProxyListener):
         path = parsed.path
         bucket = path.split('/')[1]
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
+
+        # remap metadata query params (not supported in moto) to request headers
+        append_metadata_headers(method, query_map, headers)
+
         if query == 'notification' or 'notification' in query_map:
             # handle and return response for ?notification request
             response = handle_notification_request(bucket, method, data)
@@ -662,7 +676,8 @@ class ProxyListenerS3(ProxyListener):
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
-            if method == 'PUT' and ('X-Amz-Security-Token=' in path or 'AWSAccessKeyId=' in path):
+            if method == 'PUT' and ('X-Amz-Security-Token=' in path or
+                    'X-Amz-Credential=' in path or 'AWSAccessKeyId=' in path):
                 response._content = ''
                 reset_content_length = True
 

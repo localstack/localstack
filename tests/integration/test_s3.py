@@ -176,12 +176,37 @@ class S3ListenerTest (unittest.TestCase):
         object_key = 'key-by-hostname'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         url = self.s3_client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
-        )
+            'get_object', Params={'Bucket': bucket_name, 'Key': object_key})
 
         # get object and assert headers
         response = requests.get(url, verify=False)
         self.assertEqual(response.headers['content-type'], 'binary/octet-stream')
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_put_presigned_url_metadata(self):
+        # Object metadata should be passed as query params via presigned URL
+        # https://github.com/localstack/localstack/issues/544
+
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put object
+        object_key = 'key-by-hostname'
+        url = self.s3_client.generate_presigned_url(
+            'put_object', Params={'Bucket': bucket_name, 'Key': object_key})
+        # append metadata manually to URL (this is not easily possible with boto3, as "Metadata" cannot
+        # be passed to generate_presigned_url, and generate_presigned_post works differently)
+        url += '&x-amz-meta-foo=bar'
+
+        # get object and assert metadata is present
+        response = requests.put(url, data='content 123', verify=False)
+        self.assertLess(response.status_code, 400)
+        # response body should be empty, see https://github.com/localstack/localstack/issues/1317
+        self.assertEqual('', to_str(response.content))
+        response = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)
+        self.assertEquals('bar', response.get('Metadata', {}).get('foo'))
+
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
