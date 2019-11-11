@@ -23,6 +23,10 @@ class TestKinesisPythonClient(unittest.TestCase):
             wait_until_started=True)
 
         kinesis = aws_stack.connect_to_service('kinesis')
+
+        stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
+        self.assertEqual(stream_summary['StreamDescriptionSummary']['OpenShardCount'], 1)
+
         num_events_kinesis = 10
         kinesis.put_records(Records=[
             {
