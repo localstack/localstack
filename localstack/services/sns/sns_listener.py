@@ -233,7 +233,7 @@ def do_delete_topic(topic_arn):
     SNS_SUBSCRIPTIONS.pop(topic_arn, None)
 
 
-def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy):
+def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
     for existing_topic_subscription in SNS_SUBSCRIPTIONS.get(topic_arn, []):
@@ -382,7 +382,7 @@ def create_sqs_message_attributes(subscriber, attributes):
         if value['Type'] == 'Binary':
             attribute['BinaryValue'] = value['Value']
         else:
-            attribute['StringValue'] = value['Value']
+            attribute['StringValue'] = str(value['Value'])
         message_attributes[key] = attribute
 
     return message_attributes

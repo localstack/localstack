@@ -11,6 +11,7 @@ from localstack.services.generic_proxy import ProxyListener
 ACTION_PREFIX = 'Kinesis_20131202'
 ACTION_PUT_RECORD = '%s.PutRecord' % ACTION_PREFIX
 ACTION_PUT_RECORDS = '%s.PutRecords' % ACTION_PREFIX
+ACTION_LIST_STREAMS = '%s.ListStreams' % ACTION_PREFIX
 ACTION_CREATE_STREAM = '%s.CreateStream' % ACTION_PREFIX
 ACTION_DELETE_STREAM = '%s.DeleteStream' % ACTION_PREFIX
 ACTION_UPDATE_SHARD_COUNT = '%s.UpdateShardCount' % ACTION_PREFIX

@@ -161,7 +161,7 @@ class SNSTests(unittest.TestCase):
             'MessageAttributes.entry.2.Value.BinaryValue': ['value2'.encode('utf-8')],
             'MessageAttributes.entry.3.Name': ['attr3'],
             'MessageAttributes.entry.3.Value.DataType': ['Number'],
-            'MessageAttributes.entry.3.Value.StringValue': ['value3'],
+            'MessageAttributes.entry.3.Value.StringValue': ['3'],
         }
 
         attributes = sns_listener.get_message_attributes(action)
@@ -172,7 +172,7 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(result['attr2']['DataType'], 'Binary')
         self.assertEqual(result['attr2']['BinaryValue'], 'value2'.encode('utf-8'))
         self.assertEqual(result['attr3']['DataType'], 'Number')
-        self.assertEqual(result['attr3']['StringValue'], 'value3')
+        self.assertEqual(result['attr3']['StringValue'], '3.0')
 
     def test_only_one_subscription_per_topic_per_endpoint(self):
         sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'

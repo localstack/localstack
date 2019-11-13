@@ -79,9 +79,15 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_DATA_INBOUND
         )
+
+        # list Kinesis streams via API Gateway
+        result = requests.get(url)
+        result = json.loads(to_str(result.content))
+        self.assertIn('StreamNames', result)
+
+        # post test data to Kinesis via API Gateway
         result = requests.post(url, data=json.dumps(test_data))
         result = json.loads(to_str(result.content))
-
         self.assertEqual(result['FailedRecordCount'], 0)
         self.assertEqual(len(result['Records']), len(test_data['records']))
 
@@ -310,6 +316,16 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
                 'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % DEFAULT_REGION,
                 'requestTemplates': {
                     'application/json': template
+                }
+            }]
+        }, {
+            'httpMethod': 'GET',
+            'authorizationType': 'NONE',
+            'integrations': [{
+                'type': 'AWS',
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/ListStreams' % DEFAULT_REGION,
+                'requestTemplates': {
+                    'application/json': '{}'
                 }
             }]
         }]
