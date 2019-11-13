@@ -10,6 +10,7 @@ from localstack.services.generic_proxy import ProxyListener
 
 TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
+TEST_QUEUE_NAME_2 = 'TestQueue_snsTest2'
 
 
 class SNSTest(unittest.TestCase):
@@ -19,6 +20,7 @@ class SNSTest(unittest.TestCase):
         self.sns_client = aws_stack.connect_to_service('sns')
         self.topic_arn = self.sns_client.create_topic(Name=TEST_TOPIC_NAME)['TopicArn']
         self.queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)['QueueUrl']
+        self.queue_url_2 = self.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME_2)['QueueUrl']
 
     def tearDown(self):
         self.sqs_client.delete_queue(QueueUrl=self.queue_url)
@@ -88,6 +90,36 @@ class SNSTest(unittest.TestCase):
         msgs = self.sqs_client.receive_message(QueueUrl=self.queue_url)
         msg_received = msgs['Messages'][0]
         self.assertEqual(message, msg_received['Body'])
+
+    def test_filter_policy(self):
+        # connect SNS topic to an SQS queue
+        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_2)
+        filter_policy = {'attr1': [{'numeric': ['>', 0, '<=', 100]}]}
+        self.sns_client.subscribe(
+            TopicArn=self.topic_arn,
+            Protocol='sqs',
+            Endpoint=queue_arn,
+            Attributes={
+                'FilterPolicy': json.dumps(filter_policy)
+            }
+        )
+
+        # get number of messages
+        num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2).get('Messages', []))
+
+        # publish message that satisfies the filter policy, assert that message is received
+        message = u'This is a test message'
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+            MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99'}})
+        num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        self.assertEqual(num_msgs_1, num_msgs_0 + 1)
+
+        # publish message that does not satisfy the filter policy, assert that message is not received
+        message = u'This is a test message'
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+            MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '111'}})
+        num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        self.assertEqual(num_msgs_2, num_msgs_1)
 
     def test_unknown_topic_publish(self):
         fake_arn = 'arn:aws:sns:us-east-1:123456789012:i_dont_exist'

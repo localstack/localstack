@@ -156,34 +156,38 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         return make_error('Unable to find integration for path %s' % path, 404)
 
     uri = integration.get('uri')
-    if method == 'POST' and integration['type'] == 'AWS':
-        if uri.endswith('kinesis:action/PutRecords'):
+    if integration['type'] == 'AWS':
+        if 'kinesis:action/' in uri:
+            if uri.endswith('kinesis:action/PutRecords'):
+                target = kinesis_listener.ACTION_PUT_RECORDS
+            if uri.endswith('kinesis:action/ListStreams'):
+                target = kinesis_listener.ACTION_LIST_STREAMS
+
             template = integration['requestTemplates'][APPLICATION_JSON]
             new_request = aws_stack.render_velocity_template(template, data)
-
             # forward records to target kinesis stream
             headers = aws_stack.mock_aws_request_headers(service='kinesis')
-            headers['X-Amz-Target'] = kinesis_listener.ACTION_PUT_RECORDS
+            headers['X-Amz-Target'] = target
             result = common.make_http_request(url=TEST_KINESIS_URL,
                 method='POST', data=new_request, headers=headers)
             return result
 
-        elif uri.startswith('arn:aws:apigateway:') and ':sqs:path' in uri:
-            template = integration['requestTemplates'][APPLICATION_JSON]
-            account_id, queue = uri.split('/')[-2:]
-            region_name = uri.split(':')[3]
+        if method == 'POST':
+            if uri.startswith('arn:aws:apigateway:') and ':sqs:path' in uri:
+                template = integration['requestTemplates'][APPLICATION_JSON]
+                account_id, queue = uri.split('/')[-2:]
+                region_name = uri.split(':')[3]
 
-            new_request = aws_stack.render_velocity_template(template, data) + '&QueueName=%s' % queue
-            headers = aws_stack.mock_aws_request_headers(service='sqs', region_name=region_name)
+                new_request = aws_stack.render_velocity_template(template, data) + '&QueueName=%s' % queue
+                headers = aws_stack.mock_aws_request_headers(service='sqs', region_name=region_name)
 
-            url = urljoin(TEST_SQS_URL, '%s/%s' % (account_id, queue))
-            result = common.make_http_request(url, method='POST', headers=headers, data=new_request)
-            return result
+                url = urljoin(TEST_SQS_URL, '%s/%s' % (account_id, queue))
+                result = common.make_http_request(url, method='POST', headers=headers, data=new_request)
+                return result
 
-        else:
-            msg = 'API Gateway action uri "%s" not yet implemented' % uri
-            LOGGER.warning(msg)
-            return make_error(msg, 404)
+        msg = 'API Gateway AWS integration action URI "%s", method "%s" not yet implemented' % (uri, method)
+        LOGGER.warning(msg)
+        return make_error(msg, 404)
 
     elif integration['type'] == 'AWS_PROXY':
         if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
