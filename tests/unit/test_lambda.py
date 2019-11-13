@@ -49,6 +49,37 @@ class TestLambdaAPI(unittest.TestCase):
             result = lambda_api.get_event_source_mapping(self.TEST_UUID)
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
 
+    def test_get_event_sources(self):
+        with self.app.test_request_context():
+            lambda_api.event_source_mappings.append(
+                {
+                    'UUID': self.TEST_UUID,
+                    'EventSourceArn': 'the_arn'
+                })
+
+            # Match source ARN
+            result = lambda_api.get_event_sources(source_arn='the_arn')
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0].get('UUID'), self.TEST_UUID)
+
+            # No partial match on source ARN
+            result = lambda_api.get_event_sources(source_arn='the_')
+            self.assertEqual(len(result), 0)
+
+    def test_get_event_sources_with_paths(self):
+        with self.app.test_request_context():
+            lambda_api.event_source_mappings.append(
+                {
+                    'UUID': self.TEST_UUID,
+                    'EventSourceArn': 'the_arn/path/subpath'
+                })
+
+            # Do partial match on paths
+            result = lambda_api.get_event_sources(source_arn='the_arn')
+            self.assertEqual(len(result), 1)
+            result = lambda_api.get_event_sources(source_arn='the_arn/path')
+            self.assertEqual(len(result), 1)
+
     def test_delete_event_source_mapping(self):
         with self.app.test_request_context():
             lambda_api.event_source_mappings.append({'UUID': self.TEST_UUID})
