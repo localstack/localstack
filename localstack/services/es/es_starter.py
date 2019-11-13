@@ -30,6 +30,7 @@ def start_elasticsearch(port=None, delete_data=True, asynchronous=False, update_
     es_tmp_dir = '%s/infra/elasticsearch/tmp' % (ROOT_PATH)
     es_mods_dir = '%s/infra/elasticsearch/modules' % (ROOT_PATH)
     if config.DATA_DIR:
+        delete_data = False
         es_data_dir = '%s/elasticsearch' % config.DATA_DIR
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
