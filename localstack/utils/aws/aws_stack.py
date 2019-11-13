@@ -234,15 +234,19 @@ class VelocityUtil:
             s = json.dumps(s)
         return base64.b64decode(s)
 
+    def toJson(self, obj):
+        return obj and json.dumps(obj)
 
-def render_velocity_template(template, context, as_json=False):
+
+def render_velocity_template(template, context, variables={}, as_json=False):
     import airspeed
     t = airspeed.Template(template)
-    variables = {
+    var_map = {
         'input': VelocityInput(context),
         'util': VelocityUtil()
     }
-    replaced = t.merge(variables)
+    var_map.update(variables or {})
+    replaced = t.merge(var_map)
     if as_json:
         replaced = json.loads(replaced)
     return replaced

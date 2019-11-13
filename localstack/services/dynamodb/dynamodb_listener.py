@@ -183,6 +183,11 @@ class ProxyListenerDynamoDB(ProxyListener):
                 keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
                 if isinstance(keys, Response):
                     return keys
+                # fix response
+                if response._content == '{}':
+                    response._content = json.dumps({'Attributes': data['Item']})
+                    fix_headers_for_updated_response(response)
+                # prepare record keys
                 record['dynamodb']['Keys'] = keys
                 record['dynamodb']['NewImage'] = data['Item']
                 record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
