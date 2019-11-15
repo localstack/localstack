@@ -284,9 +284,25 @@ def get_event_sources(func_name=None, source_arn=None):
     result = []
     for m in event_source_mappings:
         if not func_name or (m['FunctionArn'] in [func_name, func_arn(func_name)]):
-            if not source_arn or (m['EventSourceArn'].startswith(source_arn)):
+            if _arn_match(mapped=m['EventSourceArn'], occurred=source_arn):
                 result.append(m)
     return result
+
+
+def _arn_match(mapped, occurred):
+    if not occurred or mapped == occurred:
+        return True
+    # Some types of ARNs can end with a path separated by slashes, for
+    # example the ARN of a DynamoDB stream is tableARN/stream/ID.  It's
+    # a little counterintuitive that a more specific mapped ARN can
+    # match a less specific ARN on the event, but some integration tests
+    # rely on it for things like subscribing to a stream and matching an
+    # event labeled with the table ARN.
+    elif mapped.startswith(occurred):
+        suffix = mapped[len(occurred):]
+        return suffix[0] == '/'
+    else:
+        return False
 
 
 def get_function_version(arn, version):
