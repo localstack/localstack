@@ -152,9 +152,6 @@ for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
     CONFIG_ENV_VARS += [clean_key + '_BACKEND', clean_key + '_PORT', clean_key + '_PORT_EXTERNAL']
 
-# create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
-CONFIG_ENV_VARS += ['LOCALSTACK_' + v for v in CONFIG_ENV_VARS]
-
 
 def ping(host):
     """ Returns True if host responds to a ping request """
@@ -248,7 +245,7 @@ def parse_service_ports():
 
 
 def populate_configs(service_ports=None):
-    global SERVICE_PORTS
+    global SERVICE_PORTS, CONFIG_ENV_VARS
 
     SERVICE_PORTS = service_ports or parse_service_ports()
     globs = globals()
@@ -270,6 +267,10 @@ def populate_configs(service_ports=None):
 
     # expose LOCALSTACK_HOSTNAME as env. variable
     os.environ['LOCALSTACK_HOSTNAME'] = LOCALSTACK_HOSTNAME
+
+    # create variable aliases prefixed with LOCALSTACK_ (except LOCALSTACK_HOSTNAME)
+    CONFIG_ENV_VARS += ['LOCALSTACK_' + v for v in CONFIG_ENV_VARS if not v.startswith('LOCALSTACK_')]
+    CONFIG_ENV_VARS = list(set(CONFIG_ENV_VARS))
 
 
 def service_port(service_key):
