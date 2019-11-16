@@ -1,8 +1,12 @@
 import re
+import os
+import json
 import uuid
+import boto3
 import logging
-from requests.models import Response
+from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
+from samtranslator.translator.transform import transform as transform_sam
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, obj_to_xml, safe_requests
 from localstack.utils.analytics import event_publisher
@@ -62,6 +66,34 @@ def validate_template(req_data):
         return response
 
 
+def transform_template(req_data):
+    template_body = get_template_body(req_data)
+    parsed = template_deployer.parse_template(template_body)
+
+    policy_map = {
+        # SAM Transformer expects this map to be non-empty, but apparently the content doesn't matter (?)
+        'dummy': 'entry'
+        # 'AWSLambdaBasicExecutionRole': 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+    }
+
+    class MockPolicyLoader(object):
+        def load(self):
+            return policy_map
+
+    if parsed.get('Transform') == 'AWS::Serverless-2016-10-31':
+        # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
+        region_before = os.environ.get('AWS_DEFAULT_REGION')
+        if boto3.session.Session().region_name is None:
+            os.environ['AWS_DEFAULT_REGION'] = aws_stack.get_region()
+        try:
+            transformed = transform_sam(parsed, {}, MockPolicyLoader())
+            return transformed
+        finally:
+            os.environ.pop('AWS_DEFAULT_REGION', None)
+            if region_before is not None:
+                os.environ['AWS_DEFAULT_REGION'] = region_before
+
+
 def get_template_body(req_data):
     body = req_data.get('TemplateBody')
     if body:
@@ -115,6 +147,13 @@ class ProxyListenerCloudFormation(ProxyListener):
         if req_data:
             if action == 'ValidateTemplate':
                 return validate_template(req_data)
+            if action == 'CreateStack':
+                modified_request = transform_template(req_data)
+                if modified_request:
+                    req_data.pop('TemplateURL', None)
+                    req_data['TemplateBody'] = json.dumps(modified_request)
+                    data = urlparse.urlencode(req_data, doseq=True)
+                    return Request(data=data, headers=headers, method=method)
 
         return True
 

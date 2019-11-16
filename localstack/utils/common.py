@@ -300,6 +300,11 @@ def is_string_or_bytes(s):
     return is_string(s) or isinstance(s, six.string_types) or isinstance(s, bytes)
 
 
+def is_base64(s):
+    regex = r'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$'
+    return is_string(s) and re.match(regex, s)
+
+
 def md5(string):
     m = hashlib.md5()
     m.update(to_bytes(string))
