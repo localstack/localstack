@@ -11,6 +11,7 @@ airspeed==0.5.10
 # Use our "ext" version until this bug is fixed: https://github.com/awslabs/amazon-kinesis-client-python/issues/99
 amazon_kclpy-ext==1.5.1
 # amazon-kclpy==1.5.1
+aws-sam-translator>=1.15.1
 awscli>=1.14.18
 boto>=2.49.0
 boto3>=1.9.71                  #basic-lib

@@ -1,6 +1,8 @@
 import re
+import os
 import json
 import yaml
+import base64
 import logging
 import traceback
 import moto.cloudformation.utils
@@ -8,6 +10,8 @@ from six import iteritems
 from six import string_types
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.utils.testutil import create_zip_file
+from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 
 ACTION_CREATE = 'create'
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
@@ -16,6 +20,13 @@ LOG = logging.getLogger(__name__)
 
 # list of resource types that can be updated
 UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method']
+
+# create safe yaml loader that parses date strings as string, not date objects
+NoDatesSafeLoader = yaml.SafeLoader
+NoDatesSafeLoader.yaml_implicit_resolvers = {
+    k: [r for r in v if r[0] != 'tag:yaml.org,2002:timestamp'] for
+    k, v in NoDatesSafeLoader.yaml_implicit_resolvers.items()
+}
 
 
 def str_or_none(o):
@@ -36,6 +47,21 @@ def get_bucket_location_config(**kwargs):
 
 def lambda_get_params():
     return lambda params, **kwargs: params
+
+
+def get_lambda_code_param(params, **kwargs):
+    code = params.get('Code', {})
+    zip_file = code.get('ZipFile')
+    if zip_file and not common.is_base64(zip_file):
+        tmp_dir = common.new_tmp_dir()
+        handler_file = get_handler_file_from_name(params['Handler'], runtime=params['Runtime'])
+        tmp_file = os.path.join(tmp_dir, handler_file)
+        common.save_file(tmp_file, zip_file)
+        zip_file = create_zip_file(tmp_file, get_content=True)
+        code['ZipFile'] = common.to_str(base64.b64encode(zip_file))
+        code['ZipFile'] = zip_file
+        common.rm_rf(tmp_dir)
+    return code
 
 
 # maps resource types to functions and parameters for creation
@@ -83,7 +109,7 @@ RESOURCE_TO_FUNCTION = {
                 'Runtime': 'Runtime',
                 'Role': 'Role',
                 'Handler': 'Handler',
-                'Code': 'Code',
+                'Code': get_lambda_code_param,
                 'Description': 'Description',
                 'Environment': 'Environment',
                 'Timeout': 'Timeout',
@@ -290,11 +316,11 @@ def parse_template(template):
     try:
         return json.loads(template)
     except Exception:
-        yaml.add_multi_constructor('', moto.cloudformation.utils.yaml_tag_constructor)
+        yaml.add_multi_constructor('', moto.cloudformation.utils.yaml_tag_constructor, Loader=NoDatesSafeLoader)
         try:
             return yaml.safe_load(template)
         except Exception:
-            return yaml.load(template, Loader=yaml.Loader)
+            return yaml.load(template, Loader=NoDatesSafeLoader)
 
 
 def template_to_json(template):
@@ -621,6 +647,17 @@ def update_resource(resource_id, resources, stack_name):
         return client.put_method(**kwargs)
 
 
+def fix_account_id_in_arns(params):
+    def fix_ids(o, **kwargs):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if common.is_string(v):
+                    o[k] = aws_stack.fix_account_id_in_arns(v)
+        return o
+    result = common.recurse_object(params, fix_ids)
+    return result
+
+
 def convert_data_types(func_details, params):
     """ Convert data types in the "params" object, with the type defs
         specified in the 'types' attribute of "func_details". """
@@ -730,7 +767,7 @@ def deploy_resource_via_sdk_function(resource_id, resources, resource_type, func
             params[param_key] = str(param_value).lower() == 'true'
 
     # convert any moto account IDs (123456789012) in ARNs to our format (000000000000)
-    params = json.loads(aws_stack.fix_account_id_in_arns(json.dumps(params)))
+    params = fix_account_id_in_arns(params)
     # convert data types (e.g., boolean strings to bool)
     params = convert_data_types(func_details, params)
     # remove None values, as they usually raise boto3 errors
