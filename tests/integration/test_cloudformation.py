@@ -22,13 +22,18 @@ Resources:
 TEST_TEMPLATE_4 = """
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
+Parameters:
+  LambdaRuntime:
+    Type: String
+    Default: python3.6
 Resources:
   MyFunc:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: %s
       Handler: index.handler
-      Runtime: python3.6
+      Runtime:
+        Ref: LambdaRuntime
       InlineCode: |
         def handler(event, context):
             return {'hello': 'world'}
