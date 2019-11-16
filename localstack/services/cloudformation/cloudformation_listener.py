@@ -1,6 +1,8 @@
 import re
+import os
 import json
 import uuid
+import boto3
 import logging
 from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
@@ -79,8 +81,17 @@ def transform_template(req_data):
             return policy_map
 
     if parsed.get('Transform') == 'AWS::Serverless-2016-10-31':
-        transformed = transform_sam(parsed, {}, MockPolicyLoader())
-        return transformed
+        # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
+        region_before = os.environ.get('AWS_DEFAULT_REGION')
+        if boto3.session.Session().region_name is None:
+            os.environ['AWS_DEFAULT_REGION'] = aws_stack.get_region()
+        try:
+            transformed = transform_sam(parsed, {}, MockPolicyLoader())
+            return transformed
+        finally:
+            os.environ.pop('AWS_DEFAULT_REGION', None)
+            if region_before is not None:
+                os.environ['AWS_DEFAULT_REGION'] = region_before
 
 
 def get_template_body(req_data):
