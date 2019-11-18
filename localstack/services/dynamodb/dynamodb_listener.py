@@ -41,6 +41,8 @@ class ProxyListenerDynamoDB(ProxyListener):
         if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
             return error_response_throughput()
 
+        ProxyListenerDynamoDB.thread_local.existing_item = None
+
         action = headers.get('X-Amz-Target')
         if action == '%s.CreateTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
@@ -50,23 +52,22 @@ class ProxyListenerDynamoDB(ProxyListener):
         elif action in ('%s.PutItem' % ACTION_PREFIX, '%s.UpdateItem' % ACTION_PREFIX, '%s.DeleteItem' % ACTION_PREFIX):
             # find an existing item and store it in a thread-local, so we can access it in return_response,
             # in order to determine whether an item already existed (MODIFY) or not (INSERT)
-            ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)
+            try:
+                ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)
+            except Exception as e:
+                if 'ResourceNotFoundException' in str(e):
+                    return get_table_not_found_error()
+                raise
         elif action == '%s.DescribeTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
             table_names = ddb_client.list_tables()['TableNames']
             if to_str(data['TableName']) not in table_names:
-                response = error_response(message='Cannot do operations on a non-existent table',
-                                          error_type='ResourceNotFoundException')
-                fix_headers_for_updated_response(response)
-                return response
+                return get_table_not_found_error()
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
             table_names = ddb_client.list_tables()['TableNames']
             if to_str(data['TableName']) not in table_names:
-                response = error_response(message='Cannot do operations on a non-existent table',
-                                          error_type='ResourceNotFoundException')
-                fix_headers_for_updated_response(response)
-                return response
+                return get_table_not_found_error()
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             existing_items = []
             for table_name in sorted(data['RequestItems'].keys()):
@@ -361,6 +362,13 @@ def find_existing_item(put_item, table_name=None):
             LOGGER.warning(msg)
         return
     return existing_item.get('Item')
+
+
+def get_table_not_found_error():
+    response = error_response(message='Cannot do operations on a non-existent table',
+                              error_type='ResourceNotFoundException')
+    fix_headers_for_updated_response(response)
+    return response
 
 
 def fix_headers_for_updated_response(response):

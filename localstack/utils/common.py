@@ -13,6 +13,7 @@ import decimal
 import logging
 import zipfile
 import binascii
+import calendar
 import tempfile
 import threading
 import subprocess
@@ -485,7 +486,7 @@ def now():
 
 
 def mktime(timestamp):
-    return time.mktime(timestamp.timetuple())
+    return calendar.timegm(timestamp.timetuple())
 
 
 def mkdir(folder):
