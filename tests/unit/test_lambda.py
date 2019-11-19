@@ -13,7 +13,7 @@ class TestLambdaAPI(unittest.TestCase):
     LAST_MODIFIED = '2019-05-25T17:00:48.260+0000'
     TRACING_CONFIG = {'Mode': 'PassThrough'}
     REVISION_ID = 'e54dbcf8-e3ef-44ab-9af7-8dbef510608a'
-    HANDLER = 'index.handler'
+    HANDLER = './index.handler'
     RUNTIME = 'node.js4.3'
     TIMEOUT = 60  # Default value, hardcoded
     FUNCTION_NAME = 'test1'
