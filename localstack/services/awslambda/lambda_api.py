@@ -417,7 +417,7 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     else:
         handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
         file_ext = '.py'
-    return '%s%s' % (handler_name.split(delimiter)[0], file_ext)
+    return '%s%s' % (handler_name.rpartition(delimiter)[0], file_ext)
 
 
 def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
