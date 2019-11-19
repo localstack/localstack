@@ -97,11 +97,19 @@ def transform_template(req_data):
 def get_template_body(req_data):
     body = req_data.get('TemplateBody')
     if body:
-        return body[0]
+        return body
     url = req_data.get('TemplateURL')
     if url:
-        response = safe_requests.get(url[0])
+        response = safe_requests.get(url)
         if response.status_code >= 400:
+            # check if this is an S3 URL, then get the file directly from there
+            if '://localhost' in url or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url):
+                parsed_path = urlparse.urlparse(url).path.lstrip('/')
+                parts = parsed_path.partition('/')
+                client = aws_stack.connect_to_service('s3')
+                result = client.get_object(Bucket=parts[0], Key=parts[2])
+                body = to_str(result['Body'].read())
+                return body
             raise Exception('Unable to fetch template body (code %s) from URL %s' % (response.status_code, url[0]))
         return response.content
     raise Exception('Unable to get template body from input: %s' % req_data)
@@ -116,10 +124,11 @@ class ProxyListenerCloudFormation(ProxyListener):
         req_data = None
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
-            action = req_data.get('Action')[0]
+            req_data = dict([(k, v[0]) for k, v in req_data.items()])
+            action = req_data.get('Action')
 
             if action == 'CreateStack':
-                stack_name = req_data.get('StackName')[0]
+                stack_name = req_data.get('StackName')
                 event_publisher.fire_event(event_publisher.EVENT_CLOUDFORMATION_CREATE_STACK,
                     payload={'n': event_publisher.get_hash(stack_name)})
 

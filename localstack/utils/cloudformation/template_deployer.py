@@ -651,7 +651,7 @@ def fix_account_id_in_arns(params):
     def fix_ids(o, **kwargs):
         if isinstance(o, dict):
             for k, v in o.items():
-                if common.is_string(v):
+                if common.is_string(v, exclude_binary=True):
                     o[k] = aws_stack.fix_account_id_in_arns(v)
         return o
     result = common.recurse_object(params, fix_ids)

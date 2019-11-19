@@ -441,16 +441,16 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_java_options_with_only_memory_options(self):
         expected = '-Xmx512M'
-        result = self.prepareJavaOpts(expected)
+        result = self.prepare_java_opts(expected)
         self.assertEqual(expected, result)
 
     def test_java_options_with_memory_options_and_agentlib_option(self):
         expected = '.*transport=dt_socket,server=y,suspend=y,address=[0-9]+'
-        result = self.prepareJavaOpts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
+        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
                                       ',suspend=y,address=_debug_port_')
         self.assertTrue(re.match(expected, result))
 
-    def prepareJavaOpts(self, java_opts):
+    def prepare_java_opts(self, java_opts):
         lambda_executors.config.LAMBDA_JAVA_OPTS = java_opts
         result = lambda_executors.Util.get_java_opts()
         return result
