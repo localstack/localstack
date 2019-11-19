@@ -328,7 +328,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             status = self.get_docker_container_status(func_arn)
             LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
 
-            lambda_container_registry = config.LAMBDA_CONTAINER_REGISTRY
+            docker_image = Util.docker_image_for_runtime(runtime)
 
             # Container is not running or doesn't exist.
             if status < 1:
@@ -358,9 +358,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     '  %s'  # env_vars
                     '  %s'  # network
-                    ' %s:%s'
-                ) % (docker_cmd, container_name, mount_volume_str, env_vars_str, network_str,
-                     lambda_container_registry, runtime)
+                    ' %s'
+                ) % (docker_cmd, container_name, mount_volume_str, env_vars_str, network_str, docker_image)
                 LOG.debug(cmd)
                 run(cmd)
 
@@ -381,12 +380,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 time.sleep(1)
 
             # Get the entry point for the image.
-            LOG.debug('Getting the entrypoint for image: %s:%s' % (lambda_container_registry, runtime))
+            LOG.debug('Getting the entrypoint for image: %s' % (docker_image))
             cmd = (
                 '%s image inspect'
                 ' --format="{{ .ContainerConfig.Entrypoint }}"'
-                ' %s:%s'
-            ) % (docker_cmd, lambda_container_registry, runtime)
+                ' %s'
+            ) % (docker_cmd, docker_image)
 
             LOG.debug(cmd)
             run_result = run(cmd)
@@ -586,7 +585,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
         docker_cmd = self._docker_cmd()
-        lambda_container_registry = config.LAMBDA_CONTAINER_REGISTRY
+        docker_image = Util.docker_image_for_runtime(runtime)
 
         if config.LAMBDA_REMOTE_DOCKER:
             cmd = (
@@ -596,12 +595,12 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'
                 ' %s'  # network
                 ' --rm'
-                ' "%s:%s" %s'
+                ' %s %s'
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
             ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str,
-                 lambda_container_registry, runtime, command,
+                 docker_image, command,
                  docker_cmd, lambda_cwd,
                  docker_cmd)
         else:
@@ -612,9 +611,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'
                 ' %s'  # network
                 ' --rm'
-                ' "%s:%s" %s'
-            ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string, network_str,
-                 lambda_container_registry, runtime, command)
+                ' %s %s'
+            ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string,
+                 network_str, docker_image, command)
         return cmd
 
 
@@ -678,6 +677,16 @@ class Util:
     def get_host_path_for_path_in_docker(cls, path):
         return re.sub(r'^%s/(.*)$' % config.TMP_FOLDER,
                       r'%s/\1' % config.HOST_TMP_FOLDER, path)
+
+    @classmethod
+    def docker_image_for_runtime(cls, runtime):
+        docker_tag = runtime
+        docker_image = config.LAMBDA_CONTAINER_REGISTRY
+        # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
+        # See https://github.com/lambci/docker-lambda/pull/218
+        if docker_image == 'lambci/lambda':
+            docker_tag = '20191117-%s' % docker_tag
+        return '"%s:%s"' % (docker_image, docker_tag)
 
 
 # --------------
