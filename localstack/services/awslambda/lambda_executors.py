@@ -680,9 +680,13 @@ class Util:
 
     @classmethod
     def docker_image_for_runtime(cls, runtime):
-        # Fix issue with .netcore runtimes: https://github.com/lambci/docker-lambda/pull/218
-        docker_tag = '20191117-%s' % runtime if 'dotnetcore' in runtime else runtime
-        return '"%s:%s"' % (config.LAMBDA_CONTAINER_REGISTRY, docker_tag)
+        docker_tag = runtime
+        docker_image = config.LAMBDA_CONTAINER_REGISTRY
+        # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
+        # See https://github.com/lambci/docker-lambda/pull/218
+        if docker_image == 'lambci/lambda':
+            docker_tag = '20191117-%s' % docker_tag
+        return '"%s:%s"' % (docker_image, docker_tag)
 
 
 # --------------
