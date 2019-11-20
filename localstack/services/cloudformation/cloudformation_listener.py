@@ -110,7 +110,7 @@ def get_template_body(req_data):
                 result = client.get_object(Bucket=parts[0], Key=parts[2])
                 body = to_str(result['Body'].read())
                 return body
-            raise Exception('Unable to fetch template body (code %s) from URL %s' % (response.status_code, url[0]))
+            raise Exception('Unable to fetch template body (code %s) from URL %s' % (response.status_code, url))
         return response.content
     raise Exception('Unable to get template body from input: %s' % req_data)
 
@@ -137,7 +137,6 @@ class ProxyListenerCloudFormation(ProxyListener):
                 stack_name = req_data.get('StackName')
                 run_fix = not stack_name
                 if stack_name:
-                    stack_name = stack_name[0]
                     if stack_name.startswith('arn:aws:cloudformation'):
                         run_fix = True
                         stack_name = re.sub(r'arn:aws:cloudformation:[^:]+:[^:]+:stack/([^/]+)(/.+)?',
