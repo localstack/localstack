@@ -667,7 +667,8 @@ class ProxyListenerS3(ProxyListener):
             return response
 
         # emulate ErrorDocument functionality if a website is configured
-        if method == 'GET' and response.status_code == 404:
+
+        if method == 'GET' and response.status_code == 404 and parsed.query != 'website':
             s3_client = aws_stack.connect_to_service('s3')
 
             try:
@@ -675,7 +676,7 @@ class ProxyListenerS3(ProxyListener):
                 s3_client.head_bucket(Bucket=bucket_name)
                 website_config = s3_client.get_bucket_website(Bucket=bucket_name)
 
-                if website_config['ErrorDocument'] and website_config['ErrorDocument']['Key']:
+                if 'ErrorDocument' in website_config and 'Key' in website_config['ErrorDocument']:
                     error_object = s3_client.get_object(Bucket=bucket_name, Key=website_config['ErrorDocument']['Key'])
                     response.status_code = 200
                     response._content = error_object['Body'].read()
