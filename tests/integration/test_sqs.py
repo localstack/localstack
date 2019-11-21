@@ -52,8 +52,9 @@ class SQSTest(unittest.TestCase):
 
         # publish/receive message
         self.client.send_message(QueueUrl=queue_url, MessageBody='msg123')
-        messages = self.client.receive_message(QueueUrl=queue_url)['Messages']
-        self.assertEquals(len(messages), 1)
+        for i in range(2):
+            messages = self.client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages']
+            self.assertEquals(len(messages), 1)
 
         # delete/receive message
         self.client.delete_message(QueueUrl=queue_url, ReceiptHandle=messages[0]['ReceiptHandle'])

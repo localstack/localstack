@@ -495,6 +495,10 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     lambda_details = arn_to_lambda[lambda_arn]
     is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
 
+    if is_local_mount and config.LAMBDA_REMOTE_DOCKER:
+        msg = 'Please note that Lambda mounts (bucket name "%s") cannot be used with LAMBDA_REMOTE_DOCKER=1'
+        raise Exception(msg % BUCKET_MARKER_LOCAL)
+
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(lambda_arn)
 
