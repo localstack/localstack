@@ -924,7 +924,7 @@ def update_function_configuration(function):
 def add_permission(function):
     data = json.loads(to_str(request.data))
     iam_client = aws_stack.connect_to_service('iam')
-    sid = short_uid()
+    sid = data.get('StatementId')
     policy = {
         'Version': IAM_POLICY_VERSION,
         'Id': 'LambdaFuncAccess-%s' % sid,
@@ -964,7 +964,8 @@ def remove_permission(function, statement):
 def get_policy(function):
     policy = get_lambda_policy(function)
     if not policy:
-        return jsonify({}), 404
+        return error_response('The resource you requested does not exist.',
+            404, error_type='ResourceNotFoundException')
     return jsonify({'Policy': json.dumps(policy), 'RevisionId': 'test1234'})
 
 
