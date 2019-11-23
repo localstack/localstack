@@ -1,6 +1,8 @@
 import io
 import os
 import re
+import pwd
+import grp
 import sys
 import json
 import uuid
@@ -512,10 +514,21 @@ def ensure_readable(file_path, default_perms=None):
         os.chmod(file_path, default_perms)
 
 
-def chmod_r(path, mode):
-    """Recursive chmod"""
-    os.chmod(path, mode)
+def chown_r(path, user):
+    """ Recursive chown """
+    uid = pwd.getpwnam(user).pw_uid
+    gid = grp.getgrnam(user).gr_gid
+    os.chown(path, uid, gid)
+    for root, dirs, files in os.walk(path):
+        for dirname in dirs:
+            os.chown(os.path.join(root, dirname), uid, gid)
+        for filename in files:
+            os.chown(os.path.join(root, filename), uid, gid)
 
+
+def chmod_r(path, mode):
+    """ Recursive chmod """
+    os.chmod(path, mode)
     for root, dirnames, filenames in os.walk(path):
         for dirname in dirnames:
             os.chmod(os.path.join(root, dirname), mode)
@@ -833,9 +846,21 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
         # check existence to avoid permission denied issues:
         # https://github.com/localstack/localstack/issues/1607
         if not os.path.exists(target_file):
-            save_file(target_file, file_content)
-            save_file(key_file_name, key_file_content)
-            save_file(cert_file_name, cert_file_content)
+            for i in range(2):
+                try:
+                    save_file(target_file, file_content)
+                    save_file(key_file_name, key_file_content)
+                    save_file(cert_file_name, cert_file_content)
+                    break
+                except Exception as e:
+                    if i > 0:
+                        raise
+                    LOG.info('Unable to store certificate file under %s, using tmp file instead: %s' % (target_file, e))
+                    # Fix for https://github.com/localstack/localstack/issues/1743
+                    target_file = '%s.pem' % new_tmp_file()
+                    key_file_name = '%s.key' % target_file
+                    cert_file_name = '%s.crt' % target_file
+
             TMP_FILES.append(target_file)
             TMP_FILES.append(key_file_name)
             TMP_FILES.append(cert_file_name)

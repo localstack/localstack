@@ -48,11 +48,12 @@ SERVICE_PLUGINS = {}
 
 class Plugin(object):
 
-    def __init__(self, name, start, check=None, listener=None):
+    def __init__(self, name, start, check=None, listener=None, priority=0):
         self.plugin_name = name
         self.start_function = start
         self.listener = listener
         self.check_function = check
+        self.priority = priority
 
     def start(self, asynchronous):
         kwargs = {
@@ -72,6 +73,10 @@ class Plugin(object):
 
 
 def register_plugin(plugin):
+    existing = SERVICE_PLUGINS.get(plugin.name())
+    if existing:
+        if existing.priority > plugin.priority:
+            return
     SERVICE_PLUGINS[plugin.name()] = plugin
 
 
