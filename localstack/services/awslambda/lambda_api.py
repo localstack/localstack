@@ -404,6 +404,7 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     # TODO: support Java Lambdas in the future
     delimiter = '.'
     if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
+        handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
         file_ext = '.js'
     elif runtime.startswith(LAMBDA_RUNTIME_GOLANG):
         file_ext = ''
@@ -411,13 +412,15 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
         file_ext = '.dll'
         delimiter = ':'
     elif runtime.startswith(LAMBDA_RUNTIME_RUBY):
+        handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
         file_ext = '.rb'
     elif runtime.startswith(LAMBDA_RUNTIME_CUSTOM_RUNTIME):
+        handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
         file_ext = '.sh'
     else:
         handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
         file_ext = '.py'
-    return '%s%s' % (handler_name.rpartition(delimiter)[0], file_ext)
+    return '%s%s' % (handler_name.split(delimiter)[0], file_ext)
 
 
 def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
