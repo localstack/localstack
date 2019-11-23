@@ -455,6 +455,15 @@ class TestLambdaAPI(unittest.TestCase):
         result = lambda_executors.Util.get_java_opts()
         return result
 
+    def test_get_java_lib_folder_classpath(self):
+        self.assertEquals('/a/b/c/lib/*', lambda_executors.Util.get_java_lib_folder_classpath('/a/b/c/foo.jar'))
+
+    def test_get_java_lib_folder_classpath_no_directories(self):
+        self.assertEquals('/lib/*', lambda_executors.Util.get_java_lib_folder_classpath('foo.jar'))
+
+    def test_get_java_lib_folder_classpath_archive_is_None(self):
+        self.assertRaises(TypeError, lambda_executors.Util.get_java_lib_folder_classpath, None)
+
     def _create_function(self, function_name, tags={}):
         arn = lambda_api.func_arn(function_name)
         lambda_api.arn_to_lambda[arn] = LambdaFunction(arn)
