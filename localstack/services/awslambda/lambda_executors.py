@@ -653,7 +653,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         save_file(event_file, json.dumps(event))
         TMP_FILES.append(event_file)
         class_name = handler.split('::')[0]
-        classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
+        classpath = '%s:%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file, Util.get_java_lib_folder_classpath(main_file))
         cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
         result, log_output = self.run_lambda_executor(cmd)
         LOG.debug('Lambda result / log output:\n%s\n> %s' % (
@@ -687,6 +687,17 @@ class Util:
         if docker_image == 'lambci/lambda':
             docker_tag = '20191117-%s' % docker_tag
         return '"%s:%s"' % (docker_image, docker_tag)
+
+    @classmethod
+    def get_java_lib_folder_classpath(cls, archive):
+        """
+        Returns the absolute path of a "lib/*" classpath living
+        alongside the supplied java archive (.jar or .zip).
+
+        :param archive: an absolute path to a .jar or .zip Java archive
+        :return: the absolute "lib/*" classpath.
+        """
+        return '%s/lib/*' % os.path.dirname(archive)
 
 
 # --------------
