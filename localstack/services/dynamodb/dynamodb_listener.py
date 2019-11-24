@@ -22,6 +22,12 @@ ACTION_PREFIX = 'DynamoDB_20120810'
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
+# list of actions subject to throughput limitations
+THROTTLED_ACTIONS = [
+    'PutItem', 'BatchWriteItem', 'UpdateItem', 'DeleteItem', 'TransactWriteItems',
+    'GetItem', 'Query', 'Scan', 'TransactGetItems', 'BatchGetItem'
+]
+
 
 class ProxyListenerDynamoDB(ProxyListener):
     thread_local = threading.local()
@@ -37,13 +43,15 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         data = json.loads(to_str(data))
         ddb_client = aws_stack.connect_to_service('dynamodb')
+        action = headers.get('X-Amz-Target')
 
         if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
-            return error_response_throughput()
+            throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in THROTTLED_ACTIONS]
+            if action in throttled:
+                return error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
 
-        action = headers.get('X-Amz-Target')
         if action == '%s.CreateTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
             table_names = ddb_client.list_tables()['TableNames']
