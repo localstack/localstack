@@ -1,5 +1,6 @@
 import os
 import re
+import glob
 import json
 import time
 import logging
@@ -225,8 +226,9 @@ class LambdaExecutorContainers(LambdaExecutor):
             # TODO cleanup once we have custom Java Docker image
             taskdir = '/var/task'
             save_file(os.path.join(lambda_cwd, LAMBDA_EVENT_FILE), event_body)
-            command = ("bash -c 'cd %s; java %s -cp \".:`ls *.jar | tr \"\\n\" \":\"`\" \"%s\" \"%s\" \"%s\"'" %
-                (taskdir, java_opts, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
+            classpath = Util.get_java_classpath(target_file)
+            command = ("bash -c 'cd %s; java %s -cp \"%s\" \"%s\" \"%s\" \"%s\"'" %
+                (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
 
         # determine the command to be executed (implemented by subclasses)
         cmd = self.prepare_execution(func_arn, environment, runtime, command, handler, lambda_cwd)
@@ -653,7 +655,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         save_file(event_file, json.dumps(event))
         TMP_FILES.append(event_file)
         class_name = handler.split('::')[0]
-        classpath = '%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file)
+        classpath = '%s:%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file, Util.get_java_classpath(main_file))
         cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
         result, log_output = self.run_lambda_executor(cmd)
         LOG.debug('Lambda result / log output:\n%s\n> %s' % (
@@ -687,6 +689,27 @@ class Util:
         if docker_image == 'lambci/lambda':
             docker_tag = '20191117-%s' % docker_tag
         return '"%s:%s"' % (docker_image, docker_tag)
+
+    @classmethod
+    def get_java_classpath(cls, archive):
+        """
+        Return the Java classpath, using the parent folder of the
+        given archive as the base folder.
+
+        The result contains any *.jar files in the base folder, as
+        well as any JAR files in the "lib/*" subfolder living
+        alongside the supplied java archive (.jar or .zip).
+
+        :param archive: an absolute path to a .jar or .zip Java archive
+        :return: the Java classpath, relative to the base dir of "archive"
+        """
+        entries = ['.']
+        base_dir = os.path.dirname(archive)
+        for pattern in ['%s/*.jar', '%s/lib/*.jar']:
+            for entry in glob.glob(pattern % base_dir):
+                entries.append(os.path.relpath(entry, base_dir))
+        result = ':'.join(entries)
+        return result
 
 
 # --------------

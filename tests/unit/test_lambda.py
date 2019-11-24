@@ -1,6 +1,8 @@
+import os
 import re
 import json
 import unittest
+from localstack.utils.common import save_file, new_tmp_dir, mkdir
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
 
@@ -454,6 +456,23 @@ class TestLambdaAPI(unittest.TestCase):
         lambda_executors.config.LAMBDA_JAVA_OPTS = java_opts
         result = lambda_executors.Util.get_java_opts()
         return result
+
+    def test_get_java_lib_folder_classpath(self):
+        jar_file = os.path.join(new_tmp_dir(), 'foo.jar')
+        save_file(jar_file, '')
+        self.assertEquals('.:foo.jar', lambda_executors.Util.get_java_classpath(jar_file))
+
+    def test_get_java_lib_folder_classpath_no_directories(self):
+        base_dir = new_tmp_dir()
+        jar_file = os.path.join(base_dir, 'foo.jar')
+        save_file(jar_file, '')
+        lib_file = os.path.join(base_dir, 'lib', 'lib.jar')
+        mkdir(os.path.dirname(lib_file))
+        save_file(lib_file, '')
+        self.assertEquals('.:foo.jar:lib/lib.jar', lambda_executors.Util.get_java_classpath(jar_file))
+
+    def test_get_java_lib_folder_classpath_archive_is_None(self):
+        self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
 
     def _create_function(self, function_name, tags={}):
         arn = lambda_api.func_arn(function_name)

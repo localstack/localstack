@@ -802,10 +802,14 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     # (Our test Lambdas are importing this file but don't have the module installed)
     from OpenSSL import crypto
 
+    def all_exist(*files):
+        return all([os.path.exists(f) for f in files])
+
     if target_file and not overwrite and os.path.exists(target_file):
         key_file_name = '%s.key' % target_file
         cert_file_name = '%s.crt' % target_file
-        return target_file, cert_file_name, key_file_name
+        if all_exist(key_file_name, cert_file_name):
+            return target_file, cert_file_name, key_file_name
     if random and target_file:
         if '.' in target_file:
             target_file = target_file.replace('.', '.%s.' % short_uid(), 1)
@@ -845,7 +849,7 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
         cert_file_name = '%s.crt' % target_file
         # check existence to avoid permission denied issues:
         # https://github.com/localstack/localstack/issues/1607
-        if not os.path.exists(target_file):
+        if not all_exist(target_file, key_file_name, cert_file_name):
             for i in range(2):
                 try:
                     save_file(target_file, file_content)
@@ -860,7 +864,6 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
                     target_file = '%s.pem' % new_tmp_file()
                     key_file_name = '%s.key' % target_file
                     cert_file_name = '%s.crt' % target_file
-
             TMP_FILES.append(target_file)
             TMP_FILES.append(key_file_name)
             TMP_FILES.append(cert_file_name)

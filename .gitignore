@@ -31,6 +31,7 @@ node_modules/
 
 **/obj/**
 **/bin/**
+**/lib/**
 
 !bin/docker-entrypoint.sh
 

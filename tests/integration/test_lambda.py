@@ -28,6 +28,7 @@ TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.rb')
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, 'lambdas', 'dotnetcore2', 'dotnetcore2.zip')
 TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, 'lambdas', 'custom-runtime')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', 'localstack-utils-tests.jar')
+TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(THIS_FOLDER, 'lambdas', 'java', 'lambda-function-with-lib-0.0.1.jar')
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
@@ -39,6 +40,7 @@ TEST_LAMBDA_NAME_CUSTOM_RUNTIME = 'test_lambda_custom_runtime'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
+TEST_LAMBDA_NAME_JAVA_WITH_LIB = 'test_lambda_java_with_lib'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 MAVEN_BASE_URL = 'https://repo.maven.apache.org/maven2'
@@ -517,12 +519,22 @@ class TestJavaRuntimes(LambdaTestBase):
             handler='cloud.localstack.sample.SerializedInputLambdaHandler'
         )
 
+        # upload the JAR directly
+        cls.test_java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode='rb')
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JAVA_WITH_LIB,
+            zip_file=cls.test_java_jar_with_lib,
+            runtime=LAMBDA_RUNTIME_JAVA8,
+            handler='cloud.localstack.sample.LambdaHandlerWithLib'
+        )
+
     @classmethod
     def tearDownClass(cls):
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA)
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_STREAM)
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_SERIALIZABLE)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_WITH_LIB)
 
     def test_java_runtime(self):
         self.assertIsNotNone(self.test_java_jar)
@@ -533,6 +545,16 @@ class TestJavaRuntimes(LambdaTestBase):
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertIn('LinkedHashMap', to_str(result_data))
+
+    def test_java_runtime_with_lib(self):
+        self.assertIsNotNone(self.test_java_jar_with_lib)
+
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JAVA_WITH_LIB, Payload=b'{"echo":"echo"}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertIn('echo', to_str(result_data))
 
     def test_sns_event(self):
         result = self.lambda_client.invoke(

@@ -568,6 +568,15 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
                 working_dir=lambda_cwd, file_name=LAMBDA_JAR_FILE_NAME)
             save_file(jar_tmp_file, zip_file_content)
 
+            # AWS Lambda allows dependencies in the "lib" folder of the jar
+            # ref: https://docs.aws.amazon.com/lambda/latest/dg/create-deployment-pkg-zip-java.html
+            #     "The deployment package must have the following structure.
+            #       * All compiled class files and resource files at the root level.
+            #       * All required jars to run the code in the /lib directory."
+            # We extract the lib folder here in order to add it to the classpath in
+            # lambda_executors.py. This will always return a 0 exit code, even if
+            # the "lib" folder does not exist.
+            run('cd "%s"; jar xvf %s lib' % (os.path.dirname(jar_tmp_file), os.path.basename(jar_tmp_file)))
     else:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
