@@ -36,8 +36,7 @@ class SNSTest(unittest.TestCase):
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message)
         msgs = self.sqs_client.receive_message(QueueUrl=self.queue_url)
         msg_received = msgs['Messages'][0]
-        msg_received = json.loads(to_str(msg_received['Body']))
-        msg_received = msg_received['Message']
+        msg_received = msg_received['Body']
         self.assertEqual(message, msg_received)
 
     def test_subscribe_http_endpoint(self):
@@ -107,12 +106,19 @@ class SNSTest(unittest.TestCase):
         # get number of messages
         num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2).get('Messages', []))
 
-        # publish message that satisfies the filter policy, assert that message is received
+        # publish message that satisfies the filter policy, assert that message is received with correct attrs
         message = u'This is a test message'
-        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
-            MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99'}})
-        num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        msg_attrs = {'attr1': {'DataType': 'Number', 'StringValue': '99'}}
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message, MessageAttributes=msg_attrs)
+        messages = self.sqs_client.receive_message(QueueUrl=self.queue_url_2,
+            VisibilityTimeout=0, AttributeNames=['All'], MessageAttributeNames=['All'])['Messages']
+        num_msgs_1 = len(messages)
         self.assertEqual(num_msgs_1, num_msgs_0 + 1)
+        self.assertEqual(messages[-1]['Body'], message)
+        self.assertIn('SentTimestamp', messages[-1]['Attributes'])
+        self.assertIn('attr1', messages[-1]['MessageAttributes'])
+        self.assertEqual(float(messages[-1]['MessageAttributes']['attr1']['StringValue']),
+            float(msg_attrs['attr1']['StringValue']))
 
         # publish message that does not satisfy the filter policy, assert that message is not received
         message = u'This is a test message'

@@ -580,18 +580,21 @@ def apply_patches():
 
     # fix AttributeError in moto's CloudFormation describe_stack_resource
 
+    def stack_not_found_error(stack_name, moto_region):
+        msg = ('Unable to find CloudFormation stack "%s" in region %s' %
+               (stack_name, aws_stack.get_region()))
+        if aws_stack.get_region() != moto_region:
+            msg = '%s/%s' % (msg, moto_region)
+        LOG.warning(msg)
+        response = aws_responses.flask_error_response(msg, code=404, error_type='ResourceNotFoundException')
+        return 404, response.headers, response.data
+
     def describe_stack_resource(self):
         stack_name = self._get_param('StackName')
         stack = self.cloudformation_backend.get_stack(stack_name)
         logical_resource_id = self._get_param('LogicalResourceId')
         if not stack:
-            msg = ('Unable to find CloudFormation stack "%s" in region %s' %
-                   (stack_name, aws_stack.get_region()))
-            if aws_stack.get_region() != self.region:
-                msg = '%s/%s' % (msg, self.region)
-            LOG.warning(msg)
-            response = aws_responses.flask_error_response(msg, code=404, error_type='ResourceNotFoundException')
-            return 404, response.headers, response.data
+            return stack_not_found_error(stack_name, self.region)
 
         for stack_resource in stack.stack_resources:
             # Note: Line below has been patched
@@ -607,6 +610,16 @@ def apply_patches():
         return template.render(stack=stack, resource=resource)
 
     responses.CloudFormationResponse.describe_stack_resource = describe_stack_resource
+
+    def describe_stack_events(self, *args, **kwargs):
+        stack_name = self._get_param('StackName')
+        stack = self.cloudformation_backend.get_stack(stack_name)
+        if not stack:
+            return stack_not_found_error(stack_name, self.region)
+        return describe_stack_events_orig(self, *args, **kwargs)
+
+    describe_stack_events_orig = responses.CloudFormationResponse.describe_stack_events
+    responses.CloudFormationResponse.describe_stack_events = describe_stack_events
 
 
 def inject_stats_endpoint():

@@ -190,11 +190,9 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 queue_url = aws_stack.get_sqs_queue_url(queue_name)
                 subscriber['sqs_queue_url'] = queue_url
             try:
+                sqs_msg_attrs = create_sqs_message_attributes(subscriber, message_attributes)
                 sqs_client.send_message(
-                    QueueUrl=queue_url,
-                    MessageBody=create_sns_message_body(subscriber, req_data),
-                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
-                )
+                    QueueUrl=queue_url, MessageBody=req_data['Message'][0], MessageAttributes=sqs_msg_attrs)
             except Exception as exc:
                 return make_error(message=str(exc), code=400)
         elif subscriber['Protocol'] == 'lambda':
@@ -209,7 +207,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
         elif subscriber['Protocol'] in ['http', 'https']:
             msg_type = (req_data.get('Type') or ['Notification'])[0]
             try:
-                message_body = create_sns_message_body(subscriber, req_data)
+                message_body = create_http_message_body(subscriber, req_data)
             except Exception as exc:
                 return make_error(message=str(exc), code=400)
             requests.post(
@@ -333,7 +331,7 @@ def make_error(message, code=400, code_string='InvalidParameter'):
     return response
 
 
-def create_sns_message_body(subscriber, req_data):
+def create_http_message_body(subscriber, req_data):
     message = req_data['Message'][0]
     subject = req_data.get('Subject', [None])[0]
     protocol = subscriber['Protocol']
@@ -372,7 +370,7 @@ def create_sns_message_body(subscriber, req_data):
 
 
 def create_sqs_message_attributes(subscriber, attributes):
-    if subscriber.get('RawMessageDelivery') not in ('true', True):
+    if subscriber.get('RawMessageDelivery') in ('true', True):
         return {}
 
     message_attributes = {}

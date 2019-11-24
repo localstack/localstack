@@ -1,9 +1,9 @@
 import re
 import uuid
 import xmltodict
+from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
-from requests.models import Request, Response
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.common import to_str, md5
