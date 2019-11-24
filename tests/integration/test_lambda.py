@@ -491,7 +491,6 @@ class TestJavaRuntimes(LambdaTestBase):
         if not os.path.exists(TEST_LAMBDA_JAVA):
             mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
             download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
-            download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA_WITH_LIB)
 
         # Lambda supports single JAR deployments without the zip,
         # so we upload the JAR directly.
