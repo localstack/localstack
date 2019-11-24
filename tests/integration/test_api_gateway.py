@@ -4,13 +4,14 @@ import base64
 import re
 import json
 import unittest
+from jsonpatch import apply_patch
 from requests.models import Response
 from xml.dom.minidom import parseString
 from localstack.config import INBOUND_GATEWAY_URL_PATTERN, DEFAULT_REGION
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, load_file
+from localstack.utils.common import to_str, load_file, clone
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import (
@@ -18,6 +19,8 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
+
+TEST_API_GATEWAY_ID = 'fugvjdxtri'
 
 
 class TestAPIGatewayIntegrations(unittest.TestCase):
@@ -58,7 +61,31 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = 'test_lambda_apigw_backend_path_param'
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_ARMlambda_apigw_backend_any_method'
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_ARMlambda_apigw_backend_any_method_path_param'
-    TEST_LAMBDA_HANDLER_NAME = 'lambda_sqs_handler'
+    TEST_LAMBDA_SQS_HANDLER_NAME = 'lambda_sqs_handler'
+    TEST_LAMBDA_AUTHORIZER_HANDLER_NAME = 'lambda_authorizer_handler'
+
+    TEST_API_GATEWAY_AUTHORIZER = {
+        'restApiId': TEST_API_GATEWAY_ID,
+        'name': 'test',
+        'type': 'TOKEN',
+        'providerARNs': [
+            'arn:aws:cognito-idp:us-east-1:123412341234:userpool/us-east-1_123412341'
+        ],
+        'authType': 'custom',
+        'authorizerUri': 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' +
+                         'arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations',
+        'authorizerCredentials': 'arn:aws:iam::123456789012:role/apigAwsProxyRole',
+        'identitySource': 'method.request.header.Authorization',
+        'identityValidationExpression': '.*',
+        'authorizerResultTtlInSeconds': 300
+    }
+    TEST_API_GATEWAY_AUTHORIZER_OPS = [
+        {
+            'op': 'replace',
+            'path': '/name',
+            'value': 'test1'
+        }
+    ]
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
@@ -106,9 +133,9 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             queue_arn=self.TEST_SQS_QUEUE, path=self.API_PATH_DATA_INBOUND)
 
         # create event source for sqs lambda processor
-        self.create_lambda_function(self.TEST_LAMBDA_HANDLER_NAME)
+        self.create_lambda_function(self.TEST_LAMBDA_SQS_HANDLER_NAME)
         add_event_source(
-            self.TEST_LAMBDA_HANDLER_NAME,
+            self.TEST_LAMBDA_SQS_HANDLER_NAME,
             aws_stack.sqs_queue_arn(self.TEST_SQS_QUEUE),
             True)
 
@@ -276,6 +303,53 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM)
+
+    def test_api_gateway_authorizer_crud(self):
+
+        apig = aws_stack.connect_to_service('apigateway')
+
+        authorizer = apig.create_authorizer(**self.TEST_API_GATEWAY_AUTHORIZER)
+
+        authorizer_id = authorizer.get('id')
+
+        create_result = apig.get_authorizer(
+            restApiId=TEST_API_GATEWAY_ID,
+            authorizerId=authorizer_id)
+
+        # ignore boto3 stuff
+        del create_result['ResponseMetadata']
+
+        create_expected = clone(self.TEST_API_GATEWAY_AUTHORIZER)
+        del create_expected['restApiId']
+        create_expected['id'] = authorizer_id
+
+        self.assertDictEqual(create_expected, create_result)
+
+        apig.update_authorizer(
+            restApiId=TEST_API_GATEWAY_ID,
+            authorizerId=authorizer_id,
+            patchOperations=self.TEST_API_GATEWAY_AUTHORIZER_OPS)
+
+        update_result = apig.get_authorizer(
+            restApiId=TEST_API_GATEWAY_ID,
+            authorizerId=authorizer_id)
+
+        # ignore boto3 stuff
+        del update_result['ResponseMetadata']
+
+        update_expected = apply_patch(create_expected, self.TEST_API_GATEWAY_AUTHORIZER_OPS)
+
+        self.assertDictEqual(update_expected, update_result)
+
+        apig.delete_authorizer(
+            restApiId=TEST_API_GATEWAY_ID,
+            authorizerId=authorizer_id)
+
+        self.assertRaises(
+            Exception,
+            apig.get_authorizer,
+            TEST_API_GATEWAY_ID,
+            authorizer_id)
 
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
         self.create_lambda_function(fn_name)

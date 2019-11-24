@@ -54,7 +54,7 @@ def get_authorizer(path):
     api_id = get_api_id_from_path(path)
     authorizer_id = get_authorizer_id_from_path(path)
 
-    authorizer = AUTHORIZERS[authorizer_id]
+    authorizer = AUTHORIZERS.get(authorizer_id)
 
     if authorizer is None:
         return make_error_response('Not found: %s' % authorizer_id, 404)
@@ -95,7 +95,7 @@ def normalize_authorizer(data):
     result = common.clone(data)
 
     # terraform sends this as a string in patch, so convert to int
-    result['authorizerResultTtlInSeconds'] = int(result['authorizerResultTtlInSeconds'] or 300)
+    result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
 
     return result
 
@@ -116,7 +116,7 @@ def add_authorizer(path, data):
 def update_authorizer(path, data):
     api_id = get_api_id_from_path(path)
     authorizer_id = get_authorizer_id_from_path(path)
-    authorizer = AUTHORIZERS[authorizer_id]
+    authorizer = AUTHORIZERS.get(authorizer_id)
 
     if authorizer is None:
         return make_error_response('Not found: %s' % api_id, 404)
