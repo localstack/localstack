@@ -7,11 +7,12 @@ import unittest
 from jsonpatch import apply_patch
 from requests.models import Response
 from xml.dom.minidom import parseString
+from requests.structures import CaseInsensitiveDict
 from localstack.config import INBOUND_GATEWAY_URL_PATTERN, DEFAULT_REGION
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, load_file, clone
+from localstack.utils.common import to_str, load_file, json_safe, clone
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import (
@@ -192,7 +193,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             def forward_request(self, **kwargs):
                 response = Response()
                 response.status_code = 200
-                response._content = kwargs.get('data') or '{}'
+                result = {
+                    'data': kwargs.get('data') or '{}',
+                    'headers': dict(kwargs.get('headers'))
+                }
+                response._content = json.dumps(json_safe(result))
                 return response
 
         proxy = GenericProxy(test_port, update_listener=TestListener())
@@ -218,15 +223,26 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertTrue(re.match(result.headers['Access-Control-Allow-Origin'].replace('*', '.*'), origin))
         self.assertIn('POST', result.headers['Access-Control-Allow-Methods'])
 
-        # make test request to gateway
+        # make test GET request to gateway
         result = requests.get(url)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(to_str(result.content), '{}')
+        self.assertEqual(json.loads(to_str(result.content))['data'], '{}')
 
-        data = {'data': 123}
-        result = requests.post(url, data=json.dumps(data))
+        # make test POST request to gateway
+        data = json.dumps({'data': 123})
+        result = requests.post(url, data=data)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(to_str(result.content)), data)
+        self.assertEqual(json.loads(to_str(result.content))['data'], data)
+
+        # make test POST request with non-JSON content type
+        data = 'test=123'
+        ctype = 'application/x-www-form-urlencoded'
+        result = requests.post(url, data=data, headers={'content-type': ctype})
+        self.assertEqual(result.status_code, 200)
+        content = json.loads(to_str(result.content))
+        headers = CaseInsensitiveDict(content['headers'])
+        self.assertEqual(content['data'], data)
+        self.assertEqual(headers['content-type'], ctype)
 
         # clean up
         proxy.stop()
