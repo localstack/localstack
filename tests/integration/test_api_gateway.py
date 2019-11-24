@@ -21,8 +21,6 @@ from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
-TEST_API_GATEWAY_ID = 'fugvjdxtri'
-
 
 class TestAPIGatewayIntegrations(unittest.TestCase):
     # template used to transform incoming requests at the API Gateway (stream name to be filled in later)
@@ -64,9 +62,9 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_ARMlambda_apigw_backend_any_method_path_param'
     TEST_LAMBDA_SQS_HANDLER_NAME = 'lambda_sqs_handler'
     TEST_LAMBDA_AUTHORIZER_HANDLER_NAME = 'lambda_authorizer_handler'
+    TEST_API_GATEWAY_ID = 'fugvjdxtri'
 
     TEST_API_GATEWAY_AUTHORIZER = {
-        'restApiId': TEST_API_GATEWAY_ID,
         'name': 'test',
         'type': 'TOKEN',
         'providerARNs': [
@@ -324,30 +322,31 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
         apig = aws_stack.connect_to_service('apigateway')
 
-        authorizer = apig.create_authorizer(**self.TEST_API_GATEWAY_AUTHORIZER)
+        authorizer = apig.create_authorizer(
+            restApiId=self.TEST_API_GATEWAY_ID,
+            **self.TEST_API_GATEWAY_AUTHORIZER)
 
         authorizer_id = authorizer.get('id')
 
         create_result = apig.get_authorizer(
-            restApiId=TEST_API_GATEWAY_ID,
+            restApiId=self.TEST_API_GATEWAY_ID,
             authorizerId=authorizer_id)
 
         # ignore boto3 stuff
         del create_result['ResponseMetadata']
 
         create_expected = clone(self.TEST_API_GATEWAY_AUTHORIZER)
-        del create_expected['restApiId']
         create_expected['id'] = authorizer_id
 
         self.assertDictEqual(create_expected, create_result)
 
         apig.update_authorizer(
-            restApiId=TEST_API_GATEWAY_ID,
+            restApiId=self.TEST_API_GATEWAY_ID,
             authorizerId=authorizer_id,
             patchOperations=self.TEST_API_GATEWAY_AUTHORIZER_OPS)
 
         update_result = apig.get_authorizer(
-            restApiId=TEST_API_GATEWAY_ID,
+            restApiId=self.TEST_API_GATEWAY_ID,
             authorizerId=authorizer_id)
 
         # ignore boto3 stuff
@@ -358,13 +357,13 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertDictEqual(update_expected, update_result)
 
         apig.delete_authorizer(
-            restApiId=TEST_API_GATEWAY_ID,
+            restApiId=self.TEST_API_GATEWAY_ID,
             authorizerId=authorizer_id)
 
         self.assertRaises(
             Exception,
             apig.get_authorizer,
-            TEST_API_GATEWAY_ID,
+            self.TEST_API_GATEWAY_ID,
             authorizer_id)
 
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
