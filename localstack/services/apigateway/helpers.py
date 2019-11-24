@@ -1,5 +1,7 @@
 import re
 import json
+
+from jsonpatch import apply_patch
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack.utils import common
@@ -11,6 +13,8 @@ from localstack.utils.aws.aws_responses import requests_response
 PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
 PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
 
+PATH_REGEX_AUTHORIZER = r'^/restapis/[A-Za-z0-9_\-]+/authorizers/(.*)'
+
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 
@@ -18,14 +22,20 @@ APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.bas
 AUTHORIZERS = {}
 
 
-def make_response(message):
+def make_json_response(message):
     return requests_response(json.dumps(message), headers={'Content-Type': APPLICATION_JSON})
 
 
-def make_error(message, code=400):
+def make_error_response(message, code=400):
     response = Response()
     response.status_code = code
     response._content = json.dumps({'message': message})
+    return response
+
+
+def make_accepted_response():
+    response = Response()
+    response.status_code = 202
     return response
 
 
@@ -36,38 +46,109 @@ def get_api_id_from_path(path):
     return re.match(PATH_REGEX_MAIN, path).group(1)
 
 
-def get_authorizers(path):
-    result = {'item': []}
+def get_authorizer_id_from_path(path):
+    return re.match(PATH_REGEX_AUTHORIZER, path).group(1)
+
+
+def get_authorizer(path):
     api_id = get_api_id_from_path(path)
-    for key, value in AUTHORIZERS.items():
-        auth_api_id = get_api_id_from_path(value['_links']['self']['href'])
-        if auth_api_id == api_id:
-            result['item'].append(value)
+    authorizer_id = get_authorizer_id_from_path(path)
+
+    authorizer = AUTHORIZERS.get(authorizer_id)
+
+    if authorizer is None:
+        return make_error_response('Not found: %s' % authorizer_id, 404)
+
+    return to_authorizer_response_json(api_id, authorizer)
+
+
+def to_authorizer_response_json(api_id, data):
+    result = common.clone(data)
+
+    self_link = '/restapis/%s/authorizers/%s' % (api_id, data['id'])
+
+    if '_links' not in result:
+        result['_links'] = {}
+
+    result['_links']['self'] = {
+        'href': self_link
+    }
+
+    result['_links']['curies'] = {
+        'href': 'https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html',
+        'name': 'authorizer',
+        'templated': True
+    }
+
+    result['_links']['authorizer:delete'] = {
+        'href': self_link
+    }
+
+    result['_links']['authorizer:delete'] = {
+        'href': self_link
+    }
+
+    return result
+
+
+def normalize_authorizer(data):
+    result = common.clone(data)
+
+    # terraform sends this as a string in patch, so convert to int
+    result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
+
     return result
 
 
 def add_authorizer(path, data):
     api_id = get_api_id_from_path(path)
+    authorizer_id = common.short_uid()
     result = common.clone(data)
-    result['id'] = common.short_uid()
-    if '_links' not in result:
-        result['_links'] = {}
-    result['_links']['self'] = {
-        'href': '/restapis/%s/authorizers/%s' % (api_id, result['id'])
-    }
-    AUTHORIZERS[result['id']] = result
-    return result
+
+    result['id'] = authorizer_id
+    result = normalize_authorizer(result)
+
+    AUTHORIZERS[authorizer_id] = result
+
+    return make_json_response(to_authorizer_response_json(api_id, result))
+
+
+def update_authorizer(path, data):
+    api_id = get_api_id_from_path(path)
+    authorizer_id = get_authorizer_id_from_path(path)
+    authorizer = AUTHORIZERS.get(authorizer_id)
+
+    if authorizer is None:
+        return make_error_response('Not found: %s' % api_id, 404)
+
+    result = apply_patch(authorizer, data['patchOperations'])
+    result = normalize_authorizer(result)
+
+    AUTHORIZERS[authorizer_id] = result
+
+    return make_json_response(to_authorizer_response_json(api_id, result))
+
+
+def delete_authorizer(path):
+    authorizer_id = get_authorizer_id_from_path(path)
+
+    del AUTHORIZERS[authorizer_id]
+
+    return make_accepted_response()
 
 
 def handle_authorizers(method, path, data, headers):
-    result = {}
+
     if method == 'GET':
-        result = get_authorizers(path)
+        return get_authorizer(path)
     elif method == 'POST':
-        result = add_authorizer(path, data)
-    else:
-        return make_error('Not implemented for API Gateway authorizers: %s' % method, 404)
-    return make_response(result)
+        return add_authorizer(path, data)
+    elif method == 'PATCH':
+        return update_authorizer(path, data)
+    elif method == 'DELETE':
+        return delete_authorizer(path)
+
+    return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
 
 
 def tokenize_path(path):
