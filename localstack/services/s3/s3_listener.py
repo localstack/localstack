@@ -675,9 +675,10 @@ class ProxyListenerS3(ProxyListener):
                 # Verify the bucket exists in the first place--if not, we want normal processing of the 404
                 s3_client.head_bucket(Bucket=bucket_name)
                 website_config = s3_client.get_bucket_website(Bucket=bucket_name)
+                error_doc_key = website_config.get('ErrorDocument', {}).get('Key')
 
-                if 'ErrorDocument' in website_config and 'Key' in website_config['ErrorDocument']:
-                    error_object = s3_client.get_object(Bucket=bucket_name, Key=website_config['ErrorDocument']['Key'])
+                if error_doc_key:
+                    error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
                     response.status_code = 200
                     response._content = error_object['Body'].read()
                     response.headers['content-length'] = len(response._content)
