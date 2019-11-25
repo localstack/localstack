@@ -492,6 +492,51 @@ class S3ListenerTest (unittest.TestCase):
         finally:
             config.HOSTNAME_EXTERNAL = hostname_before
 
+    def test_s3_website_errordocument(self):
+        # check that the error document is returned when configured
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
+        self.s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
+        )
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
+        )
+        response = requests.get(url, verify=False)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text, 'This is the error document')
+        # cleanup
+        self.s3_client.delete_object(Bucket=bucket_name, Key='error.html')
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
+        # check that normal responses are returned for bucket with index configuration, but not error document
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'}}
+        )
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
+        )
+        response = requests.get(url, verify=False)
+        self.assertEqual(response.status_code, 404)
+        # cleanup
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
+        # check that normal responses are returned for bucket without configuration
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
+        )
+        response = requests.get(url, verify=False)
+        self.assertEqual(response.status_code, 404)
+        # cleanup
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
     # ---------------
     # HELPER METHODS
     # ---------------
