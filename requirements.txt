@@ -28,7 +28,6 @@ flask_swagger==0.2.12
 forbiddenfruit==0.1.3
 jsonpatch==1.24
 jsonpath-rw==1.4.0
-jsonpointer==2.0
 localstack-ext[full]>=0.10.51
 localstack-ext>=0.10.51        #basic-lib
 localstack-client>=0.14        #basic-lib
@@ -45,4 +44,3 @@ requests-aws4auth==0.9
 six>=1.12.0                    #basic-lib
 subprocess32==3.5.4            #basic-lib
 xmltodict>=0.11.0
-# yappi==1.0

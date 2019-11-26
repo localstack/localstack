@@ -154,8 +154,8 @@ class LambdaExecutor(object):
             log_output += '\n%s' % additional_logs
 
         if return_code != 0:
-            raise Exception('Lambda process returned error status code: %s. Output:\n%s' %
-                (return_code, log_output))
+            raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
+                (return_code, result, log_output))
 
         return result, log_output
 

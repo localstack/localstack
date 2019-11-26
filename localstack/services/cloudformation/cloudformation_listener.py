@@ -100,7 +100,7 @@ def get_template_body(req_data):
         return body
     url = req_data.get('TemplateURL')
     if url:
-        response = safe_requests.get(url)
+        response = safe_requests.get(url, verify=False)
         if response.status_code >= 400:
             # check if this is an S3 URL, then get the file directly from there
             if '://localhost' in url or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url):
