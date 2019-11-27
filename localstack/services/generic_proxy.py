@@ -211,16 +211,18 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
         path = self.path
         if '://' in path:
-            path = '/' + path.split('://', 1)[1].split('/', 1)[1]
-        forward_url = self.proxy.forward_url
+            path = path.split('://', 1)[1]
+            path = '/%s' % (path.split('/', 1)[1] if '/' in path else '')
+        forward_base_url = self.proxy.forward_base_url
+        proxy_url = '%s%s' % (forward_base_url, path)
+
         for listener in self._listeners():
             if listener:
-                forward_url = listener.get_forward_url(method, path, data, forward_headers) or forward_url
+                proxy_url = listener.get_forward_url(method, path, data, forward_headers) or proxy_url
 
-        proxy_url = '%s%s' % (forward_url, path)
         target_url = self.path
         if '://' not in target_url:
-            target_url = '%s%s' % (forward_url, target_url)
+            target_url = '%s%s' % (forward_base_url, target_url)
 
         # update original "Host" header (moto s3 relies on this behavior)
         if not forward_headers.get('Host'):
@@ -261,6 +263,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     self._send_cors_headers()
                     self.end_headers()
                     return
+
             # perform the actual invocation of the backend service
             if response is None:
                 forward_headers['Connection'] = forward_headers.get('Connection') or 'close'
@@ -268,7 +271,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 request_url = proxy_url
                 if modified_request:
                     if modified_request.url:
-                        request_url = '%s%s' % (forward_url, modified_request.url)
+                        request_url = '%s%s' % (forward_base_url, modified_request.url)
                     data_to_send = modified_request.data
 
                 response = self.method(request_url, data=data_to_send,
@@ -277,6 +280,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 # prevent requests from processing response body
                 if not response._content_consumed and response.raw:
                     response._content = response.raw.read()
+
             # update listener (post-invocation)
             if self.proxy.update_listener:
                 kwargs = {
@@ -369,7 +373,7 @@ class GenericProxy(FuncThread):
             if '://' not in forward_url:
                 forward_url = 'http://%s' % forward_url
             forward_url = forward_url.rstrip('/')
-        self.forward_url = forward_url
+        self.forward_base_url = forward_url
         self.update_listener = update_listener
         self.server_stopped = False
         # Required to enable 'Connection: keep-alive' for S3 uploads
