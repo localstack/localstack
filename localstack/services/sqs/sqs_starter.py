@@ -1,16 +1,34 @@
 import os
 import logging
+import traceback
 from localstack import config
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.constants import DEFAULT_PORT_SQS_BACKEND
-from localstack.utils.common import save_file, short_uid, TMP_FILES
+from localstack.utils.aws import aws_stack
+from localstack.utils.common import wait_for_port_open, save_file, short_uid, TMP_FILES
 from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq
 
 # max heap size allocated for the Java process
 MAX_HEAP_SIZE = '256m'
 
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
+
+
+def check_sqs(expect_shutdown=False, print_error=False):
+    out = None
+    try:
+        # wait for port to be opened
+        wait_for_port_open(DEFAULT_PORT_SQS_BACKEND)
+        # check S3
+        out = aws_stack.connect_to_service(service_name='sqs').list_queues()
+    except Exception as e:
+        if print_error:
+            LOG.warning('SQS health check failed: %s %s' % (e, traceback.format_exc()))
+    if expect_shutdown:
+        assert out is None
+    else:
+        assert out.get('ResponseMetadata', {}).get('HTTPStatusCode') == 200
 
 
 def start_sqs(port=None, asynchronous=False, update_listener=None):

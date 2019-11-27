@@ -39,6 +39,10 @@ LOGGER = logging.getLogger(__name__)
 # XML namespace constants
 XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 
+# see https://stackoverflow.com/questions/50480924/regex-for-s3-bucket-name#50484916
+BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
+    r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
+
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
 
@@ -402,14 +406,13 @@ def check_content_md5(data, headers):
     except Exception:
         expected = '__invalid__'
     if actual != expected:
-        result = {
-            'Error': {
-                'Code': 'InvalidDigest',
-                'Message': 'The Content-MD5 you specified was invalid'
-            }
-        }
-        content = xmltodict.unparse(result)
-        return requests_response(content, status_code=400)
+        return error_response('The Content-MD5 you specified was invalid', 'InvalidDigest', status_code=400)
+
+
+def error_response(message, code, status_code=400):
+    result = {'Error': {'Code': code, 'Message': message}}
+    content = xmltodict.unparse(result)
+    return requests_response(content, status_code=status_code)
 
 
 def expand_redirect_url(starting_url, key, bucket):
@@ -535,6 +538,11 @@ class ProxyListenerS3(ProxyListener):
                 return response
 
         modified_data = None
+
+        # check bucket name
+        bucket_name = get_bucket_name(path, headers)
+        if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
+            return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
         to_find = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
