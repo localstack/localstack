@@ -216,7 +216,7 @@ class TestPythonRuntimes(LambdaTestBase):
 
     def test_invocation_with_qualifier(self):
         lambda_name = 'test_lambda_%s' % short_uid()
-        bucket_name = 'test_bucket_lambda2'
+        bucket_name = 'test-bucket-lambda2'
         bucket_key = 'test_lambda.zip'
 
         # upload zip file to S3
@@ -270,7 +270,7 @@ class TestPythonRuntimes(LambdaTestBase):
 
     def test_upload_lambda_from_s3(self):
         lambda_name = 'test_lambda_%s' % short_uid()
-        bucket_name = 'test_bucket_lambda'
+        bucket_name = 'test-bucket-lambda'
         bucket_key = 'test_lambda.zip'
 
         # upload zip file to S3

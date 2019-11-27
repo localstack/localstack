@@ -32,7 +32,8 @@ SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = """
 # list of valid attribute names, and names not supported by the backend (elasticmq)
 VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
     'Policy', 'ReceiveMessageWaitTimeSeconds', 'RedrivePolicy', 'VisibilityTimeout']
-UNSUPPORTED_ATTRIBUTE_NAMES = ['MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy']
+UNSUPPORTED_ATTRIBUTE_NAMES = [
+    'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy']
 
 # maps queue URLs to attributes set via the API
 QUEUE_ATTRIBUTES = {}

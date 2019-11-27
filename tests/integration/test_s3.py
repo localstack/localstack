@@ -12,8 +12,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     short_uid, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
 
-TEST_BUCKET_NAME_WITH_POLICY = 'test_bucket_policy_1'
-TEST_BUCKET_WITH_NOTIFICATION = 'test_bucket_notification_1'
+TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
+TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
 
 
@@ -317,7 +317,7 @@ class S3ListenerTest (unittest.TestCase):
 
     def test_bucket_exists(self):
         # Test setup
-        bucket = 'test-bucket'
+        bucket = 'test-bucket-%s' % short_uid()
 
         s3_client = aws_stack.connect_to_service('s3')
         s3_client.create_bucket(Bucket=bucket)

@@ -33,7 +33,8 @@ def register_localstack_plugins():
             listener=sns_listener.UPDATE_SNS))
         register_plugin(Plugin('sqs',
             start=sqs_starter.start_sqs,
-            listener=sqs_listener.UPDATE_SQS))
+            listener=sqs_listener.UPDATE_SQS,
+            check=sqs_starter.check_sqs))
         register_plugin(Plugin('ses',
             start=start_ses))
         register_plugin(Plugin('ssm',
