@@ -115,14 +115,16 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # create lambda permission
         action = 'lambda:InvokeFunction'
+        sid = 's3'
         resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
-            StatementId='s3', Principal='s3.amazonaws.com', SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+            StatementId=sid, Principal='s3.amazonaws.com', SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
         self.assertIn('Statement', resp)
         # fetch lambda policy
         policy = lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
         self.assertIsInstance(policy, six.string_types)
         policy = json.loads(to_str(policy))
         self.assertEqual(policy['Statement'][0]['Action'], action)
+        self.assertEqual(policy['Statement'][0]['Sid'], sid)
         self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
