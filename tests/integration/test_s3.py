@@ -335,6 +335,17 @@ class S3ListenerTest (unittest.TestCase):
         # Cleanup
         s3_client.delete_bucket(Bucket=bucket)
 
+    def test_s3_uppercase_names(self):
+        # bucket name should be case-insensitive
+        bucket_name = 'TestBucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # key name should be case-sensitive
+        object_key = 'camelCaseKey'
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        self.assertRaises(Exception, self.s3_client.get_object, Bucket=bucket_name, Key=object_key.lower())
+
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
