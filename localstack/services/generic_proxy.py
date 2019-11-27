@@ -211,7 +211,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
         path = self.path
         if '://' in path:
-            path = '/' + path.split('://', 1)[1].split('/', 1)[1]
+            path = path.split('://', 1)[1]
+            path = '/%s' % (path.split('/', 1)[1] if '/' in path else '')
         forward_base_url = self.proxy.forward_base_url
         proxy_url = '%s%s' % (forward_base_url, path)
 
