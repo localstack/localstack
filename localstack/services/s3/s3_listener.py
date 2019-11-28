@@ -446,6 +446,20 @@ def expand_redirect_url(starting_url, key, bucket):
     return redirect_url
 
 
+def is_bucket_specified_in_domain_name(path, headers):
+    host = headers.get('host', '')
+    return re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com', host)
+
+
+def is_object_specific_request(path, headers):
+    """ Return whether the given request is specific to a certain S3 object.
+        Note: the bucket name is usually specified as a path parameter,
+        but may also be part of the domain name! """
+    bucket_in_domain = is_bucket_specified_in_domain_name(path, headers)
+    parts = len(path.split('/'))
+    return parts > (1 if bucket_in_domain else 2)
+
+
 def normalize_bucket_name(bucket_name):
     bucket_name = bucket_name or ''
     # AWS appears to automatically convert upper to lower case chars in bucket names
@@ -761,17 +775,19 @@ class ProxyListenerS3(ProxyListener):
                     if param_name in query_map:
                         response.headers[header_name] = query_map[param_name][0]
 
-            # We need to un-pretty-print the XML, otherwise we run into this issue with Spark:
-            # https://github.com/jserver/mock-s3/pull/9/files
-            # https://github.com/localstack/localstack/issues/183
-            # Note: yet, we need to make sure we have a newline after the first line: <?xml ...>\n
             if response_content_str and response_content_str.startswith('<'):
                 is_bytes = isinstance(response._content, six.binary_type)
+                response._content = response_content_str
 
                 append_last_modified_headers(response=response, content=response_content_str)
 
-                # un-pretty-print the XML
-                response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
+                # We need to un-pretty-print the XML, otherwise we run into this issue with Spark:
+                # https://github.com/jserver/mock-s3/pull/9/files
+                # https://github.com/localstack/localstack/issues/183
+                # Note: yet, we need to make sure we have a newline after the first line: <?xml ...>\n
+                # Note: make sure to return XML docs verbatim: https://github.com/localstack/localstack/issues/1037
+                if method != 'GET' or not is_object_specific_request(path, headers):
+                    response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
 
                 # update Location information in response payload
                 response._content = self._update_location(response._content, bucket_name)
