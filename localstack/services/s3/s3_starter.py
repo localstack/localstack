@@ -18,6 +18,9 @@ LOG = logging.getLogger(__name__)
 # max file size for S3 objects (in MB)
 S3_MAX_FILE_SIZE_MB = 2048
 
+# temporary state
+TMP_STATE = {}
+
 
 def check_s3(expect_shutdown=False, print_error=False):
     out = None
@@ -56,18 +59,40 @@ def apply_patches():
     original_init = s3_models.FakeKey.__init__
     s3_models.FakeKey.__init__ = init
 
+    def s3_update_acls(self, request, query, bucket_name, key_name):
+        # fix for - https://github.com/localstack/localstack/issues/1733
+        #         - https://github.com/localstack/localstack/issues/1170
+        acl_key = 'acl|%s|%s' % (bucket_name, key_name)
+        acl = self._acl_from_headers(request.headers)
+        if acl:
+            TMP_STATE[acl_key] = acl
+        if not query.get('uploadId'):
+            return
+        bucket = self.backend.get_bucket(bucket_name)
+        key = bucket and self.backend.get_key(bucket_name, key_name)
+        if not key:
+            return
+        acl = acl or TMP_STATE.pop(acl_key, None) or bucket.acl
+        if acl:
+            key.set_acl(acl)
+
     def s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
         result = s3_key_response_post_orig(request, body, bucket_name, query, key_name, *args, **kwargs)
-        if query.get('uploadId'):
-            # fix for https://github.com/localstack/localstack/issues/1733
-            key = self.backend.get_key(bucket_name, key_name)
-            acl = self._acl_from_headers(request.headers) or self.backend.get_bucket(bucket_name).acl
-            key.set_acl(acl)
+        s3_update_acls(self, request, query, bucket_name, key_name)
         return result
 
     s3_key_response_post_orig = s3_responses.S3ResponseInstance._key_response_post
     s3_responses.S3ResponseInstance._key_response_post = types.MethodType(
         s3_key_response_post, s3_responses.S3ResponseInstance)
+
+    def s3_key_response_put(self, request, body, bucket_name, query, key_name, headers, *args, **kwargs):
+        result = s3_key_response_put_orig(request, body, bucket_name, query, key_name, headers, *args, **kwargs)
+        s3_update_acls(self, request, query, bucket_name, key_name)
+        return result
+
+    s3_key_response_put_orig = s3_responses.S3ResponseInstance._key_response_put
+    s3_responses.S3ResponseInstance._key_response_put = types.MethodType(
+        s3_key_response_put, s3_responses.S3ResponseInstance)
 
 
 def main():
