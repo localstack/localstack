@@ -170,6 +170,7 @@ def in_docker():
 
 
 is_in_docker = in_docker()
+is_in_linux = is_linux()
 
 # determine IP of Docker bridge
 if not DOCKER_BRIDGE_IP:
@@ -184,7 +185,7 @@ if not DOCKER_BRIDGE_IP:
 # determine route to Docker host from container
 try:
     DOCKER_HOST_FROM_CONTAINER = DOCKER_BRIDGE_IP
-    if not is_in_docker:
+    if not is_in_docker and not is_in_linux:
         # If we're running outside docker, and would like the Lambda containers to be able
         # to access services running on the local machine, set DOCKER_HOST_FROM_CONTAINER accordingly
         if LOCALSTACK_HOSTNAME == HOSTNAME:
