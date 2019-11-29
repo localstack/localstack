@@ -608,6 +608,19 @@ def apply_patches():
 
     responses.CloudFormationResponse.describe_stack_resource = describe_stack_resource
 
+    # fix moto's describe_stack_events jinja2.exceptions.UndefinedError
+
+    def cf_describe_stack_events(self):
+        stack_name = self._get_param('StackName')
+        stack = self.cloudformation_backend.get_stack(stack_name)
+        if not stack:
+            raise ValidationError(stack_name,
+                message='Unable to find stack "%s" in region %s' % (stack_name, aws_stack.get_region()))
+        return cf_describe_stack_events_orig(self)
+
+    cf_describe_stack_events_orig = responses.CloudFormationResponse.describe_stack_events
+    responses.CloudFormationResponse.describe_stack_events = cf_describe_stack_events
+
 
 def inject_stats_endpoint():
     """ Inject a simple /_stats endpoint into the moto server backend Web app. """

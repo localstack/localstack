@@ -362,6 +362,8 @@ def get_resource_name(resource):
         name = properties.get('QueueName')
     elif res_type == 'Cognito::UserPool':
         name = properties.get('PoolName')
+    elif res_type == 'StepFunctions::StateMachine':
+        name = properties.get('StateMachineName')
     else:
         LOG.warning('Unable to extract name for resource type "%s"' % res_type)
 
