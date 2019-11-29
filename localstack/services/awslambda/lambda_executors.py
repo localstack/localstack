@@ -711,7 +711,7 @@ class Util:
                     entries.append(os.path.relpath(entry, base_dir))
         # make sure to append the localstack-utils.jar at the end of the classpath
         # https://github.com/localstack/localstack/issues/1160
-        entries.append(archive)
+        entries.append(os.path.relpath(archive, base_dir))
         result = ':'.join(entries)
         return result
 
