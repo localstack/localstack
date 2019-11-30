@@ -140,6 +140,8 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', version
 
 
 def queue_url_for_arn(queue_arn):
+    if '://' in queue_arn:
+        return queue_arn
     sqs_client = aws_stack.connect_to_service('sqs')
     parts = queue_arn.split(':')
     return sqs_client.get_queue_url(QueueName=parts[5],
@@ -430,7 +432,8 @@ def check_content_md5(data, headers):
 def error_response(message, code, status_code=400):
     result = {'Error': {'Code': code, 'Message': message}}
     content = xmltodict.unparse(result)
-    return requests_response(content, status_code=status_code)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
 
 
 def expand_redirect_url(starting_url, key, bucket):
