@@ -2,6 +2,7 @@ import re
 import os
 import json
 import time
+import shutil
 import unittest
 import six
 from io import BytesIO
@@ -10,7 +11,8 @@ from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSIO
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    short_uid, load_file, to_str, mkdir, download, run_safe, get_free_tcp_port, get_service_protocol)
+    unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
+    run_safe, get_free_tcp_port, get_service_protocol)
 from localstack.services.infra import start_proxy
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
@@ -40,7 +42,6 @@ TEST_LAMBDA_NAME_CUSTOM_RUNTIME = 'test_lambda_custom_runtime'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
-TEST_LAMBDA_NAME_JAVA_WITH_LIB = 'test_lambda_java_with_lib'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 MAVEN_BASE_URL = 'https://repo.maven.apache.org/maven2'
@@ -521,22 +522,12 @@ class TestJavaRuntimes(LambdaTestBase):
             handler='cloud.localstack.sample.SerializedInputLambdaHandler'
         )
 
-        # upload the JAR directly
-        cls.test_java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode='rb')
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_JAVA_WITH_LIB,
-            zip_file=cls.test_java_jar_with_lib,
-            runtime=LAMBDA_RUNTIME_JAVA8,
-            handler='cloud.localstack.sample.LambdaHandlerWithLib'
-        )
-
     @classmethod
     def tearDownClass(cls):
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA)
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_STREAM)
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_SERIALIZABLE)
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_WITH_LIB)
 
     def test_java_runtime(self):
         self.assertIsNotNone(self.test_java_jar)
@@ -549,14 +540,30 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertIn('LinkedHashMap', to_str(result_data))
 
     def test_java_runtime_with_lib(self):
-        self.assertIsNotNone(self.test_java_jar_with_lib)
+        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode='rb')
 
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA_WITH_LIB, Payload=b'{"echo":"echo"}')
-        result_data = result['Payload'].read()
+        # create ZIP file from JAR file
+        jar_dir = new_tmp_dir()
+        zip_dir = new_tmp_dir()
+        unzip(TEST_LAMBDA_JAVA_WITH_LIB, jar_dir)
+        shutil.move(os.path.join(jar_dir, 'lib'), os.path.join(zip_dir, 'lib'))
+        jar_without_libs_file = testutil.create_zip_file(jar_dir)
+        shutil.copy(jar_without_libs_file, os.path.join(zip_dir, 'lib', 'lambda.jar'))
+        java_zip_with_lib = testutil.create_zip_file(zip_dir, get_content=True)
 
-        self.assertEqual(result['StatusCode'], 200)
-        self.assertIn('echo', to_str(result_data))
+        for archive in [java_jar_with_lib, java_zip_with_lib]:
+            lambda_name = 'test-%s' % short_uid()
+            testutil.create_lambda_function(func_name=lambda_name,
+                zip_file=archive, runtime=LAMBDA_RUNTIME_JAVA8,
+                handler='cloud.localstack.sample.LambdaHandlerWithLib')
+
+            result = self.lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
+            result_data = result['Payload'].read()
+
+            self.assertEqual(result['StatusCode'], 200)
+            self.assertIn('echo', to_str(result_data))
+            # clean up
+            testutil.delete_lambda_function(lambda_name)
 
     def test_sns_event(self):
         result = self.lambda_client.invoke(

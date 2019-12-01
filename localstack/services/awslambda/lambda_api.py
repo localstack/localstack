@@ -470,15 +470,15 @@ def get_java_handler(zip_file_content, handler, main_file):
     """
     if not is_jar_archive(zip_file_content):
         with zipfile.ZipFile(BytesIO(zip_file_content)) as zip_ref:
+            # TODO: check if this is still needed (probably not)
             jar_entries = [e for e in zip_ref.infolist() if e.filename.endswith('.jar')]
-            if len(jar_entries) != 1:
-                raise ClientError('Expected exactly one *.jar entry in zip file, found %s' % len(jar_entries))
-            zip_file_content = zip_ref.read(jar_entries[0].filename)
-            LOG.info('Found jar file %s with %s bytes in Lambda zip archive' %
-                     (jar_entries[0].filename, len(zip_file_content)))
-            main_file = new_tmp_file()
-            save_file(main_file, zip_file_content)
-    if is_jar_archive(zip_file_content):
+            if len(jar_entries) == 1:
+                zip_file_content = zip_ref.read(jar_entries[0].filename)
+                LOG.info('Found single jar file %s with %s bytes in Lambda zip archive' %
+                         (jar_entries[0].filename, len(zip_file_content)))
+                main_file = new_tmp_file()
+                save_file(main_file, zip_file_content)
+    if is_zip_file(zip_file_content):
         def execute(event, context):
             result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
                 event, context, handler=handler, main_file=main_file)
@@ -557,36 +557,24 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
-    if runtime == LAMBDA_RUNTIME_JAVA8:
-        # The Lambda executors for Docker subclass LambdaExecutorContainers,
-        # which runs Lambda in Docker by passing all *.jar files in the function
-        # working directory as part of the classpath. Because of this, we need to
-        # save the zip_file_content as a .jar here.
-        lambda_handler, zip_file_content = get_java_handler(zip_file_content, handler_name, tmp_file)
-        if is_jar_archive(zip_file_content):
-            jar_tmp_file = '{working_dir}/{file_name}'.format(
-                working_dir=lambda_cwd, file_name=LAMBDA_JAR_FILE_NAME)
-            save_file(jar_tmp_file, zip_file_content)
 
-            # AWS Lambda allows dependencies in the "lib" folder of the jar
-            # ref: https://docs.aws.amazon.com/lambda/latest/dg/create-deployment-pkg-zip-java.html
-            #     "The deployment package must have the following structure.
-            #       * All compiled class files and resource files at the root level.
-            #       * All required jars to run the code in the /lib directory."
-            # We extract the lib folder here in order to add it to the classpath in
-            # lambda_executors.py. This will always return a 0 exit code, even if
-            # the "lib" folder does not exist.
-            run('cd "%s"; jar xvf %s lib' % (os.path.dirname(jar_tmp_file), os.path.basename(jar_tmp_file)))
-    else:
+    if runtime == LAMBDA_RUNTIME_JAVA8:
+        # The Lambda executors for Docker subclass LambdaExecutorContainers, which
+        # runs Lambda in Docker by passing all *.jar files in the function working
+        # directory as part of the classpath. Obtain a Java handler function below.
+        lambda_handler, zip_file_content = get_java_handler(zip_file_content, handler_name, tmp_file)
+
+    if not is_local_mount:
+        # Lambda code must be uploaded in Zip format
+        if not is_zip_file(zip_file_content):
+            raise ClientError(
+                'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
+        unzip(tmp_file, lambda_cwd)
+
+    # Obtain handler details for any non-Java Lambda function
+    if runtime != LAMBDA_RUNTIME_JAVA8:
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
-
-        if not is_local_mount:
-            # Lambda code must be uploaded in Zip format
-            if not is_zip_file(zip_file_content):
-                raise ClientError(
-                    'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
-            unzip(tmp_file, lambda_cwd)
 
         main_file = '%s/%s' % (lambda_cwd, handler_file)
         if not os.path.exists(main_file):

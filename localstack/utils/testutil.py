@@ -83,7 +83,6 @@ def create_zip_file(file_path, get_content=False):
                 zip_file.write(full_name, dest)
     if not get_content:
         TMP_FILES.append(tmp_dir)
-        shutil.rmtree(tmp_dir)
         return full_zip_file
     zip_file_content = None
     with open(full_zip_file, 'rb') as file_obj:
