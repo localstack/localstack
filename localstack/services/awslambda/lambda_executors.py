@@ -707,7 +707,11 @@ class Util:
         base_dir = os.path.dirname(archive)
         for pattern in ['%s/*.jar', '%s/lib/*.jar']:
             for entry in glob.glob(pattern % base_dir):
-                entries.append(os.path.relpath(entry, base_dir))
+                if os.path.realpath(archive) != os.path.realpath(entry):
+                    entries.append(os.path.relpath(entry, base_dir))
+        # make sure to append the localstack-utils.jar at the end of the classpath
+        # https://github.com/localstack/localstack/issues/1160
+        entries.append(os.path.relpath(archive, base_dir))
         result = ':'.join(entries)
         return result
 

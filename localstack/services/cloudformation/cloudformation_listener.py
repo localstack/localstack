@@ -8,7 +8,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 from samtranslator.translator.transform import transform as transform_sam
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, obj_to_xml, safe_requests
+from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -100,8 +100,8 @@ def get_template_body(req_data):
         return body
     url = req_data.get('TemplateURL')
     if url:
-        response = safe_requests.get(url, verify=False)
-        if response.status_code >= 400:
+        response = run_safe(lambda: safe_requests.get(url, verify=False))
+        if not response or response.status_code >= 400:
             # check if this is an S3 URL, then get the file directly from there
             if '://localhost' in url or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url):
                 parsed_path = urlparse.urlparse(url).path.lstrip('/')

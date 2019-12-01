@@ -469,7 +469,7 @@ class TestLambdaAPI(unittest.TestCase):
         lib_file = os.path.join(base_dir, 'lib', 'lib.jar')
         mkdir(os.path.dirname(lib_file))
         save_file(lib_file, '')
-        self.assertEquals('.:foo.jar:lib/lib.jar', lambda_executors.Util.get_java_classpath(jar_file))
+        self.assertEquals('.:lib/lib.jar:foo.jar', lambda_executors.Util.get_java_classpath(jar_file))
 
     def test_get_java_lib_folder_classpath_archive_is_None(self):
         self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
