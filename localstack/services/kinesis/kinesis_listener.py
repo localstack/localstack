@@ -20,7 +20,7 @@ ACTION_UPDATE_SHARD_COUNT = '%s.UpdateShardCount' % ACTION_PREFIX
 class ProxyListenerKinesis(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        data = json.loads(to_str(data))
+        data = json.loads(to_str(data or '{}'))
         action = headers.get('X-Amz-Target')
 
         if action == '%s.DescribeStreamConsumer' % ACTION_PREFIX:
@@ -45,7 +45,7 @@ class ProxyListenerKinesis(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target')
-        data = json.loads(to_str(data))
+        data = json.loads(to_str(data or '{}'))
 
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):
