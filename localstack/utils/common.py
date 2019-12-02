@@ -63,6 +63,8 @@ LOG = logging.getLogger(__name__)
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
 
+SSL_CERT_LOCK = threading.RLock()
+
 
 class CustomEncoder(json.JSONEncoder):
     """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
@@ -811,7 +813,7 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
-@synchronized
+@synchronized(lock=SSL_CERT_LOCK)
 def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_content=False, serial_number=None):
     # Note: Do NOT import "OpenSSL" at the root scope
     # (Our test Lambdas are importing this file but don't have the module installed)
