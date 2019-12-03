@@ -33,6 +33,20 @@ class S3ListenerTest (unittest.TestCase):
         self.s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
 
+    def test_create_bucket_via_host_name(self):
+        body = """<?xml version="1.0" encoding="UTF-8"?>
+            <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                <LocationConstraint>eu-central-1</LocationConstraint>
+            </CreateBucketConfiguration>"""
+        headers = aws_stack.mock_aws_request_headers('s3')
+        bucket_name = 'test-%s' % short_uid()
+        headers['Host'] = '%s.s3.amazonaws.com' % bucket_name
+        response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
+        self.assertEquals(response.status_code, 200)
+        response = self.s3_client.get_bucket_location(Bucket=bucket_name)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('LocationConstraint', response)
+
     def test_bucket_policy(self):
         # create test bucket
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_WITH_POLICY)
