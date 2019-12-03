@@ -367,13 +367,15 @@ class DuplexSocket(ssl.SSLSocket):
 
     def accept(self):
         newsock, addr = socket.socket.accept(self)
-        first_bytes = newsock.recv(5, socket.MSG_PEEK)
-        first_byte = first_bytes[0]
-        if first_byte < 32 or first_byte >= 127 and len(first_bytes) == 5:
-            newsock = self.context.wrap_socket(newsock,
-                        do_handshake_on_connect=self.do_handshake_on_connect,
-                        suppress_ragged_eofs=self.suppress_ragged_eofs,
-                        server_side=True)
+        peek_bytes = 5
+        first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
+        if len(first_bytes or '') == peek_bytes:
+            first_byte = first_bytes[0]
+            if first_byte < 32 or first_byte >= 127:
+                newsock = self.context.wrap_socket(newsock,
+                            do_handshake_on_connect=self.do_handshake_on_connect,
+                            suppress_ragged_eofs=self.suppress_ragged_eofs,
+                            server_side=True)
 
         return newsock, addr
 
