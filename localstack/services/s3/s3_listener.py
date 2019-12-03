@@ -568,6 +568,9 @@ class ProxyListenerS3(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
 
+        # parse path and query params
+        parsed_path = urlparse.urlparse(path)
+
         # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
         # Note that all S3 clients using LocalStack need to enable path style addressing.
         if 's3.amazonaws.com' not in headers.get('host', ''):
@@ -584,6 +587,10 @@ class ProxyListenerS3(ProxyListener):
         # check bucket name
         bucket_name = get_bucket_name(path, headers)
         if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
+            if len(parsed_path.path) <= 1:
+                return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
+                    'configured to use path style addressing, or send a valid <Bucket>.s3.amazonaws.com "Host" header',
+                    'InvalidBucketName', status_code=400)
             return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
@@ -616,9 +623,8 @@ class ProxyListenerS3(ProxyListener):
         persistence.record('s3', method, path, data, headers)
 
         # parse query params
-        parsed = urlparse.urlparse(path)
-        query = parsed.query
-        path = parsed.path
+        query = parsed_path.query
+        path = parsed_path.path
         bucket = path.split('/')[1]
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
 
