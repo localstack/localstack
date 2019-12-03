@@ -23,6 +23,7 @@ import six
 import shutil
 import requests
 import dns.resolver
+import functools
 from io import BytesIO
 from contextlib import closing
 from datetime import datetime
@@ -61,6 +62,8 @@ LOG = logging.getLogger(__name__)
 
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
+
+SSL_CERT_LOCK = threading.RLock()
 
 
 class CustomEncoder(json.JSONEncoder):
@@ -289,6 +292,19 @@ class CaptureOutput(object):
 # ----------------
 # UTILITY METHODS
 # ----------------
+
+def synchronized(lock=None):
+    """
+    Synchronization decorator as described in
+    http://blog.dscpl.com.au/2014/01/the-missing-synchronized-decorator.html.
+    """
+    def _decorator(wrapped):
+        @functools.wraps(wrapped)
+        def _wrapper(*args, **kwargs):
+            with lock:
+                return wrapped(*args, **kwargs)
+        return _wrapper
+    return _decorator
 
 
 def is_string(s, include_unicode=True, exclude_binary=False):
@@ -797,6 +813,7 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
+@synchronized(lock=SSL_CERT_LOCK)
 def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_content=False, serial_number=None):
     # Note: Do NOT import "OpenSSL" at the root scope
     # (Our test Lambdas are importing this file but don't have the module installed)

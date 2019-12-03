@@ -1,8 +1,6 @@
 import json
 import unittest
-
 from requests.models import Response
-
 from localstack import config
 from localstack.services.kinesis.kinesis_listener import UPDATE_KINESIS
 from localstack.utils.common import to_str

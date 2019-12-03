@@ -13,7 +13,7 @@ import dateutil.parser
 from six.moves.urllib import parse as urlparse
 from botocore.client import ClientError
 from requests.models import Response, Request
-from localstack import config
+from localstack import config, constants
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
@@ -38,6 +38,10 @@ LOGGER = logging.getLogger(__name__)
 
 # XML namespace constants
 XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
+
+# see https://stackoverflow.com/questions/50480924/regex-for-s3-bucket-name#50484916
+BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
+    r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
@@ -95,6 +99,7 @@ def prefix_with_slash(s):
 
 def get_event_message(event_name, bucket_name, file_name='testfile.txt', version_id=None, file_size=1024):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
+    bucket_name = normalize_bucket_name(bucket_name)
     return {
         'Records': [{
             'eventVersion': '2.0',
@@ -135,6 +140,8 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', version
 
 
 def queue_url_for_arn(queue_arn):
+    if '://' in queue_arn:
+        return queue_arn
     sqs_client = aws_stack.connect_to_service('sqs')
     parts = queue_arn.split(':')
     return sqs_client.get_queue_url(QueueName=parts[5],
@@ -142,6 +149,7 @@ def queue_url_for_arn(queue_arn):
 
 
 def send_notifications(method, bucket_name, object_path, version_id):
+    bucket_name = normalize_bucket_name(bucket_name)
     for bucket, notifs in S3_NOTIFICATIONS.items():
         if bucket == bucket_name:
             action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
@@ -159,6 +167,8 @@ def send_notifications(method, bucket_name, object_path, version_id):
 
 
 def send_notification_for_subscriber(notif, bucket_name, object_path, version_id, api_method, action, event_name):
+    bucket_name = normalize_bucket_name(bucket_name)
+
     if (not event_type_matches(notif['Event'], action, api_method) or
             not filter_rules_match(notif.get('Filter'), object_path)):
         return
@@ -202,6 +212,7 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
 
 
 def get_cors(bucket_name):
+    bucket_name = normalize_bucket_name(bucket_name)
     response = Response()
 
     exists, code = bucket_exists(bucket_name)
@@ -221,6 +232,7 @@ def get_cors(bucket_name):
 
 
 def set_cors(bucket_name, cors):
+    bucket_name = normalize_bucket_name(bucket_name)
     response = Response()
 
     exists, code = bucket_exists(bucket_name)
@@ -236,6 +248,7 @@ def set_cors(bucket_name, cors):
 
 
 def delete_cors(bucket_name):
+    bucket_name = normalize_bucket_name(bucket_name)
     response = Response()
 
     exists, code = bucket_exists(bucket_name)
@@ -249,6 +262,8 @@ def delete_cors(bucket_name):
 
 
 def append_cors_headers(bucket_name, request_method, request_headers, response):
+    bucket_name = normalize_bucket_name(bucket_name)
+
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
         return
@@ -317,6 +332,8 @@ def append_metadata_headers(method, query_map, headers):
 
 
 def get_lifecycle(bucket_name):
+    bucket_name = normalize_bucket_name(bucket_name)
+
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
     if not lifecycle:
         # TODO: check if bucket exists, otherwise return 404-like error
@@ -328,8 +345,9 @@ def get_lifecycle(bucket_name):
 
 
 def get_replication(bucket_name):
-    # TODO return actual value
+    bucket_name = normalize_bucket_name(bucket_name)
 
+    # TODO return actual value
     # result = {
     #     'Error': {
     #         'Code': 'NoSuchReplicationConfiguration',
@@ -348,6 +366,8 @@ def get_replication(bucket_name):
 
 
 def get_encryption(bucket_name):
+    bucket_name = normalize_bucket_name(bucket_name)
+
     # TODO return actual value
     result = {
         'ServerSideEncryptionConfiguration': {}
@@ -357,6 +377,8 @@ def get_encryption(bucket_name):
 
 
 def set_lifecycle(bucket_name, lifecycle):
+    bucket_name = normalize_bucket_name(bucket_name)
+
     # TODO: check if bucket exists, otherwise return 404-like error
     if isinstance(to_str(lifecycle), six.string_types):
         lifecycle = xmltodict.parse(lifecycle)
@@ -384,6 +406,8 @@ def bucket_exists(bucket_name):
     """Tests for the existence of the specified bucket. Returns the error code
     if the bucket does not exist (200 if the bucket does exist).
     """
+    bucket_name = normalize_bucket_name(bucket_name)
+
     s3_client = aws_stack.connect_to_service('s3')
     try:
         s3_client.head_bucket(Bucket=bucket_name)
@@ -402,14 +426,14 @@ def check_content_md5(data, headers):
     except Exception:
         expected = '__invalid__'
     if actual != expected:
-        result = {
-            'Error': {
-                'Code': 'InvalidDigest',
-                'Message': 'The Content-MD5 you specified was invalid'
-            }
-        }
-        content = xmltodict.unparse(result)
-        return requests_response(content, status_code=400)
+        return error_response('The Content-MD5 you specified was invalid', 'InvalidDigest', status_code=400)
+
+
+def error_response(message, code, status_code=400):
+    result = {'Error': {'Code': code, 'Message': message}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
 
 
 def expand_redirect_url(starting_url, key, bucket):
@@ -425,6 +449,27 @@ def expand_redirect_url(starting_url, key, bucket):
     return redirect_url
 
 
+def is_bucket_specified_in_domain_name(path, headers):
+    host = headers.get('host', '')
+    return re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com', host)
+
+
+def is_object_specific_request(path, headers):
+    """ Return whether the given request is specific to a certain S3 object.
+        Note: the bucket name is usually specified as a path parameter,
+        but may also be part of the domain name! """
+    bucket_in_domain = is_bucket_specified_in_domain_name(path, headers)
+    parts = len(path.split('/'))
+    return parts > (1 if bucket_in_domain else 2)
+
+
+def normalize_bucket_name(bucket_name):
+    bucket_name = bucket_name or ''
+    # AWS appears to automatically convert upper to lower case chars in bucket names
+    bucket_name = bucket_name.lower()
+    return bucket_name
+
+
 def get_bucket_name(path, headers):
     parsed = urlparse.urlparse(path)
 
@@ -435,7 +480,7 @@ def get_bucket_name(path, headers):
 
     # is the hostname not starting a bucket name?
     if host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL):
-        return bucket_name
+        return normalize_bucket_name(bucket_name)
 
     # matches the common endpoints like
     #     - '<bucket_name>.s3.<region>.amazonaws.com'
@@ -462,7 +507,7 @@ def get_bucket_name(path, headers):
 
     # we're either returning the original bucket_name,
     # or a pattern matched the host and we're returning that name instead
-    return bucket_name
+    return normalize_bucket_name(bucket_name)
 
 
 def handle_notification_request(bucket, method, data):
@@ -523,6 +568,9 @@ class ProxyListenerS3(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
 
+        # parse path and query params
+        parsed_path = urlparse.urlparse(path)
+
         # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
         # Note that all S3 clients using LocalStack need to enable path style addressing.
         if 's3.amazonaws.com' not in headers.get('host', ''):
@@ -535,6 +583,15 @@ class ProxyListenerS3(ProxyListener):
                 return response
 
         modified_data = None
+
+        # check bucket name
+        bucket_name = get_bucket_name(path, headers)
+        if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
+            if len(parsed_path.path) <= 1:
+                return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
+                    'configured to use path style addressing, or send a valid <Bucket>.s3.amazonaws.com "Host" header',
+                    'InvalidBucketName', status_code=400)
+            return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
         to_find = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
@@ -566,9 +623,8 @@ class ProxyListenerS3(ProxyListener):
         persistence.record('s3', method, path, data, headers)
 
         # parse query params
-        parsed = urlparse.urlparse(path)
-        query = parsed.query
-        path = parsed.path
+        query = parsed_path.query
+        path = parsed_path.path
         bucket = path.split('/')[1]
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
 
@@ -622,6 +678,19 @@ class ProxyListenerS3(ProxyListener):
             bucket=bucket_name,
             etag='d41d8cd98f00b204e9800998ecf8427f',
         )
+
+    def get_forward_url(self, method, path, data, headers):
+        def sub(match):
+            # make sure to convert any bucket names to lower case
+            bucket_name = normalize_bucket_name(match.group(1))
+            return '/%s%s' % (bucket_name, match.group(2) or '')
+
+        path_new = re.sub(r'/([^?/]+)([?/].*)?', sub, path)
+        if path == path_new:
+            return
+        url = '%s://%s:%s%s' % (get_service_protocol(), constants.LOCALHOST,
+            constants.DEFAULT_PORT_S3_BACKEND, path_new)
+        return url
 
     def return_response(self, method, path, data, headers, response):
 
@@ -740,17 +809,19 @@ class ProxyListenerS3(ProxyListener):
                     if param_name in query_map:
                         response.headers[header_name] = query_map[param_name][0]
 
-            # We need to un-pretty-print the XML, otherwise we run into this issue with Spark:
-            # https://github.com/jserver/mock-s3/pull/9/files
-            # https://github.com/localstack/localstack/issues/183
-            # Note: yet, we need to make sure we have a newline after the first line: <?xml ...>\n
             if response_content_str and response_content_str.startswith('<'):
                 is_bytes = isinstance(response._content, six.binary_type)
+                response._content = response_content_str
 
                 append_last_modified_headers(response=response, content=response_content_str)
 
-                # un-pretty-print the XML
-                response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
+                # We need to un-pretty-print the XML, otherwise we run into this issue with Spark:
+                # https://github.com/jserver/mock-s3/pull/9/files
+                # https://github.com/localstack/localstack/issues/183
+                # Note: yet, we need to make sure we have a newline after the first line: <?xml ...>\n
+                # Note: make sure to return XML docs verbatim: https://github.com/localstack/localstack/issues/1037
+                if method != 'GET' or not is_object_specific_request(path, headers):
+                    response._content = re.sub(r'([^\?])>\n\s*<', r'\1><', response_content_str, flags=re.MULTILINE)
 
                 # update Location information in response payload
                 response._content = self._update_location(response._content, bucket_name)
@@ -776,6 +847,8 @@ class ProxyListenerS3(ProxyListener):
                 response.headers['content-length'] = len(response._content)
 
     def _update_location(self, content, bucket_name):
+        bucket_name = normalize_bucket_name(bucket_name)
+
         host = config.HOSTNAME_EXTERNAL
         if ':' not in host:
             host = '%s:%s' % (host, config.PORT_S3)

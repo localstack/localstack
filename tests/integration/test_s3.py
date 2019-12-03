@@ -12,8 +12,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     short_uid, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
 
-TEST_BUCKET_NAME_WITH_POLICY = 'test_bucket_policy_1'
-TEST_BUCKET_WITH_NOTIFICATION = 'test_bucket_notification_1'
+TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
+TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
 
 
@@ -32,6 +32,20 @@ class S3ListenerTest (unittest.TestCase):
     def setUp(self):
         self.s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
+
+    def test_create_bucket_via_host_name(self):
+        body = """<?xml version="1.0" encoding="UTF-8"?>
+            <CreateBucketConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+                <LocationConstraint>eu-central-1</LocationConstraint>
+            </CreateBucketConfiguration>"""
+        headers = aws_stack.mock_aws_request_headers('s3')
+        bucket_name = 'test-%s' % short_uid()
+        headers['Host'] = '%s.s3.amazonaws.com' % bucket_name
+        response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
+        self.assertEquals(response.status_code, 200)
+        response = self.s3_client.get_bucket_location(Bucket=bucket_name)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('LocationConstraint', response)
 
     def test_bucket_policy(self):
         # create test bucket
@@ -150,6 +164,26 @@ class S3ListenerTest (unittest.TestCase):
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+
+    def test_s3_multipart_upload_acls(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name, ACL='public-read')
+
+        def check_permissions(key, expected_perms):
+            grants = self.s3_client.get_object_acl(Bucket=bucket_name, Key=key)['Grants']
+            grants = [g for g in grants if 'AllUsers' in g.get('Grantee', {}).get('URI', '')]
+            self.assertEquals(len(grants), 1)
+            permissions = grants[0]['Permission']
+            permissions = permissions if isinstance(permissions, list) else [permissions]
+            self.assertEquals(len(permissions), expected_perms)
+
+        # perform uploads (multipart and regular) and check ACLs
+        self.s3_client.put_object(Bucket=bucket_name, Key='acl-key0', Body='something')
+        check_permissions('acl-key0', 1)
+        self._perform_multipart_upload(bucket=bucket_name, key='acl-key1')
+        check_permissions('acl-key1', 1)
+        self._perform_multipart_upload(bucket=bucket_name, key='acl-key2', acl='public-read-write')
+        check_permissions('acl-key2', 2)
 
     def test_s3_presigned_url_upload(self):
         key_by_path = 'key-by-hostname'
@@ -317,7 +351,7 @@ class S3ListenerTest (unittest.TestCase):
 
     def test_bucket_exists(self):
         # Test setup
-        bucket = 'test-bucket'
+        bucket = 'test-bucket-%s' % short_uid()
 
         s3_client = aws_stack.connect_to_service('s3')
         s3_client.create_bucket(Bucket=bucket)
@@ -334,6 +368,17 @@ class S3ListenerTest (unittest.TestCase):
 
         # Cleanup
         s3_client.delete_bucket(Bucket=bucket)
+
+    def test_s3_uppercase_names(self):
+        # bucket name should be case-insensitive
+        bucket_name = 'TestBucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # key name should be case-sensitive
+        object_key = 'camelCaseKey'
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        self.assertRaises(Exception, self.s3_client.get_object, Bucket=bucket_name, Key=object_key.lower())
 
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -572,8 +617,8 @@ class S3ListenerTest (unittest.TestCase):
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
     def _perform_multipart_upload(self, bucket, key, data=None, zip=False, acl=None):
-        acl = acl or 'private'
-        multipart_upload_dict = self.s3_client.create_multipart_upload(Bucket=bucket, Key=key, ACL=acl)
+        kwargs = {'ACL': acl} if acl else {}
+        multipart_upload_dict = self.s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
         uploadId = multipart_upload_dict['UploadId']
 
         # Write contents to memory rather than a file.

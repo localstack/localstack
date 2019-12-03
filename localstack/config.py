@@ -170,6 +170,7 @@ def in_docker():
 
 
 is_in_docker = in_docker()
+is_in_linux = is_linux()
 
 # determine IP of Docker bridge
 if not DOCKER_BRIDGE_IP:
@@ -184,10 +185,14 @@ if not DOCKER_BRIDGE_IP:
 # determine route to Docker host from container
 try:
     DOCKER_HOST_FROM_CONTAINER = DOCKER_BRIDGE_IP
-    if not is_in_docker:
-        DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
+    if not is_in_docker and not is_in_linux:
+        # If we're running outside docker, and would like the Lambda containers to be able
+        # to access services running on the local machine, set DOCKER_HOST_FROM_CONTAINER accordingly
+        if LOCALSTACK_HOSTNAME == HOSTNAME:
+            DOCKER_HOST_FROM_CONTAINER = 'host.docker.internal'
     # update LOCALSTACK_HOSTNAME if host.docker.internal is available
     if is_in_docker and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
+        DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
         LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
     pass
@@ -256,7 +261,7 @@ def populate_configs(service_ports=None):
 
         # define PORT_* variables with actual service ports as per configuration
         port_var_name = 'PORT_%s' % key_upper
-        port_number = SERVICE_PORTS.get(key, 0)
+        port_number = service_port(key)
         globs[port_var_name] = port_number
         url = 'http%s://%s:%s' % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, port_number)
         # define TEST_*_URL variables with mock service endpoints
@@ -275,6 +280,10 @@ def populate_configs(service_ports=None):
 
 def service_port(service_key):
     return SERVICE_PORTS.get(service_key, 0)
+
+
+def external_service_url(service_key):
+    return 'http%s://%s:%s' % ('s' if USE_SSL else '', HOSTNAME_EXTERNAL, service_port(service_key))
 
 
 # initialize config values

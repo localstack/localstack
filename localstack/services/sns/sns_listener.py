@@ -7,7 +7,7 @@ import requests
 import xmltodict
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
-from localstack.config import TEST_SNS_URL
+from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, to_str, timestamp, TIMESTAMP_FORMAT_MILLIS
@@ -254,12 +254,13 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
     # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
     if protocol in ['http', 'https']:
         token = short_uid()
+        external_url = external_service_url('sns')
         confirmation = {
             'Type': ['SubscriptionConfirmation'],
             'Token': [token],
             'Message': [('You have chosen to subscribe to the topic %s.\n' % topic_arn) +
                 'To confirm the subscription, visit the SubscribeURL included in this message.'],
-            'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (TEST_SNS_URL, topic_arn, token)]
+            'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
         }
         publish_message(topic_arn, confirmation, subscription_arn)
 

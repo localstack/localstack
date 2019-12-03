@@ -1,23 +1,25 @@
 import time
+import unittest
 from requests.models import Response
 from localstack.utils.aws import aws_stack
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.utils.common import download, parallelize, TMP_FILES, load_file, parse_chunked_data
 
 
-def test_environment():
-    env = aws_stack.Environment.from_json({'prefix': 'foobar1'})
-    assert env.prefix == 'foobar1'
-    env = aws_stack.Environment.from_string('foobar2')
-    assert env.prefix == 'foobar2'
+class TestMisc(unittest.TestCase):
 
+    def test_environment(self):
+        env = aws_stack.Environment.from_json({'prefix': 'foobar1'})
+        self.assertEqual(env.prefix, 'foobar1')
+        env = aws_stack.Environment.from_string('foobar2')
+        self.assertEqual(env.prefix, 'foobar2')
 
-def test_parse_chunked_data():
-    # See: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
-    chunked = '4\r\nWiki\r\n5\r\npedia\r\nE\r\n in\r\n\r\nchunks.\r\n0\r\n\r\n'
-    expected = 'Wikipedia in\r\n\r\nchunks.'
-    parsed = parse_chunked_data(chunked)
-    assert parsed.strip() == expected.strip()
+    def test_parse_chunked_data(self):
+        # See: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
+        chunked = '4\r\nWiki\r\n5\r\npedia\r\nE\r\n in\r\n\r\nchunks.\r\n0\r\n\r\n'
+        expected = 'Wikipedia in\r\n\r\nchunks.'
+        parsed = parse_chunked_data(chunked)
+        self.assertEqual(parsed.strip(), expected.strip())
 
 
 # This test is not enabled in CI, it is just used for manual
