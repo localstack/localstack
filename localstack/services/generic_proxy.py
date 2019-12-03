@@ -362,6 +362,28 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         return
 
 
+class DuplexSocket(ssl.SSLSocket):
+    """ Simple duplex socket wrapper that allows serving HTTP/HTTPS over the same port. """
+
+    def accept(self):
+        newsock, addr = socket.socket.accept(self)
+        peek_bytes = 5
+        first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
+        if len(first_bytes or '') == peek_bytes:
+            first_byte = first_bytes[0]
+            if first_byte < 32 or first_byte >= 127:
+                newsock = self.context.wrap_socket(newsock,
+                            do_handshake_on_connect=self.do_handshake_on_connect,
+                            suppress_ragged_eofs=self.suppress_ragged_eofs,
+                            server_side=True)
+
+        return newsock, addr
+
+
+# set globally defined SSL socket implementation class
+ssl.SSLContext.sslsocket_class = DuplexSocket
+
+
 class GenericProxy(FuncThread):
     def __init__(self, port, forward_url=None, ssl=False, host=None, update_listener=None, quiet=False, params={}):
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
