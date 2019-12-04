@@ -17,7 +17,7 @@ Resources:
   SNSTopic:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: cf-test-topic-1-1
+      TopicName: { "Fn::Join": [ "", [ { "Ref": "AWS::StackName" }, "-test-topic-1-1" ] ] }
       Tags:
         - Key: foobar
           Value:
