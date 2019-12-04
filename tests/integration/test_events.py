@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
-
 import json
+import os
 import unittest
 from datetime import datetime
 
+from localstack.services.events.events_listener import EVENTS_TMP_DIR
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import load_file
 
 TEST_RULE_NAME = 'TestRule'
 TEST_EVENT_SOURCE = 'integration_tests'
 TEST_DETAIL_TYPE = 'TEST_EVENT'
+TEST_DETAIL = 'some detail'
 
 TEST_EVENT_PATTERN = {
     'Source': TEST_EVENT_SOURCE,
     'DetailType': TEST_DETAIL_TYPE,
-    'Detail': 'something'
+    'Detail': TEST_DETAIL
 }
 
 
@@ -23,15 +26,22 @@ class EventsTest(unittest.TestCase):
         self.events_client = aws_stack.connect_to_service('events')
 
     def test_put_rule(self):
-        self.events_client.put_rule(Name='test_rule', EventPattern=json.dumps(TEST_EVENT_PATTERN))
-        rules = self.events_client.list_rules(NamePrefix='test_rule')['Rules']
+        self.events_client.put_rule(Name=TEST_RULE_NAME, EventPattern=json.dumps(TEST_EVENT_PATTERN))
+        rules = self.events_client.list_rules(NamePrefix=TEST_RULE_NAME)['Rules']
 
         self.assertEqual(1, len(rules))
         self.assertEqual(TEST_EVENT_PATTERN, json.loads(rules[0]['EventPattern']))
 
     def test_put_events(self):
-        self.events_client.put_events(Entries=[{
+        response = self.events_client.put_events(Entries=[{
             'Time': datetime(2019, 7, 29),
             'DetailType': TEST_DETAIL_TYPE,
-            'Detail': 'some detail'
+            'Detail': TEST_DETAIL
         }])
+        entries = response['Entries']
+        self.assertEqual(1, len(entries))
+        event_id = entries[0]['EventId']
+        self.assertRegexpMatches(event_id, '[0-9a-f-]{36}')
+        event_from_file = json.loads(str(load_file(os.path.join(EVENTS_TMP_DIR, event_id))))
+        self.assertEqual(TEST_DETAIL_TYPE, event_from_file['DetailType'])
+        self.assertEqual(TEST_DETAIL, event_from_file['Detail'])

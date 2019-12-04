@@ -13,7 +13,7 @@ from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
-    DEFAULT_PORT_EC2_BACKEND, DEFAULT_SERVICE_PORTS)
+    DEFAULT_PORT_EC2_BACKEND, DEFAULT_PORT_EVENTS_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
@@ -143,9 +143,10 @@ def start_cloudwatch_logs(port=None, asynchronous=False):
     return start_moto_server('logs', port, name='CloudWatch Logs', asynchronous=asynchronous)
 
 
-def start_events(port=None, asynchronous=False):
+def start_events(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_EVENTS
-    return start_moto_server('events', port, name='CloudWatch Events', asynchronous=asynchronous)
+    return start_moto_server('events', port, name='CloudWatch Events', asynchronous=asynchronous,
+        backend_port=DEFAULT_PORT_EVENTS_BACKEND, update_listener=update_listener)
 
 
 def start_sts(port=None, asynchronous=False):
