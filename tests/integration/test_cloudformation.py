@@ -137,7 +137,7 @@ class CloudFormationTest(unittest.TestCase):
         # assert that queue has been created
         assert queue_exists('cf-test-queue-1')
         # assert that topic has been created
-        assert topic_exists('cf-test-topic-1-1')
+        assert topic_exists('%s-test-topic-1-1' % stack_name)
         # assert that stream has been created
         assert stream_exists('cf-test-stream-1')
         # assert that queue has been created
@@ -151,7 +151,7 @@ class CloudFormationTest(unittest.TestCase):
         subs = sns.list_subscriptions()['Subscriptions']
         subs = [s for s in subs if (':%s:cf-test-queue-1' % TEST_AWS_ACCOUNT_ID) in s['Endpoint']]
         self.assertEqual(len(subs), 1)
-        self.assertIn(':%s:cf-test-topic-1-1' % TEST_AWS_ACCOUNT_ID, subs[0]['TopicArn'])
+        self.assertIn(':%s:%s-test-topic-1-1' % (TEST_AWS_ACCOUNT_ID, stack_name), subs[0]['TopicArn'])
 
         # assert that Gateway responses have been created
         test_api_name = 'test-api'

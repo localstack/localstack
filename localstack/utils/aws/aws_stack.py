@@ -358,23 +358,24 @@ def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
         (get_region(), account_id, table_name, latest_stream_label))
 
 
-def lambda_function_arn(function_name, account_id=None):
-    return lambda_function_or_layer_arn('function', function_name, account_id=account_id)
+def lambda_function_arn(function_name, account_id=None, region_name=None):
+    return lambda_function_or_layer_arn('function', function_name, account_id=account_id, region_name=region_name)
 
 
 def lambda_layer_arn(layer_name, version=None, account_id=None):
     return lambda_function_or_layer_arn('layer', layer_name, version=None, account_id=account_id)
 
 
-def lambda_function_or_layer_arn(type, entity_name, version=None, account_id=None):
+def lambda_function_or_layer_arn(type, entity_name, version=None, account_id=None, region_name=None):
     pattern = 'arn:aws:lambda:.*:.*:(function|layer):.*'
     if re.match(pattern, entity_name):
         return entity_name
     if ':' in entity_name:
         raise Exception('Lambda %s name should not contain a colon ":": %s' % (type, entity_name))
     account_id = get_account_id(account_id)
+    region_name = region_name or get_region()
     pattern = re.sub(r'\([^\|]+\|.+\)', type, pattern)
-    result = pattern.replace('.*', '%s') % (get_region(), account_id, entity_name)
+    result = pattern.replace('.*', '%s') % (region_name, account_id, entity_name)
     if version:
         result = '%s:%s' (result, version)
     return result
@@ -402,7 +403,9 @@ def fix_arn(arn):
     """ Function that attempts to "canonicalize" the given ARN. This includes converting
         resource names to ARNs, replacing incorrect regions, account IDs, etc. """
     if arn.startswith('arn:aws:lambda'):
-        return lambda_function_arn(lambda_function_name(arn))
+        parts = arn.split(':')
+        region = parts[3] if parts[3] in config.VALID_REGIONS else get_region()
+        return lambda_function_arn(lambda_function_name(arn), region_name=region)
     LOG.warning('Unable to fix/canonicalize ARN: %s' % arn)
     return arn
 

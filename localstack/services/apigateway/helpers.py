@@ -18,7 +18,7 @@ PATH_REGEX_AUTHORIZER = r'^/restapis/[A-Za-z0-9_\-]+/authorizers/(.*)'
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 
-# maps API ids to authorizers
+# maps (API id) -> [authorizers]
 AUTHORIZERS = {}
 
 
@@ -47,19 +47,32 @@ def get_api_id_from_path(path):
 
 
 def get_authorizer_id_from_path(path):
-    return re.match(PATH_REGEX_AUTHORIZER, path).group(1)
+    match = re.match(PATH_REGEX_AUTHORIZER, path)
+    return match.group(1) if match else None
 
 
-def get_authorizer(path):
+def _find_authorizer(api_id, authorizer_id):
+    auth_list = AUTHORIZERS.get(api_id) or []
+    authorizer = ([a for a in auth_list if a['id'] == authorizer_id] or [None])[0]
+    return authorizer
+
+
+def get_authorizers(path):
+    # This function returns either a list or a single authorizer (depending on the path)
     api_id = get_api_id_from_path(path)
     authorizer_id = get_authorizer_id_from_path(path)
 
-    authorizer = AUTHORIZERS.get(authorizer_id)
+    auth_list = AUTHORIZERS.get(api_id) or []
 
-    if authorizer is None:
-        return make_error_response('Not found: %s' % authorizer_id, 404)
+    if authorizer_id:
+        authorizer = _find_authorizer(api_id, authorizer_id)
+        if authorizer is None:
+            return make_error_response('Not found: %s' % authorizer_id, 404)
+        return to_authorizer_response_json(api_id, authorizer)
 
-    return to_authorizer_response_json(api_id, authorizer)
+    result = [to_authorizer_response_json(api_id, a) for a in auth_list]
+    result = {'item': result}
+    return result
 
 
 def to_authorizer_response_json(api_id, data):
@@ -108,7 +121,8 @@ def add_authorizer(path, data):
     result['id'] = authorizer_id
     result = normalize_authorizer(result)
 
-    AUTHORIZERS[authorizer_id] = result
+    AUTHORIZERS[api_id] = AUTHORIZERS.get(api_id) or []
+    AUTHORIZERS[api_id].append(result)
 
     return make_json_response(to_authorizer_response_json(api_id, result))
 
@@ -116,23 +130,31 @@ def add_authorizer(path, data):
 def update_authorizer(path, data):
     api_id = get_api_id_from_path(path)
     authorizer_id = get_authorizer_id_from_path(path)
-    authorizer = AUTHORIZERS.get(authorizer_id)
 
+    authorizer = _find_authorizer(api_id, authorizer_id)
     if authorizer is None:
         return make_error_response('Not found: %s' % api_id, 404)
 
     result = apply_patch(authorizer, data['patchOperations'])
     result = normalize_authorizer(result)
 
-    AUTHORIZERS[authorizer_id] = result
+    auth_list = AUTHORIZERS[api_id]
+    for i in range(len(auth_list)):
+        if auth_list[i]['id'] == authorizer_id:
+            auth_list[i] = result
 
     return make_json_response(to_authorizer_response_json(api_id, result))
 
 
 def delete_authorizer(path):
+    api_id = get_api_id_from_path(path)
     authorizer_id = get_authorizer_id_from_path(path)
 
-    del AUTHORIZERS[authorizer_id]
+    auth_list = AUTHORIZERS[api_id]
+    for i in range(len(auth_list)):
+        if auth_list[i]['id'] == authorizer_id:
+            del auth_list[i]
+            break
 
     return make_accepted_response()
 
@@ -140,7 +162,7 @@ def delete_authorizer(path):
 def handle_authorizers(method, path, data, headers):
 
     if method == 'GET':
-        return get_authorizer(path)
+        return get_authorizers(path)
     elif method == 'POST':
         return add_authorizer(path, data)
     elif method == 'PATCH':
