@@ -32,6 +32,10 @@ PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.
 GATEWAY_RESPONSES = {}
 
 
+class AuthorizationError(Exception):
+    pass
+
+
 class ProxyListenerApiGateway(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
@@ -41,7 +45,10 @@ class ProxyListenerApiGateway(ProxyListener):
             api_id = search_match.group(1)
             stage = search_match.group(2)
             relative_path_w_query_params = '/%s' % search_match.group(3)
-            return invoke_rest_api(api_id, stage, method, relative_path_w_query_params, data, headers, path=path)
+            try:
+                return invoke_rest_api(api_id, stage, method, relative_path_w_query_params, data, headers, path=path)
+            except AuthorizationError as e:
+                return make_error_response('Not authorized to invoke REST API %s: %s' % (api_id, e), 403)
 
         data = data and json.loads(to_str(data))
 
@@ -135,9 +142,24 @@ def put_gateway_response(api_id, response_type, data):
     return data
 
 
+def run_authorizer(api_id, headers, authorizer):
+    # TODO implement authorizers
+    pass
+
+
+def authorize_invocation(api_id, headers):
+    client = aws_stack.connect_to_service('apigateway')
+    authorizers = client.get_authorizers(restApiId=api_id, limit=100).get('items', [])
+    for authorizer in authorizers:
+        run_authorizer(api_id, headers, authorizer)
+
+
 def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
+
+    # run gateway authorizers for this request
+    authorize_invocation(api_id, headers)
 
     path_map = helpers.get_rest_api_paths(rest_api_id=api_id)
     try:
