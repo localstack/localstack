@@ -11,7 +11,7 @@ from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, ELASTICSEARCH_DELETE_MODULES,
     DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL,
-    LOCAL_KMS_URL, LOCALSTACK_INFRA_PROCESS)
+    KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
@@ -114,7 +114,8 @@ def install_local_kms():
     if not os.path.exists(binary_path):
         log_install_msg('KMS')
         mkdir(INSTALL_DIR_KMS)
-        download(LOCAL_KMS_URL, binary_path)
+        kms_url = KMS_URL_PATTERN.replace('<arch>', get_arch())
+        download(kms_url, binary_path)
         chmod_r(binary_path, 0o777)
 
 

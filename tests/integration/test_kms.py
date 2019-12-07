@@ -4,7 +4,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 
 
-class EventsTest(unittest.TestCase):
+class KMSTest(unittest.TestCase):
 
     def test_create_key(self):
         client = aws_stack.connect_to_service('kms')
@@ -24,7 +24,6 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(len(response['Keys']), len(keys_before) + 1)
 
         response = client.describe_key(KeyId=key_id)['KeyMetadata']
-        print(response)
         self.assertEqual(response['KeyId'], key_id)
         self.assertIn(':%s:' % config.DEFAULT_REGION, response['Arn'])
         self.assertIn(':%s:' % TEST_AWS_ACCOUNT_ID, response['Arn'])

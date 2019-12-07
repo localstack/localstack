@@ -14,9 +14,9 @@ def start_kms(port=None, backend_port=None, asynchronous=None, update_listener=N
     backend_port = DEFAULT_PORT_KMS_BACKEND
     kms_binary = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', get_arch())
     print('Starting mock KMS (%s port %s)...' % (get_service_protocol(), port))
-    start_proxy_for_service('s3', port, backend_port, update_listener)
+    start_proxy_for_service('kms', port, backend_port, update_listener)
     env_vars = {
-        'PORT': backend_port,
+        'PORT': str(backend_port),
         'REGION': config.DEFAULT_REGION,
         'ACCOUNT_ID': TEST_AWS_ACCOUNT_ID
     }

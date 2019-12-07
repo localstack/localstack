@@ -53,7 +53,8 @@ def register_localstack_plugins():
             check=kinesis_starter.check_kinesis,
             listener=kinesis_listener.UPDATE_KINESIS))
         register_plugin(Plugin('kms',
-            start=kms_starter.start_kms))
+            start=kms_starter.start_kms,
+            priority=10))
         register_plugin(Plugin('lambda',
             start=start_lambda))
         register_plugin(Plugin('logs',
