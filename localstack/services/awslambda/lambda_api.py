@@ -641,7 +641,8 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'MemorySize': func_details.memory_size,
         'LastModified': func_details.last_modified,
         'TracingConfig': {'Mode': 'PassThrough'},
-        'RevisionId': func_version.get('RevisionId')
+        'RevisionId': func_version.get('RevisionId'),
+        'State': 'Active'
     }
     if func_details.envvars:
         result['Environment'] = {
