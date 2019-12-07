@@ -282,7 +282,7 @@ def do_run(cmd, asynchronous, print_output=False, env_vars={}):
         t.start()
         TMP_THREADS.append(t)
         return t
-    return run(cmd)
+    return run(cmd, env_vars=env_vars)
 
 
 def start_proxy_for_service(service_name, port, default_backend_port, update_listener, quiet=False, params={}):

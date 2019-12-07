@@ -54,6 +54,7 @@ LocalStack spins up the following core Cloud APIs on your local machine:
 * **STS** at http://localhost:4592
 * **IAM** at http://localhost:4593
 * **EC2** at http://localhost:4597
+* **KMS** at http://localhost:4599
 
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
 * **AppSync**
@@ -685,11 +686,10 @@ flask                     | BSD License
 flask_swagger             | MIT License
 jsonpath-rw               | Apache License 2.0
 moto                      | Apache License 2.0
-nose                      | GNU LGPL
-pep8                      | Expat license
 requests                  | Apache License 2.0
 subprocess32              | PSF License
 **Node.js/npm modules:**  |
 kinesalite                | MIT License
 **Other tools:**          |
 Elasticsearch             | Apache License 2.0
+local-kms                 | MIT License

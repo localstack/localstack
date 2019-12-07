@@ -11,12 +11,13 @@ from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, ELASTICSEARCH_DELETE_MODULES,
     DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL,
-    LOCALSTACK_INFRA_PROCESS)
+    KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
 from localstack.utils.common import (
-    download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r, is_alpine, in_docker)
+    download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r, is_alpine,
+    in_docker, get_arch)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -27,8 +28,10 @@ INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
 INSTALL_DIR_KCL = '%s/amazon-kinesis-client' % INSTALL_DIR_INFRA
 INSTALL_DIR_STEPFUNCTIONS = '%s/stepfunctions' % INSTALL_DIR_INFRA
+INSTALL_DIR_KMS = '%s/kms' % INSTALL_DIR_INFRA
 INSTALL_DIR_ELASTICMQ = '%s/elasticmq' % INSTALL_DIR_INFRA
 INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_INFRA
+INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, 'local-kms.<arch>.bin')
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 
@@ -104,6 +107,16 @@ def install_kinesalite():
     if not os.path.exists(target_dir):
         log_install_msg('Kinesis')
         run('cd "%s" && npm install' % ROOT_PATH)
+
+
+def install_local_kms():
+    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', get_arch())
+    if not os.path.exists(binary_path):
+        log_install_msg('KMS')
+        mkdir(INSTALL_DIR_KMS)
+        kms_url = KMS_URL_PATTERN.replace('<arch>', get_arch())
+        download(kms_url, binary_path)
+        chmod_r(binary_path, 0o777)
 
 
 def install_stepfunctions_local():
@@ -185,7 +198,8 @@ def install_component(name):
         'dynamodb': install_dynamodb_local,
         'es': install_elasticsearch,
         'sqs': install_elasticmq,
-        'stepfunctions': install_stepfunctions_local
+        'stepfunctions': install_stepfunctions_local,
+        'kms': install_local_kms
     }
     installer = installers.get(name)
     if installer:
