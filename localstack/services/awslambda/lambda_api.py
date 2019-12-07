@@ -274,7 +274,10 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
                 'messageAttributes': message_attributes,
                 'sqs': True,
             }]}
-            run_lambda(event=event, context={}, func_arn=arn)
+            result = run_lambda(event=event, context={}, func_arn=arn)
+            status_code = getattr(result, 'status_code', 200)
+            if status_code >= 400:
+                raise Exception('Invocation failed (response code %s): %s' % (status_code, result.data))
             return True
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SQS messages: %s %s' % (e, traceback.format_exc()))

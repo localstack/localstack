@@ -19,7 +19,12 @@ public class SQSLambdaHandler implements RequestHandler<SQSEvent, Object> {
     protected AmazonS3 clientS3;
 
     public SQSLambdaHandler() {
-        clientS3 = TestUtils.getClientS3();
+        try {
+            clientS3 = TestUtils.getClientS3();
+        } catch (Exception e) {
+            // fall back to deprecated TestUtils
+            clientS3 = cloud.localstack.deprecated.TestUtils.getClientS3();
+        }
     }
 
     @Override

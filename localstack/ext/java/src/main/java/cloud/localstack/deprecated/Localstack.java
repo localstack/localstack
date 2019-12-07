@@ -3,10 +3,7 @@ package cloud.localstack.deprecated;
 import com.amazonaws.util.IOUtils;
 import org.ow2.proactive.process_tree_killer.ProcessTree;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -57,6 +54,8 @@ public class Localstack {
     private static final String LOCALSTACK_REPO_URL = "https://github.com/localstack/localstack";
 
     public static final String ENV_CONFIG_USE_SSL = "USE_SSL";
+
+    public static final String ENV_DEBUG = "DEBUG";
 
     private static final String ENV_LOCALSTACK_PROCESS_GROUP = "ENV_LOCALSTACK_PROCESS_GROUP";
 
@@ -294,6 +293,10 @@ public class Localstack {
         return isEnvConfigSet(ENV_CONFIG_USE_SSL);
     }
 
+    public static boolean isDebug() {
+        return isEnvConfigSet(ENV_DEBUG);
+    }
+
     public static boolean isEnvConfigSet(String configName) {
         String value = System.getenv(configName);
         return value != null && !Arrays.asList("false", "0", "").contains(value.trim());
@@ -366,18 +369,27 @@ public class Localstack {
             Process proc;
             try {
                 proc = exec(false, cmd);
-                BufferedReader r1 = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+                final BufferedReader r1 = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+                final BufferedReader r2 = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
                 String line;
                 LOG.info(TMP_INSTALL_DIR);
                 LOG.info("Waiting for infrastructure to be spun up");
                 boolean ready = false;
+                boolean debug = isDebug();
                 String output = "";
                 while ((line = r1.readLine()) != null) {
                     output += line + "\n";
+                    if (debug) {
+                        System.out.println("LocalStack: " + line);
+                    }
                     if (INFRA_READY_MARKER.equals(line)) {
                         ready = true;
                         break;
                     }
+                }
+                if (debug) {
+                    dumpStream(r1, System.out);
+                    dumpStream(r2, System.err);
                 }
                 if (!ready) {
                     throw new RuntimeException("Unable to start local infrastructure. Debug output: " + output);
@@ -387,6 +399,21 @@ public class Localstack {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void dumpStream(BufferedReader r, PrintStream out) {
+        new Thread(new Runnable() {
+            public void run() {
+                String line;
+                try {
+                    while ((line = r.readLine()) != null) {
+                        out.println("LocalStack: " + line);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
     }
 
     /**

@@ -73,7 +73,6 @@ public class S3FeaturesTest {
 
 		String bucketName = "test-bucket-https";
 
-		System.out.println(Localstack.INSTANCE.getEndpointS3());
 		AmazonS3 amazonS3Client = AmazonS3ClientBuilder.standard()
 				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
 						Localstack.INSTANCE.getEndpointS3(),

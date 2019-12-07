@@ -54,6 +54,11 @@ public class Localstack {
 
     private String externalHostName;
 
+    static {
+        // make sure we avoid any errors related to locally generated SSL certificates
+        TestUtils.disableSslCertChecking();
+    }
+
     private Localstack() {
     }
 
@@ -201,7 +206,8 @@ public class Localstack {
     public String endpointForPort(int port) {
         if (localStackContainer != null) {
             int externalPort = localStackContainer.getExternalPortFor(port);
-            return String.format("http://%s:%s", externalHostName, externalPort);
+            String protocol = useSSL() ? "https" : "http";
+            return String.format("%s://%s:%s", protocol, externalHostName, externalPort);
         }
 
         throw new RuntimeException("Container not started");

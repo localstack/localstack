@@ -62,4 +62,24 @@ public class LocalTestUtil {
 		jarStream.closeEntry();
 	}
 
+	public static void retry(Runnable r) {
+		retry(r, 5, 1);
+	}
+
+	public static void retry(Runnable r, int retries, double sleepSecs) {
+		for (int i = 0; i < retries; i++) {
+			try {
+				r.run();
+				return;
+			} catch (Throwable e) {
+				try {
+					Thread.sleep((int)(sleepSecs * 1000));
+				} catch (InterruptedException e1) {}
+                if (i >= retries - 1) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+
 }
