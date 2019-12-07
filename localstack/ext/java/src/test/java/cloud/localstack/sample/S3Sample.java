@@ -74,7 +74,7 @@ public class S3Sample {
 		AmazonS3 s3 = new AmazonS3Client(credentials);
         Region usWest2 = Region.getRegion(Regions.US_WEST_2);
         s3.setRegion(usWest2);
-        s3.setEndpoint(Localstack.getEndpointS3());
+        s3.setEndpoint(Localstack.INSTANCE.getEndpointS3());
 		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true)
 				.disableChunkedEncoding().build());
 

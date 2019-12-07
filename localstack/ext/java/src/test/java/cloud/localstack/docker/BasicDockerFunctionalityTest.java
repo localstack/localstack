@@ -1,6 +1,7 @@
 package cloud.localstack.docker;
 
-import cloud.localstack.DockerTestUtils;
+import cloud.localstack.Localstack;
+import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.TestUtils;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazon.sqs.javamessaging.SQSConnection;
@@ -44,7 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RunWith(LocalstackDockerTestRunner.class)
+@RunWith(LocalstackTestRunner.class)
 @ExtendWith(LocalstackDockerExtension.class)
 @LocalstackDockerProperties(randomizePorts = true)
 public class BasicDockerFunctionalityTest {
@@ -56,7 +57,7 @@ public class BasicDockerFunctionalityTest {
     @org.junit.Test
     @org.junit.jupiter.api.Test
     public void testSecretsManager() throws Exception {
-        AWSSecretsManager secretsManager = DockerTestUtils.getClientSecretsManager();
+        AWSSecretsManager secretsManager = TestUtils.getClientSecretsManager();
 
         CreateSecretRequest createSecretRequest = new CreateSecretRequest();
         createSecretRequest.setName("my-secret-name");
@@ -72,7 +73,7 @@ public class BasicDockerFunctionalityTest {
     @org.junit.Test
     @org.junit.jupiter.api.Test
     public void testKinesis() throws Exception {
-        AmazonKinesis kinesis = DockerTestUtils.getClientKinesis();
+        AmazonKinesis kinesis = TestUtils.getClientKinesis();
 
         ListStreamsResult streamsResult = kinesis.listStreams();
 
@@ -91,7 +92,7 @@ public class BasicDockerFunctionalityTest {
     @org.junit.Test
     @org.junit.jupiter.api.Test
     public void testDynamo() throws Exception {
-        AmazonDynamoDB dynamoDB = DockerTestUtils.getClientDynamoDb();
+        AmazonDynamoDB dynamoDB = TestUtils.getClientDynamoDB();
 
         ListTablesResult tablesResult = dynamoDB.listTables();
         Assertions.assertThat(tablesResult.getTableNames()).hasSize(0);
@@ -110,7 +111,7 @@ public class BasicDockerFunctionalityTest {
     @org.junit.Test
     @org.junit.jupiter.api.Test
     public void testS3() throws Exception {
-        AmazonS3 client = DockerTestUtils.getClientS3();
+        AmazonS3 client = TestUtils.getClientS3();
 
         client.createBucket("test-bucket");
         List<Bucket> bucketList = client.listBuckets();
@@ -140,7 +141,7 @@ public class BasicDockerFunctionalityTest {
     @org.junit.Test
     @org.junit.jupiter.api.Test
     public void testSQS() throws Exception {
-        AmazonSQS client = DockerTestUtils.getClientSQS();
+        AmazonSQS client = TestUtils.getClientSQS();
 
         Map<String, String> attributeMap = new HashMap<>();
         attributeMap.put("DelaySeconds", "0");
@@ -172,7 +173,7 @@ public class BasicDockerFunctionalityTest {
 
     private SQSConnection createSQSConnection() throws Exception {
         SQSConnectionFactory connectionFactory = SQSConnectionFactory.builder().withEndpoint(
-                LocalstackDocker.INSTANCE.getEndpointSQS()).withAWSCredentialsProvider(
+                Localstack.INSTANCE.getEndpointSQS()).withAWSCredentialsProvider(
                 new AWSStaticCredentialsProvider(TestUtils.TEST_CREDENTIALS)).build();
         return connectionFactory.createConnection();
     }
