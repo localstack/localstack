@@ -1,5 +1,6 @@
 package cloud.localstack.docker;
 
+import cloud.localstack.Localstack;
 import cloud.localstack.docker.command.*;
 
 import java.io.IOException;
@@ -30,6 +31,7 @@ public class Container {
     private static final int NUM_LOG_LINES = 10;
 
     private static final String ENV_DEBUG = "DEBUG";
+    private static final String ENV_USE_SSL = "USE_SSL";
     private static final String ENV_DEBUG_DEFAULT = "1";
     public static final String LOCALSTACK_EXTERNAL_HOSTNAME = "HOSTNAME_EXTERNAL";
 
@@ -59,6 +61,7 @@ public class Container {
                 .withExposedPorts(LOCALSTACK_PORTS, randomizePorts)
                 .withEnvironmentVariable(LOCALSTACK_EXTERNAL_HOSTNAME, externalHostName)
                 .withEnvironmentVariable(ENV_DEBUG, ENV_DEBUG_DEFAULT)
+                .withEnvironmentVariable(ENV_USE_SSL, Localstack.INSTANCE.useSSL() ? "1" : "0")
                 .withEnvironmentVariables(environmentVariables)
                 .execute();
         LOG.info("Started container: " + containerId);

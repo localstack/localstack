@@ -75,7 +75,7 @@ public class S3FeaturesTest {
 
 		AmazonS3 amazonS3Client = AmazonS3ClientBuilder.standard()
 				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
-						Localstack.getEndpointS3(),
+						Localstack.INSTANCE.getEndpointS3(),
 						Localstack.getDefaultRegion()))
 				.withCredentials(TestUtils.getCredentialsProvider())
 				.withChunkedEncodingDisabled(true)

@@ -255,6 +255,8 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
         arns = [s.get('FunctionArn') for s in sources]
         LOG.debug('Found %s source mappings for event from SQS queue %s: %s' % (len(arns), queue_arn, arns))
         source = next(iter(sources), None)
+        if not source:
+            return False
         if source:
             arn = source['FunctionArn']
             event = {'Records': [{
@@ -274,7 +276,10 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
                 'messageAttributes': message_attributes,
                 'sqs': True,
             }]}
-            run_lambda(event=event, context={}, func_arn=arn)
+            result = run_lambda(event=event, context={}, func_arn=arn)
+            status_code = getattr(result, 'status_code', 200)
+            if status_code >= 400:
+                LOG.warning('Invoking Lambda %s from SQS message failed (%s): %s' % (arn, status_code, result.data))
             return True
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SQS messages: %s %s' % (e, traceback.format_exc()))

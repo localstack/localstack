@@ -1,6 +1,7 @@
 package cloud.localstack.docker;
 
-import cloud.localstack.DockerTestUtils;
+import cloud.localstack.Localstack;
+import cloud.localstack.TestUtils;
 import cloud.localstack.docker.annotation.LocalstackDockerConfiguration;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.sqs.AmazonSQS;
@@ -25,10 +26,10 @@ public class LocalstackDockerTest {
 
     @Test
     public void startup() {
-        LocalstackDocker localstackDocker = LocalstackDocker.INSTANCE;
-        LocalstackDocker.INSTANCE.startup(DOCKER_CONFIG);
+        Localstack localstackDocker = Localstack.INSTANCE;
+        Localstack.INSTANCE.startup(DOCKER_CONFIG);
 
-        AmazonSQS amazonSQS = DockerTestUtils.getClientSQS();
+        AmazonSQS amazonSQS = TestUtils.getClientSQS();
         String queueUrl = amazonSQS.createQueue("test-queue").getQueueUrl();
 
         SendMessageResult sendMessageResult = amazonSQS.sendMessage(queueUrl, "test-message");
@@ -39,22 +40,22 @@ public class LocalstackDockerTest {
 
         thrown.expect(IllegalStateException.class);
 
-        LocalstackDocker.INSTANCE.startup(DOCKER_CONFIG);
-        localstackDocker.stop();
+        Localstack.INSTANCE.startup(DOCKER_CONFIG);
+        Localstack.INSTANCE.stop();
     }
 
     @Test
     public void stop() {
-        LocalstackDocker.INSTANCE.startup(DOCKER_CONFIG);
-        LocalstackDocker.INSTANCE.stop();
+        Localstack.INSTANCE.startup(DOCKER_CONFIG);
+        Localstack.INSTANCE.stop();
 
-        AmazonSQS amazonSQS = DockerTestUtils.getClientSQS();
+        AmazonSQS amazonSQS = TestUtils.getClientSQS();
         thrown.expect(SdkClientException.class);
         amazonSQS.createQueue("test-queue").getQueueUrl();
     }
 
     @After
     public void tearDown() {
-        LocalstackDocker.INSTANCE.stop();
+        Localstack.INSTANCE.stop();
     }
 }

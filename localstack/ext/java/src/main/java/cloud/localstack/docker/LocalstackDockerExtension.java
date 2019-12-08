@@ -1,5 +1,6 @@
 package cloud.localstack.docker;
 
+import cloud.localstack.Localstack;
 import cloud.localstack.docker.annotation.LocalstackDockerAnnotationProcessor;
 import cloud.localstack.docker.annotation.LocalstackDockerConfiguration;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -35,7 +36,7 @@ public class LocalstackDockerExtension implements BeforeAllCallback {
 
     static class StartedLocalStack implements ExtensionContext.Store.CloseableResource {
 
-        private LocalstackDocker localstackDocker = LocalstackDocker.INSTANCE;
+        private Localstack localstackDocker = Localstack.INSTANCE;
 
         StartedLocalStack(ExtensionContext context) {
             final LocalstackDockerConfiguration dockerConfig = PROCESSOR.process(context.getRequiredTestClass());

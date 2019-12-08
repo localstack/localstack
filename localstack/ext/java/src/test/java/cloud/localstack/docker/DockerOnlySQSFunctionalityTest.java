@@ -1,10 +1,9 @@
 package cloud.localstack.docker;
 
-import cloud.localstack.DockerTestUtils;
 import cloud.localstack.TestUtils;
-import cloud.localstack.docker.LocalstackDocker;
+import cloud.localstack.Localstack;
 import cloud.localstack.docker.LocalstackDockerExtension;
-import cloud.localstack.docker.LocalstackDockerTestRunner;
+import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
@@ -25,7 +24,7 @@ import javax.jms.TextMessage;
 import java.util.HashMap;
 import java.util.Map;
 
-@RunWith(LocalstackDockerTestRunner.class)
+@RunWith(LocalstackTestRunner.class)
 @ExtendWith(LocalstackDockerExtension.class)
 @LocalstackDockerProperties(randomizePorts = true, services = "sqs")
 public class DockerOnlySQSFunctionalityTest {
@@ -37,7 +36,7 @@ public class DockerOnlySQSFunctionalityTest {
     @org.junit.Test
     @org.junit.jupiter.api.Test
     public void testKinesisNotRunning() {
-        final Throwable throwable = Assertions.catchThrowable(() -> DockerTestUtils.getClientKinesis().listStreams());
+        final Throwable throwable = Assertions.catchThrowable(() -> TestUtils.getClientKinesis().listStreams());
 
         Assertions.assertThat(throwable).isInstanceOf(SdkClientException.class);
     }
@@ -47,7 +46,7 @@ public class DockerOnlySQSFunctionalityTest {
     @org.junit.jupiter.api.Test
     public void testDynamoNotRunning() {
 
-        final Throwable throwable = Assertions.catchThrowable(() -> DockerTestUtils.getClientDynamoDb().listTables());
+        final Throwable throwable = Assertions.catchThrowable(() -> TestUtils.getClientDynamoDB().listTables());
 
         Assertions.assertThat(throwable).isInstanceOf(SdkClientException.class);
     }
@@ -55,7 +54,7 @@ public class DockerOnlySQSFunctionalityTest {
     @org.junit.Test
     @org.junit.jupiter.api.Test
     public void testS3NotRunning() {
-        final Throwable throwable = Assertions.catchThrowable(() -> DockerTestUtils.getClientS3().createBucket
+        final Throwable throwable = Assertions.catchThrowable(() -> TestUtils.getClientS3().createBucket
                 ("test-bucket"));
 
         Assertions.assertThat(throwable).isInstanceOf(SdkClientException.class);
@@ -64,7 +63,7 @@ public class DockerOnlySQSFunctionalityTest {
     @org.junit.Test
     @org.junit.jupiter.api.Test
     public void testSQSRunning() throws Exception {
-        AmazonSQS client = DockerTestUtils.getClientSQS();
+        AmazonSQS client = TestUtils.getClientSQS();
 
         Map<String, String> attributeMap = new HashMap<>();
         attributeMap.put("DelaySeconds", "0");
@@ -98,7 +97,7 @@ public class DockerOnlySQSFunctionalityTest {
 
     private SQSConnection createSQSConnection() throws Exception {
         SQSConnectionFactory connectionFactory = SQSConnectionFactory.builder().withEndpoint(
-                LocalstackDocker.INSTANCE.getEndpointSQS()).withAWSCredentialsProvider(
+                Localstack.INSTANCE.getEndpointSQS()).withAWSCredentialsProvider(
                 new AWSStaticCredentialsProvider(TestUtils.TEST_CREDENTIALS)).build();
         return connectionFactory.createConnection();
     }

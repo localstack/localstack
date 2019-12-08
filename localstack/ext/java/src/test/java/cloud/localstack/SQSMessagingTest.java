@@ -54,7 +54,7 @@ public class SQSMessagingTest {
     @Test
     public void testSendMessage() throws JMSException {
         SQSConnectionFactory connectionFactory = SQSConnectionFactory.builder().withEndpoint(
-                Localstack.getEndpointSQS()).withAWSCredentialsProvider(
+                Localstack.INSTANCE.getEndpointSQS()).withAWSCredentialsProvider(
                 new AWSStaticCredentialsProvider(TestUtils.TEST_CREDENTIALS)).build();
         SQSConnection connection = connectionFactory.createConnection();
         connection.start();

@@ -1,9 +1,10 @@
-package cloud.localstack;
+package cloud.localstack.deprecated;
 
+import cloud.localstack.LocalTestUtil;
 import cloud.localstack.sample.KinesisLambdaHandler;
 import cloud.localstack.sample.S3Sample;
 import cloud.localstack.sample.SQSLambdaHandler;
-import cloud.localstack.sample.SQSLambdaHandlerSSL;
+
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -54,7 +55,7 @@ import static cloud.localstack.TestUtils.TEST_CREDENTIALS;
  *
  * @author Waldemar Hummer
  */
-@RunWith(LocalstackTestRunner.class)
+@RunWith(LocalstackOutsideDockerTestRunner.class)
 @ExtendWith(LocalstackExtension.class)
 public class BasicFunctionalityTest {
 
@@ -146,13 +147,8 @@ public class BasicFunctionalityTest {
         request.setFunctionName(functionName);
         request.setRuntime(Runtime.Java8);
         request.setRole("r1");
-        if(Localstack.useSSL()){
-            request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandlerSSL.class));
-            request.setHandler(SQSLambdaHandlerSSL.class.getName());
-        } else {
-            request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandler.class));
-            request.setHandler(SQSLambdaHandler.class.getName());
-        }
+        request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandler.class));
+        request.setHandler(SQSLambdaHandler.class.getName());
         lambda.createFunction(request);
 
         // create stream
@@ -175,16 +171,21 @@ public class BasicFunctionalityTest {
 
         // push event
         clientSQS.sendMessage(queue.getQueueUrl(), testBucket);
-        Thread.sleep(500);
 
-        // Test file written by Lambda
-        ObjectListing objectListing = s3.listObjects(testBucket);
-        Assertions.assertThat(objectListing.getObjectSummaries()).hasSize(1);
-        String key = objectListing.getObjectSummaries().get(0).getKey();
-        Assertions.assertThat(key).startsWith(SQSLambdaHandler.fileName[0]);
-        Assertions.assertThat(key).endsWith(SQSLambdaHandler.fileName[1]);
-        String message = s3.getObjectAsString(testBucket, key);
-        Assertions.assertThat(message).isEqualTo(SQSLambdaHandler.DID_YOU_GET_THE_MESSAGE);
+        Runnable check = new Runnable() {
+            public void run() {
+                // Assert that file has been written by Lambda
+                ObjectListing objectListing = s3.listObjects(testBucket);
+                Assertions.assertThat(objectListing.getObjectSummaries()).hasSize(1);
+                String key = objectListing.getObjectSummaries().get(0).getKey();
+                Assertions.assertThat(key).startsWith(SQSLambdaHandler.fileName[0]);
+                Assertions.assertThat(key).endsWith(SQSLambdaHandler.fileName[1]);
+                String message = s3.getObjectAsString(testBucket, key);
+                Assertions.assertThat(message).isEqualTo(SQSLambdaHandler.DID_YOU_GET_THE_MESSAGE);
+            }
+        };
+
+        LocalTestUtil.retry(check, 5, 1);
     }
 
     @org.junit.Test
@@ -234,7 +235,8 @@ public class BasicFunctionalityTest {
         Assertions.assertThat(buckets).isNotNull();
 
         // run S3 sample
-        S3Sample.runTest(TEST_CREDENTIALS);
+        String s3Endpoint = Localstack.INSTANCE.getEndpointS3();
+        S3Sample.runTest(TEST_CREDENTIALS, s3Endpoint);
 
         // run example with ZIP file upload
         String testBucket = UUID.randomUUID().toString();
