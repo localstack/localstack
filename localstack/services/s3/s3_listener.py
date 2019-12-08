@@ -30,8 +30,17 @@ S3_NOTIFICATIONS = {}
 # mappings for bucket CORS settings
 BUCKET_CORS = {}
 
-# mappings for bucket lifecycle settings
+# maps bucket name to lifecycle settings
 BUCKET_LIFECYCLE = {}
+
+# maps bucket name to replication settings
+BUCKET_REPLICATIONS = {}
+
+# maps bucket name to encryption settings
+BUCKET_ENCRYPTIONS = {}
+
+# maps bucket name to object lock settings
+OBJECT_LOCK_CONFIGS = {}
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -78,10 +87,11 @@ def filter_rules_match(filters, object_path):
     filters = filters or {}
     s3_filter = _get_s3_filter(filters)
     for rule in s3_filter.get('FilterRule', []):
-        if rule['Name'] == 'prefix':
+        rule_name_lower = rule['Name'].lower()
+        if rule_name_lower == 'prefix':
             if not prefix_with_slash(object_path).startswith(prefix_with_slash(rule['Value'])):
                 return False
-        elif rule['Name'] == 'suffix':
+        elif rule_name_lower == 'suffix':
             if not object_path.endswith(rule['Value']):
                 return False
         else:
@@ -330,62 +340,119 @@ def append_metadata_headers(method, query_map, headers):
             if headers.get(key) is None:
                 headers[key] = value[0]
 
+# --------------
+# HELPER METHODS
+#   for lifecycle/replication/encryption/...
+# --------------
+
 
 def get_lifecycle(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
-
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
+    status_code = 200
     if not lifecycle:
-        # TODO: check if bucket exists, otherwise return 404-like error
+        # TODO: check if bucket actually exists
         lifecycle = {
-            'LifecycleConfiguration': {}
+            'Error': {
+                'Code': 'NoSuchLifecycleConfiguration',
+                'Message': 'The lifecycle configuration does not exist'
+            }
         }
+        status_code = 404
     body = xmltodict.unparse(lifecycle)
-    return requests_response(body)
+    return requests_response(body, status_code=status_code)
 
 
 def get_replication(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
-
-    # TODO return actual value
-    # result = {
-    #     'Error': {
-    #         'Code': 'NoSuchReplicationConfiguration',
-    #         'Message': 'There is no replication configuration with that name.'
-    #     }
-    # }
-    # content = xmltodict.unparse(result)
-    # return requests_response(content, status_code=404)
-    # see https://docs.aws.amazon.com/AmazonS3/latest/API/RESTBucketGETreplication.html
-    config = {}
-    result = {
-        'ReplicationConfiguration': config
-    }
-    body = xmltodict.unparse(result)
-    return requests_response(body)
+    replication = BUCKET_REPLICATIONS.get(bucket_name)
+    status_code = 200
+    if not replication:
+        # TODO: check if bucket actually exists
+        replication = {
+            'Error': {
+                'Code': 'ReplicationConfigurationNotFoundError',
+                'Message': 'The replication configuration was not found'
+            }
+        }
+        status_code = 404
+    body = xmltodict.unparse(replication)
+    return requests_response(body, status_code=status_code)
 
 
 def get_encryption(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    encryption = BUCKET_ENCRYPTIONS.get(bucket_name)
+    status_code = 200
+    if not encryption:
+        # TODO: check if bucket actually exists
+        encryption = {
+            'Error': {
+                'Code': 'ServerSideEncryptionConfigurationNotFoundError',
+                'Message': 'The server side encryption configuration was not found'
+            }
+        }
+        status_code = 404
+    body = xmltodict.unparse(encryption)
+    return requests_response(body, status_code=status_code)
 
-    # TODO return actual value
-    result = {
-        'ServerSideEncryptionConfiguration': {}
-    }
-    body = xmltodict.unparse(result)
-    return requests_response(body)
+
+def get_object_lock(bucket_name):
+    bucket_name = normalize_bucket_name(bucket_name)
+    lock_config = OBJECT_LOCK_CONFIGS.get(bucket_name)
+    status_code = 200
+    if not lock_config:
+        # TODO: check if bucket actually exists
+        lock_config = {
+            'Error': {
+                'Code': 'ObjectLockConfigurationNotFoundError',
+                'Message': 'Object Lock configuration does not exist for this bucket'
+            }
+        }
+        status_code = 404
+    body = xmltodict.unparse(lock_config)
+    return requests_response(body, status_code=status_code)
 
 
 def set_lifecycle(bucket_name, lifecycle):
     bucket_name = normalize_bucket_name(bucket_name)
-
     # TODO: check if bucket exists, otherwise return 404-like error
     if isinstance(to_str(lifecycle), six.string_types):
         lifecycle = xmltodict.parse(lifecycle)
     BUCKET_LIFECYCLE[bucket_name] = lifecycle
-    response = Response()
-    response.status_code = 200
-    return response
+    return 200
+
+
+def set_replication(bucket_name, replication):
+    bucket_name = normalize_bucket_name(bucket_name)
+    # TODO: check if bucket exists, otherwise return 404-like error
+    if isinstance(to_str(replication), six.string_types):
+        replication = xmltodict.parse(replication)
+    BUCKET_REPLICATIONS[bucket_name] = replication
+    return 200
+
+
+def set_encryption(bucket_name, encryption):
+    bucket_name = normalize_bucket_name(bucket_name)
+    # TODO: check if bucket exists, otherwise return 404-like error
+    if isinstance(to_str(encryption), six.string_types):
+        encryption = xmltodict.parse(encryption)
+    BUCKET_ENCRYPTIONS[bucket_name] = encryption
+    return 200
+
+
+def set_object_lock(bucket_name, lock_config):
+    bucket_name = normalize_bucket_name(bucket_name)
+    # TODO: check if bucket exists, otherwise return 404-like error
+    if isinstance(to_str(lock_config), six.string_types):
+        lock_config = xmltodict.parse(lock_config)
+    OBJECT_LOCK_CONFIGS[bucket_name] = lock_config
+    return 200
+
+
+# -------------
+# UTIL METHODS
+# -------------
 
 
 def strip_chunk_signatures(data):
@@ -653,10 +720,20 @@ class ProxyListenerS3(ProxyListener):
         if query == 'replication' or 'replication' in query_map:
             if method == 'GET':
                 return get_replication(bucket)
+            if method == 'PUT':
+                return set_replication(bucket, data)
 
         if query == 'encryption' or 'encryption' in query_map:
             if method == 'GET':
                 return get_encryption(bucket)
+            if method == 'PUT':
+                return set_encryption(bucket, data)
+
+        if query == 'object-lock' or 'object-lock' in query_map:
+            if method == 'GET':
+                return get_object_lock(bucket)
+            if method == 'PUT':
+                return set_object_lock(bucket, data)
 
         if modified_data is not None:
             return Request(data=modified_data, headers=headers, method=method)
@@ -758,7 +835,7 @@ class ProxyListenerS3(ProxyListener):
         if response:
             reset_content_length = False
 
-            # append CORS headers and other annotations to response
+            # append CORS headers and other annotations/patches to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
             append_last_modified_headers(response=response)
             append_list_objects_marker(method, path, data, response)

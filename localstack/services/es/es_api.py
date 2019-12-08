@@ -74,6 +74,9 @@ def get_domain_config(domain_name):
                 },
                 'Status': config_status
             },
+            'CognitoOptions': {
+                'Enabled': False
+            },
             'ElasticsearchVersion': {
                 'Options': '5.3',
                 'Status': config_status
@@ -147,6 +150,9 @@ def get_domain_status(domain_name, deleted=False):
                 'VolumeType': 'gp2',
                 'VolumeSize': 10,
                 'Iops': 0
+            },
+            'CognitoOptions': {
+                'Enabled': False
             },
         }
     }
