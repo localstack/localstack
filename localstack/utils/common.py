@@ -845,7 +845,7 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
 
     # create a key pair
     k = crypto.PKey()
-    k.generate_key(crypto.TYPE_RSA, 1024)
+    k.generate_key(crypto.TYPE_RSA, 2048)
 
     # create a self-signed cert
     cert = crypto.X509()
@@ -856,13 +856,22 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     subj.O = 'LocalStack Org'  # noqa
     subj.OU = 'Testing'
     subj.CN = 'localhost'
+    # Note: new requirements for recent OSX versions: https://support.apple.com/en-us/HT210176
+    # More details: https://www.iol.unh.edu/blog/2019/10/10/macos-catalina-and-chrome-trust
     serial_number = serial_number or 1001
+    cert.set_version(2)
     cert.set_serial_number(serial_number)
     cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
+    cert.gmtime_adj_notAfter(2 * 365 * 24 * 60 * 60)
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(k)
-    cert.sign(k, 'sha1')
+    cert.add_extensions([
+        crypto.X509Extension(b'subjectAltName', False, b'DNS:localhost,IP:127.0.0.1'),
+        crypto.X509Extension(b'basicConstraints', True, b'CA:false'),
+        crypto.X509Extension(b'keyUsage', True, b'nonRepudiation,digitalSignature,keyEncipherment'),
+        crypto.X509Extension(b'extendedKeyUsage', True, b'serverAuth')
+    ])
+    cert.sign(k, 'SHA256')
 
     cert_file = StringIO()
     key_file = StringIO()
