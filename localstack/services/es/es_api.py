@@ -14,6 +14,7 @@ API_PREFIX = '/2015-01-01'
 ES_DOMAINS = {}
 
 app = Flask(APP_NAME)
+app.url_map.strict_slashes = False
 
 
 def error_response(error_type, code=400, message='Unknown error.'):

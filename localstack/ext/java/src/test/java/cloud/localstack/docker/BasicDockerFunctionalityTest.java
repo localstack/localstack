@@ -7,6 +7,8 @@ import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.services.cloudwatch.*;
+import com.amazonaws.services.cloudwatch.model.*;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
 import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
@@ -33,6 +35,7 @@ import com.amazonaws.util.IOUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
+import org.junit.Assert;
 
 import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
@@ -169,6 +172,30 @@ public class BasicDockerFunctionalityTest {
         MessageConsumer consumer = session.createConsumer(queue);
         TextMessage received = (TextMessage) consumer.receive();
         Assertions.assertThat(received.getText()).isEqualTo("Hello World!");
+    }
+
+    @org.junit.Test
+    @org.junit.jupiter.api.Test
+    public void testCloudWatch() throws Exception {
+        AmazonCloudWatch client = TestUtils.getClientCloudWatch();
+        Dimension dimension = new Dimension()
+            .withName("UNIQUE_PAGES")
+            .withValue("URLS");
+        MetricDatum datum = new MetricDatum()
+            .withMetricName("PAGES_VISITED")
+            .withUnit(StandardUnit.None)
+            .withDimensions(dimension);
+        PutMetricDataRequest request = new PutMetricDataRequest()
+            .withNamespace("SITE/TRAFFIC")
+            .withMetricData(datum);
+        // assert no error gets thrown for null values
+        datum.setValue(null);
+        PutMetricDataResult response = client.putMetricData(request);
+        Assert.assertNotNull(response);
+        // assert success for double values
+        datum.setValue(123.4);
+        response = client.putMetricData(request);
+        Assert.assertNotNull(response);
     }
 
     private SQSConnection createSQSConnection() throws Exception {
