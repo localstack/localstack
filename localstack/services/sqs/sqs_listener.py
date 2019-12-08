@@ -84,6 +84,9 @@ class ProxyListenerSQS(ProxyListener):
         if method != 'POST':
             return
 
+        if response.status_code >= 400:
+            return response
+
         region_name = extract_region_from_auth_header(headers)
         req_data = urlparse.parse_qs(to_str(data))
         action = req_data.get('Action', [None])[0]

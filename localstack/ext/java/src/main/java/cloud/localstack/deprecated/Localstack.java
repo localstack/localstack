@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import cloud.localstack.Constants;
 import cloud.localstack.ServiceName;
 
 /**
@@ -56,6 +57,8 @@ public class Localstack {
     public static final String ENV_CONFIG_USE_SSL = "USE_SSL";
 
     public static final String ENV_DEBUG = "DEBUG";
+
+    public static final String ENV_LOCALSTACK_HOSTNAME = "LOCALSTACK_HOSTNAME";
 
     private static final String ENV_LOCALSTACK_PROCESS_GROUP = "ENV_LOCALSTACK_PROCESS_GROUP";
 
@@ -119,8 +122,8 @@ public class Localstack {
         return getEndpointS3(false);
     }
 
-    public static String getEndpointS3(boolean override_SSL) {
-        String s3Endpoint = ensureInstallationAndGetEndpoint(ServiceName.S3, override_SSL);
+    public static String getEndpointS3(boolean overrideSSL) {
+        String s3Endpoint = ensureInstallationAndGetEndpoint(ServiceName.S3, overrideSSL);
         /*
          * Use the domain name wildcard *.localhost.atlassian.io which maps to 127.0.0.1
          * We need to do this because S3 SDKs attempt to access a domain <bucket-name>.<service-host-name>
@@ -284,9 +287,13 @@ public class Localstack {
         return ensureInstallationAndGetEndpoint(service,false);
     }
 
-    private static String ensureInstallationAndGetEndpoint(String service, boolean override_SSL) {
-        ensureInstallation();
-        return getEndpoint(service, override_SSL);
+    private static String ensureInstallationAndGetEndpoint(String service, boolean overrideSSL) {
+        try {
+            ensureInstallation();
+            return getEndpoint(service, overrideSSL);
+        } catch (Exception e) {
+            return getDefaultEndpoint(service);
+        }
     }
 
     public static boolean useSSL() {
@@ -302,11 +309,27 @@ public class Localstack {
         return value != null && !Arrays.asList("false", "0", "").contains(value.trim());
     }
 
+    private static String getEndpoint(String service, boolean overrideSSL) {
+        try {
+            return getEndpointFromSource(service, overrideSSL);
+        } catch (Exception e) {
+            return getDefaultEndpoint(service);
+        }
+    }
+
+    private static String getDefaultEndpoint(String service) {
+        int port = Constants.DEFAULT_PORTS.get(service);
+        String protocol = useSSL() ? "https" : "http";
+        String localstackHostname = System.getenv(ENV_LOCALSTACK_HOSTNAME);
+        localstackHostname = localstackHostname == null ? "localhost" : localstackHostname;
+        return String.format("%s://%s:%s", protocol, localstackHostname, port);
+    }
+
     /**
-     * Gets the endpoint for the service, uses SSL if override_SSL or environmental config USE_SSL is set
+     * Gets the endpoint for the service, uses SSL if overrideSSL or environmental config USE_SSL is set
      */
-    private static String getEndpoint(String service, boolean override_SSL) {
-        String useSSL = override_SSL || useSSL() ? "USE_SSL=1" : "";
+    private static String getEndpointFromSource(String service, boolean overrideSSL) {
+        String useSSL = overrideSSL || useSSL() ? "USE_SSL=1" : "";
         String cmd = "cd '" + TMP_INSTALL_DIR + "'; "
                 + ". .venv/bin/activate; "
                 + useSSL + " python -c 'import localstack_client.config; "

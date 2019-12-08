@@ -171,7 +171,6 @@ public class BasicFunctionalityTest {
 
         // push event
         clientSQS.sendMessage(queue.getQueueUrl(), testBucket);
-        Thread.sleep(1500);
 
         Runnable check = new Runnable() {
             public void run() {
@@ -186,7 +185,7 @@ public class BasicFunctionalityTest {
             }
         };
 
-        LocalTestUtil.retry(check, 5, 100);
+        LocalTestUtil.retry(check, 5, 1);
     }
 
     @org.junit.Test
