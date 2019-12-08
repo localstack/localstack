@@ -32,4 +32,4 @@ class CloudWatchTest(unittest.TestCase):
             },
         ]
         response = client.put_metric_data(Namespace='string', MetricData=data)
-        print(response)
+        self.assertEquals(response['ResponseMetadata']['HTTPStatusCode'], 200)
