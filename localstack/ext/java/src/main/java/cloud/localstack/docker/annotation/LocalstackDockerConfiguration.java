@@ -10,7 +10,8 @@ import java.util.Map;
 /**
  * Bean to specify the docker configuration.
  *
- * @author Patrick Allain.
+ * @author Patrick Allain
+ * @author Waldemar Hummer
  */
 @Data
 @Builder
@@ -29,5 +30,8 @@ public class LocalstackDockerConfiguration {
 
     @Builder.Default
     private final Map<String, String> environmentVariables = Collections.emptyMap();
+
+    @Builder.Default
+    private final Map<Integer, Integer> portMappings = Collections.emptyMap();
 
 }

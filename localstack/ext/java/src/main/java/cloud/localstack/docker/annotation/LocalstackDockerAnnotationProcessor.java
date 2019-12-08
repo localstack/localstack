@@ -19,21 +19,34 @@ public class LocalstackDockerAnnotationProcessor {
 
     public LocalstackDockerConfiguration process(final Class<?> klass) {
         return Stream.of(klass.getAnnotations())
-                .filter(annotation -> annotation instanceof LocalstackDockerProperties)
-                .map(i -> (LocalstackDockerProperties) i)
-                .map(this::processDockerPropertiesAnnotation)
-                .findFirst()
-                .orElse(LocalstackDockerConfiguration.DEFAULT);
+            .filter(annotation -> annotation instanceof LocalstackDockerProperties)
+            .map(i -> (LocalstackDockerProperties) i)
+            .map(this::processDockerPropertiesAnnotation)
+            .findFirst()
+            .orElse(LocalstackDockerConfiguration.DEFAULT);
     }
 
     private LocalstackDockerConfiguration processDockerPropertiesAnnotation(LocalstackDockerProperties properties) {
         return LocalstackDockerConfiguration.builder()
-                .environmentVariables(this.getEnvironments(properties))
-                .externalHostName(this.getExternalHostName(properties))
-                .pullNewImage(properties.pullNewImage())
-                .randomizePorts(properties.randomizePorts())
-                .imageTag(StringUtils.isEmpty(properties.imageTag()) ? null : properties.imageTag())
-                .build();
+            .environmentVariables(this.getEnvironments(properties))
+            .externalHostName(this.getExternalHostName(properties))
+            .portMappings(this.getCustomPortMappings(properties))
+            .pullNewImage(properties.pullNewImage())
+            .randomizePorts(properties.randomizePorts())
+            .imageTag(StringUtils.isEmpty(properties.imageTag()) ? null : properties.imageTag())
+            .build();
+    }
+
+    private Map<Integer, Integer> getCustomPortMappings(final LocalstackDockerProperties properties) {
+        final Map<Integer, Integer> portMappings = new HashMap<>();
+        for (String service : properties.services()) {
+            String[] parts = service.split(":");
+            if (parts.length > 1) {
+                int port = Integer.parseInt(parts[1]);
+                portMappings.put(port, port);
+            }
+        }
+        return portMappings;
     }
 
     private Map<String, String> getEnvironments(final LocalstackDockerProperties properties) {
