@@ -22,7 +22,6 @@ public class PortCommand extends Command {
         this.containerId = containerId;
     }
 
-
     public List<PortMapping> execute() {
         String output = dockerExe.execute(Arrays.asList("port", containerId));
 
@@ -30,7 +29,6 @@ public class PortCommand extends Command {
                 .map(matchToPortMapping)
                 .collect(Collectors.toList());
     }
-
 
     private Function<MatchResult, PortMapping> matchToPortMapping = m -> new PortMapping(m.group(IP_GROUP), m.group(EXTERNAL_PORT_GROUP), m.group(INTERNAL_PORT_GROUP));
 

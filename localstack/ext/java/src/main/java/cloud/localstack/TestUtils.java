@@ -63,8 +63,13 @@ public class TestUtils {
     }
 
     public static AmazonSQS getClientSQS() {
+        return getClientSQS(null);
+    }
+
+    public static AmazonSQS getClientSQS(String endpoint) {
+        endpoint = endpoint == null ? Localstack.INSTANCE.getEndpointSQS() : endpoint;
         return AmazonSQSClientBuilder.standard().
-                withEndpointConfiguration(getEndpointConfigurationSQS()).
+                withEndpointConfiguration(getEndpointConfiguration(endpoint)).
                 withCredentials(getCredentialsProvider()).build();
     }
 

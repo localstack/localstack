@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 import java.lang.annotation.Inherited;
 
 /**
- * An annotation to provide parameters to the LocalstackDockerTestRunner
+ * An annotation to provide parameters to the main (Docker-based) LocalstackTestRunner
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
