@@ -160,6 +160,10 @@ public class Localstack {
         return endpointForService(ServiceName.REDSHIFT);
     }
 
+    public String getEndpointCloudWatch() {
+        return endpointForService(ServiceName.CLOUDWATCH);
+    }
+
     public String getEndpointSES() {
         return endpointForService(ServiceName.SES);
     }
@@ -170,10 +174,6 @@ public class Localstack {
 
     public String getEndpointCloudFormation() {
         return endpointForService(ServiceName.CLOUDFORMATION);
-    }
-
-    public String getEndpointCloudWatch() {
-        return endpointForService(ServiceName.CLOUDWATCH);
     }
 
     public String getEndpointSSM() {

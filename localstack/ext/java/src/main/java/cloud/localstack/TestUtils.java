@@ -6,6 +6,8 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.client.builder.ExecutorFactory;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatch;
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBStreams;
@@ -162,6 +164,12 @@ public class TestUtils {
                 withCredentials(getCredentialsProvider()).build();
     }
 
+    public static AmazonCloudWatch getClientCloudWatch() {
+        return AmazonCloudWatchClientBuilder.standard().
+                withEndpointConfiguration(getEndpointConfigurationCloudWatch()).
+                withCredentials(getCredentialsProvider()).build();
+    }
+
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationLambda() {
         return getEndpointConfiguration(Localstack.INSTANCE.getEndpointLambda());
     }
@@ -188,6 +196,10 @@ public class TestUtils {
 
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationSNS() {
         return getEndpointConfiguration(Localstack.INSTANCE.getEndpointSNS());
+    }
+
+    protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationCloudWatch() {
+        return getEndpointConfiguration(Localstack.INSTANCE.getEndpointCloudWatch());
     }
 
     protected static AwsClientBuilder.EndpointConfiguration getEndpointConfigurationSecretsManager() {
