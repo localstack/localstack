@@ -19,7 +19,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_CUSTOM_RUNTIME
+    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_NODEJS12X, LAMBDA_RUNTIME_CUSTOM_RUNTIME
 )
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -369,6 +369,37 @@ class TestNodeJSRuntimes(LambdaTestBase):
             zip_file=zip_file,
             handler='lambda_integration.handler',
             runtime=LAMBDA_RUNTIME_NODEJS810
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(to_str(result_data).strip(), '{}')
+
+        # assert that logs are present
+        expected = ['.*Node.js Lambda handler executing.']
+        self.check_lambda_logs(TEST_LAMBDA_NAME_JS, expected_lines=expected)
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
+
+class TestNodeJS12Runtimes(LambdaTestBase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
+
+    def test_nodejs_lambda_running_in_docker(self):
+        if not use_docker():
+            return
+
+        zip_file = testutil.create_zip_file(
+            TEST_LAMBDA_NODEJS, get_content=True)
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JS,
+            zip_file=zip_file,
+            handler='lambda_integration.handler',
+            runtime=LAMBDA_RUNTIME_NODEJS12X
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')

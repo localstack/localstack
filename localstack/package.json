@@ -4,7 +4,8 @@
   "description": "Local Cloud Stack and Utilities",
   "version": "0.0.1",
   "dependencies": {
-    "kinesalite": "3.2.0"
+    "kinesalite": "3.2.0",
+    "serverless-iot-offline": "git+https://github.com/whummer/serverless-iot-offline.git"
   },
   "optionalDependencies": {
     "leveldown": "^5.2.1"
