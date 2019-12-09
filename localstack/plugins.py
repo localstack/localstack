@@ -14,9 +14,10 @@ from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
 from localstack.services.apigateway import apigateway_listener
 from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
 from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
-
+from localstack.services.events import events_listener
 
 # register default plugins
+
 
 def register_localstack_plugins():
     try:
@@ -82,6 +83,8 @@ def register_localstack_plugins():
             start=start_ssm))
         register_plugin(Plugin('sts',
             start=start_sts))
+        register_plugin(Plugin('events',
+            start=start_events, listener=events_listener.UPDATE_EVENTS))
         register_plugin(Plugin('stepfunctions',
             start=stepfunctions_starter.start_stepfunctions,
             listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS))
