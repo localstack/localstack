@@ -1,12 +1,14 @@
 import re
 import uuid
 import xmltodict
+from moto.sqs.utils import parse_message_attributes
+from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
 from requests.models import Request, Response
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
-from localstack.utils.common import to_str, md5
+from localstack.utils.common import to_str, md5, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.utils.aws.aws_stack import extract_region_from_auth_header
@@ -213,6 +215,32 @@ class ProxyListenerSQS(ProxyListener):
 
         return msg_attrs
 
+    @classmethod
+    def get_message_attributes_md5(self, req_data):
+        req_data = clone(req_data)
+        orig_types = {}
+        for key, entry in dict(req_data).items():
+            # Fix an issue in moto where data types like 'Number.java.lang.Integer' are
+            # not supported: Keep track of the original data type, and temporarily change
+            # it to the short form (e.g., 'Number'), before changing it back again.
+            if key.endswith('DataType'):
+                parts = entry[0].split('.')
+                if len(parts) > 2:
+                    short_type_name = parts[0]
+                    full_type_name = req_data[key][0]
+                    attr_num = key.split('.')[1]
+                    attr_name = req_data['MessageAttribute.%s.Name' % attr_num][0]
+                    orig_types[attr_name] = full_type_name
+                    req_data[key] = [short_type_name]
+                    if full_type_name not in TRANSPORT_TYPE_ENCODINGS:
+                        TRANSPORT_TYPE_ENCODINGS[full_type_name] = TRANSPORT_TYPE_ENCODINGS[short_type_name]
+        moto_message = Message('dummy_msg_id', 'dummy_body')
+        moto_message.message_attributes = parse_message_attributes(req_data)
+        for key, data_type in orig_types.items():
+            moto_message.message_attributes[key]['data_type'] = data_type
+        message_attr_hash = moto_message.attribute_md5
+        return message_attr_hash
+
     # Format attributes as dict. Example input:
     #  {
     #    'Attribute.1.Name': ['Policy'],
@@ -242,8 +270,9 @@ class ProxyListenerSQS(ProxyListener):
         if process_result:
             # If a Lambda was listening, do not add the message to the queue
             new_response = Response()
+            message_attr_hash = self.get_message_attributes_md5(req_data)
             new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
-                message_attr_hash=md5(data),
+                message_attr_hash=message_attr_hash,
                 message_body_hash=md5(message_body),
                 message_id=str(uuid.uuid4())
             )
