@@ -8,8 +8,8 @@ from jsonpatch import apply_patch
 from requests.models import Response
 from xml.dom.minidom import parseString
 from requests.structures import CaseInsensitiveDict
-from localstack.config import INBOUND_GATEWAY_URL_PATTERN, DEFAULT_REGION
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack import config
+from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, load_file, json_safe, clone
@@ -100,7 +100,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             {'data': '{"foo": "bar3"}'}
         ]}
 
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
+        url = self.gateway_request_url(
             api_id=result['id'],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_DATA_INBOUND
@@ -141,7 +141,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         # generate test data
         test_data = {'spam': 'eggs & beans'}
 
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
+        url = self.gateway_request_url(
             api_id=result['id'],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_DATA_INBOUND
@@ -155,7 +155,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         attr_md5 = root.childNodes[1].lastChild.nodeValue
         body_md5 = root.childNodes[3].lastChild.nodeValue
 
-        self.assertEqual(attr_md5, '4141913720225b35a836dd9e19fc1e55')
+        self.assertEqual(attr_md5, 'd41d8cd98f00b204e9800998ecf8427e')
         self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')
 
     def test_api_gateway_sqs_integration(self):
@@ -169,7 +169,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         # generate test data
         test_data = {'spam': 'eggs'}
 
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
+        url = self.gateway_request_url(
             api_id=result['id'],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_DATA_INBOUND
@@ -208,7 +208,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             path=self.API_PATH_HTTP_BACKEND
         )
 
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
+        url = self.gateway_request_url(
             api_id=result['id'],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_HTTP_BACKEND
@@ -261,7 +261,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
         invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
-        target_uri = invocation_uri % (DEFAULT_REGION, lambda_uri)
+        target_uri = invocation_uri % (config.DEFAULT_REGION, lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
             'test_gateway2', target_uri, path=path)
@@ -274,7 +274,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         path = path.replace('{test_param1}', 'foo1')
         path = path + '?foo=foo&bar=bar&bar=baz'
 
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
+        url = self.gateway_request_url(
             api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path)
 
         data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
@@ -378,7 +378,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
         # make test request to gateway and check response
         path = path.replace('{test_param1}', 'foo1')
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
+        url = self.gateway_request_url(
             api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=path)
         data = {}
 
@@ -393,6 +393,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     # Helper methods
     # =====================================================================
 
+    def gateway_request_url(self, api_id, stage_name, path):
+        """ Return URL for inbound API gateway for given API ID, stage name, and path """
+        pattern = '%s/restapis/{api_id}/{stage_name}/%s{path}' % (config.TEST_APIGATEWAY_URL, PATH_USER_REQUEST)
+        return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
+
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
         template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % (kinesis_stream)
@@ -402,7 +407,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             'authorizationType': 'NONE',
             'integrations': [{
                 'type': 'AWS',
-                'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % DEFAULT_REGION,
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % config.DEFAULT_REGION,
                 'requestTemplates': {
                     'application/json': template
                 }
@@ -412,7 +417,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             'authorizationType': 'NONE',
             'integrations': [{
                 'type': 'AWS',
-                'uri': 'arn:aws:apigateway:%s:kinesis:action/ListStreams' % DEFAULT_REGION,
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/ListStreams' % config.DEFAULT_REGION,
                 'requestTemplates': {
                     'application/json': '{}'
                 }
