@@ -68,8 +68,9 @@ def set_moto_account_ids(resource_json):
     def fix_ids(obj, **kwargs):
         if isinstance(obj, dict):
             for key, value in obj.items():
-                if 'arn' in key.lower() and isinstance(value, six.string_types):
-                    obj[key] = value.replace(TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID)
+                if isinstance(value, six.string_types):
+                    if 'arn' in key.lower() or (':%s:' % TEST_AWS_ACCOUNT_ID) in value:
+                        obj[key] = value.replace(TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID)
         return obj
 
     return recurse_object(resource_json, fix_ids)

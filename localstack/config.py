@@ -9,7 +9,7 @@ from os.path import expanduser
 import six
 from boto3 import Session
 from localstack.constants import (
-    DEFAULT_SERVICE_PORTS, LOCALHOST, PATH_USER_REQUEST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
+    DEFAULT_SERVICE_PORTS, LOCALHOST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY)
 
 TRUE_VALUES = ('1', 'true')
@@ -299,7 +299,3 @@ BUNDLE_API_PROCESSES = True
 
 # whether to use a CPU/memory profiler when running the integration tests
 USE_PROFILER = os.environ.get('USE_PROFILER', '').lower() in TRUE_VALUES
-
-# set URL pattern of inbound API gateway
-INBOUND_GATEWAY_URL_PATTERN = ('%s/restapis/{api_id}/{stage_name}/%s{path}' %
-                               (TEST_APIGATEWAY_URL, PATH_USER_REQUEST))  # noqa
