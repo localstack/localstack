@@ -739,6 +739,23 @@ class ProxyListenerS3(ProxyListener):
             return Request(data=modified_data, headers=headers, method=method)
         return True
 
+    def get_201_reponse(self, key, bucket_name):
+        return """
+            <PostResponse>
+                <Location>{protocol}://{host}/{encoded_key}</Location>
+                <Bucket>{bucket}</Bucket>
+                <Key>{key}</Key>
+                <ETag>{etag}</ETag>
+            </PostResponse>
+            """.format(
+            protocol=get_service_protocol(),
+            host=config.HOSTNAME_EXTERNAL,
+            encoded_key=urlparse.quote(key, safe=''),
+            key=key,
+            bucket=bucket_name,
+            etag='d41d8cd98f00b204e9800998ecf8427f',
+        )
+
     def get_forward_url(self, method, path, data, headers):
         def sub(match):
             # make sure to convert any bucket names to lower case
@@ -763,16 +780,24 @@ class ProxyListenerS3(ProxyListener):
         if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
             bucket_name = hostname_parts[0]
 
-        # POST requests to S3 may include a success_action_redirect field,
-        # which should be used to redirect a client to a new location.
+        # POST requests to S3 may include a success_action_redirect or
+        # success_action_status field, which should be used to redirect a
+        # client to a new location.
         key = None
         if method == 'POST':
-            key, redirect_url = multipart_content.find_multipart_redirect_url(data, headers)
+            key, redirect_url = multipart_content.find_multipart_key_value(data, headers)
 
             if key and redirect_url:
                 response.status_code = 303
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
                 LOGGER.debug('S3 POST {} to {}'.format(response.status_code, response.headers['Location']))
+
+            key, status_code = multipart_content.find_multipart_key_value(
+                data, headers, 'success_action_status')
+            if response.status_code == 200 and status_code == '201' and key:
+                response.status_code = 201
+                response._content = self.get_201_reponse(key, bucket_name)
+                return response
 
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = headers['host'].startswith(bucket_name)

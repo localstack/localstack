@@ -71,19 +71,19 @@ def expand_multipart_filename(data, headers):
     return data
 
 
-def find_multipart_redirect_url(data, headers):
-    """ Return object key and redirect URL if they can be found.
+def find_multipart_key_value(data, headers, field_name='success_action_redirect'):
+    """ Return object key and value of the field_name if they can be found.
 
-        Data is given as multipart form submission bytes, and redirect is found
-        in the success_action_redirect field according to Amazon S3
-        documentation for Post uploads:
+        Data is given as multipart form submission bytes, and the value is found
+        in the fields like success_action_redirect or success_action_status
+        field according to Amazon S3 documentation for Post uploads:
         http://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPOST.html
     """
     _, params = cgi.parse_header(headers.get('Content-Type', ''))
-    key, redirect_url = None, None
+    key, field_value = None, None
 
     if 'boundary' not in params:
-        return key, redirect_url
+        return key, field_value
 
     boundary = params['boundary'].encode('ascii')
     data_bytes = to_bytes(data)
@@ -95,8 +95,7 @@ def find_multipart_redirect_url(data, headers):
 
     if key:
         for (disposition, part) in _iter_multipart_parts(data_bytes, boundary):
-            if disposition.get('name') == 'success_action_redirect':
+            if disposition.get('name') == field_name:
                 _, value = part.split(b'\r\n\r\n', 1)
-                redirect_url = value.rstrip(b'\r\n--').decode('utf8')
-
-    return key, redirect_url
+                field_value = value.rstrip(b'\r\n--').decode('utf8')
+    return key, field_value
