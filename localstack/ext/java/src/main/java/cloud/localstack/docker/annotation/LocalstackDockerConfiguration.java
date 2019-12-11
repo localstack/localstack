@@ -2,7 +2,6 @@ package cloud.localstack.docker.annotation;
 
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 
 import java.util.Collections;
 import java.util.Map;
@@ -12,6 +11,7 @@ import java.util.Map;
  *
  * @author Patrick Allain
  * @author Waldemar Hummer
+ * @author Omar Khammassi
  */
 @Data
 @Builder
@@ -33,5 +33,8 @@ public class LocalstackDockerConfiguration {
 
     @Builder.Default
     private final Map<Integer, Integer> portMappings = Collections.emptyMap();
+
+    @Builder.Default
+    private final boolean useSingleDockerContainer = false;
 
 }
