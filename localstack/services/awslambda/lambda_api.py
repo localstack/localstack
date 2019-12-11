@@ -78,6 +78,10 @@ exec_mutex = threading.Semaphore(1)
 # whether to use Docker for execution
 DO_USE_DOCKER = None
 
+# start characters indicating that a lambda result should be parsed as JSON
+# TODO: check integration with StepFunctions, and whether this should be ('[', '{', '"') instead
+JSON_START_CHARS = ('[', '{')
+
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
 
@@ -1023,7 +1027,7 @@ def invoke_function(function):
                     details[key] = result[key]
         # Try to parse parse payload as JSON
         payload = details['Payload']
-        if payload and isinstance(payload, (str, bytes)) and payload[0] in ('[', '{', '"'):
+        if payload and isinstance(payload, (str, bytes)) and payload[0] in JSON_START_CHARS:
             try:
                 details['Payload'] = json.loads(details['Payload'])
             except Exception:
