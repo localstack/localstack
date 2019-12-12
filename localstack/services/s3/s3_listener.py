@@ -340,6 +340,25 @@ def append_metadata_headers(method, query_map, headers):
             if headers.get(key) is None:
                 headers[key] = value[0]
 
+
+def fix_location_constraint(response):
+    """ Make sure we return a valid non-empty LocationConstraint, as this otherwise breaks Serverless. """
+    try:
+        content = to_str(response.content or '') or ''
+    except Exception:
+        content = ''
+    if 'LocationConstraint' in content:
+        pattern = r'<LocationConstraint([^>]*)>\s*</LocationConstraint>'
+        replace = r'<LocationConstraint\1>%s</LocationConstraint>' % aws_stack.get_region()
+        response._content = re.sub(pattern, replace, content)
+        remove_xml_preamble(response)
+
+
+def remove_xml_preamble(response):
+    """ Removes <?xml ... ?> from a response content """
+    response._content = re.sub(r'^<\?[^\?]+\?>', '', response._content)
+
+
 # --------------
 # HELPER METHODS
 #   for lifecycle/replication/encryption/...
@@ -864,6 +883,7 @@ class ProxyListenerS3(ProxyListener):
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
             append_last_modified_headers(response=response)
             append_list_objects_marker(method, path, data, response)
+            fix_location_constraint(response)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
