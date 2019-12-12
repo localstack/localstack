@@ -53,6 +53,10 @@ API_COMPOSITES = {
 # name of main Docker container
 MAIN_CONTAINER_NAME = 'localstack_main'
 
+# environment variable that indicates that we're executing in the context of the script that starts the Docker container
+ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
+
+# semaphore for locking access to Popen
 mutex_popen = threading.Semaphore(1)
 
 
@@ -114,7 +118,8 @@ def load_plugin_from_path(file_path, scope=None):
         try:
             return method_to_execute()
         except Exception as e:
-            LOG.warning('Unable to load plugins from file %s: %s' % (file_path, e))
+            if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
+                LOG.warning('Unable to load plugins from file %s: %s' % (file_path, e))
 
 
 def load_plugins(scope=None):
@@ -249,6 +254,8 @@ def start_infra_in_docker():
 
     if docker_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
+
+    os.environ[ENV_SCRIPT_STARTING_DOCKER] = '1'
 
     # load plugins before starting the docker container
     plugin_configs = load_plugins()

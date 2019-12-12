@@ -90,17 +90,16 @@ class TestStateMachine(unittest.TestCase):
         def check_invocations():
             self.assertIn(lambda_arn_1, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
+            # assert that the result is correct
+            response = self.sfn_client.list_executions(stateMachineArn=sm_arn)
+            execution = response['executions'][0]
+            result = self.sfn_client.get_execution_history(executionArn=execution['executionArn'])
+            events = sorted(result['events'], key=lambda event: event['id'])
+            result = json.loads(events[-1]['executionSucceededEventDetails']['output'])
+            self.assertEqual(result['result_value'], {'Hello': TEST_RESULT_VALUE})
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=0.7, retries=25)
-
-        # assert that the result is correct
-        response = self.sfn_client.list_executions(stateMachineArn=sm_arn)
-        execution = response['executions'][0]
-        result = self.sfn_client.get_execution_history(executionArn=execution['executionArn'])
-        events = sorted(result['events'], key=lambda event: event['id'])
-        result = json.loads(events[-1]['executionSucceededEventDetails']['output'])
-        self.assertEqual(result['result_value'], {'Hello': TEST_RESULT_VALUE})
 
         # clean up
         self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
