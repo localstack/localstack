@@ -11,6 +11,7 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 TEST_LAMBDA_NAME_1 = 'lambda_sfn_1'
 TEST_LAMBDA_NAME_2 = 'lambda_sfn_2'
+TEST_RESULT_VALUE = 'testresult1'
 STATE_MACHINE_NAME = 'test_sm_1'
 STATE_MACHINE_DEF = {
     'Comment': 'Hello World example',
@@ -24,6 +25,7 @@ STATE_MACHINE_DEF = {
         'step2': {
             'Type': 'Task',
             'Resource': '__tbd__',
+            'ResultPath': '$.result_value',
             'End': True
         }
     }
@@ -46,12 +48,14 @@ class TestStateMachine(unittest.TestCase):
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_1,
             zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON36
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+            envvars={'Hello': TEST_RESULT_VALUE}
         )
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_2,
             zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON36
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+            envvars={'Hello': TEST_RESULT_VALUE}
         )
 
     @classmethod
@@ -84,11 +88,19 @@ class TestStateMachine(unittest.TestCase):
         self.assertTrue(result.get('executionArn'))
 
         def check_invocations():
-            assert lambda_api.LAMBDA_EXECUTOR.function_invoke_times[lambda_arn_1]
-            assert lambda_api.LAMBDA_EXECUTOR.function_invoke_times[lambda_arn_2]
+            self.assertIn(lambda_arn_1, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
+            self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
 
         # assert that the lambda has been invoked by the SM execution
-        retry(check_invocations, sleep=0.7, retries=20)
+        retry(check_invocations, sleep=0.7, retries=25)
+
+        # assert that the result is correct
+        response = self.sfn_client.list_executions(stateMachineArn=sm_arn)
+        execution = response['executions'][0]
+        result = self.sfn_client.get_execution_history(executionArn=execution['executionArn'])
+        events = sorted(result['events'], key=lambda event: event['id'])
+        result = json.loads(events[-1]['executionSucceededEventDetails']['output'])
+        self.assertEqual(result['result_value'], {'Hello': TEST_RESULT_VALUE})
 
         # clean up
         self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)

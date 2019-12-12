@@ -12,8 +12,6 @@ from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY)
 
-TRUE_VALUES = ('1', 'true')
-
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get('LAMBDA_JAVA_OPTS', '').strip()
 
@@ -47,13 +45,16 @@ SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
 
 # whether to remotely copy the lambda or locally mount a volume
-LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').lower().strip() in TRUE_VALUES
+LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').lower().strip() in TRUE_STRINGS
 
 # network that the docker lambda container will be joining
 LAMBDA_DOCKER_NETWORK = os.environ.get('LAMBDA_DOCKER_NETWORK', '').strip()
 
 # default container registry for lambda execution images
 LAMBDA_CONTAINER_REGISTRY = os.environ.get('LAMBDA_CONTAINER_REGISTRY', '').strip() or DEFAULT_LAMBDA_CONTAINER_REGISTRY
+
+# whether to remove containers after Lambdas finished executing
+LAMBDA_REMOVE_CONTAINERS = os.environ.get('LAMBDA_REMOVE_CONTAINERS', '').lower().strip() not in FALSE_STRINGS
 
 # directory for persisting data
 DATA_DIR = os.environ.get('DATA_DIR', '').strip()
@@ -143,9 +144,9 @@ LAMBDA_FALLBACK_URL = os.environ.get('LAMBDA_FALLBACK_URL', '').strip()
 # Make sure to keep this in sync with the above!
 # Note: do *not* include DATA_DIR in this list, as it is treated separately
 CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOSTNAME', 'LAMBDA_FALLBACK_URL',
-                   'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'USE_SSL', 'DEBUG',
-                   'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI', 'START_WEB',
-                   'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
+                   'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'LAMBDA_REMOVE_CONTAINERS',
+                   'USE_SSL', 'DEBUG', 'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI',
+                   'START_WEB', 'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
                    'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -290,7 +291,7 @@ def external_service_url(service_key):
 populate_configs()
 
 # set log level
-if os.environ.get('DEBUG', '').lower() in TRUE_VALUES:
+if os.environ.get('DEBUG', '').lower() in TRUE_STRINGS:
     logging.getLogger('').setLevel(logging.DEBUG)
     logging.getLogger('localstack').setLevel(logging.DEBUG)
 
@@ -298,4 +299,4 @@ if os.environ.get('DEBUG', '').lower() in TRUE_VALUES:
 BUNDLE_API_PROCESSES = True
 
 # whether to use a CPU/memory profiler when running the integration tests
-USE_PROFILER = os.environ.get('USE_PROFILER', '').lower() in TRUE_VALUES
+USE_PROFILER = os.environ.get('USE_PROFILER', '').lower() in TRUE_STRINGS

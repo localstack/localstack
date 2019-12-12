@@ -331,6 +331,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
 
             docker_image = Util.docker_image_for_runtime(runtime)
+            rm_flag = Util.get_docker_remove_flag()
 
             # Container is not running or doesn't exist.
             if status < 1:
@@ -350,7 +351,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 LOG.debug('Creating container: %s' % container_name)
                 cmd = (
                     '%s create'
-                    ' --rm'
+                    ' %s'  # --rm flag
                     ' --name "%s"'
                     ' --entrypoint /bin/bash'  # Load bash when it starts.
                     ' %s'
@@ -361,7 +362,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     '  %s'  # env_vars
                     '  %s'  # network
                     ' %s'
-                ) % (docker_cmd, container_name, mount_volume_str, env_vars_str, network_str, docker_image)
+                ) % (docker_cmd, rm_flag, container_name, mount_volume_str, env_vars_str, network_str, docker_image)
                 LOG.debug(cmd)
                 run(cmd)
 
@@ -588,6 +589,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         network_str = '--network="%s"' % network if network else ''
         docker_cmd = self._docker_cmd()
         docker_image = Util.docker_image_for_runtime(runtime)
+        rm_flag = Util.get_docker_remove_flag()
 
         if config.LAMBDA_REMOTE_DOCKER:
             cmd = (
@@ -596,12 +598,12 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'
                 ' %s'
                 ' %s'  # network
-                ' --rm'
+                ' %s'  # --rm flag
                 ' %s %s'
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str,
+            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str, rm_flag,
                  docker_image, command,
                  docker_cmd, lambda_cwd,
                  docker_cmd)
@@ -612,10 +614,10 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s -v "%s":/var/task'
                 ' %s'
                 ' %s'  # network
-                ' --rm'
+                ' %s'  # --rm flag
                 ' %s %s'
             ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string,
-                 network_str, docker_image, command)
+                 network_str, rm_flag, docker_image, command)
         return cmd
 
 
@@ -690,6 +692,10 @@ class Util:
         if docker_image == 'lambci/lambda' and any(img in docker_tag for img in lambdas_to_add_prefix):
             docker_tag = '20191117-%s' % docker_tag
         return '"%s:%s"' % (docker_image, docker_tag)
+
+    @classmethod
+    def get_docker_remove_flag(cls):
+        return '--rm' if config.LAMBDA_REMOVE_CONTAINERS else ''
 
     @classmethod
     def get_java_classpath(cls, archive):
