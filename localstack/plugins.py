@@ -1,26 +1,28 @@
+import os
 import sys
-from localstack.services.es import es_starter
-from localstack.services.s3 import s3_listener, s3_starter
-from localstack.services.kms import kms_starter
-from localstack.services.sns import sns_listener
-from localstack.services.sqs import sqs_listener, sqs_starter
-from localstack.services.iam import iam_listener, iam_starter
-from localstack.services.infra import (register_plugin, Plugin,
-    start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_events, start_lambda,
-    start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
-    start_ssm, start_sts, start_secretsmanager, start_cloudwatch_logs, start_ec2)
-from localstack.services.kinesis import kinesis_listener, kinesis_starter
-from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
-from localstack.services.apigateway import apigateway_listener
-from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
-from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
-from localstack.services.events import events_listener
-
-# register default plugins
+from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 
 
 def register_localstack_plugins():
+    # register default plugins
     try:
+        from localstack.services.es import es_starter
+        from localstack.services.s3 import s3_listener, s3_starter
+        from localstack.services.kms import kms_starter
+        from localstack.services.sns import sns_listener
+        from localstack.services.sqs import sqs_listener, sqs_starter
+        from localstack.services.iam import iam_listener, iam_starter
+        from localstack.services.infra import (register_plugin, Plugin,
+            start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_events, start_lambda,
+            start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
+            start_ssm, start_sts, start_secretsmanager, start_cloudwatch_logs, start_ec2)
+        from localstack.services.kinesis import kinesis_listener, kinesis_starter
+        from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
+        from localstack.services.apigateway import apigateway_listener
+        from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
+        from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
+        from localstack.services.events import events_listener
+
         register_plugin(Plugin('apigateway',
             start=start_apigateway,
             listener=apigateway_listener.UPDATE_APIGATEWAY))
@@ -89,6 +91,7 @@ def register_localstack_plugins():
             start=stepfunctions_starter.start_stepfunctions,
             listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS))
     except Exception as e:
-        print('Unable to register plugins: %s' % e)
-        sys.stdout.flush()
+        if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
+            print('Unable to register plugins: %s' % e)
+            sys.stdout.flush()
         raise e
