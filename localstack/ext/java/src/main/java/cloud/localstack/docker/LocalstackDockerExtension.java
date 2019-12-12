@@ -3,7 +3,6 @@ package cloud.localstack.docker;
 import cloud.localstack.Localstack;
 import cloud.localstack.docker.annotation.LocalstackDockerAnnotationProcessor;
 import cloud.localstack.docker.annotation.LocalstackDockerConfiguration;
-import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -23,15 +22,26 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  *
  * @author Alan Bevier
  * @author Patrick Allain
+ * @author Omar Khammassi
  */
 public class LocalstackDockerExtension implements BeforeAllCallback {
 
     private static final LocalstackDockerAnnotationProcessor PROCESSOR = new LocalstackDockerAnnotationProcessor();
+    private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(LocalstackDockerExtension.class);
 
     @Override
     public void beforeAll(final ExtensionContext context) throws Exception {
-        context.getStore(ExtensionContext.Namespace.create(LocalstackDockerExtension.class))
-                .getOrComputeIfAbsent("localstack", key -> new StartedLocalStack(context));
+        final ExtensionContext.Store store;
+        if (isUseSingleDockerContainer(context)) {
+            store = context.getRoot().getStore(ExtensionContext.Namespace.GLOBAL);
+        } else {
+            store = context.getStore(NAMESPACE);
+        }
+        store.getOrComputeIfAbsent("localstack", key -> new LocalstackDockerExtension.StartedLocalStack(context));
+    }
+
+    private boolean isUseSingleDockerContainer(final ExtensionContext context) {
+        return PROCESSOR.process(context.getRequiredTestClass()).isUseSingleDockerContainer();
     }
 
     static class StartedLocalStack implements ExtensionContext.Store.CloseableResource {

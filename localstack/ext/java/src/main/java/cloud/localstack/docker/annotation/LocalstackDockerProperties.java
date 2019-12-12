@@ -47,4 +47,9 @@ public @interface LocalstackDockerProperties {
      * Use a specific image tag for docker container
      */
     String imageTag() default "";
+
+    /**
+     * Determines if the singleton container should be used by all test classes
+     */
+    boolean useSingleDockerContainer() default false;
 }
