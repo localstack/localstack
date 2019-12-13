@@ -595,7 +595,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
         if network == 'host':
-            env_vars['DOCKER_LAMBDA_API_PORT'] = str(self.next_port + self.port_offset)
+            port = str(self.next_port + self.port_offset)
+            env_vars['DOCKER_LAMBDA_API_PORT'] = port
+            env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
             self.next_port = (self.next_port + 1) % self.max_port
 
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
