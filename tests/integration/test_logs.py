@@ -18,10 +18,13 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.assertEquals(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
         # send message with non-ASCII (multi-byte) chars
-        body_msg = '🙀 - 参よ'
+        body_msg = '🙀 - 参よ - 日本語'
         events = [{
             'timestamp': 1234567,
             'message': body_msg
         }]
         response = client.put_log_events(logGroupName=group, logStreamName=stream, logEvents=events)
         self.assertEquals(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        events = client.get_log_events(logGroupName=group, logStreamName=stream)['events']
+        self.assertEquals(events[0]['message'], body_msg)

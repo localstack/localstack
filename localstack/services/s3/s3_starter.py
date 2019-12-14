@@ -94,6 +94,24 @@ def apply_patches():
     s3_responses.S3ResponseInstance._key_response_put = types.MethodType(
         s3_key_response_put, s3_responses.S3ResponseInstance)
 
+    # patch DeleteObjectTagging
+
+    def s3_key_response_delete(self, bucket_name, query, key_name, *args, **kwargs):
+        # Fixes https://github.com/localstack/localstack/issues/1083
+        if query.get('tagging'):
+            self._set_action('KEY', 'DELETE', query)
+            self._authenticate_and_authorize_s3_action()
+            key = self.backend.get_key(bucket_name, key_name)
+            key.tags = s3_models.FakeTagging()
+            return 204, {}, ''
+        result = s3_key_response_delete_orig(bucket_name, query, key_name, *args, **kwargs)
+        return result
+
+    s3_key_response_delete_orig = s3_responses.S3ResponseInstance._key_response_delete
+    s3_responses.S3ResponseInstance._key_response_delete = types.MethodType(
+        s3_key_response_delete, s3_responses.S3ResponseInstance)
+    s3_responses.ACTION_MAP['KEY']['DELETE']['tagging'] = 'DeleteObjectTagging'
+
 
 def main():
     setup_logging()
