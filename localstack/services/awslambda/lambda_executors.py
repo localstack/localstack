@@ -43,6 +43,9 @@ LAMBDA_EVENT_FILE = 'event_file.json'
 LAMBDA_SERVER_UNIQUE_PORTS = 500
 LAMBDA_SERVER_PORT_OFFSET = 5000
 
+LAMBDA_API_UNIQUE_PORTS = 500
+LAMBDA_API_PORT_OFFSET = 9000
+
 # logger
 LOG = logging.getLogger(__name__)
 
@@ -570,6 +573,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
 class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
+    def __init__(self):
+        super(LambdaExecutorSeparateContainers, self).__init__()
+        self.next_port = 1
+        self.max_port = LAMBDA_API_UNIQUE_PORTS
+        self.port_offset = LAMBDA_API_PORT_OFFSET
+
     def prepare_event(self, environment, event_body):
 
         # Tell Lambci to use STDIN for the event
@@ -583,10 +592,16 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         else:
             command = '"%s"' % handler
 
-        env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
-        debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
+        if network == 'host':
+            port = str(self.next_port + self.port_offset)
+            env_vars['DOCKER_LAMBDA_API_PORT'] = port
+            env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
+            self.next_port = (self.next_port + 1) % self.max_port
+
+        env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
+        debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
         docker_cmd = self._docker_cmd()
         docker_image = Util.docker_image_for_runtime(runtime)
         rm_flag = Util.get_docker_remove_flag()
@@ -594,12 +609,12 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         if config.LAMBDA_REMOTE_DOCKER:
             cmd = (
                 'CONTAINER_ID="$(%s create -i'
-                ' %s'
-                ' %s'
-                ' %s'
+                ' %s'  # entrypoint
+                ' %s'  # debug_docker_java_port
+                ' %s'  # env
                 ' %s'  # network
                 ' %s'  # --rm flag
-                ' %s %s'
+                ' %s %s'  # image and command
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
