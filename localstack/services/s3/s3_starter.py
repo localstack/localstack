@@ -112,6 +112,15 @@ def apply_patches():
         s3_key_response_delete, s3_responses.S3ResponseInstance)
     s3_responses.ACTION_MAP['KEY']['DELETE']['tagging'] = 'DeleteObjectTagging'
 
+    # patch max-keys
+
+    def s3_truncate_result(self, result_keys, max_keys):
+        return s3_truncate_result_orig(result_keys, max_keys or 1000)
+
+    s3_truncate_result_orig = s3_responses.S3ResponseInstance._truncate_result
+    s3_responses.S3ResponseInstance._truncate_result = types.MethodType(
+        s3_truncate_result, s3_responses.S3ResponseInstance)
+
 
 def main():
     setup_logging()
