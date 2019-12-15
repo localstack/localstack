@@ -27,7 +27,7 @@ class PutRequest(Request):
         return 'PUT'
 
 
-class S3ListenerTest (unittest.TestCase):
+class S3ListenerTest(unittest.TestCase):
 
     def setUp(self):
         self.s3_client = aws_stack.connect_to_service('s3')

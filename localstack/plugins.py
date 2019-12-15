@@ -6,7 +6,6 @@ from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 def register_localstack_plugins():
     # register default plugins
     try:
-        from localstack.services.es import es_starter
         from localstack.services.s3 import s3_listener, s3_starter
         from localstack.services.kms import kms_starter
         from localstack.services.sns import sns_listener
@@ -39,9 +38,6 @@ def register_localstack_plugins():
             start=start_dynamodbstreams))
         register_plugin(Plugin('ec2',
             start=start_ec2))
-        register_plugin(Plugin('elasticsearch',
-            start=es_starter.start_elasticsearch,
-            check=es_starter.check_elasticsearch))
         register_plugin(Plugin('es',
             start=start_elasticsearch_service))
         register_plugin(Plugin('events',
