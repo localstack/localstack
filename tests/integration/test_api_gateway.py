@@ -4,7 +4,6 @@ import base64
 import re
 import json
 import unittest
-import pyfastcopy
 from jsonpatch import apply_patch
 from requests.models import Response
 from xml.dom.minidom import parseString
@@ -257,38 +256,29 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM)
 
     def _test_api_gateway_lambda_proxy_integration(self, fn_name, path):
-        print('_test_api_gateway_lambda_proxy_integration', fn_name, path)
-        print('pyfastcopy', pyfastcopy)
-
         self.create_lambda_function(fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
         invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
         target_uri = invocation_uri % (config.DEFAULT_REGION, lambda_uri)
-        print('1', lambda_uri, invocation_uri, target_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
             'test_gateway2', target_uri, path=path)
-        print('2', lambda_uri, invocation_uri, target_uri)
 
         api_id = result['id']
         path_map = get_rest_api_paths(api_id)
         _, resource = get_resource_for_path('/lambda/foo1', path_map)
-        print('3', api_id, path_map, resource, target_uri)
 
         # make test request to gateway and check response
         path = path.replace('{test_param1}', 'foo1')
         path = path + '?foo=foo&bar=bar&bar=baz'
-        print('4', path)
 
         url = self.gateway_request_url(
             api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path)
-        print('5', url)
 
         data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
         result = requests.post(url, data=json.dumps(data),
             headers={'User-Agent': 'python-requests/testing'})
-        print('6', data, result)
 
         self.assertEqual(result.status_code, 203)
         self.assertEqual(result.headers.get('foo'), 'bar123')
@@ -297,7 +287,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(parsed_body.get('return_status_code'), 203)
         self.assertDictEqual(parsed_body.get('return_headers'), {'foo': 'bar123'})
         self.assertDictEqual(parsed_body.get('queryStringParameters'), {'foo': 'foo', 'bar': ['bar', 'baz']})
-        print('7', parsed_body)
 
         request_context = parsed_body.get('requestContext')
         source_ip = request_context['identity'].pop('sourceIp')
@@ -310,15 +299,12 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(request_context['stage'], self.TEST_STAGE_NAME)
         self.assertEqual(request_context['identity']['userAgent'], 'python-requests/testing')
 
-        print('8', url, data)
         result = requests.delete(url, data=json.dumps(data))
         self.assertEqual(result.status_code, 404)
 
         # send message with non-ASCII chars
-        print('9', result)
         body_msg = '🙀 - 参よ'
         result = requests.post(url, data=json.dumps({'return_raw_body': body_msg}))
-        print('10', result)
         self.assertEqual(to_str(result.content), body_msg)
 
     def test_api_gateway_lambda_proxy_integration_any_method(self):
@@ -487,18 +473,14 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         )
 
     def create_lambda_function(self, fn_name):
-        print('create function 1', fn_name, TEST_LAMBDA_PYTHON)
-        print('create function 2', len(load_file(TEST_LAMBDA_PYTHON)))
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
             get_content=True,
             libs=TEST_LAMBDA_LIBS,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
-        print('create function', len(zip_file))
         testutil.create_lambda_function(
             func_name=fn_name,
             zip_file=zip_file,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
-        print('created function')
