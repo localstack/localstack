@@ -43,6 +43,8 @@ install:
 
 script:
   - set -e # fail fast
+  # build Docker image
+  - make docker-build
   # run tests using Python 3 (limit the set of tests to reduce test duration)
   - DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
   # run tests using Python 2
@@ -51,8 +53,6 @@ script:
   - "make reinstall-p2 > /dev/null"
   - make init
   - LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-  # build Docker image
-  - make docker-build
   # run Java tests
   # TODO: re-enable java tests when fixed!
   # - make test-java-if-changed; true
