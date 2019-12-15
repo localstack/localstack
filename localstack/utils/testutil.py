@@ -20,25 +20,33 @@ ARCHIVE_DIR_PREFIX = 'lambda.archive.'
 
 def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file_name=None):
     """Utility method to create a Lambda function archive"""
+    print('create_lambda_archive')
     tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
     TMP_FILES.append(tmp_dir)
+    print('create_lambda_archive 1', tmp_dir)
     file_name = file_name or get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
     script_file = os.path.join(tmp_dir, file_name)
+    print('create_lambda_archive 2', script_file)
     if os.path.sep in script_file:
         mkdir(os.path.dirname(script_file))
+        print('create_lambda_archive 3', script_file)
         # create __init__.py files along the path to allow Python imports
         path = file_name.split(os.path.sep)
         for i in range(1, len(path)):
             save_file(os.path.join(tmp_dir, *(path[:i] + ['__init__.py'])), '')
+        print('create_lambda_archive 4', path)
     save_file(script_file, script)
+    print('create_lambda_archive 5', path)
     # copy libs
     for lib in libs:
+        print('create_lambda_archive 6', lib)
         paths = [lib, '%s.py' % lib]
         try:
             module = importlib.import_module(lib)
             paths.append(module.__file__)
         except Exception:
             pass
+        print('create_lambda_archive 7', paths)
         target_dir = tmp_dir
         root_folder = os.path.join(LOCALSTACK_VENV_FOLDER, 'lib/python*/site-packages')
         if lib == 'localstack':
@@ -46,17 +54,31 @@ def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file
             root_folder = LOCALSTACK_ROOT_FOLDER
             target_dir = os.path.join(tmp_dir, lib)
             mkdir(target_dir)
+        print('create_lambda_archive 8', target_dir, paths)
         for path in paths:
             file_to_copy = path if path.startswith('/') else os.path.join(root_folder, path)
+            print('create_lambda_archive 9', file_to_copy, len(glob.glob(file_to_copy)))
             for file_path in glob.glob(file_to_copy):
+                if lib == 'pip':
+                    from localstack.utils.common import run
+                    print(run('du -h -d 1 %s' % file_path))
+                    print(run('which df || true'))
+                    print(run('df -h || true'))
+                    print(run('free -m || true'))
+                    print(run('cat /proc/meminfo || true'))
                 name = os.path.join(target_dir, file_path.split(os.path.sep)[-1])
+                print('copy', os.path.isdir(file_path), file_path, name)
                 if os.path.isdir(file_path):
                     shutil.copytree(file_path, name)
                 else:
                     shutil.copyfile(file_path, name)
+    print('create_lambda_archive 10')
+    print(run('du -h -d 1 %s' % tmp_dir))
 
     # create zip file
-    return create_zip_file(tmp_dir, get_content=get_content)
+    result = create_zip_file(tmp_dir, get_content=get_content)
+    print('create_lambda_archive 11')
+    return result
 
 
 def delete_lambda_function(name):
