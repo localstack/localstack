@@ -63,6 +63,10 @@ LOG = logging.getLogger(__name__)
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
 
+# generic cache object
+CACHE = {}
+
+# lock for creating certificate files
 SSL_CERT_LOCK = threading.RLock()
 
 
@@ -558,6 +562,12 @@ def rm_rf(path):
     """
     if not path or not os.path.exists(path):
         return
+    # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
+    if is_alpine():
+        try:
+            return run('rm -rf "%s"' % path)
+        except Exception:
+            pass
     # Make sure all files are writeable and dirs executable to remove
     chmod_r(path, 0o777)
     # check if the file is either a normal file, or, e.g., a fifo
@@ -637,12 +647,15 @@ def is_linux():
 
 def is_alpine():
     try:
-        if not os.path.exists('/etc/issue'):
-            return False
-        out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
-        return 'Alpine' in out
+        if '_is_alpine_' not in CACHE:
+            CACHE['_is_alpine_'] = False
+            if not os.path.exists('/etc/issue'):
+                return False
+            out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
+            CACHE['_is_alpine_'] = 'Alpine' in out
     except subprocess.CalledProcessError:
         return False
+    return CACHE['_is_alpine_']
 
 
 def get_arch():
@@ -774,6 +787,9 @@ def is_zip_file(content):
 
 
 def unzip(path, target_dir):
+    if is_alpine():
+        # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
+        return run('cd %s; unzip %s' % (target_dir, path))
     try:
         zip_ref = zipfile.ZipFile(path, 'r')
     except Exception as e:
@@ -781,9 +797,11 @@ def unzip(path, target_dir):
         raise e
     # Make sure to preserve file permissions in the zip file
     # https://www.burgundywall.com/post/preserving-file-perms-with-python-zipfile-module
-    for file_entry in zip_ref.infolist():
-        _unzip_file_entry(zip_ref, file_entry, target_dir)
-    zip_ref.close()
+    try:
+        for file_entry in zip_ref.infolist():
+            _unzip_file_entry(zip_ref, file_entry, target_dir)
+    finally:
+        zip_ref.close()
 
 
 def _unzip_file_entry(zip_ref, file_entry, target_dir):

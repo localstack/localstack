@@ -176,6 +176,12 @@ def start_elasticsearch_instance():
     return t1
 
 
+def cleanup_elasticsearch_instance():
+    # Note: keep imports here to avoid circular dependencies
+    from localstack.services.es import es_starter
+    es_starter.stop_elasticsearch()
+
+
 @app.route('%s/domain' % API_PREFIX, methods=['GET'])
 def list_domain_names():
     result = {
@@ -220,6 +226,8 @@ def delete_domain(domain_name):
         return error_response(error_type='ResourceNotFoundException')
     result = get_domain_status(domain_name, deleted=True)
     ES_DOMAINS.pop(domain_name)
+    if not ES_DOMAINS:
+        cleanup_elasticsearch_instance()
     # record event
     event_publisher.fire_event(event_publisher.EVENT_ES_DELETE_DOMAIN,
         payload={'n': event_publisher.get_hash(domain_name)})

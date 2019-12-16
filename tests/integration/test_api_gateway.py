@@ -58,8 +58,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     TEST_STAGE_NAME = 'testing'
     TEST_LAMBDA_PROXY_BACKEND = 'test_lambda_apigw_backend'
     TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = 'test_lambda_apigw_backend_path_param'
-    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_ARMlambda_apigw_backend_any_method'
-    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_ARMlambda_apigw_backend_any_method_path_param'
+    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_lambda_apigw_backend_any_method'
+    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_lambda_apigw_backend_any_method_path_param'
     TEST_LAMBDA_SQS_HANDLER_NAME = 'lambda_sqs_handler'
     TEST_LAMBDA_AUTHORIZER_HANDLER_NAME = 'lambda_authorizer_handler'
     TEST_API_GATEWAY_ID = 'fugvjdxtri'
@@ -256,7 +256,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM)
 
     def _test_api_gateway_lambda_proxy_integration(self, fn_name, path):
-
         self.create_lambda_function(fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)

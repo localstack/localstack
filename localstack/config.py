@@ -283,8 +283,9 @@ def service_port(service_key):
     return SERVICE_PORTS.get(service_key, 0)
 
 
-def external_service_url(service_key):
-    return 'http%s://%s:%s' % ('s' if USE_SSL else '', HOSTNAME_EXTERNAL, service_port(service_key))
+def external_service_url(service_key, host=None):
+    host = host or HOSTNAME_EXTERNAL
+    return 'http%s://%s:%s' % ('s' if USE_SSL else '', host, service_port(service_key))
 
 
 # initialize config values

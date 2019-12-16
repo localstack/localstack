@@ -87,7 +87,7 @@ class S3ListenerTest(unittest.TestCase):
         # put an object where the bucket_name is in the host
         # it doesn't care about the authorization header as long as it's present
         headers = {'Host': '{}.s3.amazonaws.com'.format(TEST_BUCKET_WITH_NOTIFICATION), 'authorization': 'some_token'}
-        url = '{}/{}'.format(os.getenv('TEST_S3_URL'), key_by_host)
+        url = '{}/{}'.format(config.TEST_S3_URL, key_by_host)
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data='something else', headers=headers, verify=False)
         self.assertTrue(response.ok)
@@ -298,7 +298,7 @@ class S3ListenerTest(unittest.TestCase):
         data = ('d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n' +
             '%s\r\n0;chunk-signature=f2a50a8c0ad4d212b579c2489c6d122db88d8a0d0b987ea1f3e9d081074a5937\r\n') % body
         # put object
-        url = '%s/%s/%s' % (os.environ['TEST_S3_URL'], bucket_name, object_key)
+        url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, object_key)
         req = PutRequest(url, to_bytes(data), headers)
         urlopen(req, context=ssl.SSLContext()).read()
         # get object and assert content length
@@ -348,6 +348,21 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual(response.headers['content-length'], '0')
         # clean up
         self._delete_bucket(bucket_name, [object_key])
+
+    def test_delete_object_tagging(self):
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name, ACL='public-read')
+        object_key = 'test-key'
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        # get object and assert response
+        url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, object_key)
+        response = requests.get(url, verify=False)
+        self.assertEqual(response.status_code, 200)
+        # delete object tagging
+        self.s3_client.delete_object_tagging(Bucket=bucket_name, Key=object_key)
+        # assert that the object still exists
+        response = requests.get(url, verify=False)
+        self.assertEqual(response.status_code, 200)
 
     def test_bucket_exists(self):
         # Test setup
