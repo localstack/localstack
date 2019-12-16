@@ -1,7 +1,7 @@
 import json
 import time
 import unittest
-from nose.tools import assert_in, assert_equal
+from nose.tools import assert_equal, assert_in, assert_not_in
 from botocore.exceptions import ClientError
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import safe_requests as requests
@@ -38,6 +38,12 @@ class ElasticsearchTest(unittest.TestCase):
     def tearDownClass(cls):
         cls._delete_document(TEST_DOC_ID)
 
+        # make sure domain deletion works
+        es_client = aws_stack.connect_to_service('es')
+        es_client.delete_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
+        assert_not_in(TEST_DOMAIN_NAME,
+            [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
+
     def test_domain_creation(self):
         es_client = aws_stack.connect_to_service('es')
 
@@ -56,11 +62,6 @@ class ElasticsearchTest(unittest.TestCase):
         # make sure we can fake adding tags to a domain
         response = es_client.add_tags(ARN='string', TagList=[{'Key': 'SOME_TAG', 'Value': 'SOME_VALUE'}])
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
-
-        # make sure domain deletion works
-        es_client.delete_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        self.assertNotIn(TEST_DOMAIN_NAME,
-            [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
 
     def test_elasticsearch_get_document(self):
         article_path = '{}/{}/employee/{}?pretty'.format(

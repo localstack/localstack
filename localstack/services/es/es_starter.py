@@ -10,7 +10,7 @@ from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf
 from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 from localstack.services.install import ROOT_PATH
 
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 STATE = {}
 
@@ -19,6 +19,14 @@ def delete_all_elasticsearch_data():
     """ This function drops ALL data in the local Elasticsearch data folder. Use with caution! """
     data_dir = os.path.join(LOCALSTACK_ROOT_FOLDER, 'infra', 'elasticsearch', 'data', 'elasticsearch', 'nodes')
     rm_rf(data_dir)
+
+
+def stop_elasticsearch():
+    thread = STATE.get('_thread_')
+    if not thread:
+        return
+    LOG.info('Terminating Elasticsearch instance, as all clusters have been removed')
+    thread.stop()
 
 
 def start_elasticsearch(port=None, delete_data=True, asynchronous=False, update_listener=None):
@@ -76,7 +84,7 @@ def check_elasticsearch(expect_shutdown=False, print_error=False):
         out = es.cat.aliases()
     except Exception as e:
         if print_error:
-            LOGGER.error('Elasticsearch health check failed (retrying...): %s %s' % (e, traceback.format_exc()))
+            LOG.error('Elasticsearch health check failed (retrying...): %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
         assert out is None
     else:
