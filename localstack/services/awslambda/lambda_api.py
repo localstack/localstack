@@ -740,7 +740,6 @@ def create_function():
     try:
         data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
-        print('CREATE FUNCTION', lambda_name)
         event_publisher.fire_event(event_publisher.EVENT_LAMBDA_CREATE_FUNC,
             payload={'n': event_publisher.get_hash(lambda_name)})
         arn = func_arn(lambda_name)

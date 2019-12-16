@@ -41,8 +41,7 @@ PLUGIN_SCOPE_COMMANDS = 'commands'
 # maps from API names to list of other API names that they depend on
 API_DEPENDENCIES = {
     'dynamodbstreams': ['kinesis'],
-    'lambda': ['logs'],
-    'es': ['elasticsearch']
+    'lambda': ['logs']
 }
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {

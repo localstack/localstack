@@ -435,9 +435,6 @@ def start_infra(asynchronous=False, apis=None):
         # start services
         thread = None
 
-        if 'elasticsearch' in apis or 'es' in apis:
-            sleep_time = max(sleep_time, 10)
-
         # loop through plugins and start each service
         for name, plugin in SERVICE_PLUGINS.items():
             if name in apis:
