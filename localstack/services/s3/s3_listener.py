@@ -816,7 +816,7 @@ class ProxyListenerS3(ProxyListener):
             if response.status_code == 200 and status_code == '201' and key:
                 response.status_code = 201
                 response._content = self.get_201_reponse(key, bucket_name)
-                response.headers['Content-Length']=len(response._content)
+                response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
 
