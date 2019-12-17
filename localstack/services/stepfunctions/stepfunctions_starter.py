@@ -21,11 +21,12 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     dynamodb_endpoint = aws_stack.get_local_service_url('dynamodb')
     sns_endpoint = aws_stack.get_local_service_url('sns')
     sqs_endpoint = aws_stack.get_local_service_url('sqs')
+    sfn_endpoint = aws_stack.get_local_service_url('stepfunctions')
     cmd = ('cd %s; java -Dcom.amazonaws.sdk.disableCertChecking -Xmx%s -jar StepFunctionsLocal.jar '
            '--lambda-endpoint %s --dynamodb-endpoint %s --sns-endpoint %s '
-           '--sqs-endpoint %s --aws-region %s --aws-account %s') % (
+           '--sqs-endpoint %s --aws-region %s --aws-account %s --step-functions-endpoint %s') % (
         install.INSTALL_DIR_STEPFUNCTIONS, MAX_HEAP_SIZE, lambda_endpoint, dynamodb_endpoint,
-        sns_endpoint, sqs_endpoint, aws_stack.get_region(), TEST_AWS_ACCOUNT_ID)
+        sns_endpoint, sqs_endpoint, aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, sfn_endpoint)
     print('Starting mock StepFunctions (%s port %s)...' % (get_service_protocol(), port))
     start_proxy_for_service('stepfunctions', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
