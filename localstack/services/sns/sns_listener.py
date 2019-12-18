@@ -44,7 +44,7 @@ class ProxyListenerSNS(ProxyListener):
             # parse payload and extract fields
             req_data = urlparse.parse_qs(to_str(data))
             req_action = req_data['Action'][0]
-            topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn')
+            topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn') or req_data.get('ResourceArn')
 
             if topic_arn:
                 topic_arn = topic_arn[0]
@@ -97,14 +97,11 @@ class ProxyListenerSNS(ProxyListener):
                         content += '</member>'
                     content += '</Tags>'
                 return make_response(req_action, content=content)
+            elif req_action == 'CreateTopic':
+                topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
+                self._extract_tags(topic_arn, req_data)
             elif req_action == 'TagResource':
-                tags = []
-                req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
-                for i in range(int(len(req_tags.keys()) / 2)):
-                    key = req_tags['Tags.member.' + str(i + 1) + '.Key'][0]
-                    value = req_tags['Tags.member.' + str(i + 1) + '.Value'][0]
-                    tags.append({'Key': key, 'Value': value})
-                do_tag_resource(topic_arn, tags)
+                self._extract_tags(topic_arn, req_data)
                 return make_response(req_action)
             elif req_action == 'UntagResource':
                 tags_to_remove = []
@@ -119,6 +116,15 @@ class ProxyListenerSNS(ProxyListener):
             return Request(data=data, headers=headers, method=method)
 
         return True
+
+    def _extract_tags(self, topic_arn, req_data):
+        tags = []
+        req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
+        for i in range(int(len(req_tags.keys()) / 2)):
+            key = req_tags['Tags.member.' + str(i + 1) + '.Key'][0]
+            value = req_tags['Tags.member.' + str(i + 1) + '.Value'][0]
+            tags.append({'Key': key, 'Value': value})
+        do_tag_resource(topic_arn, tags)
 
     def _reset_account_id(self, data):
         """ Fix account ID in request payload. All external-facing responses contain our

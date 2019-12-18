@@ -19,9 +19,11 @@ Resources:
     Properties:
       TopicName: { "Fn::Join": [ "", [ { "Ref": "AWS::StackName" }, "-test-topic-1-1" ] ] }
       Tags:
-        - Key: foobar
+        - Key: foo
           Value:
             Ref: S3Bucket
+        - Key: bar
+          Value: { "Fn::GetAtt": ["S3Bucket", "Arn"] }
   TopicSubscription:
     Type: AWS::SNS::Subscription
     Properties:

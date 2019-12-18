@@ -137,16 +137,22 @@ class CloudFormationTest(unittest.TestCase):
         # assert that queue has been created
         assert queue_exists('cf-test-queue-1')
         # assert that topic has been created
-        assert topic_exists('%s-test-topic-1-1' % stack_name)
+        topic_arn = topic_exists('%s-test-topic-1-1' % stack_name)
+        assert topic_arn
         # assert that stream has been created
         assert stream_exists('cf-test-stream-1')
         # assert that queue has been created
         resource = describe_stack_resource(stack_name, 'SQSQueueNoNameProperty')
         assert queue_exists(resource['PhysicalResourceId'])
 
-        # assert that topic tags have been created
+        # assert that tags have been created
         tags = s3.get_bucket_tagging(Bucket='cf-test-bucket-1')['TagSet']
         self.assertEqual(tags, [{'Key': 'foobar', 'Value': aws_stack.get_sqs_queue_url('cf-test-queue-1')}])
+        tags = sns.list_tags_for_resource(ResourceArn=topic_arn)['Tags']
+        self.assertEqual(tags, [
+            {'Key': 'foo', 'Value': 'cf-test-bucket-1'},
+            {'Key': 'bar', 'Value': aws_stack.s3_bucket_arn('cf-test-bucket-1')}
+        ])
         # assert that subscriptions have been created
         subs = sns.list_subscriptions()['Subscriptions']
         subs = [s for s in subs if (':%s:cf-test-queue-1' % TEST_AWS_ACCOUNT_ID) in s['Endpoint']]
