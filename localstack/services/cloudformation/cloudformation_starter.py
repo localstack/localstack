@@ -399,6 +399,16 @@ def apply_patches():
     SQS_Queue_get_cfn_attribute_orig = sqs_models.Queue.get_cfn_attribute
     sqs_models.Queue.get_cfn_attribute = SQS_Queue_get_cfn_attribute
 
+    # Patch S3 Bucket get_cfn_attribute(..) method in moto
+
+    def S3_Bucket_get_cfn_attribute(self, attribute_name):
+        if attribute_name in ['Arn']:
+            return aws_stack.s3_bucket_arn(self.name)
+        return S3_Bucket_get_cfn_attribute_orig(self, attribute_name)
+
+    S3_Bucket_get_cfn_attribute_orig = s3_models.FakeBucket.get_cfn_attribute
+    s3_models.FakeBucket.get_cfn_attribute = S3_Bucket_get_cfn_attribute
+
     # Patch SQS physical_resource_id(..) method in moto
 
     @property
