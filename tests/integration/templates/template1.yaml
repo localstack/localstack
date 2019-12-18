@@ -34,7 +34,6 @@ Resources:
       Name: cf-test-stream-1
   SQSQueueNoNameProperty:
     Type: AWS::SQS::Queue
-
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:

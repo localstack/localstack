@@ -303,7 +303,7 @@ def append_last_modified_headers(response, content=None):
     time_format = '%a, %d %b %Y %H:%M:%S GMT'  # TimeFormat
     try:
         if content:
-            last_modified_str = re.findall(r'<LastModified>(.*)</LastModified>', content)
+            last_modified_str = re.findall(r'<LastModified>([^<]*)</LastModified>', content)
             if last_modified_str:
                 last_modified_str = last_modified_str[0]
                 last_modified_time_format = dateutil.parser.parse(last_modified_str).strftime(time_format)
