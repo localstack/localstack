@@ -249,7 +249,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 return result
 
             response = Response()
-            parsed_result = result if isinstance(result, dict) else json.loads(result)
+            parsed_result = result if isinstance(result, dict) else json.loads(str(result))
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
             response.status_code = int(parsed_result.get('statusCode', 200))
