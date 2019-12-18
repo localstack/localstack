@@ -710,6 +710,10 @@ def deploy_resource(resource_id, resources, stack_name):
     func_details = func_details if isinstance(func_details, list) else [func_details]
     results = []
     for func in func_details:
+        if callable(func['function']):
+            result = func['function'](resource_id, resources, resource_type, func, stack_name)
+            results.append(result)
+            continue
         client = get_client(resource, func)
         if client:
             result = deploy_resource_via_sdk_function(resource_id, resources, resource_type, func, stack_name)

@@ -33,7 +33,8 @@ def rm_dir(dir):
 
 
 def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file_name=None):
-    """Utility method to create a Lambda function archive"""
+    """ Utility method to create a Lambda function archive """
+    runtime = runtime or LAMBDA_DEFAULT_RUNTIME
     tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
     TMP_FILES.append(tmp_dir)
     file_name = file_name or get_handler_file_from_name(LAMBDA_DEFAULT_HANDLER, runtime=runtime)
@@ -121,10 +122,11 @@ def create_zip_file(file_path, get_content=False):
 
 
 def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
-        starting_position=LAMBDA_DEFAULT_STARTING_POSITION, runtime=LAMBDA_DEFAULT_RUNTIME,
-        envvars={}, tags={}, delete=False, layers=None):
+        starting_position=None, runtime=None, envvars={}, tags={}, delete=False, layers=None):
     """Utility method to create a new function via the Lambda API"""
 
+    starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
+    runtime = runtime or LAMBDA_DEFAULT_RUNTIME
     client = aws_stack.connect_to_service('lambda')
 
     if delete:
@@ -231,10 +233,11 @@ def download_s3_object(s3, bucket, path):
         return result
 
 
-def map_all_s3_objects(to_json=True):
+def map_all_s3_objects(to_json=True, buckets=None):
     s3_client = aws_stack.get_s3_client()
     result = {}
-    for bucket in s3_client.buckets.all():
+    buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
+    for bucket in buckets:
         for key in bucket.objects.all():
             value = download_s3_object(s3_client, key.bucket_name, key.key)
             try:
