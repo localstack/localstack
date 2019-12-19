@@ -35,7 +35,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, isoformat_milliseconds)
+    md5, new_tmp_file, parse_chunked_data, now_utc, safe_requests, isoformat_milliseconds)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -77,10 +77,6 @@ exec_mutex = threading.Semaphore(1)
 
 # whether to use Docker for execution
 DO_USE_DOCKER = None
-
-# start characters indicating that a lambda result should be parsed as JSON
-# TODO: check integration with StepFunctions, and whether this should be ('[', '{', '"') instead
-JSON_START_CHARS = ('[', '{')
 
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
@@ -1026,10 +1022,12 @@ def invoke_function(function):
                 if result.get(key):
                     details[key] = result[key]
         # Try to parse parse payload as JSON
+        json_loads_successful = False
         payload = details['Payload']
-        if payload and isinstance(payload, (str, bytes)) and payload[0] in JSON_START_CHARS:
+        if payload and isinstance(payload, (str, bytes)):
             try:
                 details['Payload'] = json.loads(details['Payload'])
+                json_loads_successful = True
             except Exception:
                 pass
         # Set error headers
@@ -1037,9 +1035,9 @@ def invoke_function(function):
             details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
         # Construct response object
         response_obj = details['Payload']
-        if isinstance(response_obj, (dict, list, bool)) or is_number(response_obj):
-            # Assume this is a JSON response
+        if json_loads_successful:
             response_obj = jsonify(response_obj)
+            details['Headers']['Content-Type'] = 'application/json'
         else:
             response_obj = str(response_obj)
             details['Headers']['Content-Type'] = 'text/plain'
