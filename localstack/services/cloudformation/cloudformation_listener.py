@@ -126,15 +126,19 @@ class ProxyListenerCloudFormation(ProxyListener):
             req_data = urlparse.parse_qs(to_str(data))
             req_data = dict([(k, v[0]) for k, v in req_data.items()])
             action = req_data.get('Action')
+            stack_name = req_data.get('StackName')
 
             if action == 'CreateStack':
-                stack_name = req_data.get('StackName')
                 event_publisher.fire_event(event_publisher.EVENT_CLOUDFORMATION_CREATE_STACK,
                     payload={'n': event_publisher.get_hash(stack_name)})
 
+            if action == 'DeleteStack':
+                client = aws_stack.connect_to_service('cloudformation')
+                stack_resources = client.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
+                template_deployer.delete_stack(stack_name, stack_resources)
+
             if action == 'DescribeStackEvents':
                 # fix an issue where moto cannot handle ARNs as stack names (or missing names)
-                stack_name = req_data.get('StackName')
                 run_fix = not stack_name
                 if stack_name:
                     if stack_name.startswith('arn:aws:cloudformation'):
@@ -169,12 +173,19 @@ class ProxyListenerCloudFormation(ProxyListener):
         if response.status_code >= 400:
             LOG.debug('Error response from CloudFormation (%s) %s %s: %s' %
                       (response.status_code, method, path, response.content))
+
         if response._content:
             aws_stack.fix_account_id_in_arns(response)
 
     def _list_stack_names(self):
         client = aws_stack.connect_to_service('cloudformation')
-        stack_names = [s['StackName'] for s in client.list_stacks()['StackSummaries']]
+        stacks = client.list_stacks()['StackSummaries']
+        stack_names = []
+        for stack in stacks:
+            status = stack['StackStatus']
+            if 'FAILED' in status or 'DELETE' in status:
+                continue
+            stack_names.append(stack['StackName'])
         return stack_names
 
 

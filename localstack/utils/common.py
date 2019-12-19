@@ -970,6 +970,10 @@ def clone(item):
     return json.loads(json.dumps(item))
 
 
+def clone_safe(item):
+    return clone(json_safe(item))
+
+
 def remove_non_ascii(text):
     # text = unicode(text, "utf-8")
     text = text.decode('utf-8', CODEC_HANDLER_UNDERSCORE)

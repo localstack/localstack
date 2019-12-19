@@ -14,6 +14,7 @@ from localstack.utils.testutil import create_zip_file
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 
 ACTION_CREATE = 'create'
+ACTION_DELETE = 'delete'
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
 
 LOG = logging.getLogger(__name__)
@@ -74,6 +75,12 @@ RESOURCE_TO_FUNCTION = {
                 'ACL': lambda params, **kwargs: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead')),
                 'CreateBucketConfiguration': lambda params, **kwargs: get_bucket_location_config()
             }
+        },
+        'delete': {
+            'function': 'delete_bucket',
+            'parameters': {
+                'Bucket': 'PhysicalResourceId'
+            }
         }
     },
     'SQS::Queue': {
@@ -87,6 +94,12 @@ RESOURCE_TO_FUNCTION = {
                 ),
                 'tags': 'Tags'
             }
+        },
+        'delete': {
+            'function': 'delete_queue',
+            'parameters': {
+                'QueueUrl': 'PhysicalResourceId'
+            }
         }
     },
     'SNS::Topic': {
@@ -95,6 +108,12 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'Name': 'TopicName',
                 'Tags': 'Tags'
+            }
+        },
+        'delete': {
+            'function': 'delete_topic',
+            'parameters': {
+                'TopicArn': 'PhysicalResourceId'
             }
         }
     },
@@ -254,6 +273,12 @@ RESOURCE_TO_FUNCTION = {
             'defaults': {
                 'ShardCount': 1
             }
+        },
+        'delete': {
+            'function': 'delete_stream',
+            'parameters': {
+                'StreamName': 'PhysicalResourceId'
+            }
         }
     },
     'StepFunctions::StateMachine': {
@@ -337,7 +362,7 @@ def get_resource_type(resource):
 
 
 def get_service_name(resource):
-    res_type = resource.get('Type', '')
+    res_type = resource.get('Type', resource.get('ResourceType', ''))
     parts = res_type.split('::')
     if len(parts) == 1:
         return None
@@ -376,9 +401,6 @@ def get_client(resource, func_config):
     resource_config = RESOURCE_TO_FUNCTION.get(resource_type)
     if resource_config is None:
         raise Exception('CloudFormation deployment for resource type %s not yet implemented' % resource_type)
-    if ACTION_CREATE not in resource_config:
-        # nothing to do for this resource
-        return
     try:
         if func_config.get('boto_client') == 'resource':
             return aws_stack.connect_to_resource(service)
@@ -698,15 +720,23 @@ def remove_none_values(params):
 
 
 def deploy_resource(resource_id, resources, stack_name):
+    return execute_resource_action(resource_id, resources, stack_name, ACTION_CREATE)
+
+
+def delete_resource(resource_id, resources, stack_name):
+    return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
+
+
+def execute_resource_action(resource_id, resources, stack_name, action_name):
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
     func_details = RESOURCE_TO_FUNCTION.get(resource_type)
-    if not func_details:
-        LOG.warning('Resource type not yet implemented: %s' % resource_type)
+    if not func_details or action_name not in func_details:
+        LOG.warning('Action "%s" for resource type %s not yet implemented' % (action_name, resource_type))
         return
 
-    LOG.debug('Deploying resource type "%s" id "%s"' % (resource_type, resource_id))
-    func_details = func_details[ACTION_CREATE]
+    LOG.debug('Running action "%s" for resource type "%s" id "%s"' % (action_name, resource_type, resource_id))
+    func_details = func_details[action_name]
     func_details = func_details if isinstance(func_details, list) else [func_details]
     results = []
     for func in func_details:
@@ -716,12 +746,12 @@ def deploy_resource(resource_id, resources, stack_name):
             continue
         client = get_client(resource, func)
         if client:
-            result = deploy_resource_via_sdk_function(resource_id, resources, resource_type, func, stack_name)
+            result = configure_resource_via_sdk(resource_id, resources, resource_type, func, stack_name)
             results.append(result)
     return (results or [None])[0]
 
 
-def deploy_resource_via_sdk_function(resource_id, resources, resource_type, func_details, stack_name):
+def configure_resource_via_sdk(resource_id, resources, resource_type, func_details, stack_name):
     resource = resources[resource_id]
     client = get_client(resource, func_details)
     function = getattr(client, func_details['function'])
@@ -781,7 +811,7 @@ def deploy_resource_via_sdk_function(resource_id, resources, resource_type, func
 
     # invoke function
     try:
-        LOG.debug('Request for creating resource type "%s" in region %s: %s %s' % (
+        LOG.debug('Request for resource type "%s" in region %s: %s %s' % (
             resource_type, aws_stack.get_region(), func_details['function'], params))
         result = function(**params)
     except Exception as e:
@@ -845,6 +875,14 @@ def deploy_template(template, stack_name):
 
     LOG.warning('Unable to resolve all dependencies and deploy all resources ' +
         'after %s iterations. Remaining (%s): %s' % (iters, len(next), next))
+
+
+def delete_stack(stack_name, stack_resources):
+    resources = dict([(r['LogicalResourceId'], common.clone_safe(r)) for r in stack_resources])
+    for key, resource in resources.items():
+        resources[key]['Properties'] = common.clone_safe(resource)
+    for resource_id, resource in resources.items():
+        delete_resource(resource_id, resources, stack_name)
 
 
 # --------

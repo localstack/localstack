@@ -8,6 +8,7 @@ from moto.iam import models as iam_models
 from moto.sqs import models as sqs_models
 from moto.core import BaseModel
 from moto.server import main as moto_main
+from moto.kinesis import models as kinesis_models
 from moto.dynamodb import models as dynamodb_models
 from moto.dynamodb2 import models as dynamodb2_models
 from moto.awslambda import models as lambda_models
@@ -128,6 +129,8 @@ def update_physical_resource_id(resource):
         elif isinstance(resource, service_models.StepFunctionsActivity):
             act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
             resource.physical_resource_id = act_arn
+        elif isinstance(resource, kinesis_models.Stream):
+            resource.physical_resource_id = resource.stream_name
         else:
             LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
