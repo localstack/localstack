@@ -354,6 +354,19 @@ def fix_location_constraint(response):
         remove_xml_preamble(response)
 
 
+def fix_range_content_type(bucket_name, path, headers, response):
+    # Fix content type for Range requests - https://github.com/localstack/localstack/issues/1259
+    if 'Range' not in headers:
+        return
+
+    s3_client = aws_stack.connect_to_service('s3')
+    key_name = get_key_name(path, headers)
+    result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
+    content_type = result['ContentType']
+    if response.headers.get('Content-Type') == 'text/html; charset=utf-8':
+        response.headers['Content-Type'] = content_type
+
+
 def remove_xml_preamble(response):
     """ Removes <?xml ... ?> from a response content """
     response._content = re.sub(r'^<\?[^\?]+\?>', '', response._content)
@@ -556,16 +569,28 @@ def normalize_bucket_name(bucket_name):
     return bucket_name
 
 
+def get_key_name(path, headers):
+    parsed = urlparse.urlparse(path)
+    path_parts = parsed.path.lstrip('/').split('/', 1)
+
+    if uses_path_addressing(headers):
+        return path_parts[1]
+    return path_parts[0]
+
+
+def uses_path_addressing(headers):
+    host = headers['host']
+    return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL)
+
+
 def get_bucket_name(path, headers):
     parsed = urlparse.urlparse(path)
 
     # try pick the bucket_name from the path
     bucket_name = parsed.path.split('/')[1]
 
-    host = headers['host']
-
-    # is the hostname not starting a bucket name?
-    if host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL):
+    # is the hostname not starting with a bucket name?
+    if uses_path_addressing(headers):
         return normalize_bucket_name(bucket_name)
 
     # matches the common endpoints like
@@ -585,6 +610,7 @@ def get_bucket_name(path, headers):
 
     # if any of the above patterns match, the first captured group
     # will be returned as the bucket name
+    host = headers['host']
     for pattern in [common_pattern, dualstack_pattern, legacy_patterns]:
         match = pattern.match(host)
         if match:
@@ -886,6 +912,7 @@ class ProxyListenerS3(ProxyListener):
             append_last_modified_headers(response=response)
             append_list_objects_marker(method, path, data, response)
             fix_location_constraint(response)
+            fix_range_content_type(bucket_name, path, headers, response)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317

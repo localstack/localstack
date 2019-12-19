@@ -244,23 +244,30 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
-    def test_s3_get_response_content_type_same_as_upload(self):
+    def test_s3_get_response_content_type_same_as_upload_and_range(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         # put object
-        object_key = 'key-by-hostname'
+        object_key = '/foo/bar/key-by-hostname'
+        content_type = 'foo/bar; charset=utf-8'
         self.s3_client.put_object(Bucket=bucket_name,
                                   Key=object_key,
-                                  Body='something',
-                                  ContentType='text/html; charset=utf-8')
+                                  Body='something ' * 20,
+                                  ContentType=content_type)
         url = self.s3_client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
 
         # get object and assert headers
         response = requests.get(url, verify=False)
-        self.assertEqual(response.headers['content-type'], 'text/html; charset=utf-8')
+        self.assertEqual(response.headers['content-type'], content_type)
+
+        # get object using range query and assert headers
+        response = requests.get(url, headers={'Range': 'bytes=0-18'}, verify=False)
+        self.assertEqual(response.headers['content-type'], content_type)
+        self.assertEqual(to_str(response.content), 'something something')
+
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
