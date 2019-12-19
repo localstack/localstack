@@ -51,7 +51,10 @@ def bucket_exists(name):
 def queue_exists(name):
     sqs_client = aws_stack.connect_to_service('sqs')
     queues = sqs_client.list_queues()
-    url = name if '://' in name else aws_stack.get_sqs_queue_url(name)
+    try:
+        url = name if '://' in name else aws_stack.get_sqs_queue_url(name)
+    except Exception:
+        return False
     for queue_url in queues['QueueUrls']:
         if queue_url == url:
             return True
@@ -114,8 +117,9 @@ def get_topic_arns():
 
 class CloudFormationTest(unittest.TestCase):
 
-    def test_apply_template(self):
+    def test_create_delete_stack(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
+        cf_client = aws_stack.connect_to_service('cloudformation')
         s3 = aws_stack.connect_to_service('s3')
         sns = aws_stack.connect_to_service('sns')
         apigateway = aws_stack.connect_to_service('apigateway')
@@ -132,16 +136,12 @@ class CloudFormationTest(unittest.TestCase):
 
         retry(check_stack, retries=3, sleep=2)
 
-        # assert that bucket has been created
+        # assert that resources have been created
         assert bucket_exists('cf-test-bucket-1')
-        # assert that queue has been created
         assert queue_exists('cf-test-queue-1')
-        # assert that topic has been created
         topic_arn = topic_exists('%s-test-topic-1-1' % stack_name)
         assert topic_arn
-        # assert that stream has been created
         assert stream_exists('cf-test-stream-1')
-        # assert that queue has been created
         resource = describe_stack_resource(stack_name, 'SQSQueueNoNameProperty')
         assert queue_exists(resource['PhysicalResourceId'])
 
@@ -153,6 +153,7 @@ class CloudFormationTest(unittest.TestCase):
             {'Key': 'foo', 'Value': 'cf-test-bucket-1'},
             {'Key': 'bar', 'Value': aws_stack.s3_bucket_arn('cf-test-bucket-1')}
         ])
+
         # assert that subscriptions have been created
         subs = sns.list_subscriptions()['Subscriptions']
         subs = [s for s in subs if (':%s:cf-test-queue-1' % TEST_AWS_ACCOUNT_ID) in s['Endpoint']]
@@ -166,6 +167,15 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(responses), 2)
         types = [r['responseType'] for r in responses]
         self.assertEqual(set(types), set(['UNAUTHORIZED', 'DEFAULT_5XX']))
+
+        # delete the stack
+        cf_client.delete_stack(StackName=stack_name)
+
+        # assert that resources have been deleted
+        assert not bucket_exists('cf-test-bucket-1')
+        assert not queue_exists('cf-test-queue-1')
+        assert not topic_exists('%s-test-topic-1-1' % stack_name)
+        retry(lambda: self.assertFalse(stream_exists('cf-test-stream-1')))
 
     def test_list_stack_events(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
