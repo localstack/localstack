@@ -363,6 +363,11 @@ def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
         (get_region(), account_id, table_name, latest_stream_label))
 
 
+def log_group_arn(group_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:logs:%s:%s:log-group:%s'
+    return _resource_arn(group_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def lambda_function_arn(function_name, account_id=None, region_name=None):
     return lambda_function_or_layer_arn('function', function_name, account_id=account_id, region_name=region_name)
 
