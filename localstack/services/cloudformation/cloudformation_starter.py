@@ -13,6 +13,7 @@ from moto.dynamodb import models as dynamodb_models
 from moto.dynamodb2 import models as dynamodb2_models
 from moto.awslambda import models as lambda_models
 from moto.apigateway import models as apigw_models
+from moto.cloudwatch import models as cw_models
 from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
@@ -424,6 +425,19 @@ def apply_patches():
 
     SQS_Queue_physical_resource_id_orig = sqs_models.Queue.physical_resource_id
     sqs_models.Queue.physical_resource_id = SQS_Queue_physical_resource_id
+
+    # Patch LogGroup get_cfn_attribute(..) method in moto
+
+    def LogGroup_get_cfn_attribute(self, attribute_name):
+        try:
+            return LogGroup_get_cfn_attribute_orig(self, attribute_name)
+        except Exception:
+            if attribute_name == 'Arn':
+                return aws_stack.log_group_arn(self.name)
+            raise
+
+    LogGroup_get_cfn_attribute_orig = getattr(cw_models.LogGroup, 'get_cfn_attribute', None)
+    cw_models.LogGroup.get_cfn_attribute = LogGroup_get_cfn_attribute
 
     # Patch Lambda get_cfn_attribute(..) method in moto
 
