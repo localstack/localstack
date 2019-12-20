@@ -163,6 +163,16 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEquals({'Content-Type': 'application/json'}, response[2])
 
     @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_string_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '"thing"'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'"thing"\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEqual({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
     def test_invoke_integer_json_response(self, mock_run_lambda):
         with self.app.test_request_context() as context:
             self._request_response(context)
