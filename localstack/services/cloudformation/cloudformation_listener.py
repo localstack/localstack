@@ -101,7 +101,8 @@ def get_template_body(req_data):
     url = req_data.get('TemplateURL')
     if url:
         response = run_safe(lambda: safe_requests.get(url, verify=False))
-        if not response or response.status_code >= 400:
+        # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
+        if not response or response.status_code == 301 or response.status_code >= 400:
             # check if this is an S3 URL, then get the file directly from there
             if '://localhost' in url or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url):
                 parsed_path = urlparse.urlparse(url).path.lstrip('/')
