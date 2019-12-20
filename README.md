@@ -401,19 +401,6 @@ instead of installing LocalStack on the current machine. The only dependency is 
 installed locally. The test runner will automatically pull the image and start the container for the
 duration of the test.  The container can be configured by using the @LocalstackDockerProperties annotation.
 
-```
-@RunWith(LocalstackDockerTestRunner.class)
-@LocalstackDockerProperties(services = { "sqs", "kinesis:77077" })
-public class MyDockerCloudAppTest {
-
-  @Test
-  public void testKinesis() {
-    AmazonKinesis kinesis = DockerTestUtils.getClientKinesis();
-
-    ListStreamsResult streams = kinesis.listStreams();
-    ...
-```
-
 Or with JUnit 5 :
 
 ```
