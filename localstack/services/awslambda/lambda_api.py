@@ -11,6 +11,7 @@ import zipfile
 import threading
 import traceback
 import hashlib
+import functools
 from io import BytesIO
 from datetime import datetime
 from six.moves import cStringIO as StringIO
@@ -35,7 +36,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data, is_number, now_utc, safe_requests, isoformat_milliseconds)
+    md5, new_tmp_file, parse_chunked_data, now_utc, safe_requests, isoformat_milliseconds)
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -79,8 +80,20 @@ exec_mutex = threading.Semaphore(1)
 DO_USE_DOCKER = None
 
 # start characters indicating that a lambda result should be parsed as JSON
-# TODO: check integration with StepFunctions, and whether this should be ('[', '{', '"') instead
-JSON_START_CHARS = ('[', '{')
+JSON_START_CHAR_MAP = {
+    list: ('[',),
+    tuple: ('[',),
+    dict: ('{',),
+    str: ('"',),
+    bytes: ('"',),
+    bool: ('t', 'f'),
+    type(None): ('n',),
+    int: ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
+    float: ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')
+}
+POSSIBLE_JSON_TYPES = (str, bytes)
+JSON_START_TYPES = tuple(set(JSON_START_CHAR_MAP.keys()) - set(POSSIBLE_JSON_TYPES))
+JSON_START_CHARS = tuple(set(functools.reduce(lambda x, y: x + y, JSON_START_CHAR_MAP.values())))
 
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
@@ -1026,10 +1039,12 @@ def invoke_function(function):
                 if result.get(key):
                     details[key] = result[key]
         # Try to parse parse payload as JSON
+        was_json = False
         payload = details['Payload']
-        if payload and isinstance(payload, (str, bytes)) and payload[0] in JSON_START_CHARS:
+        if payload and isinstance(payload, POSSIBLE_JSON_TYPES) and payload[0] in JSON_START_CHARS:
             try:
                 details['Payload'] = json.loads(details['Payload'])
+                was_json = True
             except Exception:
                 pass
         # Set error headers
@@ -1037,9 +1052,9 @@ def invoke_function(function):
             details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
         # Construct response object
         response_obj = details['Payload']
-        if isinstance(response_obj, (dict, list, bool)) or is_number(response_obj):
-            # Assume this is a JSON response
+        if was_json or isinstance(response_obj, JSON_START_TYPES):
             response_obj = jsonify(response_obj)
+            details['Headers']['Content-Type'] = 'application/json'
         else:
             response_obj = str(response_obj)
             details['Headers']['Content-Type'] = 'text/plain'
