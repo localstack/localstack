@@ -34,14 +34,13 @@ LocalStack spins up the following core Cloud APIs on your local machine:
 * **Kinesis** at http://localhost:4568
 * **DynamoDB** at http://localhost:4569
 * **DynamoDB Streams** at http://localhost:4570
-* **Elasticsearch** at http://localhost:4571
 * **S3** at http://localhost:4572
 * **Firehose** at http://localhost:4573
 * **Lambda** at http://localhost:4574
 * **SNS** at http://localhost:4575
 * **SQS** at http://localhost:4576
 * **Redshift** at http://localhost:4577
-* **ES (Elasticsearch Service)** at http://localhost:4578
+* **Elasticsearch Service** at http://localhost:4578
 * **SES** at http://localhost:4579
 * **Route53** at http://localhost:4580
 * **CloudFormation** at http://localhost:4581
@@ -59,9 +58,11 @@ LocalStack spins up the following core Cloud APIs on your local machine:
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
 * **AppSync**
 * **Athena**
+* **CloudFront**
 * **Cognito**
-* **ElastiCache**
 * **ECS/EKS**
+* **ElastiCache**
+* **EMR**
 * **IoT**
 * **Lambda Layers**
 * **RDS**
@@ -365,16 +366,20 @@ In order to mount a local folder, ensure that `LAMBDA_REMOTE_DOCKER` is set to `
 
 ## Integration with Java/JUnit
 
-In order to use LocalStack with Java, the project ships with a simple JUnit runner and a JUnit 5 extension. Take a look
-at the example JUnit test in `ext/java`. When you run the test, all dependencies are automatically
-downloaded and installed to a temporary directory in your system.
+In order to use LocalStack with Java, the project ships with a simple JUnit runner and a JUnit 5
+extension. Take a look at the example JUnit tests in `ext/java`.
+
+By default, the JUnit Test Runner starts LocalStack in a Docker container, for the duration of the test.
+The container can be configured by using the `@LocalstackDockerProperties` annotation.
 
 ```
 ...
 import cloud.localstack.LocalstackTestRunner;
 import cloud.localstack.TestUtils;
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 
 @RunWith(LocalstackTestRunner.class)
+@LocalstackDockerProperties(services = { "s3", "sqs", "kinesis:77077" })
 public class MyCloudAppTest {
 
   @Test
@@ -391,22 +396,8 @@ Or with JUnit 5 :
 
 ```
 @ExtendWith(LocalstackExtension.class)
+@LocalstackDockerProperties(...)
 public class MyCloudAppTest {
-   ...
-}
-```
-
-Additionally, there is a version of the LocalStack Test Runner which runs in a docker container
-instead of installing LocalStack on the current machine. The only dependency is to have docker
-installed locally. The test runner will automatically pull the image and start the container for the
-duration of the test.  The container can be configured by using the @LocalstackDockerProperties annotation.
-
-Or with JUnit 5 :
-
-```
-@ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(services = { "sqs", "kinesis:77077" })
-public class MyDockerCloudAppTest {
    ...
 }
 ```
@@ -426,14 +417,15 @@ You can configure the Docker behaviour using the `@LocalstackDockerProperties` a
 
 | property                    | usage                                                                                                                        | type                         | default value |
 |-----------------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------|---------------|
-| pullNewImage                | Determines if a new image is pulled from the docker repo before the tests are run.                                           | boolean                      | false         |
-| randomizePorts              | Determines if the container should expose the default local stack ports (4567-4583) or if it should expose randomized ports. | boolean                      | false         |
-| services                    | Determines which services should be run when the localstack starts.                                                          | String[]                     | All           |
-| imageTag                    | Use a specific image tag for docker container                                                                                | String                       | latest        |
-| hostNameResolver            | Used for determining the host name of the machine running the docker containers so that the containers can be addressed.     | IHostNameResolver            | localhost     |
-| environmentVariableProvider | Used for injecting environment variables into the container.                                                                 | IEnvironmentVariableProvider | Empty Map     |
+| `pullNewImage`              | Determines if a new image is pulled from the docker repo before the tests are run.                                           | boolean                      | `false`         |
+| `randomizePorts`            | Determines if the container should expose the default local stack ports (4567-4583) or if it should expose randomized ports. | boolean                      | `false`         |
+| `services`                  | Determines which services should be run when the localstack starts.                                                          | String[]                     | All           |
+| `imageTag`                  | Use a specific image tag for docker container                                                                                | String                       | `latest`        |
+| `hostNameResolver`          | Used for determining the host name of the machine running the docker containers so that the containers can be addressed.     | IHostNameResolver            | `localhost`     |
+| `environmentVariableProvider` | Used for injecting environment variables into the container.                                                                 | IEnvironmentVariableProvider | Empty Map     |
+| `useSingleDockerContainer`  | Whether a singleton container should be used by all test classes.                     | boolean | `false`     |
 
-_NB : When specifying the port in the `services` property, you cannot use `randomizePorts = true`_
+_Note: When specifying the port in the `services` property, you cannot use `randomizePorts = true`_
 
 ### Troubleshooting
 
