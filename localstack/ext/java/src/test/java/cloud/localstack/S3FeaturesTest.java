@@ -115,7 +115,8 @@ public class S3FeaturesTest {
 		Assert.assertTrue(receivedMetadata.equals(originalMetadata) || receivedMetadata.equals(actualResult) );
 	}
 
-	private void testListNextBatchOfObjects() {
+	@Test
+	public void testListNextBatchOfObjects() {
 		AmazonS3 s3Client = TestUtils.getClientS3();
 		String s3BucketName = UUID.randomUUID().toString();
 		s3Client.createBucket(s3BucketName);
