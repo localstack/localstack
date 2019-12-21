@@ -370,6 +370,20 @@ class S3ListenerTest(unittest.TestCase):
         # assert that the object still exists
         response = requests.get(url, verify=False)
         self.assertEqual(response.status_code, 200)
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_delete_non_existing_keys(self):
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        object_key = 'test-key'
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        response = self.s3_client.delete_objects(Bucket=bucket_name,
+            Delete={'Objects': [{'Key': object_key}, {'Key': 'dummy1'}, {'Key': 'dummy2'}]})
+        self.assertEqual(len(response['Deleted']), 3)
+        self.assertNotIn('Errors', response)
+        # clean up
+        self._delete_bucket(bucket_name)
 
     def test_bucket_exists(self):
         # Test setup
@@ -632,10 +646,11 @@ class S3ListenerTest(unittest.TestCase):
             QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
         return queue_attributes['Attributes']['ApproximateNumberOfMessages']
 
-    def _delete_bucket(self, bucket_name, keys):
+    def _delete_bucket(self, bucket_name, keys=[]):
         keys = keys if isinstance(keys, list) else [keys]
         objects = [{'Key': k} for k in keys]
-        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': objects})
+        if objects:
+            self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': objects})
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
     def _perform_multipart_upload(self, bucket, key, data=None, zip=False, acl=None):

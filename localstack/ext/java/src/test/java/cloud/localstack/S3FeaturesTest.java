@@ -3,30 +3,19 @@ package cloud.localstack;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
-import com.amazonaws.services.s3.model.Tag;
-import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
-import com.amazonaws.services.s3.model.lifecycle.LifecycleTagPredicate;
+import com.amazonaws.services.s3.*;
+import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.lifecycle.*;
 
 @RunWith(LocalstackTestRunner.class)
 public class S3FeaturesTest {
@@ -126,4 +115,37 @@ public class S3FeaturesTest {
 		Assert.assertTrue(receivedMetadata.equals(originalMetadata) || receivedMetadata.equals(actualResult) );
 	}
 
+	@Test
+	public void testListNextBatchOfObjects() {
+		AmazonS3 s3Client = TestUtils.getClientS3();
+		String s3BucketName = UUID.randomUUID().toString();
+		s3Client.createBucket(s3BucketName);
+		s3Client.putObject(s3BucketName, "key1", "content");
+		s3Client.putObject(s3BucketName, "key2", "content");
+		s3Client.putObject(s3BucketName, "key3", "content");
+
+		ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+			.withBucketName(s3BucketName)
+			.withPrefix("")
+			.withDelimiter("/")
+			.withMaxKeys(1); // 1 Key per request
+
+		ObjectListing objectListing = s3Client.listObjects(listObjectsRequest);
+		List<Object> someObjList = new LinkedList<>();
+		someObjList.addAll(mapFilesToSomeObject(objectListing)); // puts at least 1 item into the list
+
+		while (objectListing.isTruncated()) {
+			objectListing = s3Client.listNextBatchOfObjects(objectListing);
+			someObjList.addAll(mapFilesToSomeObject(objectListing));
+		}
+		System.out.println("someObjList.size() " + someObjList.size());
+		assertEquals(3, someObjList.size());
+	}
+
+	private List<Object> mapFilesToSomeObject(ObjectListing objectListing) {
+		return objectListing.getObjectSummaries()
+			.stream()
+			.map(S3ObjectSummary::getKey)
+			.collect(Collectors.toList());
+	}
 }

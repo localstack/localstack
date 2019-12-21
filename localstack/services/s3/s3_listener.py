@@ -367,6 +367,29 @@ def fix_range_content_type(bucket_name, path, headers, response):
         response.headers['Content-Type'] = content_type
 
 
+def fix_delete_objects_response(bucket_name, method, parsed_path, data, headers, response):
+    # Deleting non-existing keys should not result in errors.
+    # Fixes https://github.com/localstack/localstack/issues/1893
+    if not (method == 'POST' and parsed_path.query == 'delete' and '<Delete' in to_str(data or '')):
+        return
+    content = to_str(response._content)
+    if '<Error>' not in content:
+        return
+    result = xmltodict.parse(content).get('DeleteResult')
+    errors = result.get('Error')
+    errors = errors if isinstance(errors, list) else [errors]
+    deleted = result.get('Deleted')
+    if not isinstance(result.get('Deleted'), list):
+        deleted = result['Deleted'] = [deleted] if deleted else []
+    for entry in list(errors):
+        if set(entry.keys()) == set(['Key']):
+            errors.remove(entry)
+            deleted.append(entry)
+    if not errors:
+        result.pop('Error')
+    response._content = xmltodict.unparse({'DeleteResult': result})
+
+
 def remove_xml_preamble(response):
     """ Removes <?xml ... ?> from a response content """
     response._content = re.sub(r'^<\?[^\?]+\?>', '', response._content)
@@ -913,6 +936,7 @@ class ProxyListenerS3(ProxyListener):
             append_list_objects_marker(method, path, data, response)
             fix_location_constraint(response)
             fix_range_content_type(bucket_name, path, headers, response)
+            fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
