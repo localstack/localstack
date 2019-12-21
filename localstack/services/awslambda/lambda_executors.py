@@ -68,6 +68,9 @@ class LambdaExecutor(object):
             # start the execution
             try:
                 result, log_output = self._execute(func_arn, func_details, event, context, version)
+            except Exception as e:
+                if asynchronous:
+                    self._send_to_dead_letter_queue(func_arn, func_details, event, context, version, e)
             finally:
                 self.function_invoke_times[func_arn] = invocation_time
             # forward log output to cloudwatch logs
@@ -93,6 +96,9 @@ class LambdaExecutor(object):
 
     def cleanup(self, arn=None):
         pass
+
+    def _send_to_dead_letter_queue(self, func_arn, func_details, event, context, version, error):
+        print('_send_to_dead_letter_queue', func_arn, func_details, error)
 
     def _store_logs(self, func_details, log_output, invocation_time):
         if not aws_stack.is_service_enabled('logs'):

@@ -110,6 +110,27 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         finally:
             config.LAMBDA_FALLBACK_URL = ''
 
+    def test_dead_letter_queue(self):
+        sqs_client = aws_stack.connect_to_service('sqs')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # create DLQ and Lambda function
+        queue_name = 'test-%s' % short_uid()
+        lambda_name = 'test-%s' % short_uid()
+        queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON),
+            get_content=True, libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36)
+        testutil.create_lambda_function(func_name=lambda_name, zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON36, DeadLetterConfig={'TargetArn': queue_arn})
+
+        # invoke Lambda, triggering an error
+        result = lambda_client.invoke(FunctionName=lambda_name, Payload='{}')
+        print(result)
+        # assert that message has been received
+        result = sqs_client.receive_message(QueueUrl=queue_url)
+        print('msg', result)
+
     def test_add_lambda_permission(self):
         iam_client = aws_stack.connect_to_service('iam')
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -144,18 +165,8 @@ class TestPythonRuntimes(LambdaTestBase):
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
         cls.s3_client = aws_stack.connect_to_service('s3')
-
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_PY,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
+        Util.create_function(TEST_LAMBDA_PYTHON, TEST_LAMBDA_NAME_PY,
+            runtime=LAMBDA_RUNTIME_PYTHON27, libs=TEST_LAMBDA_LIBS)
 
     @classmethod
     def tearDownClass(cls):
@@ -765,3 +776,13 @@ class TestDockerBehaviour(LambdaTestBase):
 
         # clean up
         testutil.delete_lambda_function(func_name)
+
+
+class Util(object):
+    @classmethod
+    def create_function(cls, file, name, runtime=None, libs=None):
+        runtime = runtime or LAMBDA_RUNTIME_PYTHON27
+        zip_file = testutil.create_lambda_archive(
+            load_file(file), get_content=True, libs=libs, runtime=runtime)
+        testutil.create_lambda_function(
+            func_name=name, zip_file=zip_file, runtime=runtime)

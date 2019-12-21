@@ -122,7 +122,8 @@ def create_zip_file(file_path, get_content=False):
 
 
 def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
-        starting_position=None, runtime=None, envvars={}, tags={}, delete=False, layers=None):
+        starting_position=None, runtime=None, envvars={}, tags={}, delete=False, layers=None,
+        **kwargs):
     """Utility method to create a new function via the Lambda API"""
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
@@ -137,6 +138,7 @@ def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=L
             pass
 
     # create function
+    additional_kwargs = kwargs
     kwargs = {
         'FunctionName': func_name,
         'Runtime': runtime,
@@ -149,6 +151,7 @@ def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=L
         'Environment': dict(Variables=envvars),
         'Tags': tags
     }
+    kwargs.update(additional_kwargs)
     if layers:
         kwargs['Layers'] = layers
     client.create_function(**kwargs)
