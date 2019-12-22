@@ -12,7 +12,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
-    run_safe, get_free_tcp_port, get_service_protocol)
+    run_safe, get_free_tcp_port, get_service_protocol, retry)
 from localstack.services.infra import start_proxy
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
@@ -21,6 +21,7 @@ from localstack.services.awslambda.lambda_api import (
     use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_CUSTOM_RUNTIME
 )
+from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py')
@@ -125,11 +126,21 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36, DeadLetterConfig={'TargetArn': queue_arn})
 
         # invoke Lambda, triggering an error
-        result = lambda_client.invoke(FunctionName=lambda_name, Payload='{}')
-        print(result)
-        # assert that message has been received
-        result = sqs_client.receive_message(QueueUrl=queue_url)
-        print('msg', result)
+        payload = {
+            lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1
+        }
+        lambda_client.invoke(FunctionName=lambda_name,
+            Payload=json.dumps(payload), InvocationType='Event')
+
+        # assert that message has been received on the DLQ
+        def receive_dlq():
+            result = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+            self.assertGreater(len(result['Messages']), 0)
+            msg_attrs = result['Messages'][0]['MessageAttributes']
+            self.assertIn('RequestID', msg_attrs)
+            self.assertIn('ErrorCode', msg_attrs)
+            self.assertIn('ErrorMessage', msg_attrs)
+        retry(receive_dlq, retries=8, sleep=2)
 
     def test_add_lambda_permission(self):
         iam_client = aws_stack.connect_to_service('iam')

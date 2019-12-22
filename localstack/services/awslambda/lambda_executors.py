@@ -18,6 +18,7 @@ from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -70,7 +71,8 @@ class LambdaExecutor(object):
                 result, log_output = self._execute(func_arn, func_details, event, context, version)
             except Exception as e:
                 if asynchronous:
-                    self._send_to_dead_letter_queue(func_arn, func_details, event, context, version, e)
+                    lambda_error_to_dead_letter_queue(func_details, event, e)
+                raise e
             finally:
                 self.function_invoke_times[func_arn] = invocation_time
             # forward log output to cloudwatch logs
@@ -96,9 +98,6 @@ class LambdaExecutor(object):
 
     def cleanup(self, arn=None):
         pass
-
-    def _send_to_dead_letter_queue(self, func_arn, func_details, event, context, version, error):
-        print('_send_to_dead_letter_queue', func_arn, func_details, error)
 
     def _store_logs(self, func_details, log_output, invocation_time):
         if not aws_stack.is_service_enabled('logs'):
