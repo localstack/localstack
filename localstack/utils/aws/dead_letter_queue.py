@@ -9,7 +9,8 @@ LOG = logging.getLogger(__name__)
 def sqs_error_to_dead_letter_queue(queue_arn, event, error):
     client = aws_stack.connect_to_service('sqs')
     queue_url = aws_stack.get_sqs_queue_url(queue_arn)
-    attrs = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['RedrivePolicy'])['Attributes']
+    attrs = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['RedrivePolicy'])
+    attrs = attrs.get('Attributes', {})
     policy = json.loads(attrs.get('RedrivePolicy') or '{}')
     target_arn = policy.get('deadLetterTargetArn')
     if not target_arn:
