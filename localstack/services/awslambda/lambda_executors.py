@@ -215,6 +215,8 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         environment['HOSTNAME'] = docker_host
         environment['LOCALSTACK_HOSTNAME'] = docker_host
+        if func_details.timeout:
+            environment['AWS_LAMBDA_FUNCTION_TIMEOUT'] = str(func_details.timeout)
         if context:
             environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
@@ -242,7 +244,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         cmd = self.prepare_execution(func_arn, environment, runtime, command, handler, lambda_cwd)
 
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
-        LOG.debug('Running lambda cmd: %s' % cmd)
+        LOG.info('Running lambda cmd: %s' % cmd)
         result, log_output = self.run_lambda_executor(cmd, stdin, environment)
         log_formatted = log_output.strip().replace('\n', '\n> ')
         LOG.debug('Lambda %s result / log output:\n%s\n>%s' % (func_arn, result.strip(), log_formatted))
@@ -750,7 +752,7 @@ class Util:
 EXECUTOR_LOCAL = LambdaExecutorLocal()
 EXECUTOR_CONTAINERS_SEPARATE = LambdaExecutorSeparateContainers()
 EXECUTOR_CONTAINERS_REUSE = LambdaExecutorReuseContainers()
-DEFAULT_EXECUTOR = EXECUTOR_LOCAL
+DEFAULT_EXECUTOR = EXECUTOR_CONTAINERS_SEPARATE
 # the keys of AVAILABLE_EXECUTORS map to the LAMBDA_EXECUTOR config variable
 AVAILABLE_EXECUTORS = {
     'local': EXECUTOR_LOCAL,
