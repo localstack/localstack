@@ -6,7 +6,7 @@ import threading
 from binascii import crc32
 from requests.models import Response
 from localstack import config
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import to_bytes, to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
@@ -36,7 +36,10 @@ class ProxyListenerDynamoDB(ProxyListener):
         self._table_ttl_map = {}
 
     def forward_request(self, method, path, data, headers):
-        if path.startswith('/shell'):
+        if path.startswith('/shell') or method == 'GET':
+            if path == '/shell':
+                headers = {'Refresh': '0; url=%s/shell/' % config.TEST_DYNAMODB_URL}
+                return aws_responses.requests_response('', headers=headers)
             return True
         if method == 'OPTIONS':
             return 200
@@ -138,7 +141,7 @@ class ProxyListenerDynamoDB(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response):
-        if path.startswith('/shell'):
+        if path.startswith('/shell') or method == 'GET':
             return
         data = json.loads(to_str(data))
 
