@@ -260,7 +260,7 @@ class ProxyListenerSQS(ProxyListener):
 
     def _send_message(self, path, data, req_data, headers):
         queue_url = self._queue_url(path, req_data, headers)
-        queue_name = queue_url[queue_url.rindex('/') + 1:]
+        queue_name = queue_url.rpartition('/')[2]
         message_body = req_data.get('MessageBody', [None])[0]
         message_attributes = self.format_message_attributes(req_data)
         region_name = extract_region_from_auth_header(headers)

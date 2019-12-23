@@ -4,9 +4,9 @@ import base64
 import re
 import json
 import unittest
+import xmltodict
 from jsonpatch import apply_patch
 from requests.models import Response
-from xml.dom.minidom import parseString
 from requests.structures import CaseInsensitiveDict
 from localstack import config
 from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
@@ -149,11 +149,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         result = requests.post(url, data=json.dumps(test_data))
         self.assertEqual(result.status_code, 200)
 
-        parsed_content = parseString(result.content)
-        root = parsed_content.documentElement.childNodes[1]
+        parsed_json = xmltodict.parse(result.content)
+        result = parsed_json['SendMessageResponse']['SendMessageResult']
 
-        attr_md5 = root.childNodes[1].lastChild.nodeValue
-        body_md5 = root.childNodes[3].lastChild.nodeValue
+        attr_md5 = result['MD5OfMessageAttributes']
+        body_md5 = result['MD5OfMessageBody']
 
         self.assertEqual(attr_md5, 'd41d8cd98f00b204e9800998ecf8427e')
         self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')

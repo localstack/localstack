@@ -20,6 +20,7 @@ from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_PYTHON27,
@@ -37,9 +38,9 @@ from localstack.services.awslambda.lambda_executors import (
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
     md5, new_tmp_file, parse_chunked_data, now_utc, safe_requests, isoformat_milliseconds)
-from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
+from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
 APP_NAME = 'lambda_api'
@@ -297,6 +298,8 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
             status_code = getattr(result, 'status_code', 200)
             if status_code >= 400:
                 LOG.warning('Invoking Lambda %s from SQS message failed (%s): %s' % (arn, status_code, result.data))
+                # check if we need to forward to a dead letter queue
+                sqs_error_to_dead_letter_queue(queue_arn, event, result)
             return True
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SQS messages: %s %s' % (e, traceback.format_exc()))
@@ -771,6 +774,7 @@ def create_function():
         func_details.role = data['Role']
         func_details.memory_size = data.get('MemorySize')
         func_details.code = data['Code']
+        func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
         if isinstance(result, Response):
             del arn_to_lambda[arn]
@@ -927,11 +931,16 @@ def update_function_configuration(function):
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
 
-    lambda_details = arn_to_lambda[arn]
+    lambda_details = arn_to_lambda.get(arn)
+    if not lambda_details:
+        return error_response('Unable to find Lambda function ARN "%s"' % arn,
+            404, error_type='ResourceNotFoundException')
+
     if data.get('Handler'):
         lambda_details.handler = data['Handler']
     if data.get('Runtime'):
         lambda_details.runtime = data['Runtime']
+    lambda_details.set_dead_letter_config(data)
     env_vars = data.get('Environment', {}).get('Variables')
     if env_vars is not None:
         lambda_details.envvars = env_vars

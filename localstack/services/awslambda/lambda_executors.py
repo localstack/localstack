@@ -18,6 +18,7 @@ from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
+from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -68,6 +69,10 @@ class LambdaExecutor(object):
             # start the execution
             try:
                 result, log_output = self._execute(func_arn, func_details, event, context, version)
+            except Exception as e:
+                if asynchronous:
+                    lambda_error_to_dead_letter_queue(func_details, event, e)
+                raise e
             finally:
                 self.function_invoke_times[func_arn] = invocation_time
             # forward log output to cloudwatch logs

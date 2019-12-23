@@ -33,6 +33,9 @@ def handler(event, context):
     LOGGER.info('Lambda log message - logging module')
     print('Lambda log message - print function')
 
+    if MSG_BODY_RAISE_ERROR_FLAG in event:
+        raise Exception('Test exception (this is intentional)')
+
     if 'httpMethod' in event:
         # looks like this is a call from an AWS_PROXY API Gateway
         try:
