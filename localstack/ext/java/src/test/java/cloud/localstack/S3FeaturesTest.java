@@ -7,17 +7,29 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.*;
+import java.net.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.*;
+import org.apache.http.client.*;
+import org.apache.http.client.methods.*;
+import org.apache.http.entity.*;
+import org.apache.http.impl.client.*;
+
+import com.amazonaws.HttpMethod;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import com.amazonaws.services.s3.model.lifecycle.*;
 
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
+
 @RunWith(LocalstackTestRunner.class)
+@LocalstackDockerProperties(services = {"s3"})
 public class S3FeaturesTest {
 
 	/**
@@ -138,7 +150,6 @@ public class S3FeaturesTest {
 			objectListing = s3Client.listNextBatchOfObjects(objectListing);
 			someObjList.addAll(mapFilesToSomeObject(objectListing));
 		}
-		System.out.println("someObjList.size() " + someObjList.size());
 		assertEquals(3, someObjList.size());
 	}
 
@@ -147,5 +158,35 @@ public class S3FeaturesTest {
 			.stream()
 			.map(S3ObjectSummary::getKey)
 			.collect(Collectors.toList());
+	}
+
+	@Test
+	public void test() throws Exception {
+		AmazonS3 s3client = TestUtils.getClientS3();
+		Date expiration = new Date(System.currentTimeMillis() + 1000*60*5);
+		String bucketName = UUID.randomUUID().toString();
+		String keyName = "presign-test-key";
+		s3client.createBucket(bucketName);
+
+		GeneratePresignedUrlRequest generatePresignedUrlRequest =
+			new GeneratePresignedUrlRequest(bucketName, keyName)
+				.withMethod(HttpMethod.PUT)
+				.withExpiration(expiration)
+				.withKey(keyName);
+		URL presignedUrl = s3client.generatePresignedUrl(generatePresignedUrlRequest);
+
+		// upload content
+		String content = "test content";
+		HttpPut httpPut = new HttpPut(presignedUrl.toString());
+    httpPut.setEntity(new StringEntity(content));
+		CloseableHttpClient httpclient = HttpClients.createDefault();
+		httpclient.execute(httpPut);
+		httpclient.close();
+
+		// download content
+		GetObjectRequest req = new GetObjectRequest(bucketName, keyName);
+		S3Object stream = s3client.getObject(req);
+		String result = IOUtils.toString(stream.getObjectContent());
+		Assert.assertEquals(result, content);
 	}
 }
