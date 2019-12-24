@@ -6,6 +6,8 @@ import java.util.Map;
 
 public class RunCommand extends Command {
 
+    private static final int PULL_AND_RUN_TIMEOUT_MINUTES = 7;
+
     private final String imageName;
 
     private final String imageTag;
@@ -27,7 +29,7 @@ public class RunCommand extends Command {
         args.addAll(options);
         args.add(imageTag == null ? imageName : String.format("%s:%s", imageName, imageTag));
 
-        return dockerExe.execute(args);
+        return dockerExe.execute(args, PULL_AND_RUN_TIMEOUT_MINUTES);
     }
 
     public RunCommand withExposedPorts(String portsToExpose, boolean randomize) {
