@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class PullCommand extends Command {
 
-    private static final int PULL_COMMAND_TIMEOUT_MINUTES = 10;
+    private static final int PULL_COMMAND_TIMEOUT_MINUTES = 7;
     private static final String LATEST_TAG = "latest";
 
     private final String imageName;

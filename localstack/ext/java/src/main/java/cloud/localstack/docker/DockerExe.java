@@ -16,12 +16,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A wrapper around the docker executable process. The DOCKER_LOCATION environment variable
+ * A wrapper around the docker executable. The DOCKER_LOCATION environment variable
  * can be used if docker is not installed in a default location.
  */
 public class DockerExe {
 
-    private static final int DEFAULT_WAIT_TIME_MINUTES = 1;
+    private static final int DEFAULT_WAIT_TIME_MINUTES = 2;
 
     private static final List<String> POSSIBLE_EXE_LOCATIONS = Arrays.asList(
             System.getenv("DOCKER_LOCATION"),
@@ -29,14 +29,11 @@ public class DockerExe {
             "/usr/local/bin/docker",
             "/usr/bin/docker");
 
-
     private final String exeLocation;
-
 
     public DockerExe() {
         this.exeLocation = getDockerExeLocation();
     }
-
 
     private String getDockerExeLocation() {
         return POSSIBLE_EXE_LOCATIONS.stream()
@@ -45,7 +42,6 @@ public class DockerExe {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Cannot find docker executable."));
     }
-
 
     public String execute(List<String> args) {
         return execute(args, DEFAULT_WAIT_TIME_MINUTES);
@@ -74,7 +70,6 @@ public class DockerExe {
             throw new RuntimeException("Failed to execute command", ex);
         }
     }
-
 
     private String handleOutput(Process process) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), UTF_8));
