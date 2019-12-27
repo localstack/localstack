@@ -21,8 +21,8 @@ coverage==4.5.4
 dnspython==1.16.0              #basic-lib
 docopt>=0.6.2                  #basic-lib
 elasticsearch>=6.0.0,<7.0.0
-flake8>=3.6.0
-flake8-quotes>=0.11.0
+flake8>=3.6.0                  #extended-lib
+flake8-quotes>=0.11.0          #extended-lib
 flask==1.0.2
 flask-cors==3.0.3
 flask_swagger==0.2.12
