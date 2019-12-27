@@ -2,6 +2,7 @@
 *.pyo
 *.class
 *.log
+*.iml
 
 /infra/
 localstack/infra/
@@ -28,6 +29,7 @@ node_modules/
 /target/
 
 .idea
+.vscode
 
 **/obj/**
 **/bin/**
