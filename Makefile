@@ -21,7 +21,7 @@ install:           ## Install full dependencies in virtualenv
 
 install-basic:     ## Install basic dependencies for CLI usage in virtualenv
 	make setup-venv && \
-		($(VENV_RUN); cat requirements.txt | grep -ve '^#' | grep '#basic' | sed 's/ #.*//' \
+		($(VENV_RUN); cat requirements.txt | grep -ve '^#' | grep '#\(basic\|extended\)' | sed 's/ #.*//' \
 			| xargs $(PIP_CMD) install)
 
 install-web:       ## Install npm dependencies for dashboard Web UI
