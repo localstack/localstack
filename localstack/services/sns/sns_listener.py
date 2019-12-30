@@ -222,7 +222,12 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 subscriber['Endpoint'],
                 headers={
                     'Content-Type': 'text/plain',
-                    'x-amz-sns-message-type': msg_type
+                    # AWS headers according to
+                    # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
+                    'x-amz-sns-message-type': msg_type,
+                    'x-amz-sns-topic-arn': subscriber['TopicArn'],
+                    'x-amz-sns-subscription-arn': subscriber['SubscriptionArn'],
+                    'User-Agent': 'Amazon Simple Notification Service Agent'
                 },
                 data=message_body,
                 verify=False)
