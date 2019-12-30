@@ -360,6 +360,7 @@ def fix_range_content_type(bucket_name, path, headers, response):
         return
 
     s3_client = aws_stack.connect_to_service('s3')
+    path = urlparse.unquote(path)
     key_name = get_key_name(path, headers)
     result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
     content_type = result['ContentType']
