@@ -640,13 +640,17 @@ def apply_patches():
 
     def cf_describe_stack_events(self):
         stack_name = self._get_param('StackName')
-        stack = self.cloudformation_backend.get_stack(stack_name)
+        backend = self.cloudformation_backend
+        stack = backend.get_stack(stack_name)
+        if not stack:
+            # Also return stack events for deleted stacks, specified by stack name
+            stack = ([stk for id, stk in backend.deleted_stacks.items() if stk.name == stack_name] or [0])[0]
         if not stack:
             raise ValidationError(stack_name,
                 message='Unable to find stack "%s" in region %s' % (stack_name, aws_stack.get_region()))
-        return cf_describe_stack_events_orig(self)
+        template = self.response_template(responses.DESCRIBE_STACK_EVENTS_RESPONSE)
+        return template.render(stack=stack)
 
-    cf_describe_stack_events_orig = responses.CloudFormationResponse.describe_stack_events
     responses.CloudFormationResponse.describe_stack_events = cf_describe_stack_events
 
 
