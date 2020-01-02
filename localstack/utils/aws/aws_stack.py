@@ -278,7 +278,7 @@ def set_default_region_in_headers(headers):
 
 def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace=None):
     """ Fix the account ID in the ARNs returned in the given Flask response or string """
-    existing = existing or ['123456789', MOTO_ACCOUNT_ID]
+    existing = existing or ['123456789', '1234567890', MOTO_ACCOUNT_ID]
     existing = existing if isinstance(existing, list) else [existing]
     replace = replace or TEST_AWS_ACCOUNT_ID
     is_str_obj = is_string_or_bytes(response)
