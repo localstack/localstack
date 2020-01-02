@@ -11,6 +11,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, to_str, save_file, TMP_FILES, mkdir
 from localstack.utils.tagging import TaggingService
+from localstack.constants import APPLICATION_AMZ_JSON_1_1
 
 EVENTS_TMP_DIR = os.path.join(config.TMP_FOLDER, 'cw_events')
 
@@ -21,27 +22,23 @@ class ProxyListenerEvents(ProxyListener):
     def forward_request(self, method, path, data, headers):
         action = headers.get('X-Amz-Target')
         if method == 'POST' and path == '/':
+            parsed_data = json.loads(to_str(data))
             if action == 'AWSEvents.PutEvents':
-                parsed_data = json.loads(to_str(data))
                 events_with_added_uuid = list(
                     map(lambda event: {'event': event, 'uuid': str(uuid.uuid4())}, parsed_data['Entries']))
-                response_string = json.dumps(
-                    {'Entries': list(map(lambda event: {'EventId': event['uuid']}, events_with_added_uuid))})
+                content = {'Entries': list(map(lambda event: {'EventId': event['uuid']}, events_with_added_uuid))}
                 self._create_and_register_temp_dir()
                 self._dump_events_to_files(events_with_added_uuid)
-                return make_response(response_string)
+                return make_response(content)
             elif action == 'AWSEvents.ListTagsForResource':
-                parsed_data = json.loads(to_str(data))
                 return make_response(self.svc.list_tags_for_resource(
                     parsed_data['ResourceARN']))
             elif action == 'AWSEvents.TagResource':
-                parsed_data = json.loads(to_str(data))
                 self.svc.tag_resource(
                     parsed_data['ResourceARN'], parsed_data['Tags'])
                 return make_response()
             elif action == 'AWSEvents.UntagResource':
-                parsed_data = json.loads(to_str(data))
-                self.svc.tag_resource(
+                self.svc.untag_resource(
                     parsed_data['ResourceARN'], parsed_data['TagKeys'])
                 return make_response()
 
@@ -65,8 +62,7 @@ class ProxyListenerEvents(ProxyListener):
 
     def _dump_events_to_files(self, events_with_added_uuid):
         for event in events_with_added_uuid:
-            save_file(os.path.join(EVENTS_TMP_DIR,
-                                   event['uuid']), json.dumps(event['event']))
+            save_file(os.path.join(EVENTS_TMP_DIR, event['uuid']), json.dumps(event['event']))
 
     def _fix_date_format(self, response):
         """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
@@ -87,10 +83,10 @@ class ProxyListenerEvents(ProxyListener):
 UPDATE_EVENTS = ProxyListenerEvents()
 
 
-def make_response(content='{}'):
+def make_response(content={}):
     response = Response()
     response.headers['x-amzn-RequestId'] = short_uid()
-    response.headers['Content-Type'] = 'application/x-amz-json-1.1'
+    response.headers['Content-Type'] = APPLICATION_AMZ_JSON_1_1
     response.status_code = 200
-    response._content = content
+    response._content = json.dumps(content)
     return response

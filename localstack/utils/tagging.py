@@ -1,5 +1,3 @@
-import json
-
 
 class TaggingService():
     def __init__(self):
@@ -10,7 +8,7 @@ class TaggingService():
         if arn in self.tags:
             for k, v in self.tags[arn].items():
                 result.append({'Key': k, 'Value': v})
-        return '{"Tags":%s}' % json.dumps(result)
+        return {'Tags': result}
 
     def tag_resource(self, arn, tags):
         if arn not in self.tags:
@@ -20,5 +18,5 @@ class TaggingService():
 
     def untag_resource(self, arn, tag_names):
         for name in tag_names:
-            if name in self.tags[arn]:
+            if name in self.tags.get(arn, {}):
                 del self.tags[arn][name]
