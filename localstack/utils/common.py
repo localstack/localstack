@@ -592,6 +592,10 @@ def download(url, path, verify_ssl=True):
     # enable parallel file downloads during installation!
     s = requests.Session()
     r = s.get(url, stream=True, verify=verify_ssl)
+    # check status code before attempting to read body
+    if r.status_code != 200:
+        raise Exception('Failed to download %s, response code %s' % (url, r.status_code))
+
     total = 0
     try:
         if not os.path.exists(os.path.dirname(path)):
@@ -607,8 +611,13 @@ def download(url, path, verify_ssl=True):
                     LOG.debug('Empty chunk %s (total %s) from %s' % (chunk, total, url))
             f.flush()
             os.fsync(f)
+        if os.path.getsize(path) == 0:
+            LOG.warning('Zero bytes downloaded from %s, retrying' % url)
+            download(url, path, verify_ssl)
+            return
+        LOG.debug('Done downloading %s, response code %s, total bytes %d' % (url, r.status_code, total))
     finally:
-        LOG.debug('Done downloading %s, response code %s' % (url, r.status_code))
+        LOG.debug('Cleaning up file handles for download of %s' % url)
         r.close()
         s.close()
 

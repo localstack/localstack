@@ -2,9 +2,11 @@
 *.pyo
 *.class
 *.log
+*.iml
 
 /infra/
 localstack/infra/
+localstack/ext/java/.factorypath
 
 /node_modules/
 package-lock.json
@@ -28,6 +30,7 @@ node_modules/
 /target/
 
 .idea
+.vscode
 
 **/obj/**
 **/bin/**
