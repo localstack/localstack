@@ -594,7 +594,7 @@ def download(url, path, verify_ssl=True):
     r = s.get(url, stream=True, verify=verify_ssl)
     # check status code before attempting to read body
     if r.status_code != 200:
-        raise 'Failed to download %s, response code %s' % (url, r.status_code)
+        raise Exception('Failed to download %s, response code %s' % (url, r.status_code))
 
     total = 0
     try:
@@ -612,7 +612,7 @@ def download(url, path, verify_ssl=True):
             f.flush()
             os.fsync(f)
         if os.path.getsize(path) == 0:
-            LOG.error('Zero bytes downloaded from %s, retrying' % url)
+            LOG.warning('Zero bytes downloaded from %s, retrying' % url)
             download(url, path, verify_ssl)
             return
         LOG.debug('Done downloading %s, response code %s, total bytes %d' % (url, r.status_code, total))

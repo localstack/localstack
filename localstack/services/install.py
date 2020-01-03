@@ -240,8 +240,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract()
     except Exception as e:
         # try deleting and re-downloading the zip file
-        LOGGER.error('download_and_extract_with_retry caught exception: %s' % e)
-        LOGGER.info('Unable to extract file, re-downloading ZIP archive: %s' % tmp_archive)
+        LOGGER.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
         rm_rf(tmp_archive)
         download_and_extract()
 
