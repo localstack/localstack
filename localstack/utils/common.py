@@ -593,7 +593,7 @@ def download(url, path, verify_ssl=True):
     s = requests.Session()
     r = s.get(url, stream=True, verify=verify_ssl)
     # check status code before attempting to read body
-    if r.status_code != 200:
+    if r.status_code >= 400:
         raise Exception('Failed to download %s, response code %s' % (url, r.status_code))
 
     total = 0
