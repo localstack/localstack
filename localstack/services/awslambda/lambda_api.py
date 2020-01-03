@@ -550,6 +550,11 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     return tmp_dir
 
 
+def is_java_lambda(lambda_details):
+    runtime = getattr(lambda_details, 'runtime', lambda_details)
+    return runtime == LAMBDA_RUNTIME_JAVA8
+
+
 def set_function_code(code, lambda_name, lambda_cwd=None):
 
     def generic_handler(event, context):
@@ -583,7 +588,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
 
-    if runtime == LAMBDA_RUNTIME_JAVA8:
+    if is_java_lambda(runtime):
         # The Lambda executors for Docker subclass LambdaExecutorContainers, which
         # runs Lambda in Docker by passing all *.jar files in the function working
         # directory as part of the classpath. Obtain a Java handler function below.
@@ -594,10 +599,13 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         if not is_zip_file(zip_file_content):
             raise ClientError(
                 'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
-        unzip(tmp_file, lambda_cwd)
+        # Unzipping should only be required for non-Java Lambdas
+        if not is_java_lambda(runtime):
+            unzip(tmp_file, lambda_cwd)
 
     # Obtain handler details for any non-Java Lambda function
-    if runtime != LAMBDA_RUNTIME_JAVA8:
+    if not is_java_lambda(runtime):
+
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
