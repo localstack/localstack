@@ -734,7 +734,7 @@ class Util:
         """
         entries = ['.']
         base_dir = os.path.dirname(archive)
-        for pattern in ['%s/*.jar', '%s/lib/*.jar']:
+        for pattern in ['%s/*.jar', '%s/lib/*.jar', '%s/*.zip']:
             for entry in glob.glob(pattern % base_dir):
                 if os.path.realpath(archive) != os.path.realpath(entry):
                     entries.append(os.path.relpath(entry, base_dir))

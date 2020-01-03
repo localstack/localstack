@@ -7,7 +7,6 @@ import uuid
 import time
 import base64
 import logging
-import zipfile
 import threading
 import traceback
 import hashlib
@@ -36,8 +35,9 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_RUBY25,
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-    mkdir, unzip, is_zip_file, run, short_uid, is_jar_archive, timestamp, TIMESTAMP_FORMAT_MILLIS,
-    md5, new_tmp_file, parse_chunked_data, now_utc, safe_requests, isoformat_milliseconds)
+    mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid, timestamp,
+    TIMESTAMP_FORMAT_MILLIS, md5, parse_chunked_data, now_utc, safe_requests,
+    isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
@@ -493,22 +493,12 @@ def get_java_handler(zip_file_content, handler, main_file):
 
     :returns: function or flask.Response
     """
-    if not is_jar_archive(zip_file_content):
-        with zipfile.ZipFile(BytesIO(zip_file_content)) as zip_ref:
-            # TODO: check if this is still needed (probably not)
-            jar_entries = [e for e in zip_ref.infolist() if e.filename.endswith('.jar')]
-            if len(jar_entries) == 1:
-                zip_file_content = zip_ref.read(jar_entries[0].filename)
-                LOG.info('Found single jar file %s with %s bytes in Lambda zip archive' %
-                         (jar_entries[0].filename, len(zip_file_content)))
-                main_file = new_tmp_file()
-                save_file(main_file, zip_file_content)
     if is_zip_file(zip_file_content):
         def execute(event, context):
             result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
                 event, context, handler=handler, main_file=main_file)
             return result
-        return execute, zip_file_content
+        return execute
     raise ClientError(error_response(
         'Unable to extract Java Lambda handler - file is not a valid zip/jar file', 400, error_type='ValidationError'))
 
@@ -550,6 +540,11 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     return tmp_dir
 
 
+def is_java_lambda(lambda_details):
+    runtime = getattr(lambda_details, 'runtime', lambda_details)
+    return runtime == LAMBDA_RUNTIME_JAVA8
+
+
 def set_function_code(code, lambda_name, lambda_cwd=None):
 
     def generic_handler(event, context):
@@ -583,21 +578,24 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
 
-    if runtime == LAMBDA_RUNTIME_JAVA8:
+    if is_java_lambda(runtime):
         # The Lambda executors for Docker subclass LambdaExecutorContainers, which
         # runs Lambda in Docker by passing all *.jar files in the function working
         # directory as part of the classpath. Obtain a Java handler function below.
-        lambda_handler, zip_file_content = get_java_handler(zip_file_content, handler_name, tmp_file)
+        lambda_handler = get_java_handler(zip_file_content, handler_name, tmp_file)
 
     if not is_local_mount:
         # Lambda code must be uploaded in Zip format
         if not is_zip_file(zip_file_content):
             raise ClientError(
                 'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
-        unzip(tmp_file, lambda_cwd)
+        # Unzipping should only be required for (1) non-Java Lambdas, or (2) zip files containing JAR files
+        if not is_java_lambda(runtime) or zip_contains_jar_entries(zip_file_content, 'lib/'):
+            unzip(tmp_file, lambda_cwd)
 
     # Obtain handler details for any non-Java Lambda function
-    if runtime != LAMBDA_RUNTIME_JAVA8:
+    if not is_java_lambda(runtime):
+
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
