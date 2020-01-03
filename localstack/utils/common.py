@@ -814,6 +814,22 @@ def _unzip_file_entry(zip_ref, file_entry, target_dir):
     os.chmod(out_path, perm or 0o777)
 
 
+def zip_contains_jar_entries(content, jar_path_prefix=None, match_single_jar=True):
+    try:
+        with tempfile.NamedTemporaryFile() as tf:
+            tf.write(content)
+            tf.flush()
+            with zipfile.ZipFile(tf.name, 'r') as zf:
+                jar_entries = [e for e in zf.infolist() if e.filename.lower().endswith('.jar')]
+                if match_single_jar and len(jar_entries) == 1 and len(zf.infolist()) == 1:
+                    return True
+                matching_prefix = [e for e in jar_entries if
+                    not jar_path_prefix or e.filename.lower().startswith(jar_path_prefix)]
+                return len(matching_prefix) > 0
+    except Exception:
+        return False
+
+
 def is_jar_archive(content):
     """ Determine whether `content` contains valid zip bytes representing a JAR archive
         that contains at least one *.class file and a META-INF/MANIFEST.MF file. """
