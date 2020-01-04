@@ -12,7 +12,7 @@ from boto3.dynamodb.types import TypeDeserializer
 from localstack.services import generic_proxy
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_responses
-from localstack.utils.common import short_uid, to_str
+from localstack.utils.common import short_uid, to_str, timestamp
 from localstack.utils.aws.aws_stack import (
     get_s3_client, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
 from localstack.utils.kinesis import kinesis_connector
@@ -94,13 +94,23 @@ def put_records(stream_name, records):
                 elif 'data' in record:
                     data = base64.b64decode(record['data'])
 
-                obj_name = str(uuid.uuid4())
-                obj_path = '%s%s%s' % (prefix, '' if prefix.endswith('/') else '/', obj_name)
+                obj_path = get_s3_object_path(stream_name, prefix)
                 try:
                     s3.Object(bucket, obj_path).put(Body=data)
                 except Exception as e:
                     LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
                     raise e
+
+
+def get_s3_object_path(stream_name, prefix):
+    # See https://aws.amazon.com/kinesis/data-firehose/faqs/#Data_delivery
+    # Path prefix pattern: myApp/YYYY/MM/DD/HH/
+    # Object name pattern: DeliveryStreamName-DeliveryStreamVersion-YYYY-MM-DD-HH-MM-SS-RandomString
+    prefix = '%s%s' % (prefix, '' if prefix.endswith('/') else '/')
+    pattern = '{pre}%Y/%m/%d/%H/{name}-%Y-%m-%d-%H-%M-%S-{rand}'
+    path = pattern.format(pre=prefix, name=stream_name, rand=str(uuid.uuid4()))
+    path = timestamp(format=path)
+    return path
 
 
 def get_destination(stream_name, destination_id):

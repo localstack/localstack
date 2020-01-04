@@ -246,7 +246,8 @@ def map_all_s3_objects(to_json=True, buckets=None):
             try:
                 if to_json:
                     value = json.loads(value)
-                result['%s/%s' % (key.bucket_name, key.key)] = value
+                key = '%s%s%s' % (key.bucket_name, '' if key.key.startswith('/') else '/', key.key)
+                result[key] = value
             except Exception:
                 # skip non-JSON or binary objects
                 pass

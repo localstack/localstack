@@ -10,7 +10,6 @@ from nose.tools import assert_raises
 from localstack.utils import testutil
 from localstack.utils.common import (
     load_file, short_uid, clone, to_bytes, to_str, run_safe, retry)
-# from localstack.utils.common import profiled
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
@@ -75,6 +74,10 @@ class IntegrationTest(unittest.TestCase):
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+        # check file layout in target bucket
+        all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
+        for key in all_objects.keys():
+            self.assertRegexpMatches(key, r'.*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*')
 
     def test_firehose_kinesis_to_s3(self):
         kinesis = aws_stack.connect_to_service('kinesis')
