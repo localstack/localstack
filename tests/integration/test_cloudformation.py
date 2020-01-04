@@ -38,6 +38,24 @@ Resources:
         def handler(event, context):
             return {'hello': 'world'}
 """
+TEST_TEMPLATE_5 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  S3Setup:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: test-%s
+""" % short_uid()
+TEST_ARTIFACTS_BUCKET = 'cf-artifacts'
+TEST_ARTIFACTS_PATH = 'stack.yaml'
+TEST_TEMPLATE_6 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  NestedStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: http://localhost:4572/%s/%s
+""" % (TEST_ARTIFACTS_BUCKET, TEST_ARTIFACTS_PATH)
 
 
 def bucket_exists(name):
@@ -251,3 +269,20 @@ class CloudFormationTest(unittest.TestCase):
         result = awslambda.invoke(FunctionName=func_name)
         result = json.loads(to_str(result['Payload'].read()))
         self.assertEqual(result, {'hello': 'world'})
+
+    def test_nested_stack(self):
+        s3 = aws_stack.connect_to_service('s3')
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        # upload template to S3
+        s3.create_bucket(Bucket=TEST_ARTIFACTS_BUCKET, ACL='public-read')
+        s3.put_object(Bucket=TEST_ARTIFACTS_BUCKET, Key=TEST_ARTIFACTS_PATH, Body=TEST_TEMPLATE_5)
+
+        # deploy template
+        buckets_before = len(s3.list_buckets()['Buckets'])
+        stack_name = 'stack-%s' % short_uid()
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_6)
+
+        # assert that nested resources have been created
+        buckets_after = len(s3.list_buckets()['Buckets'])
+        self.assertEqual(buckets_after, buckets_before + 1)

@@ -50,6 +50,11 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
+def get_nested_stack_name(params, **kwargs):
+    stack_name = kwargs.get('stack_name', 'stack')
+    return '%s-%s' % (stack_name, common.short_uid())
+
+
 def get_lambda_code_param(params, **kwargs):
     code = params.get('Code', {})
     zip_file = code.get('ZipFile')
@@ -307,6 +312,15 @@ RESOURCE_TO_FUNCTION = {
                 'TopicArn': 'TopicArn',
                 'Protocol': 'Protocol',
                 'Endpoint': 'Endpoint'
+            }
+        }
+    },
+    'CloudFormation::Stack': {
+        'create': {
+            'function': 'create_stack',
+            'parameters': {
+                'StackName': get_nested_stack_name,
+                'TemplateURL': 'TemplateURL'
             }
         }
     }
