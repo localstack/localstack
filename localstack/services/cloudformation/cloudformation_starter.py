@@ -46,7 +46,8 @@ MODEL_MAP = {
     'AWS::ApiGateway::Method': apigw_models.Method,
     'AWS::ApiGateway::Resource': apigw_models.Resource,
     'AWS::ApiGateway::RestApi': apigw_models.RestAPI,
-    'AWS::StepFunctions::StateMachine': sfn_models.StateMachine
+    'AWS::StepFunctions::StateMachine': sfn_models.StateMachine,
+    'AWS::CloudFormation::Stack': service_models.CloudFormationStack
 }
 
 
