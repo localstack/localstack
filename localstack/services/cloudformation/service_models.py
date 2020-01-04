@@ -19,3 +19,7 @@ class SNSSubscription(BaseModel):
 
 class GatewayResponse(BaseModel):
     pass
+
+
+class CloudFormationStack(BaseModel):
+    pass

@@ -57,7 +57,7 @@ def start_elasticsearch(port=None, delete_data=True, asynchronous=False, update_
         'ES_JAVA_OPTS': os.environ.get('ES_JAVA_OPTS', '-Xms200m -Xmx600m'),
         'ES_TMPDIR': es_tmp_dir
     }
-    print('Starting local Elasticsearch (%s port %s)...' % (get_service_protocol(), port))
+    LOG.debug('Starting local Elasticsearch (%s port %s)' % (get_service_protocol(), port))
     if delete_data:
         rm_rf(es_data_dir)
     # fix permissions
