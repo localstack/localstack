@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import Response
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import now_utc
+from localstack.utils.common import now_utc, to_str
 from localstack.utils.analytics import event_publisher
 
 
@@ -55,6 +55,7 @@ def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_tim
         return
     start_time = start_time or int(time.time() * 1000)
     logs_client = aws_stack.connect_to_service('logs')
+    log_output = to_str(log_output)
 
     # make sure that the log group exists
     log_groups = logs_client.describe_log_groups()['logGroups']
