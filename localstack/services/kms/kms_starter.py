@@ -17,7 +17,7 @@ def start_kms(port=None, backend_port=None, asynchronous=None, update_listener=N
     start_proxy_for_service('kms', port, backend_port, update_listener)
     env_vars = {
         'PORT': str(backend_port),
-        'REGION': config.DEFAULT_REGION,
-        'ACCOUNT_ID': TEST_AWS_ACCOUNT_ID
+        'KMS_REGION': config.DEFAULT_REGION,
+        'KMS_ACCOUNT_ID': TEST_AWS_ACCOUNT_ID
     }
     return do_run(kms_binary, asynchronous, env_vars=env_vars)
