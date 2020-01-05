@@ -13,6 +13,7 @@ import socket
 import hashlib
 import decimal
 import logging
+import tarfile
 import zipfile
 import binascii
 import calendar
@@ -821,6 +822,12 @@ def _unzip_file_entry(zip_ref, file_entry, target_dir):
     out_path = os.path.join(target_dir, file_entry.filename)
     perm = file_entry.external_attr >> 16
     os.chmod(out_path, perm or 0o777)
+
+
+def untar(path, target_dir):
+    mode = 'r:gz' if path.endswith('gz') else 'r'
+    with tarfile.open(path, mode) as tar:
+        tar.extractall(path=target_dir)
 
 
 def zip_contains_jar_entries(content, jar_path_prefix=None, match_single_jar=True):

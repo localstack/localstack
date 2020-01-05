@@ -119,11 +119,20 @@ def is_local_env(env):
     return not env or env.region == REGION_LOCAL or env.prefix == ENV_DEV
 
 
-def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=None):
-    """
-    Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
-    """
-    return connect_to_service(service_name, client=False, env=env, region_name=region_name, endpoint_url=endpoint_url)
+class Boto3Session(boto3.session.Session):
+    """ Custom boto3 session that points to local endpoint URLs. """
+
+    def resource(self, service, *args, **kwargs):
+        self._fix_endpoint(kwargs)
+        return connect_to_resource(service, *args, **kwargs)
+
+    def client(self, service, *args, **kwargs):
+        self._fix_endpoint(kwargs)
+        return connect_to_service(service, *args, **kwargs)
+
+    def _fix_endpoint(self, kwargs):
+        if 'amazonaws.com' in kwargs.get('endpoint_url', ''):
+            kwargs.pop('endpoint_url')
 
 
 def get_boto3_credentials():
@@ -164,7 +173,10 @@ def get_local_service_url(service_name_or_port):
     service_name = service_name_or_port
     if service_name == 's3api':
         service_name = 's3'
-    return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
+    elif service_name == 'runtime.sagemaker':
+        service_name = 'sagemaker-runtime'
+    service_name_upper = service_name.upper().replace('-', '_').replace('.', '_')
+    return os.environ['TEST_%s_URL' % service_name_upper]
 
 
 def is_service_enabled(service_name):
@@ -177,7 +189,15 @@ def is_service_enabled(service_name):
         return False
 
 
-def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None, config=None):
+def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=None, *args, **kwargs):
+    """
+    Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
+    """
+    return connect_to_service(service_name, client=False, env=env, region_name=region_name, endpoint_url=endpoint_url)
+
+
+def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None,
+        config=None, *args, **kwargs):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
@@ -299,8 +319,7 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
 def get_s3_client():
     return boto3.resource('s3',
         endpoint_url=config.TEST_S3_URL,
-        config=boto3.session.Config(
-            s3={'addressing_style': 'path'}),
+        config=boto3.session.Config(s3={'addressing_style': 'path'}),
         verify=False)
 
 
