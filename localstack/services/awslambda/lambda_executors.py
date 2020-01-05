@@ -13,12 +13,12 @@ try:
 except ImportError:
     from pipes import quote as cmd_quote  # for Python 2.7
 from localstack import config
-from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
+from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -100,49 +100,10 @@ class LambdaExecutor(object):
         pass
 
     def _store_logs(self, func_details, log_output, invocation_time):
-        if not aws_stack.is_service_enabled('logs'):
-            return
-        logs_client = aws_stack.connect_to_service('logs')
         log_group_name = '/aws/lambda/%s' % func_details.name()
         time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time))
         log_stream_name = '%s/[$LATEST]%s' % (time_str, short_uid())
-
-        # make sure that the log group exists
-        log_groups = logs_client.describe_log_groups()['logGroups']
-        log_groups = [lg['logGroupName'] for lg in log_groups]
-        if log_group_name not in log_groups:
-            try:
-                logs_client.create_log_group(logGroupName=log_group_name)
-            except Exception as e:
-                if 'ResourceAlreadyExistsException' in str(e):
-                    # this can happen in certain cases, possibly due to a race condition
-                    pass
-                else:
-                    raise e
-
-        # create a new log stream for this lambda invocation
-        logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
-
-        # store new log events under the log stream
-        invocation_time = invocation_time
-        finish_time = int(time.time() * 1000)
-        log_lines = log_output.split('\n')
-        time_diff_per_line = float(finish_time - invocation_time) / float(len(log_lines))
-        log_events = []
-        for i, line in enumerate(log_lines):
-            if not line:
-                continue
-            # simple heuristic: assume log lines were emitted in regular intervals
-            log_time = invocation_time + float(i) * time_diff_per_line
-            event = {'timestamp': int(log_time), 'message': line}
-            log_events.append(event)
-        if not log_events:
-            return
-        logs_client.put_log_events(
-            logGroupName=log_group_name,
-            logStreamName=log_stream_name,
-            logEvents=log_events
-        )
+        return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
     def run_lambda_executor(self, cmd, event=None, env_vars={}):
         process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars,
