@@ -354,7 +354,7 @@ def create_sns_message_body(subscriber, req_data):
         # fix non-ascii unicode characters under Python 2
         message = message.encode('raw-unicode-escape')
 
-    if subscriber.get('RawMessageDelivery') in ('true', True):
+    if subscriber.get('RawMessageDelivery') in ('true', 'True', True):
         return message
 
     if req_data.get('MessageStructure') == ['json']:
