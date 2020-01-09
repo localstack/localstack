@@ -71,13 +71,13 @@ public class S3Sample {
 
     public static void runTest(AWSCredentials credentials, String s3Endpoint) throws IOException {
 
-		@SuppressWarnings("deprecation")
-		AmazonS3 s3 = new AmazonS3Client(credentials);
+        @SuppressWarnings("deprecation")
+        AmazonS3 s3 = new AmazonS3Client(credentials);
         Region usWest2 = Region.getRegion(Regions.US_WEST_2);
         s3.setRegion(usWest2);
         s3.setEndpoint(s3Endpoint);
-		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true)
-				.disableChunkedEncoding().build());
+        s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true)
+            .disableChunkedEncoding().build());
 
         String bucketName = "my-first-s3-bucket-" + UUID.randomUUID();
         String key = "MyObjectKey";

@@ -209,8 +209,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         if forward_headers.get('Connection', '').lower() != 'keep-alive':
             self.close_connection = 1
 
+        def is_full_url(url):
+            return re.match(r'[a-zA-Z+]://.+', url)
+
         path = self.path
-        if '://' in path:
+        if is_full_url(path):
             path = path.split('://', 1)[1]
             path = '/%s' % (path.split('/', 1)[1] if '/' in path else '')
         forward_base_url = self.proxy.forward_base_url
@@ -221,7 +224,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 proxy_url = listener.get_forward_url(method, path, data, forward_headers) or proxy_url
 
         target_url = self.path
-        if '://' not in target_url:
+        if not is_full_url(target_url):
             target_url = '%s%s' % (forward_base_url, target_url)
 
         # update original "Host" header (moto s3 relies on this behavior)
