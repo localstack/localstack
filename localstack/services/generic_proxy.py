@@ -210,7 +210,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             self.close_connection = 1
 
         def is_full_url(url):
-            return re.match(r'[a-zA-Z+]://.+', url)
+            return re.match(r'[a-zA-Z]+://.+', url)
 
         path = self.path
         if is_full_url(path):
