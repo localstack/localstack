@@ -796,10 +796,11 @@ def is_zip_file(content):
     return zipfile.is_zipfile(stream)
 
 
-def unzip(path, target_dir):
+def unzip(path, target_dir, overwrite=True):
     if is_alpine():
         # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
-        return run('cd %s; unzip %s' % (target_dir, path))
+        flags = '-o' if overwrite else ''
+        return run('cd %s; unzip %s %s' % (target_dir, flags, path))
     try:
         zip_ref = zipfile.ZipFile(path, 'r')
     except Exception as e:
