@@ -671,7 +671,7 @@ class Util:
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
         # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
         # See https://github.com/lambci/docker-lambda/pull/218
-        lambdas_to_add_prefix = ['dotnetcore', 'python']
+        lambdas_to_add_prefix = ['dotnetcore', 'python2.7', 'python3.6', 'python3.7']
         if docker_image == 'lambci/lambda' and any(img in docker_tag for img in lambdas_to_add_prefix):
             docker_tag = '20191117-%s' % docker_tag
         return '"%s:%s"' % (docker_image, docker_tag)
