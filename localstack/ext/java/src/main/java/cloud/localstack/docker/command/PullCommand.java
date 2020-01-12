@@ -20,7 +20,6 @@ public class PullCommand extends Command {
         this.imageTag = imageTag;
     }
 
-
     public void execute() {
         String image = String.format("%s:%s", imageName, imageTag == null ? LATEST_TAG : imageTag);
         dockerExe.execute(Arrays.asList("pull", image), PULL_COMMAND_TIMEOUT_MINUTES);
