@@ -14,8 +14,8 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
- * An abstraction of the localstack docker container.  Provides port mappings,
- * a way to poll the logs until a specified token appears, and the ability to stop the container
+ * An abstraction of the LocalStack docker container. Provides port mappings, a way
+ * to poll the logs until a specified token appears, and the ability to stop the container.
  */
 public class Container {
 
@@ -35,10 +35,8 @@ public class Container {
     private static final String ENV_DEBUG_DEFAULT = "1";
     public static final String LOCALSTACK_EXTERNAL_HOSTNAME = "HOSTNAME_EXTERNAL";
 
-
     private final String containerId;
     private final List<PortMapping> ports;
-
 
     /**
      * It creates a container using the hostname given and the set of environment variables provided
@@ -55,7 +53,10 @@ public class Container {
         environmentVariables = environmentVariables == null ? Collections.emptyMap() : environmentVariables;
         portMappings = portMappings == null ? Collections.emptyMap() : portMappings;
 
-        if(pullNewImage) {
+        String fullImageName = LOCALSTACK_NAME + ":" + (imageTag == null ? "latest" : imageTag);
+        boolean imageExists = new ListImagesCommand().execute().contains(fullImageName);
+
+        if(pullNewImage || !imageExists) {
             LOG.info("Pulling latest image...");
             new PullCommand(LOCALSTACK_NAME, imageTag).execute();
         }
