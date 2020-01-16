@@ -560,6 +560,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         else:
             command = '"%s"' % handler
 
+        # add Docker Lambda env vars
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
         if network == 'host':

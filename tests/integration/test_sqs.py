@@ -108,6 +108,23 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_send_message_attributes(self):
+        queue_name = 'queue-%s' % short_uid()
+
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        payload = {}
+        attrs = {'attr1': {'StringValue': 'val1', 'DataType': 'String'}}
+        self.client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload),
+            MessageAttributes=attrs)
+
+        result = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+        messages = result['Messages']
+        self.assertEquals(messages[0]['MessageAttributes'], attrs)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_dead_letter_queue_config(self):
         queue_name = 'queue-%s' % short_uid()
         dlq_name = 'queue-%s' % short_uid()
@@ -116,24 +133,22 @@ class SQSTest(unittest.TestCase):
         dlq_arn = aws_stack.sqs_queue_arn(dlq_name)
 
         attributes = {'RedrivePolicy': json.dumps({'deadLetterTargetArn': dlq_arn, 'maxReceiveCount': 100})}
-        queue_info = self.client.create_queue(QueueName=queue_name, Attributes=attributes)
-        queue_url = queue_info['QueueUrl']
+        queue_url = self.client.create_queue(QueueName=queue_name, Attributes=attributes)['QueueUrl']
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
         self.client.delete_queue(QueueUrl=dlq_info['QueueUrl'])
 
     def test_dead_letter_queue_execution(self):
-        sqs_client = aws_stack.connect_to_service('sqs')
         lambda_client = aws_stack.connect_to_service('lambda')
 
         # create SQS queue with DLQ redrive policy
         queue_name1 = 'test-%s' % short_uid()
         queue_name2 = 'test-%s' % short_uid()
-        queue_url1 = sqs_client.create_queue(QueueName=queue_name1)['QueueUrl']
+        queue_url1 = self.client.create_queue(QueueName=queue_name1)['QueueUrl']
         queue_arn1 = aws_stack.sqs_queue_arn(queue_name1)
         policy = {'deadLetterTargetArn': queue_arn1, 'maxReceiveCount': 1}
-        queue_url2 = sqs_client.create_queue(QueueName=queue_name2,
+        queue_url2 = self.client.create_queue(QueueName=queue_name2,
             Attributes={'RedrivePolicy': json.dumps(policy)})['QueueUrl']
         queue_arn2 = aws_stack.sqs_queue_arn(queue_name2)
 
@@ -149,11 +164,11 @@ class SQSTest(unittest.TestCase):
         payload = {
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1
         }
-        sqs_client.send_message(QueueUrl=queue_url2, MessageBody=json.dumps(payload))
+        self.client.send_message(QueueUrl=queue_url2, MessageBody=json.dumps(payload))
 
         # assert that message has been received on the DLQ
         def receive_dlq():
-            result = sqs_client.receive_message(QueueUrl=queue_url1, MessageAttributeNames=['All'])
+            result = self.client.receive_message(QueueUrl=queue_url1, MessageAttributeNames=['All'])
             self.assertGreater(len(result['Messages']), 0)
             msg_attrs = result['Messages'][0]['MessageAttributes']
             self.assertIn('RequestID', msg_attrs)

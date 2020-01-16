@@ -52,4 +52,10 @@ public @interface LocalstackDockerProperties {
      * Determines if the singleton container should be used by all test classes
      */
     boolean useSingleDockerContainer() default false;
+
+    /**
+     * Determines if errors should be ignored when starting the Docker container.
+     * This can be used to run tests with an existing LocalStack container running on the host.
+     */
+    boolean ignoreDockerRunErrors() default false;
 }

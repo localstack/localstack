@@ -37,4 +37,7 @@ public class LocalstackDockerConfiguration {
     @Builder.Default
     private final boolean useSingleDockerContainer = false;
 
+    @Builder.Default
+    private final boolean ignoreDockerRunErrors = false;
+
 }

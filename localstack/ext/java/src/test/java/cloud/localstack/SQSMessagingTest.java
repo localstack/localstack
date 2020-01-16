@@ -1,6 +1,7 @@
 package cloud.localstack;
 
 import cloud.localstack.utils.PromiseAsyncHandler;
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 import com.amazon.sqs.javamessaging.SQSConnection;
 import com.amazon.sqs.javamessaging.SQSConnectionFactory;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -12,11 +13,13 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import static org.junit.Assert.*;
 
 import javax.jms.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +28,7 @@ import java.util.concurrent.TimeUnit;
  * Based on: https://bitbucket.org/atlassian/localstack/issues/24/not-support-sqs-in-jms
  */
 @RunWith(LocalstackTestRunner.class)
+@LocalstackDockerProperties(ignoreDockerRunErrors=true)
 public class SQSMessagingTest {
 
     private static final String JMS_QUEUE_NAME = "aws_develop_class_jms";
@@ -97,6 +101,39 @@ public class SQSMessagingTest {
         final CompletableFuture<Message> receivedMessage = receiveMessagePromise.thenApply(e -> e.getMessages().get(0));
 
         Assert.assertEquals(receivedMessage.get(3, TimeUnit.SECONDS).getBody(), "message");
+    }
+
+    @Test
+    public void testAsyncMessageAttributes() {
+        final AmazonSQSAsync sqsAsync = TestUtils.getClientSQSAsync();
+
+        final CreateQueueResult myqueue = sqsAsync.createQueue("myqueue");
+
+        final String attrValue = "a value to see";
+        final SendMessageResult sendMessageResult = sqsAsync.sendMessage(
+            new SendMessageRequest()
+                .withQueueUrl(myqueue.getQueueUrl())
+                .addMessageAttributesEntry("testKey", new MessageAttributeValue()
+                    .withStringValue(attrValue).withDataType("String"))
+                .withMessageBody("Simple body")
+        );
+
+        final String messageId = sendMessageResult.getMessageId();
+
+        final ReceiveMessageRequest request = new ReceiveMessageRequest(myqueue.getQueueUrl()).
+            withMessageAttributeNames("All");
+        final ReceiveMessageResult receiveMessageResult = sqsAsync.receiveMessage(request);
+
+        final List<Message> messages = receiveMessageResult.getMessages();
+
+        final Optional<Message> messageOptional = messages.stream()
+            .filter(message -> messageId.equals(message.getMessageId()))
+            .findFirst();
+
+        final Message message = messageOptional.get();
+        assertEquals(message.getBody(), "Simple body");
+        assertEquals(message.getMessageAttributes().get("testKey").getStringValue(), attrValue);
+        assertEquals(message.getMessageAttributes().get("testKey").getDataType(), "String");
     }
 
     /**

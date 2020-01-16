@@ -1,17 +1,14 @@
 package cloud.localstack;
 
 import cloud.localstack.ServiceName;
-import cloud.localstack.docker.Container;
+import cloud.localstack.docker.*;
+import cloud.localstack.docker.command.*;
 import cloud.localstack.docker.annotation.LocalstackDockerConfiguration;
-import cloud.localstack.docker.command.RegexStream;
 import cloud.localstack.docker.exception.LocalstackDockerException;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,8 +56,7 @@ public class Localstack {
         TestUtils.disableSslCertChecking();
     }
 
-    private Localstack() {
-    }
+    private Localstack() { }
 
     public void startup(LocalstackDockerConfiguration dockerConfiguration) {
         if (locked) {
@@ -71,18 +67,24 @@ public class Localstack {
 
         try {
             localStackContainer = Container.createLocalstackContainer(
-                    dockerConfiguration.getExternalHostName(),
-                    dockerConfiguration.isPullNewImage(),
-                    dockerConfiguration.isRandomizePorts(),
-                    dockerConfiguration.getImageTag(),
-                    dockerConfiguration.getEnvironmentVariables(),
-                    dockerConfiguration.getPortMappings()
+                dockerConfiguration.getExternalHostName(),
+                dockerConfiguration.isPullNewImage(),
+                dockerConfiguration.isRandomizePorts(),
+                dockerConfiguration.getImageTag(),
+                dockerConfiguration.getEnvironmentVariables(),
+                dockerConfiguration.getPortMappings()
             );
             loadServiceToPortMap();
 
             LOG.info("Waiting for LocalStack container to be ready...");
             localStackContainer.waitForLogToken(READY_TOKEN);
         } catch (Exception t) {
+            if (t.toString().contains("port is already allocated") && dockerConfiguration.isIgnoreDockerRunErrors()) {
+                LOG.info("Ignoring port conflict when starting Docker container, due to ignoreDockerRunErrors=true");
+                localStackContainer = Container.getRunningLocalstackContainer();
+                loadServiceToPortMap();
+                return;
+            }
             this.stop();
             throw new LocalstackDockerException("Could not start the localstack docker container.", t);
         }

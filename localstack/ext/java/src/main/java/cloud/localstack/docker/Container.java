@@ -35,8 +35,12 @@ public class Container {
     private static final String ENV_DEBUG_DEFAULT = "1";
     public static final String LOCALSTACK_EXTERNAL_HOSTNAME = "HOSTNAME_EXTERNAL";
 
+    private static final String DEFAULT_CONTAINER_ID = "localstack_main";
+
     private final String containerId;
     private final List<PortMapping> ports;
+
+    private boolean startedByUs;
 
     /**
      * It creates a container using the hostname given and the set of environment variables provided
@@ -73,6 +77,17 @@ public class Container {
         String containerId = runCommand.execute();
         LOG.info("Started container: " + containerId);
 
+        Container result = getRunningLocalstackContainer(containerId);
+        result.startedByUs = true;
+        return result;
+    }
+
+
+    public static Container getRunningLocalstackContainer() {
+        return getRunningLocalstackContainer(DEFAULT_CONTAINER_ID);
+    }
+
+    public static Container getRunningLocalstackContainer(String containerId) {
         List<PortMapping> portMappingsList = new PortCommand(containerId).execute();
         return new Container(containerId, portMappingsList);
     }
@@ -126,8 +141,8 @@ public class Container {
 
 
     /**
-     * Poll the docker logs until a specific token appears, then return.  Primarily used to look
-     * for the "Ready." token in the localstack logs.
+     * Poll the docker logs until a specific token appears, then return. Primarily
+     * used to look for the "Ready." token in the LocalStack logs.
      */
     public void waitForLogToken(Pattern pattern) {
         int attempts = 0;
@@ -140,7 +155,7 @@ public class Container {
         }
         while(attempts < MAX_LOG_COLLECTION_ATTEMPTS);
 
-        throw new IllegalStateException("Could not find token: " + pattern.toString() + " in docker logs.");
+        throw new IllegalStateException("Could not find token: " + pattern + " in Docker logs.");
     }
 
 
@@ -163,7 +178,10 @@ public class Container {
     /**
      * Stop the container
      */
-    public void stop(){
+    public void stop() {
+        if (!startedByUs) {
+            return;
+        }
         new StopCommand(containerId).execute();
         LOG.info("Stopped container: " + containerId);
     }

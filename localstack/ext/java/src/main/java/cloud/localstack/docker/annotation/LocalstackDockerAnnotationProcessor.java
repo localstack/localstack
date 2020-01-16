@@ -33,6 +33,7 @@ public class LocalstackDockerAnnotationProcessor {
             .externalHostName(this.getExternalHostName(properties))
             .portMappings(this.getCustomPortMappings(properties))
             .pullNewImage(properties.pullNewImage())
+            .ignoreDockerRunErrors(properties.ignoreDockerRunErrors())
             .randomizePorts(properties.randomizePorts())
             .imageTag(StringUtils.isEmpty(properties.imageTag()) ? null : properties.imageTag())
             .useSingleDockerContainer(properties.useSingleDockerContainer())

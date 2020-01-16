@@ -48,6 +48,10 @@ public class DockerExe {
     }
 
     public String execute(List<String> args, int waitTimeoutMinutes) {
+        return execute(args, waitTimeoutMinutes, Arrays.asList());
+    }
+
+    public String execute(List<String> args, int waitTimeoutMinutes, List<Integer> errorCodes) {
         try {
             List<String> command = new ArrayList<>();
             command.add(exeLocation);
@@ -63,16 +67,24 @@ public class DockerExe {
 
             String output = outputFuture.get(waitTimeoutMinutes, TimeUnit.MINUTES);
             process.waitFor(waitTimeoutMinutes, TimeUnit.MINUTES);
+            int code = process.exitValue();
             exec.shutdown();
+
+            if (errorCodes.contains(code)) {
+                throw new RuntimeException("Error status code " + code + " returned from process. Output: " + output);
+            }
 
             return output;
         } catch (Exception ex) {
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
             throw new RuntimeException("Failed to execute command", ex);
         }
     }
 
     private String handleOutput(Process process) {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), UTF_8));
-        return reader.lines().collect(joining(System.lineSeparator()));
+        BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream(), UTF_8));
+        return stdout.lines().collect(joining(System.lineSeparator()));
     }
 }
