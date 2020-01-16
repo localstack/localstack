@@ -1,6 +1,7 @@
 package cloud.localstack.docker.command;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +30,9 @@ public class RunCommand extends Command {
         args.addAll(options);
         args.add(imageTag == null ? imageName : String.format("%s:%s", imageName, imageTag));
 
-        return dockerExe.execute(args, PULL_AND_RUN_TIMEOUT_MINUTES);
+        // See details here: https://docs.docker.com/engine/reference/run/#exit-status
+        List<Integer> errorCodes = Arrays.asList(125, 126, 127);
+        return dockerExe.execute(args, PULL_AND_RUN_TIMEOUT_MINUTES, errorCodes);
     }
 
     public RunCommand withExposedPorts(String portsToExpose, boolean randomize) {
