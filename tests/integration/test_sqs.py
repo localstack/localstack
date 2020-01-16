@@ -111,16 +111,19 @@ class SQSTest(unittest.TestCase):
     def test_send_message_attributes(self):
         queue_name = 'queue-%s' % short_uid()
 
-        queue_info = self.client.create_queue(QueueName=queue_name)
-        queue_url = queue_info['QueueUrl']
-        print('queue_url', queue_url)
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
 
         payload = {}
+        attrs = {'attr1': {'StringValue': 'val1', 'DataType': 'String'}}
         self.client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload),
-            MessageAttributes={'attr1': {'StringValue': 'val1', 'DataType': 'String'}})
+            MessageAttributes=attrs)
 
         result = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
-        print('result', result)
+        messages = result['Messages']
+        self.assertEquals(messages[0]['MessageAttributes'], attrs)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
 
     def test_dead_letter_queue_config(self):
         queue_name = 'queue-%s' % short_uid()
@@ -130,8 +133,7 @@ class SQSTest(unittest.TestCase):
         dlq_arn = aws_stack.sqs_queue_arn(dlq_name)
 
         attributes = {'RedrivePolicy': json.dumps({'deadLetterTargetArn': dlq_arn, 'maxReceiveCount': 100})}
-        queue_info = self.client.create_queue(QueueName=queue_name, Attributes=attributes)
-        queue_url = queue_info['QueueUrl']
+        queue_url = self.client.create_queue(QueueName=queue_name, Attributes=attributes)['QueueUrl']
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)

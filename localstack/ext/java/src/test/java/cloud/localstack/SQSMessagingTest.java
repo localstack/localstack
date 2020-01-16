@@ -109,17 +109,20 @@ public class SQSMessagingTest {
 
         final CreateQueueResult myqueue = sqsAsync.createQueue("myqueue");
 
+        final String attrValue = "a value to see";
         final SendMessageResult sendMessageResult = sqsAsync.sendMessage(
             new SendMessageRequest()
                 .withQueueUrl(myqueue.getQueueUrl())
-                .addMessageAttributesEntry("testKey", new MessageAttributeValue().withStringValue("a value to see").withDataType("String"))
+                .addMessageAttributesEntry("testKey", new MessageAttributeValue()
+                    .withStringValue(attrValue).withDataType("String"))
                 .withMessageBody("Simple body")
         );
 
         final String messageId = sendMessageResult.getMessageId();
 
-        final ReceiveMessageResult receiveMessageResult = sqsAsync.receiveMessage(
-            myqueue.getQueueUrl());
+        final ReceiveMessageRequest request = new ReceiveMessageRequest(myqueue.getQueueUrl()).
+            withMessageAttributeNames("All");
+        final ReceiveMessageResult receiveMessageResult = sqsAsync.receiveMessage(request);
 
         final List<Message> messages = receiveMessageResult.getMessages();
 
@@ -129,19 +132,8 @@ public class SQSMessagingTest {
 
         final Message message = messageOptional.get();
         assertEquals(message.getBody(), "Simple body");
-        // assertThat(message.getMessageAttributes()).isEqualTo("Simple body");
-        System.out.println(message.getMessageAttributes());
-
-        // assertThat(messageOptional)
-        //     .hasValueSatisfying(message -> {
-        //         assertThat(message.getBody()).isEqualTo("Simple body");
-        //         assertThat(message.getMessageAttributes())
-        //             .isNotEmpty() // <-- FAILS HERE
-        //             .hasEntrySatisfying("testKey", value -> {
-        //                 assertThat(value.getDataType()).isEqualTo("String");
-        //                 assertThat(value.getStringValue()).isEqualTo("a value to see");
-        //             });
-        //     });
+        assertEquals(message.getMessageAttributes().get("testKey").getStringValue(), attrValue);
+        assertEquals(message.getMessageAttributes().get("testKey").getDataType(), "String");
     }
 
     /**
