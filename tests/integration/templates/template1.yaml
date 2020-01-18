@@ -30,6 +30,9 @@ Resources:
       Protocol: sqs
       TopicArn: !Ref SNSTopic
       Endpoint: !GetAtt SQSQueue.QueueArn
+      FilterPolicy:
+        eventType:
+          - created
   KinesisStream:
     Type: AWS::Kinesis::Stream
     Properties:
