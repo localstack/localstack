@@ -70,6 +70,15 @@ def get_lambda_code_param(params, **kwargs):
     return code
 
 
+def sns_subscription_params(params, **kwargs):
+    def attr_val(val):
+        return json.dumps(val) if isinstance(val, (dict, list)) else str(val)
+
+    attrs = ['DeliveryPolicy', 'FilterPolicy', 'RawMessageDelivery', 'RedrivePolicy']
+    result = dict([(a, attr_val(params[a])) for a in attrs if a in params])
+    return result
+
+
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -311,7 +320,8 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'TopicArn': 'TopicArn',
                 'Protocol': 'Protocol',
-                'Endpoint': 'Endpoint'
+                'Endpoint': 'Endpoint',
+                'Attributes': sns_subscription_params
             }
         }
     },

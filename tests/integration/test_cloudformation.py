@@ -177,6 +177,11 @@ class CloudFormationTest(unittest.TestCase):
         subs = [s for s in subs if (':%s:cf-test-queue-1' % TEST_AWS_ACCOUNT_ID) in s['Endpoint']]
         self.assertEqual(len(subs), 1)
         self.assertIn(':%s:%s-test-topic-1-1' % (TEST_AWS_ACCOUNT_ID, stack_name), subs[0]['TopicArn'])
+        # assert that subscription attributes are added properly
+        attrs = sns.get_subscription_attributes(SubscriptionArn=subs[0]['SubscriptionArn'])['Attributes']
+        self.assertEqual(attrs, {'Endpoint': subs[0]['Endpoint'], 'Protocol': 'sqs',
+            'SubscriptionArn': subs[0]['SubscriptionArn'], 'TopicArn': subs[0]['TopicArn'],
+            'FilterPolicy': json.dumps({'eventType': ['created']})})
 
         # assert that Gateway responses have been created
         test_api_name = 'test-api'
