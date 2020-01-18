@@ -391,6 +391,26 @@ def fix_delete_objects_response(bucket_name, method, parsed_path, data, headers,
     response._content = xmltodict.unparse({'DeleteResult': result})
 
 
+def fix_metadata_key_underscores(request_headers={}, response=None):
+    # fix for https://github.com/localstack/localstack/issues/1790
+    underscore_replacement = '---'
+    meta_header_prefix = 'x-amz-meta'
+    updated = False
+    for key in list(request_headers.keys()):
+        if key.lower().startswith(meta_header_prefix):
+            key_new = key.replace('_', underscore_replacement)
+            if key != key_new:
+                request_headers[key_new] = request_headers.pop(key)
+                updated = True
+    if response:
+        for key in list(response.headers.keys()):
+            if key.lower().startswith(meta_header_prefix):
+                key_new = key.replace(underscore_replacement, '_')
+                if key != key_new:
+                    response.headers[key_new] = response.headers.pop(key)
+    return updated
+
+
 def remove_xml_preamble(response):
     """ Removes <?xml ... ?> from a response content """
     response._content = re.sub(r'^<\?[^\?]+\?>', '', response._content)
@@ -767,6 +787,9 @@ class ProxyListenerS3(ProxyListener):
         # remap metadata query params (not supported in moto) to request headers
         append_metadata_headers(method, query_map, headers)
 
+        # apply fixes
+        headers_changed = fix_metadata_key_underscores(request_headers=headers)
+
         if query == 'notification' or 'notification' in query_map:
             # handle and return response for ?notification request
             response = handle_notification_request(bucket, method, data)
@@ -804,7 +827,7 @@ class ProxyListenerS3(ProxyListener):
             if method == 'PUT':
                 return set_object_lock(bucket, data)
 
-        if modified_data is not None:
+        if modified_data is not None or headers_changed:
             return Request(data=modified_data, headers=headers, method=method)
         return True
 
@@ -938,6 +961,7 @@ class ProxyListenerS3(ProxyListener):
             fix_location_constraint(response)
             fix_range_content_type(bucket_name, path, headers, response)
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
+            fix_metadata_key_underscores(response=response)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
