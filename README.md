@@ -261,7 +261,7 @@ curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhos
 
 When a container is started for the first time, it will execute files with extensions .sh that are found in `/docker-entrypoint-initaws.d`. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
 
-## A note about using custom SSL certificates (for `USE_SSL=1`)
+## Using custom SSL certificates (for `USE_SSL=1`)
 
 If you need to use your own SSL Certificate and keep it persistent and not use the random automatic generated Certificate, you can place into the localstack temporary directory :
 
@@ -280,7 +280,7 @@ server.test.pem.key
 - the file `server.test.pem` must contains your key file content, your certificate and chain certificate files contents (do a cat in this order)
  - the file `server.test.pem.crt` must contains your certificate and chains files contents (do a 'cat' in this order)
 - the file server.test.pem.key must contains your key file content
-***
+
 ### Using USE_SSL and own persistent certificate with docker-compose
 
 Typically with docker-compose you can add into docker-compose.yml this volume to the localstack services :
@@ -292,8 +292,6 @@ volumes:
 ```
 
 local directory **ls_tmp** must contains the three files (server.test.pem, server.test.pem.crt, server.test.pem.key)
-
-***
 
 ## Accessing the infrastructure via CLI or code
 
@@ -352,16 +350,20 @@ You can use the [`serverless-localstack`](https://www.npmjs.com/package/serverle
 For more information, please check out the plugin repository here:
 https://github.com/localstack/serverless-localstack
 
+## Integration with Terraform
+
+You can use [Terraform](https://www.terraform.io) to provision your resources locally. Please refer to the Terraform AWS Provider docs [here](https://www.terraform.io/docs/providers/aws/guides/custom-service-endpoints.html#localstack) on how to configure the API endpoints on `localhost`.
+
 ## Using local code with Lambda
 
 In order to mount a local folder, ensure that `LAMBDA_REMOTE_DOCKER` is set to `false` then set the S3 bucket name to `__local__` and the S3 key to your local path:
 
 ```
-    awslocal lambda create-function --function-name myLambda \
-      --code S3Bucket="__local__",S3Key="/my/local/lambda/folder" \
-      --handler index.myHandler \
-      --runtime nodejs8.10 \
-      --role whatever
+awslocal lambda create-function --function-name myLambda \
+    --code S3Bucket="__local__",S3Key="/my/local/lambda/folder" \
+    --handler index.myHandler \
+    --runtime nodejs8.10 \
+    --role whatever
 ```
 
 ## Integration with Java/JUnit

@@ -28,6 +28,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_NODEJS610,
     LAMBDA_RUNTIME_NODEJS810,
     LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_DOTNETCORE21,
     LAMBDA_RUNTIME_GOLANG,
@@ -542,7 +543,7 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
 
 def is_java_lambda(lambda_details):
     runtime = getattr(lambda_details, 'runtime', lambda_details)
-    return runtime == LAMBDA_RUNTIME_JAVA8
+    return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11]
 
 
 def set_function_code(code, lambda_name, lambda_cwd=None):
