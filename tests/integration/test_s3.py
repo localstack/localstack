@@ -221,7 +221,6 @@ class S3ListenerTest(unittest.TestCase):
     def test_s3_put_presigned_url_metadata(self):
         # Object metadata should be passed as query params via presigned URL
         # https://github.com/localstack/localstack/issues/544
-
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
@@ -240,6 +239,22 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual('', to_str(response.content))
         response = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)
         self.assertEquals('bar', response.get('Metadata', {}).get('foo'))
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_put_metadata_underscores(self):
+        # Object metadata keys should accept keys with underscores
+        # https://github.com/localstack/localstack/issues/1790
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put object
+        object_key = 'key-with-metadata'
+        metadata = {'test_meta_1': 'foo'}
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Metadata=metadata)
+        metadata_saved = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)['Metadata']
+        self.assertEqual(metadata, metadata_saved)
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
