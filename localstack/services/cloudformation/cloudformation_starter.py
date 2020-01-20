@@ -3,6 +3,7 @@ import json
 import logging
 import traceback
 import six
+import boto3.session
 from moto.s3 import models as s3_models
 from moto.iam import models as iam_models
 from moto.sqs import models as sqs_models
@@ -653,6 +654,12 @@ def apply_patches():
         return template.render(stack=stack)
 
     responses.CloudFormationResponse.describe_stack_events = cf_describe_stack_events
+
+    # fix Lambda regions in moto - see https://github.com/localstack/localstack/issues/1961
+
+    for region in boto3.session.Session().get_available_regions('lambda'):
+        if region not in lambda_models.lambda_backends:
+            lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
 
 
 def inject_stats_endpoint():
