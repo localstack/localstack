@@ -17,7 +17,7 @@ from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
-from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
+from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
 
 # constants
@@ -58,6 +58,15 @@ LOG = logging.getLogger(__name__)
 # maximum time a pre-allocated container can sit idle before getting killed
 MAX_CONTAINER_IDLE_TIME_MS = 600 * 1000
 
+EVENT_SOURCE_SQS = 'aws:sqs'
+
+
+def get_from_event(event, key):
+    try:
+        return event['Records'][0][key]
+    except KeyError:
+        return None
+
 
 class LambdaExecutor(object):
     """ Base class for Lambda executors. Subclasses must overwrite the _execute method """
@@ -76,7 +85,14 @@ class LambdaExecutor(object):
                 result, log_output = self._execute(func_arn, func_details, event, context, version)
             except Exception as e:
                 if asynchronous:
-                    lambda_error_to_dead_letter_queue(func_details, event, e)
+                    if get_from_event(event, 'eventSource') == EVENT_SOURCE_SQS:
+                        sqs_queue_arn = get_from_event(event, 'eventSourceARN')
+                        if sqs_queue_arn:
+                            # event source is SQS, send event back to dead letter queue
+                            sqs_error_to_dead_letter_queue(sqs_queue_arn, event, e)
+                    else:
+                        # event source is not SQS, send back to lambda dead letter
+                        lambda_error_to_dead_letter_queue(func_details, event, e)
                 raise e
             finally:
                 self.function_invoke_times[func_arn] = invocation_time

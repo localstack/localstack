@@ -41,7 +41,6 @@ from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, en
     isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
 APP_NAME = 'lambda_api'
@@ -295,12 +294,7 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
                 'messageAttributes': message_attributes,
                 'sqs': True,
             }]}
-            result = run_lambda(event=event, context={}, func_arn=arn)
-            status_code = getattr(result, 'status_code', 200)
-            if status_code >= 400:
-                LOG.warning('Invoking Lambda %s from SQS message failed (%s): %s' % (arn, status_code, result.data))
-                # check if we need to forward to a dead letter queue
-                sqs_error_to_dead_letter_queue(queue_arn, event, result)
+            run_lambda(event=event, context={}, func_arn=arn, asynchronous=True)
             return True
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SQS messages: %s %s' % (e, traceback.format_exc()))

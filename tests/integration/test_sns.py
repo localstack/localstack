@@ -3,10 +3,16 @@
 import json
 import unittest
 from botocore.exceptions import ClientError
+from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol
+from localstack.utils.common import (
+    to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid, load_file
+)
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
+
+from .lambdas import lambda_integration
+from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
 
 TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
@@ -175,3 +181,35 @@ class SNSTest(unittest.TestCase):
         self.assertEqual(len(tags['Tags']), 1)
         self.assertEqual(tags['Tags'][0]['Key'], '456')
         self.assertEqual(tags['Tags'][0]['Value'], 'def')
+
+    def test_dead_letter_queue(self):
+        lambda_name = 'test-%s' % short_uid()
+        lambda_arn = aws_stack.lambda_function_arn(lambda_name)
+        topic_name = 'test-%s' % short_uid()
+        topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
+        queue_name = 'test-%s' % short_uid()
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36,
+        )
+        testutil.create_lambda_function(
+            func_name=lambda_name, zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON36,
+            DeadLetterConfig={'TargetArn': queue_arn},
+        )
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol='lambda', Endpoint=lambda_arn)
+
+        payload = {
+            lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
+        }
+        self.sns_client.publish(TopicArn=topic_arn, Message=json.dumps(payload))
+
+        def receive_dlq():
+            result = self.sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+            msg_attrs = result['Messages'][0]['MessageAttributes']
+            self.assertGreater(len(result['Messages']), 0)
+            self.assertIn('RequestID', msg_attrs)
+            self.assertIn('ErrorCode', msg_attrs)
+            self.assertIn('ErrorMessage', msg_attrs)
+        retry(receive_dlq, retries=8, sleep=2)

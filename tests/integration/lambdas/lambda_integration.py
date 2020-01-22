@@ -122,7 +122,10 @@ def deserialize_event(event):
     if sqs:
         result = {'data': event['body']}
         return result
-    return event.get('Sns')
+    sns = event.get('Sns')
+    if sns:
+        result = {'data': sns['Message']}
+        return result
 
 
 def forward_events(records):
