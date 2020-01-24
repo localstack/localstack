@@ -828,7 +828,7 @@ class ProxyListenerS3(ProxyListener):
                 return set_object_lock(bucket, data)
 
         if modified_data is not None or headers_changed:
-            return Request(data=modified_data, headers=headers, method=method)
+            return Request(data=modified_data or data, headers=headers, method=method)
         return True
 
     def get_201_reponse(self, key, bucket_name):
