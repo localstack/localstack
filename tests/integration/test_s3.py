@@ -274,7 +274,7 @@ class S3ListenerTest(unittest.TestCase):
             data.seek(0)
             self.s3_client.upload_fileobj(data, bucket_name, object_key)
 
-        range_header = f'bytes=0-{chunk_size - 1}'
+        range_header = 'bytes=0-%s' % (chunk_size - 1)
         resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key, Range=range_header)
         content = resp['Body'].read()
         self.assertEquals(len(content), chunk_size)
