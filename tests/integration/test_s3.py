@@ -1,3 +1,4 @@
+import io
 import os
 import ssl
 import gzip
@@ -259,6 +260,28 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_range_header_body_length(self):
+        # Test for https://github.com/localstack/localstack/issues/1952
+
+        object_key = 'sample.bin'
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        chunk_size = 1024
+
+        with io.BytesIO() as data:
+            data.write(os.urandom(chunk_size * 2))
+            data.seek(0)
+            self.s3_client.upload_fileobj(data, bucket_name, object_key)
+
+        range_header = 'bytes=0-%s' % (chunk_size - 1)
+        resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key, Range=range_header)
+        content = resp['Body'].read()
+        self.assertEquals(len(content), chunk_size)
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
     def test_s3_get_response_content_type_same_as_upload_and_range(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
@@ -422,7 +445,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_uppercase_names(self):
         # bucket name should be case-insensitive
-        bucket_name = 'TestBucket-%s' % short_uid()
+        bucket_name = 'TestUpperCase-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         # key name should be case-sensitive

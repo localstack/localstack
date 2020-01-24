@@ -76,6 +76,8 @@ def apply_patches():
         if acl:
             key.set_acl(acl)
 
+    # patch _key_response_post(..)
+
     def s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
         result = s3_key_response_post_orig(request, body, bucket_name, query, key_name, *args, **kwargs)
         s3_update_acls(self, request, query, bucket_name, key_name)
@@ -84,6 +86,8 @@ def apply_patches():
     s3_key_response_post_orig = s3_responses.S3ResponseInstance._key_response_post
     s3_responses.S3ResponseInstance._key_response_post = types.MethodType(
         s3_key_response_post, s3_responses.S3ResponseInstance)
+
+    # patch _key_response_put(..)
 
     def s3_key_response_put(self, request, body, bucket_name, query, key_name, headers, *args, **kwargs):
         result = s3_key_response_put_orig(request, body, bucket_name, query, key_name, headers, *args, **kwargs)
