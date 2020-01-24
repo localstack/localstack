@@ -857,8 +857,7 @@ class ProxyListenerS3(ProxyListener):
         path_new = re.sub(r'/([^?/]+)([?/].*)?', sub, path)
         if path == path_new:
             return
-        url = '%s://%s:%s%s' % (get_service_protocol(), constants.LOCALHOST,
-            constants.DEFAULT_PORT_S3_BACKEND, path_new)
+        url = 'http://%s:%s%s' % (constants.LOCALHOST, constants.DEFAULT_PORT_S3_BACKEND, path_new)
         return url
 
     def return_response(self, method, path, data, headers, response):
