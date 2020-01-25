@@ -252,7 +252,7 @@ class S3ListenerTest(unittest.TestCase):
 
         # put object
         object_key = 'key-with-metadata'
-        metadata = {'test_meta_1': 'foo'}
+        metadata = {'test_meta_1': 'foo', '__meta_2': 'bar'}
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Metadata=metadata, Body='foo')
         metadata_saved = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)['Metadata']
         self.assertEqual(metadata, metadata_saved)
