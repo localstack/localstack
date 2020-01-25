@@ -394,26 +394,33 @@ def fix_delete_objects_response(bucket_name, method, parsed_path, data, headers,
 def fix_metadata_key_underscores(request_headers={}, response=None):
     # fix for https://github.com/localstack/localstack/issues/1790
     underscore_replacement = '---'
-    meta_header_prefix = 'x-amz-meta'
+    meta_header_prefix = 'x-amz-meta-'
+    prefix_len = len(meta_header_prefix)
     updated = False
     for key in list(request_headers.keys()):
         if key.lower().startswith(meta_header_prefix):
-            key_new = key.replace('_', underscore_replacement)
+            key_new = meta_header_prefix + key[prefix_len:].replace('_', underscore_replacement)
             if key != key_new:
                 request_headers[key_new] = request_headers.pop(key)
                 updated = True
     if response:
         for key in list(response.headers.keys()):
             if key.lower().startswith(meta_header_prefix):
-                key_new = key.replace(underscore_replacement, '_')
+                key_new = meta_header_prefix + key[prefix_len:].replace(underscore_replacement, '_')
                 if key != key_new:
                     response.headers[key_new] = response.headers.pop(key)
     return updated
 
 
+def fix_creation_date(method, path, response):
+    if method != 'GET' or path != '/':
+        return
+    response._content = re.sub(r'([0-9])</CreationDate>', r'\1Z</CreationDate>', to_str(response._content))
+
+
 def remove_xml_preamble(response):
     """ Removes <?xml ... ?> from a response content """
-    response._content = re.sub(r'^<\?[^\?]+\?>', '', response._content)
+    response._content = re.sub(r'^<\?[^\?]+\?>', '', to_str(response._content))
 
 
 # --------------
@@ -961,6 +968,7 @@ class ProxyListenerS3(ProxyListener):
             fix_range_content_type(bucket_name, path, headers, response)
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
             fix_metadata_key_underscores(response=response)
+            fix_creation_date(method, path, response=response)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317

@@ -15,6 +15,7 @@ import org.junit.runner.RunWith;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.*;
+import org.apache.http.conn.ssl.*;
 import org.apache.http.client.*;
 import org.apache.http.client.methods.*;
 import org.apache.http.entity.*;
@@ -29,7 +30,7 @@ import com.amazonaws.services.s3.model.lifecycle.*;
 import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 
 @RunWith(LocalstackTestRunner.class)
-@LocalstackDockerProperties(services = {"s3"})
+@LocalstackDockerProperties(services = {"s3"}, ignoreDockerRunErrors=true)
 public class S3FeaturesTest {
 
 	/**
@@ -102,11 +103,10 @@ public class S3FeaturesTest {
 		String bucketName = UUID.randomUUID().toString();
 		s3.createBucket(bucketName);
 
-		String keyWithUnderscores = "__key1";
-		String keyWithDashes = keyWithUnderscores.replace("_", "-");
-
 		Map<String, String> originalMetadata = new HashMap<String, String>();
-		originalMetadata.put(keyWithUnderscores, "val1");
+		originalMetadata.put("key1", "val1");
+		originalMetadata.put("key_2", "val2");
+		originalMetadata.put("__key3", "val3");
 
 		ObjectMetadata objectMetadata = new ObjectMetadata();
 		objectMetadata.setUserMetadata(originalMetadata);
@@ -119,12 +119,7 @@ public class S3FeaturesTest {
 
 		Map<String, String> receivedMetadata = objectMetadataResponse.getUserMetadata();
 
-		Map<String, String> actualResult = new HashMap<String, String>();
-		actualResult.put(keyWithDashes, "val1");
-
-		// TODO: We currently have a bug that converts underscores in metadata keys to dashes.
-		// See here for details: https://github.com/localstack/localstack/issues/459
-		Assert.assertTrue(receivedMetadata.equals(originalMetadata) || receivedMetadata.equals(actualResult) );
+		Assert.assertEquals(originalMetadata, receivedMetadata);
 	}
 
 	@Test
@@ -179,7 +174,11 @@ public class S3FeaturesTest {
 		String content = "test content";
 		HttpPut httpPut = new HttpPut(presignedUrl.toString());
     httpPut.setEntity(new StringEntity(content));
-		CloseableHttpClient httpclient = HttpClients.createDefault();
+		SSLContextBuilder builder = new SSLContextBuilder();
+		builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build());
+		CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
+
 		httpclient.execute(httpPut);
 		httpclient.close();
 
