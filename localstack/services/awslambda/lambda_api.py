@@ -36,9 +36,8 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_RUBY25,
     LAMBDA_RUNTIME_CUSTOM_RUNTIME)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-    mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid, timestamp,
-    TIMESTAMP_FORMAT_MILLIS, md5, parse_chunked_data, now_utc, safe_requests,
-    isoformat_milliseconds)
+    mkdir, unzip, is_zip_file, run, short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, md5,
+    parse_chunked_data, now_utc, safe_requests, isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
@@ -584,9 +583,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         if not is_zip_file(zip_file_content):
             raise ClientError(
                 'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
-        # Unzipping should only be required for (1) non-Java Lambdas, or (2) zip files containing JAR files
-        if not is_java_lambda(runtime) or zip_contains_jar_entries(zip_file_content, 'lib/'):
-            unzip(tmp_file, lambda_cwd)
+        unzip(tmp_file, lambda_cwd)
 
     # Obtain handler details for any non-Java Lambda function
     if not is_java_lambda(runtime):
