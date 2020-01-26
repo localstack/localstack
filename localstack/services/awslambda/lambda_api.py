@@ -51,8 +51,8 @@ LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 # List of Lambda runtime names. Keep them in this list, mainly to silence the linter
 LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36,
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21, LAMBDA_RUNTIME_NODEJS,
-    LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_RUBY,
-    LAMBDA_RUNTIME_RUBY25]
+    LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_RUBY, LAMBDA_RUNTIME_RUBY25]
 
 # default timeout in seconds
 LAMBDA_DEFAULT_TIMEOUT = 3
@@ -535,11 +535,6 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     return tmp_dir
 
 
-def is_java_lambda(lambda_details):
-    runtime = getattr(lambda_details, 'runtime', lambda_details)
-    return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11]
-
-
 def set_function_code(code, lambda_name, lambda_cwd=None):
 
     def generic_handler(event, context):
@@ -572,8 +567,9 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
 
     # Set the appropriate lambda handler.
     lambda_handler = generic_handler
+    is_java = lambda_executors.is_java_lambda(runtime)
 
-    if is_java_lambda(runtime):
+    if is_java:
         # The Lambda executors for Docker subclass LambdaExecutorContainers, which
         # runs Lambda in Docker by passing all *.jar files in the function working
         # directory as part of the classpath. Obtain a Java handler function below.
@@ -585,11 +581,11 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
             raise ClientError(
                 'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
         # Unzipping should only be required for (1) non-Java Lambdas, or (2) zip files containing JAR files
-        if not is_java_lambda(runtime) or zip_contains_jar_entries(zip_file_content, 'lib/'):
+        if not is_java or zip_contains_jar_entries(zip_file_content, 'lib/'):
             unzip(tmp_file, lambda_cwd)
 
     # Obtain handler details for any non-Java Lambda function
-    if not is_java_lambda(runtime):
+    if not is_java:
 
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
