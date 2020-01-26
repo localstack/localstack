@@ -209,6 +209,27 @@ def start_ec2(port=None, asynchronous=False, update_listener=None):
 # HELPER METHODS
 # ---------------
 
+def patch_urllib3_connection_pool(**constructor_kwargs):
+    """
+    Override the default parameters of HTTPConnectionPool, e.g., set the pool size via maxsize=16
+    """
+    try:
+        from urllib3 import connectionpool, poolmanager
+
+        class MyHTTPSConnectionPool(connectionpool.HTTPSConnectionPool):
+            def __init__(self, *args, **kwargs):
+                kwargs.update(constructor_kwargs)
+                super(MyHTTPSConnectionPool, self).__init__(*args, **kwargs)
+        poolmanager.pool_classes_by_scheme['https'] = MyHTTPSConnectionPool
+
+        class MyHTTPConnectionPool(connectionpool.HTTPConnectionPool):
+            def __init__(self, *args, **kwargs):
+                kwargs.update(constructor_kwargs)
+                super(MyHTTPConnectionPool, self).__init__(*args, **kwargs)
+        poolmanager.pool_classes_by_scheme['http'] = MyHTTPConnectionPool
+    except Exception:
+        pass
+
 
 def set_service_status(data):
     command = data.get('command')
@@ -408,6 +429,9 @@ def start_infra(asynchronous=False, apis=None):
             print(('!WARNING! - Running outside of Docker with LAMBDA_EXECUTOR=%s can lead to '
                    'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
                    'be properly set in your Lambdas.') % config.LAMBDA_EXECUTOR)
+
+        # apply patches
+        patch_urllib3_connection_pool(maxsize=128)
 
         # load plugins
         load_plugins()
