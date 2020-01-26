@@ -138,11 +138,6 @@ def start_cloudwatch(port=None, asynchronous=False):
     return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
 
 
-def start_cloudwatch_logs(port=None, asynchronous=False):
-    port = port or config.PORT_LOGS
-    return start_moto_server('logs', port, name='CloudWatch Logs', asynchronous=asynchronous)
-
-
 def start_events(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_EVENTS
     return start_moto_server('events', port, name='CloudWatch Events', asynchronous=asynchronous,

@@ -23,7 +23,7 @@ class ProxyListenerIAM(ProxyListener):
             # fix dates returned from this API (fixes an issue with Terraform)
             self._fix_date_format(response)
             # fix content-length header
-            response.headers['content-length'] = len(response._content)
+            response.headers['content-length'] = str(len(response._content))
 
     def _fix_date_format(self, response):
         """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
