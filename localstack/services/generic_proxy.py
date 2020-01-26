@@ -206,7 +206,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         forward_headers = CaseInsensitiveDict(self.headers)
 
         # force close connection
-        if forward_headers.get('Connection', '').lower() != 'keep-alive':
+        if forward_headers.get('Connection') not in ['keep-alive', None]:
             self.close_connection = 1
 
         def is_full_url(url):
