@@ -24,15 +24,13 @@ LOGGER = logging.getLogger(__name__)
 def should_record(api, method, path, data, headers):
     """ Decide whether or not a given API call should be recorded (persisted to disk) """
     if api == 's3':
-        if method not in ['PUT', 'POST', 'DELETE']:
-            return False
-        return True
+        return method in ['PUT', 'POST', 'DELETE']
     return False
 
 
 def record(api, method, path, data, headers):
     """ Record a given API call to a persistent file on disk """
-    file_path = get_file_path(api, create=True)
+    file_path = get_file_path(api)
     if CURRENTLY_REPLAYING or not file_path or not should_record(api, method, path, data, headers):
         return
     entry = None
@@ -96,7 +94,7 @@ def restore_persisted_data(api):
 # HELPER METHODS
 # ---------------
 
-def get_file_path(api, create=False):
+def get_file_path(api, create=True):
     if api not in API_FILE_PATHS:
         API_FILE_PATHS[api] = False
         if not DATA_DIR:

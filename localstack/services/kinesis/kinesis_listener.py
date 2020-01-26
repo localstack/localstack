@@ -1,8 +1,9 @@
 import json
 import random
+from datetime import datetime
 from requests.models import Response
 from localstack import config
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, json_safe, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -11,30 +12,76 @@ from localstack.services.generic_proxy import ProxyListener
 ACTION_PREFIX = 'Kinesis_20131202'
 ACTION_PUT_RECORD = '%s.PutRecord' % ACTION_PREFIX
 ACTION_PUT_RECORDS = '%s.PutRecords' % ACTION_PREFIX
+ACTION_LIST_STREAMS = '%s.ListStreams' % ACTION_PREFIX
 ACTION_CREATE_STREAM = '%s.CreateStream' % ACTION_PREFIX
 ACTION_DELETE_STREAM = '%s.DeleteStream' % ACTION_PREFIX
 ACTION_UPDATE_SHARD_COUNT = '%s.UpdateShardCount' % ACTION_PREFIX
+
+# list of stream consumer details
+STREAM_CONSUMERS = []
 
 
 class ProxyListenerKinesis(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        data = json.loads(to_str(data))
+        global STREAM_CONSUMERS
+        data = json.loads(to_str(data or '{}'))
+        action = headers.get('X-Amz-Target')
+
+        if action == '%s.RegisterStreamConsumer' % ACTION_PREFIX:
+            consumer = clone(data)
+            consumer['ConsumerStatus'] = 'ACTIVE'
+            consumer['ConsumerARN'] = '%s/consumer/%s' % (data['StreamARN'], data['ConsumerName'])
+            consumer['ConsumerCreationTimestamp'] = datetime.now()
+            consumer = json_safe(consumer)
+            STREAM_CONSUMERS.append(consumer)
+            return {'Consumer': consumer}
+        elif action == '%s.DeregisterStreamConsumer' % ACTION_PREFIX:
+            def consumer_matches(c):
+                stream_arn = data.get('StreamARN')
+                cons_name = data.get('ConsumerName')
+                cons_arn = data.get('ConsumerARN')
+                return (c.get('ConsumerARN') == cons_arn or
+                    (c.get('StreamARN') == stream_arn and c.get('ConsumerName') == cons_name))
+            STREAM_CONSUMERS = [c for c in STREAM_CONSUMERS if not consumer_matches(c)]
+            return {}
+        elif action == '%s.ListStreamConsumers' % ACTION_PREFIX:
+            result = {
+                'Consumers': [c for c in STREAM_CONSUMERS if c.get('StreamARN') == data.get('StreamARN')]
+            }
+            return result
+        elif action == '%s.DescribeStreamConsumer' % ACTION_PREFIX:
+            consumer_arn = data.get('ConsumerARN') or data['ConsumerName']
+            consumer_name = data.get('ConsumerName') or data['ConsumerARN']
+            result = {
+                'ConsumerDescription': {
+                    'ConsumerARN': consumer_arn,
+                    # 'ConsumerCreationTimestamp': number,
+                    'ConsumerName': consumer_name,
+                    'ConsumerStatus': 'ACTIVE',
+                    'StreamARN': data.get('StreamARN')
+                }
+            }
+            return result
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
-            if headers.get('X-Amz-Target') in [ACTION_PUT_RECORD, ACTION_PUT_RECORDS]:
-                return kinesis_error_response(data)
+            action = headers.get('X-Amz-Target')
+            if action in [ACTION_PUT_RECORD, ACTION_PUT_RECORDS]:
+                return kinesis_error_response(data, action)
         return True
 
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target')
-        data = json.loads(to_str(data))
+        data = json.loads(to_str(data or '{}'))
 
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):
             event_type = (event_publisher.EVENT_KINESIS_CREATE_STREAM if action == ACTION_CREATE_STREAM
-                else event_publisher.EVENT_KINESIS_DELETE_STREAM)
-            event_publisher.fire_event(event_type, payload={'n': event_publisher.get_hash(data.get('StreamName'))})
+                          else event_publisher.EVENT_KINESIS_DELETE_STREAM)
+            payload = {'n': event_publisher.get_hash(data.get('StreamName'))}
+            if action == ACTION_CREATE_STREAM:
+                payload['s'] = data.get('ShardCount')
+            event_publisher.fire_event(event_type, payload=payload)
         elif action == ACTION_PUT_RECORD:
             response_body = json.loads(to_str(response.content))
             event_record = {
@@ -48,18 +95,19 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == ACTION_PUT_RECORDS:
             event_records = []
             response_body = json.loads(to_str(response.content))
-            response_records = response_body['Records']
-            records = data['Records']
-            for index in range(0, len(records)):
-                record = records[index]
-                event_record = {
-                    'data': record['Data'],
-                    'partitionKey': record['PartitionKey'],
-                    'sequenceNumber': response_records[index].get('SequenceNumber')
-                }
-                event_records.append(event_record)
-            stream_name = data['StreamName']
-            lambda_api.process_kinesis_records(event_records, stream_name)
+            if 'Records' in response_body:
+                response_records = response_body['Records']
+                records = data['Records']
+                for index in range(0, len(records)):
+                    record = records[index]
+                    event_record = {
+                        'data': record['Data'],
+                        'partitionKey': record['PartitionKey'],
+                        'sequenceNumber': response_records[index].get('SequenceNumber')
+                    }
+                    event_records.append(event_record)
+                stream_name = data['StreamName']
+                lambda_api.process_kinesis_records(event_records, stream_name)
         elif action == ACTION_UPDATE_SHARD_COUNT:
             # Currently kinesalite, which backs the Kinesis implementation for localstack, does
             # not support UpdateShardCount:
@@ -87,14 +135,23 @@ class ProxyListenerKinesis(ProxyListener):
 UPDATE_KINESIS = ProxyListenerKinesis()
 
 
-def kinesis_error_response(data):
+def kinesis_error_response(data, action):
     error_response = Response()
-    error_response.status_code = 200
-    content = {'FailedRecordCount': 1, 'Records': []}
-    for record in data.get('Records', []):
-        content['Records'].append({
+
+    if action == ACTION_PUT_RECORD:
+        error_response.status_code = 400
+        content = {
             'ErrorCode': 'ProvisionedThroughputExceededException',
             'ErrorMessage': 'Rate exceeded for shard X in stream Y under account Z.'
-        })
+        }
+    else:
+        error_response.status_code = 200
+        content = {'FailedRecordCount': 1, 'Records': []}
+        for record in data.get('Records', []):
+            content['Records'].append({
+                'ErrorCode': 'ProvisionedThroughputExceededException',
+                'ErrorMessage': 'Rate exceeded for shard X in stream Y under account Z.'
+            })
+
     error_response._content = json.dumps(content)
     return error_response

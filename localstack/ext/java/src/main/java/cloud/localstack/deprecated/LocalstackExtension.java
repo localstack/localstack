@@ -1,4 +1,4 @@
-package cloud.localstack;
+package cloud.localstack.deprecated;
 
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;

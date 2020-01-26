@@ -4,15 +4,16 @@ import json
 import logging
 import socket
 import tempfile
-from localstack.utils.common import (short_uid, parallelize, is_port_open,
-    rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, run, md5)
+from six import iteritems
+from localstack.config import DEFAULT_REGION
+from localstack.utils.aws import aws_stack
+from localstack.utils.common import (short_uid, parallelize, is_port_open, new_tmp_file,
+    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, run, md5)
 from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
     KinesisShard, KinesisStream, LambdaFunction)
-from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
-from localstack.constants import REGION_LOCAL, DEFAULT_REGION
-from six import iteritems
+
+# TODO: CLI commands in this file need to be replaced with SDK calls!
 
 
 AWS_CACHE_TIMEOUT = 5  # 5 seconds
@@ -39,8 +40,16 @@ def run_cached(cmd, cache_duration_secs=None):
         'AWS_DEFAULT_REGION': os.environ.get('AWS_DEFAULT_REGION') or DEFAULT_REGION,
         'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
     })
-    return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars,
-               stderr=open(os.devnull, 'w'))
+    tmp_file_path = new_tmp_file()
+    error = None
+    with open(tmp_file_path, 'w') as err_file:
+        try:
+            return run(cmd, cache_duration_secs=cache_duration_secs, env_vars=env_vars, stderr=err_file)
+        except Exception as e:
+            error = e
+    if error:
+        LOG.warning('Error running command: %s %s %s' % (cmd, error, load_file(tmp_file_path)))
+        raise error
 
 
 def run_aws_cmd(service, cmd_params, env=None, cache_duration_secs=None):
@@ -84,14 +93,14 @@ def aws_cmd(service, env):
     cmd = '{ test `which aws` || . .venv/bin/activate; }; aws'
     endpoint_url = None
     env = aws_stack.get_environment(env)
-    if env.region == REGION_LOCAL:
+    if aws_stack.is_local_env(env):
         endpoint_url = aws_stack.get_local_service_url(service)
     if endpoint_url:
+        if not is_port_open(endpoint_url):
+            raise socket.error()
         if endpoint_url.startswith('https://'):
             cmd += ' --no-verify-ssl'
         cmd = '%s --endpoint-url="%s"' % (cmd, endpoint_url)
-        if not is_port_open(endpoint_url):
-            raise socket.error()
     cmd = '%s %s' % (cmd, service)
     return cmd
 
@@ -140,8 +149,7 @@ def get_sqs_queues(filter='.*', pool={}, env=None):
         queues = json.loads(out)['QueueUrls']
         for q in queues:
             name = q.split('/')[-1]
-            account = q.split('/')[-2]
-            arn = 'arn:aws:sqs:%s:%s:%s' % (DEFAULT_REGION, account, name)
+            arn = aws_stack.sqs_queue_arn(name)
             if re.match(filter, name):
                 queue = SqsQueue(arn)
                 result.append(queue)
@@ -251,7 +259,7 @@ def get_lambda_code(func_name, retries=1, cache_time=None, env=None):
     if MOCK_OBJ:
         return ''
     env = aws_stack.get_environment(env)
-    if cache_time is None and env.region != REGION_LOCAL:
+    if cache_time is None and not aws_stack.is_local_env(env):
         cache_time = AWS_LAMBDA_CODE_CACHE_TIMEOUT
     out = cmd_lambda('get-function --function-name %s' % func_name, env, cache_time)
     out = json.loads(out)

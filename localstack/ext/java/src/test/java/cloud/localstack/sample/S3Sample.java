@@ -65,18 +65,19 @@ public class S3Sample {
                             "location (~/.aws/credentials), and is in valid format.",
                     e);
         }
-        runTest(credentials);
+        String s3Endpoint = Localstack.INSTANCE.getEndpointS3();
+        runTest(credentials, s3Endpoint);
     }
 
-    public static void runTest(AWSCredentials credentials) throws IOException {
+    public static void runTest(AWSCredentials credentials, String s3Endpoint) throws IOException {
 
-		@SuppressWarnings("deprecation")
-		AmazonS3 s3 = new AmazonS3Client(credentials);
+        @SuppressWarnings("deprecation")
+        AmazonS3 s3 = new AmazonS3Client(credentials);
         Region usWest2 = Region.getRegion(Regions.US_WEST_2);
         s3.setRegion(usWest2);
-        s3.setEndpoint(Localstack.getEndpointS3());
-		s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true)
-				.disableChunkedEncoding().build());
+        s3.setEndpoint(s3Endpoint);
+        s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true)
+            .disableChunkedEncoding().build());
 
         String bucketName = "my-first-s3-bucket-" + UUID.randomUUID();
         String key = "MyObjectKey";

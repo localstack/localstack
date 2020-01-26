@@ -1,9 +1,15 @@
-package cloud.localstack;
+package cloud.localstack.deprecated;
 
+import cloud.localstack.LocalTestUtil;
 import cloud.localstack.sample.KinesisLambdaHandler;
 import cloud.localstack.sample.S3Sample;
 import cloud.localstack.sample.SQSLambdaHandler;
-import cloud.localstack.sample.SQSLambdaHandlerSSL;
+
+import com.amazonaws.ClientConfiguration;
+import com.amazonaws.Protocol;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.kinesis.AmazonKinesis;
 import com.amazonaws.services.kinesis.model.ListStreamsResult;
 import com.amazonaws.services.kinesis.model.PutRecordRequest;
@@ -16,6 +22,8 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.Bucket;
 import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.CreateQueueResult;
 import com.amazonaws.services.sqs.model.DeleteQueueRequest;
@@ -28,6 +36,7 @@ import com.amazonaws.services.sqs.model.ReceiveMessageResult;
 import com.amazonaws.services.sqs.model.SendMessageRequest;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import org.assertj.core.api.Assertions;
+import org.junit.Assert;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.runner.RunWith;
 
@@ -35,9 +44,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -48,7 +55,7 @@ import static cloud.localstack.TestUtils.TEST_CREDENTIALS;
  *
  * @author Waldemar Hummer
  */
-@RunWith(LocalstackTestRunner.class)
+@RunWith(LocalstackOutsideDockerTestRunner.class)
 @ExtendWith(LocalstackExtension.class)
 public class BasicFunctionalityTest {
 
@@ -106,6 +113,7 @@ public class BasicFunctionalityTest {
         request.setRuntime(Runtime.Java8);
         request.setCode(LocalTestUtil.createFunctionCode(KinesisLambdaHandler.class));
         request.setHandler(KinesisLambdaHandler.class.getName());
+        request.setRole("r1");
         lambda.createFunction(request);
 
         // create stream
@@ -138,13 +146,9 @@ public class BasicFunctionalityTest {
         CreateFunctionRequest request = new CreateFunctionRequest();
         request.setFunctionName(functionName);
         request.setRuntime(Runtime.Java8);
-        if(Localstack.useSSL()){
-            request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandlerSSL.class));
-            request.setHandler(SQSLambdaHandlerSSL.class.getName());
-        } else {
-            request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandler.class));
-            request.setHandler(SQSLambdaHandler.class.getName());
-        }
+        request.setRole("r1");
+        request.setCode(LocalTestUtil.createFunctionCode(SQSLambdaHandler.class));
+        request.setHandler(SQSLambdaHandler.class.getName());
         lambda.createFunction(request);
 
         // create stream
@@ -167,16 +171,60 @@ public class BasicFunctionalityTest {
 
         // push event
         clientSQS.sendMessage(queue.getQueueUrl(), testBucket);
-        Thread.sleep(500);
 
-        // Test file written by Lambda
-        ObjectListing objectListing = s3.listObjects(testBucket);
-        Assertions.assertThat(objectListing.getObjectSummaries()).hasSize(1);
-        String key = objectListing.getObjectSummaries().get(0).getKey();
-        Assertions.assertThat(key).startsWith(SQSLambdaHandler.fileName[0]);
-        Assertions.assertThat(key).endsWith(SQSLambdaHandler.fileName[1]);
-        String message = s3.getObjectAsString(testBucket, key);
-        Assertions.assertThat(message).isEqualTo(SQSLambdaHandler.DID_YOU_GET_THE_MESSAGE);
+        Runnable check = new Runnable() {
+            public void run() {
+                // Assert that file has been written by Lambda
+                ObjectListing objectListing = s3.listObjects(testBucket);
+                Assertions.assertThat(objectListing.getObjectSummaries()).hasSize(1);
+                String key = objectListing.getObjectSummaries().get(0).getKey();
+                Assertions.assertThat(key).startsWith(SQSLambdaHandler.fileName[0]);
+                Assertions.assertThat(key).endsWith(SQSLambdaHandler.fileName[1]);
+                String message = s3.getObjectAsString(testBucket, key);
+                Assertions.assertThat(message).isEqualTo(SQSLambdaHandler.DID_YOU_GET_THE_MESSAGE);
+            }
+        };
+
+        LocalTestUtil.retry(check, 5, 1);
+    }
+
+    @org.junit.Test
+    @org.junit.jupiter.api.Test
+    public void testSQSQueueAttributes() {
+        // Based on https://github.com/localstack/localstack/issues/1551
+
+        AwsClientBuilder.EndpointConfiguration endpoint = TestUtils.getEndpointConfigurationSQS();
+
+        ClientConfiguration cc = new ClientConfiguration();
+        cc.setProtocol(Protocol.HTTP);
+
+        AmazonSQSAsync sqsAsync = AmazonSQSAsyncClientBuilder.standard()
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("foo", "foo")))
+                .withEndpointConfiguration(endpoint)
+                .withClientConfiguration(cc)
+                .build();
+
+        CreateQueueResult result1 = sqsAsync.createQueue("1551-test");
+        CreateQueueResult result2 = sqsAsync.createQueue("1551-test-dlq");
+
+        final String queueArn = "QueueArn";
+        GetQueueAttributesResult dlqQueueAttributes = sqsAsync.getQueueAttributes(result2.getQueueUrl(),
+                Collections.singletonList(queueArn));
+        dlqQueueAttributes.getAttributes().get(queueArn);
+
+        // set queue attributes
+        final Map<String, String> attributes = new HashMap<>();
+        attributes.put("VisibilityTimeout", "60");
+        attributes.put("MessageRetentionPeriod", "345600");
+        attributes.put("RedrivePolicy", "{\"foo\":1}");
+        final String queueUrl = result1.getQueueUrl();
+        sqsAsync.setQueueAttributes(queueUrl, attributes);
+
+        // get and assert queue attributes
+        Map<String, String> result = sqsAsync.getQueueAttributes(queueUrl, Arrays.asList("All")).getAttributes();
+        Assert.assertEquals(result.get("MessageRetentionPeriod"), "345600");
+        Assert.assertEquals(result.get("VisibilityTimeout"), "60");
+        Assert.assertEquals(result.get("RedrivePolicy"), "{\"foo\":1}");
     }
 
     @org.junit.Test
@@ -187,7 +235,8 @@ public class BasicFunctionalityTest {
         Assertions.assertThat(buckets).isNotNull();
 
         // run S3 sample
-        S3Sample.runTest(TEST_CREDENTIALS);
+        String s3Endpoint = Localstack.INSTANCE.getEndpointS3();
+        S3Sample.runTest(TEST_CREDENTIALS, s3Endpoint);
 
         // run example with ZIP file upload
         String testBucket = UUID.randomUUID().toString();

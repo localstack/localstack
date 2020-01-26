@@ -5,12 +5,13 @@ import time
 import boto3
 import base64
 import logging
-from six import iteritems
+import six
 from localstack import config
-from localstack.constants import (REGION_LOCAL, DEFAULT_REGION, LOCALHOST,
-    ENV_DEV, APPLICATION_AMZ_JSON_1_1, APPLICATION_AMZ_JSON_1_0)
+from localstack.constants import (
+    REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
+    APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
-    run_safe, to_str, is_string, make_http_request, timestamp, is_port_open, get_service_protocol)
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -33,6 +34,9 @@ CREATE_NEW_SESSION_PER_BOTO3_CONNECTION = False
 
 # Used in AWS assume role function
 INITIAL_BOTO3_SESSION = None
+
+# Boto clients cache
+BOTO_CLIENTS_CACHE = {}
 
 # Assume role loop seconds
 DEFAULT_TIMER_LOOP_SECONDS = 60 * 50
@@ -111,11 +115,24 @@ def get_environment(env=None, region_name=None):
     return env
 
 
-def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=None):
-    """
-    Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
-    """
-    return connect_to_service(service_name, client=False, env=env, region_name=region_name, endpoint_url=endpoint_url)
+def is_local_env(env):
+    return not env or env.region == REGION_LOCAL or env.prefix == ENV_DEV
+
+
+class Boto3Session(boto3.session.Session):
+    """ Custom boto3 session that points to local endpoint URLs. """
+
+    def resource(self, service, *args, **kwargs):
+        self._fix_endpoint(kwargs)
+        return connect_to_resource(service, *args, **kwargs)
+
+    def client(self, service, *args, **kwargs):
+        self._fix_endpoint(kwargs)
+        return connect_to_service(service, *args, **kwargs)
+
+    def _fix_endpoint(self, kwargs):
+        if 'amazonaws.com' in kwargs.get('endpoint_url', ''):
+            kwargs.pop('endpoint_url')
 
 
 def get_boto3_credentials():
@@ -136,12 +153,17 @@ def get_boto3_session():
     return boto3
 
 
+def get_region():
+    # TODO look up region from context
+    return get_local_region()
+
+
 def get_local_region():
     global LOCAL_REGION
     if LOCAL_REGION is None:
         session = boto3.session.Session()
         LOCAL_REGION = session.region_name or ''
-    return LOCAL_REGION or DEFAULT_REGION
+    return LOCAL_REGION or config.DEFAULT_REGION
 
 
 def get_local_service_url(service_name_or_port):
@@ -151,7 +173,10 @@ def get_local_service_url(service_name_or_port):
     service_name = service_name_or_port
     if service_name == 's3api':
         service_name = 's3'
-    return os.environ['TEST_%s_URL' % (service_name.upper().replace('-', '_'))]
+    elif service_name == 'runtime.sagemaker':
+        service_name = 'sagemaker-runtime'
+    service_name_upper = service_name.upper().replace('-', '_').replace('.', '_')
+    return os.environ['TEST_%s_URL' % service_name_upper]
 
 
 def is_service_enabled(service_name):
@@ -164,20 +189,36 @@ def is_service_enabled(service_name):
         return False
 
 
-def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None, config=None):
+def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=None, *args, **kwargs):
+    """
+    Generic method to obtain an AWS service resource using boto3, based on environment, region, or custom endpoint_url.
+    """
+    return connect_to_service(service_name, client=False, env=env, region_name=region_name, endpoint_url=endpoint_url)
+
+
+def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None,
+        config=None, *args, **kwargs):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
+    region_name = region_name or get_region()
     env = get_environment(env, region_name=region_name)
-    my_session = get_boto3_session()
-    method = my_session.client if client else my_session.resource
-    verify = True
-    if not endpoint_url:
-        if env.region == REGION_LOCAL:
-            endpoint_url = get_local_service_url(service_name)
-            verify = False
-    region = env.region if env.region != REGION_LOCAL else get_local_region()
-    return method(service_name, region_name=region, endpoint_url=endpoint_url, verify=verify, config=config)
+    region = env.region if env.region != REGION_LOCAL else region_name
+    key_elements = [service_name, client, env, region, endpoint_url, config]
+    cache_key = '/'.join([str(k) for k in key_elements])
+    if cache_key not in BOTO_CLIENTS_CACHE:
+        # Cache clients, as this is a relatively expensive operation
+        my_session = get_boto3_session()
+        method = my_session.client if client else my_session.resource
+        verify = True
+        if not endpoint_url:
+            if is_local_env(env):
+                endpoint_url = get_local_service_url(service_name)
+                verify = False
+        BOTO_CLIENTS_CACHE[cache_key] = method(service_name, region_name=region,
+            endpoint_url=endpoint_url, verify=verify, config=config)
+
+    return BOTO_CLIENTS_CACHE[cache_key]
 
 
 class VelocityInput:
@@ -213,15 +254,19 @@ class VelocityUtil:
             s = json.dumps(s)
         return base64.b64decode(s)
 
+    def toJson(self, obj):
+        return obj and json.dumps(obj)
 
-def render_velocity_template(template, context, as_json=False):
+
+def render_velocity_template(template, context, variables={}, as_json=False):
     import airspeed
     t = airspeed.Template(template)
-    variables = {
+    var_map = {
         'input': VelocityInput(context),
         'util': VelocityUtil()
     }
-    replaced = t.merge(variables)
+    var_map.update(variables or {})
+    replaced = t.merge(var_map)
     if as_json:
         replaced = json.loads(replaced)
     return replaced
@@ -243,21 +288,60 @@ def check_valid_region(headers):
         raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
 
 
+def set_default_region_in_headers(headers):
+    auth_header = headers.get('Authorization')
+    if not auth_header:
+        return
+    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % get_region(), auth_header)
+    headers['Authorization'] = replaced
+
+
+def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace=None):
+    """ Fix the account ID in the ARNs returned in the given Flask response or string """
+    existing = existing or ['123456789', '1234567890', MOTO_ACCOUNT_ID]
+    existing = existing if isinstance(existing, list) else [existing]
+    replace = replace or TEST_AWS_ACCOUNT_ID
+    is_str_obj = is_string_or_bytes(response)
+    content = to_str(response if is_str_obj else response._content)
+
+    replace = r'arn{col}aws{col}\1{col}\2{col}{acc}{col}'.format(col=colon_delimiter, acc=replace)
+    for acc_id in existing:
+        regex = r'arn{col}aws{col}([^:%]+){col}([^:%]*){col}{acc}{col}'.format(col=colon_delimiter, acc=acc_id)
+        content = re.sub(regex, replace, content)
+
+    if not is_str_obj:
+        response._content = content
+        response.headers['content-length'] = len(response._content)
+        return response
+    return content
+
+
 def get_s3_client():
     return boto3.resource('s3',
         endpoint_url=config.TEST_S3_URL,
-        config=boto3.session.Config(
-            s3={'addressing_style': 'path'}),
+        config=boto3.session.Config(s3={'addressing_style': 'path'}),
         verify=False)
+
+
+def extract_region_from_auth_header(headers):
+    auth = headers.get('Authorization') or ''
+    region = re.sub(r'.*Credential=[^/]+/[^/]+/([^/]+)/.*', r'\1', auth)
+    region = region or get_region()
+    return region
+
+
+def extract_region_from_arn(arn):
+    parts = arn.split(':')
+    return parts[3] if len(parts) > 1 else None
 
 
 def get_account_id(account_id=None, env=None):
     if account_id:
         return account_id
     env = get_environment(env)
-    if env.region == REGION_LOCAL:
+    if is_local_env(env):
         return os.environ['TEST_AWS_ACCOUNT_ID']
-    raise Exception('Unable to determine AWS account ID')
+    raise Exception('Unable to determine AWS account ID (%s, %s)' % (account_id, env))
 
 
 def role_arn(role_name, account_id=None, env=None):
@@ -282,25 +366,48 @@ def get_iam_role(resource, env=None):
     return 'role-%s' % resource
 
 
-def dynamodb_table_arn(table_name, account_id=None):
-    account_id = get_account_id(account_id)
-    return 'arn:aws:dynamodb:%s:%s:table/%s' % (get_local_region(), account_id, table_name)
+def cloudformation_stack_arn(stack_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:cloudformation:%s:%s:stack/%s/id-1234'
+    return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def dynamodb_stream_arn(table_name, account_id=None):
+def dynamodb_table_arn(table_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:dynamodb:%s:%s:table/%s'
+    return _resource_arn(table_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
     account_id = get_account_id(account_id)
     return ('arn:aws:dynamodb:%s:%s:table/%s/stream/%s' %
-        (get_local_region(), account_id, table_name, timestamp()))
+        (get_region(), account_id, table_name, latest_stream_label))
 
 
-def lambda_function_arn(function_name, account_id=None):
-    pattern = 'arn:aws:lambda:.*:.*:function:.*'
-    if re.match(pattern, function_name):
-        return function_name
-    if ':' in function_name:
-        raise Exception('Lambda function name should not contain a colon ":"')
+def log_group_arn(group_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:logs:%s:%s:log-group:%s'
+    return _resource_arn(group_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def lambda_function_arn(function_name, account_id=None, region_name=None):
+    return lambda_function_or_layer_arn('function', function_name, account_id=account_id, region_name=region_name)
+
+
+def lambda_layer_arn(layer_name, version=None, account_id=None):
+    return lambda_function_or_layer_arn('layer', layer_name, version=None, account_id=account_id)
+
+
+def lambda_function_or_layer_arn(type, entity_name, version=None, account_id=None, region_name=None):
+    pattern = 'arn:aws:lambda:.*:.*:(function|layer):.*'
+    if re.match(pattern, entity_name):
+        return entity_name
+    if ':' in entity_name:
+        raise Exception('Lambda %s name should not contain a colon ":": %s' % (type, entity_name))
     account_id = get_account_id(account_id)
-    return pattern.replace('.*', '%s') % (get_local_region(), account_id, function_name)
+    region_name = region_name or get_region()
+    pattern = re.sub(r'\([^\|]+\|.+\)', type, pattern)
+    result = pattern.replace('.*', '%s') % (region_name, account_id, entity_name)
+    if version:
+        result = '%s:%s' (result, version)
+    return result
 
 
 def lambda_function_name(name_or_arn):
@@ -311,71 +418,115 @@ def lambda_function_name(name_or_arn):
     return parts[6]
 
 
-def state_machine_arn(name, account_id=None):
-    if ':' in name:
-        return name
-    account_id = get_account_id(account_id)
+def state_machine_arn(name, account_id=None, region_name=None):
     pattern = 'arn:aws:states:%s:%s:stateMachine:%s'
-    return pattern % (get_local_region(), account_id, name)
+    return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
+
+
+def stepfunctions_activity_arn(name, account_id=None, region_name=None):
+    pattern = 'arn:aws:states:%s:%s:activity:%s'
+    return _resource_arn(name, pattern, account_id=account_id, region_name=region_name)
 
 
 def fix_arn(arn):
     """ Function that attempts to "canonicalize" the given ARN. This includes converting
         resource names to ARNs, replacing incorrect regions, account IDs, etc. """
     if arn.startswith('arn:aws:lambda'):
-        return lambda_function_arn(lambda_function_name(arn))
+        parts = arn.split(':')
+        region = parts[3] if parts[3] in config.VALID_REGIONS else get_region()
+        return lambda_function_arn(lambda_function_name(arn), region_name=region)
     LOG.warning('Unable to fix/canonicalize ARN: %s' % arn)
     return arn
 
 
-def cognito_user_pool_arn(user_pool_id, account_id=None):
-    account_id = get_account_id(account_id)
-    return 'arn:aws:cognito-idp:%s:%s:userpool/%s' % (get_local_region(), account_id, user_pool_id)
+def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
+    pattern = 'arn:aws:cognito-idp:%s:%s:userpool/%s'
+    return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
 def kinesis_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
-    return 'arn:aws:kinesis:%s:%s:stream/%s' % (get_local_region(), account_id, stream_name)
+    return 'arn:aws:kinesis:%s:%s:stream/%s' % (get_region(), account_id, stream_name)
 
 
 def firehose_stream_arn(stream_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (get_local_region(), account_id, stream_name))
+    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (get_region(), account_id, stream_name))
 
 
 def s3_bucket_arn(bucket_name, account_id=None):
     return 'arn:aws:s3:::%s' % (bucket_name)
 
 
-def sqs_queue_arn(queue_name, account_id=None):
+def _resource_arn(name, pattern, account_id=None, region_name=None):
+    if ':' in name:
+        return name
     account_id = get_account_id(account_id)
-    # ElasticMQ sets a static region of "elasticmq"
-    return ('arn:aws:sqs:elasticmq:%s:%s' % (account_id, queue_name))
+    region_name = region_name or get_region()
+    return pattern % (region_name, account_id, name)
+
+
+def create_sqs_queue(queue_name, env=None):
+    env = get_environment(env)
+    # queue
+    conn = connect_to_service('sqs', env=env)
+    return conn.create_queue(QueueName=queue_name)
+
+
+def sqs_queue_arn(queue_name, account_id=None, region_name=None):
+    account_id = get_account_id(account_id)
+    region_name = region_name or get_region()
+    return ('arn:aws:sqs:%s:%s:%s' % (region_name, account_id, queue_name))
+
+
+def apigateway_restapi_arn(api_id, account_id=None, region_name=None):
+    account_id = get_account_id(account_id)
+    region_name = region_name or get_region()
+    return ('arn:aws:apigateway:%s:%s:/restapis/%s' % (region_name, account_id, api_id))
+
+
+def sqs_queue_name(queue_arn):
+    parts = queue_arn.split(':')
+    return queue_arn if len(parts) == 1 else parts[5]
 
 
 def sns_topic_arn(topic_name, account_id=None):
     account_id = get_account_id(account_id)
-    return ('arn:aws:sns:%s:%s:%s' % (get_local_region(), account_id, topic_name))
+    return ('arn:aws:sns:%s:%s:%s' % (get_region(), account_id, topic_name))
 
 
-def get_sqs_queue_url(queue_name):
-    client = connect_to_service('sqs')
+def get_sqs_queue_url(queue_arn):
+    region_name = extract_region_from_arn(queue_arn)
+    queue_name = sqs_queue_name(queue_arn)
+    client = connect_to_service('sqs', region_name=region_name)
     response = client.get_queue_url(QueueName=queue_name)
     return response['QueueUrl']
 
 
-def mock_aws_request_headers(service='dynamodb'):
+def sqs_receive_message(queue_arn):
+    region_name = extract_region_from_arn(queue_arn)
+    client = connect_to_service('sqs', region_name=region_name)
+    queue_url = get_sqs_queue_url(queue_arn)
+    response = client.receive_message(QueueUrl=queue_url)
+    return response
+
+
+def mock_aws_request_headers(service='dynamodb', region_name=None):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == 'kinesis':
         ctype = APPLICATION_AMZ_JSON_1_1
+    elif service == 'sqs':
+        ctype = APPLICATION_X_WWW_FORM_URLENCODED
     access_key = get_boto3_credentials().access_key
+    region_name = region_name or get_region()
     headers = {
         'Content-Type': ctype,
         'Accept-Encoding': 'identity',
         'X-Amz-Date': '20160623T103251Z',
         'Authorization': ('AWS4-HMAC-SHA256 ' +
-            'Credential=%s/20160623/us-east-1/%s/aws4_request, ' +
-            'SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234') % (access_key, service)
+            'Credential=%s/20160623/%s/%s/aws4_request, ' +
+            'SignedHeaders=content-type;host;x-amz-date;x-amz-target, Signature=1234') % (
+                access_key, region_name, service)
     }
     return headers
 
@@ -454,9 +605,9 @@ def get_apigateway_resource_for_path(api_id, path, parent=None, resources=None):
     return None
 
 
-def get_apigateway_path_for_resource(api_id, resource_id, path_suffix='', resources=None):
+def get_apigateway_path_for_resource(api_id, resource_id, path_suffix='', resources=None, region_name=None):
     if resources is None:
-        apigateway = connect_to_service(service_name='apigateway')
+        apigateway = connect_to_service(service_name='apigateway', region_name=region_name)
         resources = apigateway.get_resources(restApiId=api_id, limit=100)['items']
     target_resource = list(filter(lambda res: res['id'] == resource_id, resources))[0]
     path_part = target_resource.get('pathPart', '')
@@ -468,12 +619,13 @@ def get_apigateway_path_for_resource(api_id, resource_id, path_suffix='', resour
     parent_id = target_resource.get('parentId')
     if not parent_id:
         return '/%s' % path_suffix
-    return get_apigateway_path_for_resource(api_id, parent_id, path_suffix=path_suffix, resources=resources)
+    return get_apigateway_path_for_resource(api_id, parent_id,
+        path_suffix=path_suffix, resources=resources, region_name=region_name)
 
 
 def create_api_gateway(name, description=None, resources=None, stage_name=None,
-        enabled_api_keys=[], env=None, usage_plan_name=None):
-    client = connect_to_service('apigateway', env=env)
+        enabled_api_keys=[], env=None, usage_plan_name=None, region_name=None):
+    client = connect_to_service('apigateway', env=env, region_name=region_name)
     if not resources:
         resources = []
     if not stage_name:
@@ -490,7 +642,7 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
     resources_list = client.get_resources(restApiId=api_id)
     root_res_id = resources_list['items'][0]['id']
     # add API resources and methods
-    for path, methods in iteritems(resources):
+    for path, methods in six.iteritems(resources):
         # create resources recursively
         parent_id = root_res_id
         for path_part in path.split('/'):
@@ -507,14 +659,16 @@ def create_api_gateway(name, description=None, resources=None, stage_name=None,
             )
             # create integrations for this API resource/method
             integrations = method['integrations']
-            create_api_gateway_integrations(api_id, api_resource['id'], method, integrations, env=env)
+            create_api_gateway_integrations(api_id, api_resource['id'], method,
+                integrations, env=env, region_name=region_name)
     # deploy the API gateway
     client.create_deployment(restApiId=api_id, stageName=stage_name)
     return api
 
 
-def create_api_gateway_integrations(api_id, resource_id, method, integrations=[], env=None):
-    client = connect_to_service('apigateway', env=env)
+def create_api_gateway_integrations(api_id, resource_id, method,
+        integrations=[], env=None, region_name=None):
+    client = connect_to_service('apigateway', env=env, region_name=region_name)
     for integration in integrations:
         req_templates = integration.get('requestTemplates') or {}
         res_templates = integration.get('responseTemplates') or {}
@@ -557,12 +711,13 @@ def create_api_gateway_integrations(api_id, resource_id, method, integrations=[]
 
 
 def apigateway_invocations_arn(lambda_uri):
-    return 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' % (DEFAULT_REGION, lambda_uri)
+    return ('arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations' %
+        (get_region(), lambda_uri))
 
 
 def get_elasticsearch_endpoint(domain=None, region_name=None):
     env = get_environment(region_name=region_name)
-    if env.region == REGION_LOCAL:
+    if is_local_env(env):
         return os.environ['TEST_ELASTICSEARCH_URL']
     # get endpoint from API
     es_client = connect_to_service(service_name='es', region_name=env.region)
@@ -578,14 +733,14 @@ def connect_elasticsearch(endpoint=None, domain=None, region_name=None, env=None
     env = get_environment(env, region_name=region_name)
     verify_certs = False
     use_ssl = False
-    if not endpoint and env.region == REGION_LOCAL:
+    if not endpoint and is_local_env(env):
         endpoint = os.environ['TEST_ELASTICSEARCH_URL']
-    if not endpoint and env.region != REGION_LOCAL and domain:
+    if not endpoint and not is_local_env(env) and domain:
         endpoint = get_elasticsearch_endpoint(domain=domain, region_name=env.region)
     # use ssl?
     if 'https://' in endpoint:
         use_ssl = True
-        if env.region != REGION_LOCAL:
+        if not is_local_env(env):
             verify_certs = True
 
     if CUSTOM_BOTO3_SESSION or (ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ):

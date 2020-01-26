@@ -1,63 +1,155 @@
 import re
 import uuid
 import xmltodict
+from moto.sqs.utils import parse_message_attributes
+from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
 from requests.models import Request, Response
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
-from localstack.utils.common import to_str, md5
+from localstack.utils.common import to_str, md5, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
+from localstack.utils.aws.aws_stack import extract_region_from_auth_header
 from localstack.services.generic_proxy import ProxyListener
 
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
+SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = """
+    <?xml version="1.0"?>
+    <SendMessageResponse xmlns="%s">
+        <SendMessageResult>
+            <MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>
+            <MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>
+            <MessageId>{message_id}</MessageId>
+        </SendMessageResult>
+        <ResponseMetadata>
+            <RequestId>00000000-0000-0000-0000-000000000000</RequestId>
+        </ResponseMetadata>
+    </SendMessageResponse>
+""".strip() % XMLNS_SQS
 
-SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = (
-    '<?xml version="1.0"?>'  # noqa: W291
-    '<SendMessageResponse xmlns="' + XMLNS_SQS + '">'  # noqa: W291
-        '<SendMessageResult>'  # noqa: W291
-            '<MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>'  # noqa: W291
-            '<MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>'  # noqa: W291
-            '<MessageId>{message_id}</MessageId>'  # noqa: W291
-        '</SendMessageResult>'  # noqa: W291
-        '<ResponseMetadata>'  # noqa: W291
-            '<RequestId>00000000-0000-0000-0000-000000000000</RequestId>'  # noqa: W291
-        '</ResponseMetadata>'  # noqa: W291
-    '</SendMessageResponse>'  # noqa: W291
-)
+# list of valid attribute names, and names not supported by the backend (elasticmq)
+VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
+    'Policy', 'ReceiveMessageWaitTimeSeconds', 'RedrivePolicy', 'VisibilityTimeout']
+UNSUPPORTED_ATTRIBUTE_NAMES = [
+    'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy']
+
+# maps queue URLs to attributes set via the API
+QUEUE_ATTRIBUTES = {}
 
 
 class ProxyListenerSQS(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        if method == 'POST':
-            req_data = urlparse.parse_qs(to_str(data))
-            if 'QueueName' in req_data:
-                encoded_data = urlencode(req_data, doseq=True)
-                request = Request(data=encoded_data, headers=headers, method=method)
-                return request
-            elif req_data.get('Action', [None])[0] == 'SendMessage':
-                queue_url = req_data.get('QueueUrl', [path])[0]
-                queue_name = queue_url[queue_url.rindex('/') + 1:]
-                message_body = req_data.get('MessageBody', [None])[0]
-                message_attributes = self.format_message_attributes(req_data)
+        if method == 'OPTIONS':
+            return 200
 
-                if lambda_api.process_sqs_message(message_body, message_attributes, queue_name):
-                    # If a Lambda was listening, do not add the message to the queue
-                    new_response = Response()
-                    new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
-                        message_attr_hash=md5(data),
-                        message_body_hash=md5(message_body),
-                        message_id=str(uuid.uuid4()),
-                    )
-                    new_response.status_code = 200
-                    # TODO: Is it the correct behavior to return here - why not forward the message?
+        req_data = self.parse_request_data(method, path, data)
+
+        if req_data:
+            action = req_data.get('Action', [None])[0]
+            if action == 'SendMessage':
+                new_response = self._send_message(path, data, req_data, headers)
+                if new_response:
                     return new_response
+            elif action == 'SetQueueAttributes':
+                self._set_queue_attributes(path, req_data, headers)
+
+            if 'QueueName' in req_data:
+                encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
+                modified_url = None
+                if method == 'GET':
+                    base_path = path.partition('?')[0]
+                    modified_url = '%s?%s' % (base_path, urlencode(req_data, doseq=True))
+                request = Request(data=encoded_data, url=modified_url, headers=headers, method=method)
+                return request
 
         return True
+
+    def parse_request_data(self, method, path, data):
+        """ Extract request data either from query string (for GET) or request body (for POST). """
+        if method == 'POST':
+            return urlparse.parse_qs(to_str(data))
+        elif method == 'GET':
+            parsed_path = urlparse.urlparse(path)
+            return urlparse.parse_qs(parsed_path.query)
+        return {}
+
+    def return_response(self, method, path, data, headers, response, request_handler):
+        if method == 'OPTIONS' and path == '/':
+            # Allow CORS preflight requests to succeed.
+            return 200
+
+        if method != 'POST':
+            return
+
+        region_name = extract_region_from_auth_header(headers)
+        req_data = urlparse.parse_qs(to_str(data))
+        action = req_data.get('Action', [None])[0]
+        content_str = content_str_original = to_str(response.content)
+
+        if response.status_code >= 400:
+
+            # Since the following 2 API calls are not implemented in ElasticMQ, we're mocking them
+            # and letting them to return an empty response
+            if action == 'TagQueue':
+                new_response = Response()
+                new_response.status_code = 200
+                new_response._content = ("""
+                    <?xml version="1.0"?>
+                    <TagQueueResponse>
+                        <ResponseMetadata>
+                            <RequestId>{}</RequestId>
+                        </ResponseMetadata>
+                    </TagQueueResponse>
+                """).strip().format(uuid.uuid4())
+                return new_response
+            elif action == 'ListQueueTags':
+                new_response = Response()
+                new_response.status_code = 200
+                new_response._content = ("""
+                    <?xml version="1.0"?>
+                    <ListQueueTagsResponse xmlns="{}">
+                        <ListQueueTagsResult/>
+                        <ResponseMetadata>
+                            <RequestId>{}</RequestId>
+                        </ResponseMetadata>
+                    </ListQueueTagsResponse>
+                """).strip().format(XMLNS_SQS, uuid.uuid4())
+                return new_response
+
+            return response
+
+        self._fire_event(req_data, response)
+
+        # patch the response and add missing attributes
+        if action == 'GetQueueAttributes':
+            content_str = self._add_queue_attributes(path, req_data, content_str, headers)
+
+        # patch the response and return the correct endpoint URLs / ARNs
+        if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes'):
+            if config.USE_SSL and '<QueueUrl>http://' in content_str:
+                # return https://... if we're supposed to use SSL
+                content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
+            # expose external hostname:port
+            external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
+            content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
+                r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port), content_str)
+            # fix queue ARN
+            content_str = re.sub(r'<([a-zA-Z0-9]+)>\s*arn:aws:sqs:elasticmq:([^<]+)</([a-zA-Z0-9]+)>',
+                r'<\1>arn:aws:sqs:%s:\2</\3>' % (region_name), content_str)
+
+        if content_str_original != content_str:
+            # if changes have been made, return patched response
+            new_response = Response()
+            new_response.status_code = response.status_code
+            new_response.headers = response.headers
+            new_response._content = content_str
+            new_response.headers['content-length'] = len(new_response._content)
+            return new_response
 
     # Format of the message Name attribute is MessageAttribute.<int id>.<field>
     # Format of the Value attributes is MessageAttribute.<int id>.Value.DataType
@@ -98,10 +190,10 @@ class ProxyListenerSQS(ProxyListener):
     #      dataType: 'String'
     #    }
     # }
-
     def format_message_attributes(self, data):
+        prefix = 'MessageAttribute'
         names = []
-        for (k, name) in [(k, data[k]) for k in data if k.startswith('MessageAttribute') and k.endswith('.Name')]:
+        for (k, name) in [(k, data[k]) for k in data if k.startswith(prefix) and k.endswith('.Name')]:
             attr_name = name[0]
             k_id = k.split('.')[1]
             names.append((attr_name, k_id))
@@ -111,7 +203,7 @@ class ProxyListenerSQS(ProxyListener):
             msg_attrs[key_name] = {}
             # Find vals for each key_id
             attrs = [(k, data[k]) for k in data
-                if k.startswith('MessageAttribute.{}.'.format(key_id)) and not k.endswith('.Name')]
+                if k.startswith('{}.{}.'.format(prefix, key_id)) and not k.endswith('.Name')]
             for (attr_k, attr_v) in attrs:
                 attr_name = attr_k.split('.')[3]
                 msg_attrs[key_name][attr_name[0].lower() + attr_name[1:]] = attr_v[0]
@@ -124,76 +216,115 @@ class ProxyListenerSQS(ProxyListener):
 
         return msg_attrs
 
-    def return_response(self, method, path, data, headers, response, request_handler):
-        if method == 'OPTIONS' and path == '/':
-            # Allow CORS preflight requests to succeed.
+    @classmethod
+    def get_message_attributes_md5(self, req_data):
+        req_data = clone(req_data)
+        orig_types = {}
+        for key, entry in dict(req_data).items():
+            # Fix an issue in moto where data types like 'Number.java.lang.Integer' are
+            # not supported: Keep track of the original data type, and temporarily change
+            # it to the short form (e.g., 'Number'), before changing it back again.
+            if key.endswith('DataType'):
+                parts = entry[0].split('.')
+                if len(parts) > 2:
+                    short_type_name = parts[0]
+                    full_type_name = req_data[key][0]
+                    attr_num = key.split('.')[1]
+                    attr_name = req_data['MessageAttribute.%s.Name' % attr_num][0]
+                    orig_types[attr_name] = full_type_name
+                    req_data[key] = [short_type_name]
+                    if full_type_name not in TRANSPORT_TYPE_ENCODINGS:
+                        TRANSPORT_TYPE_ENCODINGS[full_type_name] = TRANSPORT_TYPE_ENCODINGS[short_type_name]
+        moto_message = Message('dummy_msg_id', 'dummy_body')
+        moto_message.message_attributes = parse_message_attributes(req_data)
+        for key, data_type in orig_types.items():
+            moto_message.message_attributes[key]['data_type'] = data_type
+        message_attr_hash = moto_message.attribute_md5
+        return message_attr_hash
+
+    # Format attributes as dict. Example input:
+    #  {
+    #    'Attribute.1.Name': ['Policy'],
+    #    'Attribute.1.Value': ['...']
+    #  }
+    def _format_attributes(self, req_data):
+        result = {}
+        for i in range(1, 500):
+            key1 = 'Attribute.%s.Name' % i
+            key2 = 'Attribute.%s.Value' % i
+            if key1 not in req_data:
+                break
+            key_name = req_data[key1][0]
+            key_value = req_data[key2][0]
+            result[key_name] = key_value
+        return result
+
+    def _send_message(self, path, data, req_data, headers):
+        queue_url = self._queue_url(path, req_data, headers)
+        queue_name = queue_url.rpartition('/')[2]
+        message_body = req_data.get('MessageBody', [None])[0]
+        message_attributes = self.format_message_attributes(req_data)
+        region_name = extract_region_from_auth_header(headers)
+
+        process_result = lambda_api.process_sqs_message(message_body,
+            message_attributes, queue_name, region_name=region_name)
+        if process_result:
+            # If a Lambda was listening, do not add the message to the queue
             new_response = Response()
+            message_attr_hash = self.get_message_attributes_md5(req_data)
+            new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
+                message_attr_hash=message_attr_hash,
+                message_body_hash=md5(message_body),
+                message_id=str(uuid.uuid4())
+            )
             new_response.status_code = 200
             return new_response
 
-        if method == 'POST' and path == '/':
-            req_data = urlparse.parse_qs(to_str(data))
-            action = req_data.get('Action', [None])[0]
-            event_type = None
-            queue_url = None
-            if action == 'CreateQueue':
-                event_type = event_publisher.EVENT_SQS_CREATE_QUEUE
-                response_data = xmltodict.parse(response.content)
-                if 'CreateQueueResponse' in response_data:
-                    queue_url = response_data['CreateQueueResponse']['CreateQueueResult']['QueueUrl']
-            elif action == 'DeleteQueue':
-                event_type = event_publisher.EVENT_SQS_DELETE_QUEUE
-                queue_url = req_data.get('QueueUrl', [None])[0]
+    def _set_queue_attributes(self, path, req_data, headers):
+        queue_url = self._queue_url(path, req_data, headers)
+        attrs = self._format_attributes(req_data)
+        # select only the attributes in UNSUPPORTED_ATTRIBUTE_NAMES
+        attrs = dict([(k, v) for k, v in attrs.items() if k in UNSUPPORTED_ATTRIBUTE_NAMES])
+        QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
+        QUEUE_ATTRIBUTES[queue_url].update(attrs)
 
-            if event_type and queue_url:
-                event_publisher.fire_event(event_type, payload={'u': event_publisher.get_hash(queue_url)})
+    def _add_queue_attributes(self, path, req_data, content_str, headers):
+        flags = re.MULTILINE | re.DOTALL
+        queue_url = self._queue_url(path, req_data, headers)
+        regex = r'(.*<GetQueueAttributesResult>)(.*)(</GetQueueAttributesResult>.*)'
+        attrs = re.sub(regex, r'\2', content_str, flags=flags)
+        for key, value in QUEUE_ATTRIBUTES.get(queue_url, {}).items():
+            if not re.match(r'<Name>\s*%s\s*</Name>' % key, attrs, flags=flags):
+                attrs += '<Attribute><Name>%s</Name><Value>%s</Value></Attribute>' % (key, value)
+        content_str = (re.sub(regex, r'\1', content_str, flags=flags) +
+            attrs + re.sub(regex, r'\3', content_str, flags=flags))
+        return content_str
 
-            # patch the response and return the correct endpoint URLs
-            if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues'):
-                content_str = content_str_original = to_str(response.content)
-                new_response = Response()
-                new_response.status_code = response.status_code
-                new_response.headers = response.headers
-                if config.USE_SSL and '<QueueUrl>http://' in content_str:
-                    # return https://... if we're supposed to use SSL
-                    content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
-                # expose external hostname:port
-                external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
-                content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
-                    r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port), content_str)
-                new_response._content = content_str
-                if content_str_original != new_response._content:
-                    # if changes have been made, return patched response
-                    new_response.headers['content-length'] = len(new_response._content)
-                    return new_response
+    def _fire_event(self, req_data, response):
+        action = req_data.get('Action', [None])[0]
+        event_type = None
+        queue_url = None
+        if action == 'CreateQueue':
+            event_type = event_publisher.EVENT_SQS_CREATE_QUEUE
+            response_data = xmltodict.parse(response.content)
+            if 'CreateQueueResponse' in response_data:
+                queue_url = response_data['CreateQueueResponse']['CreateQueueResult']['QueueUrl']
+        elif action == 'DeleteQueue':
+            event_type = event_publisher.EVENT_SQS_DELETE_QUEUE
+            queue_url = req_data.get('QueueUrl', [None])[0]
 
-            # Since the following 2 API calls are not implemented in ElasticMQ, we're mocking them
-            # and letting them to return an empty response
-            if action == 'TagQueue':
-                new_response = Response()
-                new_response.status_code = 200
-                new_response._content = (
-                    '<?xml version="1.0"?>'
-                    '<TagQueueResponse>'
-                        '<ResponseMetadata>'  # noqa: W291
-                            '<RequestId>{}</RequestId>'  # noqa: W291
-                        '</ResponseMetadata>'  # noqa: W291
-                    '</TagQueueResponse>'
-                ).format(uuid.uuid4())
-                return new_response
-            elif action == 'ListQueueTags':
-                new_response = Response()
-                new_response.status_code = 200
-                new_response._content = (
-                    '<?xml version="1.0"?>'
-                    '<ListQueueTagsResponse xmlns="{}">'
-                        '<ListQueueTagsResult/>'  # noqa: W291
-                        '<ResponseMetadata>'  # noqa: W291
-                            '<RequestId>{}</RequestId>'  # noqa: W291
-                        '</ResponseMetadata>'  # noqa: W291
-                    '</ListQueueTagsResponse>'
-                ).format(XMLNS_SQS, uuid.uuid4())
-                return new_response
+        if event_type and queue_url:
+            event_publisher.fire_event(event_type, payload={'u': event_publisher.get_hash(queue_url)})
+
+    def _queue_url(self, path, req_data, headers):
+        queue_url = req_data.get('QueueUrl')
+        if queue_url:
+            return queue_url[0]
+        url = config.TEST_SQS_URL
+        if headers.get('Host'):
+            url = 'http%s://%s' % ('s' if config.USE_SSL else '', headers['Host'])
+        queue_url = '%s%s' % (url, path.partition('?')[0])
+        return queue_url
 
 
 # extract the external port used by the client to make the request

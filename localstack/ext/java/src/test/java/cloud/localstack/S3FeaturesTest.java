@@ -3,32 +3,34 @@ package cloud.localstack;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.*;
+import java.net.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.http.*;
+import org.apache.http.conn.ssl.*;
+import org.apache.http.client.*;
+import org.apache.http.client.methods.*;
+import org.apache.http.entity.*;
+import org.apache.http.impl.client.*;
+
+import com.amazonaws.HttpMethod;
 import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.BucketLifecycleConfiguration;
-import com.amazonaws.services.s3.model.GetObjectRequest;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.SSEAwsKeyManagementParams;
-import com.amazonaws.services.s3.model.Tag;
-import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
-import com.amazonaws.services.s3.model.lifecycle.LifecycleTagPredicate;
+import com.amazonaws.services.s3.*;
+import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.lifecycle.*;
+
+import cloud.localstack.docker.annotation.LocalstackDockerProperties;
 
 @RunWith(LocalstackTestRunner.class)
+@LocalstackDockerProperties(services = {"s3"}, ignoreDockerRunErrors=true)
 public class S3FeaturesTest {
 
 	/**
@@ -75,7 +77,7 @@ public class S3FeaturesTest {
 
 		AmazonS3 amazonS3Client = AmazonS3ClientBuilder.standard()
 				.withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(
-						Localstack.getEndpointS3(),
+						Localstack.INSTANCE.getEndpointS3(),
 						Localstack.getDefaultRegion()))
 				.withCredentials(TestUtils.getCredentialsProvider())
 				.withChunkedEncodingDisabled(true)
@@ -101,11 +103,10 @@ public class S3FeaturesTest {
 		String bucketName = UUID.randomUUID().toString();
 		s3.createBucket(bucketName);
 
-		String keyWithUnderscores = "__key1";
-		String keyWithDashes = keyWithUnderscores.replace("_", "-");
-
 		Map<String, String> originalMetadata = new HashMap<String, String>();
-		originalMetadata.put(keyWithUnderscores, "val1");
+		originalMetadata.put("key1", "val1");
+		originalMetadata.put("key_2", "val2");
+		originalMetadata.put("__key3", "val3");
 
 		ObjectMetadata objectMetadata = new ObjectMetadata();
 		objectMetadata.setUserMetadata(originalMetadata);
@@ -118,12 +119,73 @@ public class S3FeaturesTest {
 
 		Map<String, String> receivedMetadata = objectMetadataResponse.getUserMetadata();
 
-		Map<String, String> actualResult = new HashMap<String, String>();
-		actualResult.put(keyWithDashes, "val1");
-
-		// TODO: We currently have a bug that converts underscores in metadata keys to dashes.
-		// See here for details: https://github.com/localstack/localstack/issues/459
-		Assert.assertTrue(receivedMetadata.equals(originalMetadata) || receivedMetadata.equals(actualResult) );
+		Assert.assertEquals(originalMetadata, receivedMetadata);
 	}
 
+	@Test
+	public void testListNextBatchOfObjects() {
+		AmazonS3 s3Client = TestUtils.getClientS3();
+		String s3BucketName = UUID.randomUUID().toString();
+		s3Client.createBucket(s3BucketName);
+		s3Client.putObject(s3BucketName, "key1", "content");
+		s3Client.putObject(s3BucketName, "key2", "content");
+		s3Client.putObject(s3BucketName, "key3", "content");
+
+		ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
+			.withBucketName(s3BucketName)
+			.withPrefix("")
+			.withDelimiter("/")
+			.withMaxKeys(1); // 1 Key per request
+
+		ObjectListing objectListing = s3Client.listObjects(listObjectsRequest);
+		List<Object> someObjList = new LinkedList<>();
+		someObjList.addAll(mapFilesToSomeObject(objectListing)); // puts at least 1 item into the list
+
+		while (objectListing.isTruncated()) {
+			objectListing = s3Client.listNextBatchOfObjects(objectListing);
+			someObjList.addAll(mapFilesToSomeObject(objectListing));
+		}
+		assertEquals(3, someObjList.size());
+	}
+
+	private List<Object> mapFilesToSomeObject(ObjectListing objectListing) {
+		return objectListing.getObjectSummaries()
+			.stream()
+			.map(S3ObjectSummary::getKey)
+			.collect(Collectors.toList());
+	}
+
+	@Test
+	public void test() throws Exception {
+		AmazonS3 s3client = TestUtils.getClientS3();
+		Date expiration = new Date(System.currentTimeMillis() + 1000*60*5);
+		String bucketName = UUID.randomUUID().toString();
+		String keyName = "presign-test-key";
+		s3client.createBucket(bucketName);
+
+		GeneratePresignedUrlRequest generatePresignedUrlRequest =
+			new GeneratePresignedUrlRequest(bucketName, keyName)
+				.withMethod(HttpMethod.PUT)
+				.withExpiration(expiration)
+				.withKey(keyName);
+		URL presignedUrl = s3client.generatePresignedUrl(generatePresignedUrlRequest);
+
+		// upload content
+		String content = "test content";
+		HttpPut httpPut = new HttpPut(presignedUrl.toString());
+    httpPut.setEntity(new StringEntity(content));
+		SSLContextBuilder builder = new SSLContextBuilder();
+		builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build());
+		CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
+
+		httpclient.execute(httpPut);
+		httpclient.close();
+
+		// download content
+		GetObjectRequest req = new GetObjectRequest(bucketName, keyName);
+		S3Object stream = s3client.getObject(req);
+		String result = IOUtils.toString(stream.getObjectContent());
+		Assert.assertEquals(result, content);
+	}
 }

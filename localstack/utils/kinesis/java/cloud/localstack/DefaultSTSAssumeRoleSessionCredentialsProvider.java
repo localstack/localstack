@@ -1,4 +1,4 @@
-package com.atlassian;
+package cloud.localstack;
 
 import java.util.Map;
 
@@ -17,7 +17,7 @@ import com.amazonaws.auth.AWSStaticCredentialsProvider;
  * As long lived credentials, this credentials provider attempts to uses the following:
  * - an STS token, via environment variables AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
  * - instance profile credentials provider (see Google hits for "EC2 instance metadata service")
- * 
+ *
  * TODO: Potentially we could simply use the default credentials provider to obtain the long-lived credentials.
  *
  * @author Waldemar Hummer

@@ -1,8 +1,9 @@
-import re
 from docopt import docopt
 from localstack import config
-from localstack.services import infra
-from localstack.utils.common import run
+from localstack.utils.bootstrap import (
+    start_infra_in_docker, start_infra_locally, run, MAIN_CONTAINER_NAME, docker_container_running)
+
+# Note: make sure we don't have imports at the root level here
 
 
 def cmd_infra(argv, args):
@@ -11,10 +12,11 @@ Usage:
   localstack infra <subcommand> [options]
 
 Commands:
-  infra start         Start the local infrastructure
+  infra start       Start the local infrastructure
 
 Options:
-  --docker            Run the infrastructure in a Docker container
+  --docker          Run the infrastructure in a Docker container (default)
+  --host            Run the infrastructure on the local host
     """
     if argv[0] == 'start':
         argv = ['infra', 'start'] + argv[1:]
@@ -22,11 +24,14 @@ Options:
         args['<args>'] = ['start'] + args['<args>']
     args.update(docopt(cmd_infra.__doc__.strip(), argv=argv))
     if args['<subcommand>'] == 'start':
+        if args['--docker'] and args['--host']:
+            raise Exception('Please specify either --docker or --host')
         print('Starting local dev environment. CTRL-C to quit.')
-        if args['--docker']:
-            infra.start_infra_in_docker()
+        in_docker = args['--docker'] or not args['--host']
+        if in_docker:
+            start_infra_in_docker()
         else:
-            infra.start_infra()
+            start_infra_locally()
 
 
 def cmd_web(argv, args):
@@ -61,13 +66,10 @@ Commands:
 Options:
     """
     args.update(docopt(cmd_ssh.__doc__.strip(), argv=argv))
-    lines = run('docker ps').split('\n')[1:]
-    lines = [l for l in lines if 'localstack' in l]
-    if len(lines) != 1:
-        raise Exception('Expected 1 running "localstack" container, but found %s' % len(lines))
-    cid = re.split(r'\s', lines[0])[0]
+    if not docker_container_running(MAIN_CONTAINER_NAME):
+        raise Exception('Expected 1 running "%s" container, but found none' % MAIN_CONTAINER_NAME)
     try:
-        process = run('docker exec -it %s bash' % cid, tty=True)
+        process = run('docker exec -it %s bash' % MAIN_CONTAINER_NAME, tty=True)
         process.wait()
     except KeyboardInterrupt:
         pass

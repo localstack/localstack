@@ -6,7 +6,7 @@ from io import BytesIO
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, to_bytes
 
-TEST_BUCKET_NAME = 'test_bucket'
+TEST_BUCKET_NAME = 'test-bucket'
 KINESIS_STREAM_NAME = 'test_stream_1'
 MSG_BODY_RAISE_ERROR_FLAG = 'raise_error'
 MSG_BODY_MESSAGE_TARGET = 'message_target'
@@ -33,6 +33,9 @@ def handler(event, context):
     LOGGER.info('Lambda log message - logging module')
     print('Lambda log message - print function')
 
+    if MSG_BODY_RAISE_ERROR_FLAG in event:
+        raise Exception('Test exception (this is intentional)')
+
     if 'httpMethod' in event:
         # looks like this is a call from an AWS_PROXY API Gateway
         try:
@@ -43,10 +46,13 @@ def handler(event, context):
         body['requestContext'] = event.get('requestContext')
         body['queryStringParameters'] = event.get('queryStringParameters')
         body['httpMethod'] = event.get('httpMethod')
+        status_code = body.get('return_status_code', 200)
+        headers = body.get('return_headers', {})
+        body = body.get('return_raw_body') or body
         return {
             'body': body,
-            'statusCode': body.get('return_status_code', 200),
-            'headers': body.get('return_headers', {})
+            'statusCode': status_code,
+            'headers': headers
         }
 
     if 'Records' not in event:
@@ -116,7 +122,10 @@ def deserialize_event(event):
     if sqs:
         result = {'data': event['body']}
         return result
-    return event.get('Sns')
+    sns = event.get('Sns')
+    if sns:
+        result = {'data': sns['Message']}
+        return result
 
 
 def forward_events(records):

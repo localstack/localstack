@@ -16,12 +16,12 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A wrapper around the docker executable process. The DOCKER_LOCATION environment variable
+ * A wrapper around the docker executable. The DOCKER_LOCATION environment variable
  * can be used if docker is not installed in a default location.
  */
 public class DockerExe {
 
-    private static final int DEFAULT_WAIT_TIME_MINUTES = 1;
+    private static final int DEFAULT_WAIT_TIME_MINUTES = 2;
 
     private static final List<String> POSSIBLE_EXE_LOCATIONS = Arrays.asList(
             System.getenv("DOCKER_LOCATION"),
@@ -29,14 +29,11 @@ public class DockerExe {
             "/usr/local/bin/docker",
             "/usr/bin/docker");
 
-
     private final String exeLocation;
-
 
     public DockerExe() {
         this.exeLocation = getDockerExeLocation();
     }
-
 
     private String getDockerExeLocation() {
         return POSSIBLE_EXE_LOCATIONS.stream()
@@ -46,12 +43,15 @@ public class DockerExe {
                 .orElseThrow(() -> new IllegalStateException("Cannot find docker executable."));
     }
 
-
     public String execute(List<String> args) {
         return execute(args, DEFAULT_WAIT_TIME_MINUTES);
     }
 
     public String execute(List<String> args, int waitTimeoutMinutes) {
+        return execute(args, waitTimeoutMinutes, Arrays.asList());
+    }
+
+    public String execute(List<String> args, int waitTimeoutMinutes, List<Integer> errorCodes) {
         try {
             List<String> command = new ArrayList<>();
             command.add(exeLocation);
@@ -67,17 +67,24 @@ public class DockerExe {
 
             String output = outputFuture.get(waitTimeoutMinutes, TimeUnit.MINUTES);
             process.waitFor(waitTimeoutMinutes, TimeUnit.MINUTES);
+            int code = process.exitValue();
             exec.shutdown();
+
+            if (errorCodes.contains(code)) {
+                throw new RuntimeException("Error status code " + code + " returned from process. Output: " + output);
+            }
 
             return output;
         } catch (Exception ex) {
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
             throw new RuntimeException("Failed to execute command", ex);
         }
     }
 
-
     private String handleOutput(Process process) {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream(), UTF_8));
-        return reader.lines().collect(joining(System.lineSeparator()));
+        BufferedReader stdout = new BufferedReader(new InputStreamReader(process.getInputStream(), UTF_8));
+        return stdout.lines().collect(joining(System.lineSeparator()));
     }
 }

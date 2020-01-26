@@ -2,15 +2,17 @@ import re
 import os
 import json
 import time
+import shutil
 import unittest
+import six
 from io import BytesIO
-from requests.models import Response
 from localstack import config
 from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSION
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    short_uid, load_file, to_str, mkdir, download, run_safe, get_free_tcp_port, get_service_protocol)
+    unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
+    run_safe, get_free_tcp_port, get_service_protocol, retry)
 from localstack.services.infra import start_proxy
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
@@ -19,6 +21,7 @@ from localstack.services.awslambda.lambda_api import (
     use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_CUSTOM_RUNTIME
 )
+from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.py')
@@ -28,6 +31,7 @@ TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.rb')
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, 'lambdas', 'dotnetcore2', 'dotnetcore2.zip')
 TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, 'lambdas', 'custom-runtime')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', 'localstack-utils-tests.jar')
+TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(THIS_FOLDER, 'lambdas', 'java', 'lambda-function-with-lib-0.0.1.jar')
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
@@ -45,7 +49,8 @@ MAVEN_BASE_URL = 'https://repo.maven.apache.org/maven2'
 TEST_LAMBDA_JAR_URL = ('{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar').format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name='localstack-utils')
 
-TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna']
+TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests',
+    'psutil', 'urllib3', 'chardet', 'certifi', 'idna', 'pip', 'dns']
 
 
 class LambdaTestBase(unittest.TestCase):
@@ -76,7 +81,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             return len((run_safe(ddb_client.scan, TableName=db_table) or {'Items': []})['Items'])
 
         items_before = num_items()
-        self.run_forward_to_fallback_url('dynamodb://%s' % db_table)
+        self._run_forward_to_fallback_url('dynamodb://%s' % db_table)
         items_after = num_items()
         self.assertEqual(items_after, items_before + 3)
 
@@ -84,22 +89,19 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 records.append(data)
-                response = Response()
-                response.status_code = 200
-                response._content = ''
-                return response
+                return 200
 
         records = []
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
 
         items_before = len(records)
-        self.run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
+        self._run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
         items_after = len(records)
         self.assertEqual(items_after, items_before + 3)
         proxy.stop()
 
-    def run_forward_to_fallback_url(self, url, num_requests=3):
+    def _run_forward_to_fallback_url(self, url, num_requests=3):
         lambda_client = aws_stack.connect_to_service('lambda')
         config.LAMBDA_FALLBACK_URL = url
         try:
@@ -109,28 +111,77 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         finally:
             config.LAMBDA_FALLBACK_URL = ''
 
+    def test_dead_letter_queue(self):
+        sqs_client = aws_stack.connect_to_service('sqs')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # create DLQ and Lambda function
+        queue_name = 'test-%s' % short_uid()
+        lambda_name = 'test-%s' % short_uid()
+        queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON),
+            get_content=True, libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36)
+        testutil.create_lambda_function(func_name=lambda_name, zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON36, DeadLetterConfig={'TargetArn': queue_arn})
+
+        # invoke Lambda, triggering an error
+        payload = {
+            lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1
+        }
+        lambda_client.invoke(FunctionName=lambda_name,
+            Payload=json.dumps(payload), InvocationType='Event')
+
+        # assert that message has been received on the DLQ
+        def receive_dlq():
+            result = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+            self.assertGreater(len(result['Messages']), 0)
+            msg_attrs = result['Messages'][0]['MessageAttributes']
+            self.assertIn('RequestID', msg_attrs)
+            self.assertIn('ErrorCode', msg_attrs)
+            self.assertIn('ErrorMessage', msg_attrs)
+        retry(receive_dlq, retries=8, sleep=2)
+
+    def test_add_lambda_permission(self):
+        iam_client = aws_stack.connect_to_service('iam')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # create lambda permission
+        action = 'lambda:InvokeFunction'
+        sid = 's3'
+        resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+            StatementId=sid, Principal='s3.amazonaws.com', SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+        self.assertIn('Statement', resp)
+        # fetch lambda policy
+        policy = lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
+        self.assertIsInstance(policy, six.string_types)
+        policy = json.loads(to_str(policy))
+        self.assertEqual(policy['Statement'][0]['Action'], action)
+        self.assertEqual(policy['Statement'][0]['Sid'], sid)
+        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
+        # fetch IAM policy
+        policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
+        self.assertEqual(len(matching), 1)
+        self.assertIn(':policy/', matching[0]['Arn'])
+
+        # remove permission that we just added
+        resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
+            StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
         cls.s3_client = aws_stack.connect_to_service('s3')
-
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_PY,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
+        Util.create_function(TEST_LAMBDA_PYTHON, TEST_LAMBDA_NAME_PY,
+            runtime=LAMBDA_RUNTIME_PYTHON27, libs=TEST_LAMBDA_LIBS)
 
     @classmethod
     def tearDownClass(cls):
-        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_PY)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_PY)
 
     def test_invocation_type_not_set(self):
         result = self.lambda_client.invoke(
@@ -165,28 +216,32 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual(result['StatusCode'], 204)
 
     def test_lambda_environment(self):
+        vars = {'Hello': 'World'}
         zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_ENV),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
+            load_file(TEST_LAMBDA_ENV), get_content=True,
+            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
         testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_ENV,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27,
-            envvars={'Hello': 'World'}
-        )
+            func_name=TEST_LAMBDA_NAME_ENV, zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON27, envvars=vars)
+
+        # invoke function and assert result contains env vars
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_ENV, Payload=b'{}')
         result_data = result['Payload']
-
         self.assertEqual(result['StatusCode'], 200)
-        self.assertDictEqual(json.load(result_data), {'Hello': 'World'})
+        self.assertDictEqual(json.load(result_data), vars)
+
+        # get function config and assert result contains env vars
+        result = self.lambda_client.get_function_configuration(
+            FunctionName=TEST_LAMBDA_NAME_ENV)
+        self.assertEqual(result['Environment'], {'Variables': vars})
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_ENV)
 
     def test_invocation_with_qualifier(self):
         lambda_name = 'test_lambda_%s' % short_uid()
-        bucket_name = 'test_bucket_lambda2'
+        bucket_name = 'test-bucket-lambda2'
         bucket_key = 'test_lambda.zip'
 
         # upload zip file to S3
@@ -235,9 +290,12 @@ class TestPythonRuntimes(LambdaTestBase):
             expected.append('.*Lambda log message - logging module')
         self.check_lambda_logs(lambda_name, expected_lines=expected)
 
+        # clean up
+        testutil.delete_lambda_function(lambda_name)
+
     def test_upload_lambda_from_s3(self):
         lambda_name = 'test_lambda_%s' % short_uid()
-        bucket_name = 'test_bucket_lambda'
+        bucket_name = 'test-bucket-lambda'
         bucket_key = 'test_lambda.zip'
 
         # upload zip file to S3
@@ -272,6 +330,9 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual('$LATEST', context['function_version'])
         self.assertEqual(lambda_name, context['function_name'])
 
+        # clean up
+        testutil.delete_lambda_function(lambda_name)
+
     def test_python_lambda_running_in_docker(self):
         if not use_docker():
             return
@@ -294,6 +355,24 @@ class TestPythonRuntimes(LambdaTestBase):
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(to_str(result_data).strip(), '{}')
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_PY3)
+
+    def test_handler_in_submodule(self):
+        func_name = 'lambda-%s' % short_uid()
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON), get_content=True,
+            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36,
+            file_name='abc/def/main.py')
+        testutil.create_lambda_function(func_name=func_name, zip_file=zip_file,
+            handler='abc.def.main.handler', runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        # invoke function and assert result
+        result = self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
+        result_data = json.loads(result['Payload'].read())
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(result_data['event'], json.loads('{}'))
 
 
 class TestNodeJSRuntimes(LambdaTestBase):
@@ -323,6 +402,9 @@ class TestNodeJSRuntimes(LambdaTestBase):
         # assert that logs are present
         expected = ['.*Node.js Lambda handler executing.']
         self.check_lambda_logs(TEST_LAMBDA_NAME_JS, expected_lines=expected)
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
 
 class TestCustomRuntimes(LambdaTestBase):
@@ -357,6 +439,9 @@ class TestCustomRuntimes(LambdaTestBase):
         self.check_lambda_logs(
             TEST_LAMBDA_NAME_CUSTOM_RUNTIME, expected_lines=expected)
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_CUSTOM_RUNTIME)
+
 
 class TestDotNetCoreRuntimes(LambdaTestBase):
     @classmethod
@@ -390,6 +475,9 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
         expected = ['Running .NET Core 2.0 Lambda']
         self.check_lambda_logs(TEST_LAMBDA_NAME_DOTNETCORE2, expected_lines=expected)
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE2)
+
 
 class TestRubyRuntimes(LambdaTestBase):
     @classmethod
@@ -415,6 +503,9 @@ class TestRubyRuntimes(LambdaTestBase):
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(to_str(result_data).strip(), '{}')
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_RUBY)
+
 
 class TestJavaRuntimes(LambdaTestBase):
     @classmethod
@@ -429,6 +520,7 @@ class TestJavaRuntimes(LambdaTestBase):
         # Lambda supports single JAR deployments without the zip,
         # so we upload the JAR directly.
         cls.test_java_jar = load_file(TEST_LAMBDA_JAVA, mode='rb')
+        cls.test_java_zip = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JAVA,
             zip_file=cls.test_java_jar,
@@ -447,10 +539,17 @@ class TestJavaRuntimes(LambdaTestBase):
         # deploy lambda - Java with serializable input object
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JAVA_SERIALIZABLE,
-            zip_file=cls.test_java_jar,
+            zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
             handler='cloud.localstack.sample.SerializedInputLambdaHandler'
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_STREAM)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_SERIALIZABLE)
 
     def test_java_runtime(self):
         self.assertIsNotNone(self.test_java_jar)
@@ -461,6 +560,32 @@ class TestJavaRuntimes(LambdaTestBase):
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertIn('LinkedHashMap', to_str(result_data))
+
+    def test_java_runtime_with_lib(self):
+        java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode='rb')
+
+        # create ZIP file from JAR file
+        jar_dir = new_tmp_dir()
+        zip_dir = new_tmp_dir()
+        unzip(TEST_LAMBDA_JAVA_WITH_LIB, jar_dir)
+        shutil.move(os.path.join(jar_dir, 'lib'), os.path.join(zip_dir, 'lib'))
+        jar_without_libs_file = testutil.create_zip_file(jar_dir)
+        shutil.copy(jar_without_libs_file, os.path.join(zip_dir, 'lib', 'lambda.jar'))
+        java_zip_with_lib = testutil.create_zip_file(zip_dir, get_content=True)
+
+        for archive in [java_jar_with_lib, java_zip_with_lib]:
+            lambda_name = 'test-%s' % short_uid()
+            testutil.create_lambda_function(func_name=lambda_name,
+                zip_file=archive, runtime=LAMBDA_RUNTIME_JAVA8,
+                handler='cloud.localstack.sample.LambdaHandlerWithLib')
+
+            result = self.lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
+            result_data = result['Payload'].read()
+
+            self.assertEqual(result['StatusCode'], 200)
+            self.assertIn('echo', to_str(result_data))
+            # clean up
+            testutil.delete_lambda_function(lambda_name)
 
     def test_sns_event(self):
         result = self.lambda_client.invoke(
@@ -590,6 +715,9 @@ class TestDockerBehaviour(LambdaTestBase):
 
         self.assertEqual(len(executor.get_all_container_names()), 0)
 
+        # clean up
+        testutil.delete_lambda_function(func_name)
+
     def test_docker_command_for_separate_container_lambda_executor(self):
         # run these tests only for the "separate containers" Lambda executor
         if not isinstance(lambda_api.LAMBDA_EXECUTOR,
@@ -656,3 +784,16 @@ class TestDockerBehaviour(LambdaTestBase):
         executor.function_invoke_times[func_arn] = time.time() - lambda_executors.MAX_CONTAINER_IDLE_TIME_MS
         executor.idle_container_destroyer()
         self.assertEqual(len(executor.get_all_container_names()), 0)
+
+        # clean up
+        testutil.delete_lambda_function(func_name)
+
+
+class Util(object):
+    @classmethod
+    def create_function(cls, file, name, runtime=None, libs=None):
+        runtime = runtime or LAMBDA_RUNTIME_PYTHON27
+        zip_file = testutil.create_lambda_archive(
+            load_file(file), get_content=True, libs=libs, runtime=runtime)
+        testutil.create_lambda_function(
+            func_name=name, zip_file=zip_file, runtime=runtime)

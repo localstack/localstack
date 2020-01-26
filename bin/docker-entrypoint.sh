@@ -4,7 +4,15 @@ set -eo pipefail
 shopt -s nullglob
 
 # Strip `LOCALSTACK_` prefix in environment variables name (except LOCALSTACK_HOSTNAME)
-source <(env | grep -v -e '^LOCALSTACK_HOSTNAME' | sed -ne 's/^LOCALSTACK_\([^=]\+\)=.*/export \1=${LOCALSTACK_\1}/p')
+source <(
+  env |
+  grep -v -e '^LOCALSTACK_HOSTNAME' |
+  grep -v -e '^LOCALSTACK_[[:digit:]]' | # See issue #1387
+  sed -ne 's/^LOCALSTACK_\([^=]\+\)=.*/export \1=${LOCALSTACK_\1}/p'
+)
+
+cat /dev/null > /tmp/localstack_infra.log
+cat /dev/null > /tmp/localstack_infra.err
 
 supervisord -c /etc/supervisord.conf &
 
@@ -25,6 +33,4 @@ function run_startup_scripts {
 
 run_startup_scripts &
 
-touch /tmp/localstack_infra.log
-touch /tmp/localstack_infra.err
 tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err

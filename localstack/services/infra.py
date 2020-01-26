@@ -8,42 +8,28 @@ import traceback
 import logging
 import boto3
 import subprocess
-import six
-import warnings
-import pkgutil
 from requests.models import Response
 from localstack import constants, config
 from localstack.constants import (
-    ENV_DEV, DEFAULT_REGION, LOCALSTACK_VENV_FOLDER,
-    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_IAM_BACKEND)
-from localstack.config import USE_SSL
+    ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS,
+    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
+    DEFAULT_PORT_EC2_BACKEND, DEFAULT_PORT_EVENTS_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
-from localstack.utils.common import (run, TMP_THREADS, in_ci, run_cmd_safe, get_free_tcp_port,
-    TIMESTAMP_FORMAT, FuncThread, ShellCommandThread, mkdir, get_service_protocol, docker_container_running)
+from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
+    FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
+from localstack.utils.server import multiserver
+from localstack.utils.bootstrap import (
+    setup_logging, is_debug, canonicalize_api_names, load_plugins, in_ci)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import GenericProxy, GenericProxyHandler
+from localstack.services.generic_proxy import GenericProxy, GenericProxyHandler, ProxyListener
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
-
-# maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
-PLUGINS_LOADED = {}
-
-# maps from API names to list of other API names that they depend on
-API_DEPENDENCIES = {
-    'dynamodbstreams': ['kinesis'],
-    'lambda': ['logs'],
-    'es': ['elasticsearch']
-}
-# composites define an abstract name like "serverless" that maps to a set of services
-API_COMPOSITES = {
-    'serverless': ['iam', 'lambda', 'dynamodb', 'apigateway', 's3', 'sns']
-}
 
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
@@ -54,17 +40,6 @@ LOG = logging.getLogger(os.path.basename(__file__))
 # map of service plugins, mapping from service name to plugin details
 SERVICE_PLUGINS = {}
 
-# whether or not to manually fix permissions on /var/run/docker.sock (currently disabled)
-DO_CHMOD_DOCKER_SOCK = False
-
-# plugin scopes
-PLUGIN_SCOPE_SERVICES = 'services'
-PLUGIN_SCOPE_COMMANDS = 'commands'
-
-# log format strings
-LOG_FORMAT = '%(asctime)s:%(levelname)s:%(name)s: %(message)s'
-LOG_DATE_FORMAT = TIMESTAMP_FORMAT
-
 
 # -----------------
 # PLUGIN UTILITIES
@@ -73,11 +48,12 @@ LOG_DATE_FORMAT = TIMESTAMP_FORMAT
 
 class Plugin(object):
 
-    def __init__(self, name, start, check=None, listener=None):
+    def __init__(self, name, start, check=None, listener=None, priority=0):
         self.plugin_name = name
         self.start_function = start
         self.listener = listener
         self.check_function = check
+        self.priority = priority
 
     def start(self, asynchronous):
         kwargs = {
@@ -97,54 +73,11 @@ class Plugin(object):
 
 
 def register_plugin(plugin):
-    SERVICE_PLUGINS[plugin.name()] = plugin
-
-
-def load_plugin_from_path(file_path, scope=None):
-    if os.path.exists(file_path):
-        module = re.sub(r'(^|.+/)([^/]+)/plugins.py', r'\2', file_path)
-        method_name = 'register_localstack_plugins'
-        scope = scope or PLUGIN_SCOPE_SERVICES
-        if scope == PLUGIN_SCOPE_COMMANDS:
-            method_name = 'register_localstack_commands'
-        try:
-            namespace = {}
-            exec('from %s.plugins import %s' % (module, method_name), namespace)
-            method_to_execute = namespace[method_name]
-        except Exception as e:
-            if not re.match(r'.*cannot import name .*%s.*' % method_name, str(e)):
-                LOG.debug('Unable to load plugins from module %s: %s' % (module, e))
+    existing = SERVICE_PLUGINS.get(plugin.name())
+    if existing:
+        if existing.priority > plugin.priority:
             return
-        try:
-            return method_to_execute()
-        except Exception as e:
-            LOG.warning('Unable to load plugins from file %s: %s' % (file_path, e))
-
-
-def load_plugins(scope=None):
-    scope = scope or PLUGIN_SCOPE_SERVICES
-    if PLUGINS_LOADED.get(scope):
-        return PLUGINS_LOADED[scope]
-
-    setup_logging()
-
-    loaded_files = []
-    result = []
-    for module in pkgutil.iter_modules():
-        file_path = None
-        if six.PY3 and not isinstance(module, tuple):
-            file_path = '%s/%s/plugins.py' % (module.module_finder.path, module.name)
-        elif six.PY3 or isinstance(module[0], pkgutil.ImpImporter):
-            if hasattr(module[0], 'path'):
-                file_path = '%s/%s/plugins.py' % (module[0].path, module[1])
-        if file_path and file_path not in loaded_files:
-            plugin_config = load_plugin_from_path(file_path, scope=scope)
-            if plugin_config:
-                result.append(plugin_config)
-            loaded_files.append(file_path)
-    # set global flag
-    PLUGINS_LOADED[scope] = result
-    return result
+    SERVICE_PLUGINS[plugin.name()] = plugin
 
 
 # -----------------------
@@ -152,7 +85,13 @@ def load_plugins(scope=None):
 # -----------------------
 
 
-class ConfigUpdateProxyListener(object):
+def update_config_variable(variable, new_value):
+    if new_value is not None:
+        LOG.info('Updating value of config variable "%s": %s' % (variable, new_value))
+        setattr(config, variable, new_value)
+
+
+class ConfigUpdateProxyListener(ProxyListener):
     """ Default proxy listener that intercepts requests to retrieve or update config variables. """
 
     def forward_request(self, method, path, data, headers):
@@ -167,9 +106,7 @@ class ConfigUpdateProxyListener(object):
             response.status_code = 400
             return response
         new_value = data.get('value')
-        if new_value is not None:
-            LOG.info('Updating value of config variable "%s": %s' % (variable, new_value))
-            setattr(config, variable, new_value)
+        update_config_variable(variable, new_value)
         value = getattr(config, variable, None)
         result = {'variable': variable, 'value': value}
         response._content = json.dumps(result)
@@ -206,15 +143,15 @@ def start_cloudwatch_logs(port=None, asynchronous=False):
     return start_moto_server('logs', port, name='CloudWatch Logs', asynchronous=asynchronous)
 
 
+def start_events(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_EVENTS
+    return start_moto_server('events', port, name='CloudWatch Events', asynchronous=asynchronous,
+        backend_port=DEFAULT_PORT_EVENTS_BACKEND, update_listener=update_listener)
+
+
 def start_sts(port=None, asynchronous=False):
     port = port or config.PORT_STS
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
-
-
-def start_iam(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_IAM
-    return start_moto_server('iam', port, name='IAM', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_IAM_BACKEND, update_listener=update_listener)
 
 
 def start_redshift(port=None, asynchronous=False):
@@ -262,24 +199,59 @@ def start_secretsmanager(port=None, asynchronous=False):
     return start_moto_server('secretsmanager', port, name='Secrets Manager', asynchronous=asynchronous)
 
 
+def start_ec2(port=None, asynchronous=False, update_listener=None):
+    port = port or config.PORT_EC2
+    return start_moto_server('ec2', port, name='EC2', asynchronous=asynchronous,
+        backend_port=DEFAULT_PORT_EC2_BACKEND, update_listener=update_listener)
+
+
 # ---------------
 # HELPER METHODS
 # ---------------
 
-def setup_logging():
-    # determine and set log level
-    log_level = logging.DEBUG if is_debug() else logging.INFO
-    logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
-    # disable some logs and warnings
-    warnings.filterwarnings('ignore')
-    logging.captureWarnings(True)
-    logging.getLogger('boto3').setLevel(logging.INFO)
-    logging.getLogger('s3transfer').setLevel(logging.INFO)
-    logging.getLogger('docker').setLevel(logging.WARNING)
-    logging.getLogger('urllib3').setLevel(logging.WARNING)
-    logging.getLogger('requests').setLevel(logging.WARNING)
-    logging.getLogger('botocore').setLevel(logging.ERROR)
-    logging.getLogger('elasticsearch').setLevel(logging.ERROR)
+
+def set_service_status(data):
+    command = data.get('command')
+    service = data.get('service')
+    service_ports = config.parse_service_ports()
+    if command == 'start':
+        existing = service_ports.get(service)
+        port = DEFAULT_SERVICE_PORTS.get(service)
+        if existing:
+            status = get_service_status(service, port)
+            if status == 'running':
+                return
+        key_upper = service.upper().replace('-', '_')
+        port_variable = 'PORT_%s' % key_upper
+        service_list = os.environ.get('SERVICES', '').strip()
+        services = [e for e in re.split(r'[\s,]+', service_list) if e]
+        contained = [s for s in services if s.startswith(service)]
+        if not contained:
+            services.append(service)
+        update_config_variable(port_variable, port)
+        new_service_list = ','.join(services)
+        os.environ['SERVICES'] = new_service_list
+        config.populate_configs()
+        LOG.info('Starting service %s on port %s' % (service, port))
+        SERVICE_PLUGINS[service].start(asynchronous=True)
+    return {}
+
+
+def get_services_status():
+    result = {}
+    for service, port in config.parse_service_ports().items():
+        status = get_service_status(service, port)
+        result[service] = {
+            'port': port,
+            'status': status
+        }
+    return result
+
+
+def get_service_status(service, port=None):
+    port = port or config.parse_service_ports().get(service)
+    status = 'disabled' if (port or 0) <= 0 else 'running' if is_port_open(port) else 'stopped'
+    return status
 
 
 def restore_persisted_data(apis):
@@ -301,10 +273,6 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def is_debug():
-    return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
-
-
 def do_run(cmd, asynchronous, print_output=False, env_vars={}):
     sys.stdout.flush()
     if asynchronous:
@@ -315,8 +283,7 @@ def do_run(cmd, asynchronous, print_output=False, env_vars={}):
         t.start()
         TMP_THREADS.append(t)
         return t
-    else:
-        return run(cmd)
+    return run(cmd, env_vars=env_vars)
 
 
 def start_proxy_for_service(service_name, port, default_backend_port, update_listener, quiet=False, params={}):
@@ -326,26 +293,32 @@ def start_proxy_for_service(service_name, port, default_backend_port, update_lis
     return start_proxy(port, backend_url=backend_url, update_listener=update_listener, quiet=quiet, params=params)
 
 
-def start_proxy(port, backend_url, update_listener, quiet=False, params={}):
+def start_proxy(port, backend_url, update_listener=None, quiet=False, params={}):
     proxy_thread = GenericProxy(port=port, forward_url=backend_url,
-        ssl=USE_SSL, update_listener=update_listener, quiet=quiet, params=params)
+        ssl=config.USE_SSL, update_listener=update_listener, quiet=quiet, params=params)
     proxy_thread.start()
     TMP_THREADS.append(proxy_thread)
     return proxy_thread
 
 
 def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
-    moto_server_cmd = '%s/bin/moto_server' % LOCALSTACK_VENV_FOLDER
-    if not os.path.exists(moto_server_cmd):
-        moto_server_cmd = run('which moto_server').strip()
-    if USE_SSL and not backend_port:
-        backend_port = get_free_tcp_port()
-    cmd = 'VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s' % (moto_server_cmd, key, backend_port or port, constants.BIND_HOST)
     if not name:
         name = key
     print('Starting mock %s (%s port %s)...' % (name, get_service_protocol(), port))
+    if config.USE_SSL and not backend_port:
+        backend_port = get_free_tcp_port()
     if backend_port:
         start_proxy_for_service(key, port, backend_port, update_listener)
+    if config.BUNDLE_API_PROCESSES:
+        return multiserver.start_api_server(key, backend_port or port)
+    return start_moto_server_separate(key, port, name=name, backend_port=backend_port, asynchronous=asynchronous)
+
+
+def start_moto_server_separate(key, port, name=None, backend_port=None, asynchronous=False):
+    moto_server_cmd = '%s/bin/moto_server' % LOCALSTACK_VENV_FOLDER
+    if not os.path.exists(moto_server_cmd):
+        moto_server_cmd = run('which moto_server').strip()
+    cmd = 'VALIDATE_LAMBDA_S3=0 %s %s -p %s -H %s' % (moto_server_cmd, key, backend_port or port, constants.BIND_HOST)
     return do_run(cmd, asynchronous)
 
 
@@ -421,162 +394,26 @@ def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=
 
 
 # -------------
-# DOCKER STARTUP
-# -------------
-
-
-def start_infra_in_docker():
-
-    container_name = 'localstack_main'
-
-    if docker_container_running(container_name):
-        raise Exception('LocalStack container named "%s" is already running' % container_name)
-
-    # load plugins before starting the docker container
-    plugin_configs = load_plugins()
-    plugin_run_params = ' '.join([
-        entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
-
-    # prepare APIs
-    canonicalize_api_names()
-
-    services = os.environ.get('SERVICES', '')
-    entrypoint = os.environ.get('ENTRYPOINT', '')
-    cmd = os.environ.get('CMD', '')
-    user_flags = os.environ.get('DOCKER_FLAGS', '')
-    image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
-    service_ports = config.SERVICE_PORTS
-    force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
-
-    # construct port mappings
-    ports_list = sorted(service_ports.values())
-    start_port = 0
-    last_port = 0
-    port_ranges = []
-    for i in range(0, len(ports_list)):
-        if not start_port:
-            start_port = ports_list[i]
-        if not last_port:
-            last_port = ports_list[i]
-        if ports_list[i] > last_port + 1:
-            port_ranges.append([start_port, last_port])
-            start_port = ports_list[i]
-        elif i >= len(ports_list) - 1:
-            port_ranges.append([start_port, ports_list[i]])
-        last_port = ports_list[i]
-    port_mappings = ' '.join(
-        '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
-        if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
-        for entry in port_ranges)
-
-    if services:
-        port_mappings = ''
-        for service, port in service_ports.items():
-            port_mappings += ' -p {port}:{port}'.format(port=port)
-
-    env_str = ''
-    for env_var in config.CONFIG_ENV_VARS:
-        value = os.environ.get(env_var, None)
-        if value is not None:
-            env_str += '-e %s="%s" ' % (env_var, value)
-
-    data_dir_mount = ''
-    data_dir = os.environ.get('DATA_DIR', None)
-    if data_dir is not None:
-        container_data_dir = '/tmp/localstack_data'
-        data_dir_mount = '-v "%s:%s" ' % (data_dir, container_data_dir)
-        env_str += '-e DATA_DIR="%s" ' % container_data_dir
-
-    interactive = '' if force_noninteractive or in_ci() else '-it '
-
-    # append space if parameter is set
-    user_flags = '%s ' % user_flags if user_flags else user_flags
-    entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
-    plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
-
-    container_name = 'localstack_main'
-
-    docker_cmd = ('docker run %s%s%s%s%s' +
-        '--rm --privileged ' +
-        '--name %s ' +
-        '-p 8080:8080 %s %s' +
-        '-v "%s:/tmp/localstack" -v "%s:%s" ' +
-        '-e DOCKER_HOST="unix://%s" ' +
-        '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
-            interactive, entrypoint, env_str, user_flags, plugin_run_params, container_name, port_mappings,
-            data_dir_mount, config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
-            config.HOST_TMP_FOLDER, image_name, cmd
-    )
-
-    mkdir(config.TMP_FOLDER)
-    run_cmd_safe(cmd='chmod -R 777 "%s"' % config.TMP_FOLDER)
-
-    print(docker_cmd)
-    t = ShellCommandThread(docker_cmd, outfile=subprocess.PIPE)
-    t.start()
-    time.sleep(2)
-
-    if DO_CHMOD_DOCKER_SOCK:
-        # fix permissions on /var/run/docker.sock
-        for i in range(0, 100):
-            if docker_container_running(container_name):
-                break
-            time.sleep(2)
-        run('docker exec -u root "%s" chmod 777 /var/run/docker.sock' % container_name)
-
-    t.process.wait()
-    sys.exit(t.process.returncode)
-
-
-# -------------
 # MAIN STARTUP
 # -------------
 
 
-def canonicalize_api_names(apis=None):
-    """ Finalize the list of API names by
-        (1) resolving and adding dependencies (e.g., "dynamodbstreams" requires "kinesis"),
-        (2) resolving and adding composites (e.g., "serverless" describes an ensemble
-                including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
-        (3) removing duplicates from the list. """
-
-    apis = apis or list(config.SERVICE_PORTS.keys())
-
-    def contains(apis, api):
-        for a in apis:
-            if a == api:
-                return True
-
-    # resolve composites
-    for comp, deps in API_COMPOSITES.items():
-        if contains(apis, comp):
-            apis.extend(deps)
-            config.SERVICE_PORTS.pop(comp)
-
-    # resolve dependencies
-    for i, api in enumerate(apis):
-        for dep in API_DEPENDENCIES.get(api, []):
-            if not contains(apis, dep):
-                apis.append(dep)
-
-    # remove duplicates and composite names
-    apis = list(set([a for a in apis if a not in API_COMPOSITES.keys()]))
-
-    # make sure we have port mappings for each API
-    for api in apis:
-        if api not in config.SERVICE_PORTS:
-            config.SERVICE_PORTS[api] = config.DEFAULT_SERVICE_PORTS.get(api)
-    config.populate_configs(config.SERVICE_PORTS)
-
-    return apis
-
-
 def start_infra(asynchronous=False, apis=None):
     try:
+        os.environ[LOCALSTACK_INFRA_PROCESS] = '1'
+
+        is_in_docker = in_docker()
+        # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
+        if not is_in_docker and 'docker' in config.LAMBDA_EXECUTOR and not is_linux():
+            print(('!WARNING! - Running outside of Docker with LAMBDA_EXECUTOR=%s can lead to '
+                   'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
+                   'be properly set in your Lambdas.') % config.LAMBDA_EXECUTOR)
+
         # load plugins
         load_plugins()
 
-        event_publisher.fire_event(event_publisher.EVENT_START_INFRA)
+        event_publisher.fire_event(event_publisher.EVENT_START_INFRA,
+            {'d': is_in_docker and 1 or 0, 'c': in_ci() and 1 or 0})
 
         # set up logging
         setup_logging()
@@ -584,10 +421,11 @@ def start_infra(asynchronous=False, apis=None):
         # prepare APIs
         apis = canonicalize_api_names(apis)
         # set environment
-        os.environ['AWS_REGION'] = DEFAULT_REGION
+        os.environ['AWS_REGION'] = config.DEFAULT_REGION
         os.environ['ENV'] = ENV_DEV
         # register signal handlers
-        register_signal_handlers()
+        if not os.environ.get(ENV_INTERNAL_TEST_RUN):
+            register_signal_handlers()
         # make sure AWS credentials are configured, otherwise boto3 bails on us
         check_aws_credentials()
         # install libs if not present
@@ -597,9 +435,6 @@ def start_infra(asynchronous=False, apis=None):
         # start services
         thread = None
 
-        if 'elasticsearch' in apis or 'es' in apis:
-            sleep_time = max(sleep_time, 10)
-
         # loop through plugins and start each service
         for name, plugin in SERVICE_PLUGINS.items():
             if name in apis:
@@ -607,7 +442,7 @@ def start_infra(asynchronous=False, apis=None):
                 thread = thread or t1
 
         time.sleep(sleep_time)
-        # check that all infra components are up and running
+        # ensure that all infra components are up and running
         check_infra(apis=apis)
         # restore persisted data
         restore_persisted_data(apis=apis)

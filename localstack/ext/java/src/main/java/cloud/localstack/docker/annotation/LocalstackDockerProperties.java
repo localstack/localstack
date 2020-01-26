@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 import java.lang.annotation.Inherited;
 
 /**
- * An annotation to provide parameters to the LocalstackDockerTestRunner
+ * An annotation to provide parameters to the main (Docker-based) LocalstackTestRunner
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -47,4 +47,15 @@ public @interface LocalstackDockerProperties {
      * Use a specific image tag for docker container
      */
     String imageTag() default "";
+
+    /**
+     * Determines if the singleton container should be used by all test classes
+     */
+    boolean useSingleDockerContainer() default false;
+
+    /**
+     * Determines if errors should be ignored when starting the Docker container.
+     * This can be used to run tests with an existing LocalStack container running on the host.
+     */
+    boolean ignoreDockerRunErrors() default false;
 }

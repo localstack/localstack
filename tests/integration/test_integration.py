@@ -74,6 +74,10 @@ class IntegrationTest(unittest.TestCase):
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+        # check file layout in target bucket
+        all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
+        for key in all_objects.keys():
+            self.assertRegexpMatches(key, r'.*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*')
 
     def test_firehose_kinesis_to_s3(self):
         kinesis = aws_stack.connect_to_service('kinesis')
@@ -118,6 +122,8 @@ class IntegrationTest(unittest.TestCase):
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
 
+    # TODO fix duplication with test_lambda_streams_batch_and_transactions(..)!
+    # @profiled()
     def test_kinesis_lambda_sns_ddb_sqs_streams(self):
         ddb_lease_table_suffix = '-kclapp'
         table_name = TEST_TABLE_NAME + 'klsdss' + ddb_lease_table_suffix
@@ -282,6 +288,10 @@ class IntegrationTest(unittest.TestCase):
         num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
         self.assertEqual(num_error_invocations, 1)
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_STREAM)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
+
     def test_lambda_streams_batch_and_transactions(self):
         ddb_lease_table_suffix = '-kclapp2'
         table_name = TEST_TABLE_NAME + 'lsbat' + ddb_lease_table_suffix
@@ -427,6 +437,9 @@ class IntegrationTest(unittest.TestCase):
         # this can take a long time in CI, make sure we give it enough time/retries
         retry(check_events, retries=9, sleep=3)
 
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
+
     def test_kinesis_lambda_forward_chain(self):
         kinesis = aws_stack.connect_to_service('kinesis')
         s3 = aws_stack.connect_to_service('s3')
@@ -454,10 +467,15 @@ class IntegrationTest(unittest.TestCase):
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(test_data, all_objects)
 
+        # clean up
+        kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
+        kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
+
 
 # ---------------
 # HELPER METHODS
 # ---------------
+
 
 def get_event_source_arn(stream_name):
     kinesis = aws_stack.connect_to_service('kinesis')

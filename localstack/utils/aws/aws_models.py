@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import time
 import json
 import six
@@ -174,9 +172,24 @@ class LambdaFunction(Component):
         self.description = ''
         self.role = None
         self.memory_size = None
+        self.code = None
+        self.dead_letter_config = None
+
+    def set_dead_letter_config(self, data):
+        config = data.get('DeadLetterConfig')
+        if not config:
+            return
+        self.dead_letter_config = config
+        target_arn = config.get('TargetArn') or ''
+        if ':sqs:' not in target_arn and ':sns:' not in target_arn:
+            raise Exception('Dead letter queue ARN "%s" requires a valid SQS queue or SNS topic' % target_arn)
 
     def get_version(self, version):
         return self.versions.get(version)
+
+    def max_version(self):
+        versions = [int(key) for key in self.versions.keys() if key != '$LATEST']
+        return versions and max(versions) or 0
 
     def name(self):
         # Example ARN: arn:aws:lambda:aws-region:acct-id:function:helloworld:1
@@ -284,7 +297,7 @@ class EventSource(Component):
         inst = None
         if obj.startswith('arn:aws:kinesis:'):
             inst = KinesisStream(obj)
-        if obj.startswith('arn:aws:lambda:'):
+        elif obj.startswith('arn:aws:lambda:'):
             inst = LambdaFunction(obj)
         elif obj.startswith('arn:aws:dynamodb:'):
             if '/stream/' in obj:

@@ -5,6 +5,7 @@ import os
 from glob import glob
 from six import iteritems
 from amazon_kclpy import kcl
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import save_file
 
 
@@ -49,9 +50,9 @@ def get_kcl_classpath(properties=None, paths=[]):
         paths.append(dir_of_file)
     # add path of custom java code
     dir_name = os.path.dirname(os.path.realpath(__file__))
-    paths.append(os.path.realpath(os.path.join(dir_name, 'java')))
     paths.insert(0, os.path.realpath(os.path.join(dir_name, '..', '..',
             'infra', 'amazon-kinesis-client', 'aws-java-sdk-sts.jar')))
+    paths.insert(0, os.path.realpath(os.path.join(dir_name, 'java')))
     return ':'.join([p for p in paths if p != ''])
 
 
@@ -76,25 +77,31 @@ def get_kcl_app_command(java, multi_lang_daemon_class, properties, paths=[]):
     :return: A command that will run the MultiLangDaemon with your
              properties and custom paths and java.
     """
-    return '{java} -cp {cp} {daemon} {props}'.format(
+    logging_config = os.path.join(get_dir_of_file(__file__), 'java', 'logging.properties')
+    sys_props = '"-Djava.util.logging.config.file=%s"' % logging_config
+    return '{java} -cp {cp} {sys_props} {daemon} {props}'.format(
         java=java,
         cp=get_kcl_classpath(properties, paths),
         daemon=multi_lang_daemon_class,
-        # Just need the basename becasue the path is added to the classpath
-        props=os.path.basename(properties))
+        # Just need the basename because the path is added to the classpath
+        props=os.path.basename(properties),
+        sys_props=sys_props)
 
 
-def create_config_file(config_file, executableName, streamName, applicationName, credentialsProvider=None, **kwargs):
+def create_config_file(config_file, executableName, streamName, applicationName,
+        credentialsProvider=None, region_name=None, **kwargs):
     if not credentialsProvider:
         credentialsProvider = 'DefaultAWSCredentialsProviderChain'
+    region_name = region_name or aws_stack.get_region()
     content = """
         executableName = %s
         streamName = %s
         applicationName = %s
         AWSCredentialsProvider = %s
         processingLanguage = python/2.7
-        regionName = us-east-1
-    """ % (executableName, streamName, applicationName, credentialsProvider)
+        parentShardPollIntervalMillis = 2000
+        regionName = %s
+    """ % (executableName, streamName, applicationName, credentialsProvider, region_name)
     # optional properties
     for key, value in iteritems(kwargs):
         content += """

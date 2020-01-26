@@ -1,5 +1,6 @@
 package cloud.localstack.docker;
 
+import cloud.localstack.Localstack;
 import cloud.localstack.docker.command.*;
 
 import java.io.IOException;
@@ -13,15 +14,15 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
- * An abstraction of the localstack docker container.  Provides port mappings,
- * a way to poll the logs until a specified token appears, and the ability to stop the container
+ * An abstraction of the LocalStack docker container. Provides port mappings, a way
+ * to poll the logs until a specified token appears, and the ability to stop the container.
  */
 public class Container {
 
     private static final Logger LOG = Logger.getLogger(Container.class.getName());
 
     private static final String LOCALSTACK_NAME = "localstack/localstack";
-    private static final String LOCALSTACK_PORTS = "4567-4583";
+    private static final String LOCALSTACK_PORTS = "4567-4584";
 
     private static final int MAX_PORT_CONNECTION_ATTEMPTS = 10;
 
@@ -29,12 +30,17 @@ public class Container {
     private static final long POLL_INTERVAL = 1000;
     private static final int NUM_LOG_LINES = 10;
 
+    private static final String ENV_DEBUG = "DEBUG";
+    private static final String ENV_USE_SSL = "USE_SSL";
+    private static final String ENV_DEBUG_DEFAULT = "1";
     public static final String LOCALSTACK_EXTERNAL_HOSTNAME = "HOSTNAME_EXTERNAL";
 
+    private static final String DEFAULT_CONTAINER_ID = "localstack_main";
 
     private final String containerId;
     private final List<PortMapping> ports;
 
+    private boolean startedByUs;
 
     /**
      * It creates a container using the hostname given and the set of environment variables provided
@@ -44,24 +50,46 @@ public class Container {
      *                       in order to prevent conflicts with other localstack containers running on the same machine
      * @param environmentVariables map of environment variables to be passed to the docker container
      */
-    public static Container createLocalstackContainer(String externalHostName, boolean pullNewImage,
-                                                      boolean randomizePorts, String imageTag,
-                                                      Map<String, String> environmentVariables) {
+    public static Container createLocalstackContainer(
+        String externalHostName, boolean pullNewImage, boolean randomizePorts, String imageTag,
+        Map<String, String> environmentVariables, Map<Integer, Integer> portMappings) {
 
-        if(pullNewImage) {
+        environmentVariables = environmentVariables == null ? Collections.emptyMap() : environmentVariables;
+        portMappings = portMappings == null ? Collections.emptyMap() : portMappings;
+
+        String fullImageName = LOCALSTACK_NAME + ":" + (imageTag == null ? "latest" : imageTag);
+        boolean imageExists = new ListImagesCommand().execute().contains(fullImageName);
+
+        if(pullNewImage || !imageExists) {
             LOG.info("Pulling latest image...");
             new PullCommand(LOCALSTACK_NAME, imageTag).execute();
         }
 
-        String containerId = new RunCommand(LOCALSTACK_NAME, imageTag)
-                .withExposedPorts(LOCALSTACK_PORTS, randomizePorts)
-                .withEnvironmentVariable(LOCALSTACK_EXTERNAL_HOSTNAME, externalHostName)
-                .withEnvironmentVariables(environmentVariables)
-                .execute();
+        RunCommand runCommand = new RunCommand(LOCALSTACK_NAME, imageTag)
+            .withExposedPorts(LOCALSTACK_PORTS, randomizePorts)
+            .withEnvironmentVariable(LOCALSTACK_EXTERNAL_HOSTNAME, externalHostName)
+            .withEnvironmentVariable(ENV_DEBUG, ENV_DEBUG_DEFAULT)
+            .withEnvironmentVariable(ENV_USE_SSL, Localstack.INSTANCE.useSSL() ? "1" : "0")
+            .withEnvironmentVariables(environmentVariables);
+        for (Integer port : portMappings.keySet()) {
+            runCommand = runCommand.withExposedPorts("" + port, false);
+        }
+        String containerId = runCommand.execute();
         LOG.info("Started container: " + containerId);
 
-        List<PortMapping> portMappings = new PortCommand(containerId).execute();
-        return new Container(containerId, portMappings);
+        Container result = getRunningLocalstackContainer(containerId);
+        result.startedByUs = true;
+        return result;
+    }
+
+
+    public static Container getRunningLocalstackContainer() {
+        return getRunningLocalstackContainer(DEFAULT_CONTAINER_ID);
+    }
+
+    public static Container getRunningLocalstackContainer(String containerId) {
+        List<PortMapping> portMappingsList = new PortCommand(containerId).execute();
+        return new Container(containerId, portMappingsList);
     }
 
 
@@ -113,8 +141,8 @@ public class Container {
 
 
     /**
-     * Poll the docker logs until a specific token appears, then return.  Primarily used to look
-     * for the "Ready." token in the localstack logs.
+     * Poll the docker logs until a specific token appears, then return. Primarily
+     * used to look for the "Ready." token in the LocalStack logs.
      */
     public void waitForLogToken(Pattern pattern) {
         int attempts = 0;
@@ -127,7 +155,7 @@ public class Container {
         }
         while(attempts < MAX_LOG_COLLECTION_ATTEMPTS);
 
-        throw new IllegalStateException("Could not find token: " + pattern.toString() + " in docker logs.");
+        throw new IllegalStateException("Could not find token: " + pattern + " in Docker logs.");
     }
 
 
@@ -150,7 +178,10 @@ public class Container {
     /**
      * Stop the container
      */
-    public void stop(){
+    public void stop() {
+        if (!startedByUs) {
+            return;
+        }
         new StopCommand(containerId).execute();
         LOG.info("Stopped container: " + containerId);
     }

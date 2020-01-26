@@ -1,10 +1,12 @@
 import json
 import uuid
 import hashlib
+import six
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, to_bytes
+from localstack.utils.analytics import event_publisher
 
 APP_NAME = 'ddb_streams_api'
 
@@ -19,21 +21,26 @@ ACTION_HEADER_PREFIX = 'DynamoDBStreams_20120810'
 SEQUENCE_NUMBER_COUNTER = 1
 
 
-def add_dynamodb_stream(table_name, view_type='NEW_AND_OLD_IMAGES', enabled=True):
+def add_dynamodb_stream(table_name, latest_stream_label=None, view_type='NEW_AND_OLD_IMAGES', enabled=True):
     if enabled:
         # create kinesis stream as a backend
         stream_name = get_kinesis_stream_name(table_name)
         aws_stack.create_kinesis_stream(stream_name)
+        latest_stream_label = latest_stream_label or 'latest'
         stream = {
-            'StreamArn': aws_stack.dynamodb_stream_arn(table_name=table_name),
+            'StreamArn': aws_stack.dynamodb_stream_arn(
+                table_name=table_name, latest_stream_label=latest_stream_label),
             'TableName': table_name,
-            'StreamLabel': 'TODO',
+            'StreamLabel': latest_stream_label,
             'StreamStatus': 'ENABLED',
             'KeySchema': [],
             'Shards': []
         }
         table_arn = aws_stack.dynamodb_table_arn(table_name)
         DDB_STREAMS[table_arn] = stream
+        # record event
+        event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_STREAM,
+            payload={'n': event_publisher.get_hash(table_name)})
 
 
 def forward_events(records):
@@ -93,7 +100,7 @@ def post_request():
             ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
     elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
         kinesis_records = kinesis.get_records(**data)
-        result = {'Records': []}
+        result = {'Records': [], 'NextShardIterator': kinesis_records.get('NextShardIterator')}
         for record in kinesis_records['Records']:
             result['Records'].append(json.loads(to_str(record['Data'])))
     else:
@@ -133,8 +140,10 @@ def stream_name_from_stream_arn(stream_arn):
 
 
 def random_id(stream_arn, kinesis_shard_id):
-    namespace = uuid.UUID(bytes=hashlib.sha1(stream_arn.encode('utf-8')).digest()[:16])
-    return uuid.uuid5(namespace, kinesis_shard_id.encode('utf-8')).hex
+    namespace = uuid.UUID(bytes=hashlib.sha1(to_bytes(stream_arn)).digest()[:16])
+    if six.PY2:
+        kinesis_shard_id = to_bytes(kinesis_shard_id, 'utf-8')
+    return uuid.uuid5(namespace, kinesis_shard_id).hex
 
 
 def shard_id(stream_arn, kinesis_shard_id):

@@ -21,7 +21,8 @@ public class ContainerTest {
 
         HashMap<String, String> environmentVariables = new HashMap<>();
         environmentVariables.put(MY_PROPERTY, MY_VALUE);
-        Container localStackContainer = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, true, null, environmentVariables);
+        Container localStackContainer = Container.createLocalstackContainer(
+            EXTERNAL_HOST_NAME, pullNewImage, true, null, environmentVariables, null);
 
         try {
             localStackContainer.waitForAllPorts(EXTERNAL_HOST_NAME);
@@ -49,7 +50,8 @@ public class ContainerTest {
 
     @Test
     public void createLocalstackContainerWithRandomPorts() throws Exception {
-        Container container = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, true, null, new HashMap<>());
+        Container container = Container.createLocalstackContainer(
+            EXTERNAL_HOST_NAME, pullNewImage, true, null, null, null);
 
         try {
             container.waitForAllPorts(EXTERNAL_HOST_NAME);
@@ -57,6 +59,7 @@ public class ContainerTest {
             assertNotEquals(4567, container.getExternalPortFor(4567));
             assertNotEquals(4575, container.getExternalPortFor(4575));
             assertNotEquals(4583, container.getExternalPortFor(4583));
+            assertNotEquals(4584, container.getExternalPortFor(4584));
         }
         finally {
             container.stop();
@@ -66,7 +69,8 @@ public class ContainerTest {
 
     @Test
     public void createLocalstackContainerWithStaticPorts() throws Exception {
-        Container container = Container.createLocalstackContainer(EXTERNAL_HOST_NAME, pullNewImage, false, null, new HashMap<>());
+        Container container = Container.createLocalstackContainer(
+            EXTERNAL_HOST_NAME, pullNewImage, false, null, null, null);
 
         try {
             container.waitForAllPorts(EXTERNAL_HOST_NAME);
@@ -74,6 +78,7 @@ public class ContainerTest {
             assertEquals(4567, container.getExternalPortFor(4567));
             assertEquals(4575, container.getExternalPortFor(4575));
             assertEquals(4583, container.getExternalPortFor(4583));
+            assertEquals(4584, container.getExternalPortFor(4584));
         }
         finally {
             container.stop();

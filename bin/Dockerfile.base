@@ -5,7 +5,7 @@ LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 
 # install some common libs
 RUN apk add --no-cache autoconf automake build-base ca-certificates curl g++ gcc git groff \
-        libffi-dev libtool linux-headers make openssl openssl-dev python3 python3-dev \
+        iputils libffi-dev libtool linux-headers make openssl openssl-dev python3 python3-dev \
         py3-pip tar xz zip && \
     update-ca-certificates
 
@@ -31,9 +31,9 @@ RUN apk add --no-cache nss
 
 # Install Maven - taken from official repo:
 # https://github.com/carlossg/docker-maven/blob/master/jdk-8/Dockerfile)
-ARG MAVEN_VERSION=3.5.4
+ARG MAVEN_VERSION=3.6.2
 ARG USER_HOME_DIR="/root"
-ARG SHA=ce50b1c91364cb77efe3776f756a6d92b76d9038b0a0782f7d53acf1e997a14d
+ARG SHA=3fbc92d1961482d6fbd57fbf3dd6d27a4de70778528ee3fb44aa7d27eb32dfdc
 ARG BASE_URL=https://apache.osuosl.org/maven/maven-3/${MAVEN_VERSION}/binaries
 RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
   && curl -fsSL -o /tmp/apache-maven.tar.gz ${BASE_URL}/apache-maven-$MAVEN_VERSION-bin.tar.gz \
@@ -63,33 +63,34 @@ RUN ln -s /usr/bin/python3 /usr/bin/python; ln -s /usr/bin/pip3 /usr/bin/pip
 RUN pip install supervisor
 
 # init environment and cache some dependencies
+# ARG DYNAMODB_ZIP_URL=https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip
+# TODO: Temporarily using a fixed version of DDB in Alpine, as we're hitting a SIGSEGV JVM crash with latest
+ARG DYNAMODB_ZIP_URL=https://github.com/whummer/dynamodb-local/raw/master/etc/DynamoDBLocal.zip
 RUN mkdir -p /opt/code/localstack/localstack/infra && \
-    wget -O /tmp/localstack.es.zip \
-        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.5.0.zip && \
-    wget -O /tmp/elasticmq-server.jar \
-        https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.14.5.jar && \
+    mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
+      curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
+      (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
+    curl -L -o /tmp/localstack.es.zip \
+        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.zip && \
+    curl -L -o /tmp/elasticmq-server.jar \
+        https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.15.2.jar && \
     (cd localstack/infra/ && unzip -q /tmp/localstack.es.zip && \
         mv elasticsearch* elasticsearch && rm /tmp/localstack.es.zip) && \
     (cd localstack/infra/elasticsearch/ && \
         bin/elasticsearch-plugin install analysis-icu && \
         bin/elasticsearch-plugin install ingest-attachment --batch && \
-        bin/elasticsearch-plugin install ingest-user-agent && \
         bin/elasticsearch-plugin install analysis-kuromoji && \
         bin/elasticsearch-plugin install mapper-murmur3 && \
         bin/elasticsearch-plugin install mapper-size && \
         bin/elasticsearch-plugin install analysis-phonetic && \
         bin/elasticsearch-plugin install analysis-smartcn && \
         bin/elasticsearch-plugin install analysis-stempel && \
-        bin/elasticsearch-plugin install analysis-ukrainian) && \
-    mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
-    wget -O /tmp/localstack.ddb.zip \
-        https://s3-us-west-2.amazonaws.com/dynamodb-local/dynamodb_local_latest.zip && \
-    (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip)
+        bin/elasticsearch-plugin install analysis-ukrainian)
 ADD requirements.txt .
 RUN (pip install --upgrade pip) && \
     (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
     (virtualenv .testvenv && source .testvenv/bin/activate && \
-        pip install -q six==1.10.0 && pip install -q -r requirements.txt && rm -rf .testvenv)
+        pip install -q six==1.10.0 && pip install -q -r requirements.txt && rm -rf .testvenv) || exit 1
 
 # add files required to run "make install-web"
 ADD Makefile .
@@ -103,4 +104,5 @@ RUN (virtualenv .venv && source .venv/bin/activate && pip install cryptography)
 
 # clean up (layers are later squashed into a single one)
 RUN rm -rf /root/.npm; \
-  apk del --purge autoconf automake build-base g++ gcc linux-headers openssl-dev python3-dev
+  apk del --purge autoconf automake build-base g++ gcc giflib krb5-conf krb5-libs libc-dev \
+  libffi-dev libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev

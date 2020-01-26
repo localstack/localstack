@@ -1,12 +1,15 @@
+import re
 import os
 import sys
 import ssl
+import json
 import socket
 import inspect
 import logging
 import traceback
 import click
 import requests
+from ssl import SSLError
 from flask_cors import CORS
 from requests.structures import CaseInsensitiveDict
 from requests.models import Response, Request
@@ -14,8 +17,8 @@ from six import iteritems
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from localstack.config import TMP_FOLDER, USE_SSL
-from localstack.constants import ENV_INTERNAL_TEST_RUN
+from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
+from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
 
 QUIET = False
@@ -23,13 +26,21 @@ QUIET = False
 # path for test certificate
 SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
 
-# CORS settings
-CORS_ALLOWED_HEADERS = ('authorization', 'content-type', 'content-md5', 'cache-control',
-    'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent')
+
+CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-md5', 'cache-control',
+    'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
+    'x-amz-target', 'x-amz-acl', 'x-amz-version-id', 'x-localstack-target', 'x-amz-tagging']
+if EXTRA_CORS_ALLOWED_HEADERS:
+    CORS_ALLOWED_HEADERS += EXTRA_CORS_ALLOWED_HEADERS.split(',')
+
 CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATCH')
 
+CORS_EXPOSE_HEADERS = ('x-amz-version-id', )
+if EXTRA_CORS_EXPOSE_HEADERS:
+    CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
+
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -56,7 +67,7 @@ class ProxyListener(object):
         """
         return True
 
-    def return_response(self, method, path, data, headers, response):
+    def return_response(self, method, path, data, headers, response, request_handler=None):
         """ This interceptor method is called by the proxy when returning a response
             (*after* having forwarded the request and received a response from the backend
             service). It receives details of the incoming request as well as the response
@@ -66,6 +77,12 @@ class ProxyListener(object):
               actual response returned from the backend service.
             * Any other value, in which case the response from the backend service is
               returned to the client.
+        """
+        return None
+
+    def get_forward_url(self, method, path, data, headers):
+        """ Return a custom URL to forward the given request to. If a falsy value is returned,
+            then the default URL will be used.
         """
         return None
 
@@ -82,7 +99,10 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.proxy = server.my_object
         self.data_bytes = None
         self.protocol_version = self.proxy.protocol_version
-        BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        try:
+            BaseHTTPRequestHandler.__init__(self, request, client_address, server)
+        except SSLError as e:
+            LOG.warning('SSL error when handling request: %s' % e)
 
     def parse_request(self):
         result = BaseHTTPRequestHandler.parse_request(self)
@@ -137,27 +157,36 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         self.method = requests.options
         self.forward('OPTIONS')
 
+    def do_CONNECT(self):
+        self.method = None
+        self.headers['Connection'] = self.headers.get('Connection') or 'keep-alive'
+        self.forward('CONNECT')
+
     def read_content(self):
         content_length = self.headers.get('Content-Length')
         if content_length:
             self.data_bytes = self.rfile.read(int(content_length))
-        else:
-            self.data_bytes = None
-            if self.method in (requests.post, requests.put):
-                # If the Content-Length header is missing, try to read
-                # content from the socket using a socket timeout.
-                socket_timeout_secs = 0.5
-                self.request.settimeout(socket_timeout_secs)
-                while True:
-                    try:
-                        # TODO find a more efficient way to do this!
-                        tmp = self.rfile.read(1)
-                        if self.data_bytes is None:
-                            self.data_bytes = tmp
-                        else:
-                            self.data_bytes += tmp
-                    except socket.timeout:
-                        break
+            return
+
+        self.data_bytes = None
+        if self.method in (requests.post, requests.put):
+            LOG.warning('Expected Content-Length header not found in POST/PUT request')
+
+            # If the Content-Length header is missing, try to read
+            # content from the socket using a socket timeout.
+            socket_timeout_secs = 0.5
+            self.request.settimeout(socket_timeout_secs)
+            block_length = 1
+            while True:
+                try:
+                    # TODO find a more efficient way to do this!
+                    tmp = self.rfile.read(block_length)
+                    if self.data_bytes is None:
+                        self.data_bytes = tmp
+                    else:
+                        self.data_bytes += tmp
+                except socket.timeout:
+                    break
 
     def build_x_forwarded_for(self, headers):
         x_forwarded_for = headers.get('X-Forwarded-For')
@@ -173,35 +202,55 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         return ', '.join(x_forwarded_for_list)
 
     def forward(self, method):
-        path = self.path
-        if '://' in path:
-            path = '/' + path.split('://', 1)[1].split('/', 1)[1]
-        proxy_url = '%s%s' % (self.proxy.forward_url, path)
-        target_url = self.path
-        if '://' not in target_url:
-            target_url = '%s%s' % (self.proxy.forward_url, target_url)
         data = self.data_bytes
-
         forward_headers = CaseInsensitiveDict(self.headers)
+
+        # force close connection
+        if forward_headers.get('Connection', '').lower() != 'keep-alive':
+            self.close_connection = 1
+
+        def is_full_url(url):
+            return re.match(r'[a-zA-Z]+://.+', url)
+
+        path = self.path
+        if is_full_url(path):
+            path = path.split('://', 1)[1]
+            path = '/%s' % (path.split('/', 1)[1] if '/' in path else '')
+        forward_base_url = self.proxy.forward_base_url
+        proxy_url = '%s%s' % (forward_base_url, path)
+
+        for listener in self._listeners():
+            if listener:
+                proxy_url = listener.get_forward_url(method, path, data, forward_headers) or proxy_url
+
+        target_url = self.path
+        if not is_full_url(target_url):
+            target_url = '%s%s' % (forward_base_url, target_url)
+
         # update original "Host" header (moto s3 relies on this behavior)
         if not forward_headers.get('Host'):
             forward_headers['host'] = urlparse(target_url).netloc
         if 'localhost.atlassian.io' in forward_headers.get('Host'):
             forward_headers['host'] = 'localhost'
-
         forward_headers['X-Forwarded-For'] = self.build_x_forwarded_for(forward_headers)
 
         try:
             response = None
             modified_request = None
             # update listener (pre-invocation)
-            for listener in self.DEFAULT_LISTENERS + [self.proxy.update_listener]:
+            for listener in self._listeners():
                 if not listener:
                     continue
                 listener_result = listener.forward_request(method=method,
                     path=path, data=data, headers=forward_headers)
                 if isinstance(listener_result, Response):
                     response = listener_result
+                    break
+                if isinstance(listener_result, dict):
+                    response = Response()
+                    response._content = json.dumps(listener_result)
+                    response.headers['Content-Type'] = APPLICATION_JSON
+                    response.status_code = 200
                     break
                 elif isinstance(listener_result, Request):
                     modified_request = listener_result
@@ -212,19 +261,29 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     # get status code from response, or use Bad Gateway status code
                     code = listener_result if isinstance(listener_result, int) else 503
                     self.send_response(code)
+                    self.send_header('Content-Length', '0')
+                    # allow pre-flight CORS headers by default
+                    self._send_cors_headers()
                     self.end_headers()
                     return
+
             # perform the actual invocation of the backend service
             if response is None:
+                forward_headers['Connection'] = forward_headers.get('Connection') or 'close'
+                data_to_send = self.data_bytes
+                request_url = proxy_url
                 if modified_request:
-                    response = self.method(proxy_url, data=modified_request.data,
-                        headers=modified_request.headers, stream=True)
-                else:
-                    response = self.method(proxy_url, data=self.data_bytes,
-                        headers=forward_headers, stream=True)
+                    if modified_request.url:
+                        request_url = '%s%s' % (forward_base_url, modified_request.url)
+                    data_to_send = modified_request.data
+
+                response = self.method(request_url, data=data_to_send,
+                    headers=forward_headers, stream=True)
+
                 # prevent requests from processing response body
                 if not response._content_consumed and response.raw:
                     response._content = response.raw.read()
+
             # update listener (post-invocation)
             if self.proxy.update_listener:
                 kwargs = {
@@ -255,26 +314,21 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.send_header('Content-Length', '%s' % len(response.content) if response.content else 0)
 
             # allow pre-flight CORS headers by default
-            if 'Access-Control-Allow-Origin' not in response.headers:
-                self.send_header('Access-Control-Allow-Origin', '*')
-            if 'Access-Control-Allow-Methods' not in response.headers:
-                self.send_header('Access-Control-Allow-Methods', ','.join(CORS_ALLOWED_METHODS))
-            if 'Access-Control-Allow-Headers' not in response.headers:
-                self.send_header('Access-Control-Allow-Headers', ','.join(CORS_ALLOWED_HEADERS))
+            self._send_cors_headers(response)
 
             self.end_headers()
             if response.content and len(response.content):
                 self.wfile.write(to_bytes(response.content))
-            self.wfile.flush()
         except Exception as e:
             trace = str(traceback.format_exc())
-            conn_errors = ('ConnectionRefusedError', 'NewConnectionError')
+            conn_errors = ('ConnectionRefusedError', 'NewConnectionError',
+                           'Connection aborted', 'Unexpected EOF', 'Connection reset by peer')
             conn_error = any(e in trace for e in conn_errors)
             error_msg = 'Error forwarding request: %s %s' % (e, trace)
             if 'Broken pipe' in trace:
-                LOGGER.warn('Connection prematurely closed by client (broken pipe).')
+                LOG.warn('Connection prematurely closed by client (broken pipe).')
             elif not self.proxy.quiet or not conn_error:
-                LOGGER.error(error_msg)
+                LOG.error(error_msg)
                 if os.environ.get(ENV_INTERNAL_TEST_RUN):
                     # During a test run, we also want to print error messages, because
                     # log messages are delayed until the entire test run is over, and
@@ -284,9 +338,53 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             self.end_headers()
             # force close connection
             self.close_connection = 1
+        finally:
+            try:
+                self.wfile.flush()
+            except Exception as e:
+                LOG.warning('Unable to flush write file: %s' % e)
+
+    def _send_cors_headers(self, response=None):
+        # Note: Use "response is not None" here instead of "not response"!
+        headers = response is not None and response.headers or {}
+        if 'Access-Control-Allow-Origin' not in headers:
+            self.send_header('Access-Control-Allow-Origin', '*')
+        if 'Access-Control-Allow-Methods' not in headers:
+            self.send_header('Access-Control-Allow-Methods', ','.join(CORS_ALLOWED_METHODS))
+        if 'Access-Control-Allow-Headers' not in headers:
+            requested_headers = self.headers.get('Access-Control-Request-Headers', '')
+            requested_headers = re.split(r'[,\s]+', requested_headers) + CORS_ALLOWED_HEADERS
+            self.send_header('Access-Control-Allow-Headers', ','.join([h for h in requested_headers if h]))
+        if 'Access-Control-Expose-Headers' not in headers:
+            self.send_header('Access-Control-Expose-Headers', ','.join(CORS_EXPOSE_HEADERS))
+
+    def _listeners(self):
+        return self.DEFAULT_LISTENERS + [self.proxy.update_listener]
 
     def log_message(self, format, *args):
         return
+
+
+class DuplexSocket(ssl.SSLSocket):
+    """ Simple duplex socket wrapper that allows serving HTTP/HTTPS over the same port. """
+
+    def accept(self):
+        newsock, addr = socket.socket.accept(self)
+        peek_bytes = 5
+        first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
+        if len(first_bytes or '') == peek_bytes:
+            first_byte = first_bytes[0]
+            if first_byte < 32 or first_byte >= 127:
+                newsock = self.context.wrap_socket(newsock,
+                            do_handshake_on_connect=self.do_handshake_on_connect,
+                            suppress_ragged_eofs=self.suppress_ragged_eofs,
+                            server_side=True)
+
+        return newsock, addr
+
+
+# set globally defined SSL socket implementation class
+ssl.SSLContext.sslsocket_class = DuplexSocket
 
 
 class GenericProxy(FuncThread):
@@ -300,7 +398,7 @@ class GenericProxy(FuncThread):
             if '://' not in forward_url:
                 forward_url = 'http://%s' % forward_url
             forward_url = forward_url.rstrip('/')
-        self.forward_url = forward_url
+        self.forward_base_url = forward_url
         self.update_listener = update_listener
         self.server_stopped = False
         # Required to enable 'Connection: keep-alive' for S3 uploads
@@ -312,14 +410,14 @@ class GenericProxy(FuncThread):
             self.httpd = ThreadedHTTPServer((self.listen_host, self.port), GenericProxyHandler)
             if self.ssl:
                 # make sure we have a cert generated
-                combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert()
+                combined_file, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=self.port)
                 self.httpd.socket = ssl.wrap_socket(self.httpd.socket,
                     server_side=True, certfile=combined_file)
             self.httpd.my_object = self
             self.httpd.serve_forever()
         except Exception as e:
             if not self.quiet or not self.server_stopped:
-                LOGGER.error('Exception running proxy on port %s: %s %s' % (self.port, e, traceback.format_exc()))
+                LOG.error('Exception running proxy on port %s: %s %s' % (self.port, e, traceback.format_exc()))
 
     def stop(self, quiet=False):
         self.quiet = quiet
@@ -328,13 +426,13 @@ class GenericProxy(FuncThread):
             self.server_stopped = True
 
     @classmethod
-    def create_ssl_cert(cls, random=True):
-        return generate_ssl_cert(SERVER_CERT_PEM_FILE, random=random)
+    def create_ssl_cert(cls, serial_number=None):
+        return generate_ssl_cert(SERVER_CERT_PEM_FILE, serial_number=serial_number)
 
     @classmethod
-    def get_flask_ssl_context(cls):
+    def get_flask_ssl_context(cls, serial_number=None):
         if USE_SSL:
-            combined_file, cert_file_name, key_file_name = cls.create_ssl_cert()
+            combined_file, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
             return (cert_file_name, key_file_name)
         return None
 
@@ -346,7 +444,7 @@ def serve_flask_app(app, port, quiet=True, host=None, cors=True):
         logging.getLogger('werkzeug').setLevel(logging.ERROR)
     if not host:
         host = '0.0.0.0'
-    ssl_context = GenericProxy.get_flask_ssl_context()
+    ssl_context = GenericProxy.get_flask_ssl_context(serial_number=port)
     app.config['ENV'] = 'development'
 
     def noecho(*args, **kwargs):

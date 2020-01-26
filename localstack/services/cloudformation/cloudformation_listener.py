@@ -1,8 +1,15 @@
+import re
+import os
+import json
 import uuid
+import boto3
 import logging
-from requests.models import Response
+from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
-from localstack.utils.common import to_str
+from samtranslator.translator.transform import transform as transform_sam
+from localstack.utils.aws import aws_stack
+from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe
+from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
 
@@ -40,6 +47,7 @@ def make_response(operation_name, content='', code=200):
 
 def validate_template(req_data):
     LOG.debug('Validate CloudFormation template: %s' % req_data)
+    # TODO implement actual validation logic
     response_content = """
         <Capabilities></Capabilities>
         <CapabilitiesReason></CapabilitiesReason>
@@ -49,7 +57,8 @@ def validate_template(req_data):
         </Parameters>
     """
     try:
-        template_deployer.template_to_json(req_data.get('TemplateBody')[0])
+        template_body = get_template_body(req_data)
+        template_deployer.template_to_json(template_body)
         response = make_response('ValidateTemplate', response_content)
         return response
     except Exception as err:
@@ -57,17 +66,107 @@ def validate_template(req_data):
         return response
 
 
+def transform_template(req_data):
+    template_body = get_template_body(req_data)
+    parsed = template_deployer.parse_template(template_body)
+
+    policy_map = {
+        # SAM Transformer expects this map to be non-empty, but apparently the content doesn't matter (?)
+        'dummy': 'entry'
+        # 'AWSLambdaBasicExecutionRole': 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
+    }
+
+    class MockPolicyLoader(object):
+        def load(self):
+            return policy_map
+
+    if parsed.get('Transform') == 'AWS::Serverless-2016-10-31':
+        # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
+        region_before = os.environ.get('AWS_DEFAULT_REGION')
+        if boto3.session.Session().region_name is None:
+            os.environ['AWS_DEFAULT_REGION'] = aws_stack.get_region()
+        try:
+            transformed = transform_sam(parsed, {}, MockPolicyLoader())
+            return transformed
+        finally:
+            os.environ.pop('AWS_DEFAULT_REGION', None)
+            if region_before is not None:
+                os.environ['AWS_DEFAULT_REGION'] = region_before
+
+
+def get_template_body(req_data):
+    body = req_data.get('TemplateBody')
+    if body:
+        return body
+    url = req_data.get('TemplateURL')
+    if url:
+        response = run_safe(lambda: safe_requests.get(url, verify=False))
+        # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
+        if not response or response.status_code == 301 or response.status_code >= 400:
+            # check if this is an S3 URL, then get the file directly from there
+            if '://localhost' in url or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url):
+                parsed_path = urlparse.urlparse(url).path.lstrip('/')
+                parts = parsed_path.partition('/')
+                client = aws_stack.connect_to_service('s3')
+                result = client.get_object(Bucket=parts[0], Key=parts[2])
+                body = to_str(result['Body'].read())
+                return body
+            raise Exception('Unable to fetch template body (code %s) from URL %s' % (response.status_code, url))
+        return response.content
+    raise Exception('Unable to get template body from input: %s' % req_data)
+
+
 class ProxyListenerCloudFormation(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
+        if method == 'OPTIONS':
+            return 200
+
         req_data = None
         if method == 'POST' and path == '/':
             req_data = urlparse.parse_qs(to_str(data))
-            action = req_data.get('Action')[0]
+            req_data = dict([(k, v[0]) for k, v in req_data.items()])
+            action = req_data.get('Action')
+            stack_name = req_data.get('StackName')
+
+            if action == 'CreateStack':
+                event_publisher.fire_event(event_publisher.EVENT_CLOUDFORMATION_CREATE_STACK,
+                    payload={'n': event_publisher.get_hash(stack_name)})
+
+            if action == 'DeleteStack':
+                client = aws_stack.connect_to_service('cloudformation')
+                stack_resources = client.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
+                template_deployer.delete_stack(stack_name, stack_resources)
+
+            if action == 'DescribeStackEvents':
+                # fix an issue where moto cannot handle ARNs as stack names (or missing names)
+                run_fix = not stack_name
+                if stack_name:
+                    if stack_name.startswith('arn:aws:cloudformation'):
+                        run_fix = True
+                        stack_name = re.sub(r'arn:aws:cloudformation:[^:]+:[^:]+:stack/([^/]+)(/.+)?',
+                                            r'\1', stack_name)
+                if run_fix:
+                    stack_names = [stack_name] if stack_name else self._list_stack_names()
+                    client = aws_stack.connect_to_service('cloudformation')
+                    events = []
+                    for stack_name in stack_names:
+                        tmp = client.describe_stack_events(StackName=stack_name)['StackEvents'][:1]
+                        events.extend(tmp)
+                    events = [{'member': e} for e in events]
+                    response_content = '<StackEvents>%s</StackEvents>' % obj_to_xml(events)
+                    return make_response('DescribeStackEvents', response_content)
 
         if req_data:
             if action == 'ValidateTemplate':
                 return validate_template(req_data)
+            if action == 'CreateStack':
+                modified_request = transform_template(req_data)
+                if modified_request:
+                    req_data.pop('TemplateURL', None)
+                    req_data['TemplateBody'] = json.dumps(modified_request)
+                    data = urlparse.urlencode(req_data, doseq=True)
+                    return Request(data=data, headers=headers, method=method)
 
         return True
 
@@ -75,6 +174,20 @@ class ProxyListenerCloudFormation(ProxyListener):
         if response.status_code >= 400:
             LOG.debug('Error response from CloudFormation (%s) %s %s: %s' %
                       (response.status_code, method, path, response.content))
+
+        if response._content:
+            aws_stack.fix_account_id_in_arns(response)
+
+    def _list_stack_names(self):
+        client = aws_stack.connect_to_service('cloudformation')
+        stacks = client.list_stacks()['StackSummaries']
+        stack_names = []
+        for stack in stacks:
+            status = stack['StackStatus']
+            if 'FAILED' in status or 'DELETE' in status:
+                continue
+            stack_names.append(stack['StackName'])
+        return stack_names
 
 
 # instantiate listener

@@ -12,7 +12,7 @@ class S3ListenerTest (unittest.TestCase):
         url2 = s3_listener.expand_redirect_url('http://example.org/?id=I', 'K', 'B')
         self.assertEqual(url2, 'http://example.org/?id=I&key=K&bucket=B')
 
-    def test_find_multipart_redirect_url(self):
+    def test_find_multipart_key_value(self):
         headers = {'Host': '10.0.1.19:4572', 'User-Agent': 'curl/7.51.0',
             'Accept': '*/*', 'Content-Length': '992', 'Expect': '100-continue',
             'Content-Type': 'multipart/form-data; boundary=------------------------3c48c744237517ac'}
@@ -30,20 +30,30 @@ class S3ListenerTest (unittest.TestCase):
                  b'redirect"\r\n\r\nhttp://127.0.0.1:5000/?id=20170826T181315.679087009Z\r\n--------------------------'
                  b'3c48c744237517ac--\r\n')
 
-        key1, url1 = multipart_content.find_multipart_redirect_url(data1, headers)
+        data4 = (b'--------------------------3c48c744237517ac\r\nContent-Disposition: form-data; name="key"\r\n\r\n'
+                 b'uploads/20170826T181315.679087009Z/upload/pixel.png\r\n--------------------------3c48c744237517ac'
+                 b'\r\nContent-Disposition: form-data; name="success_action_status"\r\n\r\n201'
+                 b'\r\n--------------------------3c48c744237517ac--\r\n')
+
+        key1, url1 = multipart_content.find_multipart_key_value(data1, headers)
 
         self.assertEqual(key1, 'uploads/20170826T181315.679087009Z/upload/pixel.png')
         self.assertEqual(url1, 'http://127.0.0.1:5000/?id=20170826T181315.679087009Z')
 
-        key2, url2 = multipart_content.find_multipart_redirect_url(data2, headers)
+        key2, url2 = multipart_content.find_multipart_key_value(data2, headers)
 
         self.assertEqual(key2, 'uploads/20170826T181315.679087009Z/upload/pixel.png')
         self.assertIsNone(url2, 'Should not get a redirect URL without success_action_redirect')
 
-        key3, url3 = multipart_content.find_multipart_redirect_url(data3, headers)
+        key3, url3 = multipart_content.find_multipart_key_value(data3, headers)
 
         self.assertIsNone(key3, 'Should not get a key without provided key')
         self.assertIsNone(url3, 'Should not get a redirect URL without provided key')
+
+        key4, status_code = multipart_content.find_multipart_key_value(data4, headers, 'success_action_status')
+
+        self.assertEqual(key4, 'uploads/20170826T181315.679087009Z/upload/pixel.png')
+        self.assertEqual(status_code, '201')
 
     def test_expand_multipart_filename(self):
         headers = {'Host': '10.0.1.19:4572', 'User-Agent': 'curl/7.51.0',

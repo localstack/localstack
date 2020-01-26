@@ -18,3 +18,7 @@ Resources:
         - Protocol: sqs
           Endpoint:
             "Fn::GetAtt": ["SQSQueue2", "Arn"]
+Outputs:
+  SQSQueue1URL:
+    Value:
+      Ref: SQSQueue1

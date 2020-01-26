@@ -1,16 +1,24 @@
+# -*- coding: utf-8 -*-
+
+import base64
 import re
 import json
 import unittest
+import xmltodict
+from jsonpatch import apply_patch
 from requests.models import Response
-from localstack.constants import DEFAULT_REGION, TEST_AWS_ACCOUNT_ID
-from localstack.config import INBOUND_GATEWAY_URL_PATTERN
+from requests.structures import CaseInsensitiveDict
+from localstack import config
+from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, load_file
+from localstack.utils.common import to_str, load_file, json_safe, clone
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-from localstack.services.awslambda.lambda_api import (LAMBDA_RUNTIME_PYTHON27)
-from localstack.services.apigateway.helpers import get_rest_api_paths, get_resource_for_path
+from localstack.services.awslambda.lambda_api import (
+    LAMBDA_RUNTIME_PYTHON27, add_event_source)
+from localstack.services.apigateway.helpers import (
+    get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 
@@ -46,11 +54,37 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
     # name of Kinesis stream connected to API Gateway
     TEST_STREAM_KINESIS_API_GW = 'test-stream-api-gw'
+    TEST_SQS_QUEUE = 'test-sqs-queue-api-gw'
     TEST_STAGE_NAME = 'testing'
     TEST_LAMBDA_PROXY_BACKEND = 'test_lambda_apigw_backend'
     TEST_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM = 'test_lambda_apigw_backend_path_param'
-    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_ARMlambda_apigw_backend_any_method'
-    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_ARMlambda_apigw_backend_any_method_path_param'
+    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD = 'test_lambda_apigw_backend_any_method'
+    TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM = 'test_lambda_apigw_backend_any_method_path_param'
+    TEST_LAMBDA_SQS_HANDLER_NAME = 'lambda_sqs_handler'
+    TEST_LAMBDA_AUTHORIZER_HANDLER_NAME = 'lambda_authorizer_handler'
+    TEST_API_GATEWAY_ID = 'fugvjdxtri'
+
+    TEST_API_GATEWAY_AUTHORIZER = {
+        'name': 'test',
+        'type': 'TOKEN',
+        'providerARNs': [
+            'arn:aws:cognito-idp:us-east-1:123412341234:userpool/us-east-1_123412341'
+        ],
+        'authType': 'custom',
+        'authorizerUri': 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' +
+                         'arn:aws:lambda:us-east-1:123456789012:function:myApiAuthorizer/invocations',
+        'authorizerCredentials': 'arn:aws:iam::123456789012:role/apigAwsProxyRole',
+        'identitySource': 'method.request.header.Authorization',
+        'identityValidationExpression': '.*',
+        'authorizerResultTtlInSeconds': 300
+    }
+    TEST_API_GATEWAY_AUTHORIZER_OPS = [
+        {
+            'op': 'replace',
+            'path': '/name',
+            'value': 'test1'
+        }
+    ]
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
@@ -66,16 +100,86 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             {'data': '{"foo": "bar3"}'}
         ]}
 
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
+        url = self.gateway_request_url(
+            api_id=result['id'],
+            stage_name=self.TEST_STAGE_NAME,
+            path=self.API_PATH_DATA_INBOUND
+        )
+
+        # list Kinesis streams via API Gateway
+        result = requests.get(url)
+        result = json.loads(to_str(result.content))
+        self.assertIn('StreamNames', result)
+
+        # post test data to Kinesis via API Gateway
+        result = requests.post(url, data=json.dumps(test_data))
+        result = json.loads(to_str(result.content))
+        self.assertEqual(result['FailedRecordCount'], 0)
+        self.assertEqual(len(result['Records']), len(test_data['records']))
+
+        # clean up
+        kinesis = aws_stack.connect_to_service('kinesis')
+        kinesis.delete_stream(StreamName=self.TEST_STREAM_KINESIS_API_GW)
+
+    def test_api_gateway_sqs_integration_with_event_source(self):
+        # create target SQS stream
+        aws_stack.create_sqs_queue(self.TEST_SQS_QUEUE)
+
+        # create API Gateway and connect it to the target queue
+        result = connect_api_gateway_to_sqs(
+            'test_gateway4',
+            stage_name=self.TEST_STAGE_NAME,
+            queue_arn=self.TEST_SQS_QUEUE, path=self.API_PATH_DATA_INBOUND)
+
+        # create event source for sqs lambda processor
+        self.create_lambda_function(self.TEST_LAMBDA_SQS_HANDLER_NAME)
+        add_event_source(
+            self.TEST_LAMBDA_SQS_HANDLER_NAME,
+            aws_stack.sqs_queue_arn(self.TEST_SQS_QUEUE),
+            True)
+
+        # generate test data
+        test_data = {'spam': 'eggs & beans'}
+
+        url = self.gateway_request_url(
             api_id=result['id'],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_DATA_INBOUND
         )
         result = requests.post(url, data=json.dumps(test_data))
-        result = json.loads(to_str(result.content))
+        self.assertEqual(result.status_code, 200)
 
-        self.assertEqual(result['FailedRecordCount'], 0)
-        self.assertEqual(len(result['Records']), len(test_data['records']))
+        parsed_json = xmltodict.parse(result.content)
+        result = parsed_json['SendMessageResponse']['SendMessageResult']
+
+        attr_md5 = result['MD5OfMessageAttributes']
+        body_md5 = result['MD5OfMessageBody']
+
+        self.assertEqual(attr_md5, 'd41d8cd98f00b204e9800998ecf8427e')
+        self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')
+
+    def test_api_gateway_sqs_integration(self):
+        # create target SQS stream
+        aws_stack.create_sqs_queue(self.TEST_SQS_QUEUE)
+
+        # create API Gateway and connect it to the target queue
+        result = connect_api_gateway_to_sqs('test_gateway4', stage_name=self.TEST_STAGE_NAME,
+            queue_arn=self.TEST_SQS_QUEUE, path=self.API_PATH_DATA_INBOUND)
+
+        # generate test data
+        test_data = {'spam': 'eggs'}
+
+        url = self.gateway_request_url(
+            api_id=result['id'],
+            stage_name=self.TEST_STAGE_NAME,
+            path=self.API_PATH_DATA_INBOUND
+        )
+        result = requests.post(url, data=json.dumps(test_data))
+        self.assertEqual(result.status_code, 200)
+
+        messages = aws_stack.sqs_receive_message(self.TEST_SQS_QUEUE)['Messages']
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(json.loads(base64.b64decode(messages[0]['Body'])), test_data)
 
     def test_api_gateway_http_integration(self):
         test_port = 12123
@@ -87,7 +191,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             def forward_request(self, **kwargs):
                 response = Response()
                 response.status_code = 200
-                response._content = kwargs.get('data') or '{}'
+                result = {
+                    'data': kwargs.get('data') or '{}',
+                    'headers': dict(kwargs.get('headers'))
+                }
+                response._content = json.dumps(json_safe(result))
                 return response
 
         proxy = GenericProxy(test_port, update_listener=TestListener())
@@ -100,7 +208,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             path=self.API_PATH_HTTP_BACKEND
         )
 
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
+        url = self.gateway_request_url(
             api_id=result['id'],
             stage_name=self.TEST_STAGE_NAME,
             path=self.API_PATH_HTTP_BACKEND
@@ -113,15 +221,26 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertTrue(re.match(result.headers['Access-Control-Allow-Origin'].replace('*', '.*'), origin))
         self.assertIn('POST', result.headers['Access-Control-Allow-Methods'])
 
-        # make test request to gateway
+        # make test GET request to gateway
         result = requests.get(url)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(to_str(result.content), '{}')
+        self.assertEqual(json.loads(to_str(result.content))['data'], '{}')
 
-        data = {'data': 123}
-        result = requests.post(url, data=json.dumps(data))
+        # make test POST request to gateway
+        data = json.dumps({'data': 123})
+        result = requests.post(url, data=data)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(to_str(result.content)), data)
+        self.assertEqual(json.loads(to_str(result.content))['data'], data)
+
+        # make test POST request with non-JSON content type
+        data = 'test=123'
+        ctype = 'application/x-www-form-urlencoded'
+        result = requests.post(url, data=data, headers={'content-type': ctype})
+        self.assertEqual(result.status_code, 200)
+        content = json.loads(to_str(result.content))
+        headers = CaseInsensitiveDict(content['headers'])
+        self.assertEqual(content['data'], data)
+        self.assertEqual(headers['content-type'], ctype)
 
         # clean up
         proxy.stop()
@@ -137,29 +256,14 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.API_PATH_LAMBDA_PROXY_BACKEND_WITH_PATH_PARAM)
 
     def _test_api_gateway_lambda_proxy_integration(self, fn_name, path):
-        # create lambda function
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
-        testutil.create_lambda_function(
-            func_name=fn_name,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
-
+        self.create_lambda_function(fn_name)
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
         invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
-        target_uri = invocation_uri % (DEFAULT_REGION, lambda_uri)
+        target_uri = invocation_uri % (config.DEFAULT_REGION, lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
-            'test_gateway2',
-            target_uri,
-            path=path
-        )
+            'test_gateway2', target_uri, path=path)
 
         api_id = result['id']
         path_map = get_rest_api_paths(api_id)
@@ -169,18 +273,12 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         path = path.replace('{test_param1}', 'foo1')
         path = path + '?foo=foo&bar=bar&bar=baz'
 
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
-            api_id=api_id,
-            stage_name=self.TEST_STAGE_NAME,
-            path=path
-        )
+        url = self.gateway_request_url(
+            api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path)
 
         data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
-        result = requests.post(
-            url,
-            data=json.dumps(data),
-            headers={'User-Agent': 'python-requests/testing'}
-        )
+        result = requests.post(url, data=json.dumps(data),
+            headers={'User-Agent': 'python-requests/testing'})
 
         self.assertEqual(result.status_code, 203)
         self.assertEqual(result.headers.get('foo'), 'bar123')
@@ -204,6 +302,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         result = requests.delete(url, data=json.dumps(data))
         self.assertEqual(result.status_code, 404)
 
+        # send message with non-ASCII chars
+        body_msg = '🙀 - 参よ'
+        result = requests.post(url, data=json.dumps({'return_raw_body': body_msg}))
+        self.assertEqual(to_str(result.content), body_msg)
+
     def test_api_gateway_lambda_proxy_integration_any_method(self):
         self._test_api_gateway_lambda_proxy_integration_any_method(
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD,
@@ -214,38 +317,68 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.TEST_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM,
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM)
 
+    def test_api_gateway_authorizer_crud(self):
+
+        apig = aws_stack.connect_to_service('apigateway')
+
+        authorizer = apig.create_authorizer(
+            restApiId=self.TEST_API_GATEWAY_ID,
+            **self.TEST_API_GATEWAY_AUTHORIZER)
+
+        authorizer_id = authorizer.get('id')
+
+        create_result = apig.get_authorizer(
+            restApiId=self.TEST_API_GATEWAY_ID,
+            authorizerId=authorizer_id)
+
+        # ignore boto3 stuff
+        del create_result['ResponseMetadata']
+
+        create_expected = clone(self.TEST_API_GATEWAY_AUTHORIZER)
+        create_expected['id'] = authorizer_id
+
+        self.assertDictEqual(create_expected, create_result)
+
+        apig.update_authorizer(
+            restApiId=self.TEST_API_GATEWAY_ID,
+            authorizerId=authorizer_id,
+            patchOperations=self.TEST_API_GATEWAY_AUTHORIZER_OPS)
+
+        update_result = apig.get_authorizer(
+            restApiId=self.TEST_API_GATEWAY_ID,
+            authorizerId=authorizer_id)
+
+        # ignore boto3 stuff
+        del update_result['ResponseMetadata']
+
+        update_expected = apply_patch(create_expected, self.TEST_API_GATEWAY_AUTHORIZER_OPS)
+
+        self.assertDictEqual(update_expected, update_result)
+
+        apig.delete_authorizer(
+            restApiId=self.TEST_API_GATEWAY_ID,
+            authorizerId=authorizer_id)
+
+        self.assertRaises(
+            Exception,
+            apig.get_authorizer,
+            self.TEST_API_GATEWAY_ID,
+            authorizer_id)
+
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
-        # create lambda function
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
-        testutil.create_lambda_function(
-            func_name=fn_name,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
+        self.create_lambda_function(fn_name)
 
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
-            'test_gateway3',
-            target_uri,
-            methods=['ANY'],
-            path=path
-        )
+            'test_gateway3', target_uri, methods=['ANY'], path=path)
 
         # make test request to gateway and check response
         path = path.replace('{test_param1}', 'foo1')
-        url = INBOUND_GATEWAY_URL_PATTERN.format(
-            api_id=result['id'],
-            stage_name=self.TEST_STAGE_NAME,
-            path=path
-        )
+        url = self.gateway_request_url(
+            api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=path)
         data = {}
 
         for method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'):
@@ -258,6 +391,12 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     # =====================================================================
     # Helper methods
     # =====================================================================
+
+    def gateway_request_url(self, api_id, stage_name, path):
+        """ Return URL for inbound API gateway for given API ID, stage name, and path """
+        pattern = '%s/restapis/{api_id}/{stage_name}/%s{path}' % (config.TEST_APIGATEWAY_URL, PATH_USER_REQUEST)
+        return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
+
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
         template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % (kinesis_stream)
@@ -267,9 +406,19 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             'authorizationType': 'NONE',
             'integrations': [{
                 'type': 'AWS',
-                'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % DEFAULT_REGION,
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % config.DEFAULT_REGION,
                 'requestTemplates': {
                     'application/json': template
+                }
+            }]
+        }, {
+            'httpMethod': 'GET',
+            'authorizationType': 'NONE',
+            'integrations': [{
+                'type': 'AWS',
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/ListStreams' % config.DEFAULT_REGION,
+                'requestTemplates': {
+                    'application/json': '{}'
                 }
             }]
         }]
@@ -321,4 +470,17 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             name=gateway_name,
             resources=resources,
             stage_name=self.TEST_STAGE_NAME
+        )
+
+    def create_lambda_function(self, fn_name):
+        zip_file = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_PYTHON),
+            get_content=True,
+            libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27
+        )
+        testutil.create_lambda_function(
+            func_name=fn_name,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON27
         )
