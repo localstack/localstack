@@ -68,6 +68,11 @@ def get_from_event(event, key):
         return None
 
 
+def is_java_lambda(lambda_details):
+    runtime = getattr(lambda_details, 'runtime', lambda_details)
+    return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11]
+
+
 class LambdaExecutor(object):
     """ Base class for Lambda executors. Subclasses must overwrite the _execute method """
 
@@ -208,7 +213,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         command = ''
 
         # if running a Java Lambda, set up classpath arguments
-        if runtime == LAMBDA_RUNTIME_JAVA8:
+        if is_java_lambda(runtime):
             java_opts = Util.get_java_opts()
             stdin = None
             # copy executor jar into temp directory
