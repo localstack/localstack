@@ -148,15 +148,20 @@ public class S3FeaturesTest {
 		assertEquals(3, someObjList.size());
 	}
 
-	private List<Object> mapFilesToSomeObject(ObjectListing objectListing) {
-		return objectListing.getObjectSummaries()
-			.stream()
-			.map(S3ObjectSummary::getKey)
-			.collect(Collectors.toList());
+	@Test
+	public void testUploadEmptyBody() {
+		AmazonS3 s3client = TestUtils.getClientS3();
+		String bucketName = UUID.randomUUID().toString();
+		String keyName = "test-key-empty";
+		s3client.createBucket(bucketName);
+		InputStream stream = new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8));
+		PutObjectRequest request = new PutObjectRequest(bucketName, keyName, stream, new ObjectMetadata());
+		PutObjectResult result = s3client.putObject(request);
+		Assert.assertEquals(result.getMetadata().getETag(), "d41d8cd98f00b204e9800998ecf8427e");
 	}
 
 	@Test
-	public void test() throws Exception {
+	public void testPresignedURLUpload() throws Exception {
 		AmazonS3 s3client = TestUtils.getClientS3();
 		Date expiration = new Date(System.currentTimeMillis() + 1000*60*5);
 		String bucketName = UUID.randomUUID().toString();
@@ -188,4 +193,16 @@ public class S3FeaturesTest {
 		String result = IOUtils.toString(stream.getObjectContent());
 		Assert.assertEquals(result, content);
 	}
+
+	// ----------------
+	// UTILITY METHODS
+	// ----------------
+
+	private List<Object> mapFilesToSomeObject(ObjectListing objectListing) {
+		return objectListing.getObjectSummaries()
+			.stream()
+			.map(S3ObjectSummary::getKey)
+			.collect(Collectors.toList());
+	}
+
 }
