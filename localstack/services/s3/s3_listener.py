@@ -24,6 +24,9 @@ from localstack.utils.aws.aws_responses import requests_response
 from localstack.services.s3 import multipart_content
 from localstack.services.generic_proxy import ProxyListener
 
+CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
+STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
+
 # mappings for S3 bucket notifications
 S3_NOTIFICATIONS = {}
 
@@ -418,6 +421,23 @@ def fix_creation_date(method, path, response):
     response._content = re.sub(r'([0-9])</CreationDate>', r'\1Z</CreationDate>', to_str(response._content))
 
 
+def fix_etag_for_multipart(data, headers, response):
+    # Fix for https://github.com/localstack/localstack/issues/1978
+    if headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD:
+        try:
+            if b'chunk-signature=' not in to_bytes(data):
+                return
+            correct_hash = md5(strip_chunk_signatures(data))
+            tags = r'<ETag>%s</ETag>'
+            pattern = r'(&#34;)?([^<&]+)(&#34;)?'
+            replacement = r'\1%s\3' % correct_hash
+            response._content = re.sub(tags % pattern, tags % replacement, to_str(response.content))
+            if response.headers.get('ETag'):
+                response.headers['ETag'] = re.sub(pattern, replacement, response.headers['ETag'])
+        except Exception:
+            pass
+
+
 def remove_xml_preamble(response):
     """ Removes <?xml ... ?> from a response content """
     response._content = re.sub(r'^<\?[^\?]+\?>', '', to_str(response._content))
@@ -765,7 +785,7 @@ class ProxyListenerS3(ProxyListener):
         # Related isse: https://github.com/localstack/localstack/issues/98
         # TODO we should evaluate whether to replace moto s3 with scality/S3:
         # https://github.com/scality/S3/issues/237
-        if headers.get('x-amz-content-sha256') == 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD':
+        if headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD:
             modified_data = strip_chunk_signatures(modified_data or data)
             headers['content-length'] = headers.get('x-amz-decoded-content-length')
 
@@ -969,6 +989,7 @@ class ProxyListenerS3(ProxyListener):
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
             fix_metadata_key_underscores(response=response)
             fix_creation_date(method, path, response=response)
+            fix_etag_for_multipart(data, headers, response)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317

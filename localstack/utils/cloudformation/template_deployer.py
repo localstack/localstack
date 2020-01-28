@@ -966,6 +966,7 @@ def resources_to_deploy_next(resources, stack_name):
 def get_resource_dependencies(resource_id, resource, resources):
     result = {}
     dumped = json.dumps(common.json_safe(resource))
+    dependencies = resource.get('DependsOn', [])
     for other_id, other in iteritems(resources):
         if resource != other:
             # TODO: traverse dict instead of doing string search
@@ -973,6 +974,6 @@ def get_resource_dependencies(resource_id, resource, resources):
             search2 = '{"Fn::GetAtt": ["%s", ' % other_id
             if search1 in dumped or search2 in dumped:
                 result[other_id] = other
-            if other_id in resource.get('DependsOn', []):
+            if other_id in dependencies:
                 result[other_id] = other
     return result
