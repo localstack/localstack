@@ -5,7 +5,7 @@ services:
     container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
     image: localstack/localstack
     ports:
-      - "4567-4597:4567-4597"
+      - "4567-4599:4567-4599"
       - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
     environment:
       - SERVICES=${SERVICES- }
