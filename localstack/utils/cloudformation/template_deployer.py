@@ -871,6 +871,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     return result
 
 
+# TODO remove?
 def deploy_template(template, stack_name):
     if isinstance(template, string_types):
         template = parse_template(template)
@@ -957,7 +958,7 @@ def all_dependencies_satisfied(resources, stack_name, all_resources, depending_r
 
 def resources_to_deploy_next(resources, stack_name):
     result = {}
-    for resource_id, resource in iteritems(resources):
+    for resource_id, resource in resources.items():
         if should_be_deployed(resource_id, resources, stack_name):
             result[resource_id] = resource
     return result
@@ -967,7 +968,7 @@ def get_resource_dependencies(resource_id, resource, resources):
     result = {}
     dumped = json.dumps(common.json_safe(resource))
     dependencies = resource.get('DependsOn', [])
-    for other_id, other in iteritems(resources):
+    for other_id, other in resources.items():
         if resource != other:
             # TODO: traverse dict instead of doing string search
             search1 = '{"Ref": "%s"}' % other_id

@@ -219,8 +219,9 @@ def apply_patches():
             return resource
 
         # check whether this resource needs to be deployed
-        resource_wrapped = {logical_id: resource_json}
-        should_be_created = template_deployer.should_be_deployed(logical_id, resource_wrapped, stack_name)
+        resource_map_new = dict(resources_map._resource_json_map)
+        resource_map_new[logical_id] = resource_json
+        should_be_created = template_deployer.should_be_deployed(logical_id, resource_map_new, stack_name)
 
         # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
         resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
@@ -250,7 +251,7 @@ def apply_patches():
         is_updateable = False
         if not should_be_created:
             # This resource is either not deployable or already exists. Check if it can be updated
-            is_updateable = template_deployer.is_updateable(logical_id, resource_wrapped, stack_name)
+            is_updateable = template_deployer.is_updateable(logical_id, resource_map_new, stack_name)
             if not update or not is_updateable:
                 LOG.debug('Resource %s need not be deployed: %s %s' % (logical_id, resource_json, bool(resource)))
                 # Return if this resource already exists and can/need not be updated
@@ -264,7 +265,7 @@ def apply_patches():
         try:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
             deploy_func = template_deployer.update_resource if update else template_deployer.deploy_resource
-            result = deploy_func(logical_id, resource_wrapped, stack_name=stack_name)
+            result = deploy_func(logical_id, resource_map_new, stack_name=stack_name)
         finally:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = False
 
