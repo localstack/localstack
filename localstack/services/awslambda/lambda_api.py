@@ -268,6 +268,7 @@ def process_kinesis_records(records, stream_name):
 def process_sqs_message(message_body, message_attributes, queue_name, region_name=None):
     # feed message into the first listening lambda (message should only get processed once)
     try:
+        region_name = region_name or aws_stack.get_region()
         queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=region_name)
         sources = get_event_sources(source_arn=queue_arn)
         arns = [s.get('FunctionArn') for s in sources]

@@ -8,10 +8,10 @@ from six.moves.urllib.parse import urlencode
 from requests.models import Request, Response
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, md5, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
-from localstack.utils.aws.aws_stack import extract_region_from_auth_header
 from localstack.services.generic_proxy import ProxyListener
 
 
@@ -86,7 +86,7 @@ class ProxyListenerSQS(ProxyListener):
         if method != 'POST':
             return
 
-        region_name = extract_region_from_auth_header(headers)
+        region_name = aws_stack.get_region()
         req_data = urlparse.parse_qs(to_str(data))
         action = req_data.get('Action', [None])[0]
         content_str = content_str_original = to_str(response.content)
@@ -264,10 +264,9 @@ class ProxyListenerSQS(ProxyListener):
         queue_name = queue_url.rpartition('/')[2]
         message_body = req_data.get('MessageBody', [None])[0]
         message_attributes = self.format_message_attributes(req_data)
-        region_name = extract_region_from_auth_header(headers)
 
         process_result = lambda_api.process_sqs_message(message_body,
-            message_attributes, queue_name, region_name=region_name)
+            message_attributes, queue_name)
         if process_result:
             # If a Lambda was listening, do not add the message to the queue
             new_response = Response()
