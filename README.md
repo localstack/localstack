@@ -142,7 +142,7 @@ services:
   localstack:
     image: localstack/localstack
     ports:
-      - "4567-4584:4567-4584"
+      - "4567-4599:4567-4599"
       - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
     environment:
       - SERVICES=${SERVICES- }
