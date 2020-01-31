@@ -20,7 +20,7 @@ def check_sqs(expect_shutdown=False, print_error=False):
     try:
         # wait for port to be opened
         wait_for_port_open(DEFAULT_PORT_SQS_BACKEND)
-        # check S3
+        # check SQS
         out = aws_stack.connect_to_service(service_name='sqs').list_queues()
     except Exception as e:
         if print_error:
