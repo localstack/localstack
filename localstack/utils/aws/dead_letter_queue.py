@@ -18,6 +18,17 @@ def sqs_error_to_dead_letter_queue(queue_arn, event, error):
     return _send_to_dead_letter_queue('SQS', queue_arn, target_arn, event, error)
 
 
+def sns_error_to_dead_letter_queue(sns_subscriber_arn, event, error):
+    client = aws_stack.connect_to_service('sns')
+    attrs = client.get_subscription_attributes(SubscriptionArn=sns_subscriber_arn)
+    attrs = attrs.get('Attributes', {})
+    policy = json.loads(attrs.get('RedrivePolicy') or '{}')
+    target_arn = policy.get('deadLetterTargetArn')
+    if not target_arn:
+        return
+    return _send_to_dead_letter_queue('SQS', sns_subscriber_arn, target_arn, event, error)
+
+
 def lambda_error_to_dead_letter_queue(func_details, event, error):
     dlq_arn = (func_details.dead_letter_config or {}).get('TargetArn')
     source_arn = func_details.id
