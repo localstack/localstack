@@ -639,6 +639,10 @@ def parse_chunked_data(data):
     return ''.join(chunks)
 
 
+def first_char_to_lower(s):
+    return '%s%s' % (s[0].lower(), s[1:])
+
+
 def is_number(s):
     try:
         float(s)  # for int, long and float
