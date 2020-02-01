@@ -604,7 +604,8 @@ def extract_resource_attribute(resource_type, resource, attribute):
     elif resource_type == 'ApiGateway::Resource':
         if attribute == 'PhysicalResourceId':
             return resource['id']
-    return resource.get(attribute)
+    attribute_lower = common.first_char_to_lower(attribute)
+    return resource.get(attribute) or resource.get(attribute_lower)
 
 
 def resolve_ref(stack_name, ref, resources, attribute):
@@ -968,6 +969,7 @@ def get_resource_dependencies(resource_id, resource, resources):
     result = {}
     dumped = json.dumps(common.json_safe(resource))
     dependencies = resource.get('DependsOn', [])
+    dependencies = dependencies if isinstance(dependencies, list) else [dependencies]
     for other_id, other in resources.items():
         if resource != other:
             # TODO: traverse dict instead of doing string search
