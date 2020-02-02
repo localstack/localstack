@@ -289,7 +289,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 kwargs = {
                     'method': method,
                     'path': path,
-                    'data': data,
+                    'data': self.data_bytes,
                     'headers': forward_headers,
                     'response': response
                 }

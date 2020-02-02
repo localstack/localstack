@@ -802,9 +802,6 @@ class ProxyListenerS3(ProxyListener):
         if method == 'PUT' and not headers.get('content-type'):
             headers['content-type'] = 'binary/octet-stream'
 
-        # persist this API call to disk
-        persistence.record('s3', method, path, data, headers)
-
         # parse query params
         query = parsed_path.query
         path = parsed_path.path
@@ -892,6 +889,9 @@ class ProxyListenerS3(ProxyListener):
         path = to_str(path)
         method = to_str(method)
         bucket_name = get_bucket_name(path, headers)
+
+        # persist this API call to disk
+        persistence.record('s3', method, path, data, headers, response)
 
         # No path-name based bucket name? Try host-based
         hostname_parts = headers['host'].split('.')

@@ -270,11 +270,6 @@ def get_service_status(service, port=None):
     return status
 
 
-def restore_persisted_data(apis):
-    for api in apis:
-        persistence.restore_persisted_data(api)
-
-
 def register_signal_handlers():
     global SIGNAL_HANDLERS_SETUP
     if SIGNAL_HANDLERS_SETUP:
@@ -464,7 +459,7 @@ def start_infra(asynchronous=False, apis=None):
         # ensure that all infra components are up and running
         check_infra(apis=apis)
         # restore persisted data
-        restore_persisted_data(apis=apis)
+        persistence.restore_persisted_data(apis=apis)
         print('Ready.')
         sys.stdout.flush()
         if not asynchronous and thread:
