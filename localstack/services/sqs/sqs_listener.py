@@ -58,7 +58,7 @@ class ProxyListenerSQS(ProxyListener):
                 queue_url = self._queue_url(path, req_data, headers)
                 self._set_queue_attributes(queue_url, req_data)
             elif action == 'DeleteQueue':
-                del QUEUE_ATTRIBUTES[self._queue_url(path, req_data, headers)]
+                QUEUE_ATTRIBUTES.pop(self._queue_url(path, req_data, headers), None)
 
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
@@ -239,8 +239,8 @@ class ProxyListenerSQS(ProxyListener):
 
     # Format attributes as a list. Example input:
     #  {
-    #    'AttributeName.1': 'Policy',
-    #    'AttributeName.2': 'MessageRetentionPeriod'
+    #    'AttributeName.1': ['Policy'],
+    #    'AttributeName.2': ['MessageRetentionPeriod']
     #  }
     def _format_attributes_names(self, req_data):
         result = set()

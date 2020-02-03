@@ -193,6 +193,7 @@ class SQSTest(unittest.TestCase):
 
         # assertion
         self.assertIn('MessageRetentionPeriod', creation_attributes['Attributes'].keys())
+        self.assertEqual('604800', creation_attributes['Attributes']['MessageRetentionPeriod'])
 
         # cleanup
         self.client.delete_queue(QueueUrl=queue_url)
@@ -213,6 +214,7 @@ class SQSTest(unittest.TestCase):
                                                                    AttributeNames=['QueueArn'])
         # assertion
         self.assertTrue('MessageRetentionPeriod' in unsupported_attribute_get['Attributes'].keys())
+        self.assertEqual('604800', unsupported_attribute_get['Attributes']['MessageRetentionPeriod'])
         self.assertTrue('QueueArn' in supported_attribute_get['Attributes'].keys())
 
         # cleanup
