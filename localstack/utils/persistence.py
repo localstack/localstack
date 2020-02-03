@@ -8,7 +8,12 @@ from localstack.config import DATA_DIR
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_bytes, to_str
 
-API_FILE_PATTERN = '{data_dir}/{api}_api_calls.json'
+USE_SINGLE_DUMP_FILE = True
+
+if USE_SINGLE_DUMP_FILE:
+    API_FILE_PATTERN = '{data_dir}/recorded_api_calls.json'
+else:
+    API_FILE_PATTERN = '{data_dir}/{api}_api_calls.json'
 
 # Stack with flags to indicate whether we are currently re-playing API calls.
 # (We should not be re-playing and recording at the same time)
@@ -18,37 +23,46 @@ CURRENTLY_REPLAYING = []
 API_FILE_PATHS = {}
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
-def should_record(api, method, path, data, headers):
+def should_record(api, method, path, data, headers, response=None):
     """ Decide whether or not a given API call should be recorded (persisted to disk) """
     if api == 's3':
         return method in ['PUT', 'POST', 'DELETE']
     return False
 
 
-def record(api, method, path, data, headers):
+def record(api, method, path, data, headers, response=None):
     """ Record a given API call to a persistent file on disk """
     file_path = get_file_path(api)
-    if CURRENTLY_REPLAYING or not file_path or not should_record(api, method, path, data, headers):
+    should_be_recorded = should_record(api, method, path, data, headers, response=response)
+    if CURRENTLY_REPLAYING or not file_path or not should_be_recorded:
         return
     entry = None
     try:
         if isinstance(data, dict):
             data = json.dumps(data)
-        if data or data in [u'', b'']:
-            try:
-                data = to_bytes(data)
-            except Exception as e:
-                LOGGER.warning('Unable to call to_bytes: %s' % e)
-            data = to_str(base64.b64encode(data))
+
+        def get_recordable_data(data):
+            if data or data in [u'', b'']:
+                try:
+                    data = to_bytes(data)
+                except Exception as e:
+                    LOG.warning('Unable to call to_bytes: %s' % e)
+                data = to_str(base64.b64encode(data))
+            return data
+
+        data = get_recordable_data(data)
+        response_data = get_recordable_data('' if response is None else response.content)
+
         entry = {
             'a': api,
             'm': method,
             'p': path,
             'd': data,
-            'h': dict(headers)
+            'h': dict(headers),
+            'rd': response_data
         }
         with open(file_path, 'a') as dumpfile:
             dumpfile.write('%s\n' % json.dumps(entry))
@@ -56,15 +70,19 @@ def record(api, method, path, data, headers):
         print('Error recording API call to persistent file: %s %s' % (e, traceback.format_exc()))
 
 
+def prepare_replay_data(command):
+    data = command['d']
+    data = data and base64.b64decode(data)
+    return data
+
+
 def replay_command(command):
     function = getattr(requests, command['m'].lower())
-    data = command['d']
-    if data:
-        data = base64.b64decode(data)
+    data = prepare_replay_data(command)
     endpoint = aws_stack.get_local_service_url(command['a'])
     full_url = (endpoint[:-1] if endpoint.endswith('/') else endpoint) + command['p']
-    result = function(full_url, data=data, headers=command['h'], verify=False)
-    return result
+    response = function(full_url, data=data, headers=command['h'], verify=False)
+    return response
 
 
 def replay(api):
@@ -83,11 +101,15 @@ def replay(api):
     finally:
         CURRENTLY_REPLAYING.pop(0)
     if count:
-        LOGGER.info('Restored %s API calls from persistent file: %s' % (count, file_path))
+        LOG.info('Restored %s API calls from persistent file: %s' % (count, file_path))
 
 
-def restore_persisted_data(api):
-    return replay(api)
+def restore_persisted_data(apis):
+    if USE_SINGLE_DUMP_FILE:
+        return replay('_all_')
+    apis = apis if isinstance(apis, list) else [apis]
+    for api in apis:
+        replay(apis)
 
 
 # ---------------

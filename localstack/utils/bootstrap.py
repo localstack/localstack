@@ -425,7 +425,7 @@ class FuncThread(threading.Thread):
 def run(cmd, print_error=True, asynchronous=False, stdin=False,
         stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
         inherit_env=True, tty=False):
-    # don't use subprocess module inn Python 2 as it is not thread-safe
+    # don't use subprocess module in Python 2 as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
     if six.PY2:
         import subprocess32 as subprocess

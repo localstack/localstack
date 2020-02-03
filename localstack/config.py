@@ -192,9 +192,10 @@ try:
         if LOCALSTACK_HOSTNAME == HOSTNAME:
             DOCKER_HOST_FROM_CONTAINER = 'host.docker.internal'
     # update LOCALSTACK_HOSTNAME if host.docker.internal is available
-    if is_in_docker and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
+    if is_in_docker:
         DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
-        LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
+        if LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
+            LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
     pass
 

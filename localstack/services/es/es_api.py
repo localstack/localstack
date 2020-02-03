@@ -2,6 +2,7 @@ import json
 import time
 from random import randint
 from flask import Flask, jsonify, request, make_response
+from localstack.utils import persistence
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -161,7 +162,7 @@ def get_domain_status(domain_name, deleted=False):
 def start_elasticsearch_instance():
     # Note: keep imports here to avoid circular dependencies
     from localstack.services.es import es_starter
-    from localstack.services.infra import check_infra, restore_persisted_data, Plugin
+    from localstack.services.infra import check_infra, Plugin
 
     api_name = 'elasticsearch'
     plugin = Plugin(api_name, start=es_starter.start_elasticsearch, check=es_starter.check_elasticsearch)
@@ -172,7 +173,7 @@ def start_elasticsearch_instance():
     # ensure that all infra components are up and running
     check_infra(apis=apis, additional_checks=[es_starter.check_elasticsearch])
     # restore persisted data
-    restore_persisted_data(apis=apis)
+    persistence.restore_persisted_data(apis=apis)
     return t1
 
 
