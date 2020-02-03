@@ -1,10 +1,11 @@
 import json
 import unittest
+
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, load_file, retry
-from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
 from .lambdas import lambda_integration
+from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
 
 TEST_QUEUE_NAME = 'TestQueue'
 
@@ -70,7 +71,7 @@ class SQSTest(unittest.TestCase):
         response = self.client.receive_message(QueueUrl=queue_url)
         self.assertFalse(response.get('Messages'))
         self.client.change_message_visibility(QueueUrl=queue_url,
-            ReceiptHandle=messages[0]['ReceiptHandle'], VisibilityTimeout=0)
+                                              ReceiptHandle=messages[0]['ReceiptHandle'], VisibilityTimeout=0)
         for i in range(2):
             messages = self.client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages']
             self.assertEquals(len(messages), 1)
@@ -116,7 +117,7 @@ class SQSTest(unittest.TestCase):
         payload = {}
         attrs = {'attr1': {'StringValue': 'val1', 'DataType': 'String'}}
         self.client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload),
-            MessageAttributes=attrs)
+                                 MessageAttributes=attrs)
 
         result = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
         messages = result['Messages']
@@ -149,15 +150,16 @@ class SQSTest(unittest.TestCase):
         queue_arn1 = aws_stack.sqs_queue_arn(queue_name1)
         policy = {'deadLetterTargetArn': queue_arn1, 'maxReceiveCount': 1}
         queue_url2 = self.client.create_queue(QueueName=queue_name2,
-            Attributes={'RedrivePolicy': json.dumps(policy)})['QueueUrl']
+                                              Attributes={'RedrivePolicy': json.dumps(policy)})['QueueUrl']
         queue_arn2 = aws_stack.sqs_queue_arn(queue_name2)
 
         # create Lambda and add source mapping
         lambda_name = 'test-%s' % short_uid()
         zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON),
-            get_content=True, libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36)
+                                                  get_content=True, libs=TEST_LAMBDA_LIBS,
+                                                  runtime=LAMBDA_RUNTIME_PYTHON36)
         testutil.create_lambda_function(func_name=lambda_name, zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON36)
+                                        runtime=LAMBDA_RUNTIME_PYTHON36)
         lambda_client.create_event_source_mapping(EventSourceArn=queue_arn2, FunctionName=lambda_name)
 
         # add message to SQS, which will trigger the Lambda, resulting in an error
@@ -174,4 +176,46 @@ class SQSTest(unittest.TestCase):
             self.assertIn('RequestID', msg_attrs)
             self.assertIn('ErrorCode', msg_attrs)
             self.assertIn('ErrorMessage', msg_attrs)
+
         retry(receive_dlq, retries=8, sleep=2)
+
+    def test_set_queue_attribute_at_creation(self):
+        queue_name = 'queue-%s' % short_uid()
+
+        attributes = {
+            'MessageRetentionPeriod': '604800',  # This one is unsupported by ElasticMq and should be saved in memory
+            'ReceiveMessageWaitTimeSeconds': '10',
+            'VisibilityTimeout': '30'
+        }
+
+        queue_url = self.client.create_queue(QueueName=queue_name, Attributes=attributes)['QueueUrl']
+        creation_attributes = self.client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
+
+        # assertion
+        self.assertIn('MessageRetentionPeriod', creation_attributes['Attributes'].keys())
+        self.assertEqual('604800', creation_attributes['Attributes']['MessageRetentionPeriod'])
+
+        # cleanup
+        self.client.delete_queue(QueueUrl=queue_url)
+
+    def test_get_specific_queue_attribute_response(self):
+        queue_name = 'queue-%s' % short_uid()
+
+        # Two attributes unsupported by ElasticMq
+        attributes = {
+            'MessageRetentionPeriod': '604800',
+            'DelaySeconds': '10',
+        }
+
+        queue_url = self.client.create_queue(QueueName=queue_name, Attributes=attributes)['QueueUrl']
+        unsupported_attribute_get = self.client.get_queue_attributes(QueueUrl=queue_url,
+                                                                     AttributeNames=['MessageRetentionPeriod'])
+        supported_attribute_get = self.client.get_queue_attributes(QueueUrl=queue_url,
+                                                                   AttributeNames=['QueueArn'])
+        # assertion
+        self.assertTrue('MessageRetentionPeriod' in unsupported_attribute_get['Attributes'].keys())
+        self.assertEqual('604800', unsupported_attribute_get['Attributes']['MessageRetentionPeriod'])
+        self.assertTrue('QueueArn' in supported_attribute_get['Attributes'].keys())
+
+        # cleanup
+        self.client.delete_queue(QueueUrl=queue_url)
