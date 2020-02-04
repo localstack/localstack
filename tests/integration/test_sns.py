@@ -162,10 +162,17 @@ class SNSTest(unittest.TestCase):
                     'Key': '456',
                     'Value': 'def'
                 },
+                {
+                    'Key': '456',
+                    'Value': 'def'
+                }
             ]
         )
 
         tags = self.sns_client.list_tags_for_resource(ResourceArn=self.topic_arn)
+        distinct_tags = [tag for idx, tag in enumerate(tags['Tags']) if tag not in tags['Tags'][:idx]]
+        # test for duplicate tags
+        self.assertEqual(len(tags['Tags']), len(distinct_tags))
         self.assertEqual(len(tags['Tags']), 2)
         self.assertEqual(tags['Tags'][0]['Key'], '123')
         self.assertEqual(tags['Tags'][0]['Value'], 'abc')

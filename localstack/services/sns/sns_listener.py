@@ -287,6 +287,12 @@ def do_unsubscribe(subscription_arn):
 def _get_tags(topic_arn):
     if topic_arn not in SNS_TAGS:
         SNS_TAGS[topic_arn] = []
+
+    if len(SNS_TAGS[topic_arn]) > 0:
+        SNS_TAGS[topic_arn] = [
+            tag for idx, tag in enumerate(SNS_TAGS[topic_arn])
+            if tag not in SNS_TAGS[topic_arn][:idx]
+        ]
     return SNS_TAGS[topic_arn]
 
 
