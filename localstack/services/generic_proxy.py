@@ -103,6 +103,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             BaseHTTPRequestHandler.__init__(self, request, client_address, server)
         except SSLError as e:
             LOG.warning('SSL error when handling request: %s' % e)
+        except Exception as e:
+            if 'cannot read from timed out object' not in str(e):
+                LOG.warning('Unknown error: %s' % e)
 
     def parse_request(self):
         result = BaseHTTPRequestHandler.parse_request(self)
@@ -322,7 +325,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         except Exception as e:
             trace = str(traceback.format_exc())
             conn_errors = ('ConnectionRefusedError', 'NewConnectionError',
-                           'Connection aborted', 'Unexpected EOF', 'Connection reset by peer')
+                           'Connection aborted', 'Unexpected EOF', 'Connection reset by peer',
+                           'cannot read from timed out object')
             conn_error = any(e in trace for e in conn_errors)
             error_msg = 'Error forwarding request: %s %s' % (e, trace)
             if 'Broken pipe' in trace:

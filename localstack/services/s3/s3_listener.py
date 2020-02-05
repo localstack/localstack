@@ -430,7 +430,7 @@ def fix_etag_for_multipart(data, headers, response):
             correct_hash = md5(strip_chunk_signatures(data))
             tags = r'<ETag>%s</ETag>'
             pattern = r'(&#34;)?([^<&]+)(&#34;)?'
-            replacement = r'\1%s\3' % correct_hash
+            replacement = r'\g<1>%s\g<3>' % correct_hash
             response._content = re.sub(tags % pattern, tags % replacement, to_str(response.content))
             if response.headers.get('ETag'):
                 response.headers['ETag'] = re.sub(pattern, replacement, response.headers['ETag'])
