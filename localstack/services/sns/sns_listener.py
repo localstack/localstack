@@ -301,7 +301,18 @@ def do_list_tags_for_resource(topic_arn):
 
 
 def do_tag_resource(topic_arn, tags):
-    _get_tags(topic_arn).extend(tags)
+    existing_tags = SNS_TAGS[topic_arn] if topic_arn in SNS_TAGS.keys() else []
+    for item in tags:
+        if len(existing_tags) > 0:
+            for idx, tag in enumerate(existing_tags):
+                if item['Key'] == tag['Key']:
+                    existing_tags[idx] = item
+                else:
+                    existing_tags.append(item)
+        else:
+            existing_tags.append(item)
+
+    SNS_TAGS[topic_arn] = existing_tags
 
 
 def do_untag_resource(topic_arn, tag_keys):
