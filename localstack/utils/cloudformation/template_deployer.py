@@ -645,6 +645,11 @@ def resolve_refs_recursively(stack_name, value, resources):
         keys_list = list(value.keys())
         # process special operators
         if keys_list == ['Ref']:
+            # first, check stack parameters
+            stack_param = get_stack_parameter(stack_name, value['Ref'])
+            if stack_param is not None:
+                return stack_param
+            # second, resolve resource references
             result = resolve_ref(stack_name, value['Ref'],
                 resources, attribute='PhysicalResourceId')
             return result
@@ -671,6 +676,16 @@ def resolve_refs_recursively(stack_name, value, resources):
         for i in range(0, len(value)):
             value[i] = resolve_refs_recursively(stack_name, value[i], resources)
     return value
+
+
+def get_stack_parameter(stack_name, parameter):
+    client = aws_stack.connect_to_service('cloudformation')
+    stack = client.describe_stacks(StackName=stack_name)['Stacks']
+    stack = stack and stack[0]
+    if not stack:
+        return None
+    result = [p['ParameterValue'] for p in stack['Parameters'] if p['ParameterKey'] == parameter]
+    return (result or [None])[0]
 
 
 def update_resource(resource_id, resources, stack_name):
