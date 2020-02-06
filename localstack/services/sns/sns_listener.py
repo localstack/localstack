@@ -288,11 +288,6 @@ def _get_tags(topic_arn):
     if topic_arn not in SNS_TAGS:
         SNS_TAGS[topic_arn] = []
 
-    if len(SNS_TAGS[topic_arn]) > 0:
-        SNS_TAGS[topic_arn] = [
-            tag for idx, tag in enumerate(SNS_TAGS[topic_arn])
-            if tag not in SNS_TAGS[topic_arn][:idx]
-        ]
     return SNS_TAGS[topic_arn]
 
 
@@ -301,18 +296,23 @@ def do_list_tags_for_resource(topic_arn):
 
 
 def do_tag_resource(topic_arn, tags):
-    existing_tags = SNS_TAGS[topic_arn] if topic_arn in SNS_TAGS.keys() else []
+    _tags = _get_tags(topic_arn)
+    tags = [
+        tag for idx, tag in enumerate(tags)
+        if tag not in tags[:idx]
+    ]
     for item in tags:
-        if len(existing_tags) > 0:
-            for idx, tag in enumerate(existing_tags):
+        if len(_tags) > 0:
+            for tag in _tags:
                 if item['Key'] == tag['Key']:
-                    existing_tags[idx] = item
+                    tag['Value'] = item['Value']
                 else:
-                    existing_tags.append(item)
+                    _tags.append(item)
         else:
-            existing_tags.append(item)
+            _tags.extend(tags)
+            break
 
-    SNS_TAGS[topic_arn] = existing_tags
+    SNS_TAGS[topic_arn] = _tags
 
 
 def do_untag_resource(topic_arn, tag_keys):
