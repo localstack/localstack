@@ -2,10 +2,15 @@ IMAGE_NAME ?= localstack/localstack
 IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 VENV_DIR ?= .venv
-VENV_RUN = . $(VENV_DIR)/bin/activate
 ADDITIONAL_MVN_ARGS ?= -DskipTests -q
 PIP_CMD ?= pip
 TEST_PATH ?= .
+
+ifeq ($(OS), Windows_NT)
+	VENV_RUN = . $(VENV_DIR)/Scripts/activate
+else
+	VENV_RUN = . $(VENV_DIR)/bin/activate
+endif
 
 usage:             ## Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
