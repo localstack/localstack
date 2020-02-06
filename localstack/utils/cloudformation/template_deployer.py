@@ -618,6 +618,13 @@ def resolve_ref(stack_name, ref, resources, attribute):
         return aws_stack.get_region()
     if ref == 'AWS::Partition':
         return 'aws'
+
+    # first, check stack parameters
+    stack_param = get_stack_parameter(stack_name, ref)
+    if stack_param is not None:
+        return stack_param
+
+    # second, resolve resource references
     resource_status = {}
     if stack_name:
         resource_status = describe_stack_resource(stack_name, ref)
@@ -645,14 +652,8 @@ def resolve_refs_recursively(stack_name, value, resources):
         keys_list = list(value.keys())
         # process special operators
         if keys_list == ['Ref']:
-            # first, check stack parameters
-            stack_param = get_stack_parameter(stack_name, value['Ref'])
-            if stack_param is not None:
-                return stack_param
-            # second, resolve resource references
-            result = resolve_ref(stack_name, value['Ref'],
+            return resolve_ref(stack_name, value['Ref'],
                 resources, attribute='PhysicalResourceId')
-            return result
         if keys_list and keys_list[0].lower() == 'fn::getatt':
             return resolve_ref(stack_name, value[keys_list[0]][0],
                 resources, attribute=value[keys_list[0]][1])
@@ -679,8 +680,11 @@ def resolve_refs_recursively(stack_name, value, resources):
 
 
 def get_stack_parameter(stack_name, parameter):
-    client = aws_stack.connect_to_service('cloudformation')
-    stack = client.describe_stacks(StackName=stack_name)['Stacks']
+    try:
+        client = aws_stack.connect_to_service('cloudformation')
+        stack = client.describe_stacks(StackName=stack_name)['Stacks']
+    except Exception:
+        return None
     stack = stack and stack[0]
     if not stack:
         return None
