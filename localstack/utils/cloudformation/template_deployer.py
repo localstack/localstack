@@ -526,7 +526,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         elif resource_type == 'ApiGateway::GatewayResponse':
             api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
             client = aws_stack.connect_to_service('apigateway')
-            return client.get_gateway_response(restApiId=api_id, responseType=resource_props['ResponseType'])
+            result = client.get_gateway_response(restApiId=api_id, responseType=resource_props['ResponseType'])
+            return result if 'responseType' in result else None
         elif resource_type == 'SQS::Queue':
             sqs_client = aws_stack.connect_to_service('sqs')
             queues = sqs_client.list_queues()

@@ -235,6 +235,21 @@ def delete_domain(domain_name):
     return jsonify(result)
 
 
+@app.route('%s/es/compatibleVersions' % API_PREFIX, methods=['GET'])
+def get_compatible_versions():
+    result = [{
+        'SourceVersion': '6.5',
+        'TargetVersions': ['6.7', '6.8']
+    }, {
+        'SourceVersion': '6.7',
+        'TargetVersions': ['6.8']
+    }, {
+        'SourceVersion': '6.8',
+        'TargetVersions': ['7.1']
+    }]
+    return jsonify({'CompatibleElasticsearchVersions': result})
+
+
 @app.route('%s/tags' % API_PREFIX, methods=['GET', 'POST'])
 def add_list_tags():
     if request.method == 'GET' and request.args.get('arn'):
