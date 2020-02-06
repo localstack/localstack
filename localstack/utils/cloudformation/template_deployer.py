@@ -523,6 +523,11 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                     m.get('methodIntegration', {}).get('type') == int_props.get('Type') and
                     m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
             return any(match) or None
+        elif resource_type == 'ApiGateway::GatewayResponse':
+            api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
+            client = aws_stack.connect_to_service('apigateway')
+            result = client.get_gateway_response(restApiId=api_id, responseType=resource_props['ResponseType'])
+            return result if 'responseType' in result else None
         elif resource_type == 'SQS::Queue':
             sqs_client = aws_stack.connect_to_service('sqs')
             queues = sqs_client.list_queues()
@@ -611,6 +616,8 @@ def extract_resource_attribute(resource_type, resource, attribute):
 def resolve_ref(stack_name, ref, resources, attribute):
     if ref == 'AWS::Region':
         return aws_stack.get_region()
+    if ref == 'AWS::Partition':
+        return 'aws'
     resource_status = {}
     if stack_name:
         resource_status = describe_stack_resource(stack_name, ref)
@@ -622,10 +629,10 @@ def resolve_ref(stack_name, ref, resources, attribute):
     elif ref in resources:
         resource_status = resources[ref]['__details__']
     # fetch resource details
-    resource = resources.get(ref)
     resource_new = retrieve_resource_details(ref, resource_status, resources, stack_name)
     if not resource_new:
         return
+    resource = resources.get(ref)
     resource_type = get_resource_type(resource)
     result = extract_resource_attribute(resource_type, resource_new, attribute)
     if not result:
@@ -645,7 +652,12 @@ def resolve_refs_recursively(stack_name, value, resources):
             return resolve_ref(stack_name, value[keys_list[0]][0],
                 resources, attribute=value[keys_list[0]][1])
         if keys_list and keys_list[0].lower() == 'fn::join':
-            return value[keys_list[0]][0].join(value[keys_list[0]][1])
+            join_values = value[keys_list[0]][1]
+            join_values = [resolve_refs_recursively(stack_name, v, resources) for v in join_values]
+            none_values = [v for v in join_values if v is None]
+            if none_values:
+                raise Exception('Cannot resolve CF fn::Join %s due to null values: %s' % (value, join_values))
+            return value[keys_list[0]][0].join(join_values)
         if keys_list and keys_list[0].lower() == 'fn::sub':
             result = value[keys_list[0]][0]
             for key, val in value[keys_list[0]][1].items():
@@ -852,10 +864,10 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
             uri = integration.get('Uri')
             if uri:
                 uri = resolve_refs_recursively(stack_name, uri, resources)
-                aws_stack.connect_to_service('apigateway').put_integration(restApiId=api_id, resourceId=res_id,
+                aws_stack.connect_to_service('apigateway').put_integration(
+                    restApiId=api_id, resourceId=res_id,
                     httpMethod=resource_props['HttpMethod'], type=integration['Type'],
-                    integrationHttpMethod=integration['IntegrationHttpMethod'], uri=uri
-                )
+                    integrationHttpMethod=integration['IntegrationHttpMethod'], uri=uri)
     elif resource_type == 'SNS::Topic':
         subscriptions = resource_props.get('Subscription', [])
         for subscription in subscriptions:
@@ -936,8 +948,7 @@ def should_be_deployed(resource_id, resources, stack_name):
     resource = resources[resource_id]
     if not is_deployable_resource(resource) or is_deployed(resource_id, resources, stack_name):
         return False
-    res_deps = get_resource_dependencies(resource_id, resource, resources)
-    return all_dependencies_satisfied(res_deps, stack_name, resources, resource_id)
+    return all_resource_dependencies_satisfied(resource_id, resources, stack_name)
 
 
 def is_updateable(resource_id, resources, stack_name):
@@ -947,6 +958,12 @@ def is_updateable(resource_id, resources, stack_name):
         return False
     resource_type = get_resource_type(resource)
     return resource_type in UPDATEABLE_RESOURCES
+
+
+def all_resource_dependencies_satisfied(resource_id, resources, stack_name):
+    resource = resources[resource_id]
+    res_deps = get_resource_dependencies(resource_id, resource, resources)
+    return all_dependencies_satisfied(res_deps, stack_name, resources, resource_id)
 
 
 def all_dependencies_satisfied(resources, stack_name, all_resources, depending_resource=None):
