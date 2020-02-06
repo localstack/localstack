@@ -17,6 +17,7 @@ from moto.apigateway import models as apigw_models
 from moto.cloudwatch import models as cw_models
 from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
+from moto.cloudformation.models import FakeStack
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
@@ -253,7 +254,17 @@ def apply_patches():
             # This resource is either not deployable or already exists. Check if it can be updated
             is_updateable = template_deployer.is_updateable(logical_id, resource_map_new, stack_name)
             if not update or not is_updateable:
-                LOG.debug('Resource %s need not be deployed: %s %s' % (logical_id, resource_json, bool(resource)))
+                all_satisfied = template_deployer.all_resource_dependencies_satisfied(
+                    logical_id, resource_map_new, stack_name)
+                if not all_satisfied:
+                    LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s' % (
+                        logical_id, resource_json))
+                    resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', set())
+                    resources_map._unresolved_resources.add(logical_id)
+                    return None
+                else:
+                    LOG.debug('Resource %s need not be deployed (is_updateable=%s): %s %s' % (
+                        logical_id, is_updateable, resource_json, bool(resource)))
                 # Return if this resource already exists and can/need not be updated
                 return resource
 
@@ -661,6 +672,31 @@ def apply_patches():
     for region in boto3.session.Session().get_available_regions('lambda'):
         if region not in lambda_models.lambda_backends:
             lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
+
+    # path FakeStack.initialize_resources
+
+    def initialize_resources(self):
+        initialize_resources_orig(self)
+        resource_map = self.resource_map
+        # Note: We're adding this additional loop, as it seems that in some cases
+        #  moto does not consider resource dependencies (e.g., if a "DependsOn" resource
+        #  property is defined). This loop allows us to incrementally resolve such dependencies.
+        for i in range(10):
+            unresolved = getattr(resource_map, '_unresolved_resources', set())
+            if not unresolved:
+                break
+            resource_map._unresolved_resources = set()
+            for resource in unresolved:
+                # Access resource in map, which will trigger the lazy inialization
+                resource_map[resource]
+            if unresolved == resource_map._unresolved_resources:
+                # looks like no more resources can be resolved -> bail
+                LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
+                break
+        return resource_map
+
+    initialize_resources_orig = FakeStack.initialize_resources
+    FakeStack.initialize_resources = initialize_resources
 
 
 def inject_stats_endpoint():
