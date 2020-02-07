@@ -162,10 +162,17 @@ class SNSTest(unittest.TestCase):
                     'Key': '456',
                     'Value': 'def'
                 },
+                {
+                    'Key': '456',
+                    'Value': 'def'
+                }
             ]
         )
 
         tags = self.sns_client.list_tags_for_resource(ResourceArn=self.topic_arn)
+        distinct_tags = [tag for idx, tag in enumerate(tags['Tags']) if tag not in tags['Tags'][:idx]]
+        # test for duplicate tags
+        self.assertEqual(len(tags['Tags']), len(distinct_tags))
         self.assertEqual(len(tags['Tags']), 2)
         self.assertEqual(tags['Tags'][0]['Key'], '123')
         self.assertEqual(tags['Tags'][0]['Value'], 'abc')
@@ -181,6 +188,21 @@ class SNSTest(unittest.TestCase):
         self.assertEqual(len(tags['Tags']), 1)
         self.assertEqual(tags['Tags'][0]['Key'], '456')
         self.assertEqual(tags['Tags'][0]['Value'], 'def')
+
+        self.sns_client.tag_resource(
+            ResourceArn=self.topic_arn,
+            Tags=[
+                {
+                    'Key': '456',
+                    'Value': 'pqr'
+                }
+            ]
+        )
+
+        tags = self.sns_client.list_tags_for_resource(ResourceArn=self.topic_arn)
+        self.assertEqual(len(tags['Tags']), 1)
+        self.assertEqual(tags['Tags'][0]['Key'], '456')
+        self.assertEqual(tags['Tags'][0]['Value'], 'pqr')
 
     def test_dead_letter_queue(self):
         lambda_name = 'test-%s' % short_uid()
