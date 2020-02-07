@@ -39,6 +39,9 @@ CURRENTLY_UPDATING_RESOURCES = {}
 # whether to start the API in a separate process
 RUN_SERVER_IN_PROCESS = False
 
+# maxiumum depth of the resource dependency tree
+MAX_DEPENDENCY_DEPTH = 40
+
 # map of additional model classes
 MODEL_MAP = {
     'AWS::StepFunctions::Activity': service_models.StepFunctionsActivity,
@@ -677,29 +680,41 @@ def apply_patches():
         if region not in lambda_models.lambda_backends:
             lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
 
-    # path FakeStack.initialize_resources
+    # patch FakeStack.initialize_resources
 
     def initialize_resources(self):
-        initialize_resources_orig(self)
-        resource_map = self.resource_map
-        # Note: We're adding this additional loop, as it seems that in some cases
-        #  moto does not consider resource dependencies (e.g., if a "DependsOn" resource
-        #  property is defined). This loop allows us to incrementally resolve such dependencies.
-        for i in range(10):
-            unresolved = getattr(resource_map, '_unresolved_resources', {})
-            if not unresolved:
-                break
-            resource_map._unresolved_resources = {}
-            for resource_id, resource_details in unresolved.items():
-                # Re-trigger the resource creation
-                parse_and_create_resource(*resource_details, force_create=True)
-            if unresolved.keys() == resource_map._unresolved_resources.keys():
-                # looks like no more resources can be resolved -> bail
-                LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
-                break
-        return resource_map
+        def set_status(status):
+            self._add_stack_event(status)
+            self.status = status
 
-    initialize_resources_orig = FakeStack.initialize_resources
+        self.resource_map.create()
+        self.output_map.create()
+
+        def run_loop(*args):
+            # NOTE: We're adding this additional loop, as it seems that in some cases moto
+            #   does not consider resource dependencies (e.g., if a "DependsOn" resource property
+            #   is defined). This loop allows us to incrementally resolve such dependencies.
+            resource_map = self.resource_map
+            for i in range(MAX_DEPENDENCY_DEPTH):
+                unresolved = getattr(resource_map, '_unresolved_resources', {})
+                if not unresolved:
+                    set_status('CREATE_COMPLETE')
+                    return resource_map
+                resource_map._unresolved_resources = {}
+                for resource_id, resource_details in unresolved.items():
+                    # Re-trigger the resource creation
+                    parse_and_create_resource(*resource_details, force_create=True)
+                if unresolved.keys() == resource_map._unresolved_resources.keys():
+                    # looks like no more resources can be resolved -> bail
+                    LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
+                    break
+            set_status('CREATE_FAILED')
+            raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
+                'dependency tree (maximum depth %s reached)' % MAX_DEPENDENCY_DEPTH)
+
+        # NOTE: We're running the loop in the background, as it might take some time to complete
+        FuncThread(run_loop).start()
+
     FakeStack.initialize_resources = initialize_resources
 
 
