@@ -479,12 +479,14 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                 raise Exception('ResourceNotFound')
             return mapping[0]
         elif resource_type == 'DynamoDB::Table':
-            resource_id = resource_props['TableName'] if resource else resource_id
-            return aws_stack.connect_to_service('dynamodb').describe_table(TableName=resource_id)
+            table_name = resource_props['TableName'] if resource else resource_id
+            table_name = resolve_refs_recursively(stack_name, table_name, resources)
+            return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
         elif resource_type == 'ApiGateway::RestApi':
             apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
-            resource_id = resource_props['Name'] if resource else resource_id
-            result = list(filter(lambda api: api['name'] == resource_id, apis))
+            api_name = resource_props['Name'] if resource else resource_id
+            api_name = resolve_refs_recursively(stack_name, api_name, resources)
+            result = list(filter(lambda api: api['name'] == api_name, apis))
             return result[0] if result else None
         elif resource_type == 'ApiGateway::Resource':
             api_id = resource_props['RestApiId'] if resource else resource_id
@@ -545,6 +547,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             return result[0] if result else None
         elif resource_type == 'S3::Bucket':
             bucket_name = resource_props.get('BucketName') or resource_id
+            bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
             return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=bucket_name)
         elif resource_type == 'Logs::LogGroup':
             # TODO implement
@@ -618,6 +621,8 @@ def resolve_ref(stack_name, ref, resources, attribute):
         return aws_stack.get_region()
     if ref == 'AWS::Partition':
         return 'aws'
+    if ref == 'AWS::StackName':
+        return stack_name
 
     # first, check stack parameters
     stack_param = get_stack_parameter(stack_name, ref)

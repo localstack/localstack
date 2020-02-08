@@ -39,6 +39,9 @@ CURRENTLY_UPDATING_RESOURCES = {}
 # whether to start the API in a separate process
 RUN_SERVER_IN_PROCESS = False
 
+# maxiumum depth of the resource dependency tree
+MAX_DEPENDENCY_DEPTH = 40
+
 # map of additional model classes
 MODEL_MAP = {
     'AWS::StepFunctions::Activity': service_models.StepFunctionsActivity,
@@ -176,9 +179,10 @@ def apply_patches():
 
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
 
-    def parse_and_create_resource(logical_id, resource_json, resources_map, region_name):
+    def parse_and_create_resource(logical_id, resource_json, resources_map, region_name, force_create=False):
         try:
-            return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name)
+            return _parse_and_create_resource(logical_id, resource_json,
+                resources_map, region_name, force_create=force_create)
         except Exception as e:
             LOG.error('Unable to parse and create resource "%s": %s %s' %
                       (logical_id, e, traceback.format_exc()))
@@ -193,13 +197,14 @@ def apply_patches():
                       (logical_id, e, traceback.format_exc()))
             raise
 
-    def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=False):
+    def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name,
+            update=False, force_create=False):
         stack_name = resources_map.get('AWS::StackName')
         resource_hash_key = (stack_name, logical_id)
 
         # If the current stack is being updated, avoid infinite recursion
         updating = CURRENTLY_UPDATING_RESOURCES.get(resource_hash_key)
-        LOG.debug('Currently updating stack resource %s/%s: %s' % (stack_name, logical_id, updating))
+        LOG.debug('Currently processing stack resource %s/%s: %s' % (stack_name, logical_id, updating))
         if updating:
             return None
 
@@ -216,7 +221,7 @@ def apply_patches():
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
-        if resource and not update:
+        if resource and not update and not force_create:
             return resource
 
         # check whether this resource needs to be deployed
@@ -229,7 +234,7 @@ def apply_patches():
         set_moto_account_ids(resource_json_arns_fixed)
 
         # create resource definition and store CloudFormation metadata in moto
-        if resource or update:
+        if (resource or update) and not force_create:
             parse_and_update_resource_orig(logical_id,
                 resource_json_arns_fixed, resources_map, region_name)
         elif not resource:
@@ -259,13 +264,15 @@ def apply_patches():
                 if not all_satisfied:
                     LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s' % (
                         logical_id, resource_json))
-                    resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', set())
-                    resources_map._unresolved_resources.add(logical_id)
-                    return None
+                    details = [logical_id, resource_json, resources_map, region_name]
+                    resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', {})
+                    resources_map._unresolved_resources[logical_id] = details
                 else:
                     LOG.debug('Resource %s need not be deployed (is_updateable=%s): %s %s' % (
                         logical_id, is_updateable, resource_json, bool(resource)))
-                # Return if this resource already exists and can/need not be updated
+                # Return if this resource already exists and can/need not be updated yet
+                # NOTE: We should always return the resource here, to avoid duplicate
+                #       creation of resources in moto!
                 return resource
 
         # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
@@ -673,29 +680,41 @@ def apply_patches():
         if region not in lambda_models.lambda_backends:
             lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
 
-    # path FakeStack.initialize_resources
+    # patch FakeStack.initialize_resources
 
     def initialize_resources(self):
-        initialize_resources_orig(self)
-        resource_map = self.resource_map
-        # Note: We're adding this additional loop, as it seems that in some cases
-        #  moto does not consider resource dependencies (e.g., if a "DependsOn" resource
-        #  property is defined). This loop allows us to incrementally resolve such dependencies.
-        for i in range(10):
-            unresolved = getattr(resource_map, '_unresolved_resources', set())
-            if not unresolved:
-                break
-            resource_map._unresolved_resources = set()
-            for resource in unresolved:
-                # Access resource in map, which will trigger the lazy inialization
-                resource_map[resource]
-            if unresolved == resource_map._unresolved_resources:
-                # looks like no more resources can be resolved -> bail
-                LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
-                break
-        return resource_map
+        def set_status(status):
+            self._add_stack_event(status)
+            self.status = status
 
-    initialize_resources_orig = FakeStack.initialize_resources
+        self.resource_map.create()
+        self.output_map.create()
+
+        def run_loop(*args):
+            # NOTE: We're adding this additional loop, as it seems that in some cases moto
+            #   does not consider resource dependencies (e.g., if a "DependsOn" resource property
+            #   is defined). This loop allows us to incrementally resolve such dependencies.
+            resource_map = self.resource_map
+            for i in range(MAX_DEPENDENCY_DEPTH):
+                unresolved = getattr(resource_map, '_unresolved_resources', {})
+                if not unresolved:
+                    set_status('CREATE_COMPLETE')
+                    return resource_map
+                resource_map._unresolved_resources = {}
+                for resource_id, resource_details in unresolved.items():
+                    # Re-trigger the resource creation
+                    parse_and_create_resource(*resource_details, force_create=True)
+                if unresolved.keys() == resource_map._unresolved_resources.keys():
+                    # looks like no more resources can be resolved -> bail
+                    LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
+                    break
+            set_status('CREATE_FAILED')
+            raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
+                'dependency tree (maximum depth %s reached)' % MAX_DEPENDENCY_DEPTH)
+
+        # NOTE: We're running the loop in the background, as it might take some time to complete
+        FuncThread(run_loop).start()
+
     FakeStack.initialize_resources = initialize_resources
 
 
