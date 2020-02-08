@@ -27,11 +27,17 @@ Parameters:
     Type: String
     Default: python3.6
 Resources:
+  MyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: test-role-123
+      AssumeRolePolicyDocument: {}
   MyFunc:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: %s
       Handler: index.handler
+      Role: !GetAtt 'MyRole.Arn'
       Runtime:
         Ref: LambdaRuntime
       InlineCode: |
