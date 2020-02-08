@@ -22,3 +22,5 @@ Outputs:
   SQSQueue1URL:
     Value:
       Ref: SQSQueue1
+    Export:
+      Name: SQSQueue1-URL
