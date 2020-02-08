@@ -79,6 +79,20 @@ def sns_subscription_params(params, **kwargs):
     return result
 
 
+def select_parameters(*param_names):
+    return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])
+
+
+def dump_json_params(param_func, *param_names):
+    def replace(params, **kwargs):
+        result = param_func(params, **kwargs)
+        for name in param_names:
+            if isinstance(result.get(name), (dict, list)):
+                result[name] = json.dumps(result[name])
+        return result
+    return replace
+
+
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -219,7 +233,14 @@ RESOURCE_TO_FUNCTION = {
         }]
     },
     'IAM::Role': {
-        # TODO implement
+        'create': {
+            'function': 'create_role',
+            'parameters':
+                dump_json_params(
+                    select_parameters('Path', 'RoleName', 'AssumeRolePolicyDocument',
+                        'Description', 'MaxSessionDuration', 'PermissionsBoundary', 'Tags'),
+                    'AssumeRolePolicyDocument')
+        }
     },
     'ApiGateway::RestApi': {
         'create': {
@@ -478,8 +499,12 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             if not mapping:
                 raise Exception('ResourceNotFound')
             return mapping[0]
+        elif resource_type == 'IAM::Role':
+            role_name = resource_props.get('RoleName') or resource_id
+            role_name = resolve_refs_recursively(stack_name, role_name, resources)
+            return aws_stack.connect_to_service('iam').get_role(RoleName=role_name)['Role']
         elif resource_type == 'DynamoDB::Table':
-            table_name = resource_props['TableName'] if resource else resource_id
+            table_name = resource_props.get('TableName') or resource_id
             table_name = resolve_refs_recursively(stack_name, table_name, resources)
             return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
         elif resource_type == 'ApiGateway::RestApi':
@@ -585,7 +610,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
 def check_not_found_exception(e, resource_type, resource, resource_status):
     # we expect this to be a "not found" exception
-    markers = ['NoSuchBucket', 'ResourceNotFound', '404']
+    markers = ['NoSuchBucket', 'ResourceNotFound', '404', 'not found']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
             (resource_type, e, traceback.format_exc(), resource, resource_status))
@@ -738,6 +763,8 @@ def fix_account_id_in_arns(params):
             for k, v in o.items():
                 if common.is_string(v, exclude_binary=True):
                     o[k] = aws_stack.fix_account_id_in_arns(v)
+        elif common.is_string(o, exclude_binary=True):
+            o = aws_stack.fix_account_id_in_arns(o)
         return o
     result = common.recurse_object(params, fix_ids)
     return result
@@ -852,7 +879,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                     if prop_value is not None:
                         params[param_key] = prop_value
 
-    # assign default value if empty
+    # assign default values if empty
     params = common.merge_recursive(defaults, params)
 
     # convert refs and boolean strings

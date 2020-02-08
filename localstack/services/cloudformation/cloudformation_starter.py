@@ -7,6 +7,7 @@ import boto3.session
 from moto.s3 import models as s3_models
 from moto.iam import models as iam_models
 from moto.sqs import models as sqs_models
+from moto.sns import models as sns_models
 from moto.core import BaseModel
 from moto.server import main as moto_main
 from moto.kinesis import models as kinesis_models
@@ -295,7 +296,7 @@ def apply_patches():
             """ Find ID of the given resource. """
             if not resource:
                 return
-            for id_attr in ('Id', 'id', 'ResourceId', 'RestApiId', 'DeploymentId'):
+            for id_attr in ('Id', 'id', 'ResourceId', 'RestApiId', 'DeploymentId', 'RoleId'):
                 if id_attr in resource:
                     return resource[id_attr]
 
@@ -520,13 +521,13 @@ def apply_patches():
     # Patch SNS Topic get_cfn_attribute(..) method in moto
 
     def SNS_Topic_get_cfn_attribute(self, attribute_name):
-        result = SNS_Topic_get_cfn_attribute(self, attribute_name)
+        result = SNS_Topic_get_cfn_attribute_orig(self, attribute_name)
         if attribute_name.lower() in ['arn', 'topicarn']:
             result = aws_stack.fix_account_id_in_arns(result)
         return result
 
-    IAM_Role_get_cfn_attribute_orig = iam_models.Role.get_cfn_attribute
-    iam_models.Role.get_cfn_attribute = IAM_Role_get_cfn_attribute
+    SNS_Topic_get_cfn_attribute_orig = sns_models.Topic.get_cfn_attribute
+    sns_models.Topic.get_cfn_attribute = SNS_Topic_get_cfn_attribute
 
     # Patch LambdaFunction create_from_cloudformation_json(..) method in moto
 
