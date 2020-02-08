@@ -232,8 +232,9 @@ class CloudFormationTest(unittest.TestCase):
         def check_stack():
             stack = get_stack_details(stack_name)
             self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
+            return stack
 
-        retry(check_stack, retries=3, sleep=2)
+        details = retry(check_stack, retries=3, sleep=2)
 
         stack_summaries = list_stack_resources(stack_name)
         queue_urls = get_queue_urls()
@@ -246,6 +247,11 @@ class CloudFormationTest(unittest.TestCase):
         stack_topics = [r for r in stack_summaries if r['ResourceType'] == 'AWS::SNS::Topic']
         for resource in stack_topics:
             self.assertIn(resource['PhysicalResourceId'], topic_arns)
+
+        # assert that stack outputs are returned properly
+        outputs = details.get('Outputs', [])
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual(outputs[0]['ExportName'], 'SQSQueue1-URL')
 
     def test_create_change_set(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')

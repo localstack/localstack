@@ -146,6 +146,10 @@ def apply_patches():
     """ Apply patches to make LocalStack seamlessly interact with the moto backend.
         TODO: Eventually, these patches should be contributed to the upstream repo! """
 
+    # add model mappings to moto
+
+    parsing.MODEL_MAP.update(MODEL_MAP)
+
     # Patch S3Backend.get_key method in moto to use S3 API from LocalStack
 
     def get_key(self, bucket_name, key_name, version_id=None):
@@ -172,10 +176,6 @@ def apply_patches():
 
     clean_json_orig = parsing.clean_json
     parsing.clean_json = clean_json
-
-    # add model mappings to moto
-
-    parsing.MODEL_MAP.update(MODEL_MAP)
 
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
 
@@ -377,16 +377,30 @@ def apply_patches():
 
     def parse_output(output_logical_id, output_json, resources_map):
         try:
-            return parse_output_orig(output_logical_id, output_json, resources_map)
+            result = parse_output_orig(output_logical_id, output_json, resources_map)
         except KeyError:
-            output = Output()
-            output.key = output_logical_id
-            output.value = None
-            output.description = output_json.get('Description')
-            return output
+            result = Output()
+            result.key = output_logical_id
+            result.value = None
+            result.description = output_json.get('Description')
+        # Make sure output includes export name
+        if not hasattr(result, 'export_name'):
+            result.export_name = output_json.get('Export', {}).get('Name')
+        return result
 
     parse_output_orig = parsing.parse_output
     parsing.parse_output = parse_output
+
+    # Make sure the export name is returned for stack outputs
+
+    if '<ExportName>' not in responses.DESCRIBE_STACKS_TEMPLATE:
+        find = '</OutputValue>'
+        replace = """</OutputValue>
+        {% if output.export_name %}
+        <ExportName>{{ output.export_name }}</ExportName>
+        {% endif %}
+        """
+        responses.DESCRIBE_STACKS_TEMPLATE = responses.DESCRIBE_STACKS_TEMPLATE.replace(find, replace)
 
     # Patch DynamoDB get_cfn_attribute(..) method in moto
 
