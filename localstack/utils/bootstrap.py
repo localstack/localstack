@@ -53,7 +53,8 @@ API_COMPOSITES = {
 # name of main Docker container
 MAIN_CONTAINER_NAME = 'localstack_main'
 
-# environment variable that indicates that we're executing in the context of the script that starts the Docker container
+# environment variable that indicates that we're executing in
+# the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
 
 # semaphore for locking access to Popen
