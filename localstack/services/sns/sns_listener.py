@@ -10,10 +10,11 @@ from six.moves.urllib import parse as urlparse
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_str, timestamp, TIMESTAMP_FORMAT_MILLIS
+from localstack.utils.common import TIMESTAMP_FORMAT_MILLIS, short_uid, to_str, timestamp
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.aws.aws_responses import response_regex_replace
 
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
@@ -139,6 +140,10 @@ class ProxyListenerSNS(ProxyListener):
             # convert account IDs in ARNs
             data = aws_stack.fix_account_id_in_arns(data, colon_delimiter='%3A')
             aws_stack.fix_account_id_in_arns(response)
+
+            # remove "None" strings from result
+            search = r'<entry><key>[^<]+</key>\s*<value>\s*None\s*</[^>]+>\s*</entry>'
+            response_regex_replace(response, search, '')
 
             # parse request and extract data
             req_data = urlparse.parse_qs(to_str(data))
