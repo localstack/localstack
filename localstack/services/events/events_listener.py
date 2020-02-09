@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import time
 import uuid
 
 from requests.models import Response
@@ -61,8 +62,10 @@ class ProxyListenerEvents(ProxyListener):
             TMP_FILES.append(EVENTS_TMP_DIR)
 
     def _dump_events_to_files(self, events_with_added_uuid):
+        current_time_millis = int(round(time.time() * 1000))
         for event in events_with_added_uuid:
-            save_file(os.path.join(EVENTS_TMP_DIR, event['uuid']), json.dumps(event['event']))
+            save_file(os.path.join(EVENTS_TMP_DIR, '%s_%s' % (current_time_millis, event['uuid'])),
+                      json.dumps(event['event']))
 
     def _fix_date_format(self, response):
         """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
