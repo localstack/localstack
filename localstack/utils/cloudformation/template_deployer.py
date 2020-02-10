@@ -2,7 +2,6 @@ import re
 import os
 import json
 import yaml
-import base64
 import logging
 import traceback
 import moto.cloudformation.utils
@@ -64,7 +63,6 @@ def get_lambda_code_param(params, **kwargs):
         tmp_file = os.path.join(tmp_dir, handler_file)
         common.save_file(tmp_file, zip_file)
         zip_file = create_zip_file(tmp_file, get_content=True)
-        code['ZipFile'] = common.to_str(base64.b64encode(zip_file))
         code['ZipFile'] = zip_file
         common.rm_rf(tmp_dir)
     return code
@@ -89,6 +87,16 @@ def dump_json_params(param_func, *param_names):
         for name in param_names:
             if isinstance(result.get(name), (dict, list)):
                 result[name] = json.dumps(result[name])
+        return result
+    return replace
+
+
+def param_defaults(param_func, defaults):
+    def replace(params, **kwargs):
+        result = param_func(params, **kwargs)
+        for key, value in defaults.items():
+            if result.get(key) in ['', None]:
+                result[key] = value
         return result
     return replace
 
@@ -236,10 +244,12 @@ RESOURCE_TO_FUNCTION = {
         'create': {
             'function': 'create_role',
             'parameters':
-                dump_json_params(
-                    select_parameters('Path', 'RoleName', 'AssumeRolePolicyDocument',
-                        'Description', 'MaxSessionDuration', 'PermissionsBoundary', 'Tags'),
-                    'AssumeRolePolicyDocument')
+                param_defaults(
+                    dump_json_params(
+                        select_parameters('Path', 'RoleName', 'AssumeRolePolicyDocument',
+                            'Description', 'MaxSessionDuration', 'PermissionsBoundary', 'Tags'),
+                        'AssumeRolePolicyDocument'),
+                    {'RoleName': PLACEHOLDER_RESOURCE_NAME})
         }
     },
     'ApiGateway::RestApi': {
@@ -434,6 +444,8 @@ def get_resource_name(resource):
         name = properties.get('PoolName')
     elif res_type == 'StepFunctions::StateMachine':
         name = properties.get('StateMachineName')
+    elif res_type == 'IAM::Role':
+        name = properties.get('RoleName')
     else:
         LOG.warning('Unable to extract name for resource type "%s"' % res_type)
 
@@ -859,18 +871,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                 prop_keys = [prop_keys]
             for prop_key in prop_keys:
                 if prop_key == PLACEHOLDER_RESOURCE_NAME:
-                    params[param_key] = resource_id
-                    resource_name = get_resource_name(resource)
-                    if resource_name:
-                        params[param_key] = resource_name
-                    else:
-                        # try to obtain physical resource name from stack resources
-                        try:
-                            return resolve_ref(stack_name, resource_id, resources,
-                                attribute='PhysicalResourceId')
-                        except Exception as e:
-                            LOG.debug('Unable to extract physical id for resource %s: %s' % (resource_id, e))
-
+                    params[param_key] = PLACEHOLDER_RESOURCE_NAME
                 else:
                     if callable(prop_key):
                         prop_value = prop_key(resource_props, stack_name=stack_name, resources=resources)
@@ -878,6 +879,20 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                         prop_value = resource_props.get(prop_key)
                     if prop_value is not None:
                         params[param_key] = prop_value
+                        break
+
+    # replace PLACEHOLDER_RESOURCE_NAME in params
+    resource_name_holder = {}
+
+    def fix_placeholders(o, **kwargs):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if v == PLACEHOLDER_RESOURCE_NAME:
+                    if 'value' not in resource_name_holder:
+                        resource_name_holder['value'] = get_resource_name(resource) or resource_id
+                    o[k] = resource_name_holder['value']
+        return o
+    common.recurse_object(params, fix_placeholders)
 
     # assign default values if empty
     params = common.merge_recursive(defaults, params)
