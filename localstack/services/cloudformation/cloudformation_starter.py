@@ -710,6 +710,7 @@ def apply_patches():
             #   does not consider resource dependencies (e.g., if a "DependsOn" resource property
             #   is defined). This loop allows us to incrementally resolve such dependencies.
             resource_map = self.resource_map
+            unresolved = {}
             for i in range(MAX_DEPENDENCY_DEPTH):
                 unresolved = getattr(resource_map, '_unresolved_resources', {})
                 if not unresolved:
@@ -725,7 +726,7 @@ def apply_patches():
                     break
             set_status('CREATE_FAILED')
             raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
-                'dependency tree (maximum depth %s reached)' % MAX_DEPENDENCY_DEPTH)
+                'dependency tree (maximum depth %s reached): %s' % (MAX_DEPENDENCY_DEPTH, unresolved.keys()))
 
         # NOTE: We're running the loop in the background, as it might take some time to complete
         FuncThread(run_loop).start()
