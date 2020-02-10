@@ -892,7 +892,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                         resource_name_holder['value'] = get_resource_name(resource) or resource_id
                     o[k] = resource_name_holder['value']
         return o
-    result = common.recurse_object(params, fix_placeholders)
+    common.recurse_object(params, fix_placeholders)
 
     # assign default values if empty
     params = common.merge_recursive(defaults, params)
