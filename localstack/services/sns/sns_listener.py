@@ -10,10 +10,11 @@ from six.moves.urllib import parse as urlparse
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_str, timestamp, TIMESTAMP_FORMAT_MILLIS
+from localstack.utils.common import TIMESTAMP_FORMAT_MILLIS, short_uid, to_str, timestamp
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.aws.aws_responses import response_regex_replace
 
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
@@ -148,6 +149,10 @@ class ProxyListenerSNS(ProxyListener):
             # convert account IDs in ARNs
             data = aws_stack.fix_account_id_in_arns(data, colon_delimiter='%3A')
             aws_stack.fix_account_id_in_arns(response)
+
+            # remove "None" strings from result
+            search = r'<entry><key>[^<]+</key>\s*<value>\s*None\s*</[^>]+>\s*</entry>'
+            response_regex_replace(response, search, '')
 
             # parse request and extract data
             req_data = urlparse.parse_qs(to_str(data))
@@ -313,6 +318,7 @@ def do_unsubscribe(subscription_arn):
 def _get_tags(topic_arn):
     if topic_arn not in SNS_TAGS:
         SNS_TAGS[topic_arn] = []
+
     return SNS_TAGS[topic_arn]
 
 
@@ -321,7 +327,26 @@ def do_list_tags_for_resource(topic_arn):
 
 
 def do_tag_resource(topic_arn, tags):
-    _get_tags(topic_arn).extend(tags)
+    existing_tags = SNS_TAGS.get(topic_arn, [])
+    tags = [
+        tag for idx, tag in enumerate(tags)
+        if tag not in tags[:idx]
+    ]
+
+    def existing_tag_index(item):
+        for idx, tag in enumerate(existing_tags):
+            if item['Key'] == tag['Key']:
+                return idx
+        return None
+
+    for item in tags:
+        existing_index = existing_tag_index(item)
+        if existing_index is None:
+            existing_tags.append(item)
+        else:
+            existing_tags[existing_index] = item
+
+    SNS_TAGS[topic_arn] = existing_tags
 
 
 def do_untag_resource(topic_arn, tag_keys):

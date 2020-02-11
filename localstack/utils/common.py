@@ -447,7 +447,7 @@ def dump_thread_info():
     print(run("ps aux | grep 'node\\|java\\|python'"))
 
 
-def merge_recursive(source, destination):
+def merge_recursive(source, destination, none_values=[None]):
     for key, value in source.items():
         if isinstance(value, dict):
             # get node or create one
@@ -457,7 +457,8 @@ def merge_recursive(source, destination):
             if not isinstance(destination, dict):
                 LOG.warning('Destination for merging %s=%s is not dict: %s' %
                     (key, value, destination))
-            destination[key] = value
+            if destination.get(key) in none_values:
+                destination[key] = value
     return destination
 
 

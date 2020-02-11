@@ -1,6 +1,8 @@
+import re
 import json
 from flask import Response
 from requests.models import Response as RequestsResponse
+from localstack.utils.common import to_str
 
 
 def flask_error_response(msg, code=500, error_type='InternalFailure'):
@@ -35,3 +37,8 @@ def flask_to_requests_response(r):
 
 def requests_to_flask_response(r):
     return Response(r.content, status=r.status_code, headers=dict(r.headers))
+
+
+def response_regex_replace(response, search, replace):
+    response._content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
+    response.headers['Content-Length'] = str(len(response._content))

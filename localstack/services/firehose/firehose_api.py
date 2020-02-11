@@ -162,8 +162,7 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
     }
     DELIVERY_STREAMS[stream_name] = stream
     if elasticsearch_destination:
-        update_destination(stream_name=stream_name,
-                           destination_id=short_uid(),
+        update_destination(stream_name=stream_name, destination_id=short_uid(),
                            elasticsearch_update=elasticsearch_destination)
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
@@ -273,7 +272,7 @@ def post_request():
                            s3_update=s3_update, version_id=version_id)
         es_update = data['ESDestinationUpdate'] if 'ESDestinationUpdate' in data else None
         update_destination(stream_name=stream_name, destination_id=destination_id,
-                           es_update=es_update, version_id=version_id)
+                           elasticsearch_update=es_update, version_id=version_id)
         response = {}
     elif action == '%s.ListTagsForDeliveryStream' % ACTION_HEADER_PREFIX:
         response = get_delivery_stream_tags(data['DeliveryStreamName'], data.get('ExclusiveStartTagKey'),
