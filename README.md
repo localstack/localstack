@@ -397,7 +397,7 @@ public class MyCloudAppTest {
 Or with JUnit 5 :
 
 ```
-@ExtendWith(LocalstackExtension.class)
+@ExtendWith(LocalstackDockerExtension.class)
 @LocalstackDockerProperties(...)
 public class MyCloudAppTest {
    ...

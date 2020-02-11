@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 
 import static cloud.localstack.TestUtils.getCredentialsProvider;
 
+@Deprecated
 @SuppressWarnings("all")
 public class TestUtils {
 
