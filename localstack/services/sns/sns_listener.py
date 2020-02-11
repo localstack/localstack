@@ -18,6 +18,9 @@ from localstack.services.generic_proxy import ProxyListener
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
 
+# mappings for subscription status
+SUBSCRIPTION_STATUS = {}
+
 # mappings for SNS tags
 SNS_TAGS = {}
 
@@ -70,6 +73,12 @@ class ProxyListenerSNS(ProxyListener):
             elif req_action == 'Subscribe':
                 if 'Endpoint' not in req_data:
                     return make_error(message='Endpoint not specified in subscription', code=400)
+            elif req_action == 'ConfirmSubscription':
+                if 'TopicArn' not in req_data:
+                    return make_error(message='TopicArn not specified in confirm subscription request', code=400)
+                if 'Token' not in req_data:
+                    return make_error(message='Token not specified in confirm subscription request', code=400)
+                do_confirm_subscription(req_data.get('TopicArn')[0], req_data.get('Token')[0])
             elif req_action == 'Unsubscribe':
                 if 'SubscriptionArn' not in req_data:
                     return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
@@ -244,6 +253,12 @@ def do_delete_topic(topic_arn):
     SNS_SUBSCRIPTIONS.pop(topic_arn, None)
 
 
+def do_confirm_subscription(topic_arn, token):
+    if topic_arn in SUBSCRIPTION_STATUS.keys():
+        if SUBSCRIPTION_STATUS[topic_arn]['Token'] == token:
+            SUBSCRIPTION_STATUS[topic_arn]['Status'] = 'Subscribed'
+
+
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
@@ -273,6 +288,17 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
                 'To confirm the subscription, visit the SubscribeURL included in this message.'],
             'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
         }
+
+        if topic_arn not in SUBSCRIPTION_STATUS.keys():
+            SUBSCRIPTION_STATUS[topic_arn] = {}
+
+        SUBSCRIPTION_STATUS[topic_arn].update(
+            {
+                'SubscriptionArn': subscription_arn,
+                'Token': token,
+                'Status': 'Not Subscribed'
+            }
+        )
         publish_message(topic_arn, confirmation, subscription_arn)
 
 

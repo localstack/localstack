@@ -10,6 +10,7 @@ from localstack.utils.common import (
 )
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
+from localstack.services.sns.sns_listener import SUBSCRIPTION_STATUS
 
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
@@ -181,6 +182,21 @@ class SNSTest(unittest.TestCase):
         self.assertEqual(len(tags['Tags']), 1)
         self.assertEqual(tags['Tags'][0]['Key'], '456')
         self.assertEqual(tags['Tags'][0]['Value'], 'def')
+
+    def test_topic_subscription(self):
+        self.sns_client.subscribe(
+            TopicArn=self.topic_arn,
+            Protocol='email',
+            Endpoint='localstack@yopmail.com'
+        )
+        self.assertEqual(SUBSCRIPTION_STATUS[self.topic_arn]['Status'], 'Not Subscribed')
+
+        _token = SUBSCRIPTION_STATUS[self.topic_arn]['Token']
+        self.sns_client.confirm_subscription(
+            TopicArn=self.topic_arn,
+            Token=_token
+        )
+        self.assertEqual(SUBSCRIPTION_STATUS[self.topic_arn]['Status'], 'Subscribed')
 
     def test_dead_letter_queue(self):
         lambda_name = 'test-%s' % short_uid()
