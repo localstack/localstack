@@ -891,7 +891,7 @@ class ProxyListenerS3(ProxyListener):
         bucket_name = get_bucket_name(path, headers)
 
         # persist this API call to disk
-        persistence.record('s3', method, path, data, headers, response)
+        persistence.record('s3', method, path, data, headers, response=response)
 
         # No path-name based bucket name? Try host-based
         hostname_parts = headers['host'].split('.')
