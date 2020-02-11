@@ -8,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
  *
  * @author Patrick Allain
  */
+@Deprecated
 public class LocalstackExtension implements BeforeTestExecutionCallback {
 
     @Override
