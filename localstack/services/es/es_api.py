@@ -2,6 +2,7 @@ import json
 import time
 from random import randint
 from flask import Flask, jsonify, request, make_response
+from localstack.utils import persistence
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -198,9 +199,12 @@ def create_domain():
     # start actual Elasticsearch instance
     start_elasticsearch_instance()
     result = get_domain_status(domain_name)
+
     # record event
     event_publisher.fire_event(event_publisher.EVENT_ES_CREATE_DOMAIN,
         payload={'n': event_publisher.get_hash(domain_name)})
+    persistence.record('es', request=request)
+
     return jsonify(result)
 
 
@@ -209,6 +213,20 @@ def describe_domain(domain_name):
     if domain_name not in ES_DOMAINS:
         return error_response(error_type='ResourceNotFoundException')
     result = get_domain_status(domain_name)
+    return jsonify(result)
+
+
+@app.route('%s/es/domain-info' % API_PREFIX, methods=['POST'])
+def describe_domains():
+    data = json.loads(to_str(request.data))
+    result = []
+    domain_names = data.get('DomainNames', [])
+    for domain_name in ES_DOMAINS:
+        if domain_name in domain_names:
+            status = get_domain_status(domain_name)
+            status = status.get('DomainStatus') or status
+            result.append(status)
+    result = {'DomainStatusList': result}
     return jsonify(result)
 
 
@@ -226,9 +244,12 @@ def delete_domain(domain_name):
     ES_DOMAINS.pop(domain_name)
     if not ES_DOMAINS:
         cleanup_elasticsearch_instance()
+
     # record event
     event_publisher.fire_event(event_publisher.EVENT_ES_DELETE_DOMAIN,
         payload={'n': event_publisher.get_hash(domain_name)})
+    persistence.record('es', request=request)
+
     return jsonify(result)
 
 
