@@ -184,19 +184,21 @@ class SNSTest(unittest.TestCase):
         self.assertEqual(tags['Tags'][0]['Value'], 'def')
 
     def test_topic_subscription(self):
-        self.sns_client.subscribe(
+        subscription = self.sns_client.subscribe(
             TopicArn=self.topic_arn,
             Protocol='email',
             Endpoint='localstack@yopmail.com'
         )
-        self.assertEqual(SUBSCRIPTION_STATUS[self.topic_arn]['Status'], 'Not Subscribed')
+        subscription_arn = subscription['SubscriptionArn']
+        subscription_obj = SUBSCRIPTION_STATUS[subscription_arn]
+        self.assertEqual(subscription_obj['Status'], 'Not Subscribed')
 
-        _token = SUBSCRIPTION_STATUS[self.topic_arn]['Token']
+        _token = subscription_obj['Token']
         self.sns_client.confirm_subscription(
             TopicArn=self.topic_arn,
             Token=_token
         )
-        self.assertEqual(SUBSCRIPTION_STATUS[self.topic_arn]['Status'], 'Subscribed')
+        self.assertEqual(subscription_obj['Status'], 'Subscribed')
 
     def test_dead_letter_queue(self):
         lambda_name = 'test-%s' % short_uid()

@@ -254,9 +254,9 @@ def do_delete_topic(topic_arn):
 
 
 def do_confirm_subscription(topic_arn, token):
-    if topic_arn in SUBSCRIPTION_STATUS.keys():
-        if SUBSCRIPTION_STATUS[topic_arn]['Token'] == token:
-            SUBSCRIPTION_STATUS[topic_arn]['Status'] = 'Subscribed'
+    for k, v in SUBSCRIPTION_STATUS.items():
+        if v['Token'] == token and v['TopicArn'] == topic_arn:
+            v['Status'] = 'Subscribed'
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
@@ -277,6 +277,16 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
     subscription.update(attributes)
     SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
 
+    if subscription_arn not in SUBSCRIPTION_STATUS.keys():
+        SUBSCRIPTION_STATUS[subscription_arn] = {}
+
+    SUBSCRIPTION_STATUS[subscription_arn].update(
+        {
+            'TopicArn': topic_arn,
+            'Token': short_uid(),
+            'Status': 'Not Subscribed'
+        }
+    )
     # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
     if protocol in ['http', 'https']:
         token = short_uid()
@@ -288,17 +298,6 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
                 'To confirm the subscription, visit the SubscribeURL included in this message.'],
             'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
         }
-
-        if topic_arn not in SUBSCRIPTION_STATUS.keys():
-            SUBSCRIPTION_STATUS[topic_arn] = {}
-
-        SUBSCRIPTION_STATUS[topic_arn].update(
-            {
-                'SubscriptionArn': subscription_arn,
-                'Token': token,
-                'Status': 'Not Subscribed'
-            }
-        )
         publish_message(topic_arn, confirmation, subscription_arn)
 
 
