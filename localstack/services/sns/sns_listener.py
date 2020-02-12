@@ -19,6 +19,9 @@ from localstack.utils.aws.aws_responses import response_regex_replace
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
 
+# mappings for subscription status
+SUBSCRIPTION_STATUS = {}
+
 # mappings for SNS tags
 SNS_TAGS = {}
 
@@ -71,6 +74,12 @@ class ProxyListenerSNS(ProxyListener):
             elif req_action == 'Subscribe':
                 if 'Endpoint' not in req_data:
                     return make_error(message='Endpoint not specified in subscription', code=400)
+            elif req_action == 'ConfirmSubscription':
+                if 'TopicArn' not in req_data:
+                    return make_error(message='TopicArn not specified in confirm subscription request', code=400)
+                if 'Token' not in req_data:
+                    return make_error(message='Token not specified in confirm subscription request', code=400)
+                do_confirm_subscription(req_data.get('TopicArn')[0], req_data.get('Token')[0])
             elif req_action == 'Unsubscribe':
                 if 'SubscriptionArn' not in req_data:
                     return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
@@ -249,6 +258,12 @@ def do_delete_topic(topic_arn):
     SNS_SUBSCRIPTIONS.pop(topic_arn, None)
 
 
+def do_confirm_subscription(topic_arn, token):
+    for k, v in SUBSCRIPTION_STATUS.items():
+        if v['Token'] == token and v['TopicArn'] == topic_arn:
+            v['Status'] = 'Subscribed'
+
+
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
@@ -267,6 +282,16 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
     subscription.update(attributes)
     SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
 
+    if subscription_arn not in SUBSCRIPTION_STATUS.keys():
+        SUBSCRIPTION_STATUS[subscription_arn] = {}
+
+    SUBSCRIPTION_STATUS[subscription_arn].update(
+        {
+            'TopicArn': topic_arn,
+            'Token': short_uid(),
+            'Status': 'Not Subscribed'
+        }
+    )
     # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
     if protocol in ['http', 'https']:
         token = short_uid()
