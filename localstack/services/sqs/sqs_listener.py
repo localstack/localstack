@@ -37,6 +37,7 @@ UNSUPPORTED_ATTRIBUTE_NAMES = [
     'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy']
 
 # maps queue URLs to attributes set via the API
+# TODO: add region as first level in the map
 QUEUE_ATTRIBUTES = {}
 
 

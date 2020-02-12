@@ -53,7 +53,8 @@ API_COMPOSITES = {
 # name of main Docker container
 MAIN_CONTAINER_NAME = 'localstack_main'
 
-# environment variable that indicates that we're executing in the context of the script that starts the Docker container
+# environment variable that indicates that we're executing in
+# the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
 
 # semaphore for locking access to Popen
@@ -452,7 +453,7 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
         # subprocess.Popen is not thread-safe, hence use a mutex here.. (TODO: mutex still needed?)
         with mutex_popen:
             stdin_arg = subprocess.PIPE if stdin else None
-            stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
+            stdout_arg = open(outfile, 'ab') if isinstance(outfile, six.string_types) else outfile
             stderr_arg = stderr
             if tty:
                 # Note: leave the "pty" import here (not supported in Windows)

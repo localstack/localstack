@@ -2,7 +2,6 @@ import json
 import time
 from random import randint
 from flask import Flask, jsonify, request, make_response
-from localstack.utils import persistence
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -172,8 +171,6 @@ def start_elasticsearch_instance():
     apis = [api_name]
     # ensure that all infra components are up and running
     check_infra(apis=apis, additional_checks=[es_starter.check_elasticsearch])
-    # restore persisted data
-    persistence.restore_persisted_data(apis=apis)
     return t1
 
 
@@ -233,6 +230,21 @@ def delete_domain(domain_name):
     event_publisher.fire_event(event_publisher.EVENT_ES_DELETE_DOMAIN,
         payload={'n': event_publisher.get_hash(domain_name)})
     return jsonify(result)
+
+
+@app.route('%s/es/compatibleVersions' % API_PREFIX, methods=['GET'])
+def get_compatible_versions():
+    result = [{
+        'SourceVersion': '6.5',
+        'TargetVersions': ['6.7', '6.8']
+    }, {
+        'SourceVersion': '6.7',
+        'TargetVersions': ['6.8']
+    }, {
+        'SourceVersion': '6.8',
+        'TargetVersions': ['7.1']
+    }]
+    return jsonify({'CompatibleElasticsearchVersions': result})
 
 
 @app.route('%s/tags' % API_PREFIX, methods=['GET', 'POST'])

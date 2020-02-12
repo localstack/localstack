@@ -7,6 +7,7 @@ import boto3.session
 from moto.s3 import models as s3_models
 from moto.iam import models as iam_models
 from moto.sqs import models as sqs_models
+from moto.sns import models as sns_models
 from moto.core import BaseModel
 from moto.server import main as moto_main
 from moto.kinesis import models as kinesis_models
@@ -17,6 +18,7 @@ from moto.apigateway import models as apigw_models
 from moto.cloudwatch import models as cw_models
 from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
+from moto.cloudformation.models import FakeStack
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
@@ -37,6 +39,9 @@ CURRENTLY_UPDATING_RESOURCES = {}
 
 # whether to start the API in a separate process
 RUN_SERVER_IN_PROCESS = False
+
+# maxiumum depth of the resource dependency tree
+MAX_DEPENDENCY_DEPTH = 40
 
 # map of additional model classes
 MODEL_MAP = {
@@ -142,6 +147,10 @@ def apply_patches():
     """ Apply patches to make LocalStack seamlessly interact with the moto backend.
         TODO: Eventually, these patches should be contributed to the upstream repo! """
 
+    # add model mappings to moto
+
+    parsing.MODEL_MAP.update(MODEL_MAP)
+
     # Patch S3Backend.get_key method in moto to use S3 API from LocalStack
 
     def get_key(self, bucket_name, key_name, version_id=None):
@@ -169,15 +178,12 @@ def apply_patches():
     clean_json_orig = parsing.clean_json
     parsing.clean_json = clean_json
 
-    # add model mappings to moto
-
-    parsing.MODEL_MAP.update(MODEL_MAP)
-
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
 
-    def parse_and_create_resource(logical_id, resource_json, resources_map, region_name):
+    def parse_and_create_resource(logical_id, resource_json, resources_map, region_name, force_create=False):
         try:
-            return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name)
+            return _parse_and_create_resource(logical_id, resource_json,
+                resources_map, region_name, force_create=force_create)
         except Exception as e:
             LOG.error('Unable to parse and create resource "%s": %s %s' %
                       (logical_id, e, traceback.format_exc()))
@@ -192,13 +198,14 @@ def apply_patches():
                       (logical_id, e, traceback.format_exc()))
             raise
 
-    def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=False):
+    def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name,
+            update=False, force_create=False):
         stack_name = resources_map.get('AWS::StackName')
         resource_hash_key = (stack_name, logical_id)
 
         # If the current stack is being updated, avoid infinite recursion
         updating = CURRENTLY_UPDATING_RESOURCES.get(resource_hash_key)
-        LOG.debug('Currently updating stack resource %s/%s: %s' % (stack_name, logical_id, updating))
+        LOG.debug('Currently processing stack resource %s/%s: %s' % (stack_name, logical_id, updating))
         if updating:
             return None
 
@@ -215,7 +222,7 @@ def apply_patches():
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
-        if resource and not update:
+        if resource and not update and not force_create:
             return resource
 
         # check whether this resource needs to be deployed
@@ -228,7 +235,7 @@ def apply_patches():
         set_moto_account_ids(resource_json_arns_fixed)
 
         # create resource definition and store CloudFormation metadata in moto
-        if resource or update:
+        if (resource or update) and not force_create:
             parse_and_update_resource_orig(logical_id,
                 resource_json_arns_fixed, resources_map, region_name)
         elif not resource:
@@ -253,8 +260,20 @@ def apply_patches():
             # This resource is either not deployable or already exists. Check if it can be updated
             is_updateable = template_deployer.is_updateable(logical_id, resource_map_new, stack_name)
             if not update or not is_updateable:
-                LOG.debug('Resource %s need not be deployed: %s %s' % (logical_id, resource_json, bool(resource)))
-                # Return if this resource already exists and can/need not be updated
+                all_satisfied = template_deployer.all_resource_dependencies_satisfied(
+                    logical_id, resource_map_new, stack_name)
+                if not all_satisfied:
+                    LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s' % (
+                        logical_id, resource_json))
+                    details = [logical_id, resource_json, resources_map, region_name]
+                    resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', {})
+                    resources_map._unresolved_resources[logical_id] = details
+                else:
+                    LOG.debug('Resource %s need not be deployed (is_updateable=%s): %s %s' % (
+                        logical_id, is_updateable, resource_json, bool(resource)))
+                # Return if this resource already exists and can/need not be updated yet
+                # NOTE: We should always return the resource here, to avoid duplicate
+                #       creation of resources in moto!
                 return resource
 
         # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
@@ -277,7 +296,7 @@ def apply_patches():
             """ Find ID of the given resource. """
             if not resource:
                 return
-            for id_attr in ('Id', 'id', 'ResourceId', 'RestApiId', 'DeploymentId'):
+            for id_attr in ('Id', 'id', 'ResourceId', 'RestApiId', 'DeploymentId', 'RoleId'):
                 if id_attr in resource:
                     return resource[id_attr]
 
@@ -359,16 +378,30 @@ def apply_patches():
 
     def parse_output(output_logical_id, output_json, resources_map):
         try:
-            return parse_output_orig(output_logical_id, output_json, resources_map)
+            result = parse_output_orig(output_logical_id, output_json, resources_map)
         except KeyError:
-            output = Output()
-            output.key = output_logical_id
-            output.value = None
-            output.description = output_json.get('Description')
-            return output
+            result = Output()
+            result.key = output_logical_id
+            result.value = None
+            result.description = output_json.get('Description')
+        # Make sure output includes export name
+        if not hasattr(result, 'export_name'):
+            result.export_name = output_json.get('Export', {}).get('Name')
+        return result
 
     parse_output_orig = parsing.parse_output
     parsing.parse_output = parse_output
+
+    # Make sure the export name is returned for stack outputs
+
+    if '<ExportName>' not in responses.DESCRIBE_STACKS_TEMPLATE:
+        find = '</OutputValue>'
+        replace = """</OutputValue>
+        {% if output.export_name %}
+        <ExportName>{{ output.export_name }}</ExportName>
+        {% endif %}
+        """
+        responses.DESCRIBE_STACKS_TEMPLATE = responses.DESCRIBE_STACKS_TEMPLATE.replace(find, replace)
 
     # Patch DynamoDB get_cfn_attribute(..) method in moto
 
@@ -488,13 +521,13 @@ def apply_patches():
     # Patch SNS Topic get_cfn_attribute(..) method in moto
 
     def SNS_Topic_get_cfn_attribute(self, attribute_name):
-        result = SNS_Topic_get_cfn_attribute(self, attribute_name)
+        result = SNS_Topic_get_cfn_attribute_orig(self, attribute_name)
         if attribute_name.lower() in ['arn', 'topicarn']:
             result = aws_stack.fix_account_id_in_arns(result)
         return result
 
-    IAM_Role_get_cfn_attribute_orig = iam_models.Role.get_cfn_attribute
-    iam_models.Role.get_cfn_attribute = IAM_Role_get_cfn_attribute
+    SNS_Topic_get_cfn_attribute_orig = sns_models.Topic.get_cfn_attribute
+    sns_models.Topic.get_cfn_attribute = SNS_Topic_get_cfn_attribute
 
     # Patch LambdaFunction create_from_cloudformation_json(..) method in moto
 
@@ -661,6 +694,44 @@ def apply_patches():
     for region in boto3.session.Session().get_available_regions('lambda'):
         if region not in lambda_models.lambda_backends:
             lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
+
+    # patch FakeStack.initialize_resources
+
+    def initialize_resources(self):
+        def set_status(status):
+            self._add_stack_event(status)
+            self.status = status
+
+        self.resource_map.create()
+        self.output_map.create()
+
+        def run_loop(*args):
+            # NOTE: We're adding this additional loop, as it seems that in some cases moto
+            #   does not consider resource dependencies (e.g., if a "DependsOn" resource property
+            #   is defined). This loop allows us to incrementally resolve such dependencies.
+            resource_map = self.resource_map
+            unresolved = {}
+            for i in range(MAX_DEPENDENCY_DEPTH):
+                unresolved = getattr(resource_map, '_unresolved_resources', {})
+                if not unresolved:
+                    set_status('CREATE_COMPLETE')
+                    return resource_map
+                resource_map._unresolved_resources = {}
+                for resource_id, resource_details in unresolved.items():
+                    # Re-trigger the resource creation
+                    parse_and_create_resource(*resource_details, force_create=True)
+                if unresolved.keys() == resource_map._unresolved_resources.keys():
+                    # looks like no more resources can be resolved -> bail
+                    LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
+                    break
+            set_status('CREATE_FAILED')
+            raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
+                'dependency tree (maximum depth %s reached): %s' % (MAX_DEPENDENCY_DEPTH, unresolved.keys()))
+
+        # NOTE: We're running the loop in the background, as it might take some time to complete
+        FuncThread(run_loop).start()
+
+    FakeStack.initialize_resources = initialize_resources
 
 
 def inject_stats_endpoint():

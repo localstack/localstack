@@ -36,8 +36,10 @@ def should_record(api, method, path, data, headers, response=None):
 def record(api, method, path, data, headers, response=None):
     """ Record a given API call to a persistent file on disk """
     file_path = get_file_path(api)
+    if CURRENTLY_REPLAYING or not file_path:
+        return
     should_be_recorded = should_record(api, method, path, data, headers, response=response)
-    if CURRENTLY_REPLAYING or not file_path or not should_be_recorded:
+    if not should_be_recorded:
         return
     entry = None
     try:

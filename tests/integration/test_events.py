@@ -2,6 +2,7 @@
 import json
 import os
 import unittest
+import uuid
 from datetime import datetime
 
 from localstack.services.events.events_listener import EVENTS_TMP_DIR
@@ -32,7 +33,7 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(1, len(rules))
         self.assertEqual(TEST_EVENT_PATTERN, json.loads(rules[0]['EventPattern']))
 
-    def test_put_events(self):
+    def test_put_event(self):
         response = self.events_client.put_events(Entries=[{
             'Time': datetime(2019, 7, 29),
             'DetailType': TEST_DETAIL_TYPE,
@@ -42,9 +43,23 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(1, len(entries))
         event_id = entries[0]['EventId']
         self.assertRegex(event_id, '[0-9a-f-]{36}')
-        event_from_file = json.loads(str(load_file(os.path.join(EVENTS_TMP_DIR, event_id))))
-        self.assertEqual(TEST_DETAIL_TYPE, event_from_file['DetailType'])
-        self.assertEqual(TEST_DETAIL, event_from_file['Detail'])
+
+    def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(self):
+        event_type = str(uuid.uuid4())
+        event_details_to_publish = list(map(lambda n: 'event %s' % n, range(100)))
+
+        for detail in event_details_to_publish:
+            self.events_client.put_events(Entries=[{
+                'DetailType': event_type,
+                'Detail': detail
+            }])
+
+        sorted_events_written_to_disk = map(
+            lambda filename: json.loads(str(load_file(os.path.join(EVENTS_TMP_DIR, filename)))),
+            sorted(os.listdir(EVENTS_TMP_DIR)))
+        sorted_events = list(filter(lambda event: event['DetailType'] == event_type,
+                                    sorted_events_written_to_disk))
+        self.assertListEqual(event_details_to_publish, list(map(lambda event: event['Detail'], sorted_events)))
 
     def test_list_tags_for_resource(self):
         rule = self.events_client.put_rule(Name=TEST_RULE_NAME, EventPattern=json.dumps(TEST_EVENT_PATTERN))

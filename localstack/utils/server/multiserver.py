@@ -124,7 +124,7 @@ def start_server_process(port):
 
 def main():
     setup_logging()
-    port = int(sys.argv[1]) if len(sys.argv) > 0 else MULTI_SERVER_PORT
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else MULTI_SERVER_PORT
     start_server(port)
 
 
