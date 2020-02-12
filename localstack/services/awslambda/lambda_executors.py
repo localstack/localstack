@@ -663,12 +663,14 @@ class LambdaExecutorLocal(LambdaExecutor):
         return result, log_output
 
     def execute_java_lambda(self, event, context, handler, main_file):
+        opts = config.LAMBDA_JAVA_OPTS if config.LAMBDA_JAVA_OPTS else ''
         event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
         save_file(event_file, json.dumps(event))
         TMP_FILES.append(event_file)
         class_name = handler.split('::')[0]
         classpath = '%s:%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file, Util.get_java_classpath(main_file))
-        cmd = 'java -cp %s %s %s %s' % (classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
+        cmd = 'java %s -cp %s %s %s %s' % (opts, classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
+        LOG.warning(cmd)
         result, log_output = self.run_lambda_executor(cmd)
         LOG.debug('Lambda result / log output:\n%s\n> %s' % (
             result.strip(), log_output.strip().replace('\n', '\n> ')))
