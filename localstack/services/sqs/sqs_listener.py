@@ -32,9 +32,13 @@ SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = """
 
 # list of valid attribute names, and names not supported by the backend (elasticmq)
 VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
-                         'ReceiveMessageWaitTimeSeconds', 'RedrivePolicy', 'VisibilityTimeout']
+                         'ReceiveMessageWaitTimeSeconds', 'RedrivePolicy', 'VisibilityTimeout',
+                         'ContentBasedDeduplication', 'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds',
+                         'CreatedTimestamp', 'LastModifiedTimestamp', 'FifoQueue',
+                         'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible']
 UNSUPPORTED_ATTRIBUTE_NAMES = [
-    'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy']
+    'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy',
+    'ContentBasedDeduplication', 'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds']
 
 # maps queue URLs to attributes set via the API
 # TODO: add region as first level in the map
@@ -57,7 +61,10 @@ class ProxyListenerSQS(ProxyListener):
                     return new_response
             elif action == 'SetQueueAttributes':
                 queue_url = self._queue_url(path, req_data, headers)
-                self._set_queue_attributes(queue_url, req_data)
+                forward_attrs = self._set_queue_attributes(queue_url, req_data)
+                if len(req_data) != len(forward_attrs):
+                    # make sure we only forward the supported attributes to the backend
+                    return self._get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
             elif action == 'DeleteQueue':
                 QUEUE_ATTRIBUTES.pop(self._queue_url(path, req_data, headers), None)
 
@@ -234,7 +241,7 @@ class ProxyListenerSQS(ProxyListener):
             if key1 not in req_data:
                 break
             key_name = req_data[key1][0]
-            key_value = req_data[key2][0]
+            key_value = (req_data.get(key2) or [''])[0]
             result[key_name] = key_value
         return result
 
@@ -251,6 +258,16 @@ class ProxyListenerSQS(ProxyListener):
                 break
             result.add(req_data[key][0])
         return result
+
+    def _get_attributes_forward_request(self, method, path, headers, req_data, forward_attrs):
+        req_data_new = dict([(k, v) for k, v in req_data.items() if not k.startswith('Attribute.')])
+        i = 1
+        for k, v in forward_attrs.items():
+            req_data_new['Attribute.%s.Name' % i] = [k]
+            req_data_new['Attribute.%s.Value' % i] = [v]
+            i += 1
+        data = urlencode(req_data_new, doseq=True)
+        return Request(data=data, headers=headers, method=method)
 
     def _send_message(self, path, data, req_data, headers):
         queue_url = self._queue_url(path, req_data, headers)
@@ -274,9 +291,11 @@ class ProxyListenerSQS(ProxyListener):
     def _set_queue_attributes(self, queue_url, req_data):
         attrs = self._format_attributes(req_data)
         # select only the attributes in UNSUPPORTED_ATTRIBUTE_NAMES
-        attrs = dict([(k, v) for k, v in attrs.items() if k in UNSUPPORTED_ATTRIBUTE_NAMES])
+        local_attrs = dict([(k, v) for k, v in attrs.items() if k in UNSUPPORTED_ATTRIBUTE_NAMES])
         QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
-        QUEUE_ATTRIBUTES[queue_url].update(attrs)
+        QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
+        forward_attrs = dict([(k, v) for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES])
+        return forward_attrs
 
     def _add_queue_attributes(self, path, req_data, content_str, headers):
         flags = re.MULTILINE | re.DOTALL
