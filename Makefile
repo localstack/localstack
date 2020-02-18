@@ -1,7 +1,7 @@
 IMAGE_NAME ?= localstack/localstack
 IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
-VENV_DIR ?= env
+VENV_DIR ?= .venv
 ADDITIONAL_MVN_ARGS ?= -DskipTests -q
 PIP_CMD ?= pip
 TEST_PATH ?= .
@@ -91,14 +91,15 @@ docker-run:        ## Run Docker image locally
 	($(VENV_RUN); bin/localstack start)
 
 docker-mount-run:
-	MOTO_DIR=$$(echo $$(pwd)/env/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
-		ENTRYPOINT="-v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/env/lib/python3.6/site-packages/moto/" make docker-run
+	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
+		ENTRYPOINT="-v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.6/site-packages/moto/" make docker-run
 
 web:               ## Start web application (dashboard)
 	($(VENV_RUN); bin/localstack web)
 
 test:              ## Run automated tests
-		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-timer --with-coverage --logging-level=INFO  --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' $(TEST_PATH))
+	make lint && \
+		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests --with-timer --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' $(TEST_PATH))
 
 test-java:         ## Run tests for Java/JUnit compatibility
 	cd localstack/ext/java; USE_SSL=1 SERVICES=serverless,kinesis,sns,sqs,cloudwatch mvn $(MVN_ARGS) -q test

@@ -736,7 +736,6 @@ def apply_patches():
     # patch Kinesis Stream get_cfn_attribute(..) method in moto
     def Kinesis_Stream_get_cfn_attribute(self, attribute_name):
         if attribute_name == 'Arn':
-            # LOG.warning('[patched] Kinesis_Stream: {}'.format(self.arn))
             return self.arn
 
         raise UnformattedGetAttTemplateException()
