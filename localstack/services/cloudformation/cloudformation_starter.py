@@ -733,6 +733,15 @@ def apply_patches():
 
     FakeStack.initialize_resources = initialize_resources
 
+    # patch Kinesis Stream get_cfn_attribute(..) method in moto
+    def Kinesis_Stream_get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'Arn':
+            return self.arn
+
+        raise UnformattedGetAttTemplateException()
+
+    kinesis_models.Stream.get_cfn_attribute = Kinesis_Stream_get_cfn_attribute
+
 
 def inject_stats_endpoint():
     """ Inject a simple /_stats endpoint into the moto server backend Web app. """
