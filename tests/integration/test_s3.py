@@ -664,6 +664,7 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                              VersioningConfiguration={'Status': 'Enabled'})
 
+        # flake8: noqa: W291
         body = """ Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. 
         Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. 
         Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. 

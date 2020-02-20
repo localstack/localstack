@@ -182,15 +182,13 @@ def send_notifications(method, bucket_name, object_path, version_id):
 def send_notification_for_subscriber(notif, bucket_name, object_path, version_id, api_method, action, event_name):
     bucket_name = normalize_bucket_name(bucket_name)
 
-    if not event_type_matches(notif['Event'], action, api_method) or not filter_rules_match(notif.get('Filter'), object_path):
+    if not event_type_matches(notif['Event'], action, api_method) or \
+            not filter_rules_match(notif.get('Filter'), object_path):
         return
 
     s3_client = aws_stack.connect_to_service('s3')
     key = urlparse.urlparse(object_path[1:]).path
-    try:
-        object_size = s3_client.head_object(Bucket=bucket_name, Key=key)['ContentLength']
-    except:
-        object_size = 0
+    object_size = s3_client.head_object(Bucket=bucket_name, Key=key).get('ContentLength', 0)
 
     # build event message
     message = get_event_message(
