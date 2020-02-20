@@ -656,6 +656,46 @@ class S3ListenerTest(unittest.TestCase):
         # cleanup
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
+    def test_s3_event_notification_with_sqs(self):
+        key_by_path = 'aws/bucket0/test1'
+
+        queue_url, queue_attributes = self._create_test_queue()
+        self._create_test_notification_bucket(queue_attributes)
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+
+        # flake8: noqa: W291
+        body = """ Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. 
+        Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. 
+        Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. 
+        Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a,. 
+        Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. 
+        Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. 
+        Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. 
+        Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. 
+        Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sed ipsum. """
+
+        # put an object
+        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body=body)
+
+        self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
+
+        rs = self.sqs_client.receive_message(QueueUrl=queue_url)
+        record = [json.loads(to_str(m['Body'])) for m in rs['Messages']][0]['Records'][0]
+
+        download_file = new_tmp_file()
+        self.s3_client.download_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                     Key=key_by_path, Filename=download_file)
+
+        self.assertEqual(record['s3']['object']['size'], os.path.getsize(download_file))
+
+        # clean up
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                             VersioningConfiguration={'Status': 'Disabled'})
+
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+
     # ---------------
     # HELPER METHODS
     # ---------------
