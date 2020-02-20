@@ -228,12 +228,16 @@ def post_request():
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         region_name = extract_region_from_auth_header(request.headers)
+        _s3_destination = data.get('S3DestinationConfiguration') or data.get('ExtendedS3DestinationConfiguration')
         response = create_stream(
-            stream_name, delivery_stream_type=data.get('DeliveryStreamType'),
+            stream_name,
+            delivery_stream_type=data.get('DeliveryStreamType'),
             delivery_stream_type_configuration=data.get('KinesisStreamSourceConfiguration'),
-            s3_destination=data.get('S3DestinationConfiguration'),
+            s3_destination=_s3_destination,
             elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'),
-            tags=data.get('Tags'), region_name=region_name)
+            tags=data.get('Tags'),
+            region_name=region_name
+        )
     elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = delete_stream(stream_name)
