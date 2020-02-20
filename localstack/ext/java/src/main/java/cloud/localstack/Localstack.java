@@ -24,7 +24,7 @@ public class Localstack {
     private static final Logger LOG = Logger.getLogger(Localstack.class.getName());
 
     private static final String PORT_CONFIG_FILENAME = "/opt/code/localstack/" +
-            ".venv/lib/python3.7/site-packages/localstack_client/config.py";
+            ".venv/lib/python3.8/site-packages/localstack_client/config.py";
 
     private static final Pattern READY_TOKEN = Pattern.compile("Ready\\.");
 
