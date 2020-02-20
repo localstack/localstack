@@ -102,7 +102,8 @@ def get_template_body(req_data):
     if url:
         response = run_safe(lambda: safe_requests.get(url, verify=False))
         # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
-        if not response or response.status_code == 301 or response.status_code >= 400:
+        status_code = 0 if response is None else response.status_code
+        if not response or status_code == 301 or status_code >= 400:
             # check if this is an S3 URL, then get the file directly from there
             if '://localhost' in url or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url):
                 parsed_path = urlparse.urlparse(url).path.lstrip('/')
@@ -111,7 +112,7 @@ def get_template_body(req_data):
                 result = client.get_object(Bucket=parts[0], Key=parts[2])
                 body = to_str(result['Body'].read())
                 return body
-            raise Exception('Unable to fetch template body (code %s) from URL %s' % (response.status_code, url))
+            raise Exception('Unable to fetch template body (code %s) from URL %s' % (status_code, url))
         return response.content
     raise Exception('Unable to get template body from input: %s' % req_data)
 
