@@ -21,6 +21,9 @@ LOG = logging.getLogger(__name__)
 # list of resource types that can be updated
 UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method']
 
+# list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
+STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName']
+
 # create safe yaml loader that parses date strings as string, not date objects
 NoDatesSafeLoader = yaml.SafeLoader
 NoDatesSafeLoader.yaml_implicit_resolvers = {
@@ -707,8 +710,12 @@ def resolve_refs_recursively(stack_name, value, resources):
                 raise Exception('Cannot resolve CF fn::Join %s due to null values: %s' % (value, join_values))
             return value[keys_list[0]][0].join(join_values)
         if keys_list and keys_list[0].lower() == 'fn::sub':
-            result = value[keys_list[0]][0]
-            for key, val in value[keys_list[0]][1].items():
+            item_to_sub = value[keys_list[0]]
+            if not isinstance(item_to_sub, list):
+                attr_refs = dict([(r, {'Ref': r}) for r in STATIC_REFS])
+                item_to_sub = [item_to_sub, attr_refs]
+            result = item_to_sub[0]
+            for key, val in item_to_sub[1].items():
                 val = resolve_refs_recursively(stack_name, val, resources)
                 result = result.replace('${%s}' % key, val)
             return result

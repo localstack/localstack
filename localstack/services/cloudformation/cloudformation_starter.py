@@ -242,6 +242,7 @@ def apply_patches():
             try:
                 resource = parse_and_create_resource_orig(logical_id,
                     resource_json_arns_fixed, resources_map, region_name)
+                resource.logical_id = logical_id
             except Exception as e:
                 if should_be_created:
                     raise
