@@ -312,7 +312,7 @@ class S3ListenerTest (unittest.TestCase):
         self.assertEqual(to_str(body), to_str(download_object))
         # clean up
         self._delete_bucket(bucket_name, [object_key])
-        
+
     def test_s3_delete_response_content_length_zero(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
