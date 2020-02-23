@@ -27,7 +27,7 @@ import dns.resolver
 import functools
 from io import BytesIO
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, date
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
@@ -80,7 +80,7 @@ class CustomEncoder(json.JSONEncoder):
                 return float(o)
             else:
                 return int(o)
-        if isinstance(o, datetime):
+        if isinstance(o, (datetime, date)):
             return str(o)
         if isinstance(o, six.binary_type):
             return to_str(o)
