@@ -205,15 +205,17 @@ class ProxyListenerDynamoDB(ProxyListener):
                 record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
                 if existing_item:
                     record['dynamodb']['OldImage'] = existing_item
-        elif action == '%s.GetItem' % ACTION_PREFIX:
+        elif action in ['%s.GetItem' % ACTION_PREFIX, '%s.Query' % ACTION_PREFIX]:
             if response.status_code == 200:
                 content = json.loads(to_str(response.content))
                 # make sure we append 'ConsumedCapacity', which is properly
                 # returned by dynalite, but not by AWS's DynamoDBLocal
-                if 'ConsumedCapacity' not in content and data.get('ReturnConsumedCapacity') in ('TOTAL', 'INDEXES'):
+                if 'ConsumedCapacity' not in content and data.get('ReturnConsumedCapacity') in ['TOTAL', 'INDEXES']:
                     content['ConsumedCapacity'] = {
-                        'CapacityUnits': 0.5,  # TODO hardcoded
-                        'TableName': data['TableName']
+                        'TableName': data['TableName'],
+                        'CapacityUnits': 5,             # TODO hardcoded
+                        'ReadCapacityUnits': 2,
+                        'WriteCapacityUnits': 3
                     }
                     response._content = json.dumps(content)
                     fix_headers_for_updated_response(response)
