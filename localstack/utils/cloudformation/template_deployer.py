@@ -91,7 +91,7 @@ def dump_json_params(param_func, *param_names):
             if isinstance(result.get(name), (dict, list)):
                 # Fix for https://github.com/localstack/localstack/issues/2022
                 # Convert any date instances to date strings, etc, Version: "2012-10-17"
-                param_value = json_safe(result[name])
+                param_value = common.json_safe(result[name])
                 result[name] = json.dumps(param_value)
         return result
     return replace
