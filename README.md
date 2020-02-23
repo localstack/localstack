@@ -257,6 +257,10 @@ For example, to dynamically set `KINESIS_ERROR_PROBABILITY=1` at runtime, use th
 curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhost:4568/?_config_'
 ```
 
+### Service health checks
+
+The service health check endpoint `http://localhost:8080/health` provides basic information about the status of each service (e.g., `{"s3":"running","es":"starting"}`). By default, the endpoint returns cached values that are determined during startup - the status values can be refreshed by adding the `reload` query parameter: `http://localhost:8080/health?reload`.
+
 ### Initializing a fresh instance
 
 When a container is started for the first time, it will execute files with extensions .sh that are found in `/docker-entrypoint-initaws.d`. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.

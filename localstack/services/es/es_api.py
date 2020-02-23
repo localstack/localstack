@@ -8,6 +8,7 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import to_str
 from localstack.utils.analytics import event_publisher
+from localstack.services.plugins import check_infra, Plugin
 
 APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'
@@ -162,7 +163,6 @@ def get_domain_status(domain_name, deleted=False):
 def start_elasticsearch_instance():
     # Note: keep imports here to avoid circular dependencies
     from localstack.services.es import es_starter
-    from localstack.services.infra import check_infra, Plugin
 
     api_name = 'elasticsearch'
     plugin = Plugin(api_name, start=es_starter.start_elasticsearch, check=es_starter.check_elasticsearch)
