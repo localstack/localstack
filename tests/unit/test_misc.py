@@ -27,10 +27,11 @@ class TestMisc(unittest.TestCase):
     def test_convert_yaml_date_strings(self):
         yaml_source = 'Version: 2012-10-17'
         obj = yaml.safe_load(yaml_source)
-        self.assertEqual(type(obj['Version']), datetime.date)
-        obj = json_safe(obj)
-        self.assertEqual(type(obj['Version']), str)
-        self.assertEqual(obj['Version'], '2012-10-17')
+        self.assertIn(type(obj['Version']), (datetime.date, str))
+        if isinstance(obj['Version'], datetime.date):
+            obj = json_safe(obj)
+            self.assertEqual(type(obj['Version']), str)
+            self.assertEqual(obj['Version'], '2012-10-17')
 
 
 # This test is not enabled in CI, it is just used for manual
