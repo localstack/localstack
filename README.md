@@ -651,7 +651,7 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 
 ## License
 
-Copyright (c) 2017-2019 LocalStack maintainers and contributors.
+Copyright (c) 2017-2020 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
