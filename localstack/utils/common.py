@@ -428,6 +428,10 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
     return time.strftime(format)
 
 
+def timestamp_millis(time=None):
+    return timestamp(time=time, format=TIMESTAMP_FORMAT_MILLIS)
+
+
 def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
@@ -503,15 +507,18 @@ def obj_to_xml(obj):
     return str(obj)
 
 
-def now_utc():
-    return mktime(datetime.utcnow())
+def now_utc(millis=False):
+    return mktime(datetime.utcnow(), millis=millis)
 
 
-def now():
-    return mktime(datetime.now())
+def now(millis=False):
+    return mktime(datetime.now(), millis=millis)
 
 
-def mktime(timestamp):
+def mktime(timestamp, millis=False):
+    if millis:
+        epoch = datetime.utcfromtimestamp(0)
+        return (timestamp - epoch).total_seconds()
     return calendar.timegm(timestamp.timetuple())
 
 
