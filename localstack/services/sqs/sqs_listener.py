@@ -1,6 +1,7 @@
 import re
 import uuid
 import json
+import logging
 import xmltodict
 from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
@@ -14,6 +15,8 @@ from localstack.utils.common import to_str, md5, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
+
+LOG = logging.getLogger(__name__)
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
@@ -37,6 +40,7 @@ VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetention
                          'ContentBasedDeduplication', 'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds',
                          'CreatedTimestamp', 'LastModifiedTimestamp', 'FifoQueue',
                          'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible']
+
 UNSUPPORTED_ATTRIBUTE_NAMES = [
     'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy',
     'ContentBasedDeduplication', 'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds']
@@ -298,14 +302,11 @@ class ProxyListenerSQS(ProxyListener):
                 try:
                     v = json.loads(v)
                     if isinstance(v, dict):
-                        _val = dict()
-                        for _key, _value in v.items():
-                            if _key == 'maxReceiveCount':
-                                _value = int(_value)
-                            _val.update({_key: _value})
-                        v = _val
+                        if 'maxReceiveCount' in v:
+                            v['maxReceiveCount'] = int(v['maxReceiveCount'])
+
                 except Exception as e:
-                    print(e, 'Exception')
+                    LOG.warning('Not able to set attributes. Service: SQS. Issue: %s' % (e))
                 local_attrs.update(dict({k: json.dumps(v)}))
 
         QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
