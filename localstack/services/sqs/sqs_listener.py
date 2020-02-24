@@ -305,8 +305,8 @@ class ProxyListenerSQS(ProxyListener):
                             _val.update({_key: _value})
                         v = _val
                 except Exception as e:
-                    print(e, "Exception")
-                local_attrs.update(dict({k: v}))
+                    print(e, 'Exception')
+                local_attrs.update(dict({k: json.dumps(v)}))
 
         QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
         QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
