@@ -1,5 +1,6 @@
 import re
 import uuid
+import json
 import xmltodict
 from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
@@ -291,7 +292,22 @@ class ProxyListenerSQS(ProxyListener):
     def _set_queue_attributes(self, queue_url, req_data):
         attrs = self._format_attributes(req_data)
         # select only the attributes in UNSUPPORTED_ATTRIBUTE_NAMES
-        local_attrs = dict([(k, v) for k, v in attrs.items() if k in UNSUPPORTED_ATTRIBUTE_NAMES])
+        local_attrs = {}
+        for k, v in attrs.items():
+            if k in UNSUPPORTED_ATTRIBUTE_NAMES:
+                try:
+                    v = json.loads(v)
+                    if isinstance(v, dict):
+                        _val = dict()
+                        for _key, _value in v.items():
+                            if _key == 'maxReceiveCount':
+                                _value = int(_value)
+                            _val.update({_key: _value})
+                        v = _val
+                except Exception as e:
+                    print(e, "Exception")
+                local_attrs.update(dict({k: v}))
+
         QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
         QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
         forward_attrs = dict([(k, v) for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES])
