@@ -144,7 +144,7 @@ def get_domain_status(domain_name, deleted=False):
                 'InstanceType': 'm3.medium.elasticsearch',
                 'ZoneAwarenessEnabled': False
             },
-            'ElasticsearchVersion': '6.7',
+            'ElasticsearchVersion': '7.1',
             'Endpoint': aws_stack.get_elasticsearch_endpoint(domain_name),
             'Processing': False,
             'EBSOptions': {
