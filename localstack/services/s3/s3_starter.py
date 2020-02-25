@@ -151,7 +151,7 @@ def apply_patches():
     def s3_bucket_response_delete_keys(self, request, body, bucket_name):
         template = self.response_template(s3_delete_keys_response_template)
 
-        elements = minidom.parseString(body).getElementsByTagName("Object")
+        elements = minidom.parseString(body).getElementsByTagName('Object')
         if len(elements) == 0:
             raise MalformedXML()
 
