@@ -201,21 +201,40 @@ class SQSTest(unittest.TestCase):
     def test_get_specific_queue_attribute_response(self):
         queue_name = 'queue-%s' % short_uid()
 
-        # Two attributes unsupported by ElasticMq
+        dead_queue_url = self.client.create_queue(QueueName='newQueue')['QueueUrl']
+        supported_attribute_get = self.client.get_queue_attributes(QueueUrl=dead_queue_url,
+                                                                   AttributeNames=['QueueArn'])
+
+        self.assertTrue('QueueArn' in supported_attribute_get['Attributes'].keys())
+        dead_queue_arn = supported_attribute_get['Attributes']['QueueArn']
+
+        _redrive_policy = {
+            'deadLetterTargetArn': dead_queue_arn,
+            'maxReceiveCount': '10'
+        }
+
         attributes = {
             'MessageRetentionPeriod': '604800',
             'DelaySeconds': '10',
+            'RedrivePolicy': json.dumps(_redrive_policy)
         }
 
         queue_url = self.client.create_queue(QueueName=queue_name, Attributes=attributes)['QueueUrl']
-        unsupported_attribute_get = self.client.get_queue_attributes(QueueUrl=queue_url,
-                                                                     AttributeNames=['MessageRetentionPeriod'])
+        unsupported_attribute_get = self.client.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=['MessageRetentionPeriod', 'RedrivePolicy']
+        )
         supported_attribute_get = self.client.get_queue_attributes(QueueUrl=queue_url,
                                                                    AttributeNames=['QueueArn'])
         # assertion
         self.assertTrue('MessageRetentionPeriod' in unsupported_attribute_get['Attributes'].keys())
         self.assertEqual('604800', unsupported_attribute_get['Attributes']['MessageRetentionPeriod'])
         self.assertTrue('QueueArn' in supported_attribute_get['Attributes'].keys())
+        self.assertTrue('RedrivePolicy' in unsupported_attribute_get['Attributes'].keys())
+
+        redrive_policy = json.loads(unsupported_attribute_get['Attributes']['RedrivePolicy'])
+        self.assertTrue(isinstance(redrive_policy['maxReceiveCount'], int))
 
         # cleanup
         self.client.delete_queue(QueueUrl=queue_url)
+        self.client.delete_queue(QueueUrl=dead_queue_url)

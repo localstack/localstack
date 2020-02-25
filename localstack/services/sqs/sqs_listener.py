@@ -299,16 +299,15 @@ class ProxyListenerSQS(ProxyListener):
         local_attrs = {}
         for k, v in attrs.items():
             if k in UNSUPPORTED_ATTRIBUTE_NAMES:
-                _v = {}
                 try:
                     _v = json.loads(v)
                     if isinstance(_v, dict):
                         if 'maxReceiveCount' in _v:
                             _v['maxReceiveCount'] = int(_v['maxReceiveCount'])
 
+                    local_attrs.update(dict({k: json.dumps(_v)}))
                 except Exception as e:
-                    LOG.warning('Not able to set attributes. Service: SQS. Issue: %s' % (e))
-                local_attrs.update(dict({k: json.dumps(_v)}))
+                    local_attrs.update(dict({k: v}))
 
         QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
         QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
