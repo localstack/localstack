@@ -428,6 +428,7 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
         inherit_env=True, tty=False):
     # don't use subprocess module in Python 2 as it is not thread-safe
     # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
+    # TODO: should be removed, now that Python 2 has reached its EOL
     if six.PY2:
         import subprocess32 as subprocess
     else:

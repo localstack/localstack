@@ -4,8 +4,8 @@ MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 
 # install some common libs
-RUN apk add --no-cache autoconf automake build-base ca-certificates curl g++ gcc git groff \
-        iputils libffi-dev libtool linux-headers make openssl openssl-dev python3 python3-dev \
+RUN apk add --no-cache autoconf automake build-base ca-certificates curl cyrus-sasl-dev g++ gcc git \
+        groff iputils libffi-dev libtool linux-headers make openssl openssl-dev python3 python3-dev \
         py3-pip tar xz zip && \
     update-ca-certificates
 
@@ -31,9 +31,9 @@ RUN apk add --no-cache nss
 
 # Install Maven - taken from official repo:
 # https://github.com/carlossg/docker-maven/blob/master/jdk-8/Dockerfile)
-ARG MAVEN_VERSION=3.6.2
+ARG MAVEN_VERSION=3.6.3
 ARG USER_HOME_DIR="/root"
-ARG SHA=3fbc92d1961482d6fbd57fbf3dd6d27a4de70778528ee3fb44aa7d27eb32dfdc
+ARG SHA=26ad91d751b3a9a53087aefa743f4e16a17741d3915b219cf74112bf87a438c5
 ARG BASE_URL=https://apache.osuosl.org/maven/maven-3/${MAVEN_VERSION}/binaries
 RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
   && curl -fsSL -o /tmp/apache-maven.tar.gz ${BASE_URL}/apache-maven-$MAVEN_VERSION-bin.tar.gz \

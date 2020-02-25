@@ -127,7 +127,8 @@ class LambdaExecutor(object):
 
     def _store_logs(self, func_details, log_output, invocation_time):
         log_group_name = '/aws/lambda/%s' % func_details.name()
-        time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time))
+        invocation_time_secs = int(invocation_time / 1000)
+        time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time_secs))
         log_stream_name = '%s/[$LATEST]%s' % (time_str, short_uid())
         return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 

@@ -182,16 +182,24 @@ def send_notifications(method, bucket_name, object_path, version_id):
 def send_notification_for_subscriber(notif, bucket_name, object_path, version_id, api_method, action, event_name):
     bucket_name = normalize_bucket_name(bucket_name)
 
-    if (not event_type_matches(notif['Event'], action, api_method) or
-            not filter_rules_match(notif.get('Filter'), object_path)):
+    if not event_type_matches(notif['Event'], action, api_method) or \
+            not filter_rules_match(notif.get('Filter'), object_path):
         return
-    # send notification
+
+    s3_client = aws_stack.connect_to_service('s3')
+    key = urlparse.urlparse(object_path[1:]).path
+    object_size = s3_client.head_object(Bucket=bucket_name, Key=key).get('ContentLength', 0)
+
+    # build event message
     message = get_event_message(
-        event_name=event_name, bucket_name=bucket_name,
-        file_name=urlparse.urlparse(object_path[1:]).path,
+        event_name=event_name,
+        bucket_name=bucket_name,
+        file_name=key,
+        file_size=object_size,
         version_id=version_id
     )
     message = json.dumps(message)
+
     if notif.get('Queue'):
         sqs_client = aws_stack.connect_to_service('sqs')
         try:
