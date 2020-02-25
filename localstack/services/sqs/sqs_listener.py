@@ -1,7 +1,6 @@
 import re
 import uuid
 import json
-import logging
 import xmltodict
 from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
@@ -15,8 +14,6 @@ from localstack.utils.common import to_str, md5, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
-
-LOG = logging.getLogger(__name__)
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
@@ -306,7 +303,7 @@ class ProxyListenerSQS(ProxyListener):
                             _v['maxReceiveCount'] = int(_v['maxReceiveCount'])
 
                     local_attrs.update(dict({k: json.dumps(_v)}))
-                except Exception as e:
+                except Exception:
                     local_attrs.update(dict({k: v}))
 
         QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
