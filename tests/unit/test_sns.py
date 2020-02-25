@@ -87,7 +87,8 @@ class SNSTests(unittest.TestCase):
             'Message': 'msg',
             'Signature': 'EXAMPLEpH+..',
             'SignatureVersion': '1',
-            'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
+            'SigningCertURL':
+                'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
             'SubscribeURL': '',
             'Token': '',
             'TopicArn': 'arn',
@@ -116,7 +117,8 @@ class SNSTests(unittest.TestCase):
             'Subject': 'subject',
             'Signature': 'EXAMPLEpH+..',
             'SignatureVersion': '1',
-            'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
+            'SigningCertURL':
+                'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
             'SubscribeURL': '',
             'Token': '',
             'TopicArn': 'arn',
