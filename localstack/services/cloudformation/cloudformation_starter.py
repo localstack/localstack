@@ -242,6 +242,7 @@ def apply_patches():
             try:
                 resource = parse_and_create_resource_orig(logical_id,
                     resource_json_arns_fixed, resources_map, region_name)
+                resource.logical_id = logical_id
             except Exception as e:
                 if should_be_created:
                     raise
@@ -732,6 +733,15 @@ def apply_patches():
         FuncThread(run_loop).start()
 
     FakeStack.initialize_resources = initialize_resources
+
+    # patch Kinesis Stream get_cfn_attribute(..) method in moto
+    def Kinesis_Stream_get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'Arn':
+            return self.arn
+
+        raise UnformattedGetAttTemplateException()
+
+    kinesis_models.Stream.get_cfn_attribute = Kinesis_Stream_get_cfn_attribute
 
 
 def inject_stats_endpoint():

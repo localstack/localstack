@@ -3,6 +3,8 @@ import re
 import json
 import unittest
 import mock
+import time
+import datetime
 from localstack.utils.common import save_file, new_tmp_dir, mkdir
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -598,6 +600,23 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_get_java_lib_folder_classpath_archive_is_None(self):
         self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
+
+    @mock.patch('localstack.services.awslambda.lambda_executors.store_cloudwatch_logs')
+    def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
+        mock_details = mock.Mock()
+        executor = lambda_executors.LambdaExecutor()
+        t_sec = time.time()  # plain old epoch secs
+        t_ms = time.time() * 1000  # epoch ms as a long-int like AWS
+
+        # pass t_ms millisecs to _store_logs
+        executor._store_logs(mock_details, 'mock log output', t_ms)
+
+        # expect the computed log-stream-name to having a prefix matching the date derived from t_sec
+        today = datetime.datetime.utcfromtimestamp(t_sec).strftime('%Y/%m/%d')
+        log_stream_name = mock_store_cloudwatch_logs.call_args_list[0].args[1]
+        parts = log_stream_name.split('/')
+        date_part = '/'.join(parts[:3])
+        self.assertEqual(date_part, today)
 
     def _create_function(self, function_name, tags={}):
         arn = lambda_api.func_arn(function_name)

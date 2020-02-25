@@ -23,6 +23,7 @@ from localstack.utils.bootstrap import (
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
+from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import GenericProxy, GenericProxyHandler, ProxyListener
@@ -35,49 +36,7 @@ SIGNAL_HANDLERS_SETUP = False
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
 # set up logger
-LOG = logging.getLogger(os.path.basename(__file__))
-
-# map of service plugins, mapping from service name to plugin details
-SERVICE_PLUGINS = {}
-
-
-# -----------------
-# PLUGIN UTILITIES
-# -----------------
-
-
-class Plugin(object):
-
-    def __init__(self, name, start, check=None, listener=None, priority=0):
-        self.plugin_name = name
-        self.start_function = start
-        self.listener = listener
-        self.check_function = check
-        self.priority = priority
-
-    def start(self, asynchronous):
-        kwargs = {
-            'asynchronous': asynchronous
-        }
-        if self.listener:
-            kwargs['update_listener'] = self.listener
-        return self.start_function(**kwargs)
-
-    def check(self, expect_shutdown=False, print_error=False):
-        if not self.check_function:
-            return
-        return self.check_function(expect_shutdown=expect_shutdown, print_error=print_error)
-
-    def name(self):
-        return self.plugin_name
-
-
-def register_plugin(plugin):
-    existing = SERVICE_PLUGINS.get(plugin.name())
-    if existing:
-        if existing.priority > plugin.priority:
-            return
-    SERVICE_PLUGINS[plugin.name()] = plugin
+LOG = logging.getLogger(__name__)
 
 
 # -----------------------
@@ -304,9 +263,10 @@ def start_proxy_for_service(service_name, port, default_backend_port, update_lis
     return start_proxy(port, backend_url=backend_url, update_listener=update_listener, quiet=quiet, params=params)
 
 
-def start_proxy(port, backend_url, update_listener=None, quiet=False, params={}):
+def start_proxy(port, backend_url, update_listener=None, quiet=False, params={}, use_ssl=None):
+    use_ssl = config.USE_SSL if use_ssl is None else use_ssl
     proxy_thread = GenericProxy(port=port, forward_url=backend_url,
-        ssl=config.USE_SSL, update_listener=update_listener, quiet=quiet, params=params)
+        ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
     proxy_thread.start()
     TMP_THREADS.append(proxy_thread)
     return proxy_thread
@@ -376,34 +336,6 @@ def check_aws_credentials():
     assert credentials
 
 
-# -----------------------------
-# INFRASTRUCTURE HEALTH CHECKS
-# -----------------------------
-
-
-def check_infra(retries=10, expect_shutdown=False, apis=None, additional_checks=[]):
-    try:
-        print_error = retries <= 0
-
-        # loop through plugins and check service status
-        for name, plugin in SERVICE_PLUGINS.items():
-            if name in apis:
-                try:
-                    plugin.check(expect_shutdown=expect_shutdown, print_error=print_error)
-                except Exception as e:
-                    LOG.warning('Service "%s" not yet available, retrying...' % name)
-                    raise e
-
-        for additional in additional_checks:
-            additional(expect_shutdown=expect_shutdown)
-    except Exception as e:
-        if retries <= 0:
-            LOG.error('Error checking state of local environment (after some retries): %s' % traceback.format_exc())
-            raise e
-        time.sleep(3)
-        check_infra(retries - 1, expect_shutdown=expect_shutdown, apis=apis, additional_checks=additional_checks)
-
-
 # -------------
 # MAIN STARTUP
 # -------------
@@ -452,6 +384,7 @@ def start_infra(asynchronous=False, apis=None):
         # loop through plugins and start each service
         for name, plugin in SERVICE_PLUGINS.items():
             if name in apis:
+                record_service_health(name, 'starting')
                 t1 = plugin.start(asynchronous=True)
                 thread = thread or t1
 

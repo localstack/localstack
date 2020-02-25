@@ -477,3 +477,20 @@ class SNSTests(unittest.TestCase):
             attributes = test[2]
             expected = test[3]
             self.assertEqual(sns_listener.check_filter_policy(filter_policy, attributes), expected, test_name)
+
+    def test_is_raw_message_delivery(self):
+        valid_true_values = ['true', 'True', True]
+
+        for true_value in valid_true_values:
+            self.subscriber['RawMessageDelivery'] = true_value
+            self.assertTrue(sns_listener.is_raw_message_delivery(self.subscriber))
+
+    def test_is_not_raw_message_delivery(self):
+        invalid_values = ['false', 'False', False, 'somevalue', '']
+
+        for invalid_values in invalid_values:
+            self.subscriber['RawMessageDelivery'] = invalid_values
+            self.assertFalse(sns_listener.is_raw_message_delivery(self.subscriber))
+
+        del self.subscriber['RawMessageDelivery']
+        self.assertFalse(sns_listener.is_raw_message_delivery(self.subscriber))

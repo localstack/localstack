@@ -1,9 +1,12 @@
 import time
+import yaml
+import datetime
 import unittest
 from requests.models import Response
 from localstack.utils.aws import aws_stack
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-from localstack.utils.common import download, parallelize, TMP_FILES, load_file, parse_chunked_data
+from localstack.utils.common import (
+    download, parallelize, TMP_FILES, load_file, parse_chunked_data, json_safe, now_utc)
 
 
 class TestMisc(unittest.TestCase):
@@ -20,6 +23,20 @@ class TestMisc(unittest.TestCase):
         expected = 'Wikipedia in\r\n\r\nchunks.'
         parsed = parse_chunked_data(chunked)
         self.assertEqual(parsed.strip(), expected.strip())
+
+    def test_convert_yaml_date_strings(self):
+        yaml_source = 'Version: 2012-10-17'
+        obj = yaml.safe_load(yaml_source)
+        self.assertIn(type(obj['Version']), (datetime.date, str))
+        if isinstance(obj['Version'], datetime.date):
+            obj = json_safe(obj)
+            self.assertEqual(type(obj['Version']), str)
+            self.assertEqual(obj['Version'], '2012-10-17')
+
+    def test_timstamp_millis(self):
+        t1 = now_utc()
+        t2 = now_utc(millis=True)
+        self.assertLessEqual(t2 - t1, 1)
 
 
 # This test is not enabled in CI, it is just used for manual
