@@ -42,7 +42,7 @@ LAMBDA_RUNTIME_DOTNETCORE21 = 'dotnetcore2.1'
 LAMBDA_RUNTIME_GOLANG = 'go1.x'
 LAMBDA_RUNTIME_RUBY = 'ruby'
 LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
-LAMBDA_RUNTIME_CUSTOM_RUNTIME = 'provided'
+LAMBDA_RUNTIME_PROVIDED = 'provided'
 
 LAMBDA_EVENT_FILE = 'event_file.json'
 
@@ -203,6 +203,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         environment['HOSTNAME'] = docker_host
         environment['LOCALSTACK_HOSTNAME'] = docker_host
+        environment['_HANDLER'] = handler
         if func_details.timeout:
             environment['AWS_LAMBDA_FUNCTION_TIMEOUT'] = str(func_details.timeout)
         if context:
