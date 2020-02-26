@@ -19,7 +19,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_CUSTOM_RUNTIME
+    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED
 )
 from .lambdas import lambda_integration
 
@@ -422,7 +422,7 @@ class TestCustomRuntimes(LambdaTestBase):
             func_name=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
             zip_file=zip_file,
             handler='function.handler',
-            runtime=LAMBDA_RUNTIME_CUSTOM_RUNTIME
+            runtime=LAMBDA_RUNTIME_PROVIDED
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
