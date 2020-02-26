@@ -1,5 +1,6 @@
 import sys
 import json
+import types
 import logging
 import traceback
 import six
@@ -18,7 +19,7 @@ from moto.apigateway import models as apigw_models
 from moto.cloudwatch import models as cw_models
 from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
-from moto.cloudformation.models import FakeStack
+from moto.cloudformation.models import FakeStack, cloudformation_backends
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
@@ -403,6 +404,23 @@ def apply_patches():
         {% endif %}
         """
         responses.DESCRIBE_STACKS_TEMPLATE = responses.DESCRIBE_STACKS_TEMPLATE.replace(find, replace)
+
+    # Patch CloudFormationBackend.update_stack method in moto
+
+    def make_cf_update_stack(cf_backend):
+        cf_update_stack_orig = cf_backend.update_stack
+
+        def cf_update_stack(self, *args, **kwargs):
+            stack = cf_update_stack_orig(*args, **kwargs)
+            # update stack exports
+            self._validate_export_uniqueness(stack)
+            for export in stack.exports:
+                self.exports[export.name] = export
+            return stack
+        return types.MethodType(cf_update_stack, cf_backend)
+
+    for region, cf_backend in cloudformation_backends.items():
+        cf_backend.update_stack = make_cf_update_stack(cf_backend)
 
     # Patch DynamoDB get_cfn_attribute(..) method in moto
 
