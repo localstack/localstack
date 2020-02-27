@@ -8,7 +8,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 from samtranslator.translator.transform import transform as transform_sam
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe
+from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -117,6 +117,13 @@ def get_template_body(req_data):
     raise Exception('Unable to get template body from input: %s' % req_data)
 
 
+def fix_hardcoded_creation_date(response):
+    search = '<CreationTime>2011-05-23T15:47:44Z</CreationTime>'
+    replace = '<CreationTime>%s</CreationTime>' % timestamp()
+    response._content = to_str(response._content or '').replace(search, replace)
+    response.headers['Content-Length'] = str(len(response._content))
+
+
 class ProxyListenerCloudFormation(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
@@ -178,6 +185,7 @@ class ProxyListenerCloudFormation(ProxyListener):
 
         if response._content:
             aws_stack.fix_account_id_in_arns(response)
+            fix_hardcoded_creation_date(response)
 
     def _list_stack_names(self):
         client = aws_stack.connect_to_service('cloudformation')
