@@ -303,7 +303,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     def startup(self):
         self.cleanup()
         # start a process to remove idle containers
-        self.start_idle_container_destroyer_interval()
+        if config.LAMBDA_REMOVE_CONTAINERS:
+            self.start_idle_container_destroyer_interval()
 
     def cleanup(self, arn=None):
         if arn:
