@@ -246,6 +246,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 },
                 data=message_body,
                 verify=False)
+
         else:
             LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
@@ -301,7 +302,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
             'Type': ['SubscriptionConfirmation'],
             'Token': [token],
             'Message': [('You have chosen to subscribe to the topic %s.\n' % topic_arn) +
-                'To confirm the subscription, visit the SubscribeURL included in this message.'],
+                        'To confirm the subscription, visit the SubscribeURL included in this message.'],
             'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
         }
         publish_message(topic_arn, confirmation, subscription_arn)
@@ -351,6 +352,7 @@ def do_tag_resource(topic_arn, tags):
 
 def do_untag_resource(topic_arn, tag_keys):
     SNS_TAGS[topic_arn] = [t for t in _get_tags(topic_arn) if t['Key'] not in tag_keys]
+
 
 # ---------------
 # HELPER METHODS
@@ -418,10 +420,10 @@ def create_sns_message_body(subscriber, req_data):
     data = {
         'Type': req_data.get('Type', ['Notification'])[0],
         'MessageId': str(uuid.uuid4()),
-        'Token': '',
+        'Token': req_data.get('Token', [None])[0],
         'TopicArn': subscriber['TopicArn'],
         'Message': message,
-        'SubscribeURL': '',
+        'SubscribeURL': req_data.get('SubscribeURL', [None])[0],
         'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
         'SignatureVersion': '1',
         # TODO Add a more sophisticated solution with an actual signature
@@ -430,16 +432,12 @@ def create_sns_message_body(subscriber, req_data):
         'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem'
     }
 
-    if subject is not None:
+    if subject:
         data['Subject'] = subject
 
     attributes = get_message_attributes(req_data)
     if attributes:
         data['MessageAttributes'] = attributes
-    for attr in ['Token', 'SubscribeURL']:
-        value = req_data.get(attr, [None])[0]
-        if value:
-            data[attr] = value
 
     return json.dumps(data)
 
@@ -450,12 +448,14 @@ def create_sqs_message_attributes(subscriber, attributes):
 
     message_attributes = {}
     for key, value in attributes.items():
-        attribute = {}
-        attribute['DataType'] = value['Type']
+        attribute = {
+            'DataType': value['Type']
+        }
         if value['Type'] == 'Binary':
             attribute['BinaryValue'] = value['Value']
         else:
             attribute['StringValue'] = str(value['Value'])
+
         message_attributes[key] = attribute
 
     return message_attributes
@@ -467,13 +467,14 @@ def get_message_attributes(req_data):
     while True:
         name = req_data.get('MessageAttributes.entry.' + str(x) + '.Name', [None])[0]
         if name is not None:
-            attribute = {}
-            attribute['Type'] = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.DataType', [None])[0]
+            attribute = {
+                'Type': req_data.get('MessageAttributes.entry.' + str(x) + '.Value.DataType', [None])[0]
+            }
             string_value = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.StringValue', [None])[0]
             binary_value = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.BinaryValue', [None])[0]
-            if string_value is not None:
+            if string_value:
                 attribute['Value'] = string_value
-            elif binary_value is not None:
+            elif binary_value:
                 attribute['Value'] = binary_value
 
             if attribute['Type'] == 'Number':
