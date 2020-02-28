@@ -30,9 +30,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class ProxyListenerSNS(ProxyListener):
-
     def forward_request(self, method, path, data, headers):
-
         if method == 'OPTIONS':
             return 200
 
@@ -44,7 +42,6 @@ class ProxyListenerSNS(ProxyListener):
             return make_error(message=str(e), code=400)
 
         if method == 'POST' and path == '/':
-
             # parse payload and extract fields
             req_data = urlparse.parse_qs(to_str(data))
             req_action = req_data['Action'][0]
@@ -144,7 +141,6 @@ class ProxyListenerSNS(ProxyListener):
             data, colon_delimiter='%3A', existing=TEST_AWS_ACCOUNT_ID, replace=MOTO_ACCOUNT_ID)
 
     def return_response(self, method, path, data, headers, response):
-
         if method == 'POST' and path == '/':
             # convert account IDs in ARNs
             data = aws_stack.fix_account_id_in_arns(data, colon_delimiter='%3A')
@@ -176,13 +172,17 @@ class ProxyListenerSNS(ProxyListener):
                 topic_arn = response_data['CreateTopicResponse']['CreateTopicResult']['TopicArn']
                 do_create_topic(topic_arn)
                 # publish event
-                event_publisher.fire_event(event_publisher.EVENT_SNS_CREATE_TOPIC,
-                    payload={'t': event_publisher.get_hash(topic_arn)})
+                event_publisher.fire_event(
+                    event_publisher.EVENT_SNS_CREATE_TOPIC,
+                    payload={'t': event_publisher.get_hash(topic_arn)}
+                )
             if req_action == 'DeleteTopic' and response.status_code < 400:
                 # publish event
                 topic_arn = (req_data.get('TargetArn') or req_data.get('TopicArn'))[0]
-                event_publisher.fire_event(event_publisher.EVENT_SNS_DELETE_TOPIC,
-                    payload={'t': event_publisher.get_hash(topic_arn)})
+                event_publisher.fire_event(
+                    event_publisher.EVENT_SNS_DELETE_TOPIC,
+                    payload={'t': event_publisher.get_hash(topic_arn)}
+                )
 
 
 # instantiate listener
@@ -232,6 +232,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 message_body = create_sns_message_body(subscriber, req_data)
             except Exception as exc:
                 return make_error(message=str(exc), code=400)
+
             requests.post(
                 subscriber['Endpoint'],
                 headers={
@@ -245,6 +246,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 },
                 data=message_body,
                 verify=False)
+
         else:
             LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
@@ -300,7 +302,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
             'Type': ['SubscriptionConfirmation'],
             'Token': [token],
             'Message': [('You have chosen to subscribe to the topic %s.\n' % topic_arn) +
-                'To confirm the subscription, visit the SubscribeURL included in this message.'],
+                        'To confirm the subscription, visit the SubscribeURL included in this message.'],
             'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
         }
         publish_message(topic_arn, confirmation, subscription_arn)
@@ -350,6 +352,7 @@ def do_tag_resource(topic_arn, tags):
 
 def do_untag_resource(topic_arn, tag_keys):
     SNS_TAGS[topic_arn] = [t for t in _get_tags(topic_arn) if t['Key'] not in tag_keys]
+
 
 # ---------------
 # HELPER METHODS
@@ -414,23 +417,29 @@ def create_sns_message_body(subscriber, req_data):
         except KeyError:
             raise Exception("Unable to find 'default' key in message payload")
 
-    data = {}
-    data['MessageId'] = str(uuid.uuid4())
-    data['Type'] = req_data.get('Type', ['Notification'])[0]
-    data['Timestamp'] = timestamp(format=TIMESTAMP_FORMAT_MILLIS)
-    data['Message'] = message
-    data['TopicArn'] = subscriber['TopicArn']
+    data = {
+        'Type': req_data.get('Type', ['Notification'])[0],
+        'MessageId': str(uuid.uuid4()),
+        'Token': req_data.get('Token', [None])[0],
+        'TopicArn': subscriber['TopicArn'],
+        'Message': message,
+        'SubscribeURL': req_data.get('SubscribeURL', [None])[0],
+        'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
+        'SignatureVersion': '1',
+        # TODO Add a more sophisticated solution with an actual signature
+        # Hardcoded
+        'Signature': 'EXAMPLEpH+..',
+        'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem'
+    }
+
     if subject is not None:
         data['Subject'] = subject
+
     attributes = get_message_attributes(req_data)
     if attributes:
         data['MessageAttributes'] = attributes
-    for attr in ['Token', 'SubscribeURL']:
-        value = req_data.get(attr, [None])[0]
-        if value:
-            data[attr] = value
-    result = json.dumps(data)
-    return result
+
+    return json.dumps(data)
 
 
 def create_sqs_message_attributes(subscriber, attributes):
@@ -439,12 +448,14 @@ def create_sqs_message_attributes(subscriber, attributes):
 
     message_attributes = {}
     for key, value in attributes.items():
-        attribute = {}
-        attribute['DataType'] = value['Type']
+        attribute = {
+            'DataType': value['Type']
+        }
         if value['Type'] == 'Binary':
             attribute['BinaryValue'] = value['Value']
         else:
             attribute['StringValue'] = str(value['Value'])
+
         message_attributes[key] = attribute
 
     return message_attributes
@@ -456,8 +467,9 @@ def get_message_attributes(req_data):
     while True:
         name = req_data.get('MessageAttributes.entry.' + str(x) + '.Name', [None])[0]
         if name is not None:
-            attribute = {}
-            attribute['Type'] = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.DataType', [None])[0]
+            attribute = {
+                'Type': req_data.get('MessageAttributes.entry.' + str(x) + '.Value.DataType', [None])[0]
+            }
             string_value = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.StringValue', [None])[0]
             binary_value = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.BinaryValue', [None])[0]
             if string_value is not None:

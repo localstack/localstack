@@ -82,7 +82,18 @@ class SNSTests(unittest.TestCase):
             assert False, 'Timestamp missing in SNS response message body'
         except ValueError:
             assert False, 'SNS response Timestamp not a valid ISO 8601 date'
-        self.assertEqual(result, {'Message': 'msg', 'Type': 'Notification', 'TopicArn': 'arn'})
+
+        self.assertEqual(result, {
+            'Message': 'msg',
+            'Signature': 'EXAMPLEpH+..',
+            'SignatureVersion': '1',
+            'SigningCertURL':
+                'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
+            'SubscribeURL': None,
+            'Token': None,
+            'TopicArn': 'arn',
+            'Type': 'Notification'
+        })
 
         # Now add a subject
         action = {
@@ -103,9 +114,15 @@ class SNSTests(unittest.TestCase):
         del result['Timestamp']
         msg = {
             'Message': 'msg',
+            'Subject': 'subject',
+            'Signature': 'EXAMPLEpH+..',
+            'SignatureVersion': '1',
+            'SigningCertURL':
+                'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
+            'SubscribeURL': None,
+            'Token': None,
             'TopicArn': 'arn',
             'Type': 'Notification',
-            'Subject': 'subject',
             'MessageAttributes': {
                 'attr1': {
                     'Type': 'String',
