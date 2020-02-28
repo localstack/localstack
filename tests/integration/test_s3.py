@@ -16,6 +16,7 @@ from localstack.utils.common import (
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
+TEST_BUCKET_WITH_VERSIONING = 'test-bucket-versioning-1'
 
 
 class PutRequest(Request):
@@ -695,6 +696,49 @@ class S3ListenerTest(unittest.TestCase):
 
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+
+    def test_s3_delete_object_with_version_id(self):
+        test_1st_key = 'aws/s3/testkey1.txt'
+        test_2nd_key = 'aws/s3/testkey2.txt'
+
+        # flake8: noqa: W291
+        body = """ Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. 
+        Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. 
+        Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. 
+        Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a,. 
+        Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. 
+        Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. 
+        Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. 
+        Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. 
+        Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sed ipsum. """
+
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_VERSIONING)
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+
+        # put 2 objects
+        rs = self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_VERSIONING, Key=test_1st_key, Body=body)
+        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_VERSIONING, Key=test_2nd_key, Body=body)
+
+        version_id = rs['VersionId']
+
+        # delete 1st object with version
+        rs = self.s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_VERSIONING,
+                                           Delete={'Objects': [{'Key': test_1st_key, 'VersionId': version_id}]})
+
+        deleted = rs['Deleted'][0]
+        self.assertEqual(deleted['Key'], test_1st_key)
+        self.assertEqual(deleted['VersionId'], version_id)
+
+        rs = self.s3_client.list_object_versions(Bucket=TEST_BUCKET_WITH_VERSIONING)
+        object_versions = [object['VersionId'] for object in rs['Versions']]
+
+        self.assertNotIn(version_id, object_versions)
+
+        # clean up
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,
+                                             VersioningConfiguration={'Status': 'Disabled'})
+        self._delete_bucket(TEST_BUCKET_WITH_VERSIONING, [test_1st_key, test_2nd_key])
 
     # ---------------
     # HELPER METHODS

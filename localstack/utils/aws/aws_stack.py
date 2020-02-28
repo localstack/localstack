@@ -238,6 +238,9 @@ class VelocityInput:
     def json(self, path):
         return json.dumps(self.path(path))
 
+    def __repr__(self):
+        return '$input'
+
 
 class VelocityUtil:
     """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration velocity templates.
@@ -260,6 +263,10 @@ class VelocityUtil:
 
 def render_velocity_template(template, context, variables={}, as_json=False):
     import airspeed
+
+    # run a few fixes to properly prepare the template
+    template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
+
     t = airspeed.Template(template)
     var_map = {
         'input': VelocityInput(context),

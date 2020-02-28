@@ -8,7 +8,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 from samtranslator.translator.transform import transform as transform_sam
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe
+from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -102,7 +102,8 @@ def get_template_body(req_data):
     if url:
         response = run_safe(lambda: safe_requests.get(url, verify=False))
         # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
-        if not response or response.status_code == 301 or response.status_code >= 400:
+        status_code = 0 if response is None else response.status_code
+        if not response or status_code == 301 or status_code >= 400:
             # check if this is an S3 URL, then get the file directly from there
             if '://localhost' in url or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url):
                 parsed_path = urlparse.urlparse(url).path.lstrip('/')
@@ -111,9 +112,16 @@ def get_template_body(req_data):
                 result = client.get_object(Bucket=parts[0], Key=parts[2])
                 body = to_str(result['Body'].read())
                 return body
-            raise Exception('Unable to fetch template body (code %s) from URL %s' % (response.status_code, url))
+            raise Exception('Unable to fetch template body (code %s) from URL %s' % (status_code, url))
         return response.content
     raise Exception('Unable to get template body from input: %s' % req_data)
+
+
+def fix_hardcoded_creation_date(response):
+    search = '<CreationTime>2011-05-23T15:47:44Z</CreationTime>'
+    replace = '<CreationTime>%s</CreationTime>' % timestamp()
+    response._content = to_str(response._content or '').replace(search, replace)
+    response.headers['Content-Length'] = str(len(response._content))
 
 
 class ProxyListenerCloudFormation(ProxyListener):
@@ -177,6 +185,7 @@ class ProxyListenerCloudFormation(ProxyListener):
 
         if response._content:
             aws_stack.fix_account_id_in_arns(response)
+            fix_hardcoded_creation_date(response)
 
     def _list_stack_names(self):
         client = aws_stack.connect_to_service('cloudformation')

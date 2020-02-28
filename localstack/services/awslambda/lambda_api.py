@@ -34,7 +34,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_RUBY,
     LAMBDA_RUNTIME_RUBY25,
-    LAMBDA_RUNTIME_CUSTOM_RUNTIME)
+    LAMBDA_RUNTIME_PROVIDED)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid, timestamp,
     TIMESTAMP_FORMAT_MILLIS, md5, parse_chunked_data, now_utc, safe_requests,
@@ -423,6 +423,8 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
 
 def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     # TODO: support Java Lambdas in the future
+    if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
+        return 'bootstrap'
     delimiter = '.'
     if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
         file_ext = '.js'
@@ -433,8 +435,6 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
         delimiter = ':'
     elif runtime.startswith(LAMBDA_RUNTIME_RUBY):
         file_ext = '.rb'
-    elif runtime.startswith(LAMBDA_RUNTIME_CUSTOM_RUNTIME):
-        file_ext = '.sh'
     else:
         handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
         file_ext = '.py'

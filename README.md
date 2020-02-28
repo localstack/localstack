@@ -257,6 +257,10 @@ For example, to dynamically set `KINESIS_ERROR_PROBABILITY=1` at runtime, use th
 curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhost:4568/?_config_'
 ```
 
+### Service health checks
+
+The service health check endpoint `http://localhost:8080/health` provides basic information about the status of each service (e.g., `{"s3":"running","es":"starting"}`). By default, the endpoint returns cached values that are determined during startup - the status values can be refreshed by adding the `reload` query parameter: `http://localhost:8080/health?reload`.
+
 ### Initializing a fresh instance
 
 When a container is started for the first time, it will execute files with extensions .sh that are found in `/docker-entrypoint-initaws.d`. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
@@ -368,11 +372,7 @@ awslocal lambda create-function --function-name myLambda \
 
 ## Integration with Java/JUnit
 
-In order to use LocalStack with Java, the project ships with a simple JUnit runner and a JUnit 5
-extension. Take a look at the example JUnit tests in `ext/java`.
-
-By default, the JUnit Test Runner starts LocalStack in a Docker container, for the duration of the test.
-The container can be configured by using the `@LocalstackDockerProperties` annotation.
+In order to use LocalStack with Java, the project ships with a simple JUnit runner, see sample below.
 
 ```
 ...
@@ -390,46 +390,12 @@ public class MyCloudAppTest {
     List<Bucket> buckets = s3.listBuckets();
     ...
   }
-
 }
 ```
 
-Or with JUnit 5 :
+For more details and a complete list of configuration parameters, please refer to the [LocalStack Java Utils](https://github.com/localstack/localstack-java-utils) repository.
 
-```
-@ExtendWith(LocalstackDockerExtension.class)
-@LocalstackDockerProperties(...)
-public class MyCloudAppTest {
-   ...
-}
-```
-
-The LocalStack JUnit test runner is published as an artifact in Maven Central.
-Simply add the following dependency to your `pom.xml` file:
-
-```
-<dependency>
-    <groupId>cloud.localstack</groupId>
-    <artifactId>localstack-utils</artifactId>
-    <version>0.2.0</version>
-</dependency>
-```
-
-You can configure the Docker behaviour using the `@LocalstackDockerProperties` annotation with the following parameters:
-
-| property                    | usage                                                                                                                        | type                         | default value |
-|-----------------------------|------------------------------------------------------------------------------------------------------------------------------|------------------------------|---------------|
-| `pullNewImage`              | Determines if a new image is pulled from the docker repo before the tests are run.                                           | boolean                      | `false`         |
-| `randomizePorts`            | Determines if the container should expose the default local stack ports (4567-4583) or if it should expose randomized ports. | boolean                      | `false`         |
-| `services`                  | Determines which services should be run when the localstack starts.                                                          | String[]                     | All           |
-| `imageTag`                  | Use a specific image tag for docker container                                                                                | String                       | `latest`        |
-| `hostNameResolver`          | Used for determining the host name of the machine running the docker containers so that the containers can be addressed.     | IHostNameResolver            | `localhost`     |
-| `environmentVariableProvider` | Used for injecting environment variables into the container.                                                                 | IEnvironmentVariableProvider | Empty Map     |
-| `useSingleDockerContainer`  | Whether a singleton container should be used by all test classes.                     | boolean | `false`     |
-
-_Note: When specifying the port in the `services` property, you cannot use `randomizePorts = true`_
-
-### Troubleshooting
+## Troubleshooting
 
 * If you're using AWS Java libraries with Kinesis, please, refer to [CBOR protocol issues with the Java SDK guide](https://github.com/mhart/kinesalite#cbor-protocol-issues-with-the-java-sdk) how to disable CBOR protocol which is not supported by kinesalite.
 
@@ -647,7 +613,7 @@ Support this project by becoming a sponsor. Your logo will show up here with a l
 
 ## License
 
-Copyright (c) 2017-2019 LocalStack maintainers and contributors.
+Copyright (c) 2017-2020 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 

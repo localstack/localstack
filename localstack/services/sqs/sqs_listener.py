@@ -1,5 +1,6 @@
 import re
 import uuid
+import json
 import xmltodict
 from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
@@ -36,6 +37,7 @@ VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetention
                          'ContentBasedDeduplication', 'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds',
                          'CreatedTimestamp', 'LastModifiedTimestamp', 'FifoQueue',
                          'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible']
+
 UNSUPPORTED_ATTRIBUTE_NAMES = [
     'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy',
     'ContentBasedDeduplication', 'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds']
@@ -291,7 +293,19 @@ class ProxyListenerSQS(ProxyListener):
     def _set_queue_attributes(self, queue_url, req_data):
         attrs = self._format_attributes(req_data)
         # select only the attributes in UNSUPPORTED_ATTRIBUTE_NAMES
-        local_attrs = dict([(k, v) for k, v in attrs.items() if k in UNSUPPORTED_ATTRIBUTE_NAMES])
+        local_attrs = {}
+        for k, v in attrs.items():
+            if k in UNSUPPORTED_ATTRIBUTE_NAMES:
+                try:
+                    _v = json.loads(v)
+                    if isinstance(_v, dict):
+                        if 'maxReceiveCount' in _v:
+                            _v['maxReceiveCount'] = int(_v['maxReceiveCount'])
+
+                    local_attrs.update(dict({k: json.dumps(_v)}))
+                except Exception:
+                    local_attrs.update(dict({k: v}))
+
         QUEUE_ATTRIBUTES[queue_url] = QUEUE_ATTRIBUTES.get(queue_url) or {}
         QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
         forward_attrs = dict([(k, v) for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES])

@@ -33,7 +33,6 @@ install:
   - # install under python 3
   - PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
   - make init
-  - make prepare-java-tests-if-changed
   - nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
   - nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
   - nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
@@ -53,9 +52,6 @@ script:
   - LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
   # build Docker image
   - make docker-build
-  # run Java tests
-  # TODO: re-enable java tests when fixed!
-  # - make test-java-if-changed; true
   # push Docker image (if on master branch)
   - make docker-push-master
 

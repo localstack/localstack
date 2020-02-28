@@ -42,7 +42,7 @@ LAMBDA_RUNTIME_DOTNETCORE21 = 'dotnetcore2.1'
 LAMBDA_RUNTIME_GOLANG = 'go1.x'
 LAMBDA_RUNTIME_RUBY = 'ruby'
 LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
-LAMBDA_RUNTIME_CUSTOM_RUNTIME = 'provided'
+LAMBDA_RUNTIME_PROVIDED = 'provided'
 
 LAMBDA_EVENT_FILE = 'event_file.json'
 
@@ -127,7 +127,8 @@ class LambdaExecutor(object):
 
     def _store_logs(self, func_details, log_output, invocation_time):
         log_group_name = '/aws/lambda/%s' % func_details.name()
-        time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time))
+        invocation_time_secs = int(invocation_time / 1000)
+        time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time_secs))
         log_stream_name = '%s/[$LATEST]%s' % (time_str, short_uid())
         return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
@@ -202,6 +203,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         environment['HOSTNAME'] = docker_host
         environment['LOCALSTACK_HOSTNAME'] = docker_host
+        environment['_HANDLER'] = handler
         if func_details.timeout:
             environment['AWS_LAMBDA_FUNCTION_TIMEOUT'] = str(func_details.timeout)
         if context:
@@ -301,7 +303,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     def startup(self):
         self.cleanup()
         # start a process to remove idle containers
-        self.start_idle_container_destroyer_interval()
+        if config.LAMBDA_REMOVE_CONTAINERS:
+            self.start_idle_container_destroyer_interval()
 
     def cleanup(self, arn=None):
         if arn:
