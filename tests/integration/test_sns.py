@@ -62,7 +62,7 @@ class SNSTest(unittest.TestCase):
         queue_arn = '%s://localhost:%s' % (get_service_protocol(), local_port)
         self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='http', Endpoint=queue_arn)
 
-        def received(self):
+        def received():
             self.assertEqual(records[0][0]['Type'], 'SubscriptionConfirmation')
             self.assertEqual(records[0][1]['x-amz-sns-message-type'], 'SubscriptionConfirmation')
 
