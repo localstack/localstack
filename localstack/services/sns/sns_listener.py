@@ -432,7 +432,7 @@ def create_sns_message_body(subscriber, req_data):
         'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem'
     }
 
-    if subject:
+    if subject is not None:
         data['Subject'] = subject
 
     attributes = get_message_attributes(req_data)
@@ -472,9 +472,9 @@ def get_message_attributes(req_data):
             }
             string_value = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.StringValue', [None])[0]
             binary_value = req_data.get('MessageAttributes.entry.' + str(x) + '.Value.BinaryValue', [None])[0]
-            if string_value:
+            if string_value is not None:
                 attribute['Value'] = string_value
-            elif binary_value:
+            elif binary_value is not None:
                 attribute['Value'] = binary_value
 
             if attribute['Type'] == 'Number':

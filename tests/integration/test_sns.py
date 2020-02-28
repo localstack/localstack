@@ -62,18 +62,18 @@ class SNSTest(unittest.TestCase):
         queue_arn = '%s://localhost:%s' % (get_service_protocol(), local_port)
         self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='http', Endpoint=queue_arn)
 
-        def received():
-            assert records[0][0]['Type'] == 'SubscriptionConfirmation'
-            assert records[0][1]['x-amz-sns-message-type'] == 'SubscriptionConfirmation'
+        def received(self):
+            self.assertEqual(records[0][0]['Type'], 'SubscriptionConfirmation')
+            self.assertEqual(records[0][1]['x-amz-sns-message-type'], 'SubscriptionConfirmation')
 
             token = records[0][0]['Token']
             subscribe_url = records[0][0]['SubscribeURL']
 
-            assert subscribe_url == '%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (
-                external_service_url('sns'), self.topic_arn, token)
+            self.assertEqual(subscribe_url, '%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (
+                external_service_url('sns'), self.topic_arn, token))
 
-            assert 'Signature' in records[0][0]
-            assert 'SigningCertURL' in records[0][0]
+            self.assertIn('Signature', records[0][0])
+            self.assertIn('SigningCertURL', records[0][0])
 
         retry(received, retries=5, sleep=1)
         proxy.stop()
