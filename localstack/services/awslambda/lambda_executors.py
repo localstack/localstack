@@ -73,6 +73,11 @@ def is_java_lambda(lambda_details):
     return runtime in [LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11]
 
 
+def is_nodejs_runtime(lambda_details):
+    runtime = getattr(lambda_details, 'runtime', lambda_details)
+    return runtime.startswith('nodejs')
+
+
 class LambdaExecutor(object):
     """ Base class for Lambda executors. Subclasses must overwrite the _execute method """
 
@@ -228,6 +233,10 @@ class LambdaExecutorContainers(LambdaExecutor):
             classpath = Util.get_java_classpath(target_file)
             command = ("bash -c 'cd %s; java %s -cp \"%s\" \"%s\" \"%s\" \"%s\"'" %
                 (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
+
+        # accept any self-signed certificates for outgoing calls from the Lambda
+        if is_nodejs_runtime(runtime):
+            environment['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 
         # determine the command to be executed (implemented by subclasses)
         cmd = self.prepare_execution(func_arn, environment, runtime, command, handler, lambda_cwd)
