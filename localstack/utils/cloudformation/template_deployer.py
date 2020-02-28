@@ -52,6 +52,15 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
+def rename_params(func, rename_map):
+    def do_rename(params, **kwargs):
+        values = func(params, **kwargs) if func else params
+        for old_param, new_param in rename_map.items():
+            values[new_param] = values.pop(old_param, None)
+        return values
+    return do_rename
+
+
 def get_nested_stack_name(params, **kwargs):
     stack_name = kwargs.get('stack_name', 'stack')
     return '%s-%s' % (stack_name, common.short_uid())
@@ -84,9 +93,9 @@ def select_parameters(*param_names):
     return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])
 
 
-def dump_json_params(param_func, *param_names):
+def dump_json_params(param_func=None, *param_names):
     def replace(params, **kwargs):
-        result = param_func(params, **kwargs)
+        result = param_func(params, **kwargs) if param_func else params
         for name in param_names:
             if isinstance(result.get(name), (dict, list)):
                 # Fix for https://github.com/localstack/localstack/issues/2022
@@ -123,6 +132,12 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'Bucket': 'PhysicalResourceId'
             }
+        }
+    },
+    'S3::BucketPolicy': {
+        'create': {
+            'function': 'put_bucket_policy',
+            'parameters': rename_params(dump_json_params(None, 'PolicyDocument'), {'PolicyDocument': 'Policy'})
         }
     },
     'SQS::Queue': {
@@ -592,6 +607,10 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             bucket_name = resource_props.get('BucketName') or resource_id
             bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
             return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=bucket_name)
+        elif resource_type == 'S3::BucketPolicy':
+            bucket_name = resource_props.get('Bucket') or resource_id
+            bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
+            return aws_stack.connect_to_service('s3').get_bucket_policy(Bucket=bucket_name)
         elif resource_type == 'Logs::LogGroup':
             # TODO implement
             raise Exception('ResourceNotFound')
