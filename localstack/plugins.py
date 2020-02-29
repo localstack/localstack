@@ -1,9 +1,14 @@
 import os
 import sys
+from localstack.constants import TRUE_STRINGS
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 
 
 def register_localstack_plugins():
+    if os.environ.get(ENV_SCRIPT_STARTING_DOCKER) in TRUE_STRINGS:
+        # skip loading plugins for Docker launching, to increase startup speed
+        return
+
     # register default plugins
     try:
         from localstack.services.s3 import s3_listener, s3_starter
