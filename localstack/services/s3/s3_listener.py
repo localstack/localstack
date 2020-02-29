@@ -110,7 +110,7 @@ def prefix_with_slash(s):
     return s if s[0] == '/' else '/%s' % s
 
 
-def get_event_message(event_name, bucket_name, file_name='testfile.txt', version_id=None, file_size=1024):
+def get_event_message(event_name, bucket_name, file_name='testfile.txt', version_id=None, file_size=0):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
     bucket_name = normalize_bucket_name(bucket_name)
     return {
@@ -186,9 +186,13 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
             not filter_rules_match(notif.get('Filter'), object_path):
         return
 
+    key = urlparse.unquote(object_path.replace('//', '/'))[1:]
+
     s3_client = aws_stack.connect_to_service('s3')
-    key = urlparse.urlparse(object_path[1:]).path
-    object_size = s3_client.head_object(Bucket=bucket_name, Key=key).get('ContentLength', 0)
+    try:
+        object_size = s3_client.head_object(Bucket=bucket_name, Key=key).get('ContentLength', 0)
+    except botocore.exceptions.ClientError:
+        object_size = 0
 
     # build event message
     message = get_event_message(

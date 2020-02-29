@@ -658,7 +658,7 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
     def test_s3_event_notification_with_sqs(self):
-        key_by_path = 'aws/bucket0/test1'
+        key_by_path = 'aws/bucket=2020/test1.txt'
 
         queue_url, queue_attributes = self._create_test_queue()
         self._create_test_notification_bucket(queue_attributes)
