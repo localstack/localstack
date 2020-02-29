@@ -146,8 +146,8 @@ def load_plugins(scope=None):
         file_path = None
         if isinstance(module, six.string_types):
             loader = pkgutil.get_loader(module)
-            if loader and hasattr(loader, 'path'):
-                path = loader.path
+            if loader:
+                path = getattr(loader, 'path', '') or getattr(loader, 'filename', '')
                 if '__init__.py' in path:
                     path = os.path.dirname(path)
                 file_path = os.path.join(path, 'plugins.py')
