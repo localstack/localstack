@@ -936,10 +936,10 @@ class ProxyListenerS3(ProxyListener):
 
         should_send_notifications = all([
             method in ('PUT', 'POST', 'DELETE'),
-            '/' in path[1:] or bucket_name_in_host,
+            '/' in path[1:] or bucket_name_in_host or key,
             # check if this is an actual put object request, because it could also be
             # a put bucket request with a path like this: /bucket_name/
-            bucket_name_in_host or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0),
+            bucket_name_in_host or key or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0),
             self.is_query_allowable(method, parsed.query)
         ])
 
