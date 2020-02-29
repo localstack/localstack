@@ -12,6 +12,7 @@ def register_localstack_plugins():
     # register default plugins
     try:
         from localstack.services.s3 import s3_listener, s3_starter
+        from localstack.services.ec2 import ec2_starter
         from localstack.services.kms import kms_starter
         from localstack.services.sns import sns_listener
         from localstack.services.sqs import sqs_listener, sqs_starter
@@ -20,7 +21,7 @@ def register_localstack_plugins():
         from localstack.services.infra import (
             start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_events, start_lambda,
             start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
-            start_ssm, start_sts, start_secretsmanager, start_ec2)
+            start_ssm, start_sts, start_secretsmanager)
         from localstack.services.plugins import Plugin, register_plugin
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
@@ -44,7 +45,7 @@ def register_localstack_plugins():
         register_plugin(Plugin('dynamodbstreams',
             start=start_dynamodbstreams))
         register_plugin(Plugin('ec2',
-            start=start_ec2))
+            start=ec2_starter.start_ec2))
         register_plugin(Plugin('es',
             start=start_elasticsearch_service))
         register_plugin(Plugin('events',
