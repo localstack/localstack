@@ -1143,7 +1143,7 @@ def create_event_source_mapping():
               in: body
     """
     data = json.loads(to_str(request.data))
-    mapping = add_event_source(data['FunctionName'], data['EventSourceArn'], data.get('Enabled'), data['BatchSize'])
+    mapping = add_event_source(data['FunctionName'], data['EventSourceArn'], data.get('Enabled'), data.get('BatchSize', 10))
     return jsonify(mapping)
 
 
