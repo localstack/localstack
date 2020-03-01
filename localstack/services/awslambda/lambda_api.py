@@ -63,6 +63,8 @@ LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
 
+DEFAULT_BATCH_SIZE = 10
+
 app = Flask(APP_NAME)
 
 # map ARN strings to lambda function objects
@@ -152,12 +154,14 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     arn_to_lambda[arn].cwd = lambda_cwd
 
 
-def add_event_source(function_name, source_arn, enabled):
+def add_event_source(function_name, source_arn, enabled, batch_size=None):
+    batch_size = batch_size or DEFAULT_BATCH_SIZE
+
     mapping = {
         'UUID': str(uuid.uuid4()),
         'StateTransitionReason': 'User action',
         'LastModified': float(time.mktime(datetime.utcnow().timetuple())),
-        'BatchSize': 100,
+        'BatchSize': batch_size,
         'State': 'Enabled' if enabled is True or enabled is None else 'Disabled',
         'FunctionArn': func_arn(function_name),
         'EventSourceArn': source_arn,
@@ -245,22 +249,31 @@ def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, mess
 
 
 def process_kinesis_records(records, stream_name):
+    def chunks(lst, n):
+        # Yield successive n-sized chunks from lst.
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
+
     # feed records into listening lambdas
     try:
         stream_arn = aws_stack.kinesis_stream_arn(stream_name)
         sources = get_event_sources(source_arn=stream_arn)
         for source in sources:
             arn = source['FunctionArn']
-            event = {
-                'Records': []
-            }
-            for rec in records:
-                event['Records'].append({
-                    'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
-                    'eventSourceARN': stream_arn,
-                    'kinesis': rec
-                })
-            run_lambda(event=event, context={}, func_arn=arn)
+            for chunk in chunks(records, source['BatchSize']):
+                event = {
+                    'Records': [
+                        {
+                            'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
+                            'eventSourceARN': stream_arn,
+                            'kinesis': rec
+                        }
+                        for rec in chunk
+                    ]
+                }
+
+                run_lambda(event=event, context={}, func_arn=arn)
+
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
@@ -1134,7 +1147,9 @@ def create_event_source_mapping():
               in: body
     """
     data = json.loads(to_str(request.data))
-    mapping = add_event_source(data['FunctionName'], data['EventSourceArn'], data.get('Enabled'))
+    mapping = add_event_source(
+        data['FunctionName'], data['EventSourceArn'], data.get('Enabled'), data.get('BatchSize')
+    )
     return jsonify(mapping)
 
 
