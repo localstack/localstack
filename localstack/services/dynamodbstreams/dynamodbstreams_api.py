@@ -66,8 +66,7 @@ def post_request():
     kinesis = aws_stack.connect_to_service('kinesis')
     if action == '%s.ListStreams' % ACTION_HEADER_PREFIX:
         result = {
-            'Streams': list(DDB_STREAMS.values()),
-            'LastEvaluatedStreamArn': 'TODO'
+            'Streams': list(DDB_STREAMS.values())
         }
     elif action == '%s.DescribeStream' % ACTION_HEADER_PREFIX:
         for stream in DDB_STREAMS.values():
