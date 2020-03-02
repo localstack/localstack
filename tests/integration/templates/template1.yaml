@@ -14,6 +14,11 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: cf-test-queue-1
+      Tags:
+        - Key: key1
+          Value: value1
+        - Key: key2
+          Value: value2
   SNSTopic:
     Type: AWS::SNS::Topic
     Properties:

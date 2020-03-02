@@ -237,10 +237,10 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def do_run(cmd, asynchronous, print_output=False, env_vars={}):
+def do_run(cmd, asynchronous, print_output=None, env_vars={}):
     sys.stdout.flush()
     if asynchronous:
-        if is_debug():
+        if is_debug() and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
         t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)

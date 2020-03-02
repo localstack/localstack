@@ -81,7 +81,7 @@ def queue_exists(name):
         return False
     for queue_url in queues['QueueUrls']:
         if queue_url == url:
-            return True
+            return queue_url
 
 
 def topic_exists(name):
@@ -146,6 +146,7 @@ class CloudFormationTest(unittest.TestCase):
         cf_client = aws_stack.connect_to_service('cloudformation')
         s3 = aws_stack.connect_to_service('s3')
         sns = aws_stack.connect_to_service('sns')
+        sqs = aws_stack.connect_to_service('sqs')
         apigateway = aws_stack.connect_to_service('apigateway')
         template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
 
@@ -162,7 +163,8 @@ class CloudFormationTest(unittest.TestCase):
 
         # assert that resources have been created
         assert bucket_exists('cf-test-bucket-1')
-        assert queue_exists('cf-test-queue-1')
+        queue_url = queue_exists('cf-test-queue-1')
+        assert queue_url
         topic_arn = topic_exists('%s-test-topic-1-1' % stack_name)
         assert topic_arn
         assert stream_exists('cf-test-stream-1')
@@ -177,6 +179,9 @@ class CloudFormationTest(unittest.TestCase):
             {'Key': 'foo', 'Value': 'cf-test-bucket-1'},
             {'Key': 'bar', 'Value': aws_stack.s3_bucket_arn('cf-test-bucket-1')}
         ])
+        queue_tags = sqs.list_queue_tags(QueueUrl=queue_url)
+        self.assertIn('Tags', queue_tags)
+        self.assertEqual(queue_tags['Tags'], {'key1': 'value1', 'key2': 'value2'})
 
         # assert that subscriptions have been created
         subs = sns.list_subscriptions()['Subscriptions']
