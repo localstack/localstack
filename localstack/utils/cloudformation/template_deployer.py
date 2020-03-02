@@ -61,6 +61,17 @@ def rename_params(func, rename_map):
     return do_rename
 
 
+def params_list_to_dict(param_name, key_attr_name, value_attr_name):
+    def do_replace(params, **kwargs):
+        result = {}
+        for entry in params.get(param_name, []):
+            key = entry[key_attr_name]
+            value = entry[value_attr_name]
+            result[key] = value
+        return result
+    return do_replace
+
+
 def get_nested_stack_name(params, **kwargs):
     stack_name = kwargs.get('stack_name', 'stack')
     return '%s-%s' % (stack_name, common.short_uid())
@@ -149,7 +160,7 @@ RESOURCE_TO_FUNCTION = {
                     ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
                      'VisibilityTimeout', 'RedrivePolicy']
                 ),
-                'tags': 'Tags'
+                'tags': params_list_to_dict('Tags', 'Key', 'Value')
             }
         },
         'delete': {
