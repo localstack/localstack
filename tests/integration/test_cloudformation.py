@@ -179,8 +179,9 @@ class CloudFormationTest(unittest.TestCase):
             {'Key': 'foo', 'Value': 'cf-test-bucket-1'},
             {'Key': 'bar', 'Value': aws_stack.s3_bucket_arn('cf-test-bucket-1')}
         ])
-        queue_tags = sqs.list_queue_tags(QueueUrl=queue_url)['Tags']
-        self.assertEqual(queue_tags, {'key1': 'value1', 'key2': 'value2'})
+        queue_tags = sqs.list_queue_tags(QueueUrl=queue_url)
+        self.assertIn('Tags', queue_tags)
+        self.assertEqual(queue_tags['Tags'], {'key1': 'value1', 'key2': 'value2'})
 
         # assert that subscriptions have been created
         subs = sns.list_subscriptions()['Subscriptions']
