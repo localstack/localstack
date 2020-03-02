@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.10.7'
+VERSION = '0.10.8'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -31,7 +31,7 @@ DEFAULT_PORT_WEB_UI = 8080
 LOCALHOST = 'localhost'
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = '0.2.0'
+LOCALSTACK_MAVEN_VERSION = '0.2.1'
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
