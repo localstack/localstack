@@ -1,10 +1,13 @@
 import time
+import logging
 from datetime import datetime
 from flask import Response
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc, to_str
 from localstack.utils.analytics import event_publisher
+
+LOG = logging.getLogger(__name__)
 
 
 # ---------------
@@ -51,6 +54,7 @@ def publish_lambda_result(time_before, result, kwargs):
 
 
 def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_time=None):
+    print('!!!LOGS ENABLED', aws_stack.is_service_enabled('logs'))
     if not aws_stack.is_service_enabled('logs'):
         return
     start_time = start_time or int(time.time() * 1000)
@@ -93,10 +97,10 @@ def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_tim
         logEvents=log_events
     )
 
+
 # ---------------
 # Helper methods
 # ---------------
-
 
 def _func_name(kwargs):
     func_name = kwargs.get('func_name')
@@ -112,23 +116,33 @@ def publish_event(time_before, result, kwargs):
 
 
 def publish_result(ns, time_before, result, kwargs):
+    print('!!publish_result', ns, time_before, result)
     if ns == 'lambda':
         publish_lambda_result(time_before, result, kwargs)
         publish_event(time_before, 'success', kwargs)
+    else:
+        LOG.info('Unexpected CloudWatch namespace:', ns)
 
 
 def publish_error(ns, time_before, e, kwargs):
+    print('!!publish_error', ns, e)
     if ns == 'lambda':
         publish_lambda_error(time_before, kwargs)
         publish_event(time_before, 'error', kwargs)
+    else:
+        LOG.info('Unexpected CloudWatch namespace:', ns)
 
 
 def cloudwatched(ns):
     """ @cloudwatched(...) decorator for annotating methods to be monitored via CloudWatch """
+    print('!!cloudwatched', ns)
+
     def wrapping(func):
         def wrapped(*args, **kwargs):
+            print('!!CW.wrapped', args, kwargs)
             time_before = now_utc()
             try:
+                print('!!CW.wrapped1', time_before, func)
                 result = func(*args, **kwargs)
                 publish_result(ns, time_before, result, kwargs)
             except Exception as e:
