@@ -156,10 +156,10 @@ class LambdaExecutor(object):
 
         log_formatted = log_output.strip().replace('\n', '\n> ')
         func_arn = func_details and func_details.arn()
-        LOG.debug('Lambda %s result / log output:\n%s\n>%s' % (func_arn, result.strip(), log_formatted))
+        LOG.debug('Lambda %s result / log output:\n%s\n> %s' % (func_arn, result.strip(), log_formatted))
 
         # store log output - TODO get live logs from `process` above?
-        self._store_logs(func_details, log_formatted)
+        self._store_logs(func_details, log_output)
 
         if return_code != 0:
             raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
@@ -251,9 +251,6 @@ class LambdaExecutorContainers(LambdaExecutor):
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.info('Running lambda cmd: %s' % cmd)
         result = self.run_lambda_executor(cmd, stdin, env_vars=environment, func_details=func_details)
-
-        # # store logs to CloudWatch
-        # self._store_logs(func_details, log_output)
 
         return result
 
@@ -698,8 +695,6 @@ class LambdaExecutorLocal(LambdaExecutor):
         cmd = 'java %s -cp %s %s %s %s' % (opts, classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
         LOG.warning(cmd)
         result = self.run_lambda_executor(cmd, func_details=func_details)
-        # LOG.debug('Lambda result / log output:\n%s\n> %s' % (
-        #     result.strip(), log_output.strip().replace('\n', '\n> ')))
         return result
 
 
