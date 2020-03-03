@@ -92,7 +92,7 @@ class LambdaExecutor(object):
             invocation_time = int(time.time() * 1000)
             # start the execution
             try:
-                result, log_output = self._execute(func_arn, func_details, event, context, version)
+                result = self._execute(func_arn, func_details, event, context, version)
             except Exception as e:
                 if asynchronous:
                     if get_from_event(event, 'eventSource') == EVENT_SOURCE_SQS:
@@ -101,15 +101,13 @@ class LambdaExecutor(object):
                             # event source is SQS, send event back to dead letter queue
                             sqs_error_to_dead_letter_queue(sqs_queue_arn, event, e)
                     else:
-                        # event source is not SQS, send back to lambda dead letter
+                        # event source is not SQS, send back to lambda dead letter queue
                         lambda_error_to_dead_letter_queue(func_details, event, e)
                 raise e
             finally:
                 self.function_invoke_times[func_arn] = invocation_time
-            # forward log output to cloudwatch logs
-            self._store_logs(func_details, log_output, invocation_time)
             # return final result
-            return result, log_output
+            return result
 
         # Inform users about asynchronous mode of the lambda execution.
         if asynchronous:
@@ -130,16 +128,18 @@ class LambdaExecutor(object):
     def cleanup(self, arn=None):
         pass
 
-    def _store_logs(self, func_details, log_output, invocation_time):
+    def _store_logs(self, func_details, log_output, invocation_time=None, container_id=None):
         log_group_name = '/aws/lambda/%s' % func_details.name()
+        container_id = container_id or short_uid()
+        invocation_time = invocation_time or int(time.time() * 1000)
         invocation_time_secs = int(invocation_time / 1000)
         time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time_secs))
-        log_stream_name = '%s/[$LATEST]%s' % (time_str, short_uid())
+        log_stream_name = '%s/[$LATEST]%s' % (time_str, container_id)
         return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
-    def run_lambda_executor(self, cmd, event=None, env_vars={}):
-        process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE, env_vars=env_vars,
-                      stdin=True)
+    def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars={}):
+        process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE,
+                      env_vars=env_vars, stdin=True)
         result, log_output = process.communicate(input=event)
         try:
             result = to_str(result).strip()
@@ -154,11 +154,18 @@ class LambdaExecutor(object):
             additional_logs, _, result = result.rpartition('\n')
             log_output += '\n%s' % additional_logs
 
+        log_formatted = log_output.strip().replace('\n', '\n> ')
+        func_arn = func_details and func_details.arn()
+        LOG.debug('Lambda %s result / log output:\n%s\n> %s' % (func_arn, result.strip(), log_formatted))
+
+        # store log output - TODO get live logs from `process` above?
+        self._store_logs(func_details, log_output)
+
         if return_code != 0:
             raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
                 (return_code, result, log_output))
 
-        return result, log_output
+        return result
 
 
 class ContainerInfo:
@@ -243,10 +250,9 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.info('Running lambda cmd: %s' % cmd)
-        result, log_output = self.run_lambda_executor(cmd, stdin, environment)
-        log_formatted = log_output.strip().replace('\n', '\n> ')
-        LOG.debug('Lambda %s result / log output:\n%s\n>%s' % (func_arn, result.strip(), log_formatted))
-        return result, log_output
+        result = self.run_lambda_executor(cmd, stdin, env_vars=environment, func_details=func_details)
+
+        return result
 
 
 class LambdaExecutorReuseContainers(LambdaExecutorContainers):
@@ -672,9 +678,14 @@ class LambdaExecutorLocal(LambdaExecutor):
         for stream in (c.stdout(), c.stderr()):
             if stream:
                 log_output += ('\n' if log_output else '') + stream
-        return result, log_output
 
-    def execute_java_lambda(self, event, context, handler, main_file):
+        # store logs to CloudWatch
+        self._store_logs(func_details, log_output)
+
+        return result
+
+    def execute_java_lambda(self, event, context, main_file, func_details=None):
+        handler = func_details.handler
         opts = config.LAMBDA_JAVA_OPTS if config.LAMBDA_JAVA_OPTS else ''
         event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
         save_file(event_file, json.dumps(event))
@@ -683,10 +694,8 @@ class LambdaExecutorLocal(LambdaExecutor):
         classpath = '%s:%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file, Util.get_java_classpath(main_file))
         cmd = 'java %s -cp %s %s %s %s' % (opts, classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
         LOG.warning(cmd)
-        result, log_output = self.run_lambda_executor(cmd)
-        LOG.debug('Lambda result / log output:\n%s\n> %s' % (
-            result.strip(), log_output.strip().replace('\n', '\n> ')))
-        return result, log_output
+        result = self.run_lambda_executor(cmd, func_details=func_details)
+        return result
 
 
 class Util:
