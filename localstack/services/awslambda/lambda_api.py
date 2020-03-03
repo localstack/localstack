@@ -389,7 +389,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
             return not_found_error(msg='The resource specified in the request does not exist.')
         if not context:
             context = LambdaContext(func_details, version)
-        result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
+        result = LAMBDA_EXECUTOR.execute(func_arn, func_details,
             event, context=context, version=version, asynchronous=asynchronous)
     except Exception as e:
         return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
@@ -504,7 +504,7 @@ def get_java_handler(zip_file_content, main_file, func_details=None):
     """
     if is_zip_file(zip_file_content):
         def execute(event, context):
-            result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
+            result = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
                 event, context, main_file=main_file, func_details=func_details)
             return result
         return execute
