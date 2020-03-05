@@ -132,10 +132,6 @@ def register_localstack_plugins():
             'sts',
             start=start_sts))
 
-        # register_plugin(Plugin(
-        #     'events',
-        #     start=start_events))
-
         register_plugin(Plugin(
             'events',
             start=events_starter.start_events,

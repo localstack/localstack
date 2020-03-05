@@ -389,7 +389,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
             return not_found_error(msg='The resource specified in the request does not exist.')
         if not context:
             context = LambdaContext(func_details, version)
-        result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
+        result = LAMBDA_EXECUTOR.execute(func_arn, func_details,
             event, context=context, version=version, asynchronous=asynchronous)
     except Exception as e:
         return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
@@ -490,7 +490,7 @@ def get_zip_bytes(function_code):
     return zip_file_content
 
 
-def get_java_handler(zip_file_content, handler, main_file):
+def get_java_handler(zip_file_content, main_file, func_details=None):
     """Creates a Java handler from an uploaded ZIP or JAR.
 
     :type zip_file_content: bytes
@@ -504,8 +504,8 @@ def get_java_handler(zip_file_content, handler, main_file):
     """
     if is_zip_file(zip_file_content):
         def execute(event, context):
-            result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
-                event, context, handler=handler, main_file=main_file)
+            result = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
+                event, context, main_file=main_file, func_details=func_details)
             return result
         return execute
     raise ClientError(error_response(
@@ -559,7 +559,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
     lambda_details = arn_to_lambda[arn]
     runtime = lambda_details.runtime
     lambda_environment = lambda_details.envvars
-    handler_name = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
+    handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = code
     code = code or lambda_details.code
     is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
@@ -587,7 +587,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         # The Lambda executors for Docker subclass LambdaExecutorContainers, which
         # runs Lambda in Docker by passing all *.jar files in the function working
         # directory as part of the classpath. Obtain a Java handler function below.
-        lambda_handler = get_java_handler(zip_file_content, handler_name, tmp_file)
+        lambda_handler = get_java_handler(zip_file_content, tmp_file, func_details=lambda_details)
 
     if not is_local_mount:
         # Lambda code must be uploaded in Zip format
