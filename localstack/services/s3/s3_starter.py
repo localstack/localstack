@@ -1,22 +1,15 @@
-import sys
 import types
 import logging
 import traceback
 from moto.s3 import models as s3_models
 from moto.s3 import responses as s3_responses
 from moto.s3.responses import (
-    minidom,
-    MalformedXML,
-    undo_clean_key_name
-)
-from moto.server import main as moto_main
+    minidom, MalformedXML, undo_clean_key_name)
 from localstack import config
 from localstack.constants import DEFAULT_PORT_S3_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import wait_for_port_open
-from localstack.services.infra import (
-    get_service_protocol, start_proxy_for_service, do_run)
-from localstack.utils.bootstrap import setup_logging
+from localstack.services.infra import start_moto_server
 
 LOG = logging.getLogger(__name__)
 
@@ -45,12 +38,11 @@ def check_s3(expect_shutdown=False, print_error=False):
 
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_S3
-    backend_port = DEFAULT_PORT_S3_BACKEND
-    cmd = '%s "%s" s3 -p %s -H 0.0.0.0' % (sys.executable, __file__, backend_port)
-    print('Starting mock S3 (%s port %s)...' % (get_service_protocol(), port))
-    start_proxy_for_service('s3', port, backend_port, update_listener)
-    env_vars = {'PYTHONPATH': ':'.join(sys.path)}
-    return do_run(cmd, asynchronous, env_vars=env_vars)
+    backend_port = backend_port or DEFAULT_PORT_S3_BACKEND
+    apply_patches()
+    return start_moto_server(
+        key='s3', name='S3', asynchronous=asynchronous,
+        port=port, backend_port=backend_port, update_listener=update_listener)
 
 
 def apply_patches():
@@ -174,8 +166,7 @@ def apply_patches():
             key_name = k['key_name']
             version_id = k['version_id']
             success = self.backend.delete_key(
-                bucket_name, undo_clean_key_name(key_name), version_id
-            )
+                bucket_name, undo_clean_key_name(key_name), version_id)
 
             if success:
                 deleted_names.append({
@@ -185,24 +176,8 @@ def apply_patches():
             else:
                 error_names.append(key_name)
 
-        return (
-            200,
-            {},
-            template.render(deleted=deleted_names, delete_errors=error_names),
-        )
+        return (200, {},
+            template.render(deleted=deleted_names, delete_errors=error_names))
 
     s3_responses.S3ResponseInstance._bucket_response_delete_keys = types.MethodType(
-        s3_bucket_response_delete_keys, s3_responses.S3ResponseInstance
-    )
-
-
-def main():
-    setup_logging()
-    # patch moto implementation
-    apply_patches()
-    # start API
-    sys.exit(moto_main())
-
-
-if __name__ == '__main__':
-    main()
+        s3_bucket_response_delete_keys, s3_responses.S3ResponseInstance)

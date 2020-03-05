@@ -31,7 +31,6 @@ from localstack.services.infra import (
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.cloudformation import service_models
-from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
 LOG = logging.getLogger(__name__)
 
@@ -151,17 +150,6 @@ def apply_patches():
     # add model mappings to moto
 
     parsing.MODEL_MAP.update(MODEL_MAP)
-
-    # Patch S3Backend.get_key method in moto to use S3 API from LocalStack
-
-    def get_key(self, bucket_name, key_name, version_id=None):
-        s3_client = aws_stack.connect_to_service('s3')
-        value = b''
-        if bucket_name != BUCKET_MARKER_LOCAL:
-            value = s3_client.get_object(Bucket=bucket_name, Key=key_name)['Body'].read()
-        return s3_models.FakeKey(name=key_name, value=value)
-
-    s3_models.S3Backend.get_key = get_key
 
     # Patch clean_json in moto
 

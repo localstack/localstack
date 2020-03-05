@@ -419,7 +419,7 @@ class S3ListenerTest(unittest.TestCase):
     def test_delete_object_tagging(self):
         bucket_name = 'test-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name, ACL='public-read')
-        object_key = 'test-key'
+        object_key = 'test-key-tagging'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         # get object and assert response
         url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, object_key)
@@ -436,7 +436,7 @@ class S3ListenerTest(unittest.TestCase):
     def test_delete_non_existing_keys(self):
         bucket_name = 'test-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
-        object_key = 'test-key'
+        object_key = 'test-key-nonexistent'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         response = self.s3_client.delete_objects(Bucket=bucket_name,
             Delete={'Objects': [{'Key': object_key}, {'Key': 'dummy1'}, {'Key': 'dummy2'}]})
@@ -686,16 +686,7 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
                                              VersioningConfiguration={'Status': 'Enabled'})
 
-        # flake8: noqa: W291
-        body = """ Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. 
-        Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. 
-        Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. 
-        Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a,. 
-        Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. 
-        Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. 
-        Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. 
-        Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. 
-        Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sed ipsum. """
+        body = 'Lorem ipsum dolor sit amet, ... ' * 30
 
         # put an object
         self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body=body)
@@ -722,16 +713,7 @@ class S3ListenerTest(unittest.TestCase):
         test_1st_key = 'aws/s3/testkey1.txt'
         test_2nd_key = 'aws/s3/testkey2.txt'
 
-        # flake8: noqa: W291
-        body = """ Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. 
-        Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. 
-        Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. 
-        Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a,. 
-        Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. 
-        Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. 
-        Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus. Phasellus viverra nulla ut metus varius laoreet. 
-        Quisque rutrum. Aenean imperdiet. Etiam ultricies nisi vel augue. Curabitur ullamcorper ultricies nisi. Nam eget dui. 
-        Etiam rhoncus. Maecenas tempus, tellus eget condimentum rhoncus, sem quam semper libero, sed ipsum. """
+        body = 'Lorem ipsum dolor sit amet, ... ' * 30
 
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_VERSIONING)
         self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,

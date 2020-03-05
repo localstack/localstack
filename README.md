@@ -399,7 +399,7 @@ For more details and a complete list of configuration parameters, please refer t
 
 * If you're using AWS Java libraries with Kinesis, please, refer to [CBOR protocol issues with the Java SDK guide](https://github.com/mhart/kinesalite#cbor-protocol-issues-with-the-java-sdk) how to disable CBOR protocol which is not supported by kinesalite.
 
-* Accessing local S3 from Java: To avoid domain name resolution issues, you need to enable **path style access** on your client:
+* Accessing local S3: To avoid domain name resolution issues, you need to enable **path style access** on your S3 SDK client. Most AWS SDKs provide a config to achieve that, e.g., for Java:
 ```
 s3.setS3ClientOptions(S3ClientOptions.builder().setPathStyleAccess(true).build());
 // There is also an option to do this if you're using any of the client builder classes:
