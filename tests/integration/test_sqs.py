@@ -57,8 +57,8 @@ class SQSTest(unittest.TestCase):
         self.client.send_message(QueueUrl=queue_url, MessageBody='msg123')
         for i in range(2):
             messages = self.client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages']
-            self.assertEquals(len(messages), 1)
-            self.assertEquals(messages[0]['Body'], 'msg123')
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(messages[0]['Body'], 'msg123')
 
         # delete/receive message
         self.client.delete_message(QueueUrl=queue_url, ReceiptHandle=messages[0]['ReceiptHandle'])
@@ -238,3 +238,23 @@ class SQSTest(unittest.TestCase):
         # cleanup
         self.client.delete_queue(QueueUrl=queue_url)
         self.client.delete_queue(QueueUrl=dead_queue_url)
+
+    def test_set_unsupported_attributes(self):
+        queue_name = 'queue-%s' % short_uid()
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        self.client.set_queue_attributes(
+            QueueUrl=queue_url,
+            Attributes={
+                'FifoQueue': 'true'
+            }
+        )
+
+        rs = self.client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('FifoQueue', rs['Attributes'])
+        self.assertEqual(rs['Attributes']['FifoQueue'], 'true')
+
+        # cleanup
+        self.client.delete_queue(QueueUrl=queue_url)
