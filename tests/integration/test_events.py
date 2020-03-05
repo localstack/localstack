@@ -107,7 +107,7 @@ class EventsTest(unittest.TestCase):
         self.assertIn('FailedEntryCount', rs)
         self.assertIn('FailedEntries', rs)
         self.assertEqual(rs['FailedEntryCount'], 0)
-        self.assertEqual(rs['FailedEntries'], [])\
+        self.assertEqual(rs['FailedEntries'], [])
 
         # clean up
         self._clean_up()
