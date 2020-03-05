@@ -10,6 +10,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file
 
 TEST_RULE_NAME = 'TestRule'
+TEST_EVENT_BUS_NAME = 'command-bus-dev'
 TEST_EVENT_SOURCE = 'integration_tests'
 TEST_DETAIL_TYPE = 'TEST_EVENT'
 TEST_DETAIL = 'some detail'
@@ -22,7 +23,6 @@ TEST_EVENT_PATTERN = {
 
 
 class EventsTest(unittest.TestCase):
-
     def setUp(self):
         self.events_client = aws_stack.connect_to_service('events')
 
@@ -76,3 +76,56 @@ class EventsTest(unittest.TestCase):
         self.events_client.untag_resource(ResourceARN=ruleArn, TagKeys=['key2'])
         actual = self.events_client.list_tags_for_resource(ResourceARN=ruleArn)['Tags']
         self.assertEqual(expected, actual)
+
+    def test_put_targets_with_success_response(self):
+        self.events_client.create_event_bus(
+            Name=TEST_EVENT_BUS_NAME
+        )
+
+        self.events_client.put_rule(
+            Name=TEST_RULE_NAME,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN)
+        )
+
+        rules = self.events_client.list_rules(NamePrefix=TEST_RULE_NAME)['Rules']
+        self.assertEqual(1, len(rules))
+        self.assertEqual(TEST_EVENT_PATTERN, json.loads(rules[0]['EventPattern']))
+
+        rs = self.events_client.put_targets(
+            Rule=TEST_RULE_NAME,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Targets=[
+                {
+                    'Id': TEST_RULE_NAME,
+                    'Arn': 'arn:aws:sqs:eu-west-1:000000000000:core-dev-command-bus',
+                    'InputPath': '$.detail'
+                }
+            ]
+        )
+
+        self.assertIn('FailedEntryCount', rs)
+        self.assertIn('FailedEntries', rs)
+        self.assertEqual(rs['FailedEntryCount'], 0)
+        self.assertEqual(rs['FailedEntries'], [])
+
+        # clean up
+        self._clean_up()
+
+    def _clean_up(self):
+        self.events_client.remove_targets(
+            Rule=TEST_RULE_NAME,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Ids=[
+                TEST_RULE_NAME,
+            ],
+            Force=True
+        )
+        self.events_client.delete_rule(
+            Name=TEST_RULE_NAME,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Force=True
+        )
+        self.events_client.delete_event_bus(
+            Name=TEST_EVENT_BUS_NAME
+        )
