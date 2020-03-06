@@ -520,7 +520,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         if resource_type == 'Lambda::Function':
             resource_props['FunctionName'] = resource_props.get('FunctionName',
                                                                 '{}-lambda-{}'.format(
-                                                                    stack_name[:50], common.short_uid()))
+                                                                    stack_name[:45], common.short_uid()))
 
             resource_id = resource_props['FunctionName'] if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
