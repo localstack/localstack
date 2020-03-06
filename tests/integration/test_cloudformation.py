@@ -64,46 +64,43 @@ Resources:
 """ % (TEST_ARTIFACTS_BUCKET, TEST_ARTIFACTS_PATH)
 
 TEST_TEMPLATE_7 = json.dumps({
-   "AWSTemplateFormatVersion": "2010-09-09",
-   "Description": "Template for AWS::Lambda::Function.",
-   "Resources": {
-      "LambdaFunction1": {
-         "Type": "AWS::Lambda::Function",
-         "Properties": {
-            "Code": {
-               "ZipFile": "file.zip"
-            },
-            "Runtime": "nodejs12.x",
-            "Handler": "index.handler",
-            "Role": {
-               "Fn::GetAtt": [
-                  "LambdaExecutionRole",
-                  "Arn"
-               ]
-            },
-            "Timeout": 300
-         }
-      },
-      "LambdaExecutionRole": {
-         "Type": "AWS::IAM::Role",
-         "Properties": {
-            "Policies": [],
-            "AssumeRolePolicyDocument": {
-               "Version": "2012-10-17",
-               "Statement": [
-                  {
-                     "Action": "sts:AssumeRole",
-                     "Sid": "",
-                     "Effect": "Allow",
-                     "Principal": {
-                        "Service": "lambda.amazonaws.com"
-                     }
-                  }
-               ]
+    'AWSTemplateFormatVersion': '2010-09-09',
+    'Description': 'Template for AWS::AWS::Function.',
+    'Resources': {
+        'LambdaFunction1': {
+            'Type': 'AWS::Lambda::Function',
+            'Properties': {
+                'Code': {
+                    'ZipFile': 'file.zip'
+                },
+                'Runtime': 'nodejs12.x',
+                'Handler': 'index.handler',
+                'Role': {
+                    'Fn::GetAtt': [
+                        'LambdaExecutionRole',
+                        'Arn'
+                    ]
+                },
+                'Timeout': 300
             }
-         }
-      }
-   }
+        },
+        'LambdaExecutionRole': {
+            'Type': 'AWS::IAM::Role',
+            'Properties': {
+                'AssumeRolePolicyDocument': {
+                    'Version': '2012-10-17',
+                    'Statement': [
+                        {
+                            'Action': 'sts:AssumeRole',
+                            'Principal': {
+                                'Service': 'lambda.amazonaws.com'
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
 })
 
 
@@ -183,7 +180,6 @@ def get_topic_arns():
 
 
 class CloudFormationTest(unittest.TestCase):
-
     def test_create_delete_stack(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -361,4 +357,3 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('StackId', rs)
         self.assertIn(stack_name, rs['StackId'])
-
