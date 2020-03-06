@@ -63,6 +63,49 @@ Resources:
       TemplateURL: http://localhost:4572/%s/%s
 """ % (TEST_ARTIFACTS_BUCKET, TEST_ARTIFACTS_PATH)
 
+TEST_TEMPLATE_7 = json.dumps({
+   "AWSTemplateFormatVersion": "2010-09-09",
+   "Description": "Template for AWS::Lambda::Function.",
+   "Resources": {
+      "LambdaFunction1": {
+         "Type": "AWS::Lambda::Function",
+         "Properties": {
+            "Code": {
+               "ZipFile": "file.zip"
+            },
+            "Runtime": "nodejs12.x",
+            "Handler": "index.handler",
+            "Role": {
+               "Fn::GetAtt": [
+                  "LambdaExecutionRole",
+                  "Arn"
+               ]
+            },
+            "Timeout": 300
+         }
+      },
+      "LambdaExecutionRole": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "Policies": [],
+            "AssumeRolePolicyDocument": {
+               "Version": "2012-10-17",
+               "Statement": [
+                  {
+                     "Action": "sts:AssumeRole",
+                     "Sid": "",
+                     "Effect": "Allow",
+                     "Principal": {
+                        "Service": "lambda.amazonaws.com"
+                     }
+                  }
+               ]
+            }
+         }
+      }
+   }
+})
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -308,3 +351,14 @@ class CloudFormationTest(unittest.TestCase):
         # assert that nested resources have been created
         buckets_after = len(s3.list_buckets()['Buckets'])
         self.assertEqual(buckets_after, buckets_before + 1)
+
+    def test_create_cfn_lambda_without_function_name(self):
+        stack_name = 'stack-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_7)
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('StackId', rs)
+        self.assertIn(stack_name, rs['StackId'])
+
