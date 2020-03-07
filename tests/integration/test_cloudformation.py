@@ -355,32 +355,31 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.delete_stack(StackName=stack_name)
 
     def test_create_cfn_lambda_without_function_name(self):
-        stack_name = 'stack-%s' % short_uid()
-
         lambda_client = aws_stack.connect_to_service('lambda')
-        rs = lambda_client.list_functions()
-        # There is no lambda function
-        self.assertEqual(rs['Functions'], [])
-
         cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        rs = lambda_client.list_functions()
+        # Number of lambdas before of stack creation
+        lambdas_before = len(rs['Functions'])
+
+        stack_name = 'stack-%s' % short_uid()
         rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_7)
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('StackId', rs)
         self.assertIn(stack_name, rs['StackId'])
 
-        def check_lambda_created():
-            rs = lambda_client.list_functions()
-            return rs['Functions']
+        # wait for deployment to finish
+        def check_stack():
+            stack = get_stack_details(stack_name)
+            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
 
-        lambda_functions = retry(check_lambda_created, retries=3, sleep=2)
+        retry(check_stack, retries=3, sleep=2)
 
-        # There is 1 lambda function
-        self.assertEqual(len(lambda_functions), 1)
-        # Check the lambda function name
-        self.assertIn('{}-lambda'.format(stack_name), lambda_functions[0]['FunctionName'])
+        rs = lambda_client.list_functions()
+
+        # There is 1 new lambda function
+        self.assertEqual(lambdas_before + 1, len(rs['Functions']))
 
         # delete the stack
         cloudformation.delete_stack(StackName=stack_name)
-        # delete lambda function
-        lambda_client.delete_function(FunctionName=lambda_functions[0]['FunctionName'])
