@@ -63,6 +63,46 @@ Resources:
       TemplateURL: http://localhost:4572/%s/%s
 """ % (TEST_ARTIFACTS_BUCKET, TEST_ARTIFACTS_PATH)
 
+TEST_TEMPLATE_7 = json.dumps({
+    'AWSTemplateFormatVersion': '2010-09-09',
+    'Description': 'Template for AWS::AWS::Function.',
+    'Resources': {
+        'LambdaFunction1': {
+            'Type': 'AWS::Lambda::Function',
+            'Properties': {
+                'Code': {
+                    'ZipFile': 'file.zip'
+                },
+                'Runtime': 'nodejs12.x',
+                'Handler': 'index.handler',
+                'Role': {
+                    'Fn::GetAtt': [
+                        'LambdaExecutionRole',
+                        'Arn'
+                    ]
+                },
+                'Timeout': 300
+            }
+        },
+        'LambdaExecutionRole': {
+            'Type': 'AWS::IAM::Role',
+            'Properties': {
+                'AssumeRolePolicyDocument': {
+                    'Version': '2012-10-17',
+                    'Statement': [
+                        {
+                            'Action': 'sts:AssumeRole',
+                            'Principal': {
+                                'Service': 'lambda.amazonaws.com'
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+})
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -140,7 +180,6 @@ def get_topic_arns():
 
 
 class CloudFormationTest(unittest.TestCase):
-
     def test_create_delete_stack(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -292,6 +331,9 @@ class CloudFormationTest(unittest.TestCase):
         result = json.loads(to_str(result['Payload'].read()))
         self.assertEqual(result, {'hello': 'world'})
 
+        # delete lambda function
+        awslambda.delete_function(FunctionName=func_name)
+
     def test_nested_stack(self):
         s3 = aws_stack.connect_to_service('s3')
         cloudformation = aws_stack.connect_to_service('cloudformation')
@@ -308,3 +350,36 @@ class CloudFormationTest(unittest.TestCase):
         # assert that nested resources have been created
         buckets_after = len(s3.list_buckets()['Buckets'])
         self.assertEqual(buckets_after, buckets_before + 1)
+
+        # delete the stack
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_create_cfn_lambda_without_function_name(self):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        rs = lambda_client.list_functions()
+        # Number of lambdas before of stack creation
+        lambdas_before = len(rs['Functions'])
+
+        stack_name = 'stack-%s' % short_uid()
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_7)
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('StackId', rs)
+        self.assertIn(stack_name, rs['StackId'])
+
+        # wait for deployment to finish
+        def check_stack():
+            stack = get_stack_details(stack_name)
+            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
+
+        retry(check_stack, retries=3, sleep=2)
+
+        rs = lambda_client.list_functions()
+
+        # There is 1 new lambda function
+        self.assertEqual(lambdas_before + 1, len(rs['Functions']))
+
+        # delete the stack
+        cloudformation.delete_stack(StackName=stack_name)
