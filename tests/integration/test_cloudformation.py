@@ -331,6 +331,9 @@ class CloudFormationTest(unittest.TestCase):
         result = json.loads(to_str(result['Payload'].read()))
         self.assertEqual(result, {'hello': 'world'})
 
+        # delete lambda function
+        awslambda.delete_function(FunctionName=func_name)
+
     def test_nested_stack(self):
         s3 = aws_stack.connect_to_service('s3')
         cloudformation = aws_stack.connect_to_service('cloudformation')
@@ -348,8 +351,16 @@ class CloudFormationTest(unittest.TestCase):
         buckets_after = len(s3.list_buckets()['Buckets'])
         self.assertEqual(buckets_after, buckets_before + 1)
 
+        # delete the stack
+        cloudformation.delete_stack(StackName=stack_name)
+
     def test_create_cfn_lambda_without_function_name(self):
         stack_name = 'stack-%s' % short_uid()
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        rs = lambda_client.list_functions()
+        # There is no lambda function
+        self.assertEqual(rs['Functions'], [])
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
         rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_7)
@@ -357,3 +368,19 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('StackId', rs)
         self.assertIn(stack_name, rs['StackId'])
+
+        def check_lambda_created():
+            rs = lambda_client.list_functions()
+            return rs['Functions']
+
+        lambda_functions = retry(check_lambda_created, retries=3, sleep=2)
+
+        # There is 1 lambda function
+        self.assertEqual(len(lambda_functions), 1)
+        # Check the lambda function name
+        self.assertIn('{}-lambda'.format(stack_name), lambda_functions[0]['FunctionName'])
+
+        # delete the stack
+        cloudformation.delete_stack(StackName=stack_name)
+        # delete lambda function
+        lambda_client.delete_function(FunctionName=lambda_functions[0]['FunctionName'])
