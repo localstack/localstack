@@ -5,8 +5,8 @@ LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 
 # install some common libs
 RUN apk add --no-cache autoconf automake build-base ca-certificates curl cyrus-sasl-dev g++ gcc git \
-        groff iputils libffi-dev libtool linux-headers make openssl openssl-dev python3 python3-dev \
-        py3-pip tar xz zip && \
+        groff iputils libffi-dev libtool linux-headers make openssl openssl-dev postgresql-dev \
+        py3-pip python3 python3-dev tar xz zip && \
     update-ca-certificates
 
 # install Docker (CLI only)
