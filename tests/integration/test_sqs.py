@@ -126,6 +126,23 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_send_message_with_invalid_string_attributes(self):
+        queue_name = 'queue-%s' % short_uid()
+
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        payload = {}
+        # String Attributes must not contain non-printable characters
+        # See: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+        attrs = {'attr1':
+        {'StringValue': 'invalid characters, %s, %s, %s' % (chr(8), chr(11), chr(12)), 'DataType': 'String'}}
+        with self.assertRaises(Exception):
+            self.client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload),
+                                     MessageAttributes=attrs)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_dead_letter_queue_config(self):
         queue_name = 'queue-%s' % short_uid()
         dlq_name = 'queue-%s' % short_uid()
