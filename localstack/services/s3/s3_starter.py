@@ -73,6 +73,19 @@ def apply_patches():
         if acl:
             key.set_acl(acl)
 
+    # patch Bucket.create_from_cloudformation_json in moto
+
+    @classmethod
+    def Bucket_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
+        result = create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+        tags = cloudformation_json['Properties'].get('Tags', [])
+        for tag in tags:
+            result.tags.tag_set.tags.append(s3_models.FakeTag(tag['Key'], tag['Value']))
+        return result
+
+    create_from_cloudformation_json_orig = s3_models.FakeBucket.create_from_cloudformation_json
+    s3_models.FakeBucket.create_from_cloudformation_json = Bucket_create_from_cloudformation_json
+
     # patch _key_response_post(..)
 
     def s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):

@@ -373,6 +373,11 @@ def get_iam_role(resource, env=None):
     return 'role-%s' % resource
 
 
+def secretsmanager_secret_arn(secret_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:secretsmanager:%s:%s:secret:%s'
+    return _resource_arn(secret_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def cloudformation_stack_arn(stack_name, account_id=None, region_name=None):
     pattern = 'arn:aws:cloudformation:%s:%s:stack/%s/id-1234'
     return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)

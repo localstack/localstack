@@ -14,7 +14,6 @@ from localstack.utils.common import TMP_FILES, run, mkdir, to_str, save_file, is
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
 
-
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
 
 
