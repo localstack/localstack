@@ -7,7 +7,7 @@
 # (3) The remaining dependencies (those without markers) are only included in
 # the "full" version of the pip package (i.e., "pip install localstack[full]").
 
-airspeed==0.5.10
+airspeed>=0.5.14
 # Use our "ext" version until this bug is fixed: https://github.com/awslabs/amazon-kinesis-client-python/issues/99
 amazon_kclpy-ext==1.5.1
 # amazon-kclpy==1.5.1

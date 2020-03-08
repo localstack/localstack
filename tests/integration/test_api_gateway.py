@@ -127,8 +127,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
-            'test_gateway4',
-            stage_name=self.TEST_STAGE_NAME,
+            'test_gateway4', stage_name=self.TEST_STAGE_NAME,
             queue_arn=self.TEST_SQS_QUEUE, path=self.API_PATH_DATA_INBOUND)
 
         # create event source for sqs lambda processor
@@ -152,11 +151,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         parsed_json = xmltodict.parse(result.content)
         result = parsed_json['SendMessageResponse']['SendMessageResult']
 
-        attr_md5 = result['MD5OfMessageAttributes']
         body_md5 = result['MD5OfMessageBody']
+        attr_md5 = result['MD5OfMessageAttributes']
 
-        self.assertEqual(attr_md5, 'd41d8cd98f00b204e9800998ecf8427e')
         self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')
+        self.assertEqual(attr_md5, 'd41d8cd98f00b204e9800998ecf8427e')
 
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream
