@@ -78,9 +78,8 @@ def apply_patches():
     @classmethod
     def Bucket_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         result = create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
-        tags = cloudformation_json['Properties'].get('Tags', [])
-        for tag in tags:
-            result.tags.tag_set.tags.append(s3_models.FakeTag(tag['Key'], tag['Value']))
+        # remove the bucket from the backend, as our template_deployer will take care of creating the resource
+        s3_models.s3_backend.buckets.pop(resource_name)
         return result
 
     create_from_cloudformation_json_orig = s3_models.FakeBucket.create_from_cloudformation_json

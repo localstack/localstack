@@ -3,7 +3,7 @@ import json
 import time
 from six.moves import queue
 from localstack.config import TMP_FOLDER, CONFIG_FILE_PATH
-from localstack.constants import ENV_INTERNAL_TEST_RUN, API_ENDPOINT
+from localstack.constants import ENV_INTERNAL_TEST_RUN, API_ENDPOINT, TRUE_STRINGS
 from localstack.utils.common import (JsonObject, to_str,
     timestamp, short_uid, save_file, FuncThread, load_file)
 from localstack.utils.common import safe_requests as requests
@@ -163,6 +163,8 @@ def get_hash(name):
 
 def fire_event(event_type, payload=None):
     global SENDER_THREAD
+    if os.environ.get('DISABLE_EVENTS') in TRUE_STRINGS:
+        return
     if not SENDER_THREAD:
         SENDER_THREAD = FuncThread(poll_and_send_messages, {})
         SENDER_THREAD.start()

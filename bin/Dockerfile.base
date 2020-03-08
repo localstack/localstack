@@ -90,7 +90,7 @@ ADD requirements.txt .
 RUN (pip install --upgrade pip) && \
     (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
     (virtualenv .testvenv && source .testvenv/bin/activate && \
-        pip install -q six==1.10.0 && pip install -q -r requirements.txt && rm -rf .testvenv) || exit 1
+        pip install -q 'localstack-ext[full]' && pip install -q -r requirements.txt && rm -rf .testvenv) || exit 1
 
 # add files required to run "make install-web"
 ADD Makefile .
