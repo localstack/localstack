@@ -108,6 +108,9 @@ DOCKER_BRIDGE_IP = os.environ.get('DOCKER_BRIDGE_IP', '').strip()
 EXTRA_CORS_ALLOWED_HEADERS = os.environ.get('EXTRA_CORS_ALLOWED_HEADERS', '').strip()
 EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').strip()
 
+# whether to disable publishing events to the API
+DISABLE_EVENTS = os.environ.get('DISABLE_EVENTS') in TRUE_STRINGS
+
 
 def has_docker():
     try:
@@ -147,7 +150,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'LAMBDA_REMOVE_CONTAINERS',
                    'USE_SSL', 'DEBUG', 'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI',
                    'START_WEB', 'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
-                   'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID']
+                   'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')

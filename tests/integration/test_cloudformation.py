@@ -222,6 +222,15 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn('Tags', queue_tags)
         self.assertEqual(queue_tags['Tags'], {'key1': 'value1', 'key2': 'value2'})
 
+        # assert that bucket notifications have been created
+        notifs = s3.get_bucket_notification_configuration(Bucket='cf-test-bucket-1')
+        self.assertIn('QueueConfigurations', notifs)
+        self.assertIn('LambdaFunctionConfigurations', notifs)
+        self.assertEqual(notifs['QueueConfigurations'][0]['QueueArn'], 'aws:arn:sqs:test:testqueue')
+        self.assertEqual(notifs['QueueConfigurations'][0]['Events'], ['s3:ObjectDeleted:*'])
+        self.assertEqual(notifs['LambdaFunctionConfigurations'][0]['LambdaFunctionArn'], 'aws:arn:lambda:test:testfunc')
+        self.assertEqual(notifs['LambdaFunctionConfigurations'][0]['Events'], ['s3:ObjectCreated:*'])
+
         # assert that subscriptions have been created
         subs = sns.list_subscriptions()['Subscriptions']
         subs = [s for s in subs if (':%s:cf-test-queue-1' % TEST_AWS_ACCOUNT_ID) in s['Endpoint']]

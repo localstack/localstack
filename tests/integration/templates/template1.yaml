@@ -6,6 +6,19 @@ Resources:
     Properties:
       AccessControl: PublicRead
       BucketName: cf-test-bucket-1
+      NotificationConfiguration:
+        LambdaConfigurations:
+        - Event: "s3:ObjectCreated:*"
+          Function: aws:arn:lambda:test:testfunc
+        QueueConfigurations:
+        - Event: "s3:ObjectDeleted:*"
+          Queue: aws:arn:sqs:test:testqueue
+          Filter:
+            S3Key:
+              S3KeyFilter:
+                Rules:
+                  - { Name: name1, Value: value1 }
+                  - { Name: name2, Value: value2 }
       Tags:
         - Key: foobar
           Value:

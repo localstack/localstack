@@ -2,7 +2,7 @@ import os
 import json
 import time
 from six.moves import queue
-from localstack.config import TMP_FOLDER, CONFIG_FILE_PATH
+from localstack import config
 from localstack.constants import ENV_INTERNAL_TEST_RUN, API_ENDPOINT
 from localstack.utils.common import (JsonObject, to_str,
     timestamp, short_uid, save_file, FuncThread, load_file)
@@ -91,11 +91,11 @@ def get_or_create_file(config_file):
 
 
 def get_config_file_homedir():
-    return get_or_create_file(CONFIG_FILE_PATH)
+    return get_or_create_file(config.CONFIG_FILE_PATH)
 
 
 def get_config_file_tempdir():
-    return get_or_create_file(os.path.join(TMP_FOLDER, '.localstack'))
+    return get_or_create_file(os.path.join(config.TMP_FOLDER, '.localstack'))
 
 
 def get_machine_id():
@@ -163,6 +163,8 @@ def get_hash(name):
 
 def fire_event(event_type, payload=None):
     global SENDER_THREAD
+    if config.DISABLE_EVENTS:
+        return
     if not SENDER_THREAD:
         SENDER_THREAD = FuncThread(poll_and_send_messages, {})
         SENDER_THREAD.start()
