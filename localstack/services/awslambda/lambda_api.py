@@ -293,7 +293,7 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
             arn = source['FunctionArn']
             event = {'Records': [{
                 'body': message_body,
-                'receiptHandle': 'MessageReceiptHandle',
+                'receiptHandle': short_uid(),
                 'md5OfBody': md5(message_body),
                 'eventSourceARN': queue_arn,
                 'eventSource': 'aws:sqs',
