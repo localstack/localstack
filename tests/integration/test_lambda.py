@@ -46,8 +46,8 @@ TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
-TEST_LAMBDA_S3_KEY = os.path.join(THIS_FOLDER, 'lambdas')
-TEST_LAMBDA_FUNCTION_NAME = 'test-lambda-function'
+TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
+TEST_LAMBDA_FUNCTION_PREFIX = 'lambda-function'
 TEST_SNS_TOPIC_NAME = 'sns-topic-1'
 
 MAVEN_BASE_URL = 'https://repo.maven.apache.org/maven2'
@@ -383,16 +383,19 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual(result_data['event'], json.loads('{}'))
 
     def test_lambda_subscribe_sns_topic(self):
-        function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_NAME, short_uid())
-        lambda_function = self.lambda_client.create_function(
-            FunctionName=function_name,
-            Runtime=LAMBDA_RUNTIME_PYTHON36,
-            Code={
-                'S3Bucket': '__local__',
-                'S3Key': TEST_LAMBDA_S3_KEY
-            },
-            Handler='lambda_echo.lambda_handler',
-            Role='whatever'
+        function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
+
+        zip_file = testutil.create_lambda_archive(
+            script=load_file(TEST_LAMBDA_ECHO_FILE),
+            get_content=True,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        testutil.create_lambda_function(
+            zip_file=zip_file,
+            func_name=function_name,
+            handler='lambda_echo.lambda_handler',
+            runtime=LAMBDA_RUNTIME_PYTHON36
         )
 
         topic = self.sns_client.create_topic(
@@ -403,7 +406,7 @@ class TestPythonRuntimes(LambdaTestBase):
         self.sns_client.subscribe(
             TopicArn=topic_arn,
             Protocol='lambda',
-            Endpoint=lambda_function['FunctionArn'],
+            Endpoint=lambda_api.func_arn(function_name),
         )
 
         subject = '[Subject] Test subject'
