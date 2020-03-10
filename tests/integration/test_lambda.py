@@ -394,7 +394,6 @@ class TestPythonRuntimes(LambdaTestBase):
         testutil.create_lambda_function(
             zip_file=zip_file,
             func_name=function_name,
-            handler='lambda_echo.lambda_handler',
             runtime=LAMBDA_RUNTIME_PYTHON36
         )
 
