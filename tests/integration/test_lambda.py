@@ -391,7 +391,7 @@ class TestPythonRuntimes(LambdaTestBase):
                 'S3Bucket': '__local__',
                 'S3Key': TEST_LAMBDA_S3_KEY
             },
-            Handler='lambda_function.lambda_handler',
+            Handler='lambda_echo.lambda_handler',
             Role='whatever'
         )
 
@@ -416,8 +416,18 @@ class TestPythonRuntimes(LambdaTestBase):
 
         logs = aws_stack.connect_to_service('logs')
 
+        def get_event_message(events):
+            for event in events:
+                raw_message = event['message']
+                if 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
+                    continue
+
+                return json.loads(raw_message)
+
+            return None
+
         # wait for lambda executing
-        def check_log_steams():
+        def check_log_streams():
             rs = logs.describe_log_streams(
                 logGroupName='/aws/lambda/{}'.format(function_name)
             )
@@ -425,16 +435,13 @@ class TestPythonRuntimes(LambdaTestBase):
             self.assertEqual(len(rs['logStreams']), 1)
             return rs['logStreams'][0]['logStreamName']
 
-        log_stream = retry(check_log_steams, retries=3, sleep=2)
-
+        log_stream = retry(check_log_streams, retries=3, sleep=2)
         rs = logs.get_log_events(
             logGroupName='/aws/lambda/{}'.format(function_name),
             logStreamName=log_stream
         )
 
-        self.assertEqual(len(rs['events']), 1)
-        message = json.loads(rs['events'][0]['message'])
-
+        message = get_event_message(rs['events'])
         self.assertEqual(len(message['Records']), 1)
         notification = message['Records'][0]['Sns']
 
