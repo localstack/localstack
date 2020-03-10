@@ -441,10 +441,10 @@ RESOURCE_TO_FUNCTION = {
     }
 }
 
-
 # ----------------
 # UTILITY METHODS
 # ----------------
+
 
 def convert_acl_cf_to_s3(acl):
     """ Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read') """

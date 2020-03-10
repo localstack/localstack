@@ -604,7 +604,7 @@ class TestLambdaAPI(unittest.TestCase):
     @mock.patch('localstack.services.awslambda.lambda_executors.store_cloudwatch_logs')
     def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
         mock_details = mock.Mock()
-        executor = lambda_executors.LambdaExecutor()
+        executor = lambda_executors
         t_sec = time.time()  # plain old epoch secs
         t_ms = time.time() * 1000  # epoch ms as a long-int like AWS
 

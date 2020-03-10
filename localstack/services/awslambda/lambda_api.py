@@ -123,7 +123,6 @@ class ClientError(Exception):
 
 
 class LambdaContext(object):
-
     def __init__(self, func_details, qualifier=None):
         self.function_name = func_details.name()
         self.function_version = func_details.get_qualifier_version(qualifier)
@@ -226,13 +225,13 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, message_attributes, subject='',):
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject='',):
     try:
         event = {
             'Records': [{
                 'EventSource': 'localstack:sns',
                 'EventVersion': '1.0',
-                'EventSubscriptionArn': subscriptionArn,
+                'EventSubscriptionArn': subscription_arn,
                 'Sns': {
                     'Type': 'Notification',
                     'TopicArn': topic_arn,
@@ -513,7 +512,6 @@ def get_java_handler(zip_file_content, main_file, func_details=None):
 
 
 def set_archive_code(code, lambda_name, zip_file_content=None):
-
     # get metadata
     lambda_arn = func_arn(lambda_name)
     lambda_details = arn_to_lambda[lambda_arn]
@@ -550,7 +548,6 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
 
 
 def set_function_code(code, lambda_name, lambda_cwd=None):
-
     def generic_handler(event, context):
         raise ClientError(('Unable to find executor for Lambda function "%s". Note that ' +
             'Node.js, Golang, and .Net Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
@@ -600,7 +597,6 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
 
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
-
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
@@ -633,7 +629,6 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
                 raise ClientError('Unable to get handler function from lambda code.', e)
 
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
-
     return {'FunctionName': lambda_name}
 
 
@@ -677,7 +672,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
             'Variables': func_details.envvars
         }
     if (always_add_version or version != '$LATEST') and len(result['FunctionArn'].split(':')) <= 7:
-        result['FunctionArn'] += ':%s' % (version)
+        result['FunctionArn'] += ':%s' % version
     return result
 
 
