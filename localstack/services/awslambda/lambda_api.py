@@ -385,7 +385,7 @@ def _arn_match(mapped, searched):
     # match a less specific ARN on the event, but some integration tests
     # rely on it for things like subscribing to a stream and matching an
     # event labeled with the table ARN.
-    if re.match(searched, mapped):
+    if re.match(r'^%s$' % searched, mapped):
         return True
     if mapped.startswith(searched):
         suffix = mapped[len(searched):]

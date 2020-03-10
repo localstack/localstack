@@ -152,10 +152,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         result = parsed_json['SendMessageResponse']['SendMessageResult']
 
         body_md5 = result['MD5OfMessageBody']
-        attr_md5 = result['MD5OfMessageAttributes']
 
         self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')
-        self.assertEqual(attr_md5, 'd41d8cd98f00b204e9800998ecf8427e')
 
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream
