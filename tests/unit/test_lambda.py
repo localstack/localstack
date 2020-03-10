@@ -604,12 +604,11 @@ class TestLambdaAPI(unittest.TestCase):
     @mock.patch('localstack.services.awslambda.lambda_executors.store_cloudwatch_logs')
     def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
         mock_details = mock.Mock()
-        executor = lambda_executors.LambdaExecutor()
         t_sec = time.time()  # plain old epoch secs
         t_ms = time.time() * 1000  # epoch ms as a long-int like AWS
 
         # pass t_ms millisecs to _store_logs
-        executor._store_logs(mock_details, 'mock log output', t_ms)
+        lambda_executors._store_logs(mock_details, 'mock log output', t_ms)
 
         # expect the computed log-stream-name to having a prefix matching the date derived from t_sec
         today = datetime.datetime.utcfromtimestamp(t_sec).strftime('%Y/%m/%d')

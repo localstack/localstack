@@ -34,6 +34,7 @@ TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', '
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(THIS_FOLDER, 'lambdas', 'java', 'lambda-function-with-lib-0.0.1.jar')
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 
+
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
@@ -45,16 +46,32 @@ TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
+TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
+TEST_LAMBDA_FUNCTION_PREFIX = 'lambda-function'
+TEST_SNS_TOPIC_NAME = 'sns-topic-1'
+
 MAVEN_BASE_URL = 'https://repo.maven.apache.org/maven2'
-TEST_LAMBDA_JAR_URL = ('{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar').format(
+
+TEST_LAMBDA_JAR_URL = '{url}/cloud/localstack/{name}/{version}/{name}-{version}-tests.jar'.format(
     version=LOCALSTACK_MAVEN_VERSION, url=MAVEN_BASE_URL, name='localstack-utils')
 
-TEST_LAMBDA_LIBS = ['localstack', 'localstack_client', 'requests',
-    'psutil', 'urllib3', 'chardet', 'certifi', 'idna', 'pip', 'dns']
+TEST_LAMBDA_LIBS = [
+    'localstack', 'localstack_client', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna', 'pip', 'dns'
+]
+
+
+def _run_forward_to_fallback_url(url, num_requests=3):
+    lambda_client = aws_stack.connect_to_service('lambda')
+    config.LAMBDA_FALLBACK_URL = url
+    try:
+        for i in range(num_requests):
+            lambda_client.invoke(FunctionName='non-existing-lambda-%s' % i,
+                Payload=b'{}', InvocationType='RequestResponse')
+    finally:
+        config.LAMBDA_FALLBACK_URL = ''
 
 
 class LambdaTestBase(unittest.TestCase):
-
     def check_lambda_logs(self, func_name, expected_lines=[]):
         logs_client = aws_stack.connect_to_service('logs')
         log_group_name = '/aws/lambda/%s' % func_name
@@ -72,7 +89,6 @@ class LambdaTestBase(unittest.TestCase):
 
 
 class TestLambdaBaseFeatures(unittest.TestCase):
-
     def test_forward_to_fallback_url_dynamodb(self):
         db_table = 'lambda-records'
         ddb_client = aws_stack.connect_to_service('dynamodb')
@@ -81,7 +97,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             return len((run_safe(ddb_client.scan, TableName=db_table) or {'Items': []})['Items'])
 
         items_before = num_items()
-        self._run_forward_to_fallback_url('dynamodb://%s' % db_table)
+        _run_forward_to_fallback_url('dynamodb://%s' % db_table)
         items_after = num_items()
         self.assertEqual(items_after, items_before + 3)
 
@@ -96,20 +112,10 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
 
         items_before = len(records)
-        self._run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
+        _run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
         items_after = len(records)
         self.assertEqual(items_after, items_before + 3)
         proxy.stop()
-
-    def _run_forward_to_fallback_url(self, url, num_requests=3):
-        lambda_client = aws_stack.connect_to_service('lambda')
-        config.LAMBDA_FALLBACK_URL = url
-        try:
-            for i in range(num_requests):
-                lambda_client.invoke(FunctionName='non-existing-lambda-%s' % i,
-                    Payload=b'{}', InvocationType='RequestResponse')
-        finally:
-            config.LAMBDA_FALLBACK_URL = ''
 
     def test_dead_letter_queue(self):
         sqs_client = aws_stack.connect_to_service('sqs')
@@ -176,6 +182,8 @@ class TestPythonRuntimes(LambdaTestBase):
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
         cls.s3_client = aws_stack.connect_to_service('s3')
+        cls.sns_client = aws_stack.connect_to_service('sns')
+
         Util.create_function(TEST_LAMBDA_PYTHON, TEST_LAMBDA_NAME_PY,
             runtime=LAMBDA_RUNTIME_PYTHON27, libs=TEST_LAMBDA_LIBS)
 
@@ -373,6 +381,74 @@ class TestPythonRuntimes(LambdaTestBase):
         result_data = json.loads(result['Payload'].read())
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(result_data['event'], json.loads('{}'))
+
+    def test_lambda_subscribe_sns_topic(self):
+        function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
+
+        zip_file = testutil.create_lambda_archive(
+            script=load_file(TEST_LAMBDA_ECHO_FILE),
+            get_content=True,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        testutil.create_lambda_function(
+            zip_file=zip_file,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        topic = self.sns_client.create_topic(
+            Name=TEST_SNS_TOPIC_NAME
+        )
+        topic_arn = topic['TopicArn']
+
+        self.sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol='lambda',
+            Endpoint=lambda_api.func_arn(function_name),
+        )
+
+        subject = '[Subject] Test subject'
+        message = 'Hello world.'
+        self.sns_client.publish(
+            TopicArn=topic_arn,
+            Subject=subject,
+            Message=message
+        )
+
+        logs = aws_stack.connect_to_service('logs')
+
+        def get_event_message(events):
+            for event in events:
+                raw_message = event['message']
+                if 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
+                    continue
+
+                return json.loads(raw_message)
+
+            return None
+
+        # wait for lambda executing
+        def check_log_streams():
+            rs = logs.describe_log_streams(
+                logGroupName='/aws/lambda/{}'.format(function_name)
+            )
+
+            self.assertEqual(len(rs['logStreams']), 1)
+            return rs['logStreams'][0]['logStreamName']
+
+        log_stream = retry(check_log_streams, retries=3, sleep=2)
+        rs = logs.get_log_events(
+            logGroupName='/aws/lambda/{}'.format(function_name),
+            logStreamName=log_stream
+        )
+
+        message = get_event_message(rs['events'])
+        self.assertEqual(len(message['Records']), 1)
+        notification = message['Records'][0]['Sns']
+
+        self.assertIn('Subject', notification)
+        self.assertEqual(notification['Subject'], subject)
 
 
 class TestNodeJSRuntimes(LambdaTestBase):

@@ -78,15 +78,23 @@ def is_nodejs_runtime(lambda_details):
     return runtime.startswith('nodejs')
 
 
+def _store_logs(func_details, log_output, invocation_time=None, container_id=None):
+    log_group_name = '/aws/lambda/%s' % func_details.name()
+    container_id = container_id or short_uid()
+    invocation_time = invocation_time or int(time.time() * 1000)
+    invocation_time_secs = int(invocation_time / 1000)
+    time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time_secs))
+    log_stream_name = '%s/[LATEST]%s' % (time_str, container_id)
+    return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
+
+
 class LambdaExecutor(object):
     """ Base class for Lambda executors. Subclasses must overwrite the _execute method """
-
     def __init__(self):
         # keeps track of each function arn and the last time it was invoked
         self.function_invoke_times = {}
 
     def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
-
         def do_execute(*args):
             # set the invocation time in milliseconds
             invocation_time = int(time.time() * 1000)
@@ -111,8 +119,7 @@ class LambdaExecutor(object):
 
         # Inform users about asynchronous mode of the lambda execution.
         if asynchronous:
-            LOG.debug('Lambda executed in Event (asynchronous) mode, no response from this '
-                      'function will be returned to caller')
+            LOG.debug('Lambda executed in Event (asynchronous) mode, no response will be returned to caller')
             FuncThread(do_execute).start()
             return None, 'Lambda executed asynchronously.'
 
@@ -127,15 +134,6 @@ class LambdaExecutor(object):
 
     def cleanup(self, arn=None):
         pass
-
-    def _store_logs(self, func_details, log_output, invocation_time=None, container_id=None):
-        log_group_name = '/aws/lambda/%s' % func_details.name()
-        container_id = container_id or short_uid()
-        invocation_time = invocation_time or int(time.time() * 1000)
-        invocation_time_secs = int(invocation_time / 1000)
-        time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time_secs))
-        log_stream_name = '%s/[$LATEST]%s' % (time_str, container_id)
-        return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
     def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars={}):
         process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE,
@@ -159,7 +157,7 @@ class LambdaExecutor(object):
         LOG.debug('Lambda %s result / log output:\n%s\n> %s' % (func_arn, result.strip(), log_formatted))
 
         # store log output - TODO get live logs from `process` above?
-        self._store_logs(func_details, log_output)
+        _store_logs(func_details, log_output)
 
         if return_code != 0:
             raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
@@ -194,7 +192,6 @@ class LambdaExecutorContainers(LambdaExecutor):
         return None
 
     def _execute(self, func_arn, func_details, event, context=None, version=None):
-
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
         handler = func_details.handler
@@ -257,7 +254,6 @@ class LambdaExecutorContainers(LambdaExecutor):
 
 class LambdaExecutorReuseContainers(LambdaExecutorContainers):
     """ Executor class for executing Lambda functions in re-usable Docker containers """
-
     def __init__(self):
         super(LambdaExecutorReuseContainers, self).__init__()
         # locking thread for creation/destruction of docker containers.
@@ -272,7 +268,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.port_offset = LAMBDA_SERVER_PORT_OFFSET
 
     def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
-
         # check whether the Lambda has been invoked before
         has_been_invoked_before = func_arn in self.function_invoke_times
 
@@ -520,11 +515,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         :param func_arn: The ARN of the lambda function.
         :return: name of the container network
         """
-
         with self.docker_container_lock:
-
             status = self.get_docker_container_status(func_arn)
-
             # container does not exist
             if status == 0:
                 return ''
@@ -584,7 +576,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
 
 class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
-
     def __init__(self):
         super(LambdaExecutorSeparateContainers, self).__init__()
         self.next_port = 1
@@ -592,7 +583,6 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         self.port_offset = LAMBDA_API_PORT_OFFSET
 
     def prepare_event(self, environment, event_body):
-
         # Tell Lambci to use STDIN for the event
         environment['DOCKER_LAMBDA_USE_STDIN'] = '1'
         return event_body.encode()
@@ -650,7 +640,6 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 
 
 class LambdaExecutorLocal(LambdaExecutor):
-
     def _execute(self, func_arn, func_details, event, context=None, version=None):
         lambda_cwd = func_details.cwd
         environment = func_details.envvars.copy()
@@ -680,7 +669,7 @@ class LambdaExecutorLocal(LambdaExecutor):
                 log_output += ('\n' if log_output else '') + stream
 
         # store logs to CloudWatch
-        self._store_logs(func_details, log_output)
+        _store_logs(func_details, log_output)
 
         return result
 
