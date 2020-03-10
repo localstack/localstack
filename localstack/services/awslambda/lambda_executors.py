@@ -94,14 +94,18 @@ class LambdaExecutor(object):
         # keeps track of each function arn and the last time it was invoked
         self.function_invoke_times = {}
 
-    def execute(self, func_arn, func_details, event, context=None, version=None, asynchronous=False):
+    def execute(self, func_arn, func_details, event, context=None, version=None,
+            asynchronous=False, callback=None):
         def do_execute(*args):
             # set the invocation time in milliseconds
             invocation_time = int(time.time() * 1000)
             # start the execution
+            raised_error = None
+            result = None
             try:
                 result = self._execute(func_arn, func_details, event, context, version)
             except Exception as e:
+                raised_error = e
                 if asynchronous:
                     if get_from_event(event, 'eventSource') == EVENT_SOURCE_SQS:
                         sqs_queue_arn = get_from_event(event, 'eventSourceARN')
@@ -114,6 +118,7 @@ class LambdaExecutor(object):
                 raise e
             finally:
                 self.function_invoke_times[func_arn] = invocation_time
+                callback and callback(result, func_arn, event, error=raised_error)
             # return final result
             return result
 

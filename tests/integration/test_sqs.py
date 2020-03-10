@@ -35,8 +35,8 @@ class SQSTest(unittest.TestCase):
         cls.client = aws_stack.connect_to_service('sqs')
 
     def test_list_queue_tags(self):
-        # Since this API call is not implemented in ElasticMQ, we're mocking it
-        # and letting it return an empty response
+        # Since this API call is not implemented in ElasticMQ, we're
+        # mocking it and letting it return an empty response
         queue_info = self.client.create_queue(QueueName=TEST_QUEUE_NAME)
         queue_url = queue_info['QueueUrl']
         result = self.client.list_queue_tags(QueueUrl=queue_url)
@@ -200,7 +200,7 @@ class SQSTest(unittest.TestCase):
         queue_name = 'queue-%s' % short_uid()
 
         attributes = {
-            'MessageRetentionPeriod': '604800',  # This one is unsupported by ElasticMq and should be saved in memory
+            'MessageRetentionPeriod': '604800',  # Unsupported by ElasticMq, should be saved in memory
             'ReceiveMessageWaitTimeSeconds': '10',
             'VisibilityTimeout': '30'
         }

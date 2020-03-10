@@ -1,5 +1,4 @@
 import re
-import uuid
 import json
 import xmltodict
 from moto.sqs.utils import parse_message_attributes
@@ -10,27 +9,12 @@ from requests.models import Request, Response
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, md5, clone
+from localstack.utils.common import to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 
-
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
-
-SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE = """
-    <?xml version="1.0"?>
-    <SendMessageResponse xmlns="%s">
-        <SendMessageResult>
-            <MD5OfMessageAttributes>{message_attr_hash}</MD5OfMessageAttributes>
-            <MD5OfMessageBody>{message_body_hash}</MD5OfMessageBody>
-            <MessageId>{message_id}</MessageId>
-        </SendMessageResult>
-        <ResponseMetadata>
-            <RequestId>00000000-0000-0000-0000-000000000000</RequestId>
-        </ResponseMetadata>
-    </SendMessageResponse>
-""".strip() % XMLNS_SQS
 
 # list of valid attribute names, and names not supported by the backend (elasticmq)
 VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
@@ -64,6 +48,7 @@ def parse_request_data(method, path, data):
 #    'Attribute.1.Name': ['Policy'],
 #    'Attribute.1.Value': ['...']
 #  }
+# TODO still needed?
 def format_message_attributes(data):
     prefix = 'MessageAttribute'
     names = []
@@ -204,12 +189,8 @@ class ProxyListenerSQS(ProxyListener):
 
         if req_data:
             action = req_data.get('Action', [None])[0]
-            if action == 'SendMessage':
-                new_response = self._send_message(path, data, req_data, headers)
-                if new_response:
-                    return new_response
 
-            elif action == 'SetQueueAttributes':
+            if action == 'SetQueueAttributes':
                 queue_url = _queue_url(path, req_data, headers)
                 forward_attrs = _set_queue_attributes(queue_url, req_data)
                 if len(req_data) != len(forward_attrs):
@@ -250,6 +231,10 @@ class ProxyListenerSQS(ProxyListener):
         # patch the response and add missing attributes
         if action == 'GetQueueAttributes':
             content_str = _add_queue_attributes(path, req_data, content_str, headers)
+
+        # instruct listeners to fetch new SQS message
+        if action == 'SendMessage':
+            self._process_sent_message(path, data, req_data, headers)
 
         # patch the response and return the correct endpoint URLs / ARNs
         if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes'):
@@ -317,7 +302,7 @@ class ProxyListenerSQS(ProxyListener):
     #      dataType: 'String'
     #    }
     # }
-
+    # TODO still needed?
     @classmethod
     def get_message_attributes_md5(self, req_data):
         req_data = clone(req_data)
@@ -344,24 +329,12 @@ class ProxyListenerSQS(ProxyListener):
         message_attr_hash = moto_message.attribute_md5
         return message_attr_hash
 
-    def _send_message(self, path, data, req_data, headers):
+    def _process_sent_message(self, path, data, req_data, headers):
         queue_url = _queue_url(path, req_data, headers)
         queue_name = queue_url.rpartition('/')[2]
         message_body = req_data.get('MessageBody', [None])[0]
         message_attributes = format_message_attributes(req_data)
-
-        process_result = lambda_api.process_sqs_message(message_body, message_attributes, queue_name)
-        if process_result:
-            # If a Lambda was listening, do not add the message to the queue
-            new_response = Response()
-            message_attr_hash = self.get_message_attributes_md5(req_data)
-            new_response._content = SUCCESSFUL_SEND_MESSAGE_XML_TEMPLATE.format(
-                message_attr_hash=message_attr_hash,
-                message_body_hash=md5(message_body),
-                message_id=str(uuid.uuid4())
-            )
-            new_response.status_code = 200
-            return new_response
+        lambda_api.process_sqs_message(queue_name, message_body, message_attributes)
 
 
 # extract the external port used by the client to make the request

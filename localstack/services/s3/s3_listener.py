@@ -152,15 +152,6 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', version
     }
 
 
-def queue_url_for_arn(queue_arn):
-    if '://' in queue_arn:
-        return queue_arn
-    sqs_client = aws_stack.connect_to_service('sqs')
-    parts = queue_arn.split(':')
-    return sqs_client.get_queue_url(QueueName=parts[5],
-        QueueOwnerAWSAccountId=parts[4])['QueueUrl']
-
-
 def send_notifications(method, bucket_name, object_path, version_id):
     bucket_name = normalize_bucket_name(bucket_name)
     for bucket, notifs in S3_NOTIFICATIONS.items():
@@ -207,7 +198,7 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
     if notif.get('Queue'):
         sqs_client = aws_stack.connect_to_service('sqs')
         try:
-            queue_url = queue_url_for_arn(notif['Queue'])
+            queue_url = aws_stack.sqs_queue_url_for_arn(notif['Queue'])
             sqs_client.send_message(QueueUrl=queue_url, MessageBody=message)
         except Exception as e:
             LOGGER.warning('Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s' %
