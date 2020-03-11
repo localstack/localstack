@@ -43,3 +43,4 @@ def _send_to_dead_letter_queue(source_type, source_arn, dlq_arn, event, error):
         sns_client.publish(TopicArn=dlq_arn, Message=message, MessageAttributes=message_attrs)
     else:
         LOG.warning('Unsupported dead letter queue type: %s' % dlq_arn)
+    return dlq_arn

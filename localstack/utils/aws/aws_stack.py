@@ -41,6 +41,9 @@ BOTO_CLIENTS_CACHE = {}
 # Assume role loop seconds
 DEFAULT_TIMER_LOOP_SECONDS = 60 * 50
 
+# maps SQS queue ARNs to queue URLs
+SQS_ARN_TO_URL_CACHE = {}
+
 
 class Environment(object):
     def __init__(self, region=None, prefix=None):
@@ -330,6 +333,18 @@ def get_s3_client():
         verify=False)
 
 
+def sqs_queue_url_for_arn(queue_arn):
+    if '://' in queue_arn:
+        return queue_arn
+    if queue_arn in SQS_ARN_TO_URL_CACHE:
+        return SQS_ARN_TO_URL_CACHE[queue_arn]
+    sqs_client = connect_to_service('sqs')
+    parts = queue_arn.split(':')
+    result = sqs_client.get_queue_url(QueueName=parts[5], QueueOwnerAWSAccountId=parts[4])['QueueUrl']
+    SQS_ARN_TO_URL_CACHE[queue_arn] = result
+    return result
+
+
 def extract_region_from_auth_header(headers):
     auth = headers.get('Authorization') or ''
     region = re.sub(r'.*Credential=[^/]+/[^/]+/([^/]+)/.*', r'\1', auth)
@@ -418,7 +433,7 @@ def lambda_function_or_layer_arn(type, entity_name, version=None, account_id=Non
     pattern = re.sub(r'\([^\|]+\|.+\)', type, pattern)
     result = pattern.replace('.*', '%s') % (region_name, account_id, entity_name)
     if version:
-        result = '%s:%s' (result, version)
+        result = '%s:%s' % (result, version)
     return result
 
 

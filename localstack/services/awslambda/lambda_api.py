@@ -37,7 +37,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_PROVIDED)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid, timestamp,
-    TIMESTAMP_FORMAT_MILLIS, md5, parse_chunked_data, now_utc, safe_requests,
+    TIMESTAMP_FORMAT_MILLIS, parse_chunked_data, now_utc, safe_requests, FuncThread,
     isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -97,6 +97,10 @@ JSON_START_CHAR_MAP = {
 POSSIBLE_JSON_TYPES = (str, bytes)
 JSON_START_TYPES = tuple(set(JSON_START_CHAR_MAP.keys()) - set(POSSIBLE_JSON_TYPES))
 JSON_START_CHARS = tuple(set(functools.reduce(lambda x, y: x + y, JSON_START_CHAR_MAP.values())))
+
+# SQS listener thread settings
+SQS_LISTENER_THREAD = {}
+SQS_POLL_INTERVAL_SEC = 1
 
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
@@ -225,7 +229,7 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject='',):
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject=''):
     try:
         event = {
             'Records': [{
@@ -277,7 +281,77 @@ def process_kinesis_records(records, stream_name):
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sqs_message(message_body, message_attributes, queue_name, region_name=None):
+def start_lambda_sqs_listener():
+    if SQS_LISTENER_THREAD:
+        return
+
+    def send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region):
+        records = []
+        for msg in messages:
+            records.append({
+                'body': msg['Body'],
+                'receiptHandle': msg['ReceiptHandle'],
+                'md5OfBody': msg['MD5OfBody'],
+                'eventSourceARN': queue_arn,
+                'eventSource': lambda_executors.EVENT_SOURCE_SQS,
+                'awsRegion': region,
+                'messageId': msg['MessageId'],
+                'attributes': msg.get('Attributes', {}),
+                'messageAttributes': msg.get('MessageAttributes', {}),
+                'md5OfMessageAttributes': msg.get('MD5OfMessageAttributes'),
+                'sqs': True,
+            })
+        event = {'Records': records}
+
+        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
+            if error and not dlq_sent:
+                # Skip deleting messages from the queue in case of processing errors AND if
+                # the message has not yet been sent to a dead letter queue (DLQ).
+                # We'll pick them up and retry next time they become available on the queue.
+                return
+            sqs_client = aws_stack.connect_to_service('sqs')
+            entries = [{'Id': r['receiptHandle'], 'ReceiptHandle': r['receiptHandle']} for r in records]
+            sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+
+        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
+        run_lambda(event=event, context={}, func_arn=lambda_arn, asynchronous=True, callback=delete_messages)
+
+    def listener_loop(*args):
+        while True:
+            try:
+                sources = get_event_sources(source_arn=r'.*:sqs:.*')
+                if not sources:
+                    # Temporarily disable polling if no event sources are configured
+                    # anymore. The loop will get restarted next time a message
+                    # arrives and if an event source is configured.
+                    SQS_LISTENER_THREAD.pop('_thread_')
+                    return
+
+                sqs_client = aws_stack.connect_to_service('sqs')
+                for source in sources:
+                    try:
+                        queue_arn = source['EventSourceArn']
+                        lambda_arn = source['FunctionArn']
+                        region_name = queue_arn.split(':')[3]
+                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+                        result = sqs_client.receive_message(QueueUrl=queue_url)
+                        messages = result.get('Messages')
+                        if not messages:
+                            continue
+                        send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+                    except Exception as e:
+                        LOG.debug('Unable to poll SQS messages for queue %s: %s' % (queue_arn, e))
+            except Exception:
+                pass
+            finally:
+                time.sleep(SQS_POLL_INTERVAL_SEC)
+
+    LOG.debug('Starting SQS message polling thread for Lambda API')
+    SQS_LISTENER_THREAD['_thread_'] = FuncThread(listener_loop)
+    SQS_LISTENER_THREAD['_thread_'].start()
+
+
+def process_sqs_message(queue_name, message_body, message_attributes, region_name=None):
     # feed message into the first listening lambda (message should only get processed once)
     try:
         region_name = region_name or aws_stack.get_region()
@@ -285,30 +359,11 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
         sources = get_event_sources(source_arn=queue_arn)
         arns = [s.get('FunctionArn') for s in sources]
         LOG.debug('Found %s source mappings for event from SQS queue %s: %s' % (len(arns), queue_arn, arns))
-        source = next(iter(sources), None)
+        source = (sources or [None])[0]
         if not source:
             return False
-        if source:
-            arn = source['FunctionArn']
-            event = {'Records': [{
-                'body': message_body,
-                'receiptHandle': short_uid(),
-                'md5OfBody': md5(message_body),
-                'eventSourceARN': queue_arn,
-                'eventSource': 'aws:sqs',
-                'awsRegion': region_name,
-                'messageId': str(uuid.uuid4()),
-                'attributes': {
-                    'ApproximateFirstReceiveTimestamp': '{}000'.format(int(time.time())),
-                    'SenderId': TEST_AWS_ACCOUNT_ID,
-                    'ApproximateReceiveCount': '1',
-                    'SentTimestamp': '{}000'.format(int(time.time()))
-                },
-                'messageAttributes': message_attributes,
-                'sqs': True,
-            }]}
-            run_lambda(event=event, context={}, func_arn=arn, asynchronous=True)
-            return True
+        start_lambda_sqs_listener()
+        return True
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SQS messages: %s %s' % (e, traceback.format_exc()))
 
@@ -317,25 +372,26 @@ def get_event_sources(func_name=None, source_arn=None):
     result = []
     for m in event_source_mappings:
         if not func_name or (m['FunctionArn'] in [func_name, func_arn(func_name)]):
-            if _arn_match(mapped=m['EventSourceArn'], occurred=source_arn):
+            if _arn_match(mapped=m['EventSourceArn'], searched=source_arn):
                 result.append(m)
     return result
 
 
-def _arn_match(mapped, occurred):
-    if not occurred or mapped == occurred:
+def _arn_match(mapped, searched):
+    if not searched or mapped == searched:
         return True
     # Some types of ARNs can end with a path separated by slashes, for
-    # example the ARN of a DynamoDB stream is tableARN/stream/ID.  It's
+    # example the ARN of a DynamoDB stream is tableARN/stream/ID. It's
     # a little counterintuitive that a more specific mapped ARN can
     # match a less specific ARN on the event, but some integration tests
     # rely on it for things like subscribing to a stream and matching an
     # event labeled with the table ARN.
-    elif mapped.startswith(occurred):
-        suffix = mapped[len(occurred):]
+    if re.match(r'^%s$' % searched, mapped):
+        return True
+    if mapped.startswith(searched):
+        suffix = mapped[len(searched):]
         return suffix[0] == '/'
-    else:
-        return False
+    return False
 
 
 def get_function_version(arn, version):
@@ -374,7 +430,8 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 @cloudwatched('lambda')
-def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False):
+def run_lambda(event, context, func_arn, version=None, suppress_output=False,
+        asynchronous=False, callback=None):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -388,8 +445,8 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
             return not_found_error(msg='The resource specified in the request does not exist.')
         if not context:
             context = LambdaContext(func_details, version)
-        result = LAMBDA_EXECUTOR.execute(func_arn, func_details,
-            event, context=context, version=version, asynchronous=asynchronous)
+        result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
+            version=version, asynchronous=asynchronous, callback=callback)
     except Exception as e:
         return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
     finally:
