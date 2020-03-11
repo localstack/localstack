@@ -229,7 +229,7 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject='',):
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject=''):
     try:
         event = {
             'Records': [{
@@ -324,7 +324,6 @@ def start_lambda_sqs_listener():
                     # Temporarily disable polling if no event sources are configured
                     # anymore. The loop will get restarted next time a message
                     # arrives and if an event source is configured.
-                    print('!!stopping listener loop')
                     SQS_LISTENER_THREAD.pop('_thread_')
                     return
 
@@ -338,13 +337,14 @@ def start_lambda_sqs_listener():
                         result = sqs_client.receive_message(QueueUrl=queue_url)
                         messages = result.get('Messages')
                         if not messages:
-                            return
+                            continue
                         send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
                     except Exception as e:
                         LOG.debug('Unable to poll SQS messages for queue %s: %s' % (queue_arn, e))
-                time.sleep(SQS_POLL_INTERVAL_SEC)
             except Exception:
                 pass
+            finally:
+                time.sleep(SQS_POLL_INTERVAL_SEC)
 
     LOG.debug('Starting SQS message polling thread for Lambda API')
     SQS_LISTENER_THREAD['_thread_'] = FuncThread(listener_loop)
@@ -359,7 +359,7 @@ def process_sqs_message(queue_name, message_body, message_attributes, region_nam
         sources = get_event_sources(source_arn=queue_arn)
         arns = [s.get('FunctionArn') for s in sources]
         LOG.debug('Found %s source mappings for event from SQS queue %s: %s' % (len(arns), queue_arn, arns))
-        source = next(iter(sources), None)
+        source = (sources or [None])[0]
         if not source:
             return False
         start_lambda_sqs_listener()

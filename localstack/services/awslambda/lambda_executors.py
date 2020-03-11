@@ -107,14 +107,12 @@ class LambdaExecutor(object):
                 result = self._execute(func_arn, func_details, event, context, version)
             except Exception as e:
                 raised_error = e
-                print('!!!Lambda error', e, asynchronous, get_from_event(event, 'eventSource'))
                 if asynchronous:
                     if get_from_event(event, 'eventSource') == EVENT_SOURCE_SQS:
                         sqs_queue_arn = get_from_event(event, 'eventSourceARN')
                         if sqs_queue_arn:
                             # event source is SQS, send event back to dead letter queue
                             dlq_sent = sqs_error_to_dead_letter_queue(sqs_queue_arn, event, e)
-                        print('!!!!!sqs_queue_arn', sqs_queue_arn, dlq_sent)
                     else:
                         # event source is not SQS, send back to lambda dead letter queue
                         lambda_error_to_dead_letter_queue(func_details, event, e)
