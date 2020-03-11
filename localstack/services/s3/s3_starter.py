@@ -8,6 +8,7 @@ from moto.s3.responses import (
 from localstack import config
 from localstack.constants import DEFAULT_PORT_S3_BACKEND
 from localstack.utils.aws import aws_stack
+from localstack.services.s3 import s3_listener
 from localstack.utils.common import wait_for_port_open
 from localstack.services.infra import start_moto_server
 
@@ -79,11 +80,39 @@ def apply_patches():
     def Bucket_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         result = create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
         # remove the bucket from the backend, as our template_deployer will take care of creating the resource
+        resource_name = s3_listener.normalize_bucket_name(resource_name)
         s3_models.s3_backend.buckets.pop(resource_name)
         return result
 
     create_from_cloudformation_json_orig = s3_models.FakeBucket.create_from_cloudformation_json
     s3_models.FakeBucket.create_from_cloudformation_json = Bucket_create_from_cloudformation_json
+
+    # patch S3Bucket.create_bucket(..)
+
+    def create_bucket(self, bucket_name, region_name, *args, **kwargs):
+        bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+        return create_bucket_orig(bucket_name, region_name, *args, **kwargs)
+
+    create_bucket_orig = s3_models.s3_backend.create_bucket
+    s3_models.s3_backend.create_bucket = types.MethodType(create_bucket, s3_models.s3_backend)
+
+    # patch S3Bucket.get_bucket(..)
+
+    def get_bucket(self, bucket_name, *args, **kwargs):
+        bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+        return get_bucket_orig(bucket_name, *args, **kwargs)
+
+    get_bucket_orig = s3_models.s3_backend.get_bucket
+    s3_models.s3_backend.get_bucket = types.MethodType(get_bucket, s3_models.s3_backend)
+
+    # patch S3Bucket.get_bucket(..)
+
+    def delete_bucket(self, bucket_name, *args, **kwargs):
+        bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+        return delete_bucket_orig(bucket_name, *args, **kwargs)
+
+    delete_bucket_orig = s3_models.s3_backend.delete_bucket
+    s3_models.s3_backend.delete_bucket = types.MethodType(delete_bucket, s3_models.s3_backend)
 
     # patch _key_response_post(..)
 
