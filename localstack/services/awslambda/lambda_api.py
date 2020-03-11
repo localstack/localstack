@@ -99,7 +99,7 @@ JSON_START_TYPES = tuple(set(JSON_START_CHAR_MAP.keys()) - set(POSSIBLE_JSON_TYP
 JSON_START_CHARS = tuple(set(functools.reduce(lambda x, y: x + y, JSON_START_CHAR_MAP.values())))
 
 # SQS listener thread settings
-SQS_LISTENER_THREAD = None
+SQS_LISTENER_THREAD = {}
 SQS_POLL_INTERVAL_SEC = 1
 
 # lambda executor instance
@@ -282,7 +282,6 @@ def process_kinesis_records(records, stream_name):
 
 
 def start_lambda_sqs_listener():
-    global SQS_LISTENER_THREAD
     if SQS_LISTENER_THREAD:
         return
 
@@ -304,15 +303,17 @@ def start_lambda_sqs_listener():
             })
         event = {'Records': records}
 
-        def delete_messages(result, func_arn, event, error=None, **kwargs):
-            if error:
-                # Do not delete messages from the queue in case of processing errors;
+        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
+            if error and not dlq_sent:
+                # Skip deleting messages from the queue in case of processing errors AND if
+                # the message has not yet been sent to a dead letter queue (DLQ).
                 # We'll pick them up and retry next time they become available on the queue.
                 return
             sqs_client = aws_stack.connect_to_service('sqs')
             entries = [{'Id': r['receiptHandle'], 'ReceiptHandle': r['receiptHandle']} for r in records]
             sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
 
+        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
         run_lambda(event=event, context={}, func_arn=lambda_arn, asynchronous=True, callback=delete_messages)
 
     def listener_loop(*args):
@@ -320,11 +321,11 @@ def start_lambda_sqs_listener():
             try:
                 sources = get_event_sources(source_arn=r'.*:sqs:.*')
                 if not sources:
-                    global SQS_LISTENER_THREAD
                     # Temporarily disable polling if no event sources are configured
                     # anymore. The loop will get restarted next time a message
                     # arrives and if an event source is configured.
-                    SQS_LISTENER_THREAD = None
+                    print('!!stopping listener loop')
+                    SQS_LISTENER_THREAD.pop('_thread_')
                     return
 
                 sqs_client = aws_stack.connect_to_service('sqs')
@@ -346,8 +347,8 @@ def start_lambda_sqs_listener():
                 pass
 
     LOG.debug('Starting SQS message polling thread for Lambda API')
-    SQS_LISTENER_THREAD = FuncThread(listener_loop)
-    SQS_LISTENER_THREAD.start()
+    SQS_LISTENER_THREAD['_thread_'] = FuncThread(listener_loop)
+    SQS_LISTENER_THREAD['_thread_'].start()
 
 
 def process_sqs_message(queue_name, message_body, message_attributes, region_name=None):

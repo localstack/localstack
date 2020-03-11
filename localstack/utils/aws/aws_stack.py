@@ -433,7 +433,7 @@ def lambda_function_or_layer_arn(type, entity_name, version=None, account_id=Non
     pattern = re.sub(r'\([^\|]+\|.+\)', type, pattern)
     result = pattern.replace('.*', '%s') % (region_name, account_id, entity_name)
     if version:
-        result = '%s:%s' (result, version)
+        result = '%s:%s' % (result, version)
     return result
 
 
