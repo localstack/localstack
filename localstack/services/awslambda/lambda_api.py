@@ -229,26 +229,23 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject=''):
-    try:
-        event = {
-            'Records': [{
-                'EventSource': 'localstack:sns',
-                'EventVersion': '1.0',
-                'EventSubscriptionArn': subscription_arn,
-                'Sns': {
-                    'Type': 'Notification',
-                    'TopicArn': topic_arn,
-                    'Subject': subject,
-                    'Message': message,
-                    'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
-                    'MessageAttributes': message_attributes
-                }
-            }]
-        }
-        return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=True)
-    except Exception as e:
-        LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (e, traceback.format_exc()))
+def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, message_attributes, subject='',):
+    event = {
+        'Records': [{
+            'EventSource': 'localstack:sns',
+            'EventVersion': '1.0',
+            'EventSubscriptionArn': subscriptionArn,
+            'Sns': {
+                'Type': 'Notification',
+                'TopicArn': topic_arn,
+                'Subject': subject,
+                'Message': message,
+                'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
+                'MessageAttributes': message_attributes
+            }
+        }]
+    }
+    return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=True)
 
 
 def process_kinesis_records(records, stream_name):

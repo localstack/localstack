@@ -1,20 +1,25 @@
 import ast
 import json
-import uuid
 import logging
-import six
+import traceback
+import uuid
+
 import requests
+import six
 import xmltodict
+from flask import Response as FlaskResponse
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
+
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
-from localstack.utils.aws import aws_stack
-from localstack.utils.common import TIMESTAMP_FORMAT_MILLIS, short_uid, to_str, timestamp
-from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.analytics import event_publisher
+from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
+from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
+from localstack.utils.common import TIMESTAMP_FORMAT_MILLIS, short_uid, to_str, timestamp
 
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
@@ -199,54 +204,70 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
         message_attributes = get_message_attributes(req_data)
         if not check_filter_policy(filter_policy, message_attributes):
             continue
+
         if subscriber['Protocol'] == 'sqs':
-            endpoint = subscriber['Endpoint']
-            if 'sqs_queue_url' in subscriber:
-                queue_url = subscriber.get('sqs_queue_url')
-            elif '://' in endpoint:
-                queue_url = endpoint
-            else:
-                queue_name = endpoint.split(':')[5]
-                queue_url = aws_stack.get_sqs_queue_url(queue_name)
-                subscriber['sqs_queue_url'] = queue_url
             try:
+                endpoint = subscriber['Endpoint']
+                if 'sqs_queue_url' in subscriber:
+                    queue_url = subscriber.get('sqs_queue_url')
+                elif '://' in endpoint:
+                    queue_url = endpoint
+                else:
+                    queue_name = endpoint.split(':')[5]
+                    queue_url = aws_stack.get_sqs_queue_url(queue_name)
+                    subscriber['sqs_queue_url'] = queue_url
+
                 sqs_client.send_message(
                     QueueUrl=queue_url,
                     MessageBody=create_sns_message_body(subscriber, req_data),
                     MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
                 )
             except Exception as exc:
+                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
                 return make_error(message=str(exc), code=400)
+
         elif subscriber['Protocol'] == 'lambda':
-            lambda_api.process_sns_notification(
-                subscriber['Endpoint'],
-                topic_arn,
-                subscriber['SubscriptionArn'],
-                message,
-                message_attributes,
-                subject=req_data.get('Subject', [None])[0]
-            )
+            try:
+                response = lambda_api.process_sns_notification(
+                    subscriber['Endpoint'],
+                    topic_arn,
+                    subscriber['SubscriptionArn'],
+                    message,
+                    message_attributes,
+                    subject=req_data.get('Subject', [None])[0]
+                )
+                if isinstance(response, FlaskResponse):
+                    response.raise_for_status()
+            except Exception as exc:
+                LOGGER.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
+                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+                return make_error(message=str(exc), code=400)
+
         elif subscriber['Protocol'] in ['http', 'https']:
             msg_type = (req_data.get('Type') or ['Notification'])[0]
             try:
                 message_body = create_sns_message_body(subscriber, req_data)
             except Exception as exc:
                 return make_error(message=str(exc), code=400)
-
-            requests.post(
-                subscriber['Endpoint'],
-                headers={
-                    'Content-Type': 'text/plain',
-                    # AWS headers according to
-                    # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
-                    'x-amz-sns-message-type': msg_type,
-                    'x-amz-sns-topic-arn': subscriber['TopicArn'],
-                    'x-amz-sns-subscription-arn': subscriber['SubscriptionArn'],
-                    'User-Agent': 'Amazon Simple Notification Service Agent'
-                },
-                data=message_body,
-                verify=False)
-
+            try:
+                response = requests.post(
+                    subscriber['Endpoint'],
+                    headers={
+                        'Content-Type': 'text/plain',
+                        # AWS headers according to
+                        # https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html#http-header
+                        'x-amz-sns-message-type': msg_type,
+                        'x-amz-sns-topic-arn': subscriber['TopicArn'],
+                        'x-amz-sns-subscription-arn': subscriber['SubscriptionArn'],
+                        'User-Agent': 'Amazon Simple Notification Service Agent'
+                    },
+                    data=message_body,
+                    verify=False
+                )
+                response.raise_for_status()
+            except Exception as exc:
+                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+                return make_error(message=str(exc), code=400)
         else:
             LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
