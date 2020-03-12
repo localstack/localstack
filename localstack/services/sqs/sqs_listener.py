@@ -232,6 +232,13 @@ class ProxyListenerSQS(ProxyListener):
                 headers = {'content-type': 'application/xhtml+xml'}                    
                 content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
 
+                new_response = Response()
+                new_response.headers = headers
+                new_response._content = content_str
+                new_response.headers['content-length'] = len(new_response._content)
+
+                return new_response
+
 
 
             if 'QueueName' in req_data:
