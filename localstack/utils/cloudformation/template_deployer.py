@@ -9,6 +9,7 @@ from six import iteritems
 from six import string_types
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.services.s3 import s3_listener
 from localstack.utils.testutil import create_zip_file
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 
@@ -511,7 +512,7 @@ def get_resource_name(resource):
 
     # try to extract name from attributes
     if res_type == 'S3::Bucket':
-        name = properties.get('BucketName')
+        name = s3_listener.normalize_bucket_name(properties.get('BucketName'))
     elif res_type == 'SQS::Queue':
         name = properties.get('QueueName')
     elif res_type == 'Cognito::UserPool':
@@ -661,6 +662,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         elif resource_type == 'S3::Bucket':
             bucket_name = resource_props.get('BucketName') or resource_id
             bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
+            bucket_name = s3_listener.normalize_bucket_name(bucket_name)
             s3_client = aws_stack.connect_to_service('s3')
             response = s3_client.get_bucket_location(Bucket=bucket_name)
             notifs = resource_props.get('NotificationConfiguration')

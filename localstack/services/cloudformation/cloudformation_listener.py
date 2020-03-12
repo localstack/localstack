@@ -7,7 +7,9 @@ import logging
 from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 from samtranslator.translator.transform import transform as transform_sam
+from localstack import config
 from localstack.utils.aws import aws_stack
+from localstack.services.s3 import s3_listener
 from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
@@ -103,9 +105,10 @@ def get_template_body(req_data):
         response = run_safe(lambda: safe_requests.get(url, verify=False))
         # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
         status_code = 0 if response is None else response.status_code
-        if not response or status_code == 301 or status_code >= 400:
+        if response is None or status_code == 301 or status_code >= 400:
             # check if this is an S3 URL, then get the file directly from there
-            if '://localhost' in url or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url):
+            url = convert_s3_to_local_url(url)
+            if is_local_service_url(url):
                 parsed_path = urlparse.urlparse(url).path.lstrip('/')
                 parts = parsed_path.partition('/')
                 client = aws_stack.connect_to_service('s3')
@@ -115,6 +118,26 @@ def get_template_body(req_data):
             raise Exception('Unable to fetch template body (code %s) from URL %s' % (status_code, url))
         return response.content
     raise Exception('Unable to get template body from input: %s' % req_data)
+
+
+def is_local_service_url(url):
+    return '://%s:' % config.LOCALSTACK_HOSTNAME in url
+
+
+def is_real_s3_url(url):
+    return re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url or '')
+
+
+def convert_s3_to_local_url(url):
+    if not is_real_s3_url(url):
+        return url
+    url_parsed = urlparse.urlparse(url)
+    path = url_parsed.path
+    bucket_name, _, key = path.lstrip('/').replace('//', '/').partition('/')
+    # note: make sure to normalize the bucket name here!
+    bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+    local_url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, key)
+    return local_url
 
 
 def fix_hardcoded_creation_date(response):
@@ -168,20 +191,28 @@ class ProxyListenerCloudFormation(ProxyListener):
         if req_data:
             if action == 'ValidateTemplate':
                 return validate_template(req_data)
-            if action == 'CreateStack':
+            if action in ['CreateStack', 'UpdateStack']:
+                do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
+                if do_replace_url:
+                    req_data['TemplateURL'] = convert_s3_to_local_url(req_data['TemplateURL'])
                 modified_request = transform_template(req_data)
                 if modified_request:
                     req_data.pop('TemplateURL', None)
                     req_data['TemplateBody'] = json.dumps(modified_request)
+                if modified_request or do_replace_url:
                     data = urlparse.urlencode(req_data, doseq=True)
                     return Request(data=data, headers=headers, method=method)
 
         return True
 
     def return_response(self, method, path, data, headers, response):
+        req_data = urlparse.parse_qs(to_str(data))
+        req_data = dict([(k, v[0]) for k, v in req_data.items()])
+        action = req_data.get('Action')
+
         if response.status_code >= 400:
-            LOG.debug('Error response from CloudFormation (%s) %s %s: %s' %
-                      (response.status_code, method, path, response.content))
+            LOG.debug('Error response for CloudFormation action "%s" (%s) %s %s: %s' %
+                      (action, response.status_code, method, path, response.content))
 
         if response._content:
             aws_stack.fix_account_id_in_arns(response)
