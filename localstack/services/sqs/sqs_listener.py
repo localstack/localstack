@@ -194,6 +194,18 @@ def _list_dead_letter_source_queues(queues, queue_url):
     return format_list_dl_source_queues_response(dead_letter_source_queues)
 
 
+def format_list_dl_source_queues_response(queues):
+    content_str= """<ListDeadLetterSourceQueuesResponse xmlns="{}">
+                        <ListDeadLetterSourceQueuesResult>
+                        {}
+                        </ListDeadLetterSourceQueuesResult>
+                    </ListDeadLetterSourceQueuesResponse>"""
+
+    queue_urls = ''              
+    for q in queues:
+        queue_urls += '<QueueUrl>{}</QueueUrl>'.format(q)
+
+    return content_str.format(XMLNS_SQS, queue_urls)
 
 class ProxyListenerSQS(ProxyListener):
     def forward_request(self, method, path, data, headers):
