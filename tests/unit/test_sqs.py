@@ -1,9 +1,9 @@
 import unittest
 from localstack.services.sqs import sqs_listener
+from localstack.services.sqs.sqs_listener import format_message_attributes
 
 
 class SQSListenerTest (unittest.TestCase):
-
     def test_sqs_format_message_attrs(self):
         request_data = {
             'Action': ['SendMessage'],
@@ -33,7 +33,7 @@ class SQSListenerTest (unittest.TestCase):
             }
         }
 
-        result = sqs_listener.UPDATE_SQS.format_message_attributes(request_data)
+        result = format_message_attributes(request_data)
         self.assertEqual(result, expected)
 
     def test_sqs_message_attrs_md5(self):

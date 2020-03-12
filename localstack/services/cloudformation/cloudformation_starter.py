@@ -31,7 +31,6 @@ from localstack.services.infra import (
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.cloudformation import service_models
-from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
 LOG = logging.getLogger(__name__)
 
@@ -152,17 +151,6 @@ def apply_patches():
 
     parsing.MODEL_MAP.update(MODEL_MAP)
 
-    # Patch S3Backend.get_key method in moto to use S3 API from LocalStack
-
-    def get_key(self, bucket_name, key_name, version_id=None):
-        s3_client = aws_stack.connect_to_service('s3')
-        value = b''
-        if bucket_name != BUCKET_MARKER_LOCAL:
-            value = s3_client.get_object(Bucket=bucket_name, Key=key_name)['Body'].read()
-        return s3_models.FakeKey(name=key_name, value=value)
-
-    s3_models.S3Backend.get_key = get_key
-
     # Patch clean_json in moto
 
     def clean_json(resource_json, resources_map):
@@ -226,16 +214,12 @@ def apply_patches():
         if resource and not update and not force_create:
             return resource
 
-        # check whether this resource needs to be deployed
-        resource_map_new = dict(resources_map._resource_json_map)
-        resource_map_new[logical_id] = resource_json
-        should_be_created = template_deployer.should_be_deployed(logical_id, resource_map_new, stack_name)
-
         # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
         resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
         set_moto_account_ids(resource_json_arns_fixed)
 
         # create resource definition and store CloudFormation metadata in moto
+        moto_create_error = None
         if (resource or update) and not force_create:
             parse_and_update_resource_orig(logical_id,
                 resource_json_arns_fixed, resources_map, region_name)
@@ -245,11 +229,20 @@ def apply_patches():
                     resource_json_arns_fixed, resources_map, region_name)
                 resource.logical_id = logical_id
             except Exception as e:
-                if should_be_created:
-                    raise
-                else:
-                    LOG.info('Error on moto CF resource creation. Ignoring, as should_be_created=%s: %s' %
-                             (should_be_created, e))
+                moto_create_error = e
+
+        # check whether this resource needs to be deployed
+        resource_map_new = dict(resources_map._resource_json_map)
+        resource_map_new[logical_id] = resource_json
+        should_be_created = template_deployer.should_be_deployed(logical_id, resource_map_new, stack_name)
+
+        # check for moto creation errors and raise an exception if needed
+        if moto_create_error:
+            if should_be_created:
+                raise moto_create_error
+            else:
+                LOG.info('Error on moto CF resource creation. Ignoring, as should_be_created=%s: %s' %
+                         (should_be_created, moto_create_error))
 
         # Fix for moto which sometimes hard-codes region name as 'us-east-1'
         if hasattr(resource, 'region_name') and resource.region_name != region_name:

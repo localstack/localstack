@@ -9,6 +9,7 @@ from six import iteritems
 from six import string_types
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.services.s3 import s3_listener
 from localstack.utils.testutil import create_zip_file
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 
@@ -52,6 +53,26 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
+def rename_params(func, rename_map):
+    def do_rename(params, **kwargs):
+        values = func(params, **kwargs) if func else params
+        for old_param, new_param in rename_map.items():
+            values[new_param] = values.pop(old_param, None)
+        return values
+    return do_rename
+
+
+def params_list_to_dict(param_name, key_attr_name, value_attr_name):
+    def do_replace(params, **kwargs):
+        result = {}
+        for entry in params.get(param_name, []):
+            key = entry[key_attr_name]
+            value = entry[value_attr_name]
+            result[key] = value
+        return result
+    return do_replace
+
+
 def get_nested_stack_name(params, **kwargs):
     stack_name = kwargs.get('stack_name', 'stack')
     return '%s-%s' % (stack_name, common.short_uid())
@@ -80,13 +101,52 @@ def sns_subscription_params(params, **kwargs):
     return result
 
 
+def s3_bucket_notification_config(params, **kwargs):
+    notif_config = params.get('NotificationConfiguration')
+    if not notif_config:
+        return None
+
+    lambda_configs = []
+    queue_configs = []
+    topic_configs = []
+
+    attr_tuples = (
+        ('LambdaConfigurations', lambda_configs, 'LambdaFunctionArn', 'Function'),
+        ('QueueConfigurations', queue_configs, 'QueueArn', 'Queue'),
+        ('TopicConfigurations', topic_configs, 'TopicArn', 'Topic')
+    )
+
+    # prepare lambda/queue/topic notification configs
+    for attrs in attr_tuples:
+        for config in notif_config.get(attrs[0]) or []:
+            filter_rules = config.get('Filter', {}).get('S3Key', {}).get('Rules')
+            entry = {
+                attrs[2]: config[attrs[3]],
+                'Events': [config['Event']]
+            }
+            if filter_rules:
+                entry['Filter'] = {'Key': {'FilterRules': filter_rules}}
+            attrs[1].append(entry)
+
+    # construct final result
+    result = {
+        'Bucket': params.get('BucketName') or PLACEHOLDER_RESOURCE_NAME,
+        'NotificationConfiguration': {
+            'LambdaFunctionConfigurations': lambda_configs,
+            'QueueConfigurations': queue_configs,
+            'TopicConfigurations': topic_configs
+        }
+    }
+    return result
+
+
 def select_parameters(*param_names):
     return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])
 
 
-def dump_json_params(param_func, *param_names):
+def dump_json_params(param_func=None, *param_names):
     def replace(params, **kwargs):
-        result = param_func(params, **kwargs)
+        result = param_func(params, **kwargs) if param_func else params
         for name in param_names:
             if isinstance(result.get(name), (dict, list)):
                 # Fix for https://github.com/localstack/localstack/issues/2022
@@ -110,19 +170,28 @@ def param_defaults(param_func, defaults):
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
-        'create': {
+        'create': [{
             'function': 'create_bucket',
             'parameters': {
                 'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
                 'ACL': lambda params, **kwargs: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead')),
                 'CreateBucketConfiguration': lambda params, **kwargs: get_bucket_location_config()
             }
-        },
+        }, {
+            'function': 'put_bucket_notification_configuration',
+            'parameters': s3_bucket_notification_config
+        }],
         'delete': {
             'function': 'delete_bucket',
             'parameters': {
                 'Bucket': 'PhysicalResourceId'
             }
+        }
+    },
+    'S3::BucketPolicy': {
+        'create': {
+            'function': 'put_bucket_policy',
+            'parameters': rename_params(dump_json_params(None, 'PolicyDocument'), {'PolicyDocument': 'Policy'})
         }
     },
     'SQS::Queue': {
@@ -134,7 +203,7 @@ RESOURCE_TO_FUNCTION = {
                     ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
                      'VisibilityTimeout', 'RedrivePolicy']
                 ),
-                'tags': 'Tags'
+                'tags': params_list_to_dict('Tags', 'Key', 'Value')
             }
         },
         'delete': {
@@ -373,10 +442,10 @@ RESOURCE_TO_FUNCTION = {
     }
 }
 
-
 # ----------------
 # UTILITY METHODS
 # ----------------
+
 
 def convert_acl_cf_to_s3(acl):
     """ Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read') """
@@ -443,7 +512,7 @@ def get_resource_name(resource):
 
     # try to extract name from attributes
     if res_type == 'S3::Bucket':
-        name = properties.get('BucketName')
+        name = s3_listener.normalize_bucket_name(properties.get('BucketName'))
     elif res_type == 'SQS::Queue':
         name = properties.get('QueueName')
     elif res_type == 'Cognito::UserPool':
@@ -492,6 +561,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     resource_props = resource.get('Properties')
     try:
         if resource_type == 'Lambda::Function':
+            resource_props['FunctionName'] = (resource_props.get('FunctionName') or
+                '{}-lambda-{}'.format(stack_name[:45], common.short_uid()))
             resource_id = resource_props['FunctionName'] if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
         elif resource_type == 'Lambda::Version':
@@ -591,7 +662,22 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         elif resource_type == 'S3::Bucket':
             bucket_name = resource_props.get('BucketName') or resource_id
             bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
-            return aws_stack.connect_to_service('s3').get_bucket_location(Bucket=bucket_name)
+            bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+            s3_client = aws_stack.connect_to_service('s3')
+            response = s3_client.get_bucket_location(Bucket=bucket_name)
+            notifs = resource_props.get('NotificationConfiguration')
+            if not response or not notifs:
+                return response
+            configs = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+            has_notifs = (configs.get('TopicConfigurations') or configs.get('QueueConfigurations') or
+                configs.get('LambdaFunctionConfigurations'))
+            if notifs and not has_notifs:
+                return None
+            return response
+        elif resource_type == 'S3::BucketPolicy':
+            bucket_name = resource_props.get('Bucket') or resource_id
+            bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
+            return aws_stack.connect_to_service('s3').get_bucket_policy(Bucket=bucket_name)
         elif resource_type == 'Logs::LogGroup':
             # TODO implement
             raise Exception('ResourceNotFound')
@@ -906,6 +992,10 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
 
     # assign default values if empty
     params = common.merge_recursive(defaults, params)
+
+    # this is an indicator that we should skip this resource deployment, and return
+    if params is None:
+        return
 
     # convert refs and boolean strings
     for param_key, param_value in dict(params).items():

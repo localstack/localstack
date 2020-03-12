@@ -110,7 +110,7 @@ def prefix_with_slash(s):
     return s if s[0] == '/' else '/%s' % s
 
 
-def get_event_message(event_name, bucket_name, file_name='testfile.txt', version_id=None, file_size=1024):
+def get_event_message(event_name, bucket_name, file_name='testfile.txt', version_id=None, file_size=0):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
     bucket_name = normalize_bucket_name(bucket_name)
     return {
@@ -152,15 +152,6 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', version
     }
 
 
-def queue_url_for_arn(queue_arn):
-    if '://' in queue_arn:
-        return queue_arn
-    sqs_client = aws_stack.connect_to_service('sqs')
-    parts = queue_arn.split(':')
-    return sqs_client.get_queue_url(QueueName=parts[5],
-        QueueOwnerAWSAccountId=parts[4])['QueueUrl']
-
-
 def send_notifications(method, bucket_name, object_path, version_id):
     bucket_name = normalize_bucket_name(bucket_name)
     for bucket, notifs in S3_NOTIFICATIONS.items():
@@ -186,9 +177,13 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
             not filter_rules_match(notif.get('Filter'), object_path):
         return
 
+    key = urlparse.unquote(object_path.replace('//', '/'))[1:]
+
     s3_client = aws_stack.connect_to_service('s3')
-    key = urlparse.urlparse(object_path[1:]).path
-    object_size = s3_client.head_object(Bucket=bucket_name, Key=key).get('ContentLength', 0)
+    try:
+        object_size = s3_client.head_object(Bucket=bucket_name, Key=key).get('ContentLength', 0)
+    except botocore.exceptions.ClientError:
+        object_size = 0
 
     # build event message
     message = get_event_message(
@@ -203,7 +198,7 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
     if notif.get('Queue'):
         sqs_client = aws_stack.connect_to_service('sqs')
         try:
-            queue_url = queue_url_for_arn(notif['Queue'])
+            queue_url = aws_stack.sqs_queue_url_for_arn(notif['Queue'])
             sqs_client.send_message(QueueUrl=queue_url, MessageBody=message)
         except Exception as e:
             LOGGER.warning('Unable to send notification for S3 bucket "%s" to SQS queue "%s": %s' %
@@ -932,10 +927,10 @@ class ProxyListenerS3(ProxyListener):
 
         should_send_notifications = all([
             method in ('PUT', 'POST', 'DELETE'),
-            '/' in path[1:] or bucket_name_in_host,
+            '/' in path[1:] or bucket_name_in_host or key,
             # check if this is an actual put object request, because it could also be
             # a put bucket request with a path like this: /bucket_name/
-            bucket_name_in_host or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0),
+            bucket_name_in_host or key or (len(path[1:].split('/')) > 1 and len(path[1:].split('/')[1]) > 0),
             self.is_query_allowable(method, parsed.query)
         ])
 

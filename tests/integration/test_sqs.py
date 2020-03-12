@@ -35,8 +35,8 @@ class SQSTest(unittest.TestCase):
         cls.client = aws_stack.connect_to_service('sqs')
 
     def test_list_queue_tags(self):
-        # Since this API call is not implemented in ElasticMQ, we're mocking it
-        # and letting it return an empty response
+        # Since this API call is not implemented in ElasticMQ, we're
+        # mocking it and letting it return an empty response
         queue_info = self.client.create_queue(QueueName=TEST_QUEUE_NAME)
         queue_url = queue_info['QueueUrl']
         result = self.client.list_queue_tags(QueueUrl=queue_url)
@@ -57,8 +57,8 @@ class SQSTest(unittest.TestCase):
         self.client.send_message(QueueUrl=queue_url, MessageBody='msg123')
         for i in range(2):
             messages = self.client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages']
-            self.assertEquals(len(messages), 1)
-            self.assertEquals(messages[0]['Body'], 'msg123')
+            self.assertEqual(len(messages), 1)
+            self.assertEqual(messages[0]['Body'], 'msg123')
 
         # delete/receive message
         self.client.delete_message(QueueUrl=queue_url, ReceiptHandle=messages[0]['ReceiptHandle'])
@@ -126,6 +126,23 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_send_message_with_invalid_string_attributes(self):
+        queue_name = 'queue-%s' % short_uid()
+
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        payload = {}
+        # String Attributes must not contain non-printable characters
+        # See: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+        attrs = {'attr1':
+        {'StringValue': 'invalid characters, %s, %s, %s' % (chr(8), chr(11), chr(12)), 'DataType': 'String'}}
+        with self.assertRaises(Exception):
+            self.client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload),
+                                     MessageAttributes=attrs)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_dead_letter_queue_config(self):
         queue_name = 'queue-%s' % short_uid()
         dlq_name = 'queue-%s' % short_uid()
@@ -183,7 +200,7 @@ class SQSTest(unittest.TestCase):
         queue_name = 'queue-%s' % short_uid()
 
         attributes = {
-            'MessageRetentionPeriod': '604800',  # This one is unsupported by ElasticMq and should be saved in memory
+            'MessageRetentionPeriod': '604800',  # Unsupported by ElasticMq, should be saved in memory
             'ReceiveMessageWaitTimeSeconds': '10',
             'VisibilityTimeout': '30'
         }
@@ -238,3 +255,23 @@ class SQSTest(unittest.TestCase):
         # cleanup
         self.client.delete_queue(QueueUrl=queue_url)
         self.client.delete_queue(QueueUrl=dead_queue_url)
+
+    def test_set_unsupported_attributes(self):
+        queue_name = 'queue-%s' % short_uid()
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        self.client.set_queue_attributes(
+            QueueUrl=queue_url,
+            Attributes={
+                'FifoQueue': 'true'
+            }
+        )
+
+        rs = self.client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('FifoQueue', rs['Attributes'])
+        self.assertEqual(rs['Attributes']['FifoQueue'], 'true')
+
+        # cleanup
+        self.client.delete_queue(QueueUrl=queue_url)

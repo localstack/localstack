@@ -37,7 +37,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_PROVIDED)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid, timestamp,
-    TIMESTAMP_FORMAT_MILLIS, md5, parse_chunked_data, now_utc, safe_requests,
+    TIMESTAMP_FORMAT_MILLIS, parse_chunked_data, now_utc, safe_requests, FuncThread,
     isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -58,10 +58,12 @@ LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36,
 LAMBDA_DEFAULT_TIMEOUT = 3
 # default handler and runtime
 LAMBDA_DEFAULT_HANDLER = 'handler.handler'
-LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
+LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON36
 LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
+
+DEFAULT_BATCH_SIZE = 10
 
 app = Flask(APP_NAME)
 
@@ -96,6 +98,10 @@ POSSIBLE_JSON_TYPES = (str, bytes)
 JSON_START_TYPES = tuple(set(JSON_START_CHAR_MAP.keys()) - set(POSSIBLE_JSON_TYPES))
 JSON_START_CHARS = tuple(set(functools.reduce(lambda x, y: x + y, JSON_START_CHAR_MAP.values())))
 
+# SQS listener thread settings
+SQS_LISTENER_THREAD = {}
+SQS_POLL_INTERVAL_SEC = 1
+
 # lambda executor instance
 LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR)
 
@@ -121,7 +127,6 @@ class ClientError(Exception):
 
 
 class LambdaContext(object):
-
     def __init__(self, func_details, qualifier=None):
         self.function_name = func_details.name()
         self.function_version = func_details.get_qualifier_version(qualifier)
@@ -152,12 +157,14 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     arn_to_lambda[arn].cwd = lambda_cwd
 
 
-def add_event_source(function_name, source_arn, enabled):
+def add_event_source(function_name, source_arn, enabled, batch_size=None):
+    batch_size = batch_size or DEFAULT_BATCH_SIZE
+
     mapping = {
         'UUID': str(uuid.uuid4()),
         'StateTransitionReason': 'User action',
         'LastModified': float(time.mktime(datetime.utcnow().timetuple())),
-        'BatchSize': 100,
+        'BatchSize': batch_size,
         'State': 'Enabled' if enabled is True or enabled is None else 'Disabled',
         'FunctionArn': func_arn(function_name),
         'EventSourceArn': source_arn,
@@ -222,13 +229,13 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, message_attributes, subject='',):
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject=''):
     try:
         event = {
             'Records': [{
                 'EventSource': 'localstack:sns',
                 'EventVersion': '1.0',
-                'EventSubscriptionArn': subscriptionArn,
+                'EventSubscriptionArn': subscription_arn,
                 'Sns': {
                     'Type': 'Notification',
                     'TopicArn': topic_arn,
@@ -245,27 +252,106 @@ def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, mess
 
 
 def process_kinesis_records(records, stream_name):
+    def chunks(lst, n):
+        # Yield successive n-sized chunks from lst.
+        for i in range(0, len(lst), n):
+            yield lst[i:i + n]
+
     # feed records into listening lambdas
     try:
         stream_arn = aws_stack.kinesis_stream_arn(stream_name)
         sources = get_event_sources(source_arn=stream_arn)
         for source in sources:
             arn = source['FunctionArn']
-            event = {
-                'Records': []
-            }
-            for rec in records:
-                event['Records'].append({
-                    'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
-                    'eventSourceARN': stream_arn,
-                    'kinesis': rec
-                })
-            run_lambda(event=event, context={}, func_arn=arn)
+            for chunk in chunks(records, source['BatchSize']):
+                event = {
+                    'Records': [
+                        {
+                            'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
+                            'eventSourceARN': stream_arn,
+                            'kinesis': rec
+                        }
+                        for rec in chunk
+                    ]
+                }
+
+                run_lambda(event=event, context={}, func_arn=arn)
+
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sqs_message(message_body, message_attributes, queue_name, region_name=None):
+def start_lambda_sqs_listener():
+    if SQS_LISTENER_THREAD:
+        return
+
+    def send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region):
+        records = []
+        for msg in messages:
+            records.append({
+                'body': msg['Body'],
+                'receiptHandle': msg['ReceiptHandle'],
+                'md5OfBody': msg['MD5OfBody'],
+                'eventSourceARN': queue_arn,
+                'eventSource': lambda_executors.EVENT_SOURCE_SQS,
+                'awsRegion': region,
+                'messageId': msg['MessageId'],
+                'attributes': msg.get('Attributes', {}),
+                'messageAttributes': msg.get('MessageAttributes', {}),
+                'md5OfMessageAttributes': msg.get('MD5OfMessageAttributes'),
+                'sqs': True,
+            })
+        event = {'Records': records}
+
+        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
+            if error and not dlq_sent:
+                # Skip deleting messages from the queue in case of processing errors AND if
+                # the message has not yet been sent to a dead letter queue (DLQ).
+                # We'll pick them up and retry next time they become available on the queue.
+                return
+            sqs_client = aws_stack.connect_to_service('sqs')
+            entries = [{'Id': r['receiptHandle'], 'ReceiptHandle': r['receiptHandle']} for r in records]
+            sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+
+        # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
+        run_lambda(event=event, context={}, func_arn=lambda_arn, asynchronous=True, callback=delete_messages)
+
+    def listener_loop(*args):
+        while True:
+            try:
+                sources = get_event_sources(source_arn=r'.*:sqs:.*')
+                if not sources:
+                    # Temporarily disable polling if no event sources are configured
+                    # anymore. The loop will get restarted next time a message
+                    # arrives and if an event source is configured.
+                    SQS_LISTENER_THREAD.pop('_thread_')
+                    return
+
+                sqs_client = aws_stack.connect_to_service('sqs')
+                for source in sources:
+                    try:
+                        queue_arn = source['EventSourceArn']
+                        lambda_arn = source['FunctionArn']
+                        region_name = queue_arn.split(':')[3]
+                        queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
+                        result = sqs_client.receive_message(QueueUrl=queue_url)
+                        messages = result.get('Messages')
+                        if not messages:
+                            continue
+                        send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+                    except Exception as e:
+                        LOG.debug('Unable to poll SQS messages for queue %s: %s' % (queue_arn, e))
+            except Exception:
+                pass
+            finally:
+                time.sleep(SQS_POLL_INTERVAL_SEC)
+
+    LOG.debug('Starting SQS message polling thread for Lambda API')
+    SQS_LISTENER_THREAD['_thread_'] = FuncThread(listener_loop)
+    SQS_LISTENER_THREAD['_thread_'].start()
+
+
+def process_sqs_message(queue_name, message_body, message_attributes, region_name=None):
     # feed message into the first listening lambda (message should only get processed once)
     try:
         region_name = region_name or aws_stack.get_region()
@@ -273,30 +359,11 @@ def process_sqs_message(message_body, message_attributes, queue_name, region_nam
         sources = get_event_sources(source_arn=queue_arn)
         arns = [s.get('FunctionArn') for s in sources]
         LOG.debug('Found %s source mappings for event from SQS queue %s: %s' % (len(arns), queue_arn, arns))
-        source = next(iter(sources), None)
+        source = (sources or [None])[0]
         if not source:
             return False
-        if source:
-            arn = source['FunctionArn']
-            event = {'Records': [{
-                'body': message_body,
-                'receiptHandle': 'MessageReceiptHandle',
-                'md5OfBody': md5(message_body),
-                'eventSourceARN': queue_arn,
-                'eventSource': 'aws:sqs',
-                'awsRegion': region_name,
-                'messageId': str(uuid.uuid4()),
-                'attributes': {
-                    'ApproximateFirstReceiveTimestamp': '{}000'.format(int(time.time())),
-                    'SenderId': TEST_AWS_ACCOUNT_ID,
-                    'ApproximateReceiveCount': '1',
-                    'SentTimestamp': '{}000'.format(int(time.time()))
-                },
-                'messageAttributes': message_attributes,
-                'sqs': True,
-            }]}
-            run_lambda(event=event, context={}, func_arn=arn, asynchronous=True)
-            return True
+        start_lambda_sqs_listener()
+        return True
     except Exception as e:
         LOG.warning('Unable to run Lambda function on SQS messages: %s %s' % (e, traceback.format_exc()))
 
@@ -305,25 +372,26 @@ def get_event_sources(func_name=None, source_arn=None):
     result = []
     for m in event_source_mappings:
         if not func_name or (m['FunctionArn'] in [func_name, func_arn(func_name)]):
-            if _arn_match(mapped=m['EventSourceArn'], occurred=source_arn):
+            if _arn_match(mapped=m['EventSourceArn'], searched=source_arn):
                 result.append(m)
     return result
 
 
-def _arn_match(mapped, occurred):
-    if not occurred or mapped == occurred:
+def _arn_match(mapped, searched):
+    if not searched or mapped == searched:
         return True
     # Some types of ARNs can end with a path separated by slashes, for
-    # example the ARN of a DynamoDB stream is tableARN/stream/ID.  It's
+    # example the ARN of a DynamoDB stream is tableARN/stream/ID. It's
     # a little counterintuitive that a more specific mapped ARN can
     # match a less specific ARN on the event, but some integration tests
     # rely on it for things like subscribing to a stream and matching an
     # event labeled with the table ARN.
-    elif mapped.startswith(occurred):
-        suffix = mapped[len(occurred):]
+    if re.match(r'^%s$' % searched, mapped):
+        return True
+    if mapped.startswith(searched):
+        suffix = mapped[len(searched):]
         return suffix[0] == '/'
-    else:
-        return False
+    return False
 
 
 def get_function_version(arn, version):
@@ -362,7 +430,8 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 @cloudwatched('lambda')
-def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False):
+def run_lambda(event, context, func_arn, version=None, suppress_output=False,
+        asynchronous=False, callback=None):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -376,8 +445,8 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
             return not_found_error(msg='The resource specified in the request does not exist.')
         if not context:
             context = LambdaContext(func_details, version)
-        result, log_output = LAMBDA_EXECUTOR.execute(func_arn, func_details,
-            event, context=context, version=version, asynchronous=asynchronous)
+        result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
+            version=version, asynchronous=asynchronous, callback=callback)
     except Exception as e:
         return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
     finally:
@@ -488,7 +557,7 @@ def get_zip_bytes(function_code):
     return zip_file_content
 
 
-def get_java_handler(zip_file_content, handler, main_file):
+def get_java_handler(zip_file_content, main_file, func_details=None):
     """Creates a Java handler from an uploaded ZIP or JAR.
 
     :type zip_file_content: bytes
@@ -502,8 +571,8 @@ def get_java_handler(zip_file_content, handler, main_file):
     """
     if is_zip_file(zip_file_content):
         def execute(event, context):
-            result, log_output = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
-                event, context, handler=handler, main_file=main_file)
+            result = lambda_executors.EXECUTOR_LOCAL.execute_java_lambda(
+                event, context, main_file=main_file, func_details=func_details)
             return result
         return execute
     raise ClientError(error_response(
@@ -511,7 +580,6 @@ def get_java_handler(zip_file_content, handler, main_file):
 
 
 def set_archive_code(code, lambda_name, zip_file_content=None):
-
     # get metadata
     lambda_arn = func_arn(lambda_name)
     lambda_details = arn_to_lambda[lambda_arn]
@@ -548,7 +616,6 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
 
 
 def set_function_code(code, lambda_name, lambda_cwd=None):
-
     def generic_handler(event, context):
         raise ClientError(('Unable to find executor for Lambda function "%s". Note that ' +
             'Node.js, Golang, and .Net Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
@@ -557,7 +624,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
     lambda_details = arn_to_lambda[arn]
     runtime = lambda_details.runtime
     lambda_environment = lambda_details.envvars
-    handler_name = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
+    handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
     code_passed = code
     code = code or lambda_details.code
     is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
@@ -585,7 +652,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         # The Lambda executors for Docker subclass LambdaExecutorContainers, which
         # runs Lambda in Docker by passing all *.jar files in the function working
         # directory as part of the classpath. Obtain a Java handler function below.
-        lambda_handler = get_java_handler(zip_file_content, handler_name, tmp_file)
+        lambda_handler = get_java_handler(zip_file_content, tmp_file, func_details=lambda_details)
 
     if not is_local_mount:
         # Lambda code must be uploaded in Zip format
@@ -598,7 +665,6 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
 
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
-
         handler_file = get_handler_file_from_name(handler_name, runtime=runtime)
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
@@ -631,7 +697,6 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
                 raise ClientError('Unable to get handler function from lambda code.', e)
 
     add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
-
     return {'FunctionName': lambda_name}
 
 
@@ -675,7 +740,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
             'Variables': func_details.envvars
         }
     if (always_add_version or version != '$LATEST') and len(result['FunctionArn'].split(':')) <= 7:
-        result['FunctionArn'] += ':%s' % (version)
+        result['FunctionArn'] += ':%s' % version
     return result
 
 
@@ -1145,7 +1210,9 @@ def create_event_source_mapping():
               in: body
     """
     data = json.loads(to_str(request.data))
-    mapping = add_event_source(data['FunctionName'], data['EventSourceArn'], data.get('Enabled'))
+    mapping = add_event_source(
+        data['FunctionName'], data['EventSourceArn'], data.get('Enabled'), data.get('BatchSize')
+    )
     return jsonify(mapping)
 
 

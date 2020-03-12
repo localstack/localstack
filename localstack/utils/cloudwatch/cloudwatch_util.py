@@ -1,10 +1,13 @@
 import time
+import logging
 from datetime import datetime
 from flask import Response
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import now_utc, to_str
 from localstack.utils.analytics import event_publisher
+
+LOG = logging.getLogger(__name__)
 
 
 # ---------------
@@ -93,10 +96,10 @@ def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_tim
         logEvents=log_events
     )
 
+
 # ---------------
 # Helper methods
 # ---------------
-
 
 def _func_name(kwargs):
     func_name = kwargs.get('func_name')
@@ -115,12 +118,16 @@ def publish_result(ns, time_before, result, kwargs):
     if ns == 'lambda':
         publish_lambda_result(time_before, result, kwargs)
         publish_event(time_before, 'success', kwargs)
+    else:
+        LOG.info('Unexpected CloudWatch namespace: %s' % ns)
 
 
 def publish_error(ns, time_before, e, kwargs):
     if ns == 'lambda':
         publish_lambda_error(time_before, kwargs)
         publish_event(time_before, 'error', kwargs)
+    else:
+        LOG.info('Unexpected CloudWatch namespace: %s' % ns)
 
 
 def cloudwatched(ns):

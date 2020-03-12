@@ -12,8 +12,8 @@ from requests.models import Response
 from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS,
-    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND,
-    DEFAULT_PORT_EC2_BACKEND, DEFAULT_PORT_EVENTS_BACKEND, DEFAULT_SERVICE_PORTS)
+    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_EVENTS_BACKEND,
+    DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
@@ -153,12 +153,6 @@ def start_secretsmanager(port=None, asynchronous=False):
     return start_moto_server('secretsmanager', port, name='Secrets Manager', asynchronous=asynchronous)
 
 
-def start_ec2(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_EC2
-    return start_moto_server('ec2', port, name='EC2', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_EC2_BACKEND, update_listener=update_listener)
-
-
 # ---------------
 # HELPER METHODS
 # ---------------
@@ -243,10 +237,10 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def do_run(cmd, asynchronous, print_output=False, env_vars={}):
+def do_run(cmd, asynchronous, print_output=None, env_vars={}):
     sys.stdout.flush()
     if asynchronous:
-        if is_debug():
+        if is_debug() and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
         t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)

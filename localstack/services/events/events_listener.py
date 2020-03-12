@@ -3,9 +3,7 @@ import os
 import re
 import time
 import uuid
-
 from requests.models import Response
-
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.services.generic_proxy import ProxyListener
