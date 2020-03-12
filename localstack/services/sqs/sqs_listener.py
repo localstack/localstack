@@ -228,6 +228,8 @@ class ProxyListenerSQS(ProxyListener):
                 QUEUE_ATTRIBUTES.pop(_queue_url(path, req_data, headers), None)
 
             elif action == 'ListDeadLetterSourceQueues':
+                queue_url = _queue_url(path, req_data, headers)
+
 
 
             if 'QueueName' in req_data:
