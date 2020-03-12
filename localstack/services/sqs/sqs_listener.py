@@ -180,6 +180,21 @@ def _add_queue_attributes(path, req_data, content_str, headers):
     return content_str
 
 
+def _list_dead_letter_source_queues(queues, queue_url):
+    dead_letter_source_queues = []
+    for k, v in queues.items():
+        for i, j in v.items():
+            if(i == 'RedrivePolicy'):
+                f = json.loads(v[i])
+                queue_url_split = queue_url.split('/')
+                if(queue_url_split[len(queue_url_split)-1] in f['deadLetterTargetArn']):
+                    x = f['deadLetterTargetArn'].rsplit(':')
+                    dead_letter_source_queues.append(k)
+                
+    return format_list_dl_source_queues_response(dead_letter_source_queues)
+
+
+
 class ProxyListenerSQS(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
