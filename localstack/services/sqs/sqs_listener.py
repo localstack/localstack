@@ -227,6 +227,9 @@ class ProxyListenerSQS(ProxyListener):
             elif action == 'DeleteQueue':
                 QUEUE_ATTRIBUTES.pop(_queue_url(path, req_data, headers), None)
 
+            elif action == 'ListDeadLetterSourceQueues':
+
+
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
                 modified_url = None
