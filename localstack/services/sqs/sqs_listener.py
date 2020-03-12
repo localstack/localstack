@@ -229,6 +229,8 @@ class ProxyListenerSQS(ProxyListener):
 
             elif action == 'ListDeadLetterSourceQueues':
                 queue_url = _queue_url(path, req_data, headers)
+                headers = {'content-type': 'application/xhtml+xml'}                    
+                content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
 
 
 
