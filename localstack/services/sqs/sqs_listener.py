@@ -233,6 +233,7 @@ class ProxyListenerSQS(ProxyListener):
                 content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
 
                 new_response = Response()
+                new_response.status_code = 200
                 new_response.headers = headers
                 new_response._content = content_str
                 new_response.headers['content-length'] = len(new_response._content)
