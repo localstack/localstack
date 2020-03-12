@@ -11,6 +11,7 @@ def register_localstack_plugins():
 
     # register default plugins
     try:
+        from localstack.services.apigateway import apigateway_starter
         from localstack.services.s3 import s3_listener, s3_starter
         from localstack.services.ec2 import ec2_starter
         from localstack.services.kms import kms_starter
@@ -19,9 +20,10 @@ def register_localstack_plugins():
         from localstack.services.iam import iam_listener, iam_starter
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.infra import (
-            start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
+            start_sns, start_ses, start_elasticsearch_service, start_lambda, start_secretsmanager,
             start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
-            start_ssm, start_sts, start_secretsmanager)
+            start_ssm, start_sts
+        )
         from localstack.services.plugins import Plugin, register_plugin
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
@@ -32,7 +34,7 @@ def register_localstack_plugins():
 
         register_plugin(Plugin(
             'apigateway',
-            start=start_apigateway,
+            start=apigateway_starter.start_apigateway,
             listener=apigateway_listener.UPDATE_APIGATEWAY))
 
         register_plugin(Plugin(
