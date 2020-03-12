@@ -377,36 +377,43 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual(result_data['event'], json.loads('{}'))
 
     def test_python3_runtime_multple_create_with_conflicting_module(self):
-        python3_with_settings1 = load_file(TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1, mode='rb')
-        python3_with_settings2 = load_file(TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2, mode='rb')
+        original_do_use_docker = lambda_api.DO_USE_DOCKER
+        try:
+            # always use the local runner
+            lambda_api.DO_USE_DOCKER = False
 
-        lambda_name1 = 'test1-%s' % short_uid()
-        testutil.create_lambda_function(func_name=lambda_name1,
-                                        zip_file=python3_with_settings1,
-                                        runtime=LAMBDA_RUNTIME_PYTHON36,
-                                        handler='handler1.handler')
+            python3_with_settings1 = load_file(TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1, mode='rb')
+            python3_with_settings2 = load_file(TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2, mode='rb')
 
-        lambda_name2 = 'test2-%s' % short_uid()
-        testutil.create_lambda_function(func_name=lambda_name2,
-                                        zip_file=python3_with_settings2,
-                                        runtime=LAMBDA_RUNTIME_PYTHON36,
-                                        handler='handler2.handler')
+            lambda_name1 = 'test1-%s' % short_uid()
+            testutil.create_lambda_function(func_name=lambda_name1,
+                                            zip_file=python3_with_settings1,
+                                            runtime=LAMBDA_RUNTIME_PYTHON36,
+                                            handler='handler1.handler')
 
-        result1 = self.lambda_client.invoke(FunctionName=lambda_name1, Payload=b'{}')
-        result_data1 = result1['Payload'].read()
+            lambda_name2 = 'test2-%s' % short_uid()
+            testutil.create_lambda_function(func_name=lambda_name2,
+                                            zip_file=python3_with_settings2,
+                                            runtime=LAMBDA_RUNTIME_PYTHON36,
+                                            handler='handler2.handler')
 
-        result2 = self.lambda_client.invoke(FunctionName=lambda_name2, Payload=b'{}')
-        result_data2 = result2['Payload'].read()
+            result1 = self.lambda_client.invoke(FunctionName=lambda_name1, Payload=b'{}')
+            result_data1 = result1['Payload'].read()
 
-        self.assertEqual(result1['StatusCode'], 200)
-        self.assertIn('setting1', to_str(result_data1))
+            result2 = self.lambda_client.invoke(FunctionName=lambda_name2, Payload=b'{}')
+            result_data2 = result2['Payload'].read()
 
-        self.assertEqual(result2['StatusCode'], 200)
-        self.assertIn('setting2', to_str(result_data2))
+            self.assertEqual(result1['StatusCode'], 200)
+            self.assertIn('setting1', to_str(result_data1))
 
-        # clean up
-        testutil.delete_lambda_function(lambda_name1)
-        testutil.delete_lambda_function(lambda_name2)
+            self.assertEqual(result2['StatusCode'], 200)
+            self.assertIn('setting2', to_str(result_data2))
+
+            # clean up
+            testutil.delete_lambda_function(lambda_name1)
+            testutil.delete_lambda_function(lambda_name2)
+        finally:
+            lambda_api.DO_USE_DOCKER = original_do_use_docker
 
 
 class TestNodeJSRuntimes(LambdaTestBase):
