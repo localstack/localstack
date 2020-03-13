@@ -724,6 +724,9 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'RevisionId': func_version.get('RevisionId'),
         'State': 'Active'
     }
+    if func_details.dead_letter_config:
+        result['DeadLetterConfig'] = func_details.dead_letter_config
+
     if func_details.envvars:
         result['Environment'] = {
             'Variables': func_details.envvars
