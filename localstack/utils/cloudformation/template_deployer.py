@@ -73,9 +73,17 @@ def params_list_to_dict(param_name, key_attr_name, value_attr_name):
     return do_replace
 
 
-def get_nested_stack_name(params, **kwargs):
+def get_nested_stack_params(params, **kwargs):
     stack_name = kwargs.get('stack_name', 'stack')
-    return '%s-%s' % (stack_name, common.short_uid())
+    nested_stack_name = '%s-%s' % (stack_name, common.short_uid())
+    stack_params = params.get('Parameters', {})
+    stack_params = [{'ParameterKey': k, 'ParameterValue': v} for k, v in stack_params.items()]
+    result = {
+        'StackName': nested_stack_name,
+        'TemplateURL': params.get('TemplateURL'),
+        'Parameters': stack_params
+    }
+    return result
 
 
 def get_lambda_code_param(params, **kwargs):
@@ -434,10 +442,7 @@ RESOURCE_TO_FUNCTION = {
     'CloudFormation::Stack': {
         'create': {
             'function': 'create_stack',
-            'parameters': {
-                'StackName': get_nested_stack_name,
-                'TemplateURL': 'TemplateURL'
-            }
+            'parameters': get_nested_stack_params
         }
     }
 }

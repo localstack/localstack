@@ -46,21 +46,31 @@ Resources:
 """
 TEST_TEMPLATE_5 = """
 AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  LocalParam:
+    Description: Local stack parameter (passed from parent stack)
+    Type: String
 Resources:
   S3Setup:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: test-%s
-""" % short_uid()
+      BucketName: !Sub 'test-${LocalParam}'
+"""
 TEST_ARTIFACTS_BUCKET = 'cf-artifacts'
 TEST_ARTIFACTS_PATH = 'stack.yaml'
 TEST_TEMPLATE_6 = """
 AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  GlobalParam:
+    Description: Global stack parameter
+    Type: String
 Resources:
   NestedStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: http://localhost:4572/%s/%s
+      Parameters:
+        LocalParam: !Ref GlobalParam
 """ % (TEST_ARTIFACTS_BUCKET, TEST_ARTIFACTS_PATH)
 
 TEST_TEMPLATE_7 = json.dumps({
@@ -354,11 +364,16 @@ class CloudFormationTest(unittest.TestCase):
         # deploy template
         buckets_before = len(s3.list_buckets()['Buckets'])
         stack_name = 'stack-%s' % short_uid()
-        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_6)
+        param_value = short_uid()
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_6,
+            Parameters=[{'ParameterKey': 'GlobalParam', 'ParameterValue': param_value}])
 
         # assert that nested resources have been created
-        buckets_after = len(s3.list_buckets()['Buckets'])
-        self.assertEqual(buckets_after, buckets_before + 1)
+        buckets_after = s3.list_buckets()['Buckets']
+        num_buckets_after = len(buckets_after)
+        self.assertEqual(num_buckets_after, buckets_before + 1)
+        bucket_names = [b['Name'] for b in buckets_after]
+        self.assertIn('test-%s' % param_value, bucket_names)
 
         # delete the stack
         cloudformation.delete_stack(StackName=stack_name)
