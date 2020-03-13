@@ -1,10 +1,6 @@
-import json
 import logging
 from moto.apigateway import models as apigateway_models
-from moto.apigateway import responses as apigateway_responses
-from moto.apigateway.exceptions import (
-    BadRequestException, CrossAccountNotAllowed, MethodNotFoundException
-)
+from moto.apigateway.exceptions import MethodNotFoundException
 from localstack import config
 from localstack.constants import DEFAULT_PORT_APIGATEWAY_BACKEND
 from localstack.services.infra import start_moto_server
