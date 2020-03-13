@@ -37,9 +37,7 @@ class AuthorizationError(Exception):
 
 
 class ProxyListenerApiGateway(ProxyListener):
-
     def forward_request(self, method, path, data, headers):
-
         if re.match(PATH_REGEX_USER_REQUEST, path):
             search_match = re.search(PATH_REGEX_USER_REQUEST, path)
             api_id = search_match.group(1)
@@ -282,8 +280,6 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                (integration['type'], method))
         LOGGER.warning(msg)
         return make_error_response(msg, 404)
-
-    return 200
 
 
 # instantiate listener
