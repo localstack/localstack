@@ -292,7 +292,10 @@ class SQSTest(unittest.TestCase):
         self.assertEqual(res['queueUrls'][0], nq)
         self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
 
+        self.assertEqual(res['queueUrls'][0], nq)
+        self.assertEqual(len(res['queueUrls']), 1)
+        self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
+
         # clean up
         self.client.delete_queue(QueueUrl=nq)
-        self.assertEqual(len(res['queueUrls']), 1)
         self.client.delete_queue(QueueUrl=dlq['QueueUrl'])
