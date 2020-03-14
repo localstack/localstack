@@ -188,7 +188,7 @@ def _list_dead_letter_source_queues(queues, queue_url):
             if i == 'RedrivePolicy':
                 f = json.loads(v[i])
                 queue_url_split = queue_url.split('/')
-                if(queue_url_split[len(queue_url_split) - 1] in f['deadLetterTargetArn']):
+                if queue_url_split[-1] in f['deadLetterTargetArn']:
                     dead_letter_source_queues.append(k)
     return format_list_dl_source_queues_response(dead_letter_source_queues)
 
