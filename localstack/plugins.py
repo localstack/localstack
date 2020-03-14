@@ -20,9 +20,8 @@ def register_localstack_plugins():
         from localstack.services.iam import iam_listener, iam_starter
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.infra import (
-            start_sns, start_ses, start_elasticsearch_service, start_lambda, start_secretsmanager,
-            start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
-            start_ssm, start_sts
+            start_sns, start_ses, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
+            start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53
         )
         from localstack.services.plugins import Plugin, register_plugin
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
@@ -31,6 +30,7 @@ def register_localstack_plugins():
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
         from localstack.services.events import events_listener, events_starter
+        from localstack.services.secretsmanager import secretsmanager_starter
 
         register_plugin(Plugin(
             'apigateway',
@@ -109,7 +109,7 @@ def register_localstack_plugins():
 
         register_plugin(Plugin(
             'secretsmanager',
-            start=start_secretsmanager))
+            start=secretsmanager_starter.start_secretsmanager))
 
         register_plugin(Plugin(
             'ses',
