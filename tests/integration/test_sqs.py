@@ -294,4 +294,5 @@ class SQSTest(unittest.TestCase):
 
         # clean up
         self.client.delete_queue(QueueUrl=nq)
+        self.assertEqual(len(res['queueUrls']), 1)
         self.client.delete_queue(QueueUrl=dlq['QueueUrl'])

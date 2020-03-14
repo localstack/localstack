@@ -13,6 +13,7 @@ from localstack.utils.common import to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.aws.aws_responses import requests_response
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
@@ -231,13 +232,7 @@ class ProxyListenerSQS(ProxyListener):
                 headers = {'content-type': 'application/xhtml+xml'}
                 content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
 
-                new_response = Response()
-                new_response.status_code = 200
-                new_response.headers = headers
-                new_response._content = content_str
-                new_response.headers['content-length'] = len(new_response._content)
-
-                return new_response
+                return requests_response(content_str, headers=headers)
 
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
