@@ -187,25 +187,24 @@ def _list_dead_letter_source_queues(queues, queue_url):
             if(i == 'RedrivePolicy'):
                 f = json.loads(v[i])
                 queue_url_split = queue_url.split('/')
-                if(queue_url_split[len(queue_url_split)-1] in f['deadLetterTargetArn']):
-                    x = f['deadLetterTargetArn'].rsplit(':')
+                if(queue_url_split[len(queue_url_split) - 1] in f['deadLetterTargetArn']):
                     dead_letter_source_queues.append(k)
-                
     return format_list_dl_source_queues_response(dead_letter_source_queues)
 
 
 def format_list_dl_source_queues_response(queues):
-    content_str= """<ListDeadLetterSourceQueuesResponse xmlns="{}">
+    content_str = """<ListDeadLetterSourceQueuesResponse xmlns="{}">
                         <ListDeadLetterSourceQueuesResult>
                         {}
                         </ListDeadLetterSourceQueuesResult>
                     </ListDeadLetterSourceQueuesResponse>"""
 
-    queue_urls = ''              
+    queue_urls = ''
     for q in queues:
         queue_urls += '<QueueUrl>{}</QueueUrl>'.format(q)
 
     return content_str.format(XMLNS_SQS, queue_urls)
+
 
 class ProxyListenerSQS(ProxyListener):
     def forward_request(self, method, path, data, headers):
@@ -229,7 +228,7 @@ class ProxyListenerSQS(ProxyListener):
 
             elif action == 'ListDeadLetterSourceQueues':
                 queue_url = _queue_url(path, req_data, headers)
-                headers = {'content-type': 'application/xhtml+xml'}                    
+                headers = {'content-type': 'application/xhtml+xml'}
                 content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
 
                 new_response = Response()
@@ -239,8 +238,6 @@ class ProxyListenerSQS(ProxyListener):
                 new_response.headers['content-length'] = len(new_response._content)
 
                 return new_response
-
-
 
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
