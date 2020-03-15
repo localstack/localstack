@@ -272,3 +272,27 @@ class SQSTest(unittest.TestCase):
 
         # cleanup
         self.client.delete_queue(QueueUrl=queue_url)
+
+    def test_list_dead_letter_source_queues(self):
+        normal_queue_name = 'queue-%s' % short_uid()
+        dlq_name = 'queue-%s' % short_uid()
+
+        dlq = self.client.create_queue(QueueName=dlq_name)
+
+        dlq_arn = aws_stack.sqs_queue_arn(dlq_name)
+
+        attributes = {'RedrivePolicy': json.dumps({'deadLetterTargetArn': dlq_arn, 'maxReceiveCount': 100})}
+        nq = self.client.create_queue(QueueName=normal_queue_name, Attributes=attributes)['QueueUrl']
+
+        res = self.client.list_dead_letter_source_queues(QueueUrl=dlq['QueueUrl'])
+
+        self.assertEqual(res['queueUrls'][0], nq)
+        self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        self.assertEqual(res['queueUrls'][0], nq)
+        self.assertEqual(len(res['queueUrls']), 1)
+        self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=nq)
+        self.client.delete_queue(QueueUrl=dlq['QueueUrl'])
