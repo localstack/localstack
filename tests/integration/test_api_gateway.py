@@ -12,7 +12,7 @@ from localstack import config
 from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, load_file, json_safe, clone
+from localstack.utils.common import to_str, json_safe, clone
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import (
@@ -470,14 +470,9 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         )
 
     def create_lambda_function(self, fn_name):
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
         testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON,
+            libs=TEST_LAMBDA_LIBS,
             func_name=fn_name,
-            zip_file=zip_file,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )

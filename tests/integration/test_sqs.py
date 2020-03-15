@@ -3,7 +3,7 @@ import unittest
 
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, load_file, retry
+from localstack.utils.common import short_uid, retry
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
 
@@ -172,11 +172,8 @@ class SQSTest(unittest.TestCase):
 
         # create Lambda and add source mapping
         lambda_name = 'test-%s' % short_uid()
-        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON),
-                                                  get_content=True, libs=TEST_LAMBDA_LIBS,
-                                                  runtime=LAMBDA_RUNTIME_PYTHON36)
-        testutil.create_lambda_function(func_name=lambda_name, zip_file=zip_file,
-                                        runtime=LAMBDA_RUNTIME_PYTHON36)
+        testutil.create_lambda_function(func_name=lambda_name, libs=TEST_LAMBDA_LIBS,
+            handler_file=TEST_LAMBDA_PYTHON, runtime=LAMBDA_RUNTIME_PYTHON36)
         lambda_client.create_event_source_mapping(EventSourceArn=queue_arn2, FunctionName=lambda_name)
 
         # add message to SQS, which will trigger the Lambda, resulting in an error

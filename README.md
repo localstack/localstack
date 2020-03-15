@@ -265,25 +265,18 @@ The service health check endpoint `http://localhost:8080/health` provides basic 
 
 When a container is started for the first time, it will execute files with extensions .sh that are found in `/docker-entrypoint-initaws.d`. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
 
-## Using custom SSL certificates (for `USE_SSL=1`)
+## Using custom SSL certificates
 
-If you need to use your own SSL Certificate and keep it persistent and not use the random automatic generated Certificate, you can place into the localstack temporary directory :
+To use your own SSL certificate (for `USE_SSL=1`) instead of the randomly generated certificate, you can place a file `server.test.pem` into the LocalStack temporary directory (`$TMPDIR/localstack`, or `/tmp/localstack` by default). The file `server.test.pem` must contain the key file, as well as the certificate file content:
 
 ```
-/tmp/localstack/
+-----BEGIN PRIVATE KEY-----
+...
+-----END PRIVATE KEY-----
+-----BEGIN CERTIFICATE-----
+...
+-----END CERTIFICATE-----
 ```
-
-the three named files below :
-
-```bash
-server.test.pem
-server.test.pem.crt
-server.test.pem.key
-```
-
-- the file `server.test.pem` must contains your key file content, your certificate and chain certificate files contents (do a cat in this order)
- - the file `server.test.pem.crt` must contains your certificate and chains files contents (do a 'cat' in this order)
-- the file server.test.pem.key must contains your key file content
 
 ### Using USE_SSL and own persistent certificate with docker-compose
 
