@@ -9,7 +9,7 @@ SECRET_ARN_STORAGE = {}
 def apply_patches():
     secret_arn_orig = secretsmanager_models.secret_arn
 
-    def secretsmanager_urls_secret_arn(region, secret_id):
+    def secretsmanager_models_secret_arn(region, secret_id):
         k = '{}_{}'.format(region, secret_id)
         if k not in SECRET_ARN_STORAGE:
             arn = secret_arn_orig(region, secret_id)
@@ -17,7 +17,7 @@ def apply_patches():
 
         return SECRET_ARN_STORAGE[k]
 
-    secretsmanager_models.secret_arn = secretsmanager_urls_secret_arn
+    secretsmanager_models.secret_arn = secretsmanager_models_secret_arn
 
 
 def start_secretsmanager(port=None, asynchronous=None):

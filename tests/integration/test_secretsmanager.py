@@ -1,4 +1,6 @@
 import unittest
+
+from datetime import datetime
 from localstack.utils.aws import aws_stack
 
 TEST_SECRET_NAME_1 = 'test_secret_put'
@@ -25,6 +27,7 @@ class SecretsManagerTest(unittest.TestCase):
         self.assertEqual(rs['Name'], TEST_SECRET_NAME_1)
         self.assertEqual(rs['SecretString'], 'my_secret')
         self.assertEqual(rs['ARN'], secret_arn)
+        self.assertTrue(isinstance(rs['CreatedDate'], datetime))
 
         # clean up
         self.secretsmanager_client.delete_secret(
