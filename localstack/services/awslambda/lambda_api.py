@@ -471,8 +471,19 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
     TMP_FILES.append(lambda_file)
     TMP_FILES.append('%sc' % lambda_file)
     try:
-        handler_module = imp.load_source(lambda_id, lambda_file)
-        module_vars = handler_module.__dict__
+        pre_sys_modules_keys = set(sys.modules.keys())
+        try:
+            handler_module = imp.load_source(lambda_id, lambda_file)
+            module_vars = handler_module.__dict__
+        finally:
+            # the above import can bring files for the function
+            # (eg settings.py) into the global namespace. subsequent
+            # calls can pick up file from another function, causing
+            # general issues.
+            post_sys_modules_keys = set(sys.modules.keys())
+            for key in post_sys_modules_keys:
+                if key not in pre_sys_modules_keys:
+                    sys.modules.pop(key)
     except Exception as e:
         LOG.error('Unable to exec: %s %s' % (script, traceback.format_exc()))
         raise e
