@@ -4,8 +4,9 @@ import six
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.exceptions import MessageRejectedError
 from localstack import config
-from localstack.constants import DEFAULT_PORT_SES
+from localstack.constants import DEFAULT_PORT_SES_BACKEND
 from localstack.services.infra import start_moto_server
+from localstack.utils.common import to_str
 
 
 def apply_patches():
@@ -21,12 +22,10 @@ def apply_patches():
 
     def email_responses_send_raw_email(self):
         (source, ) = self.querystring.get('Source', [''])
-        if bool(source):
+        if bool(source.strip()):
             return email_responses_send_raw_email_orig(self)
 
-        raw_data = base64.b64decode(self.querystring.get('RawMessage.Data')[0])
-        if six.PY3:
-            raw_data = raw_data.decode('utf-8')
+        raw_data = to_str(base64.b64decode(self.querystring.get('RawMessage.Data')[0]))
 
         source = get_source_from_raw(raw_data)
         if not bool(source):
@@ -40,7 +39,7 @@ def apply_patches():
 
 def start_ses(port=None, backend_port=None, asynchronous=None):
     port = port or config.PORT_SES
-    backend_port = backend_port or DEFAULT_PORT_SES
+    backend_port = backend_port or DEFAULT_PORT_SES_BACKEND
 
     apply_patches()
 
