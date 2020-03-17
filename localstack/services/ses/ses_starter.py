@@ -21,13 +21,13 @@ def apply_patches():
 
     def email_responses_send_raw_email(self):
         (source, ) = self.querystring.get('Source', [''])
-        if bool(source.strip()):
+        if source.strip():
             return email_responses_send_raw_email_orig(self)
 
         raw_data = to_str(base64.b64decode(self.querystring.get('RawMessage.Data')[0]))
 
         source = get_source_from_raw(raw_data)
-        if not bool(source):
+        if not source:
             raise MessageRejectedError('Source not specified')
 
         self.querystring['Source'] = [source]
