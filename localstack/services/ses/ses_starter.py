@@ -1,5 +1,4 @@
 import base64
-import six
 
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.exceptions import MessageRejectedError
