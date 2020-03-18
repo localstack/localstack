@@ -364,14 +364,21 @@ class SNSTest(unittest.TestCase):
     def test_publish_with_empty_subject(self):
         topic_arn = self.sns_client.create_topic(Name=TEST_TOPIC_NAME_2)['TopicArn']
 
+        # Publish without subject
+        rs = self.sns_client.publish(
+            TopicArn=topic_arn,
+            Message=json.dumps({'message': 'test_publish'})
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
         try:
+            # Publish with empty subject
             self.sns_client.publish(
                 TopicArn=topic_arn,
                 Subject='',
                 Message=json.dumps({'message': 'test_publish'})
             )
-
-            self.assertFalse()
+            self.fail('This call should not be successful as the subject is empty')
 
         except ClientError as e:
             self.assertEqual(e.response['Error']['Code'], 'InvalidParameter')

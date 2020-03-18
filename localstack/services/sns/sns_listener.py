@@ -100,7 +100,9 @@ class ProxyListenerSNS(ProxyListener):
                 do_delete_topic(topic_arn)
 
             elif req_action == 'Publish':
-                if 'Subject' not in req_data:
+                # Parse request data, keep param with empty value
+                params = set([p.split('=')[0] for p in to_str(data).split('&')])
+                if 'Subject' in params and 'Subject' not in req_data:
                     return make_error(code=400, code_string='InvalidParameter', message='Subject')
 
                 # No need to create a topic to send SMS or single push notifications with SNS
