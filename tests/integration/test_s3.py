@@ -18,10 +18,12 @@ TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
 TEST_BUCKET_WITH_VERSIONING = 'test-bucket-versioning-1'
 
+TEST_BUCKET_NAME_2 = 'test-bucket-2'
+TEST_KEY_2 = 'test-key-2'
+
 
 class PutRequest(Request):
     """ Class to handle putting with urllib """
-
     def __init__(self, *args, **kwargs):
         return Request.__init__(self, *args, **kwargs)
 
@@ -30,7 +32,6 @@ class PutRequest(Request):
 
 
 class S3ListenerTest(unittest.TestCase):
-
     def setUp(self):
         self.s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
@@ -742,6 +743,20 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,
                                              VersioningConfiguration={'Status': 'Disabled'})
         self._delete_bucket(TEST_BUCKET_WITH_VERSIONING, [test_1st_key, test_2nd_key])
+
+    def test_etag_on_get_object_call(self):
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_2)
+
+        body = 'Lorem ipsum dolor sit amet, ... ' * 30
+        rs = self.s3_client.put_object(Bucket=TEST_BUCKET_NAME_2, Key=TEST_KEY_2, Body=body)
+        etag = rs['ETag']
+
+        rs = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key=TEST_KEY_2)
+        self.assertIn('ETag', rs)
+        self.assertEqual(etag, rs['ETag'])
+
+        # clean up
+        self._delete_bucket(TEST_BUCKET_NAME_2, [TEST_KEY_2])
 
     # ---------------
     # HELPER METHODS
