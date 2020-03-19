@@ -20,6 +20,7 @@ TEST_BUCKET_WITH_VERSIONING = 'test-bucket-versioning-1'
 
 TEST_BUCKET_NAME_2 = 'test-bucket-2'
 TEST_KEY_2 = 'test-key-2'
+TEST_GET_OBJECT_RANGE = 17
 
 
 class PutRequest(Request):
@@ -751,9 +752,22 @@ class S3ListenerTest(unittest.TestCase):
         rs = self.s3_client.put_object(Bucket=TEST_BUCKET_NAME_2, Key=TEST_KEY_2, Body=body)
         etag = rs['ETag']
 
-        rs = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key=TEST_KEY_2)
+        rs = self.s3_client.get_object(
+            Bucket=TEST_BUCKET_NAME_2,
+            Key=TEST_KEY_2
+        )
         self.assertIn('ETag', rs)
         self.assertEqual(etag, rs['ETag'])
+        self.assertEqual(rs['ContentLength'], len(body))
+
+        rs = self.s3_client.get_object(
+            Bucket=TEST_BUCKET_NAME_2,
+            Key=TEST_KEY_2,
+            Range='bytes=0-{}'.format(TEST_GET_OBJECT_RANGE - 1)
+        )
+        self.assertIn('ETag', rs)
+        self.assertEqual(etag, rs['ETag'])
+        self.assertEqual(rs['ContentLength'], TEST_GET_OBJECT_RANGE)
 
         # clean up
         self._delete_bucket(TEST_BUCKET_NAME_2, [TEST_KEY_2])
@@ -783,7 +797,8 @@ class S3ListenerTest(unittest.TestCase):
 
     def _get_test_queue_message_count(self, queue_url):
         queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
+            QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages']
+        )
         return queue_attributes['Attributes']['ApproximateNumberOfMessages']
 
     def _delete_bucket(self, bucket_name, keys=[]):
@@ -796,7 +811,7 @@ class S3ListenerTest(unittest.TestCase):
     def _perform_multipart_upload(self, bucket, key, data=None, zip=False, acl=None):
         kwargs = {'ACL': acl} if acl else {}
         multipart_upload_dict = self.s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
-        uploadId = multipart_upload_dict['UploadId']
+        upload_id = multipart_upload_dict['UploadId']
 
         # Write contents to memory rather than a file.
         data = data or (5 * short_uid())
@@ -808,12 +823,13 @@ class S3ListenerTest(unittest.TestCase):
                 filestream.write(data)
 
         response = self.s3_client.upload_part(Bucket=bucket, Key=key,
-            Body=upload_file_object, PartNumber=1, UploadId=uploadId)
+            Body=upload_file_object, PartNumber=1, UploadId=upload_id)
 
         multipart_upload_parts = [{'ETag': response['ETag'], 'PartNumber': 1}]
 
-        return self.s3_client.complete_multipart_upload(Bucket=bucket,
-            Key=key, MultipartUpload={'Parts': multipart_upload_parts}, UploadId=uploadId)
+        return self.s3_client.complete_multipart_upload(
+            Bucket=bucket, Key=key, MultipartUpload={'Parts': multipart_upload_parts}, UploadId=upload_id
+        )
 
     def _perform_presigned_url_upload(self, bucket, key):
         url = self.s3_client.generate_presigned_url(
