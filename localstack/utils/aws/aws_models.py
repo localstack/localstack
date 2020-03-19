@@ -1,6 +1,8 @@
 import time
 import json
 import six
+from datetime import datetime
+from localstack.utils.common import isoformat_milliseconds
 
 if six.PY3:
     long = int
@@ -174,6 +176,9 @@ class LambdaFunction(Component):
         self.memory_size = None
         self.code = None
         self.dead_letter_config = None
+        self.on_successful_invocation = None
+        self.max_retry_attempt = None
+        self.max_event_age = None
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')
@@ -183,6 +188,42 @@ class LambdaFunction(Component):
         target_arn = config.get('TargetArn') or ''
         if ':sqs:' not in target_arn and ':sns:' not in target_arn:
             raise Exception('Dead letter queue ARN "%s" requires a valid SQS queue or SNS topic' % target_arn)
+
+    def put_function_event_invoke_config(self, data):
+        updated = False
+        if isinstance(data, dict) and 'DestinationConfig' in data.keys():
+            if 'OnFailure' in data['DestinationConfig'].keys():
+                dlq_arn = data['DestinationConfig']['OnFailure']['Destination']
+                self.dead_letter_config = dlq_arn
+                updated = True
+
+            if 'OnSuccess' in data['DestinationConfig'].keys():
+                sq_arn = data['DestinationConfig']['OnSuccess']['Destination']
+                self.on_successful_invocation = sq_arn
+                updated = True
+
+        if isinstance(data, dict) and 'MaximumRetryAttempts' in data.keys():
+            try:
+                max_retry_attempt = int(data['MaximumRetryAttempts'])
+            except Exception:
+                max_retry_attempt = 3
+
+            self.max_retry_attempt = max_retry_attempt
+            updated = True
+
+        if isinstance(data, dict) and 'MaximumEventAgeInSeconds' in data.keys():
+            try:
+                max_event_age = int(data['MaximumEventAgeInSeconds'])
+            except Exception:
+                max_event_age = 3600
+
+            self.max_event_age = max_event_age
+            updated = True
+
+        if updated:
+            self.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+
+        return self
 
     def get_version(self, version):
         return self.versions.get(version)
