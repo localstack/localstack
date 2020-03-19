@@ -11,6 +11,7 @@ def register_localstack_plugins():
 
     # register default plugins
     try:
+        from localstack.services.apigateway import apigateway_starter
         from localstack.services.s3 import s3_listener, s3_starter
         from localstack.services.ec2 import ec2_starter
         from localstack.services.kms import kms_starter
@@ -18,10 +19,11 @@ def register_localstack_plugins():
         from localstack.services.sqs import sqs_listener, sqs_starter
         from localstack.services.iam import iam_listener, iam_starter
         from localstack.services.logs import logs_listener, logs_starter
+        from localstack.services.ses import ses_starter
         from localstack.services.infra import (
-            start_sns, start_ses, start_apigateway, start_elasticsearch_service, start_lambda,
-            start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_route53,
-            start_ssm, start_sts, start_secretsmanager)
+            start_sns, start_route53, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
+            start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams
+        )
         from localstack.services.plugins import Plugin, register_plugin
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
@@ -29,10 +31,11 @@ def register_localstack_plugins():
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
         from localstack.services.events import events_listener, events_starter
+        from localstack.services.secretsmanager import secretsmanager_starter
 
         register_plugin(Plugin(
             'apigateway',
-            start=start_apigateway,
+            start=apigateway_starter.start_apigateway,
             listener=apigateway_listener.UPDATE_APIGATEWAY))
 
         register_plugin(Plugin(
@@ -107,11 +110,11 @@ def register_localstack_plugins():
 
         register_plugin(Plugin(
             'secretsmanager',
-            start=start_secretsmanager))
+            start=secretsmanager_starter.start_secretsmanager))
 
         register_plugin(Plugin(
             'ses',
-            start=start_ses))
+            start=ses_starter.start_ses))
 
         register_plugin(Plugin(
             'sns',

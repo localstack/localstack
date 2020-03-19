@@ -10,7 +10,7 @@ from six import iteritems
 from localstack.utils.aws import aws_stack
 from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
     LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
-from localstack.utils.common import TMP_FILES, run, mkdir, to_str, save_file, is_alpine
+from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
 from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
     LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
 
@@ -120,14 +120,19 @@ def create_zip_file(file_path, get_content=False):
     return zip_file_content
 
 
-def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
-        starting_position=None, runtime=None, envvars={}, tags={}, delete=False, layers=None,
-        **kwargs):
+def create_lambda_function(func_name, zip_file=None, event_source_arn=None, handler_file=None,
+        handler=LAMBDA_DEFAULT_HANDLER, starting_position=None, runtime=None, envvars={},
+        tags={}, libs=[], delete=False, layers=None, **kwargs):
     """Utility method to create a new function via the Lambda API"""
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
     client = aws_stack.connect_to_service('lambda')
+
+    # load zip file content if handler_file is specified
+    if not zip_file and handler_file:
+        zip_file = create_lambda_archive(load_file(handler_file), libs=libs,
+            get_content=True, runtime=runtime or LAMBDA_DEFAULT_RUNTIME)
 
     if delete:
         try:

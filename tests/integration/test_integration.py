@@ -330,10 +330,9 @@ class IntegrationTest(unittest.TestCase):
         self.assertTrue(ddb_event_source_arn)
 
         # deploy test lambda connected to DynamoDB Stream
-        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
-            zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27, delete=True)
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=TEST_LAMBDA_NAME_DDB,
+            event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27, delete=True)
 
         # submit a batch with writes
         dynamodb.batch_write_item(RequestItems={table_name: [

@@ -7,8 +7,7 @@ from localstack.config import external_service_url
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid, load_file
-)
+    to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid)
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns.sns_listener import SUBSCRIPTION_STATUS
@@ -19,6 +18,7 @@ from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBD
 TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
 TEST_QUEUE_NAME_2 = 'TestQueue_snsTest2'
+TEST_QUEUE_DLQ_NAME = 'TestQueue_DLQ_snsTest'
 
 
 class SNSTest(unittest.TestCase):
@@ -29,9 +29,12 @@ class SNSTest(unittest.TestCase):
         self.topic_arn = self.sns_client.create_topic(Name=TEST_TOPIC_NAME)['TopicArn']
         self.queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)['QueueUrl']
         self.queue_url_2 = self.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME_2)['QueueUrl']
+        self.dlq_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_DLQ_NAME)['QueueUrl']
 
     def tearDown(self):
         self.sqs_client.delete_queue(QueueUrl=self.queue_url)
+        self.sqs_client.delete_queue(QueueUrl=self.queue_url_2)
+        self.sqs_client.delete_queue(QueueUrl=self.dlq_url)
         self.sns_client.delete_topic(TopicArn=self.topic_arn)
 
     def test_publish_unicode_chars(self):
@@ -241,13 +244,9 @@ class SNSTest(unittest.TestCase):
         queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON), get_content=True, libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36,
-        )
-        testutil.create_lambda_function(
-            func_name=lambda_name, zip_file=zip_file, runtime=LAMBDA_RUNTIME_PYTHON36,
-            DeadLetterConfig={'TargetArn': queue_arn},
-        )
+        testutil.create_lambda_function(func_name=lambda_name,
+            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON36, DeadLetterConfig={'TargetArn': queue_arn})
         self.sns_client.subscribe(TopicArn=topic_arn, Protocol='lambda', Endpoint=lambda_arn)
 
         payload = {
@@ -263,3 +262,100 @@ class SNSTest(unittest.TestCase):
             self.assertIn('ErrorCode', msg_attrs)
             self.assertIn('ErrorMessage', msg_attrs)
         retry(receive_dlq, retries=8, sleep=2)
+
+    def unsubscribe_all_from_sns(self):
+        for subscription_arn in self.sns_client.list_subscriptions()['Subscriptions']:
+            self.sns_client.unsubscribe(SubscriptionArn=subscription_arn['SubscriptionArn'])
+
+    def test_redrive_policy_http_subscription(self):
+        self.unsubscribe_all_from_sns()
+
+        # create HTTP endpoint and connect it to SNS topic
+        class MyUpdateListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                records.append((json.loads(to_str(data)), headers))
+                return 200
+
+        records = []
+        local_port = get_free_tcp_port()
+        proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
+        wait_for_port_open(local_port)
+        http_endpoint = '%s://localhost:%s' % (get_service_protocol(), local_port)
+
+        subscription = self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='http', Endpoint=http_endpoint)
+        self.sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription['SubscriptionArn'],
+            AttributeName='RedrivePolicy',
+            AttributeValue=json.dumps({'deadLetterTargetArn': aws_stack.sqs_queue_arn(TEST_QUEUE_DLQ_NAME)})
+        )
+
+        proxy.stop()
+
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
+
+        def receive_dlq():
+            result = self.sqs_client.receive_message(QueueUrl=self.dlq_url, MessageAttributeNames=['All'])
+            self.assertGreater(len(result['Messages']), 0)
+            self.assertEqual(
+                json.loads(json.loads(result['Messages'][0]['Body'])['Message'][0])['message'],
+                'test_redrive_policy'
+            )
+        retry(receive_dlq, retries=10, sleep=2)
+
+    def test_redrive_policy_lambda_subscription(self):
+        self.unsubscribe_all_from_sns()
+
+        lambda_name = 'test-%s' % short_uid()
+        lambda_arn = aws_stack.lambda_function_arn(lambda_name)
+
+        testutil.create_lambda_function(func_name=lambda_name, libs=TEST_LAMBDA_LIBS,
+            handler_file=TEST_LAMBDA_PYTHON, runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        subscription = self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='lambda', Endpoint=lambda_arn)
+
+        self.sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription['SubscriptionArn'],
+            AttributeName='RedrivePolicy',
+            AttributeValue=json.dumps({'deadLetterTargetArn': aws_stack.sqs_queue_arn(TEST_QUEUE_DLQ_NAME)})
+        )
+        testutil.delete_lambda_function(lambda_name)
+
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
+
+        def receive_dlq():
+            result = self.sqs_client.receive_message(QueueUrl=self.dlq_url, MessageAttributeNames=['All'])
+            self.assertGreater(len(result['Messages']), 0)
+            self.assertEqual(
+                json.loads(json.loads(result['Messages'][0]['Body'])['Message'][0])['message'],
+                'test_redrive_policy'
+            )
+
+        retry(receive_dlq, retries=10, sleep=2)
+
+    def test_redrive_policy_queue_subscription(self):
+        self.unsubscribe_all_from_sns()
+
+        temp_queue_name = 'TestQueue_tmp_snsTest'
+        tmp_queue_url = self.sqs_client.create_queue(QueueName=temp_queue_name)['QueueUrl']
+        tmp_queue_arn = aws_stack.sqs_queue_arn(temp_queue_name)
+
+        subscription = self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='sqs', Endpoint=tmp_queue_arn)
+
+        self.sns_client.set_subscription_attributes(
+            SubscriptionArn=subscription['SubscriptionArn'],
+            AttributeName='RedrivePolicy',
+            AttributeValue=json.dumps({'deadLetterTargetArn': aws_stack.sqs_queue_arn(TEST_QUEUE_DLQ_NAME)})
+        )
+        self.sqs_client.delete_queue(QueueUrl=tmp_queue_url)
+
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
+
+        def receive_dlq():
+            result = self.sqs_client.receive_message(QueueUrl=self.dlq_url, MessageAttributeNames=['All'])
+            self.assertGreater(len(result['Messages']), 0)
+            self.assertEqual(
+                json.loads(json.loads(result['Messages'][0]['Body'])['Message'][0])['message'],
+                'test_redrive_policy'
+            )
+
+        retry(receive_dlq, retries=10, sleep=2)

@@ -229,26 +229,23 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject=''):
-    try:
-        event = {
-            'Records': [{
-                'EventSource': 'localstack:sns',
-                'EventVersion': '1.0',
-                'EventSubscriptionArn': subscription_arn,
-                'Sns': {
-                    'Type': 'Notification',
-                    'TopicArn': topic_arn,
-                    'Subject': subject,
-                    'Message': message,
-                    'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
-                    'MessageAttributes': message_attributes
-                }
-            }]
-        }
-        return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=True)
-    except Exception as e:
-        LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (e, traceback.format_exc()))
+def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, message_attributes, subject='',):
+    event = {
+        'Records': [{
+            'EventSource': 'localstack:sns',
+            'EventVersion': '1.0',
+            'EventSubscriptionArn': subscriptionArn,
+            'Sns': {
+                'Type': 'Notification',
+                'TopicArn': topic_arn,
+                'Subject': subject,
+                'Message': message,
+                'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
+                'MessageAttributes': message_attributes
+            }
+        }]
+    }
+    return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=True)
 
 
 def process_kinesis_records(records, stream_name):
@@ -475,8 +472,19 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
     TMP_FILES.append(lambda_file)
     TMP_FILES.append('%sc' % lambda_file)
     try:
-        handler_module = imp.load_source(lambda_id, lambda_file)
-        module_vars = handler_module.__dict__
+        pre_sys_modules_keys = set(sys.modules.keys())
+        try:
+            handler_module = imp.load_source(lambda_id, lambda_file)
+            module_vars = handler_module.__dict__
+        finally:
+            # the above import can bring files for the function
+            # (eg settings.py) into the global namespace. subsequent
+            # calls can pick up file from another function, causing
+            # general issues.
+            post_sys_modules_keys = set(sys.modules.keys())
+            for key in post_sys_modules_keys:
+                if key not in pre_sys_modules_keys:
+                    sys.modules.pop(key)
     except Exception as e:
         LOG.error('Unable to exec: %s %s' % (script, traceback.format_exc()))
         raise e

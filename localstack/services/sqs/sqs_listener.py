@@ -13,6 +13,7 @@ from localstack.utils.common import to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.aws.aws_responses import requests_response
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
@@ -180,6 +181,32 @@ def _add_queue_attributes(path, req_data, content_str, headers):
     return content_str
 
 
+def _list_dead_letter_source_queues(queues, queue_url):
+    dead_letter_source_queues = []
+    for k, v in queues.items():
+        for i, j in v.items():
+            if i == 'RedrivePolicy':
+                f = json.loads(v[i])
+                queue_url_split = queue_url.split('/')
+                if queue_url_split[-1] in f['deadLetterTargetArn']:
+                    dead_letter_source_queues.append(k)
+    return format_list_dl_source_queues_response(dead_letter_source_queues)
+
+
+def format_list_dl_source_queues_response(queues):
+    content_str = """<ListDeadLetterSourceQueuesResponse xmlns="{}">
+                        <ListDeadLetterSourceQueuesResult>
+                        {}
+                        </ListDeadLetterSourceQueuesResult>
+                    </ListDeadLetterSourceQueuesResponse>"""
+
+    queue_urls = ''
+    for q in queues:
+        queue_urls += '<QueueUrl>{}</QueueUrl>'.format(q)
+
+    return content_str.format(XMLNS_SQS, queue_urls)
+
+
 class ProxyListenerSQS(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
@@ -199,6 +226,13 @@ class ProxyListenerSQS(ProxyListener):
 
             elif action == 'DeleteQueue':
                 QUEUE_ATTRIBUTES.pop(_queue_url(path, req_data, headers), None)
+
+            elif action == 'ListDeadLetterSourceQueues':
+                queue_url = _queue_url(path, req_data, headers)
+                headers = {'content-type': 'application/xhtml+xml'}
+                content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
+
+                return requests_response(content_str, headers=headers)
 
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''

@@ -116,7 +116,7 @@ def restore_persisted_data(apis):
         return replay('_all_')
     apis = apis if isinstance(apis, list) else [apis]
     for api in apis:
-        replay(apis)
+        replay(api)
 
 
 # ---------------

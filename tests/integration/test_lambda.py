@@ -33,6 +33,8 @@ TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, 'lambdas', 'custom-runtim
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', 'localstack-utils-tests.jar')
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(THIS_FOLDER, 'lambdas', 'java', 'lambda-function-with-lib-0.0.1.jar')
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
+TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1 = os.path.join(THIS_FOLDER, 'lambdas', 'python3', 'lambda1', 'lambda1.zip')
+TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2 = os.path.join(THIS_FOLDER, 'lambdas', 'python3', 'lambda2', 'lambda2.zip')
 
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
@@ -126,9 +128,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         lambda_name = 'test-%s' % short_uid()
         queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
-        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON),
-            get_content=True, libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36)
-        testutil.create_lambda_function(func_name=lambda_name, zip_file=zip_file,
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON, func_name=lambda_name, libs=TEST_LAMBDA_LIBS,
             runtime=LAMBDA_RUNTIME_PYTHON36, DeadLetterConfig={'TargetArn': queue_arn})
 
         # invoke Lambda, triggering an error
@@ -225,12 +226,8 @@ class TestPythonRuntimes(LambdaTestBase):
 
     def test_lambda_environment(self):
         vars = {'Hello': 'World'}
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_ENV), get_content=True,
-            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-        testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_ENV, zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27, envvars=vars)
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS,
+            func_name=TEST_LAMBDA_NAME_ENV, runtime=LAMBDA_RUNTIME_PYTHON27, envvars=vars)
 
         # invoke function and assert result contains env vars
         result = self.lambda_client.invoke(
@@ -254,11 +251,8 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
+            load_file(TEST_LAMBDA_PYTHON), get_content=True,
+            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
         self.s3_client.create_bucket(Bucket=bucket_name)
         self.s3_client.upload_fileobj(
             BytesIO(zip_file), bucket_name, bucket_key)
@@ -308,11 +302,8 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # upload zip file to S3
         zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
+            load_file(TEST_LAMBDA_PYTHON), get_content=True,
+            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
         self.s3_client.create_bucket(Bucket=bucket_name)
         self.s3_client.upload_fileobj(
             BytesIO(zip_file), bucket_name, bucket_key)
@@ -345,17 +336,9 @@ class TestPythonRuntimes(LambdaTestBase):
         if not use_docker():
             return
 
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON3),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON36
-        )
         testutil.create_lambda_function(
-            func_name=TEST_LAMBDA_NAME_PY3,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON36
-        )
+            handler_file=TEST_LAMBDA_PYTHON3, libs=TEST_LAMBDA_LIBS,
+            func_name=TEST_LAMBDA_NAME_PY3, runtime=LAMBDA_RUNTIME_PYTHON36)
 
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
@@ -382,20 +365,50 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(result_data['event'], json.loads('{}'))
 
+    def test_python3_runtime_multple_create_with_conflicting_module(self):
+        original_do_use_docker = lambda_api.DO_USE_DOCKER
+        try:
+            # always use the local runner
+            lambda_api.DO_USE_DOCKER = False
+
+            python3_with_settings1 = load_file(TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1, mode='rb')
+            python3_with_settings2 = load_file(TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2, mode='rb')
+
+            lambda_name1 = 'test1-%s' % short_uid()
+            testutil.create_lambda_function(func_name=lambda_name1,
+                                            zip_file=python3_with_settings1,
+                                            runtime=LAMBDA_RUNTIME_PYTHON36,
+                                            handler='handler1.handler')
+
+            lambda_name2 = 'test2-%s' % short_uid()
+            testutil.create_lambda_function(func_name=lambda_name2,
+                                            zip_file=python3_with_settings2,
+                                            runtime=LAMBDA_RUNTIME_PYTHON36,
+                                            handler='handler2.handler')
+
+            result1 = self.lambda_client.invoke(FunctionName=lambda_name1, Payload=b'{}')
+            result_data1 = result1['Payload'].read()
+
+            result2 = self.lambda_client.invoke(FunctionName=lambda_name2, Payload=b'{}')
+            result_data2 = result2['Payload'].read()
+
+            self.assertEqual(result1['StatusCode'], 200)
+            self.assertIn('setting1', to_str(result_data1))
+
+            self.assertEqual(result2['StatusCode'], 200)
+            self.assertIn('setting2', to_str(result_data2))
+
+            # clean up
+            testutil.delete_lambda_function(lambda_name1)
+            testutil.delete_lambda_function(lambda_name2)
+        finally:
+            lambda_api.DO_USE_DOCKER = original_do_use_docker
+
     def test_lambda_subscribe_sns_topic(self):
         function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
 
-        zip_file = testutil.create_lambda_archive(
-            script=load_file(TEST_LAMBDA_ECHO_FILE),
-            get_content=True,
-            runtime=LAMBDA_RUNTIME_PYTHON36
-        )
-
-        testutil.create_lambda_function(
-            zip_file=zip_file,
-            func_name=function_name,
-            runtime=LAMBDA_RUNTIME_PYTHON36
-        )
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name, runtime=LAMBDA_RUNTIME_PYTHON36)
 
         topic = self.sns_client.create_topic(
             Name=TEST_SNS_TOPIC_NAME
@@ -736,18 +749,9 @@ class TestDockerBehaviour(LambdaTestBase):
         self.assertEqual(len(executor.get_all_container_names()), 0)
 
         # deploy and invoke lambda without Docker
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_ENV),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
         testutil.create_lambda_function(
-            func_name=func_name,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27,
-            envvars={'Hello': 'World'}
-        )
+            func_name=func_name, handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27, envvars={'Hello': 'World'})
 
         self.assertEqual(len(executor.get_all_container_names()), 0)
         self.assertDictEqual(executor.function_invoke_times, {})
@@ -834,18 +838,9 @@ class TestDockerBehaviour(LambdaTestBase):
         self.assertEqual(len(executor.get_all_container_names()), 0)
 
         # deploy and invoke lambda without Docker
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_ENV),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
         testutil.create_lambda_function(
-            func_name=func_name,
-            zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON27,
-            envvars={'Hello': 'World'}
-        )
+            func_name=func_name, handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON27, envvars={'Hello': 'World'})
 
         self.assertEqual(len(executor.get_all_container_names()), 0)
 
@@ -869,7 +864,5 @@ class Util(object):
     @classmethod
     def create_function(cls, file, name, runtime=None, libs=None):
         runtime = runtime or LAMBDA_RUNTIME_PYTHON27
-        zip_file = testutil.create_lambda_archive(
-            load_file(file), get_content=True, libs=libs, runtime=runtime)
         testutil.create_lambda_function(
-            func_name=name, zip_file=zip_file, runtime=runtime)
+            func_name=name, handler_file=file, libs=TEST_LAMBDA_LIBS, runtime=runtime)

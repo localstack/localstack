@@ -898,6 +898,19 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     if target_file and not overwrite and os.path.exists(target_file):
         key_file_name = '%s.key' % target_file
         cert_file_name = '%s.crt' % target_file
+        try:
+            # extract key and cert from target_file and store into separate files
+            content = load_file(target_file)
+            key_start = '-----BEGIN PRIVATE KEY-----'
+            key_end = '-----END PRIVATE KEY-----'
+            cert_start = '-----BEGIN CERTIFICATE-----'
+            cert_end = '-----END CERTIFICATE-----'
+            key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
+            cert_content = content[content.index(cert_start): content.index(cert_end) + len(cert_end)]
+            save_file(key_file_name, key_content)
+            save_file(cert_file_name, cert_content)
+        except Exception as e:
+            LOG.info('Unable to store key/cert files for custom SSL certificate: %s' % e)
         if all_exist(key_file_name, cert_file_name):
             return target_file, cert_file_name, key_file_name
     if random and target_file:
