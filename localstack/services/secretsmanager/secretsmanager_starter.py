@@ -1,6 +1,5 @@
 from moto.secretsmanager import models as secretsmanager_models
 from localstack import config
-from localstack.constants import DEFAULT_PORT_SECRETSMANAGER_BACKEND
 from localstack.services.infra import start_moto_server
 
 SECRET_ARN_STORAGE = {}
@@ -22,13 +21,10 @@ def apply_patches():
 
 def start_secretsmanager(port=None, asynchronous=None):
     port = port or config.PORT_SECRETSMANAGER
-
     apply_patches()
-
     return start_moto_server(
         key='secretsmanager',
         name='Secrets Manager',
         port=port,
-        backend_port=DEFAULT_PORT_SECRETSMANAGER_BACKEND,
         asynchronous=asynchronous
     )

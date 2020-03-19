@@ -3,9 +3,8 @@ import base64
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.exceptions import MessageRejectedError
 from localstack import config
-from localstack.constants import DEFAULT_PORT_SES_BACKEND
-from localstack.services.infra import start_moto_server
 from localstack.utils.common import to_str
+from localstack.services.infra import start_moto_server
 
 
 def apply_patches():
@@ -38,10 +37,7 @@ def apply_patches():
 
 def start_ses(port=None, backend_port=None, asynchronous=None):
     port = port or config.PORT_SES
-    backend_port = backend_port or DEFAULT_PORT_SES_BACKEND
-
     apply_patches()
-
     return start_moto_server(
         key='ses',
         name='SES',
