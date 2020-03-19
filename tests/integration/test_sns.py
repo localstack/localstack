@@ -19,10 +19,10 @@ TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
 TEST_QUEUE_NAME_2 = 'TestQueue_snsTest2'
 TEST_QUEUE_DLQ_NAME = 'TestQueue_DLQ_snsTest'
+TEST_TOPIC_NAME_2 = 'topic-test-2'
 
 
 class SNSTest(unittest.TestCase):
-
     def setUp(self):
         self.sqs_client = aws_stack.connect_to_service('sqs')
         self.sns_client = aws_stack.connect_to_service('sns')
@@ -98,7 +98,8 @@ class SNSTest(unittest.TestCase):
         for subscription in subscription_list['Subscriptions']:
             if subscription['TopicArn'] == self.topic_arn:
                 subscription_arn = subscription['SubscriptionArn']
-        actual_attributes = self.sns_client.get_subscription_attributes(SubscriptionArn=subscription_arn)['Attributes']
+        actual_attributes = self.sns_client.get_subscription_attributes(
+            SubscriptionArn=subscription_arn)['Attributes']
 
         # assert the attributes are well set
         self.assertTrue(actual_attributes['RawMessageDelivery'])
@@ -359,3 +360,28 @@ class SNSTest(unittest.TestCase):
             )
 
         retry(receive_dlq, retries=10, sleep=2)
+
+    def test_publish_with_empty_subject(self):
+        topic_arn = self.sns_client.create_topic(Name=TEST_TOPIC_NAME_2)['TopicArn']
+
+        # Publish without subject
+        rs = self.sns_client.publish(
+            TopicArn=topic_arn,
+            Message=json.dumps({'message': 'test_publish'})
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        try:
+            # Publish with empty subject
+            self.sns_client.publish(
+                TopicArn=topic_arn,
+                Subject='',
+                Message=json.dumps({'message': 'test_publish'})
+            )
+            self.fail('This call should not be successful as the subject is empty')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'InvalidParameter')
+
+        # clean up
+        self.sns_client.delete_topic(TopicArn=topic_arn)

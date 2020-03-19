@@ -243,7 +243,7 @@ class IntegrationTest(unittest.TestCase):
         sns.subscribe(TopicArn=response['TopicArn'], Protocol='lambda',
             Endpoint=aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_STREAM))
         for i in range(0, num_events_sns):
-            sns.publish(TopicArn=response['TopicArn'], Message='test message %s' % i)
+            sns.publish(TopicArn=response['TopicArn'], Subject='test_subject', Message='test message %s' % i)
 
         # get latest records
         latest = aws_stack.kinesis_get_latest_records(TEST_LAMBDA_SOURCE_STREAM_NAME,

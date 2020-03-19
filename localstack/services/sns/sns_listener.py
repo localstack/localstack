@@ -48,7 +48,7 @@ class ProxyListenerSNS(ProxyListener):
 
         if method == 'POST' and path == '/':
             # parse payload and extract fields
-            req_data = urlparse.parse_qs(to_str(data))
+            req_data = urlparse.parse_qs(to_str(data), keep_blank_values=True)
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn') or req_data.get('ResourceArn')
 
@@ -60,43 +60,60 @@ class ProxyListenerSNS(ProxyListener):
                 sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
                 if not sub:
                     return make_error(message='Unable to find subscription for given ARN', code=400)
+
                 attr_name = req_data['AttributeName'][0]
                 attr_value = req_data['AttributeValue'][0]
                 sub[attr_name] = attr_value
                 return make_response(req_action)
+
             elif req_action == 'GetSubscriptionAttributes':
                 sub = get_subscription_by_arn(req_data['SubscriptionArn'][0])
                 if not sub:
                     return make_error(message='Unable to find subscription for given ARN', code=400)
+
                 content = '<Attributes>'
                 for key, value in sub.items():
                     content += '<entry><key>%s</key><value>%s</value></entry>\n' % (key, value)
                 content += '</Attributes>'
                 return make_response(req_action, content=content)
+
             elif req_action == 'Subscribe':
                 if 'Endpoint' not in req_data:
                     return make_error(message='Endpoint not specified in subscription', code=400)
+
             elif req_action == 'ConfirmSubscription':
                 if 'TopicArn' not in req_data:
                     return make_error(message='TopicArn not specified in confirm subscription request', code=400)
+
                 if 'Token' not in req_data:
                     return make_error(message='Token not specified in confirm subscription request', code=400)
+
                 do_confirm_subscription(req_data.get('TopicArn')[0], req_data.get('Token')[0])
+
             elif req_action == 'Unsubscribe':
                 if 'SubscriptionArn' not in req_data:
                     return make_error(message='SubscriptionArn not specified in unsubscribe request', code=400)
+
                 do_unsubscribe(req_data.get('SubscriptionArn')[0])
+
             elif req_action == 'DeleteTopic':
                 do_delete_topic(topic_arn)
+
             elif req_action == 'Publish':
+                if req_data.get('Subject') == ['']:
+                    return make_error(code=400, code_string='InvalidParameter', message='Subject')
+
                 # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well
                 if 'PhoneNumber' not in req_data and 'TargetArn' not in req_data:
                     if topic_arn not in SNS_SUBSCRIPTIONS.keys():
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
+
                     publish_message(topic_arn, req_data)
+
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action)
+
             elif req_action == 'ListTagsForResource':
                 tags = do_list_tags_for_resource(topic_arn)
                 content = '<Tags/>'
@@ -109,12 +126,15 @@ class ProxyListenerSNS(ProxyListener):
                         content += '</member>'
                     content += '</Tags>'
                 return make_response(req_action, content=content)
+
             elif req_action == 'CreateTopic':
                 topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
                 self._extract_tags(topic_arn, req_data)
+
             elif req_action == 'TagResource':
                 self._extract_tags(topic_arn, req_data)
                 return make_response(req_action)
+
             elif req_action == 'UntagResource':
                 tags_to_remove = []
                 req_tags = {k: v for k, v in req_data.items() if k.startswith('TagKeys.member.')}
@@ -197,6 +217,7 @@ UPDATE_SNS = ProxyListenerSNS()
 def publish_message(topic_arn, req_data, subscription_arn=None):
     message = req_data['Message'][0]
     sqs_client = aws_stack.connect_to_service('sqs')
+
     for subscriber in SNS_SUBSCRIPTIONS.get(topic_arn, []):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
             continue
