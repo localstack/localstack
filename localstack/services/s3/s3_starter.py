@@ -227,10 +227,8 @@ def apply_patches():
         if rs_code == 206:
             for k in ['ETag', 'last-modified']:
                 v = headers.get(k)
-                if v:
+                if v and not rs_headers.get(k):
                     rs_headers[k] = v
-
-            return rs_code, rs_headers, rs_content
 
         return rs_code, rs_headers, rs_content
 
