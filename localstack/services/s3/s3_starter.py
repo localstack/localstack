@@ -4,7 +4,8 @@ import traceback
 from moto.s3 import models as s3_models
 from moto.s3 import responses as s3_responses
 from moto.s3.responses import (
-    minidom, MalformedXML, undo_clean_key_name)
+    minidom, MalformedXML, undo_clean_key_name
+)
 from localstack import config
 from localstack.constants import DEFAULT_PORT_S3_BACKEND
 from localstack.utils.aws import aws_stack
@@ -40,10 +41,13 @@ def check_s3(expect_shutdown=False, print_error=False):
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_S3
     backend_port = backend_port or DEFAULT_PORT_S3_BACKEND
+
     apply_patches()
+
     return start_moto_server(
         key='s3', name='S3', asynchronous=asynchronous,
-        port=port, backend_port=backend_port, update_listener=update_listener)
+        port=port, backend_port=backend_port, update_listener=update_listener
+    )
 
 
 def apply_patches():
@@ -75,7 +79,6 @@ def apply_patches():
             key.set_acl(acl)
 
     # patch Bucket.create_from_cloudformation_json in moto
-
     @classmethod
     def Bucket_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         result = create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
@@ -88,7 +91,6 @@ def apply_patches():
     s3_models.FakeBucket.create_from_cloudformation_json = Bucket_create_from_cloudformation_json
 
     # patch S3Bucket.create_bucket(..)
-
     def create_bucket(self, bucket_name, region_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
         return create_bucket_orig(bucket_name, region_name, *args, **kwargs)
@@ -97,7 +99,6 @@ def apply_patches():
     s3_models.s3_backend.create_bucket = types.MethodType(create_bucket, s3_models.s3_backend)
 
     # patch S3Bucket.get_bucket(..)
-
     def get_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
         return get_bucket_orig(bucket_name, *args, **kwargs)
@@ -106,7 +107,6 @@ def apply_patches():
     s3_models.s3_backend.get_bucket = types.MethodType(get_bucket, s3_models.s3_backend)
 
     # patch S3Bucket.get_bucket(..)
-
     def delete_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
         return delete_bucket_orig(bucket_name, *args, **kwargs)
@@ -115,7 +115,6 @@ def apply_patches():
     s3_models.s3_backend.delete_bucket = types.MethodType(delete_bucket, s3_models.s3_backend)
 
     # patch _key_response_post(..)
-
     def s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
         result = s3_key_response_post_orig(request, body, bucket_name, query, key_name, *args, **kwargs)
         s3_update_acls(self, request, query, bucket_name, key_name)
@@ -126,7 +125,6 @@ def apply_patches():
         s3_key_response_post, s3_responses.S3ResponseInstance)
 
     # patch _key_response_put(..)
-
     def s3_key_response_put(self, request, body, bucket_name, query, key_name, headers, *args, **kwargs):
         result = s3_key_response_put_orig(request, body, bucket_name, query, key_name, headers, *args, **kwargs)
         s3_update_acls(self, request, query, bucket_name, key_name)
@@ -137,7 +135,6 @@ def apply_patches():
         s3_key_response_put, s3_responses.S3ResponseInstance)
 
     # patch DeleteObjectTagging
-
     def s3_key_response_delete(self, bucket_name, query, key_name, *args, **kwargs):
         # Fixes https://github.com/localstack/localstack/issues/1083
         if query.get('tagging'):
@@ -155,7 +152,6 @@ def apply_patches():
     s3_responses.ACTION_MAP['KEY']['DELETE']['tagging'] = 'DeleteObjectTagging'
 
     # patch max-keys
-
     def s3_truncate_result(self, result_keys, max_keys):
         return s3_truncate_result_orig(result_keys, max_keys or 1000)
 
@@ -165,7 +161,6 @@ def apply_patches():
 
     # patch _bucket_response_delete_keys(..)
     # https://github.com/localstack/localstack/issues/2077
-
     s3_delete_keys_response_template = """<?xml version="1.0" encoding="UTF-8"?>
     <DeleteResult xmlns="http://s3.amazonaws.com/doc/2006-03-01">
     {% for k in deleted %}
@@ -222,3 +217,20 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance._bucket_response_delete_keys = types.MethodType(
         s3_bucket_response_delete_keys, s3_responses.S3ResponseInstance)
+
+    # Patch _handle_range_header(..)
+    # https://github.com/localstack/localstack/issues/2146
+    s3_response_handle_range_header_orig = s3_responses.S3ResponseInstance._handle_range_header
+
+    def s3_response_handle_range_header(self, request, headers, response_content):
+        rs_code, rs_headers, rs_content = s3_response_handle_range_header_orig(request, headers, response_content)
+        if rs_code == 206:
+            for k in ['ETag', 'last-modified']:
+                v = headers.get(k)
+                if v and not rs_headers.get(k):
+                    rs_headers[k] = v
+
+        return rs_code, rs_headers, rs_content
+
+    s3_responses.S3ResponseInstance._handle_range_header = types.MethodType(
+        s3_response_handle_range_header, s3_responses.S3ResponseInstance)
