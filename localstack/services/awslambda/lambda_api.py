@@ -36,8 +36,8 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_RUBY25,
     LAMBDA_RUNTIME_PROVIDED)
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-    mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid, timestamp,
-    TIMESTAMP_FORMAT_MILLIS, parse_chunked_data, now_utc, safe_requests, FuncThread,
+    mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid,
+    timestamp_millis, parse_chunked_data, now_utc, safe_requests, FuncThread,
     isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -240,7 +240,7 @@ def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, mess
                 'TopicArn': topic_arn,
                 'Subject': subject,
                 'Message': message,
-                'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
+                'Timestamp': timestamp_millis(),
                 'MessageAttributes': message_attributes
             }
         }]

@@ -19,7 +19,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
-from localstack.utils.common import TIMESTAMP_FORMAT_MILLIS, short_uid, to_str, timestamp
+from localstack.utils.common import timestamp_millis, short_uid, to_str
 
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
@@ -466,7 +466,7 @@ def create_sns_message_body(subscriber, req_data):
         'TopicArn': subscriber['TopicArn'],
         'Message': message,
         'SubscribeURL': req_data.get('SubscribeURL', [None])[0],
-        'Timestamp': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
+        'Timestamp': timestamp_millis(),
         'SignatureVersion': '1',
         # TODO Add a more sophisticated solution with an actual signature
         # Hardcoded

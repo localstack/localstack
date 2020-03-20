@@ -2,6 +2,7 @@ import json
 import uuid
 import unittest
 import dateutil.parser
+import re
 from localstack.services.sns import sns_listener
 
 
@@ -190,6 +191,18 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(result['attr2']['BinaryValue'], 'value2'.encode('utf-8'))
         self.assertEqual(result['attr3']['DataType'], 'Number')
         self.assertEqual(result['attr3']['StringValue'], '3.0')
+
+    def test_create_sns_message_timestamp_millis(self):
+        action = {
+            'Message': ['msg']
+        }
+        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+        result = json.loads(result_str)
+        timestamp = result.pop('Timestamp')
+        end = timestamp[-5:]
+        matcher = re.compile(r'\.[0-9]{3}Z')
+        match = matcher.match(end)
+        self.assertTrue(match is not None)
 
     def test_only_one_subscription_per_topic_per_endpoint(self):
         sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
