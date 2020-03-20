@@ -18,7 +18,7 @@ from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    short_uid, timestamp, TIMESTAMP_FORMAT_MILLIS, to_str, to_bytes, clone, md5, get_service_protocol)
+    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.services.s3 import multipart_content
@@ -118,7 +118,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', version
             'eventVersion': '2.0',
             'eventSource': 'aws:s3',
             'awsRegion': aws_stack.get_region(),
-            'eventTime': timestamp(format=TIMESTAMP_FORMAT_MILLIS),
+            'eventTime': timestamp_millis(),
             'eventName': event_name,
             'userIdentity': {
                 'principalId': 'AIDAJDPLRKLG7UEXAMPLE'

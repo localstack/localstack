@@ -52,7 +52,7 @@ mutex_clean = threading.Semaphore(1)
 
 # misc. constants
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
-TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
+TIMESTAMP_FORMAT_MICROS = '%Y-%m-%dT%H:%M:%S.%fZ'
 CODEC_HANDLER_UNDERSCORE = 'underscore'
 
 # chunk size for file downloads
@@ -429,7 +429,9 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
 
 
 def timestamp_millis(time=None):
-    return timestamp(time=time, format=TIMESTAMP_FORMAT_MILLIS)
+    microsecond_time = timestamp(time=time, format=TIMESTAMP_FORMAT_MICROS)
+    # truncating micorseconds to milliseconds. while leaving the Z
+    return microsecond_time[:-4] + microsecond_time[-1]
 
 
 def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
