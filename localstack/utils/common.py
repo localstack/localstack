@@ -626,7 +626,6 @@ def download(url, path, verify_ssl=True):
             return
         LOG.debug('Done downloading %s, response code %s, total bytes %d' % (url, r.status_code, total))
     finally:
-        LOG.debug('Cleaning up file handles for download of %s' % url)
         r.close()
         s.close()
 

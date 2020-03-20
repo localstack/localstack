@@ -49,6 +49,7 @@ script:
   #   but instead reinstall using 2.x here, as that allows us to re-use some cached libs etc.
   - "make reinstall-p2 > /dev/null"
   - make init
+  - nohup docker pull localstack/java-maven-node-python > /dev/null &
   - LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
   # build Docker image
   - make docker-build
