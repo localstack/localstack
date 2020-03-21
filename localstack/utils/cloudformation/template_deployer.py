@@ -636,7 +636,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             if not api_id or not res_id:
                 return None
             res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
-            match = [v for (k, v) in res_obj['resourceMethods'].items()
+            match = [v for (k, v) in res_obj.get('resourceMethods', {}).items()
                      if resource_props['HttpMethod'] in (v.get('httpMethod'), k)]
             int_props = resource_props.get('Integration')
             if int_props:

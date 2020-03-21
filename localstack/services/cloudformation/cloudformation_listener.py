@@ -112,6 +112,7 @@ def get_template_body(req_data):
                 parsed_path = urlparse.urlparse(url).path.lstrip('/')
                 parts = parsed_path.partition('/')
                 client = aws_stack.connect_to_service('s3')
+                LOG.debug('Download CloudFormation template content from local S3: %s - %s' % (parts[0], parts[2]))
                 result = client.get_object(Bucket=parts[0], Key=parts[2])
                 body = to_str(result['Body'].read())
                 return body
@@ -121,7 +122,8 @@ def get_template_body(req_data):
 
 
 def is_local_service_url(url):
-    return '://%s:' % config.LOCALSTACK_HOSTNAME in url
+    candidates = ('localhost', config.LOCALSTACK_HOSTNAME, config.HOSTNAME_EXTERNAL, config.HOSTNAME)
+    return any('://%s:' % host in url for host in candidates)
 
 
 def is_real_s3_url(url):
@@ -141,9 +143,10 @@ def convert_s3_to_local_url(url):
 
 
 def fix_hardcoded_creation_date(response):
-    search = '<CreationTime>2011-05-23T15:47:44Z</CreationTime>'
-    replace = '<CreationTime>%s</CreationTime>' % timestamp()
-    response._content = to_str(response._content or '').replace(search, replace)
+    # TODO: remove once this is fixed upstream
+    search = r'<CreationTime>\s*(2011-05-23T15:47:44Z)?\s*</CreationTime>'
+    replace = r'<CreationTime>%s</CreationTime>' % timestamp()
+    response._content = re.sub(search, replace, to_str(response._content or ''))
     response.headers['Content-Length'] = str(len(response._content))
 
 
