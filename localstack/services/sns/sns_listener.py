@@ -459,19 +459,22 @@ def create_sns_message_body(subscriber, req_data):
         except KeyError:
             raise Exception("Unable to find 'default' key in message payload")
 
+    token = short_uid()
+    external_url = external_service_url('sns')
+    topic_arn = subscriber['TopicArn']
+
     data = {
         'Type': req_data.get('Type', ['Notification'])[0],
         'MessageId': str(uuid.uuid4()),
-        'Token': req_data.get('Token', [None])[0],
-        'TopicArn': subscriber['TopicArn'],
+        'TopicArn': topic_arn,
         'Message': message,
-        'SubscribeURL': req_data.get('SubscribeURL', [None])[0],
         'Timestamp': timestamp_millis(),
         'SignatureVersion': '1',
         # TODO Add a more sophisticated solution with an actual signature
         # Hardcoded
         'Signature': 'EXAMPLEpH+..',
-        'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem'
+        'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
+        'UnsubscribeURL': ['%s/?Action=Unsubscribe&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
     }
 
     if subject is not None:
