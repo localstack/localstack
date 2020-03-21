@@ -89,7 +89,7 @@ def transform_template(req_data):
             os.environ['AWS_DEFAULT_REGION'] = aws_stack.get_region()
         try:
             transformed = transform_sam(parsed, {}, MockPolicyLoader())
-            return transformed
+            return json.dumps(transformed)
         finally:
             os.environ.pop('AWS_DEFAULT_REGION', None)
             if region_before is not None:
@@ -123,7 +123,7 @@ def get_template_body(req_data):
 
 def is_local_service_url(url):
     candidates = ('localhost', config.LOCALSTACK_HOSTNAME, config.HOSTNAME_EXTERNAL, config.HOSTNAME)
-    return any('://%s:' % host in url for host in candidates)
+    return url and any('://%s:' % host in url for host in candidates)
 
 
 def is_real_s3_url(url):
@@ -178,8 +178,8 @@ class ProxyListenerCloudFormation(ProxyListener):
                 if stack_name:
                     if stack_name.startswith('arn:aws:cloudformation'):
                         run_fix = True
-                        stack_name = re.sub(r'arn:aws:cloudformation:[^:]+:[^:]+:stack/([^/]+)(/.+)?',
-                                            r'\1', stack_name)
+                        pattern = r'arn:aws:cloudformation:[^:]+:[^:]+:stack/([^/]+)(/.+)?'
+                        stack_name = re.sub(pattern, r'\1', stack_name)
                 if run_fix:
                     stack_names = [stack_name] if stack_name else self._list_stack_names()
                     client = aws_stack.connect_to_service('cloudformation')
@@ -198,11 +198,15 @@ class ProxyListenerCloudFormation(ProxyListener):
                 do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
                 if do_replace_url:
                     req_data['TemplateURL'] = convert_s3_to_local_url(req_data['TemplateURL'])
-                modified_request = transform_template(req_data)
-                if modified_request:
+                url = req_data.get('TemplateURL', '')
+                is_custom_local_endpoint = is_local_service_url(url) and '://localhost:' not in url
+                modified_template_body = transform_template(req_data)
+                if not modified_template_body and is_custom_local_endpoint:
+                    modified_template_body = get_template_body(req_data)
+                if modified_template_body:
                     req_data.pop('TemplateURL', None)
-                    req_data['TemplateBody'] = json.dumps(modified_request)
-                if modified_request or do_replace_url:
+                    req_data['TemplateBody'] = modified_template_body
+                if modified_template_body or do_replace_url:
                     data = urlparse.urlencode(req_data, doseq=True)
                     return Request(data=data, headers=headers, method=method)
 

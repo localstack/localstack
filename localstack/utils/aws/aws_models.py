@@ -74,7 +74,7 @@ class KinesisStream(Component):
                         print(next_entry['Records'][0]['Data'])
                     record = next_entry
             except Exception as e:
-                print('Error reading from Kinesis stream "%s": %s' (self.stream_name, e))
+                print('Error reading from Kinesis stream "%s": %s' % (self.stream_name, e))
 
     def wait_for(self):
         GET_STATUS_SLEEP_SECS = 5

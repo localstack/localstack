@@ -709,24 +709,22 @@ def apply_patches():
 
     # patch FakeStack.initialize_resources
 
-    def initialize_resources(self):
+    def run_dependencies_deployment_loop(stack, action):
         def set_status(status):
-            self._add_stack_event(status)
-            self.status = status
-
-        self.resource_map.create()
-        self.output_map.create()
+            stack._add_stack_event(status)
+            stack.status = status
 
         def run_loop(*args):
             # NOTE: We're adding this additional loop, as it seems that in some cases moto
             #   does not consider resource dependencies (e.g., if a "DependsOn" resource property
             #   is defined). This loop allows us to incrementally resolve such dependencies.
-            resource_map = self.resource_map
+            resource_map = stack.resource_map
             unresolved = {}
             for i in range(MAX_DEPENDENCY_DEPTH):
+                LOG.debug('Running CloudFormation stack deployment loop iteration %s' % (i + 1))
                 unresolved = getattr(resource_map, '_unresolved_resources', {})
                 if not unresolved:
-                    set_status('CREATE_COMPLETE')
+                    set_status('%s_COMPLETE' % action)
                     return resource_map
                 resource_map._unresolved_resources = {}
                 for resource_id, resource_details in unresolved.items():
@@ -736,14 +734,25 @@ def apply_patches():
                     # looks like no more resources can be resolved -> bail
                     LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
                     break
-            set_status('CREATE_FAILED')
+            set_status('%s_FAILED' % action)
             raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
                 'dependency tree (maximum depth %s reached): %s' % (MAX_DEPENDENCY_DEPTH, unresolved.keys()))
 
         # NOTE: We're running the loop in the background, as it might take some time to complete
         FuncThread(run_loop).start()
 
+    def initialize_resources(self):
+        self.resource_map.create()
+        self.output_map.create()
+        run_dependencies_deployment_loop(self, 'CREATE')
+
+    def update(self, *args, **kwargs):
+        stack_update_orig(self, *args, **kwargs)
+        run_dependencies_deployment_loop(self, 'UPDATE')
+
     FakeStack.initialize_resources = initialize_resources
+    stack_update_orig = FakeStack.update
+    FakeStack.update = update
 
     # patch Kinesis Stream get_cfn_attribute(..) method in moto
     def Kinesis_Stream_get_cfn_attribute(self, attribute_name):
