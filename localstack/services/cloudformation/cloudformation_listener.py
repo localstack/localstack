@@ -10,7 +10,7 @@ from samtranslator.translator.transform import transform as transform_sam
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp
+from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -112,6 +112,7 @@ def get_template_body(req_data):
                 parsed_path = urlparse.urlparse(url).path.lstrip('/')
                 parts = parsed_path.partition('/')
                 client = aws_stack.connect_to_service('s3')
+                LOG.debug('Download CloudFormation template content from local S3: %s - %s' % (parts[0], parts[2]))
                 result = client.get_object(Bucket=parts[0], Key=parts[2])
                 body = to_str(result['Body'].read())
                 return body
@@ -121,7 +122,8 @@ def get_template_body(req_data):
 
 
 def is_local_service_url(url):
-    return '://%s:' % config.LOCALSTACK_HOSTNAME in url
+    candidates = ('localhost', config.LOCALSTACK_HOSTNAME, config.HOSTNAME_EXTERNAL, config.HOSTNAME)
+    return any('://%s:' % host in url for host in candidates)
 
 
 def is_real_s3_url(url):
@@ -138,13 +140,6 @@ def convert_s3_to_local_url(url):
     bucket_name = s3_listener.normalize_bucket_name(bucket_name)
     local_url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, key)
     return local_url
-
-
-def fix_hardcoded_creation_date(response):
-    search = '<CreationTime>2011-05-23T15:47:44Z</CreationTime>'
-    replace = '<CreationTime>%s</CreationTime>' % timestamp()
-    response._content = to_str(response._content or '').replace(search, replace)
-    response.headers['Content-Length'] = str(len(response._content))
 
 
 class ProxyListenerCloudFormation(ProxyListener):
@@ -216,7 +211,6 @@ class ProxyListenerCloudFormation(ProxyListener):
 
         if response._content:
             aws_stack.fix_account_id_in_arns(response)
-            fix_hardcoded_creation_date(response)
 
     def _list_stack_names(self):
         client = aws_stack.connect_to_service('cloudformation')

@@ -59,6 +59,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **AppSync**
 * **Athena**
 * **CloudFront**
+* **CloudTrail**
 * **Cognito**
 * **ECS/EKS**
 * **ElastiCache**
