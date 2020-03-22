@@ -638,10 +638,10 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
             match = [v for (k, v) in res_obj.get('resourceMethods', {}).items()
                      if resource_props['HttpMethod'] in (v.get('httpMethod'), k)]
-            int_props = resource_props.get('Integration')
-            if int_props:
+            int_props = resource_props.get('Integration') or {}
+            if int_props.get('Type') == 'AWS_PROXY':
                 match = [m for m in match if
-                    m.get('methodIntegration', {}).get('type') == int_props.get('Type') and
+                    m.get('methodIntegration', {}).get('type') == 'AWS_PROXY' and
                     m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
             return any(match) or None
         elif resource_type == 'ApiGateway::GatewayResponse':
@@ -1029,16 +1029,25 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     # some resources have attached/nested resources which we need to create recursively now
     if resource_type == 'ApiGateway::Method':
         integration = resource_props.get('Integration')
+        apigateway = aws_stack.connect_to_service('apigateway')
         if integration:
             api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
             res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
-            uri = integration.get('Uri')
-            if uri:
-                uri = resolve_refs_recursively(stack_name, uri, resources)
-                aws_stack.connect_to_service('apigateway').put_integration(
-                    restApiId=api_id, resourceId=res_id,
-                    httpMethod=resource_props['HttpMethod'], type=integration['Type'],
-                    integrationHttpMethod=integration['IntegrationHttpMethod'], uri=uri)
+            kwargs = {}
+            if integration.get('Uri'):
+                uri = resolve_refs_recursively(stack_name, integration.get('Uri'), resources)
+                kwargs['uri'] = uri
+            if integration.get('IntegrationHttpMethod'):
+                kwargs['integrationHttpMethod'] = integration['IntegrationHttpMethod']
+            apigateway.put_integration(restApiId=api_id, resourceId=res_id,
+                httpMethod=resource_props['HttpMethod'], type=integration['Type'], **kwargs)
+        responses = resource_props.get('MethodResponses') or []
+        for response in responses:
+            api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
+            res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
+            apigateway.put_method_response(restApiId=api_id, resourceId=res_id,
+                httpMethod=resource_props['HttpMethod'], statusCode=response['StatusCode'],
+                responseParameters=response.get('ResponseParameters', {}))
     elif resource_type == 'SNS::Topic':
         subscriptions = resource_props.get('Subscription', [])
         for subscription in subscriptions:
