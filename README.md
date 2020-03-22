@@ -56,6 +56,7 @@ LocalStack spins up the following core Cloud APIs on your local machine:
 * **KMS** at http://localhost:4599
 
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
+* **API Gateway V2 (WebSockets support)**
 * **AppSync**
 * **Athena**
 * **CloudFront**
