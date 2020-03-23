@@ -1,6 +1,8 @@
 import logging
 from moto.apigateway import models as apigateway_models
-from moto.apigateway.exceptions import MethodNotFoundException
+from moto.apigateway.exceptions import (
+    MethodNotFoundException, NoIntegrationDefined
+)
 from localstack import config
 from localstack.constants import DEFAULT_PORT_APIGATEWAY_BACKEND
 from localstack.services.infra import start_moto_server
@@ -21,15 +23,25 @@ def apply_patches():
         method = self.resource_methods.get(method_type)
         if not method:
             raise MethodNotFoundException()
+
         return method
+
+    def apigateway_models_resource_get_integration(self, method_type):
+        resource_method = self.resource_methods.get(method_type, {})
+        if 'methodIntegration' not in resource_method:
+            raise NoIntegrationDefined()
+
+        return resource_method['methodIntegration']
 
     def apigateway_models_resource_delete_integration(self, method_type):
         if method_type in self.resource_methods:
             return self.resource_methods[method_type].pop('methodIntegration')
+
         return {}
 
     apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
+    apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
 
 
