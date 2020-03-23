@@ -474,7 +474,7 @@ def create_sns_message_body(subscriber, req_data):
         # Hardcoded
         'Signature': 'EXAMPLEpH+..',
         'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
-        'UnsubscribeURL': ['%s/?Action=Unsubscribe&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
+        'UnsubscribeURL': '%s/?Action=Unsubscribe&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)
     }
 
     if subject is not None:
