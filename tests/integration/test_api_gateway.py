@@ -5,6 +5,7 @@ import re
 import json
 import unittest
 import xmltodict
+from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
@@ -12,7 +13,7 @@ from localstack import config
 from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, json_safe, clone
+from localstack.utils.common import to_str, json_safe, clone, short_uid
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import (
@@ -135,7 +136,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         add_event_source(
             self.TEST_LAMBDA_SQS_HANDLER_NAME,
             aws_stack.sqs_queue_arn(self.TEST_SQS_QUEUE),
-            True)
+            True
+        )
 
         # generate test data
         test_data = {'spam': 'eggs & beans'}
@@ -184,7 +186,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
         # create target HTTP backend
         class TestListener(ProxyListener):
-
             def forward_request(self, **kwargs):
                 response = Response()
                 response.status_code = 200
@@ -315,7 +316,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.API_PATH_LAMBDA_PROXY_BACKEND_ANY_METHOD_WITH_PATH_PARAM)
 
     def test_api_gateway_authorizer_crud(self):
-
         apig = aws_stack.connect_to_service('apigateway')
 
         authorizer = apig.create_authorizer(
@@ -360,7 +360,79 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             Exception,
             apig.get_authorizer,
             self.TEST_API_GATEWAY_ID,
-            authorizer_id)
+            authorizer_id
+        )
+
+    def test_apigateway_with_lambda_integration(self):
+        lambda_name = 'test-apigw-lambda-%s' % short_uid()
+        self.create_lambda_function(lambda_name)
+
+        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
+
+        apigw_client = aws_stack.connect_to_service('apigateway')
+
+        api = apigw_client.create_rest_api(name='test-api', description='')
+
+        api_id = api['id']
+        root_res_id = apigw_client.get_resources(restApiId=api_id)['items'][0]['id']
+        api_resource = apigw_client.create_resource(restApiId=api_id, parentId=root_res_id, pathPart='test')
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=api_resource['id'],
+            httpMethod='GET',
+            authorizationType='NONE'
+        )
+
+        rs = apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=api_resource['id'],
+            httpMethod='GET',
+            type='AWS',
+            uri=target_uri
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = apigw_client.get_integration(
+            restApiId=api_id,
+            resourceId=api_resource['id'],
+            httpMethod='GET'
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        self.assertEqual(rs['type'], 'AWS')
+        self.assertEqual(rs['httpMethod'], 'GET')
+        self.assertEqual(rs['uri'], target_uri)
+
+        rs = apigw_client.delete_integration(
+            restApiId=api_id,
+            resourceId=api_resource['id'],
+            httpMethod='GET',
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        try:
+            # Try to get deleted integration
+            apigw_client.get_integration(
+                restApiId=api_id,
+                resourceId=api_resource['id'],
+                httpMethod='GET'
+            )
+            self.fail('This call should not be successful as the integration is deleted')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'BadRequestException')
+
+        # clean up
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.delete_function(
+            FunctionName=lambda_name
+        )
+
+        apigw_client.delete_rest_api(
+            restApiId=api_id
+        )
 
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
         self.create_lambda_function(fn_name)
@@ -370,12 +442,12 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
-            'test_gateway3', target_uri, methods=['ANY'], path=path)
+            'test_gateway3', target_uri, methods=['ANY'], path=path
+        )
 
         # make test request to gateway and check response
         path = path.replace('{test_param1}', 'foo1')
-        url = self.gateway_request_url(
-            api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=path)
+        url = self.gateway_request_url(api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=path)
         data = {}
 
         for method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'):
@@ -389,14 +461,15 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     # Helper methods
     # =====================================================================
 
-    def gateway_request_url(self, api_id, stage_name, path):
+    @staticmethod
+    def gateway_request_url(api_id, stage_name, path):
         """ Return URL for inbound API gateway for given API ID, stage name, and path """
         pattern = '%s/restapis/{api_id}/{stage_name}/%s{path}' % (config.TEST_APIGATEWAY_URL, PATH_USER_REQUEST)
         return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
 
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
-        template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % (kinesis_stream)
+        template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
         resource_path = self.API_PATH_DATA_INBOUND.replace('/', '')
         resources[resource_path] = [{
             'httpMethod': 'POST',
@@ -469,7 +542,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             stage_name=self.TEST_STAGE_NAME
         )
 
-    def create_lambda_function(self, fn_name):
+    @staticmethod
+    def create_lambda_function(fn_name):
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON,
             libs=TEST_LAMBDA_LIBS,
