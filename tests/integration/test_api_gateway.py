@@ -13,7 +13,7 @@ from localstack import config
 from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, json_safe, clone
+from localstack.utils.common import to_str, json_safe, clone, short_uid
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import (
@@ -21,8 +21,6 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
-
-TEST_API_GATEWAY_INTEGRATION_LAMBDA_FUNCTION_NAME = 'test-apigw-lambda-func'
 
 
 class TestAPIGatewayIntegrations(unittest.TestCase):
@@ -366,11 +364,11 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         )
 
     def test_apigateway_with_lambda_integration(self):
-        self.create_lambda_function(TEST_API_GATEWAY_INTEGRATION_LAMBDA_FUNCTION_NAME)
+        lambda_name = 'test-apigw-lambda-%s' % short_uid()
+        self.create_lambda_function(lambda_name)
 
-        lambda_uri = aws_stack.lambda_function_arn(TEST_API_GATEWAY_INTEGRATION_LAMBDA_FUNCTION_NAME)
-        invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
-        target_uri = invocation_uri % (config.DEFAULT_REGION, lambda_uri)
+        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
         apigw_client = aws_stack.connect_to_service('apigateway')
 
@@ -429,7 +427,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         # clean up
         lambda_client = aws_stack.connect_to_service('lambda')
         lambda_client.delete_function(
-            FunctionName=TEST_API_GATEWAY_INTEGRATION_LAMBDA_FUNCTION_NAME
+            FunctionName=lambda_name
         )
 
         apigw_client.delete_rest_api(
