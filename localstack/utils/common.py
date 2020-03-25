@@ -829,13 +829,11 @@ def unzip(path, target_dir, overwrite=True):
 
 
 def ungzip(path, target_dir):
-    if is_alpine():
-        pass
     try:
         tar_ref = tarfile.TarFile(path, 'r')
     except Exception as e:
         LOG.warning('Unable to open tarball file: %s: %s' % (path, e))
-        raise e
+        raise
 
     try:
         tar_ref.extractall(target_dir)

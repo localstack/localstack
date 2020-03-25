@@ -240,8 +240,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
             unzip(tmp_archive, target_dir)
         elif ext == '.gz' or ext == '.bz2':
             ungzip(tmp_archive, target_dir)
-        else:
-            raise Exception('Unsupported archive format: %s' % ext)
+        raise Exception('Unsupported archive format: %s' % ext)
 
     try:
         download_and_extract()
