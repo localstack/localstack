@@ -30,7 +30,7 @@ RUN set -x && apk add --no-cache openjdk8 && [ "$JAVA_HOME" = "$(docker-java-hom
 RUN apk add --no-cache nss
 
 # Install Maven - taken from official repo:
-# https://github.com/carlossg/docker-maven/blob/master/jdk-8/Dockerfile)
+# https://github.com/carlossg/docker-maven/blob/master/openjdk-8/Dockerfile)
 ARG MAVEN_VERSION=3.6.3
 ARG USER_HOME_DIR="/root"
 ARG SHA=26ad91d751b3a9a53087aefa743f4e16a17741d3915b219cf74112bf87a438c5
@@ -43,14 +43,14 @@ RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
   && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 ENV MAVEN_HOME /usr/share/maven
 ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
-ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/jdk-8/settings-docker.xml /usr/share/maven/ref/
+ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/openjdk-8/settings-docker.xml /usr/share/maven/ref/
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
 WORKDIR /opt/code/localstack/
 
 # https://github.com/pires/docker-elasticsearch/issues/56
-ENV ES_TMPDIR  /tmp
+ENV ES_TMPDIR /tmp
 
 # install npm dependencies (Note: node-gyp currently requires python2 :/ , hence install it temporarily)
 RUN apk add python2
@@ -70,12 +70,12 @@ RUN mkdir -p /opt/code/localstack/localstack/infra && \
     mkdir -p /opt/code/localstack/localstack/infra/dynamodb && \
       curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
       (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
-    curl -L -o /tmp/localstack.es.zip \
-        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.zip && \
+    curl -L -o /tmp/localstack.es.tar.gz \
+        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.1.0-linux-x86_64.tar.gz && \
     curl -L -o /tmp/elasticmq-server.jar \
         https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.15.5.jar && \
-    (cd localstack/infra/ && unzip -q /tmp/localstack.es.zip && \
-        mv elasticsearch* elasticsearch && rm /tmp/localstack.es.zip) && \
+    (cd localstack/infra/ && tar -xf /tmp/localstack.es.tar.gz && \
+        mv elasticsearch* elasticsearch && rm /tmp/localstack.es.tar.gz) && \
     (cd localstack/infra/elasticsearch/ && \
         bin/elasticsearch-plugin install analysis-icu && \
         bin/elasticsearch-plugin install ingest-attachment --batch && \
@@ -103,6 +103,7 @@ RUN make install-web
 RUN (virtualenv .venv && source .venv/bin/activate && pip install cryptography)
 
 # clean up (layers are later squashed into a single one)
+RUN rm -rf localstack/infra/elasticsearch/jdk/
 RUN rm -rf /root/.npm; \
   apk del --purge autoconf automake build-base g++ gcc giflib krb5-conf krb5-libs libc-dev \
   libffi-dev libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev

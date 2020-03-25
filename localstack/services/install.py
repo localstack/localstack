@@ -16,7 +16,7 @@ if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
 from localstack.utils.common import (
-    download, parallelize, run, mkdir, load_file, save_file, unzip, rm_rf, chmod_r, is_alpine,
+    download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf, chmod_r, is_alpine,
     in_docker, get_arch)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -52,7 +52,7 @@ def install_elasticsearch():
         log_install_msg('Elasticsearch')
         mkdir(INSTALL_DIR_INFRA)
         # download and extract archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.es.zip')
+        tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.es.tar.gz')
         download_and_extract_with_retry(ELASTICSEARCH_JAR_URL, tmp_archive, INSTALL_DIR_INFRA)
         elasticsearch_dir = glob.glob(os.path.join(INSTALL_DIR_INFRA, 'elasticsearch*'))
         if not elasticsearch_dir:
@@ -234,7 +234,14 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
     def download_and_extract():
         if not os.path.exists(tmp_archive):
             download(archive_url, tmp_archive)
-        unzip(tmp_archive, target_dir)
+
+        _, ext = os.path.splitext(tmp_archive)
+        if ext == '.zip':
+            unzip(tmp_archive, target_dir)
+        elif ext == '.gz' or ext == '.bz2':
+            untar(tmp_archive, target_dir)
+        else:
+            raise Exception('Unsupported archive format: %s' % ext)
 
     try:
         download_and_extract()
