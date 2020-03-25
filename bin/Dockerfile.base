@@ -30,7 +30,7 @@ RUN set -x && apk add --no-cache openjdk8 && [ "$JAVA_HOME" = "$(docker-java-hom
 RUN apk add --no-cache nss
 
 # Install Maven - taken from official repo:
-# https://github.com/carlossg/docker-maven/blob/master/jdk-8/Dockerfile)
+# https://github.com/carlossg/docker-maven/blob/master/openjdk-8/Dockerfile)
 ARG MAVEN_VERSION=3.6.3
 ARG USER_HOME_DIR="/root"
 ARG SHA=26ad91d751b3a9a53087aefa743f4e16a17741d3915b219cf74112bf87a438c5
@@ -43,14 +43,14 @@ RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
   && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 ENV MAVEN_HOME /usr/share/maven
 ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
-ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/jdk-8/settings-docker.xml /usr/share/maven/ref/
+ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/openjdk-8/settings-docker.xml /usr/share/maven/ref/
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
 WORKDIR /opt/code/localstack/
 
 # https://github.com/pires/docker-elasticsearch/issues/56
-ENV ES_TMPDIR  /tmp
+ENV ES_TMPDIR /tmp
 
 # install npm dependencies (Note: node-gyp currently requires python2 :/ , hence install it temporarily)
 RUN apk add python2
