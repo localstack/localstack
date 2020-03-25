@@ -754,7 +754,7 @@ def forward_to_fallback_url(func_arn, data):
             'timestamp': {'N': str(now_utc())},
             'payload': {'S': str(data)}
         }
-        aws_stack.create_dynamodb_table(table_name, partition_key='id')
+        aws_stack.create_dynamodb_table(table_name, partition_key=['id'])
         dynamodb.put_item(TableName=table_name, Item=item)
         return ''
     if re.match(r'^https?://.+', config.LAMBDA_FALLBACK_URL):

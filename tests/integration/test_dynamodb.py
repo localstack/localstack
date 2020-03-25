@@ -10,7 +10,7 @@ TEST_DDB_TABLE_NAME = 'test-ddb-table-1'
 TEST_DDB_TABLE_NAME_2 = 'test-ddb-table-2'
 TEST_DDB_TABLE_NAME_3 = 'test-ddb-table-3'
 TEST_DDB_TABLE_NAME_4 = 'test-ddb-table-4'
-PARTITION_KEY = 'id'
+PARTITION_KEY = ['id']
 
 
 class DynamoDBIntegrationTest (unittest.TestCase):

@@ -567,19 +567,24 @@ def dynamodb_get_item_raw(request):
     return new_item
 
 
-def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None):
+def create_dynamodb_table(table_name, partition_keys, env=None, stream_view_type=None):
     """Utility method to create a DynamoDB table"""
+    key_schema_partitions = []
+    attr_defs_partitions = []
+    for partition_key in partition_keys:
+        key_schema_partitions.append({
+            'AttributeName': partition_key,
+            'KeyType': 'HASH'
+        })
+        attr_defs_partitions.append({
+            'AttributeName': partition_key,
+            'AttributeType': 'S'
+        })
 
     dynamodb = connect_to_service('dynamodb', env=env, client=True)
     stream_spec = {'StreamEnabled': False}
-    key_schema = [{
-        'AttributeName': partition_key,
-        'KeyType': 'HASH'
-    }]
-    attr_defs = [{
-        'AttributeName': partition_key,
-        'AttributeType': 'S'
-    }]
+    key_schema = key_schema_partitions
+    attr_defs = attr_defs_partitions
     if stream_view_type is not None:
         stream_spec = {
             'StreamEnabled': True,

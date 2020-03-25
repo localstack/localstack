@@ -32,7 +32,7 @@ TEST_CHAIN_STREAM2_NAME = 'test_chain_stream_2'
 TEST_CHAIN_LAMBDA1_NAME = 'test_chain_lambda_1'
 TEST_CHAIN_LAMBDA2_NAME = 'test_chain_lambda_2'
 
-PARTITION_KEY = 'id'
+PARTITION_KEY = ['id']
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
