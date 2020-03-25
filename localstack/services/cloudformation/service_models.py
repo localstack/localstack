@@ -23,3 +23,7 @@ class GatewayResponse(BaseModel):
 
 class CloudFormationStack(BaseModel):
     pass
+
+
+class SSMParameter(BaseModel):
+    pass

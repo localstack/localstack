@@ -155,6 +155,13 @@ def stream_exists(name):
     return name in streams['StreamNames']
 
 
+def ssm_param_exists(name):
+    client = aws_stack.connect_to_service('ssm')
+    params = client.describe_parameters(Filters=[{'Key': 'Name', 'Values': [name]}])['Parameters']
+    param = (params or [{}])[0]
+    return param.get('Name') == name and param
+
+
 def get_stack_details(stack_name):
     cloudformation = aws_stack.connect_to_service('cloudformation')
     stacks = cloudformation.describe_stacks(StackName=stack_name)
@@ -219,6 +226,7 @@ class CloudFormationTest(unittest.TestCase):
         assert stream_exists('cf-test-stream-1')
         resource = describe_stack_resource(stack_name, 'SQSQueueNoNameProperty')
         assert queue_exists(resource['PhysicalResourceId'])
+        assert ssm_param_exists('cf-test-param-1')
 
         # assert that tags have been created
         tags = s3.get_bucket_tagging(Bucket='cf-test-bucket-1')['TagSet']
