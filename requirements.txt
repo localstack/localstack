@@ -20,7 +20,7 @@ cachetools>=3.1.1,<4.0.0
 coverage==4.5.4
 dnspython==1.16.0              #basic-lib
 docopt>=0.6.2                  #basic-lib
-elasticsearch>=6.0.0,<7.0.0
+elasticsearch>=7.0.0,<8.0.0
 flake8>=3.6.0                  #extended-lib
 flake8-quotes>=0.11.0          #extended-lib
 flask>=1.0.2
