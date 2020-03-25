@@ -8,6 +8,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 from samtranslator.translator.transform import transform as transform_sam
 from localstack import config
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp
@@ -17,6 +18,8 @@ from localstack.services.generic_proxy import ProxyListener
 
 XMLNS_CLOUDFORMATION = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
 LOG = logging.getLogger(__name__)
+
+MOTO_CLOUDFORMATION_ACCOUNT_ID = '123456789'
 
 
 def error_response(message, code=400, error_type='ValidationError'):
@@ -150,6 +153,13 @@ def fix_hardcoded_creation_date(response):
     response.headers['Content-Length'] = str(len(response._content))
 
 
+# Replace localstack account id by moto account id
+def fix_account_id(resource_arn):
+    search = r'arn{col}aws{col}([^:%]+){col}([^:%]*){col}{acc}{col}'.format(col=':', acc=TEST_AWS_ACCOUNT_ID)
+    replace = r'arn{col}aws{col}\1{col}\2{col}{acc}{col}'.format(col=':', acc=MOTO_CLOUDFORMATION_ACCOUNT_ID)
+    return re.sub(search, replace, resource_arn)
+
+
 class ProxyListenerCloudFormation(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
@@ -213,7 +223,7 @@ class ProxyListenerCloudFormation(ProxyListener):
                     return Request(data=data, headers=headers, method=method)
 
             if action in ['DescribeChangeSet', 'ExecuteChangeSet']:
-                req_data['ChangeSetName'] = req_data['ChangeSetName'].replace('000000000000', '123456789')
+                req_data['ChangeSetName'] = fix_account_id(req_data['ChangeSetName'])
                 return Request(data=urlparse.urlencode(req_data, doseq=True), headers=headers, method=method)
 
         return True
