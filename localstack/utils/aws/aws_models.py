@@ -189,6 +189,22 @@ class LambdaFunction(Component):
         if ':sqs:' not in target_arn and ':sns:' not in target_arn:
             raise Exception('Dead letter queue ARN "%s" requires a valid SQS queue or SNS topic' % target_arn)
 
+    def get_function_event_invoke_config(self):
+        return {
+            'LastModified': str(self.last_modified),
+            'FunctionArn': str(self.id),
+            'MaximumRetryAttempts': self.max_retry_attempt,
+            'MaximumEventAgeInSeconds': self.max_event_age,
+            'DestinationConfig': {
+                'OnSuccess': {
+                    'Destination': str(self.on_successful_invocation)
+                },
+                'OnFailure': {
+                    'Destination': str(self.dead_letter_config)
+                }
+            }
+        }
+
     def put_function_event_invoke_config(self, data):
         updated = False
         if isinstance(data, dict) and 'DestinationConfig' in data.keys():
