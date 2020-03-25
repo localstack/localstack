@@ -16,7 +16,7 @@ if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
 from localstack.utils.common import (
-    download, parallelize, run, mkdir, load_file, save_file, unzip, ungzip, rm_rf, chmod_r, is_alpine,
+    download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf, chmod_r, is_alpine,
     in_docker, get_arch)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -239,7 +239,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         if ext == '.zip':
             unzip(tmp_archive, target_dir)
         elif ext == '.gz' or ext == '.bz2':
-            ungzip(tmp_archive, target_dir)
+            untar(tmp_archive, target_dir)
         else:
             raise Exception('Unsupported archive format: %s' % ext)
 

@@ -828,19 +828,6 @@ def unzip(path, target_dir, overwrite=True):
         zip_ref.close()
 
 
-def ungzip(path, target_dir):
-    try:
-        tar_ref = tarfile.TarFile(path, 'r')
-    except Exception as e:
-        LOG.warning('Unable to open tarball file: %s: %s' % (path, e))
-        raise
-
-    try:
-        tar_ref.extractall(target_dir)
-    finally:
-        tar_ref.close()
-
-
 def _unzip_file_entry(zip_ref, file_entry, target_dir):
     """
     Extracts a Zipfile entry and preserves permissions
