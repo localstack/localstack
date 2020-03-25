@@ -57,6 +57,15 @@ Resources:
       Name: cf-test-stream-1
   SQSQueueNoNameProperty:
     Type: AWS::SQS::Queue
+  TestParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: cf-test-param-1
+      Description: test param 1
+      Type: String
+      Value: value123
+      Tags:
+        tag1: value1
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
