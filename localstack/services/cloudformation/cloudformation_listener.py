@@ -153,13 +153,6 @@ def fix_hardcoded_creation_date(response):
     response.headers['Content-Length'] = str(len(response._content))
 
 
-# Replace localstack account id by moto account id
-def fix_account_id(resource_arn):
-    search = r'arn{col}aws{col}([^:%]+){col}([^:%]*){col}{acc}{col}'.format(col=':', acc=TEST_AWS_ACCOUNT_ID)
-    replace = r'arn{col}aws{col}\1{col}\2{col}{acc}{col}'.format(col=':', acc=MOTO_CLOUDFORMATION_ACCOUNT_ID)
-    return re.sub(search, replace, resource_arn)
-
-
 class ProxyListenerCloudFormation(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
