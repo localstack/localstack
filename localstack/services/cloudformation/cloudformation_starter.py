@@ -737,18 +737,39 @@ def apply_patches():
 
     kinesis_models.Stream.get_cfn_attribute = Kinesis_Stream_get_cfn_attribute
 
-    # patch cloudformation backend describe_change_set(..)
+    # patch cloudformation backend create_change_set(..)
     # #760 cloudformation deploy invalid xml error
-    cloudformation_backend_describe_change_set_orig = CloudFormationBackend.describe_change_set
+    cloudformation_backend_create_change_set_orig = CloudFormationBackend.create_change_set
 
-    def cloudformation_backend_describe_change_set(self, change_set_name, stack_name=None):
-        change_set = cloudformation_backend_describe_change_set_orig(self, change_set_name, stack_name)
-        if change_set.status == 'REVIEW_IN_PROGRESS':
-            change_set.status = 'CREATE_COMPLETE'
+    def cloudformation_backend_create_change_set(
+            self,
+            stack_name,
+            change_set_name,
+            template,
+            parameters,
+            region_name,
+            change_set_type,
+            notification_arns=None,
+            tags=None,
+            role_arn=None):
+        change_set_id, _ = cloudformation_backend_create_change_set_orig(
+            self,
+            stack_name,
+            change_set_name,
+            template,
+            parameters,
+            region_name,
+            change_set_type,
+            notification_arns,
+            tags,
+            role_arn
+        )
+        change_set = self.change_sets[change_set_id]
+        change_set.status = 'CREATE_COMPLETE'
 
-        return change_set
+        return change_set_id, _
 
-    CloudFormationBackend.describe_change_set = cloudformation_backend_describe_change_set
+    CloudFormationBackend.create_change_set = cloudformation_backend_create_change_set
 
 
 def inject_stats_endpoint():

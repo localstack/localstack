@@ -223,7 +223,9 @@ class ProxyListenerCloudFormation(ProxyListener):
                     return Request(data=data, headers=headers, method=method)
 
             if action in ['DescribeChangeSet', 'ExecuteChangeSet']:
-                req_data['ChangeSetName'] = fix_account_id(req_data['ChangeSetName'])
+                req_data['ChangeSetName'] = aws_stack.fix_account_id_in_arns(
+                    req_data['ChangeSetName'], existing=TEST_AWS_ACCOUNT_ID, replace=MOTO_CLOUDFORMATION_ACCOUNT_ID
+                )
                 return Request(data=urlparse.urlencode(req_data, doseq=True), headers=headers, method=method)
 
         return True

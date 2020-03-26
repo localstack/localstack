@@ -132,7 +132,7 @@ Resources:
   MyBaseDomainName:
     Type: AWS::SSM::Parameter
     Properties:
-      Name: !Join [ '/', [ !Ref SSMPrefix, domains, 'base-domain-name' ] ]
+      Name: 'base-domain-name'
       Type: String
       Value: !If [ IsProd, example.com, !Join [ '-', [ !Ref EnvironmentType, example.com ] ] ]
 """
