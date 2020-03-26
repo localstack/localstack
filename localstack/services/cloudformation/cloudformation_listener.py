@@ -11,7 +11,7 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp
+from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp_millis
 from localstack.utils.analytics import event_publisher
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.generic_proxy import ProxyListener
@@ -148,7 +148,17 @@ def convert_s3_to_local_url(url):
 def fix_hardcoded_creation_date(response):
     # TODO: remove once this is fixed upstream
     search = r'<CreationTime>\s*(2011-05-23T15:47:44Z)?\s*</CreationTime>'
-    replace = r'<CreationTime>%s</CreationTime>' % timestamp()
+    replace = r'<CreationTime>%s</CreationTime>' % timestamp_millis()
+    fix_in_response(search, replace, response)
+
+
+def fix_region_in_arns(response):
+    search = r'arn:aws:cloudformation:[^:]+:'
+    replace = r'arn:aws:cloudformation:%s:' % aws_stack.get_region()
+    fix_in_response(search, replace, response)
+
+
+def fix_in_response(search, replace, response):
     response._content = re.sub(search, replace, to_str(response._content or ''))
     response.headers['Content-Length'] = str(len(response._content))
 
@@ -158,8 +168,14 @@ class ProxyListenerCloudFormation(ProxyListener):
         if method == 'OPTIONS':
             return 200
 
+        data = data or ''
+        data_orig = data
+        data = aws_stack.fix_account_id_in_arns(data, existing=TEST_AWS_ACCOUNT_ID,
+            replace=MOTO_CLOUDFORMATION_ACCOUNT_ID, colon_delimiter='%3A')
+
         req_data = None
         if method == 'POST' and path == '/':
+
             req_data = urlparse.parse_qs(to_str(data))
             req_data = dict([(k, v[0]) for k, v in req_data.items()])
             action = req_data.get('Action')
@@ -215,10 +231,7 @@ class ProxyListenerCloudFormation(ProxyListener):
                     data = urlparse.urlencode(req_data, doseq=True)
                     return Request(data=data, headers=headers, method=method)
 
-            if action in ['DescribeChangeSet', 'ExecuteChangeSet']:
-                req_data['ChangeSetName'] = aws_stack.fix_account_id_in_arns(
-                    req_data['ChangeSetName'], existing=TEST_AWS_ACCOUNT_ID, replace=MOTO_CLOUDFORMATION_ACCOUNT_ID
-                )
+            if data != data_orig or action in ['DescribeChangeSet', 'ExecuteChangeSet']:
                 return Request(data=urlparse.urlencode(req_data, doseq=True), headers=headers, method=method)
 
         return True
@@ -235,6 +248,7 @@ class ProxyListenerCloudFormation(ProxyListener):
         if response._content:
             aws_stack.fix_account_id_in_arns(response)
             fix_hardcoded_creation_date(response)
+            fix_region_in_arns(response)
 
     @staticmethod
     def _list_stack_names():
