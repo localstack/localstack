@@ -8,6 +8,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 from samtranslator.translator.transform import transform as transform_sam
 from localstack import config
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp
@@ -17,6 +18,8 @@ from localstack.services.generic_proxy import ProxyListener
 
 XMLNS_CLOUDFORMATION = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
 LOG = logging.getLogger(__name__)
+
+MOTO_CLOUDFORMATION_ACCOUNT_ID = '123456789'
 
 
 def error_response(message, code=400, error_type='ValidationError'):
@@ -41,8 +44,8 @@ def make_response(operation_name, content='', code=200):
         {content}
       </{op_name}Result>
       <ResponseMetadata><RequestId>{uid}</RequestId></ResponseMetadata>
-    </{op_name}Response>""".format(xmlns=XMLNS_CLOUDFORMATION,
-        op_name=operation_name, uid=uuid.uuid4(), content=content)
+    </{op_name}Response>""".format(
+        xmlns=XMLNS_CLOUDFORMATION, op_name=operation_name, uid=uuid.uuid4(), content=content)
     response.status_code = code
     return response
 
@@ -151,7 +154,6 @@ def fix_hardcoded_creation_date(response):
 
 
 class ProxyListenerCloudFormation(ProxyListener):
-
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
             return 200
@@ -164,8 +166,10 @@ class ProxyListenerCloudFormation(ProxyListener):
             stack_name = req_data.get('StackName')
 
             if action == 'CreateStack':
-                event_publisher.fire_event(event_publisher.EVENT_CLOUDFORMATION_CREATE_STACK,
-                    payload={'n': event_publisher.get_hash(stack_name)})
+                event_publisher.fire_event(
+                    event_publisher.EVENT_CLOUDFORMATION_CREATE_STACK,
+                    payload={'n': event_publisher.get_hash(stack_name)}
+                )
 
             if action == 'DeleteStack':
                 client = aws_stack.connect_to_service('cloudformation')
@@ -194,6 +198,7 @@ class ProxyListenerCloudFormation(ProxyListener):
         if req_data:
             if action == 'ValidateTemplate':
                 return validate_template(req_data)
+
             if action in ['CreateStack', 'UpdateStack']:
                 do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
                 if do_replace_url:
@@ -210,6 +215,12 @@ class ProxyListenerCloudFormation(ProxyListener):
                     data = urlparse.urlencode(req_data, doseq=True)
                     return Request(data=data, headers=headers, method=method)
 
+            if action in ['DescribeChangeSet', 'ExecuteChangeSet']:
+                req_data['ChangeSetName'] = aws_stack.fix_account_id_in_arns(
+                    req_data['ChangeSetName'], existing=TEST_AWS_ACCOUNT_ID, replace=MOTO_CLOUDFORMATION_ACCOUNT_ID
+                )
+                return Request(data=urlparse.urlencode(req_data, doseq=True), headers=headers, method=method)
+
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -225,7 +236,8 @@ class ProxyListenerCloudFormation(ProxyListener):
             aws_stack.fix_account_id_in_arns(response)
             fix_hardcoded_creation_date(response)
 
-    def _list_stack_names(self):
+    @staticmethod
+    def _list_stack_names():
         client = aws_stack.connect_to_service('cloudformation')
         stacks = client.list_stacks()['StackSummaries']
         stack_names = []

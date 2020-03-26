@@ -19,7 +19,7 @@ from moto.apigateway import models as apigw_models
 from moto.cloudwatch import models as cw_models
 from moto.cloudformation import parsing, responses
 from boto.cloudformation.stack import Output
-from moto.cloudformation.models import FakeStack, cloudformation_backends
+from moto.cloudformation.models import FakeStack, CloudFormationBackend, cloudformation_backends
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
@@ -27,7 +27,8 @@ from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import FuncThread, short_uid, recurse_object, clone, json_safe
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
-    get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names)
+    get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names
+)
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.cloudformation import service_models
@@ -40,7 +41,7 @@ CURRENTLY_UPDATING_RESOURCES = {}
 # whether to start the API in a separate process
 RUN_SERVER_IN_PROCESS = False
 
-# maxiumum depth of the resource dependency tree
+# maximum depth of the resource dependency tree
 MAX_DEPENDENCY_DEPTH = 40
 
 # map of additional model classes
@@ -149,11 +150,9 @@ def apply_patches():
         TODO: Eventually, these patches should be contributed to the upstream repo! """
 
     # add model mappings to moto
-
     parsing.MODEL_MAP.update(MODEL_MAP)
 
     # Patch clean_json in moto
-
     def clean_json(resource_json, resources_map):
         result = clean_json_orig(resource_json, resources_map)
         if isinstance(result, BaseModel):
@@ -169,11 +168,11 @@ def apply_patches():
     parsing.clean_json = clean_json
 
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
-
     def parse_and_create_resource(logical_id, resource_json, resources_map, region_name, force_create=False):
         try:
-            return _parse_and_create_resource(logical_id, resource_json,
-                resources_map, region_name, force_create=force_create)
+            return _parse_and_create_resource(
+                logical_id, resource_json, resources_map, region_name, force_create=force_create
+            )
         except Exception as e:
             LOG.error('Unable to parse and create resource "%s": %s %s' %
                       (logical_id, e, traceback.format_exc()))
@@ -181,8 +180,7 @@ def apply_patches():
 
     def parse_and_update_resource(logical_id, resource_json, resources_map, region_name):
         try:
-            return _parse_and_create_resource(logical_id,
-                resource_json, resources_map, region_name, update=True)
+            return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=True)
         except Exception as e:
             LOG.error('Unable to parse and update resource "%s": %s %s' %
                       (logical_id, e, traceback.format_exc()))
@@ -222,12 +220,12 @@ def apply_patches():
         # create resource definition and store CloudFormation metadata in moto
         moto_create_error = None
         if (resource or update) and not force_create:
-            parse_and_update_resource_orig(logical_id,
-                resource_json_arns_fixed, resources_map, region_name)
+            parse_and_update_resource_orig(logical_id, resource_json_arns_fixed, resources_map, region_name)
         elif not resource:
             try:
-                resource = parse_and_create_resource_orig(logical_id,
-                    resource_json_arns_fixed, resources_map, region_name)
+                resource = parse_and_create_resource_orig(
+                    logical_id, resource_json_arns_fixed, resources_map, region_name
+                )
                 resource.logical_id = logical_id
             except Exception as e:
                 moto_create_error = e
@@ -257,7 +255,8 @@ def apply_patches():
             is_updateable = template_deployer.is_updateable(logical_id, resource_map_new, stack_name)
             if not update or not is_updateable:
                 all_satisfied = template_deployer.all_resource_dependencies_satisfied(
-                    logical_id, resource_map_new, stack_name)
+                    logical_id, resource_map_new, stack_name
+                )
                 if not all_satisfied:
                     LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s' % (
                         logical_id, resource_json))
@@ -370,8 +369,7 @@ def apply_patches():
     parse_and_update_resource_orig = parsing.parse_and_update_resource
     parsing.parse_and_update_resource = parse_and_update_resource
 
-    # Patch CloudFormation parse_output(..) method to fix a bug in moto
-
+    # patch CloudFormation parse_output(..) method to fix a bug in moto
     def parse_output(output_logical_id, output_json, resources_map):
         try:
             result = parse_output_orig(output_logical_id, output_json, resources_map)
@@ -389,7 +387,6 @@ def apply_patches():
     parsing.parse_output = parse_output
 
     # Make sure the export name is returned for stack outputs
-
     if '<ExportName>' not in responses.DESCRIBE_STACKS_TEMPLATE:
         find = '</OutputValue>'
         replace = """</OutputValue>
@@ -400,7 +397,6 @@ def apply_patches():
         responses.DESCRIBE_STACKS_TEMPLATE = responses.DESCRIBE_STACKS_TEMPLATE.replace(find, replace)
 
     # Patch CloudFormationBackend.update_stack method in moto
-
     def make_cf_update_stack(cf_backend):
         cf_update_stack_orig = cf_backend.update_stack
 
@@ -417,20 +413,18 @@ def apply_patches():
         cf_backend.update_stack = make_cf_update_stack(cf_backend)
 
     # Patch DynamoDB get_cfn_attribute(..) method in moto
-
     def DynamoDB_Table_get_cfn_attribute(self, attribute_name):
         try:
-            return DynamoDB_Table_get_cfn_attribute_orig(self, attribute_name)
+            return ddb_table_get_cfn_attribute_orig(self, attribute_name)
         except Exception:
             if attribute_name == 'Arn':
                 return aws_stack.dynamodb_table_arn(table_name=self.name)
             raise
 
-    DynamoDB_Table_get_cfn_attribute_orig = dynamodb_models.Table.get_cfn_attribute
+    ddb_table_get_cfn_attribute_orig = dynamodb_models.Table.get_cfn_attribute
     dynamodb_models.Table.get_cfn_attribute = DynamoDB_Table_get_cfn_attribute
 
     # Patch DynamoDB get_cfn_attribute(..) method in moto
-
     def DynamoDB2_Table_get_cfn_attribute(self, attribute_name):
         if attribute_name == 'Arn':
             return aws_stack.dynamodb_table_arn(table_name=self.name)
@@ -443,7 +437,6 @@ def apply_patches():
     dynamodb2_models.Table.get_cfn_attribute = DynamoDB2_Table_get_cfn_attribute
 
     # Patch SQS get_cfn_attribute(..) method in moto
-
     def SQS_Queue_get_cfn_attribute(self, attribute_name):
         if attribute_name in ['Arn', 'QueueArn']:
             return aws_stack.sqs_queue_arn(queue_name=self.name)
@@ -453,7 +446,6 @@ def apply_patches():
     sqs_models.Queue.get_cfn_attribute = SQS_Queue_get_cfn_attribute
 
     # Patch S3 Bucket get_cfn_attribute(..) method in moto
-
     def S3_Bucket_get_cfn_attribute(self, attribute_name):
         if attribute_name in ['Arn']:
             return aws_stack.s3_bucket_arn(self.name)
@@ -463,7 +455,6 @@ def apply_patches():
     s3_models.FakeBucket.get_cfn_attribute = S3_Bucket_get_cfn_attribute
 
     # Patch SQS physical_resource_id(..) method in moto
-
     @property
     def SQS_Queue_physical_resource_id(self):
         result = SQS_Queue_physical_resource_id_orig.fget(self)
@@ -476,7 +467,6 @@ def apply_patches():
     sqs_models.Queue.physical_resource_id = SQS_Queue_physical_resource_id
 
     # Patch LogGroup get_cfn_attribute(..) method in moto
-
     def LogGroup_get_cfn_attribute(self, attribute_name):
         try:
             return LogGroup_get_cfn_attribute_orig(self, attribute_name)
@@ -489,7 +479,6 @@ def apply_patches():
     cw_models.LogGroup.get_cfn_attribute = LogGroup_get_cfn_attribute
 
     # Patch Lambda get_cfn_attribute(..) method in moto
-
     def Lambda_Function_get_cfn_attribute(self, attribute_name):
         try:
             if attribute_name == 'Arn':
@@ -504,7 +493,6 @@ def apply_patches():
     lambda_models.LambdaFunction.get_cfn_attribute = Lambda_Function_get_cfn_attribute
 
     # Patch DynamoDB get_cfn_attribute(..) method in moto
-
     def DynamoDB_Table_get_cfn_attribute(self, attribute_name):
         try:
             if attribute_name == 'StreamArn':
@@ -519,7 +507,6 @@ def apply_patches():
     dynamodb_models.Table.get_cfn_attribute = DynamoDB_Table_get_cfn_attribute
 
     # Patch IAM get_cfn_attribute(..) method in moto
-
     def IAM_Role_get_cfn_attribute(self, attribute_name):
         try:
             return IAM_Role_get_cfn_attribute_orig(self, attribute_name)
@@ -532,7 +519,6 @@ def apply_patches():
     iam_models.Role.get_cfn_attribute = IAM_Role_get_cfn_attribute
 
     # Patch SNS Topic get_cfn_attribute(..) method in moto
-
     def SNS_Topic_get_cfn_attribute(self, attribute_name):
         result = SNS_Topic_get_cfn_attribute_orig(self, attribute_name)
         if attribute_name.lower() in ['arn', 'topicarn']:
@@ -543,7 +529,6 @@ def apply_patches():
     sns_models.Topic.get_cfn_attribute = SNS_Topic_get_cfn_attribute
 
     # Patch LambdaFunction create_from_cloudformation_json(..) method in moto
-
     @classmethod
     def Lambda_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         resource_name = cloudformation_json.get('Properties', {}).get('FunctionName') or resource_name
@@ -553,7 +538,6 @@ def apply_patches():
     lambda_models.LambdaFunction.create_from_cloudformation_json = Lambda_create_from_cloudformation_json
 
     # Patch EventSourceMapping create_from_cloudformation_json(..) method in moto
-
     @classmethod
     def Mapping_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json.get('Properties', {})
@@ -566,7 +550,6 @@ def apply_patches():
     lambda_models.EventSourceMapping.create_from_cloudformation_json = Mapping_create_from_cloudformation_json
 
     # Patch LambdaFunction update_from_cloudformation_json(..) method in moto
-
     @classmethod
     def Lambda_update_from_cloudformation_json(cls,
             original_resource, new_resource_name, cloudformation_json, region_name):
@@ -577,9 +560,7 @@ def apply_patches():
         lambda_models.LambdaFunction.update_from_cloudformation_json = Lambda_update_from_cloudformation_json
 
     # patch ApiGateway Deployment
-
-    def depl_delete_from_cloudformation_json(
-            resource_name, resource_json, region_name):
+    def depl_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
         LOG.info('TODO: apigateway.Deployment.delete_from_cloudformation_json %s' % properties)
 
@@ -587,9 +568,7 @@ def apply_patches():
         apigw_models.Deployment.delete_from_cloudformation_json = depl_delete_from_cloudformation_json
 
     # patch Lambda Version
-
-    def vers_delete_from_cloudformation_json(
-            resource_name, resource_json, region_name):
+    def vers_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
         LOG.info('TODO: apigateway.Deployment.delete_from_cloudformation_json %s' % properties)
 
@@ -597,7 +576,6 @@ def apply_patches():
         lambda_models.LambdaVersion.delete_from_cloudformation_json = vers_delete_from_cloudformation_json
 
     # add CloudFormation types
-
     @classmethod
     def RestAPI_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
@@ -656,7 +634,6 @@ def apply_patches():
     # TODO: add support for AWS::ApiGateway::Model, AWS::ApiGateway::RequestValidator, ...
 
     # fix AttributeError in moto's CloudFormation describe_stack_resource
-
     def describe_stack_resource(self):
         stack_name = self._get_param('StackName')
         stack = self.cloudformation_backend.get_stack(stack_name)
@@ -686,7 +663,6 @@ def apply_patches():
     responses.CloudFormationResponse.describe_stack_resource = describe_stack_resource
 
     # fix moto's describe_stack_events jinja2.exceptions.UndefinedError
-
     def cf_describe_stack_events(self):
         stack_name = self._get_param('StackName')
         backend = self.cloudformation_backend
@@ -703,13 +679,11 @@ def apply_patches():
     responses.CloudFormationResponse.describe_stack_events = cf_describe_stack_events
 
     # fix Lambda regions in moto - see https://github.com/localstack/localstack/issues/1961
-
     for region in boto3.session.Session().get_available_regions('lambda'):
         if region not in lambda_models.lambda_backends:
             lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
 
     # patch FakeStack.initialize_resources
-
     def run_dependencies_deployment_loop(stack, action):
         def set_status(status):
             stack._add_stack_event(status)
@@ -763,6 +737,40 @@ def apply_patches():
         raise UnformattedGetAttTemplateException()
 
     kinesis_models.Stream.get_cfn_attribute = Kinesis_Stream_get_cfn_attribute
+
+    # patch cloudformation backend create_change_set(..)
+    # #760 cloudformation deploy invalid xml error
+    cloudformation_backend_create_change_set_orig = CloudFormationBackend.create_change_set
+
+    def cloudformation_backend_create_change_set(
+            self,
+            stack_name,
+            change_set_name,
+            template,
+            parameters,
+            region_name,
+            change_set_type,
+            notification_arns=None,
+            tags=None,
+            role_arn=None):
+        change_set_id, _ = cloudformation_backend_create_change_set_orig(
+            self,
+            stack_name,
+            change_set_name,
+            template,
+            parameters,
+            region_name,
+            change_set_type,
+            notification_arns,
+            tags,
+            role_arn
+        )
+        change_set = self.change_sets[change_set_id]
+        change_set.status = 'CREATE_COMPLETE'
+
+        return change_set_id, _
+
+    CloudFormationBackend.create_change_set = cloudformation_backend_create_change_set
 
 
 def inject_stats_endpoint():

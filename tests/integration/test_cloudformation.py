@@ -113,6 +113,30 @@ TEST_TEMPLATE_7 = json.dumps({
     }
 })
 
+TEST_CHANGE_SET_BODY = """
+Parameters:
+  EnvironmentType:
+    Type: String
+    Default: local
+    AllowedValues:
+      - prod
+      - stage
+      - dev
+      - local
+
+Conditions:
+  IsProd:
+    !Equals [ !Ref EnvironmentType, prod ]
+
+Resources:
+  MyBaseDomainName:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: 'base-domain-name'
+      Type: String
+      Value: !If [ IsProd, example.com, !Join [ '-', [ !Ref EnvironmentType, example.com ] ] ]
+"""
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -415,3 +439,70 @@ class CloudFormationTest(unittest.TestCase):
 
         # delete the stack
         cloudformation.delete_stack(StackName=stack_name)
+
+    def test_deploy_stack_change_set(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        stack_name = 'stack-%s' % short_uid()
+        change_set_name = 'change-set-%s' % short_uid()
+
+        try:
+            cloudformation.describe_stacks(
+                StackName=stack_name
+            )
+            self.fail('This call should not be successful as the stack does not exist')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'ValidationError')
+
+        rs = cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=TEST_CHANGE_SET_BODY,
+            Parameters=[
+                {
+                    'ParameterKey': 'EnvironmentType',
+                    'ParameterValue': 'stage'
+                }
+            ],
+            Capabilities=['CAPABILITY_IAM'],
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        change_set_id = rs['Id']
+
+        rs = cloudformation.describe_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['ChangeSetName'], change_set_name)
+        self.assertEqual(rs['ChangeSetId'], change_set_id)
+        self.assertEqual(rs['Status'], 'CREATE_COMPLETE')
+
+        rs = cloudformation.execute_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = cloudformation.describe_stacks(
+            StackName=stack_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        stack = rs['Stacks'][0]
+        parameters = stack['Parameters']
+
+        self.assertEqual(stack['StackName'], stack_name)
+        self.assertEqual(parameters[0]['ParameterKey'], 'EnvironmentType')
+        self.assertEqual(parameters[0]['ParameterValue'], 'stage')
+
+        # clean up
+        cloudformation.delete_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        cloudformation.delete_stack(
+            StackName=stack_name
+        )
