@@ -772,6 +772,21 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(TEST_BUCKET_NAME_2, [TEST_KEY_2])
 
+    def test_get_object_versioning(self):
+        bucket_name = 'bucket-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        rs = self.s3_client.list_object_versions(
+            Bucket=bucket_name,
+            EncodingType='url'
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['Name'], bucket_name)
+
+        # clean up
+        self._delete_bucket(bucket_name, [])
+
     # ---------------
     # HELPER METHODS
     # ---------------
