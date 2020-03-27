@@ -730,7 +730,8 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'LastModified': func_details.last_modified,
         'TracingConfig': {'Mode': 'PassThrough'},
         'RevisionId': func_version.get('RevisionId'),
-        'State': 'Active'
+        'State': 'Active',
+        'LastUpdateStatus': 'Successful'
     }
     if func_details.envvars:
         result['Environment'] = {
