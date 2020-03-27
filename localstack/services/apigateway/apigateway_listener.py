@@ -251,9 +251,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
             response.status_code = int(parsed_result.get('statusCode', 200))
-            parsed_headers = parsed_result.get('headers', {})
-            if parsed_headers is not None:
-                response.headers.update(parsed_headers)
+            response.headers.update((parsed_result or {}).get('headers', {}))
             try:
                 if isinstance(parsed_result['body'], dict):
                     response._content = json.dumps(parsed_result['body'])

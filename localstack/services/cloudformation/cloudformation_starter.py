@@ -18,6 +18,8 @@ from moto.awslambda import models as lambda_models
 from moto.apigateway import models as apigw_models
 from moto.cloudwatch import models as cw_models
 from moto.cloudformation import parsing, responses
+from moto.cloudformation import utils as cloudformation_utils
+from moto.cloudformation import models as cloudformation_models
 from boto.cloudformation.stack import Output
 from moto.cloudformation.models import FakeStack, CloudFormationBackend, cloudformation_backends
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
@@ -423,6 +425,14 @@ def apply_patches():
 
     ddb_table_get_cfn_attribute_orig = dynamodb_models.Table.get_cfn_attribute
     dynamodb_models.Table.get_cfn_attribute = DynamoDB_Table_get_cfn_attribute
+
+    # Patch generate_stack_id(..) method in moto
+    def generate_stack_id(stack_name, region=None, **kwargs):
+        region = region or aws_stack.get_region()
+        return generate_stack_id_orig(stack_name, region=region, **kwargs)
+
+    generate_stack_id_orig = cloudformation_utils.generate_stack_id
+    cloudformation_utils.generate_stack_id = cloudformation_models.generate_stack_id = generate_stack_id
 
     # Patch DynamoDB get_cfn_attribute(..) method in moto
     def DynamoDB2_Table_get_cfn_attribute(self, attribute_name):
