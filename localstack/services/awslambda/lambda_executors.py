@@ -699,10 +699,14 @@ class Util:
     @classmethod
     def get_java_opts(cls):
         opts = config.LAMBDA_JAVA_OPTS or ''
-        if '_debug_port_' in opts:
+        if 'address=_debug_port_' in opts:
             if not cls.debug_java_port:
                 cls.debug_java_port = get_free_tcp_port()
             opts = opts.replace('_debug_port_', ('%s' % cls.debug_java_port))
+        elif 'address=' in opts:
+            if not cls.debug_java_port:
+                cls.debug_java_port = ops.split("address=")[1]
+
         return opts
 
     @classmethod
