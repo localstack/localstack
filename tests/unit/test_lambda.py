@@ -579,7 +579,7 @@ class TestLambdaAPI(unittest.TestCase):
                                       ',suspend=y,address=_debug_port_')
         self.assertTrue(re.match(expected, result))
         self.assertTrue(lambda_executors.Util.debug_java_port is not False)
-    
+
     def test_java_options_with_debug_port(self):
         expected = '.*transport=dt_socket,server=y,suspend=y,address=1234'
         result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'

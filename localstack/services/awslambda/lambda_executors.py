@@ -705,7 +705,7 @@ class Util:
             opts = opts.replace('_debug_port_', ('%s' % cls.debug_java_port))
         elif 'address=' in opts:
             if not cls.debug_java_port:
-                cls.debug_java_port = ops.split('address=')[1]
+                cls.debug_java_port = opts.split('address=')[1]
 
         return opts
 
