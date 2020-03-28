@@ -1,8 +1,6 @@
 import re
 import json
 import xmltodict
-from jinja2 import Template
-from xml.dom import minidom
 from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
 from six.moves.urllib import parse as urlparse
@@ -35,38 +33,6 @@ UNSUPPORTED_ATTRIBUTE_NAMES = [
 # TODO: add region as first level in the map
 QUEUE_ATTRIBUTES = {}
 
-MESSAGE_ATTRIBUTE_DATA_TYPE = {
-    'String': 'stringValue',
-    'Number': 'stringValue',
-    'Binary': 'binaryValue',
-}
-
-# maps message id to message's attributes
-MESSAGE_ATTRIBUTES = {}
-
-RECEIVE_MESSAGE_RESPONSE_TEMPLATE = """
-<ReceiveMessageResponse xmlns="http://queue.amazonaws.com/doc/2012-11-05/">
-  <ReceiveMessageResult>
-  {% for msg in messages %}
-    <Message>
-        <MessageId>{{msg.id}}</MessageId>
-        <ReceiptHandle>{{msg.receipt_handle}}</ReceiptHandle>
-        <MD5OfBody>{{msg.body_md5}}</MD5OfBody>
-        <Body>{{msg.body}}</Body>
-        {% for attr in msg.attributes %}
-        <Attribute>
-            <Name>{{attr.name}}</Name>
-            <Value>{{attr.value}}</Value>
-        </Attribute>
-        {% endfor %}
-    </Message>
-  {% endfor %}
-  </ReceiveMessageResult>
-  <ResponseMetadata>
-    <RequestId>{{request_id}}</RequestId>
-  </ResponseMetadata>
-</ReceiveMessageResponse>"""
-
 
 def parse_request_data(method, path, data):
     """ Extract request data either from query string (for GET) or request body (for POST). """
@@ -76,78 +42,6 @@ def parse_request_data(method, path, data):
         parsed_path = urlparse.urlparse(path)
         return urlparse.parse_qs(parsed_path.query)
     return {}
-
-
-# Format attributes as dict. Example input:
-#  {
-#    'Attribute.1.Name': ['Policy'],
-#    'Attribute.1.Value': ['...']
-#  }
-# Format of the message Name attribute is MessageAttribute.<int id>.<field>
-# Format of the Value attributes is MessageAttribute.<int id>.Value.DataType
-# and MessageAttribute.<int id>.Value.<Type>Value
-#
-# The data schema changes on transfer between SQS and Lambda (at least)
-# JS functions in real AWS!
-# It is unknown at this time whether this data structure change affects different
-# languages in different ways.
-#
-# The MessageAttributes specified in the SQS payload (in JavaScript):
-# var params = {
-#   MessageBody: "body string",
-#   MessageAttributes: {
-#       "attr_1": {
-#           DataType: "String",
-#           StringValue: "attr_1_value"
-#       },
-#       "attr_2": {
-#           DataType: "String",
-#           StringValue: "attr_2_value"
-#       }
-#   }
-# }
-#
-# The MessageAttributes specified above are massaged into the following structure:
-# {
-#    attr_1: {
-#      stringValue: 'attr_1_value',
-#      stringListValues: [],
-#      binaryListValues: [],
-#      dataType: 'String'
-#    },
-#    attr_2: {
-#      stringValue: 'attr_2_value',
-#      stringListValues: [],
-#      binaryListValues: [],
-#      dataType: 'String'
-#    }
-# }
-# TODO still needed?
-def format_message_attributes(data):
-    prefix = 'MessageAttribute'
-    names = []
-    for (k, name) in [(k, data[k]) for k in data if k.startswith(prefix) and k.endswith('.Name')]:
-        attr_name = name[0]
-        k_id = k.split('.')[1]
-        names.append((attr_name, k_id))
-
-    msg_attrs = {}
-    for (key_name, key_id) in names:
-        msg_attrs[key_name] = {}
-        # Find vals for each key_id
-        attrs = [(k, data[k]) for k in data
-                 if k.startswith('{}.{}.'.format(prefix, key_id)) and not k.endswith('.Name')]
-        for (attr_k, attr_v) in attrs:
-            attr_name = attr_k.split('.')[3]
-            msg_attrs[key_name][attr_name[0].lower() + attr_name[1:]] = attr_v[0]
-
-        # These fields are set in the payload sent to Lambda.
-        # It is extremely likely additional work will
-        # be required to support these fields
-        msg_attrs[key_name]['stringListValues'] = []
-        msg_attrs[key_name]['binaryListValues'] = []
-
-    return msg_attrs
 
 
 # Format attributes as a list. Example input:
@@ -266,18 +160,10 @@ def _list_dead_letter_source_queues(queues, queue_url):
     return format_list_dl_source_queues_response(dead_letter_source_queues)
 
 
-def _process_sent_message(path, req_data, response, headers):
-    queue_url = _queue_url(path, req_data, headers)
-    queue_name = queue_url.rpartition('/')[2]
+def _process_sent_message(path, req_data, headers):
+    queue_name = _queue_url(path, req_data, headers).rpartition('/')[2]
 
-    message_body = req_data.get('MessageBody', [None])[0]
-    message_attributes = format_message_attributes(req_data)
-
-    if message_attributes:
-        message_id = re.match(r'.*<MessageId>(.*)</MessageId>', to_str(response._content), re.DOTALL).group(1)
-        MESSAGE_ATTRIBUTES[message_id] = message_attributes
-
-    lambda_api.process_sqs_message(queue_name, message_body, message_attributes)
+    lambda_api.process_sqs_message(queue_name)
 
 
 def format_list_dl_source_queues_response(queues):
@@ -294,10 +180,19 @@ def format_list_dl_source_queues_response(queues):
     return content_str.format(XMLNS_SQS, queue_urls)
 
 
-class ProxyListenerSQS(ProxyListener):
-    def __init__(self):
-        self.receive_message_renderer = Template(RECEIVE_MESSAGE_RESPONSE_TEMPLATE)
+# extract the external port used by the client to make the request
+def get_external_port(headers, request_handler):
+    host = headers.get('Host', '')
+    if ':' in host:
+        return int(host.split(':')[1])
 
+    # If we cannot find the Host header, then fall back to the port of the proxy.
+    # (note that this could be incorrect, e.g., if running in Docker with a host port that
+    # is different from the internal container port, but there is not much else we can do.)
+    return request_handler.proxy.port
+
+
+class ProxyListenerSQS(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
             return 200
@@ -375,19 +270,16 @@ class ProxyListenerSQS(ProxyListener):
 
         # instruct listeners to fetch new SQS message
         if action == 'SendMessage':
-            _process_sent_message(path, req_data, response, headers)
-
-        if action == 'ReceiveMessage':
-            content_str = self._process_received_response(response)
+            _process_sent_message(path, req_data, headers)
 
         if content_str_original != content_str:
             # if changes have been made, return patched response
-            new_response = Response()
-            new_response.status_code = response.status_code
-            new_response.headers = response.headers
-            new_response._content = content_str
-            new_response.headers['content-length'] = len(new_response._content)
-            return new_response
+            rs = Response()
+            rs.status_code = response.status_code
+            rs.headers = response.headers
+            rs._content = content_str
+            rs.headers['content-length'] = len(rs._content)
+            return rs
 
     @classmethod
     def get_message_attributes_md5(cls, req_data):
@@ -416,49 +308,6 @@ class ProxyListenerSQS(ProxyListener):
         message_attr_hash = moto_message.attribute_md5
 
         return message_attr_hash
-
-    def _process_received_response(self, response):
-        _content = to_str(response._content)
-        messages = minidom.parseString(_content).getElementsByTagName('Message')
-        if not messages:
-            return _content
-
-        kwargs = {
-            'request_id': re.match(r'.*<MessageId>(.*)</MessageId>', _content, re.DOTALL).group(1),
-            'messages': []
-        }
-        for message in messages:
-            msg_xml = message.toxml()
-            message_id = re.match(r'.*<MessageId>(.*)</MessageId>', msg_xml, re.DOTALL).group(1)
-            attributes = []
-            for k, attribute_data in MESSAGE_ATTRIBUTES.get(message_id, {}).items():
-                v = attribute_data[MESSAGE_ATTRIBUTE_DATA_TYPE[attribute_data['dataType']]]
-                attributes.append({
-                    'name': k,
-                    'value': v
-                })
-
-            kwargs['messages'].append({
-                'id': message_id,
-                'receipt_handle': re.match(r'.*<ReceiptHandle>(.*)</ReceiptHandle>', msg_xml, re.DOTALL).group(1),
-                'body_md5': re.match(r'.*<MD5OfBody>(.*)</MD5OfBody>', msg_xml, re.DOTALL).group(1),
-                'body': re.match(r'.*<Body>(.*)</Body>', msg_xml, re.DOTALL).group(1),
-                'attributes': attributes
-            })
-
-        return self.receive_message_renderer.render(**kwargs)
-
-
-# extract the external port used by the client to make the request
-def get_external_port(headers, request_handler):
-    host = headers.get('Host', '')
-    if ':' in host:
-        return int(host.split(':')[1])
-
-    # If we cannot find the Host header, then fall back to the port of the proxy.
-    # (note that this could be incorrect, e.g., if running in Docker with a host port that
-    # is different from the internal container port, but there is not much else we can do.)
-    return request_handler.proxy.port
 
 
 # instantiate listener

@@ -283,6 +283,17 @@ def start_lambda_sqs_listener():
         return
 
     def send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region):
+        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
+            if error and not dlq_sent:
+                # Skip deleting messages from the queue in case of processing errors AND if
+                # the message has not yet been sent to a dead letter queue (DLQ).
+                # We'll pick them up and retry next time they become available on the queue.
+                return
+
+            sqs_client = aws_stack.connect_to_service('sqs')
+            entries = [{'Id': r['receiptHandle'], 'ReceiptHandle': r['receiptHandle']} for r in records]
+            sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+
         records = []
         for msg in messages:
             records.append({
@@ -298,17 +309,8 @@ def start_lambda_sqs_listener():
                 'md5OfMessageAttributes': msg.get('MD5OfMessageAttributes'),
                 'sqs': True,
             })
-        event = {'Records': records}
 
-        def delete_messages(result, func_arn, event, error=None, dlq_sent=None, **kwargs):
-            if error and not dlq_sent:
-                # Skip deleting messages from the queue in case of processing errors AND if
-                # the message has not yet been sent to a dead letter queue (DLQ).
-                # We'll pick them up and retry next time they become available on the queue.
-                return
-            sqs_client = aws_stack.connect_to_service('sqs')
-            entries = [{'Id': r['receiptHandle'], 'ReceiptHandle': r['receiptHandle']} for r in records]
-            sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=entries)
+        event = {'Records': records}
 
         # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
         run_lambda(event=event, context={}, func_arn=lambda_arn, asynchronous=True, callback=delete_messages)
@@ -326,18 +328,25 @@ def start_lambda_sqs_listener():
 
                 sqs_client = aws_stack.connect_to_service('sqs')
                 for source in sources:
+                    queue_arn = source['EventSourceArn']
+                    lambda_arn = source['FunctionArn']
+
                     try:
-                        queue_arn = source['EventSourceArn']
-                        lambda_arn = source['FunctionArn']
                         region_name = queue_arn.split(':')[3]
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
-                        result = sqs_client.receive_message(QueueUrl=queue_url)
+                        result = sqs_client.receive_message(
+                            QueueUrl=queue_url,
+                            MessageAttributeNames=['All']
+                        )
                         messages = result.get('Messages')
                         if not messages:
                             continue
+
                         send_event_to_lambda(queue_arn, queue_url, lambda_arn, messages, region=region_name)
+
                     except Exception as e:
                         LOG.debug('Unable to poll SQS messages for queue %s: %s' % (queue_arn, e))
+
             except Exception:
                 pass
             finally:
@@ -348,7 +357,7 @@ def start_lambda_sqs_listener():
     SQS_LISTENER_THREAD['_thread_'].start()
 
 
-def process_sqs_message(queue_name, message_body, message_attributes, region_name=None):
+def process_sqs_message(queue_name, region_name=None):
     # feed message into the first listening lambda (message should only get processed once)
     try:
         region_name = region_name or aws_stack.get_region()
@@ -359,6 +368,7 @@ def process_sqs_message(queue_name, message_body, message_attributes, region_nam
         source = (sources or [None])[0]
         if not source:
             return False
+
         start_lambda_sqs_listener()
         return True
     except Exception as e:
