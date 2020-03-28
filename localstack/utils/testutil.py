@@ -317,10 +317,7 @@ def get_lambda_log_stream(function_name):
         logGroupName='/aws/lambda/{}'.format(function_name)
     )
 
-    try:
-        return rs['logStreams'][0]['logStreamName']
-    except Exception:
-        raise
+    return rs['logStreams'][0]['logStreamName']
 
 
 def get_event_message(events):

@@ -5,7 +5,7 @@ from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
-from requests.models import Request, Response
+from requests.models import Request
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
@@ -274,12 +274,8 @@ class ProxyListenerSQS(ProxyListener):
 
         if content_str_original != content_str:
             # if changes have been made, return patched response
-            rs = Response()
-            rs.status_code = response.status_code
-            rs.headers = response.headers
-            rs._content = content_str
-            rs.headers['content-length'] = len(rs._content)
-            return rs
+            response.headers['content-length'] = len(content_str)
+            return requests_response(content_str, headers=response.headers, status_code=response.status_code)
 
     @classmethod
     def get_message_attributes_md5(cls, req_data):
