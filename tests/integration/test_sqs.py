@@ -28,6 +28,21 @@ TEST_POLICY = """
 }
 """
 
+TEST_MESSAGE_ATTRIBUTES = {
+    'City': {
+        'DataType': 'String',
+        'StringValue': 'Any City'
+    },
+    'Greeting': {
+        'DataType': 'Binary',
+        'BinaryValue': 'Hello, World!'
+    },
+    'Population': {
+        'DataType': 'Number',
+        'StringValue': '1250800'
+    }
+}
+
 
 class SQSTest(unittest.TestCase):
     @classmethod
@@ -296,3 +311,23 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=nq)
         self.client.delete_queue(QueueUrl=dlq['QueueUrl'])
+
+    def test_receive_message_with_attributes(self):
+        queue_name = 'queue-%s' % short_uid()
+
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+        self.client.send_message(
+            QueueUrl=queue_url,
+            MessageBody='hello',
+            MessageAttributes=TEST_MESSAGE_ATTRIBUTES
+        )
+
+        rs = self.client.receive_message(QueueUrl=queue_url)
+        messages = rs['Messages']
+
+        self.assertEqual(len(messages), 1)
+        self.assertIn('Attributes', messages[0])
+        self.assertEqual(messages[0]['Attributes']['City'], TEST_MESSAGE_ATTRIBUTES['City']['StringValue'])
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
