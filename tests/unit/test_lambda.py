@@ -587,6 +587,13 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertTrue(re.match(expected, result))
         self.assertEqual('1234', lambda_executors.Util.debug_java_port)
 
+    def test_java_options_with_debug_port_in_middle(self):
+        expected = '.*transport=dt_socket,server=y,address=1234,suspend=y'
+        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
+                                      ',suspend=y,address=1234')
+        self.assertTrue(re.match(expected, result))
+        self.assertEqual('1234', lambda_executors.Util.debug_java_port)
+
     def prepare_java_opts(self, java_opts):
         lambda_executors.config.LAMBDA_JAVA_OPTS = java_opts
         result = lambda_executors.Util.get_java_opts()
