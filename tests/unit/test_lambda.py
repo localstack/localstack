@@ -580,17 +580,24 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertTrue(re.match(expected, result))
         self.assertTrue(lambda_executors.Util.debug_java_port is not False)
 
-    def test_java_options_with_debug_port(self):
+    def test_java_options_with_unset_debug_port_in_middle(self):
+        expected = '.*transport=dt_socket,server=y,address=[0-9]+,suspend=y'
+        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
+                                      ',address=_debug_port_,suspend=y')
+        self.assertTrue(re.match(expected, result))
+        self.assertTrue(lambda_executors.Util.debug_java_port is not False)
+
+    def test_java_options_with_configured_debug_port(self):
         expected = '.*transport=dt_socket,server=y,suspend=y,address=1234'
         result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
                                       ',suspend=y,address=1234')
         self.assertTrue(re.match(expected, result))
         self.assertEqual('1234', lambda_executors.Util.debug_java_port)
 
-    def test_java_options_with_debug_port_in_middle(self):
+    def test_java_options_with_configured_debug_port_in_middle(self):
         expected = '.*transport=dt_socket,server=y,address=1234,suspend=y'
         result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
-                                      ',suspend=y,address=1234')
+                                      ',address=1234,suspend=y')
         self.assertTrue(re.match(expected, result))
         self.assertEqual('1234', lambda_executors.Util.debug_java_port)
 
