@@ -12,6 +12,7 @@ from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import wait_for_port_open
 from localstack.services.infra import start_moto_server
+from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
 LOG = logging.getLogger(__name__)
 
@@ -101,6 +102,8 @@ def apply_patches():
     # patch S3Bucket.get_bucket(..)
     def get_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+        if bucket_name == BUCKET_MARKER_LOCAL:
+            return None
         return get_bucket_orig(bucket_name, *args, **kwargs)
 
     get_bucket_orig = s3_models.s3_backend.get_bucket
