@@ -103,13 +103,13 @@ class SQSTest(unittest.TestCase):
         self.assertIn(queue_name, queue_url)
 
         def receive_messages(**kwargs):
-            defaults = dict(
+            kwds = dict(
                 QueueUrl=queue_url,
                 MaxNumberOfMessages=10,
                 MessageAttributeNames=['All']
             )
-
-            messages = self.client.receive_message(**{**defaults, **kwargs})
+            kwds.update(kwargs)
+            messages = self.client.receive_message(**kwds)
             return messages
 
         def get_hashes(messages, outgoing=False):
