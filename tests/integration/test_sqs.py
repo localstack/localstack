@@ -96,6 +96,89 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_publish_get_delete_message_batch(self):
+        queue_name = 'queue-%s' % short_uid()
+        queue_info = self.client.create_queue(QueueName=queue_name)
+        queue_url = queue_info['QueueUrl']
+        self.assertIn(queue_name, queue_url)
+
+        def receive_messages(**kwargs):
+            kwds = dict(
+                QueueUrl=queue_url,
+                MaxNumberOfMessages=10,
+                MessageAttributeNames=['All']
+            )
+            kwds.update(kwargs)
+            messages = self.client.receive_message(**kwds)
+            return messages
+
+        def get_hashes(messages, outgoing=False):
+            body_key = 'MD5OfMessageBody' if outgoing else 'MD5OfBody'
+            return set([
+                (m[body_key], m['MD5OfMessageAttributes'])
+                for m in messages
+            ])
+
+        messages_to_send = [
+            {
+                'Id': 'message{:02d}'.format(i),
+                'MessageBody': 'msgBody{:02d}'.format(i),
+                'MessageAttributes': {
+                    'CustomAttribute': {
+                        'DataType': 'String',
+                        'StringValue': 'CustomAttributeValue{:02d}'.format(i)
+                    }
+                }
+            }
+            for i in range(1, 11)
+        ]
+
+        resp = self.client.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send)
+        sent_hashes = get_hashes(resp.get('Successful', []), outgoing=True)
+        self.assertEqual(len(sent_hashes), len(messages_to_send))
+
+        for i in range(2):
+            messages = receive_messages(VisibilityTimeout=0)['Messages']
+            received_hashes = get_hashes(messages)
+            self.assertEqual(received_hashes, sent_hashes)
+
+        self.client.delete_message_batch(
+            QueueUrl=queue_url,
+            Entries=[
+                {'Id': '{:02d}'.format(i), 'ReceiptHandle': m['ReceiptHandle']}
+                for i, m in enumerate(messages)
+            ]
+        )
+
+        response = receive_messages()
+        self.assertFalse(response.get('Messages'))
+
+        # publish/receive message with change_message_visibility
+        self.client.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send)
+        messages = receive_messages()['Messages']
+        response = receive_messages()
+        self.assertFalse(response.get('Messages'))
+
+        reset_hashes = get_hashes(messages[:5])
+        self.client.change_message_visibility_batch(
+            QueueUrl=queue_url,
+            Entries=[
+                {
+                    'Id': '{:02d}'.format(i),
+                    'ReceiptHandle': msg['ReceiptHandle'],
+                    'VisibilityTimeout': 0,
+                }
+                for i, msg in enumerate(messages[:5])
+            ]
+        )
+        for i in range(2):
+            messages = receive_messages(VisibilityTimeout=0)['Messages']
+            received_hashes = get_hashes(messages)
+            self.assertEqual(reset_hashes, received_hashes)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_create_fifo_queue(self):
         fifo_queue = 'my-queue.fifo'
         queue_info = self.client.create_queue(QueueName=fifo_queue, Attributes={'FifoQueue': 'true'})

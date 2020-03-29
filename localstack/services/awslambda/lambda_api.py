@@ -330,13 +330,15 @@ def start_lambda_sqs_listener():
                 for source in sources:
                     queue_arn = source['EventSourceArn']
                     lambda_arn = source['FunctionArn']
+                    batch_size = max(min(source.get('BatchSize', 1), 10), 1)
 
                     try:
                         region_name = queue_arn.split(':')[3]
                         queue_url = aws_stack.sqs_queue_url_for_arn(queue_arn)
                         result = sqs_client.receive_message(
                             QueueUrl=queue_url,
-                            MessageAttributeNames=['All']
+                            MessageAttributeNames=['All'],
+                            MaxNumberOfMessages=batch_size
                         )
                         messages = result.get('Messages')
                         if not messages:
