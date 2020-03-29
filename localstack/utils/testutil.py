@@ -162,14 +162,22 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
     kwargs.update(additional_kwargs)
     if layers:
         kwargs['Layers'] = layers
-    client.create_function(**kwargs)
+    create_func_resp = client.create_function(**kwargs)
+
+    resp = {
+        'CreateFunctionResponse': create_func_resp,
+        'CreateEventSourceMappingResponse': None
+    }
+
     # create event source mapping
     if event_source_arn:
-        client.create_event_source_mapping(
+        resp['CreateEventSourceMappingResponse'] = client.create_event_source_mapping(
             FunctionName=func_name,
             EventSourceArn=event_source_arn,
             StartingPosition=starting_position
         )
+
+    return resp
 
 
 def assert_objects(asserts, all_objects):

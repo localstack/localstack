@@ -269,7 +269,7 @@ class ProxyListenerSQS(ProxyListener):
                 _set_queue_attributes(queue_url, req_data)
 
         # instruct listeners to fetch new SQS message
-        if action == 'SendMessage':
+        if action in ('SendMessage', 'SendMessageBatch'):
             _process_sent_message(path, req_data, headers)
 
         if content_str_original != content_str:
