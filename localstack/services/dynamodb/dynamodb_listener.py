@@ -279,7 +279,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                 payload={'n': event_publisher.get_hash(data['TableName'])}
             )
 
-            TABLE_TAGS.pop(json.loads(response._content)['TableDescription']['TableArn'], None)
+            TABLE_TAGS.pop(json.loads(response._content).get('TableDescription', {}).get('TableArn', None), None)
 
             return
 
