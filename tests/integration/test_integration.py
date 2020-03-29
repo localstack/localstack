@@ -558,7 +558,7 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(invocation_count, 5)
 
         # wait for the queue to drain
-        retry(wait_for_done, retries=10, sleep=3.0)
+        retry(wait_for_done, retries=20, sleep=3.0)
 
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_QUEUE_BATCH)
         sqs.delete_queue(QueueUrl=queue_url)
