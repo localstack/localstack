@@ -510,18 +510,17 @@ class IntegrationTest(unittest.TestCase):
                     }
                 }
             }
-            for i in range(1, 22)
+            for i in range(1, 12)
         ]
 
-        initial_invocation_count = get_lambda_invocations_count(TEST_LAMBDA_NAME_QUEUE_BATCH)
+        start_time = datetime.now()
 
-        # send 21 messages (which should get split into 5 batches)
+        # send 11 messages (which should get split into 3 batches)
         sqs.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send[:10])
-        sqs.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send[10:20])
         sqs.send_message(
             QueueUrl=queue_url,
-            MessageBody=messages_to_send[20]['MessageBody'],
-            MessageAttributes=messages_to_send[20]['MessageAttributes']
+            MessageBody=messages_to_send[10]['MessageBody'],
+            MessageAttributes=messages_to_send[10]['MessageAttributes']
         )
 
         def wait_for_done():
@@ -546,19 +545,22 @@ class IntegrationTest(unittest.TestCase):
                 LOGGER.warning(('SQS messages not visible (actual/expected): %s/%s') %
                     (not_visible_count, 0))
 
-            # batch size is 5, so 21 messages gets sent in 5 batches
-            final_invocation_count = get_lambda_invocations_count(TEST_LAMBDA_NAME_QUEUE_BATCH)
-            invocation_count = final_invocation_count - initial_invocation_count
-            if not_visible_count != 5:
+            invocation_count = get_lambda_invocations_count(
+                TEST_LAMBDA_NAME_QUEUE_BATCH,
+                period=120,
+                start_time=start_time,
+                end_time=datetime.now()
+            )
+            if invocation_count != 3:
                 LOGGER.warning(('Lambda invocations (actual/expected): %s/%s') %
-                    (invocation_count, 5))
+                    (invocation_count, 3))
 
             self.assertEqual(delayed_count, 0, 'no messages waiting for retry')
             self.assertEqual(delayed_count + not_visible_count, 0, 'no in flight messages')
-            self.assertEqual(invocation_count, 5)
+            self.assertEqual(invocation_count, 3, 'expected 3 lambda invocations')
 
-        # wait for the queue to drain
-        retry(wait_for_done, retries=20, sleep=3.0)
+        # wait for the queue to drain (max 90s)
+        retry(wait_for_done, retries=18, sleep=5.0)
 
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_QUEUE_BATCH)
         sqs.delete_queue(QueueUrl=queue_url)
@@ -573,22 +575,26 @@ def get_event_source_arn(stream_name):
     return kinesis.describe_stream(StreamName=stream_name)['StreamDescription']['StreamARN']
 
 
-def get_lambda_invocations_count(lambda_name, metric=None):
-    metric = get_lambda_metrics(lambda_name, metric)
+def get_lambda_invocations_count(lambda_name, metric=None, period=60, start_time=None, end_time=None):
+    metric = get_lambda_metrics(lambda_name, metric, period, start_time, end_time)
     if not metric['Datapoints']:
         return 0
     return metric['Datapoints'][-1]['Sum']
 
 
-def get_lambda_metrics(func_name, metric=None):
+def get_lambda_metrics(func_name, metric=None, period=60, start_time=None, end_time=None):
     metric = metric or 'Invocations'
     cloudwatch = aws_stack.connect_to_service('cloudwatch')
+    if end_time is None:
+        end_time = datetime.now()
+    if start_time is None:
+        start_time = end_time - timedelta(seconds=period)
     return cloudwatch.get_metric_statistics(
         Namespace='AWS/Lambda',
         MetricName=metric,
         Dimensions=[{'Name': 'FunctionName', 'Value': func_name}],
-        Period=60,
-        StartTime=datetime.now() - timedelta(minutes=1),
-        EndTime=datetime.now(),
+        Period=period,
+        StartTime=start_time,
+        EndTime=end_time,
         Statistics=['Sum']
     )
