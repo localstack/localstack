@@ -8,11 +8,14 @@ import zipfile
 import importlib
 from six import iteritems
 from localstack.utils.aws import aws_stack
-from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
-    LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
+from localstack.constants import (
+    LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
+)
 from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
-from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
+from localstack.services.awslambda.lambda_api import (
+    get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION,
+    LAMBDA_DEFAULT_TIMEOUT
+)
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
 
@@ -27,7 +30,8 @@ def copy_dir(source, target):
 def rm_dir(dir):
     if is_alpine():
         # Using the native command can be an order of magnitude faster on Travis-CI
-        return run('rm -r %s' % (dir))
+        return run('rm -r %s' % dir)
+
     shutil.rmtree(dir)
 
 
@@ -304,3 +308,24 @@ def create_sqs_queue(queue_name):
         'QueueUrl': queue_url,
         'QueueArn': queue_arn,
     }
+
+
+# get lambda lambda log stream
+def get_lambda_log_stream(function_name):
+    logs = aws_stack.connect_to_service('logs')
+    rs = logs.describe_log_streams(
+        logGroupName='/aws/lambda/{}'.format(function_name)
+    )
+
+    return rs['logStreams'][0]['logStreamName']
+
+
+def get_event_message(events):
+    for event in events:
+        raw_message = event['message']
+        if 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
+            continue
+
+        return json.loads(raw_message)
+
+    return None

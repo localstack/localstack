@@ -1,7 +1,9 @@
+import os
 import json
 import unittest
 
 from localstack.utils import testutil
+from localstack.utils.testutil import get_lambda_log_stream, get_event_message
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry
 from .lambdas import lambda_integration
@@ -27,6 +29,20 @@ TEST_POLICY = """
   ]
 }
 """
+
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
+
+TEST_MESSAGE_ATTRIBUTES = {
+    'City': {
+        'DataType': 'String',
+        'StringValue': 'Any City'
+    },
+    'Population': {
+        'DataType': 'Number',
+        'StringValue': '1250800'
+    }
+}
 
 
 class SQSTest(unittest.TestCase):
@@ -296,3 +312,49 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=nq)
         self.client.delete_queue(QueueUrl=dlq['QueueUrl'])
+
+    def test_lambda_invoked_by_sqs_message_with_attributes(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        queue_name = 'queue-{}'.format(short_uid())
+
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=aws_stack.sqs_queue_arn(queue_name),
+            FunctionName=function_name
+        )
+
+        self.client.send_message(
+            QueueUrl=queue_url,
+            MessageBody='hello world.',
+            MessageAttributes=TEST_MESSAGE_ATTRIBUTES
+        )
+
+        logs = aws_stack.connect_to_service('logs')
+
+        log_stream = retry(get_lambda_log_stream, retries=3, sleep=2, function_name=function_name)
+        rs = logs.get_log_events(
+            logGroupName='/aws/lambda/{}'.format(function_name),
+            logStreamName=log_stream
+        )
+
+        message = get_event_message(rs['events'])
+        self.assertEqual(len(message['Records']), 1)
+
+        sqs_msg = message['Records'][0]
+        self.assertEqual(sqs_msg['body'], 'hello world.')
+
+        self.assertIn('messageAttributes', sqs_msg)
+        self.assertIn('City', sqs_msg['messageAttributes'])
+        self.assertEqual(sqs_msg['messageAttributes']['City'], TEST_MESSAGE_ATTRIBUTES['City'])
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+        lambda_client.delete_function(FunctionName=function_name)

@@ -7,12 +7,14 @@ import unittest
 import six
 from io import BytesIO
 from localstack import config
-from localstack.constants import LOCALSTACK_ROOT_FOLDER, LOCALSTACK_MAVEN_VERSION
+from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER
 from localstack.utils import testutil
+from localstack.utils.testutil import get_lambda_log_stream, get_event_message
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
-    run_safe, get_free_tcp_port, get_service_protocol, retry)
+    run_safe, get_free_tcp_port, get_service_protocol, retry
+)
 from localstack.services.infra import start_proxy
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
@@ -431,26 +433,7 @@ class TestPythonRuntimes(LambdaTestBase):
 
         logs = aws_stack.connect_to_service('logs')
 
-        def get_event_message(events):
-            for event in events:
-                raw_message = event['message']
-                if 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
-                    continue
-
-                return json.loads(raw_message)
-
-            return None
-
-        # wait for lambda executing
-        def check_log_streams():
-            rs = logs.describe_log_streams(
-                logGroupName='/aws/lambda/{}'.format(function_name)
-            )
-
-            self.assertEqual(len(rs['logStreams']), 1)
-            return rs['logStreams'][0]['logStreamName']
-
-        log_stream = retry(check_log_streams, retries=3, sleep=2)
+        log_stream = retry(get_lambda_log_stream, retries=3, sleep=2, function_name=function_name)
         rs = logs.get_log_events(
             logGroupName='/aws/lambda/{}'.format(function_name),
             logStreamName=log_stream
