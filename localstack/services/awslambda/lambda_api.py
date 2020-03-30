@@ -1381,7 +1381,7 @@ def put_function_event_invoke_config(function):
     return jsonify({
         'LastModified': response.last_modified,
         'FunctionArn': str(function_arn),
-        'MaximumRetryAttempts': response.max_retry_attempt,
+        'MaximumRetryAttempts': response.max_retry_attempts,
         'MaximumEventAgeInSeconds': response.max_event_age,
         'DestinationConfig': {
             'OnSuccess': {
@@ -1392,6 +1392,29 @@ def put_function_event_invoke_config(function):
             }
         }
     })
+
+
+@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['GET'])
+def get_function_event_invoke_config(function):
+    """ Retrieves the configuration for asynchronous invocation for a function
+        ---
+        operationId: GetFunctionEventInvokeConfig
+        parameters:
+            - name: 'function'
+              in: path
+            - name: 'qualifier'
+              in: path
+            - name: 'request'
+              in: body
+    """
+    try:
+        function_arn = func_arn(function)
+        lambda_obj = arn_to_lambda[function_arn]
+    except Exception as e:
+        return error_response(str(e), 400)
+
+    response = lambda_obj.get_function_event_invoke_config()
+    return jsonify(response)
 
 
 def serve(port, quiet=True):

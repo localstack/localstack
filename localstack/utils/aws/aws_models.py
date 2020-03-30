@@ -177,7 +177,7 @@ class LambdaFunction(Component):
         self.code = None
         self.dead_letter_config = None
         self.on_successful_invocation = None
-        self.max_retry_attempt = None
+        self.max_retry_attempts = None
         self.max_event_age = None
 
     def set_dead_letter_config(self, data):
@@ -190,24 +190,40 @@ class LambdaFunction(Component):
             raise Exception('Dead letter queue ARN "%s" requires a valid SQS queue or SNS topic' % target_arn)
 
     def get_function_event_invoke_config(self):
-        return {
+        response = {
             'LastModified': str(self.last_modified),
             'FunctionArn': str(self.id),
-            'MaximumRetryAttempts': self.max_retry_attempt,
-            'MaximumEventAgeInSeconds': self.max_event_age,
-            'DestinationConfig': {
-                'OnSuccess': {
-                    'Destination': str(self.on_successful_invocation)
-                },
-                'OnFailure': {
-                    'Destination': str(self.dead_letter_config)
-                }
-            }
         }
 
+        if self.max_retry_attempts:
+            response.update({'MaximumRetryAttempts': self.max_retry_attempts})
+
+        if self.max_event_age:
+            response.update({'MaximumEventAgeInSeconds': self.max_event_age})
+
+        if self.on_successful_invocation or self.dead_letter_config:
+            response.update({'DestinationConfig': {}})
+            if self.on_successful_invocation:
+                response['DestinationConfig'].update({
+                    'OnSuccess': {
+                        'Destination': self.on_successful_invocation
+                    }
+                })
+            if self.dead_letter_config:
+                response['DestinationConfig'].update({
+                    'OnFailure': {
+                        'Destination': self.dead_letter_config
+                    }
+                })
+
+        return response
+
     def put_function_event_invoke_config(self, data):
+        if not isinstance(data, dict):
+            return
+
         updated = False
-        if isinstance(data, dict) and 'DestinationConfig' in data.keys():
+        if 'DestinationConfig' in data.keys():
             if 'OnFailure' in data['DestinationConfig'].keys():
                 dlq_arn = data['DestinationConfig']['OnFailure']['Destination']
                 self.dead_letter_config = dlq_arn
@@ -218,16 +234,16 @@ class LambdaFunction(Component):
                 self.on_successful_invocation = sq_arn
                 updated = True
 
-        if isinstance(data, dict) and 'MaximumRetryAttempts' in data.keys():
+        if 'MaximumRetryAttempts' in data.keys():
             try:
-                max_retry_attempt = int(data['MaximumRetryAttempts'])
+                max_retry_attempts = int(data['MaximumRetryAttempts'])
             except Exception:
-                max_retry_attempt = 3
+                max_retry_attempts = 3
 
-            self.max_retry_attempt = max_retry_attempt
+            self.max_retry_attempts = max_retry_attempts
             updated = True
 
-        if isinstance(data, dict) and 'MaximumEventAgeInSeconds' in data.keys():
+        if 'MaximumEventAgeInSeconds' in data.keys():
             try:
                 max_event_age = int(data['MaximumEventAgeInSeconds'])
             except Exception:
