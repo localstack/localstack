@@ -1,6 +1,8 @@
 import time
 import json
 import six
+from datetime import datetime
+from localstack.utils.common import isoformat_milliseconds
 
 if six.PY3:
     long = int
@@ -174,6 +176,9 @@ class LambdaFunction(Component):
         self.memory_size = None
         self.code = None
         self.dead_letter_config = None
+        self.on_successful_invocation = None
+        self.max_retry_attempts = None
+        self.max_event_age = None
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')
@@ -183,6 +188,74 @@ class LambdaFunction(Component):
         target_arn = config.get('TargetArn') or ''
         if ':sqs:' not in target_arn and ':sns:' not in target_arn:
             raise Exception('Dead letter queue ARN "%s" requires a valid SQS queue or SNS topic' % target_arn)
+
+    def get_function_event_invoke_config(self):
+        response = {
+            'LastModified': str(self.last_modified),
+            'FunctionArn': str(self.id),
+        }
+
+        if self.max_retry_attempts:
+            response.update({'MaximumRetryAttempts': self.max_retry_attempts})
+
+        if self.max_event_age:
+            response.update({'MaximumEventAgeInSeconds': self.max_event_age})
+
+        if self.on_successful_invocation or self.dead_letter_config:
+            response.update({'DestinationConfig': {}})
+            if self.on_successful_invocation:
+                response['DestinationConfig'].update({
+                    'OnSuccess': {
+                        'Destination': self.on_successful_invocation
+                    }
+                })
+            if self.dead_letter_config:
+                response['DestinationConfig'].update({
+                    'OnFailure': {
+                        'Destination': self.dead_letter_config
+                    }
+                })
+
+        return response
+
+    def put_function_event_invoke_config(self, data):
+        if not isinstance(data, dict):
+            return
+
+        updated = False
+        if 'DestinationConfig' in data.keys():
+            if 'OnFailure' in data['DestinationConfig'].keys():
+                dlq_arn = data['DestinationConfig']['OnFailure']['Destination']
+                self.dead_letter_config = dlq_arn
+                updated = True
+
+            if 'OnSuccess' in data['DestinationConfig'].keys():
+                sq_arn = data['DestinationConfig']['OnSuccess']['Destination']
+                self.on_successful_invocation = sq_arn
+                updated = True
+
+        if 'MaximumRetryAttempts' in data.keys():
+            try:
+                max_retry_attempts = int(data['MaximumRetryAttempts'])
+            except Exception:
+                max_retry_attempts = 3
+
+            self.max_retry_attempts = max_retry_attempts
+            updated = True
+
+        if 'MaximumEventAgeInSeconds' in data.keys():
+            try:
+                max_event_age = int(data['MaximumEventAgeInSeconds'])
+            except Exception:
+                max_event_age = 3600
+
+            self.max_event_age = max_event_age
+            updated = True
+
+        if updated:
+            self.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+
+        return self
 
     def get_version(self, version):
         return self.versions.get(version)

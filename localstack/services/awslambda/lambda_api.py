@@ -457,6 +457,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False,
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
             version=version, asynchronous=asynchronous, callback=callback)
     except Exception as e:
+
         return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
     finally:
         if suppress_output:
@@ -745,6 +746,9 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'State': 'Active',
         'LastUpdateStatus': 'Successful'
     }
+    if func_details.dead_letter_config:
+        result['DeadLetterConfig'] = func_details.dead_letter_config
+
     if func_details.envvars:
         result['Environment'] = {
             'Variables': func_details.envvars
@@ -1367,6 +1371,63 @@ def untag_resource(version, arn):
     for tag_key in tag_keys:
         func_details.tags.pop(tag_key, None)
     return jsonify({})
+
+
+@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['PUT'])
+def put_function_event_invoke_config(function):
+    """ Updates the configuration for asynchronous invocation for a function
+        ---
+        operationId: PutFunctionEventInvokeConfig
+        parameters:
+            - name: 'function'
+              in: path
+            - name: 'qualifier'
+              in: path
+            - name: 'request'
+              in: body
+    """
+    data = json.loads(to_str(request.data))
+    function_arn = func_arn(function)
+    lambda_obj = arn_to_lambda[function_arn]
+    response = lambda_obj.put_function_event_invoke_config(data)
+
+    return jsonify({
+        'LastModified': response.last_modified,
+        'FunctionArn': str(function_arn),
+        'MaximumRetryAttempts': response.max_retry_attempts,
+        'MaximumEventAgeInSeconds': response.max_event_age,
+        'DestinationConfig': {
+            'OnSuccess': {
+                'Destination': str(response.on_successful_invocation)
+            },
+            'OnFailure': {
+                'Destination': str(response.dead_letter_config)
+            }
+        }
+    })
+
+
+@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['GET'])
+def get_function_event_invoke_config(function):
+    """ Retrieves the configuration for asynchronous invocation for a function
+        ---
+        operationId: GetFunctionEventInvokeConfig
+        parameters:
+            - name: 'function'
+              in: path
+            - name: 'qualifier'
+              in: path
+            - name: 'request'
+              in: body
+    """
+    try:
+        function_arn = func_arn(function)
+        lambda_obj = arn_to_lambda[function_arn]
+    except Exception as e:
+        return error_response(str(e), 400)
+
+    response = lambda_obj.get_function_event_invoke_config()
+    return jsonify(response)
 
 
 def serve(port, quiet=True):
