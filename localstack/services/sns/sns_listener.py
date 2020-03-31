@@ -218,6 +218,8 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
     message = req_data['Message'][0]
     sqs_client = aws_stack.connect_to_service('sqs')
 
+    LOGGER.debug('Publishing message to TopicArn: %s | Message:  %s' % (topic_arn, message))
+
     for subscriber in SNS_SUBSCRIPTIONS.get(topic_arn, []):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
             continue
