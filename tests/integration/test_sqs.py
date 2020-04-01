@@ -441,3 +441,70 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
         lambda_client.delete_function(FunctionName=function_name)
+
+    def test_send_message_with_delay_seconds(self):
+        queue_name = 'queue-{}'.format(short_uid())
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        # send message with DelaySeconds = 0
+        self.client.send_message(
+            QueueUrl=queue_url,
+            MessageBody='hello world.',
+            DelaySeconds=0
+        )
+
+        rs = self.client.receive_message(QueueUrl=queue_url)
+        self.assertIn('Messages', rs)
+        self.assertEqual(len(rs['Messages']), 1)
+
+        message = rs['Messages'][0]
+        self.assertEqual(message['Body'], 'hello world.')
+        self.client.delete_message_batch(
+            QueueUrl=queue_url,
+            Entries=[{'Id': short_uid(), 'ReceiptHandle': message['ReceiptHandle']}]
+        )
+
+        # send message with DelaySeconds = 10
+        self.client.send_message(
+            QueueUrl=queue_url,
+            MessageBody='test_message_2',
+            DelaySeconds=10
+        )
+
+        rs = self.client.receive_message(QueueUrl=queue_url)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertNotIn('Messages', rs)
+
+        def get_message(q_url):
+            resp = self.client.receive_message(QueueUrl=q_url)
+            return resp['Messages']
+
+        messages = retry(get_message, retries=3, sleep=10, q_url=queue_url)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(messages[0]['Body'], 'test_message_2')
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
+    def test_get_multiple_messages(self):
+        queue_name = 'queue-{}'.format(short_uid())
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+        number_of_messages = 3
+
+        for i in range(number_of_messages):
+            self.client.send_message(
+                QueueUrl=queue_url,
+                MessageBody='hello world. {}'.format(i),
+                DelaySeconds=0
+            )
+
+        messages = {}
+        for i in range(number_of_messages):
+            rs = self.client.receive_message(QueueUrl=queue_url)
+            m = rs['Messages'][0]
+            messages[m['MessageId']] = m['Body']
+
+        self.assertEqual(len(messages.keys()), number_of_messages)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
