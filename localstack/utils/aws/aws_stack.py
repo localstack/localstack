@@ -332,19 +332,10 @@ def get_s3_client():
     else:
         endpoint_url = config.TEST_S3_URL
 
-    if ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ:
-        return boto3.resource('s3',
-            endpoint_url=endpoint_url,
-            config=boto3.session.Config(s3={'addressing_style': 'path'}),
-            aws_access_key_id=os.environ.get(ENV_ACCESS_KEY),
-            aws_secret_access_key=os.environ.get(ENV_SECRET_KEY),
-            verify=False)
-    else :
-        return boto3.resource('s3',
-            endpoint_url=endpoint_url,
-            config=boto3.session.Config(s3={'addressing_style': 'path'}),
-            verify=False)
-
+    return boto3.resource('s3',
+        endpoint_url=endpoint_url,
+        config=boto3.session.Config(s3={'addressing_style': 'path'}),
+        verify=False)
 
 def sqs_queue_url_for_arn(queue_arn):
     if '://' in queue_arn:
