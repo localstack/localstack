@@ -1,44 +1,49 @@
-import base64
-import functools
-import hashlib
-import imp
-import json
-import logging
-import os
 import re
+import os
+import imp
 import sys
-import threading
-import time
-import traceback
+import json
 import uuid
-from datetime import datetime
+import time
+import base64
+import logging
+import threading
+import traceback
+import hashlib
+import functools
 from io import BytesIO
-
+from datetime import datetime
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
-
 from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services import generic_proxy
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.lambda_executors import (
-    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21,
-    LAMBDA_RUNTIME_GOLANG, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11,
-    LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810,
-    LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36,
-    LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_PYTHON38, LAMBDA_RUNTIME_RUBY,
-    LAMBDA_RUNTIME_RUBY25)
+    LAMBDA_RUNTIME_PYTHON27,
+    LAMBDA_RUNTIME_PYTHON36,
+    LAMBDA_RUNTIME_PYTHON37,
+    LAMBDA_RUNTIME_PYTHON38,
+    LAMBDA_RUNTIME_NODEJS,
+    LAMBDA_RUNTIME_NODEJS610,
+    LAMBDA_RUNTIME_NODEJS810,
+    LAMBDA_RUNTIME_JAVA8,
+    LAMBDA_RUNTIME_JAVA11,
+    LAMBDA_RUNTIME_DOTNETCORE2,
+    LAMBDA_RUNTIME_DOTNETCORE21,
+    LAMBDA_RUNTIME_GOLANG,
+    LAMBDA_RUNTIME_RUBY,
+    LAMBDA_RUNTIME_RUBY25,
+    LAMBDA_RUNTIME_PROVIDED)
+from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
+    mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid,
+    timestamp_millis, parse_chunked_data, now_utc, safe_requests, FuncThread,
+    isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws import aws_responses, aws_stack
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
-from localstack.utils.common import (TMP_FILES, FuncThread, ensure_readable,
-                                     is_zip_file, isoformat_milliseconds,
-                                     load_file, mkdir, now_utc,
-                                     parse_chunked_data, run, safe_requests,
-                                     save_file, short_uid, timestamp_millis,
-                                     to_str, unzip, zip_contains_jar_entries)
 
 APP_NAME = 'lambda_api'
 PATH_ROOT = '/2015-03-31'
@@ -46,10 +51,10 @@ ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 
 # List of Lambda runtime names. Keep them in this list, mainly to silence the linter
-LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36,LAMBDA_RUNTIME_PYTHON37,
-LAMBDA_RUNTIME_PYTHON38, LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21,
-LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810,
-LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_RUBY, LAMBDA_RUNTIME_RUBY25]
+LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_PYTHON37,
+    LAMBDA_RUNTIME_PYTHON38, LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21,
+    LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810,
+    LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_RUBY, LAMBDA_RUNTIME_RUBY25]
 
 # default timeout in seconds
 LAMBDA_DEFAULT_TIMEOUT = 3
