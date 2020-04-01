@@ -327,10 +327,23 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
 
 
 def get_s3_client():
-    return boto3.resource('s3',
-        endpoint_url=config.TEST_S3_URL,
-        config=boto3.session.Config(s3={'addressing_style': 'path'}),
-        verify=False)
+    if 'S3_BACKEND' in os.environ:
+        endpoint_url = os.environ.get('S3_BACKEND')
+    else:
+        endpoint_url = config.TEST_S3_URL
+
+    if ENV_ACCESS_KEY in os.environ and ENV_SECRET_KEY in os.environ:
+        return boto3.resource('s3',
+            endpoint_url=endpoint_url,
+            config=boto3.session.Config(s3={'addressing_style': 'path'}),
+            aws_access_key_id=os.environ.get(ENV_ACCESS_KEY),
+            aws_secret_access_key=os.environ.get(ENV_SECRET_KEY),
+            verify=False)
+    else :
+        return boto3.resource('s3',
+            endpoint_url=endpoint_url,
+            config=boto3.session.Config(s3={'addressing_style': 'path'}),
+            verify=False)
 
 
 def sqs_queue_url_for_arn(queue_arn):
