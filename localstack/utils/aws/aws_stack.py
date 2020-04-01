@@ -337,6 +337,7 @@ def get_s3_client():
         config=boto3.session.Config(s3={'addressing_style': 'path'}),
         verify=False)
 
+
 def sqs_queue_url_for_arn(queue_arn):
     if '://' in queue_arn:
         return queue_arn
