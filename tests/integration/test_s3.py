@@ -110,15 +110,6 @@ class S3ListenerTest(unittest.TestCase):
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path, key_by_host])
 
-    def generate_large_file(self, size):
-        # https://stackoverflow.com/questions/8816059/create-file-of-particular-size-in-python
-        filename = 'large_file_%s' % uuid.uuid4()
-        f = open(filename, 'wb')
-        f.seek(size - 1)
-        f.write(b'\0')
-        f.close()
-        return open(filename, 'r')
-
     def test_s3_upload_fileobj_with_large_file_notification(self):
         queue_url, queue_attributes = self._create_test_queue()
         self._create_test_notification_bucket(queue_attributes)
@@ -787,9 +778,43 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [])
 
+    def test_upload_big_file(self):
+        bucket_name = 'bucket-big-file-%s' % short_uid()
+        key1 = 'test_key1'
+        key2 = 'test_key1'
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        body1 = '\x01' * 10000000
+        rs = self.s3_client.put_object(Bucket=bucket_name, Key=key1, Body=body1)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        body2 = 'a' * 10000000
+        rs = self.s3_client.put_object(Bucket=bucket_name, Key=key2, Body=body2)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = self.s3_client.head_object(Bucket=bucket_name, Key=key1)
+        self.assertEqual(rs['ContentLength'], len(body1))
+
+        rs = self.s3_client.head_object(Bucket=bucket_name, Key=key2)
+        self.assertEqual(rs['ContentLength'], len(body2))
+
+        # clean up
+        self._delete_bucket(bucket_name, [key1, key2])
+
     # ---------------
     # HELPER METHODS
     # ---------------
+
+    @staticmethod
+    def generate_large_file(size):
+        # https://stackoverflow.com/questions/8816059/create-file-of-particular-size-in-python
+        filename = 'large_file_%s' % uuid.uuid4()
+        f = open(filename, 'wb')
+        f.seek(size - 1)
+        f.write(b'\0')
+        f.close()
+        return open(filename, 'r')
 
     def _create_test_queue(self):
         queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)['QueueUrl']
