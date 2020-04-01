@@ -44,8 +44,6 @@ TEST_MESSAGE_ATTRIBUTES = {
     }
 }
 
-NUMBER_OF_MESSAGES = 3
-
 
 class SQSTest(unittest.TestCase):
     @classmethod
@@ -491,8 +489,9 @@ class SQSTest(unittest.TestCase):
     def test_get_multiple_messages(self):
         queue_name = 'queue-{}'.format(short_uid())
         queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+        number_of_messages = 3
 
-        for i in range(NUMBER_OF_MESSAGES):
+        for i in range(number_of_messages):
             self.client.send_message(
                 QueueUrl=queue_url,
                 MessageBody='hello world. {}'.format(i),
@@ -500,12 +499,12 @@ class SQSTest(unittest.TestCase):
             )
 
         messages = {}
-        for i in range(NUMBER_OF_MESSAGES):
+        for i in range(number_of_messages):
             rs = self.client.receive_message(QueueUrl=queue_url)
             m = rs['Messages'][0]
             messages[m['MessageId']] = m['Body']
 
-        self.assertEqual(len(messages.keys()), NUMBER_OF_MESSAGES)
+        self.assertEqual(len(messages.keys()), number_of_messages)
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
