@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import unittest
 
 from localstack.utils import testutil
@@ -508,3 +509,62 @@ class SQSTest(unittest.TestCase):
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
+
+    def test_lambda_invoked_by_sqs_message_with_delay_seconds(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        queue_name = 'queue-{}'.format(short_uid())
+        delay_time = 6
+
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        lambda_log_group_name = '/aws/lambda/{}'.format(function_name)
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=function_name
+        )
+
+        rs = self.client.send_message(
+            QueueUrl=queue_url,
+            MessageBody='hello world.',
+            DelaySeconds=delay_time
+        )
+        message_id = rs['MessageId']
+
+        logs = aws_stack.connect_to_service('logs')
+
+        time.sleep(delay_time / 2)
+
+        # There is no log group for this lambda (lambda not invoked yet)
+        rs = logs.describe_log_groups()
+        self.assertEqual(
+            len([lg['logGroupName'] for lg in rs['logGroups'] if lg['logGroupName'] == lambda_log_group_name]),
+            0
+        )
+
+        # After delay time, lambda invoked by sqs
+        log_stream = retry(get_lambda_log_stream, retries=3, sleep=delay_time, function_name=function_name)
+        rs = logs.get_log_events(
+            logGroupName=lambda_log_group_name,
+            logStreamName=log_stream
+        )
+
+        event = get_event_message(rs['events'])
+        # Lambda just invoked 1 time
+        self.assertEqual(len(event['Records']), 1)
+
+        message = event['Records'][0]
+        self.assertEqual(message['eventSourceARN'], queue_arn)
+        self.assertEqual(message['messageId'], message_id)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+        lambda_client.delete_function(FunctionName=function_name)

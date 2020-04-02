@@ -318,7 +318,7 @@ def create_sqs_queue(queue_name):
     }
 
 
-# get lambda lambda log stream
+# get lambda log stream
 def get_lambda_log_stream(function_name):
     logs = aws_stack.connect_to_service('logs')
     rs = logs.describe_log_streams(
