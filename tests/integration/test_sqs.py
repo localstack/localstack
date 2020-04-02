@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import unittest
 
 from localstack.utils import testutil
@@ -512,7 +513,7 @@ class SQSTest(unittest.TestCase):
     def test_lambda_invoked_by_sqs_message_with_delay_seconds(self):
         function_name = 'lambda_func-{}'.format(short_uid())
         queue_name = 'queue-{}'.format(short_uid())
-        delay_time = 10
+        delay_time = 6
 
         queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
@@ -539,6 +540,8 @@ class SQSTest(unittest.TestCase):
         message_id = rs['MessageId']
 
         logs = aws_stack.connect_to_service('logs')
+
+        time.sleep(delay_time / 2)
 
         # There is no log group for this lambda (lambda not invoked yet)
         rs = logs.describe_log_groups()
