@@ -11,6 +11,7 @@ from botocore.parsers import ResponseParserError
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_TEMPLATE_1 = os.path.join(THIS_FOLDER, 'templates', 'template1.yaml')
 TEST_TEMPLATE_2 = os.path.join(THIS_FOLDER, 'templates', 'template2.yaml')
+
 TEST_TEMPLATE_3 = """
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
@@ -19,6 +20,7 @@ Resources:
     Properties:
       BucketName: test-%s
 """ % short_uid()
+
 TEST_TEMPLATE_4 = """
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
@@ -44,6 +46,7 @@ Resources:
         def handler(event, context):
             return {'hello': 'world'}
 """
+
 TEST_TEMPLATE_5 = """
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
@@ -56,8 +59,10 @@ Resources:
     Properties:
       BucketName: !Sub 'test-${LocalParam}'
 """
+
 TEST_ARTIFACTS_BUCKET = 'cf-artifacts'
 TEST_ARTIFACTS_PATH = 'stack.yaml'
+
 TEST_TEMPLATE_6 = """
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
@@ -73,7 +78,7 @@ Resources:
         LocalParam: !Ref GlobalParam
 """ % (TEST_ARTIFACTS_BUCKET, TEST_ARTIFACTS_PATH)
 
-TEST_TEMPLATE_7 = json.dumps({
+TEST_TEMPLATE_7 = {
     'AWSTemplateFormatVersion': '2010-09-09',
     'Description': 'Template for AWS::AWS::Function.',
     'Resources': {
@@ -86,10 +91,7 @@ TEST_TEMPLATE_7 = json.dumps({
                 'Runtime': 'nodejs12.x',
                 'Handler': 'index.handler',
                 'Role': {
-                    'Fn::GetAtt': [
-                        'LambdaExecutionRole',
-                        'Arn'
-                    ]
+                    'Fn::GetAtt': ['LambdaExecutionRole', 'Arn']
                 },
                 'Timeout': 300
             }
@@ -102,16 +104,27 @@ TEST_TEMPLATE_7 = json.dumps({
                     'Statement': [
                         {
                             'Action': 'sts:AssumeRole',
-                            'Principal': {
-                                'Service': 'lambda.amazonaws.com'
-                            }
+                            'Principal': {'Service': 'lambda.amazonaws.com'}
                         }
                     ]
                 }
             }
         }
     }
-})
+}
+
+TEST_TEMPLATE_8 = {
+    'AWSTemplateFormatVersion': '2010-09-09',
+    'Description': 'Template for AWS::AWS::Function.',
+    'Resources': {
+        'S3Bucket': {
+            'Type': 'AWS::S3::Bucket',
+            'Properties': {
+                'BucketName': ''
+            }
+        }
+    }
+}
 
 TEST_CHANGE_SET_BODY = """
 Parameters:
@@ -265,13 +278,16 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(queue_tags['Tags'], {'key1': 'value1', 'key2': 'value2'})
 
         # assert that bucket notifications have been created
-        notifs = s3.get_bucket_notification_configuration(Bucket='cf-test-bucket-1')
-        self.assertIn('QueueConfigurations', notifs)
-        self.assertIn('LambdaFunctionConfigurations', notifs)
-        self.assertEqual(notifs['QueueConfigurations'][0]['QueueArn'], 'aws:arn:sqs:test:testqueue')
-        self.assertEqual(notifs['QueueConfigurations'][0]['Events'], ['s3:ObjectDeleted:*'])
-        self.assertEqual(notifs['LambdaFunctionConfigurations'][0]['LambdaFunctionArn'], 'aws:arn:lambda:test:testfunc')
-        self.assertEqual(notifs['LambdaFunctionConfigurations'][0]['Events'], ['s3:ObjectCreated:*'])
+        notifications = s3.get_bucket_notification_configuration(Bucket='cf-test-bucket-1')
+        self.assertIn('QueueConfigurations', notifications)
+        self.assertIn('LambdaFunctionConfigurations', notifications)
+        self.assertEqual(notifications['QueueConfigurations'][0]['QueueArn'], 'aws:arn:sqs:test:testqueue')
+        self.assertEqual(notifications['QueueConfigurations'][0]['Events'], ['s3:ObjectDeleted:*'])
+        self.assertEqual(
+            notifications['LambdaFunctionConfigurations'][0]['LambdaFunctionArn'],
+            'aws:arn:lambda:test:testfunc'
+        )
+        self.assertEqual(notifications['LambdaFunctionConfigurations'][0]['Events'], ['s3:ObjectCreated:*'])
 
         # assert that subscriptions have been created
         subs = sns.list_subscriptions()['Subscriptions']
@@ -362,8 +378,11 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_3)
 
         # create change set with the same template (no changes)
-        response = cloudformation.create_change_set(StackName=stack_name,
-            TemplateBody=TEST_TEMPLATE_3, ChangeSetName='nochanges')
+        response = cloudformation.create_change_set(
+            StackName=stack_name,
+            TemplateBody=TEST_TEMPLATE_3,
+            ChangeSetName='nochanges'
+        )
         self.assertIn(':%s:changeSet/nochanges/' % TEST_AWS_ACCOUNT_ID, response['Id'])
         self.assertIn(':%s:stack/' % TEST_AWS_ACCOUNT_ID, response['StackId'])
 
@@ -397,8 +416,11 @@ class CloudFormationTest(unittest.TestCase):
         buckets_before = len(s3.list_buckets()['Buckets'])
         stack_name = 'stack-%s' % short_uid()
         param_value = short_uid()
-        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_6,
-            Parameters=[{'ParameterKey': 'GlobalParam', 'ParameterValue': param_value}])
+        cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=TEST_TEMPLATE_6,
+            Parameters=[{'ParameterKey': 'GlobalParam', 'ParameterValue': param_value}]
+        )
 
         # assert that nested resources have been created
         buckets_after = s3.list_buckets()['Buckets']
@@ -419,7 +441,7 @@ class CloudFormationTest(unittest.TestCase):
         lambdas_before = len(rs['Functions'])
 
         stack_name = 'stack-%s' % short_uid()
-        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_7)
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_7))
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('StackId', rs)
@@ -506,3 +528,34 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.delete_stack(
             StackName=stack_name
         )
+
+    def test_cfn_handle_deleted_resources(self):
+        stack_name = 'stack-%s' % short_uid()
+        bucket_name = 's3-bucket-%s' % short_uid()
+
+        TEST_TEMPLATE_8['Resources']['S3Bucket']['Properties']['BucketName'] = bucket_name
+
+        self.assertFalse(bucket_exists(bucket_name))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+
+        cfn.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_8))
+
+        # wait for deployment to finish
+        def check_stack():
+            stack = get_stack_details(stack_name)
+            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
+
+        retry(check_stack, retries=3, sleep=2)
+
+        self.assertTrue(bucket_exists(bucket_name))
+
+        cfn.delete_stack(StackName=stack_name)
+
+        self.assertFalse(bucket_exists(bucket_name))
+
+        rs = cfn.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_8))
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        # clean up
+        cfn.delete_stack(StackName=stack_name)
