@@ -6,6 +6,7 @@ import boto3
 import base64
 import logging
 import six
+from six.moves.urllib.parse import quote_plus, unquote_plus
 from localstack import config
 from localstack.constants import (
     REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
@@ -227,6 +228,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
 class VelocityInput:
     """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
+
     def __init__(self, value):
         self.value = value
 
@@ -248,6 +250,7 @@ class VelocityInput:
 class VelocityUtil:
     """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
+
     def base64Encode(self, s):
         if not isinstance(s, str):
             s = json.dumps(s)
@@ -262,6 +265,15 @@ class VelocityUtil:
 
     def toJson(self, obj):
         return obj and json.dumps(obj)
+
+    def urlEncode(self, s):
+        return quote_plus(s)
+
+    def urlDecode(self, s):
+        return unquote_plus(s)
+
+    def escapeJavaScript(self, s):
+        return str(s).replace("'", r"\'")
 
 
 def render_velocity_template(template, context, variables={}, as_json=False):
