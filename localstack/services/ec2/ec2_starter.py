@@ -1,5 +1,5 @@
 from moto.ec2 import models as ec2_models
-from moto.ec2.exceptions import InvalidPermissionNotFoundError,MotoNotImplementedError
+from moto.ec2.exceptions import InvalidPermissionNotFoundError, MotoNotImplementedError
 from localstack import config
 from localstack.constants import DEFAULT_PORT_EC2_BACKEND
 from localstack.services.infra import start_moto_server
@@ -25,11 +25,11 @@ def patch_ec2():
             try:
                 return describe_instance_credit_specifications_orig(**kwargs)
             except MotoNotImplementedError:
-                # this will happen because the moto doesnt support the describe_instance_credit_specifications fucnction.
+                # this will happen because the moto doesnt support the describe_instance_credit_specifications
+                # function.
                 if kwargs[0] == []:
                     return '_ignore_'
         return describe_instance_credit_specifications
-
 
     for region, backend in ec2_models.ec2_backends.items():
         backend.revoke_security_group_egress = patch_revoke_security_group_egress(backend)
