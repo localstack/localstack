@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import json
-import requests as r
 import unittest
 
 from localstack.utils.aws import aws_stack
@@ -39,7 +37,7 @@ class CloudWatchLogsTest(unittest.TestCase):
             logGroupName=group
         )
 
-    def test_filter_log_events_header(self):
+    def test_filter_log_events_response_header(self):
         group = 'lg-%s' % short_uid()
         stream = 'ls-%s' % short_uid()
 
@@ -52,18 +50,12 @@ class CloudWatchLogsTest(unittest.TestCase):
         ]
         self.logs_client.put_log_events(logGroupName=group, logStreamName=stream, logEvents=events)
 
-        rs = r.post(
-            url=self.logs_client.meta.endpoint_url,
-            headers={
-                'Content-Type': 'application/x-amz-json-1.1',
-                'X-Amz-Target': 'Logs_20140328.FilterLogEvents',
-                'Authorization': 'AWS4-HMAC-SHA256 Credential=x/y/ap-southeast-1/logs/aws4_request'
-            },
-            data=json.dumps({'logGroupName': group})
+        rs = self.logs_client.filter_log_events(
+            logGroupName=group
         )
 
-        self.assertEqual(rs.status_code, 200)
-        self.assertEqual(rs.headers['content-type'], 'application/x-amz-json-1.1')
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['ResponseMetadata']['HTTPHeaders']['content-type'], 'application/x-amz-json-1.1')
 
         # clean up
         self.logs_client.delete_log_group(
