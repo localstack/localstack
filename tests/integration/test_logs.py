@@ -2,6 +2,7 @@
 
 import unittest
 
+from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
@@ -55,7 +56,7 @@ class CloudWatchLogsTest(unittest.TestCase):
         )
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(rs['ResponseMetadata']['HTTPHeaders']['content-type'], 'application/x-amz-json-1.1')
+        self.assertEqual(rs['ResponseMetadata']['HTTPHeaders']['content-type'], APPLICATION_AMZ_JSON_1_1)
 
         # clean up
         self.logs_client.delete_log_group(
