@@ -377,7 +377,7 @@ def start_infra(asynchronous=False, apis=None):
 
         # loop through plugins and start each service
         for name, plugin in SERVICE_PLUGINS.items():
-            if name in apis:
+            if plugin.is_enabled(api_names=apis):
                 record_service_health(name, 'starting')
                 t1 = plugin.start(asynchronous=True)
                 thread = thread or t1
