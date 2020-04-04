@@ -259,7 +259,18 @@ RESOURCE_TO_FUNCTION = {
         }
     },
     'Logs::LogGroup': {
-        # TODO implement
+        'create': {
+            'function': 'create_log_group',
+            'parameters': {
+                'logGroupName': 'LogGroupName'
+            }
+        },
+        'delete': {
+            'function': 'delete_log_group',
+            'parameters': {
+                'logGroupName': 'PhysicalResourceId'
+            }
+        }
     },
     'Lambda::Function': {
         'create': {

@@ -1,5 +1,4 @@
 class BaseModel(object):
-
     def __init__(self, **params):
         self.params = params
 
@@ -26,4 +25,8 @@ class CloudFormationStack(BaseModel):
 
 
 class SSMParameter(BaseModel):
+    pass
+
+
+class LogsLogGroup(BaseModel):
     pass

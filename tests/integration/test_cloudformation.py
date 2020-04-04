@@ -1,7 +1,7 @@
 import os
 import json
 import unittest
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry, short_uid, to_str
 from localstack.utils.cloudformation import template_deployer
@@ -125,6 +125,43 @@ TEST_TEMPLATE_8 = {
         }
     }
 }
+
+TEST_TEMPLATE_9 = """
+Parameters:
+  FeatureBranch:
+    Type: String
+    Default: false
+    AllowedValues: ["true", "false"]
+  gitBranch:
+    Type: String
+    Default: dev
+
+Mappings:
+  AccountInfo:
+    "%s":
+      ID: 10000000
+      ENV: dev
+
+Conditions:
+  FeatureBranch:
+    Fn::Equals:
+      - Ref: gitBranch
+      - 'dev'
+
+Resources:
+  HeartbeatHandlerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 1
+      LogGroupName:
+        Fn::Join:
+          - '_'
+          - - '/aws/lambda/AWS_DUB_LAM'
+            - !FindInMap [ AccountInfo, !Ref "AWS::AccountId", ID ]
+            - !If [ FeatureBranch, !Ref "gitBranch", !Ref "AWS::NoValue" ]
+            - 'MessageFooHandler'
+            - !FindInMap [ AccountInfo, !Ref "AWS::AccountId", ENV ]
+""" % MOTO_ACCOUNT_ID
 
 TEST_CHANGE_SET_BODY = """
 Parameters:
@@ -559,3 +596,35 @@ class CloudFormationTest(unittest.TestCase):
 
         # clean up
         cfn.delete_stack(StackName=stack_name)
+
+    def test_cfn_handle_log_group_resource(self):
+        stack_name = 'stack-%s' % short_uid()
+        log_group_prefix = '/aws/lambda/AWS_DUB_LAM_10000000'
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        logs_client = aws_stack.connect_to_service('logs')
+
+        cfn.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_9)
+
+        # wait for deployment to finish
+        def check_stack():
+            stack = get_stack_details(stack_name)
+            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
+
+        retry(check_stack, retries=3, sleep=1)
+
+        rs = logs_client.describe_log_groups(
+            logGroupNamePrefix=log_group_prefix
+        )
+
+        self.assertEqual(len(rs['logGroups']), 1)
+        self.assertEqual(rs['logGroups'][0]['logGroupName'],
+                         '/aws/lambda/AWS_DUB_LAM_10000000_dev_MessageFooHandler_dev')
+
+        cfn.delete_stack(StackName=stack_name)
+
+        rs = logs_client.describe_log_groups(
+            logGroupNamePrefix=log_group_prefix
+        )
+
+        self.assertEqual(len(rs['logGroups']), 0)
