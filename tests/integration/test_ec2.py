@@ -50,4 +50,3 @@ class Ec2Test(unittest.TestCase):
         result = self.ec2_client.start_instances(InstanceIds=[actual_instance_id])
         current_state = result['StartingInstances'][0]['CurrentState']['Name']
         self.assertEqual(current_state, 'pending')
-

@@ -23,11 +23,9 @@ def patch_ec2():
             return
 
         def describe_instance_credit_specifications(**kwargs):
-           # mocking the describe_instance_credit_specifications function with the cpu credits as standard
-           # in the response as this function is not implemented in moto
             instance_id = kwargs.get('InstanceId')
             result = {
-                'InstanceCreditSpecifications': [{'InstanceId':instance_id,'CpuCredits':"standard"}]
+                'InstanceCreditSpecifications': [{'InstanceId': instance_id, 'CpuCredits': 'standard'}]
             }
             return result
 
