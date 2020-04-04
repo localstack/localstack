@@ -13,7 +13,7 @@ from localstack.services.generic_proxy import ProxyListener, GenericProxy
 LOG = logging.getLogger(__name__)
 
 # Header to indicate that the process should kill itself. This is required because if
-# this process is started as root, then we cannot kill it from the other non-root process
+# this process is started as root, then we cannot kill it from a non-root process
 HEADER_KILL_SIGNAL = 'x-localstack-kill'
 
 

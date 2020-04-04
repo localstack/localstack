@@ -97,8 +97,9 @@ DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 # whether to start the web API
 START_WEB = os.environ.get('START_WEB', '').strip() not in FALSE_STRINGS
 
-# fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
+# port number for the edge service, the main entry point for all API invocations
 EDGE_PORT = int(os.environ.get('EDGE_PORT') or 0) or DEFAULT_PORT_EDGE
+# fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
 EDGE_PORT_HTTP = int(os.environ.get('EDGE_PORT_HTTP') or 0)
 
 # port of Web UI
