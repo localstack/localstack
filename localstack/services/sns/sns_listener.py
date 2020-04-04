@@ -522,7 +522,10 @@ def get_message_attributes(req_data):
                 attribute['Value'] = binary_value
 
             if attribute['Type'] == 'Number':
-                attribute['Value'] = float(attribute['Value'])
+                if '.' in attribute['Value']:
+                    attribute['Value'] = float(attribute['Value'])
+                else:
+                    attribute['Value'] = int(attribute['Value'])
 
             attributes[name] = attribute
             x += 1
