@@ -57,7 +57,8 @@ MODEL_MAP = {
     'AWS::ApiGateway::RestApi': apigw_models.RestAPI,
     'AWS::StepFunctions::StateMachine': sfn_models.StateMachine,
     'AWS::CloudFormation::Stack': service_models.CloudFormationStack,
-    'AWS::SSM::Parameter': service_models.SSMParameter
+    'AWS::SSM::Parameter': service_models.SSMParameter,
+    'AWS::Logs::LogGroup': service_models.LogsLogGroup
 }
 
 
@@ -135,14 +136,21 @@ def update_physical_resource_id(resource):
         if isinstance(resource, lambda_models.LambdaFunction):
             func_arn = aws_stack.lambda_function_arn(resource.function_name)
             resource.function_arn = resource.physical_resource_id = func_arn
+
         elif isinstance(resource, sfn_models.StateMachine):
             sm_arn = aws_stack.state_machine_arn(resource.name)
             resource.physical_resource_id = sm_arn
+
         elif isinstance(resource, service_models.StepFunctionsActivity):
             act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
             resource.physical_resource_id = act_arn
+
         elif isinstance(resource, kinesis_models.Stream):
             resource.physical_resource_id = resource.stream_name
+
+        elif isinstance(resource, service_models.LogsLogGroup):
+            resource.physical_resource_id = resource.params.get('LogGroupName')
+
         else:
             LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
