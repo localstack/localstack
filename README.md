@@ -28,9 +28,13 @@ any longer.
 
 # Overview
 
-LocalStack spins up the following core Cloud APIs on your local machine:
+LocalStack spins up the following core Cloud APIs on your local machine.
 
-* **API Gateway** at http://localhost:4567
+**Note:** Starting with version `0.11.0`, all APIs are accessible via a single "edge" service, which is
+accessible on **`http://localhost:4566`** by default (customizable via `EDGE_PORT`, see further below).
+The port numbers below are still left for reference, but may get removed in a future release of LocalStack.
+
+* **API Gateway** ~ at http://localhost:4567 ~
 * **Kinesis** at http://localhost:4568
 * **DynamoDB** at http://localhost:4569
 * **DynamoDB Streams** at http://localhost:4570
@@ -144,7 +148,7 @@ services:
   localstack:
     image: localstack/localstack
     ports:
-      - "4567-4599:4567-4599"
+      - "4566-4599:4566-4599"
       - "${PORT_WEB_UI-8080}:${PORT_WEB_UI-8080}"
     environment:
       - SERVICES=${SERVICES- }
@@ -180,13 +184,12 @@ pip install "localstack[full]"
 
 You can pass the following environment variables to LocalStack:
 
-* `SERVICES`: Comma-separated list of service names and (optional) ports they should run on.
-  If no port is specified, a default port is used. Service names basically correspond to the
-  [service names of the AWS CLI](http://docs.aws.amazon.com/cli/latest/reference/#available-services)
+* `EDGE_PORT`: Port number for the edge service, the main entry point for all API invocations (default: `4566`).
+* `SERVICES`: Comma-separated list of service names (APIs) to start up. Service names basically correspond
+  to the [service names of the AWS CLI](http://docs.aws.amazon.com/cli/latest/reference/#available-services)
   (`kinesis`, `lambda`, `sqs`, etc), although LocalStack only supports a subset of them.
-  Example value: `kinesis,lambda:4569,sqs:4570` to start Kinesis on the default port,
-  Lambda on port 4569, and SQS on port 4570. In addition, the following shorthand values can be
-  specified to run a predefined ensemble of services:
+  Example value: `kinesis,lambda,sqs` to start Kinesis, Lambda, and SQS.
+  In addition, the following shorthand values can be specified to run a predefined ensemble of services:
   - `serverless`: run services often used for Serverless apps (`iam`, `lambda`, `dynamodb`, `apigateway`, `s3`, `sns`)
 * `DEFAULT_REGION`: AWS region to use when talking to the API (defaults to `us-east-1`).
 * `HOSTNAME`: Name of the host to expose the services internally (defaults to `localhost`).

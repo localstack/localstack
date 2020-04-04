@@ -23,12 +23,13 @@ STATUSES = {}
 
 class Plugin(object):
 
-    def __init__(self, name, start, check=None, listener=None, priority=0):
+    def __init__(self, name, start, check=None, listener=None, priority=0, active=False):
         self.plugin_name = name
         self.start_function = start
         self.listener = listener
         self.check_function = check
         self.priority = priority
+        self.default_active = active
 
     def start(self, asynchronous):
         kwargs = {
@@ -45,6 +46,13 @@ class Plugin(object):
 
     def name(self):
         return self.plugin_name
+
+    def is_enabled(self, api_names=None):
+        if self.default_active:
+            return True
+        if api_names is None:
+            api_names = canonicalize_api_names()
+        return self.name() in api_names
 
 
 def register_plugin(plugin):

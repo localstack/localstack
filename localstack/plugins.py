@@ -1,16 +1,35 @@
 import os
 import sys
+from localstack import config
 from localstack.constants import TRUE_STRINGS
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 
 
 def register_localstack_plugins():
-    if os.environ.get(ENV_SCRIPT_STARTING_DOCKER) in TRUE_STRINGS:
-        # skip loading plugins for Docker launching, to increase startup speed
-        return
 
+    # skip loading plugins for Docker launching, to increase startup speed
+    if os.environ.get(ENV_SCRIPT_STARTING_DOCKER) not in TRUE_STRINGS:
+        do_register_localstack_plugins()
+
+    docker_flags = []
+
+    # add Docker flags for edge ports
+    for port in [config.EDGE_PORT, config.EDGE_PORT_HTTP]:
+        if port:
+            docker_flags += ['-p {p}:{p}'.format(p=port)]
+
+    result = {
+        'docker': {
+            'run_flags': ' '.join(docker_flags)
+        }
+    }
+    return result
+
+
+def do_register_localstack_plugins():
     # register default plugins
     try:
+        from localstack.services import edge
         from localstack.services.apigateway import apigateway_starter
         from localstack.services.s3 import s3_listener, s3_starter
         from localstack.services.ec2 import ec2_starter
@@ -32,6 +51,11 @@ def register_localstack_plugins():
         from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
         from localstack.services.events import events_listener, events_starter
         from localstack.services.secretsmanager import secretsmanager_starter
+
+        register_plugin(Plugin(
+            'edge',
+            start=edge.start_edge,
+            active=True))
 
         register_plugin(Plugin(
             'apigateway',
