@@ -109,9 +109,25 @@ The easiest way to install LocalStack is via `pip`:
 pip install localstack
 ```
 
+Installing the `awscli` for running the aws commands through `cli`
+
+```
+pip install awscli
+```
+
 **Note**: Please do **not** use `sudo` or the `root` user - LocalStack
 should be installed and started entirely under a local non-root user. If you have problems
 with permissions in MacOS X Sierra, install with `pip install --user localstack`
+
+## Setting up local region and credentials to run localstack
+
+aws requires the region and the credentials to be set in order to run the aws commands. Create the default configuration & the credentials. Below key will ask for the Access key id, secret Access Key, region & output format.
+
+```
+aws configure --profile default
+
+# Config & credential file will be created under ~/.aws folder
+```
 
 ## Running in Docker
 
