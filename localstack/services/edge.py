@@ -105,7 +105,8 @@ def get_api_from_headers(headers, path=None):
 def do_start_edge(port, use_ssl, asynchronous=False):
     # get port and start Edge
     print('Starting edge router (http%s port %s)...' % ('s' if use_ssl else '', port))
-    proxy = GenericProxy(port, ssl=use_ssl, update_listener=ProxyListenerEdge())
+    # use use=True here because our proxy allows both, HTTP and HTTPS traffic
+    proxy = GenericProxy(port, ssl=True, update_listener=ProxyListenerEdge())
     proxy.start()
     if not asynchronous:
         proxy.join()

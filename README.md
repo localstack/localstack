@@ -30,7 +30,7 @@ any longer.
 
 LocalStack spins up the following core Cloud APIs on your local machine.
 
-**Note:** Starting with version `0.11.0`, all APIs are accessible via a single _edge service_, which is
+**Note:** Starting with version `0.11.0`, all APIs are exposed via a single _edge service_, which is
 accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`, see further below).
 The API-specific endpoints below are still left for backwards-compatibility, but may get removed in a
 future release - please reconfigure your client SDKs to start using the single edge endpoint URL!
@@ -80,25 +80,25 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 
 ## Why LocalStack?
 
-LocalStack builds on existing best-of-breed mocking/testing tools, most notably
+LocalStack builds on existing best-of-breed mocking/testing tools, notably
 [kinesalite](https://github.com/mhart/kinesalite)/[dynalite](https://github.com/mhart/dynalite)
-and [moto](https://github.com/spulec/moto). While these tools are *awesome* (!), they lack functionality
-for certain use cases. LocalStack combines the tools, makes them interoperable, and adds important
-missing functionality on top of them:
+and [moto](https://github.com/spulec/moto), [ElasticMQ](https://github.com/softwaremill/elasticmq),
+and others. While these tools are *awesome* (!), they lack functionality for certain use cases.
+LocalStack combines the tools, makes them interoperable, and adds important missing functionality
+on top of them:
 
 * **Error injection:** LocalStack allows to inject errors frequently occurring in real Cloud environments,
   for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
   read/write throughput is exceeded.
-* **Isolated processes**: All services in LocalStack run in separate processes. The overhead of additional
-  processes is negligible, and the entire stack can easily be executed on any developer machine and CI server.
-  In moto, components are often hard-wired in RAM (e.g., when forwarding a message on an SNS topic to an SQS queue,
-  the queue endpoint is looked up in a local hash map). In contrast, LocalStack services live in isolation
-  (separate processes available via HTTP), which fosters true decoupling and more closely resembles the real
-  cloud environment.
+* **Isolated processes**: Services in LocalStack can be run in separate processes. The overhead of additional
+  processes is acceptable, and the entire stack can easily be executed on any developer machine and CI server.
+  In moto, components are often hard-wired in memory (e.g., when forwarding a message on an SNS topic to an
+  SQS queue, the queue endpoint is looked up in a local hash map). In contrast, LocalStack services live in
+  isolation (separate processes communicating via HTTP), which fosters true decoupling and more closely
+  resembles the real cloud environment.
 * **Pluggable services**: All services in LocalStack are easily pluggable (and replaceable), due to the fact that
   we are using isolated processes for each service. This allows us to keep the framework up-to-date and select
   best-of-breed mocks for each individual service.
-
 
 ## Requirements
 
@@ -192,19 +192,19 @@ You can pass the following environment variables to LocalStack:
   Example value: `kinesis,lambda,sqs` to start Kinesis, Lambda, and SQS.
   In addition, the following shorthand values can be specified to run a predefined ensemble of services:
   - `serverless`: run services often used for Serverless apps (`iam`, `lambda`, `dynamodb`, `apigateway`, `s3`, `sns`)
-* `DEFAULT_REGION`: AWS region to use when talking to the API (defaults to `us-east-1`).
-* `HOSTNAME`: Name of the host to expose the services internally (defaults to `localhost`).
+* `DEFAULT_REGION`: AWS region to use when talking to the API (default: `us-east-1`).
+* `HOSTNAME`: Name of the host to expose the services internally (default: `localhost`).
   Use this to customize the framework-internal communication, e.g., if services are
   started in different containers using docker-compose.
-* `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (defaults to `localhost`).
+* `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (default: `localhost`).
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
 * `<SERVICE>_PORT`: Port number to bind a specific service to (defaults to service ports above).
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
-* `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (defaults to `false`).
+* `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`).
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
-* `KINESIS_SHARD_LIMIT`: Integer value (defaults to `100`) or `Infinity` (to disable), in which to kinesalite will start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
-* `KINESIS_LATENCY`: Integer value (defaults to `500`) or `0` (to disable), in which to kinesalite will delay returning a response in order to mimick latency from a live AWS call.
+* `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
+* `KINESIS_LATENCY`: Integer value (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call.
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
 * `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Possible values are:
@@ -230,7 +230,7 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch, S3). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
-* `PORT_WEB_UI`: Port for the Web user interface (dashboard). Default is `8080`.
+* `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`).
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
   `KINESIS`, `S3`, `SNS`, `SQS`). This allows to easily integrate third-party services into LocalStack.
