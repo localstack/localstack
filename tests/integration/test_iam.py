@@ -106,3 +106,28 @@ class TestIAMIntegrations(unittest.TestCase):
         self.iam_client.delete_role(
             RoleName=role_name
         )
+
+    def test_create_user_with_tags(self):
+        user_name = 'user-role-{}'.format(short_uid())
+
+        rs = self.iam_client.create_user(
+            UserName=user_name,
+            Tags=[
+                {'Key': 'env', 'Value': 'production'}
+            ]
+        )
+
+        self.assertIn('Tags', rs['User'])
+        self.assertEqual(rs['User']['Tags'][0]['Key'], 'env')
+
+        rs = self.iam_client.get_user(
+            UserName=user_name
+        )
+
+        self.assertIn('Tags', rs['User'])
+        self.assertEqual(rs['User']['Tags'][0]['Value'], 'production')
+
+        # clean up
+        self.iam_client.delete_user(
+            UserName=user_name
+        )

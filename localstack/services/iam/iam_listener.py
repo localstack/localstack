@@ -7,7 +7,6 @@ from localstack.services.generic_proxy import ProxyListener
 
 
 class ProxyListenerIAM(ProxyListener):
-
     def forward_request(self, method, path, data, headers):
         if method == 'POST' and path == '/':
             data = self._reset_account_id(data)
@@ -16,7 +15,6 @@ class ProxyListenerIAM(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response):
-
         if response.content:
             # fix hardcoded account ID in ARNs returned from this API
             self._fix_account_id(response)
@@ -31,18 +29,21 @@ class ProxyListenerIAM(ProxyListener):
         replacement = r'<CreateDate>\1T\2Z</CreateDate>'
         self._replace(response, pattern, replacement)
 
-    def _fix_account_id(self, response):
+    @staticmethod
+    def _fix_account_id(response):
         return aws_stack.fix_account_id_in_arns(
             response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
 
-    def _reset_account_id(self, data):
+    @staticmethod
+    def _reset_account_id(data):
         """ Fix account ID in request payload. All external-facing responses contain our
             predefined account ID (defaults to 000000000000), whereas the backend endpoint
             from moto expects a different hardcoded account ID (123456789012). """
         return aws_stack.fix_account_id_in_arns(
             data, colon_delimiter='%3A', existing=TEST_AWS_ACCOUNT_ID, replace=MOTO_ACCOUNT_ID)
 
-    def _replace(self, response, pattern, replacement):
+    @staticmethod
+    def _replace(response, pattern, replacement):
         content = to_str(response.content)
         response._content = re.sub(pattern, replacement, content)
 
