@@ -5,6 +5,7 @@ import time
 import shutil
 import unittest
 import six
+from botocore.exceptions import ClientError
 from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER
@@ -21,7 +22,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED
+    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION
 )
 from .lambdas import lambda_integration
 
@@ -38,7 +39,6 @@ TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(THIS_FOLDER, 'lambdas', 'java', 'lambda
 TEST_LAMBDA_ENV = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
 TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE1 = os.path.join(THIS_FOLDER, 'lambdas', 'python3', 'lambda1', 'lambda1.zip')
 TEST_LAMBDA_PYTHON3_MULTIPLE_CREATE2 = os.path.join(THIS_FOLDER, 'lambdas', 'python3', 'lambda2', 'lambda2.zip')
-
 
 TEST_LAMBDA_NAME_PY = 'test_lambda_py'
 TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
@@ -71,7 +71,7 @@ def _run_forward_to_fallback_url(url, num_requests=3):
     try:
         for i in range(num_requests):
             lambda_client.invoke(FunctionName='non-existing-lambda-%s' % i,
-                Payload=b'{}', InvocationType='RequestResponse')
+                                 Payload=b'{}', InvocationType='RequestResponse')
     finally:
         config.LAMBDA_FALLBACK_URL = ''
 
@@ -140,7 +140,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1
         }
         lambda_client.invoke(FunctionName=lambda_name,
-            Payload=json.dumps(payload), InvocationType='Event')
+                             Payload=json.dumps(payload), InvocationType='Event')
 
         # assert that message has been received on the DLQ
         def receive_dlq():
@@ -150,6 +150,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             self.assertIn('RequestID', msg_attrs)
             self.assertIn('ErrorCode', msg_attrs)
             self.assertIn('ErrorMessage', msg_attrs)
+
         retry(receive_dlq, retries=8, sleep=2)
 
     def test_add_lambda_permission(self):
@@ -160,7 +161,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         action = 'lambda:InvokeFunction'
         sid = 's3'
         resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
-            StatementId=sid, Principal='s3.amazonaws.com', SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+                                            StatementId=sid, Principal='s3.amazonaws.com',
+                                            SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
         self.assertIn('Statement', resp)
         # fetch lambda policy
         policy = lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
@@ -177,8 +179,76 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # remove permission that we just added
         resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
-            StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
+                                               StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+
+    def test_event_source_mapping_default_batch_size(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        queue_name_1 = 'queue-{}-1'.format(short_uid())
+        queue_name_2 = 'queue-{}-2'.format(short_uid())
+        ddb_table = 'ddb_table-{}'.format(short_uid())
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        sqs_client = aws_stack.connect_to_service('sqs')
+        queue_url_1 = sqs_client.create_queue(QueueName=queue_name_1)['QueueUrl']
+        queue_arn_1 = aws_stack.sqs_queue_arn(queue_name_1)
+
+        rs = lambda_client.create_event_source_mapping(
+            EventSourceArn=queue_arn_1,
+            FunctionName=function_name
+        )
+        self.assertEqual(rs['BatchSize'], BATCH_SIZE_RANGES['sqs'][0])
+
+        uuid = rs['UUID']
+
+        try:
+            # Update batch size with invalid value
+            lambda_client.update_event_source_mapping(
+                UUID=uuid,
+                FunctionName=function_name,
+                BatchSize=BATCH_SIZE_RANGES['sqs'][1] + 1
+            )
+            self.fail('This call should not be successful as the batch size > MAX_BATCH_SIZE')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], INVALID_PARAMETER_VALUE_EXCEPTION)
+
+        queue_url_2 = sqs_client.create_queue(QueueName=queue_name_2)['QueueUrl']
+        queue_arn_2 = aws_stack.sqs_queue_arn(queue_name_2)
+
+        try:
+            # Create event source mapping with invalid batch size value
+            lambda_client.create_event_source_mapping(
+                EventSourceArn=queue_arn_2,
+                FunctionName=function_name,
+                BatchSize=BATCH_SIZE_RANGES['sqs'][1] + 1
+            )
+            self.fail('This call should not be successful as the batch size > MAX_BATCH_SIZE')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], INVALID_PARAMETER_VALUE_EXCEPTION)
+
+        table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key='id')['TableDescription']['TableArn']
+        rs = lambda_client.create_event_source_mapping(
+            EventSourceArn=table_arn,
+            FunctionName=function_name
+        )
+        self.assertEqual(rs['BatchSize'], BATCH_SIZE_RANGES['dynamodb'][0])
+
+        # clean up
+        dynamodb_client = aws_stack.connect_to_service('dynamodb')
+        dynamodb_client.delete_table(TableName=ddb_table)
+
+        sqs_client.delete_queue(QueueUrl=queue_url_1)
+        sqs_client.delete_queue(QueueUrl=queue_url_2)
+        lambda_client.delete_function(FunctionName=function_name)
 
 
 class TestPythonRuntimes(LambdaTestBase):
@@ -189,7 +259,7 @@ class TestPythonRuntimes(LambdaTestBase):
         cls.sns_client = aws_stack.connect_to_service('sns')
 
         Util.create_function(TEST_LAMBDA_PYTHON, TEST_LAMBDA_NAME_PY,
-            runtime=LAMBDA_RUNTIME_PYTHON27, libs=TEST_LAMBDA_LIBS)
+                             runtime=LAMBDA_RUNTIME_PYTHON27, libs=TEST_LAMBDA_LIBS)
 
     @classmethod
     def tearDownClass(cls):
@@ -230,7 +300,7 @@ class TestPythonRuntimes(LambdaTestBase):
     def test_lambda_environment(self):
         vars = {'Hello': 'World'}
         testutil.create_lambda_function(handler_file=TEST_LAMBDA_ENV, libs=TEST_LAMBDA_LIBS,
-            func_name=TEST_LAMBDA_NAME_ENV, runtime=LAMBDA_RUNTIME_PYTHON27, envvars=vars)
+                                        func_name=TEST_LAMBDA_NAME_ENV, runtime=LAMBDA_RUNTIME_PYTHON27, envvars=vars)
 
         # invoke function and assert result contains env vars
         result = self.lambda_client.invoke(
@@ -360,7 +430,7 @@ class TestPythonRuntimes(LambdaTestBase):
             libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON36,
             file_name='abc/def/main.py')
         testutil.create_lambda_function(func_name=func_name, zip_file=zip_file,
-            handler='abc.def.main.handler', runtime=LAMBDA_RUNTIME_PYTHON36)
+                                        handler='abc.def.main.handler', runtime=LAMBDA_RUNTIME_PYTHON36)
 
         # invoke function and assert result
         result = self.lambda_client.invoke(FunctionName=func_name, Payload=b'{}')
@@ -411,7 +481,7 @@ class TestPythonRuntimes(LambdaTestBase):
         function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
 
         testutil.create_lambda_function(handler_file=TEST_LAMBDA_ECHO_FILE,
-            func_name=function_name, runtime=LAMBDA_RUNTIME_PYTHON36)
+                                        func_name=function_name, runtime=LAMBDA_RUNTIME_PYTHON36)
 
         topic = self.sns_client.create_topic(
             Name=TEST_SNS_TOPIC_NAME
@@ -649,8 +719,8 @@ class TestJavaRuntimes(LambdaTestBase):
         for archive in [java_jar_with_lib, java_zip_with_lib]:
             lambda_name = 'test-%s' % short_uid()
             testutil.create_lambda_function(func_name=lambda_name,
-                zip_file=archive, runtime=LAMBDA_RUNTIME_JAVA8,
-                handler='cloud.localstack.sample.LambdaHandlerWithLib')
+                                            zip_file=archive, runtime=LAMBDA_RUNTIME_JAVA8,
+                                            handler='cloud.localstack.sample.LambdaHandlerWithLib')
 
             result = self.lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
             result_data = result['Payload'].read()

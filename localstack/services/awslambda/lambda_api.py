@@ -65,7 +65,13 @@ LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
 
-DEFAULT_BATCH_SIZE = 10
+INVALID_PARAMETER_VALUE_EXCEPTION = 'InvalidParameterValueException'
+
+BATCH_SIZE_RANGES = {
+    'kinesis': (100, 10000),
+    'dynamodb': (100, 1000),
+    'sqs': (10, 10)
+}
 
 app = Flask(APP_NAME)
 
@@ -153,6 +159,23 @@ def func_arn(function_name):
     return aws_stack.lambda_function_arn(function_name)
 
 
+def check_batch_size_range(source_arn, batch_size=None):
+    batch_size_entry = BATCH_SIZE_RANGES.get(source_arn.split(':')[2].lower())
+    if not batch_size_entry:
+        raise ValueError(
+            INVALID_PARAMETER_VALUE_EXCEPTION, 'Unsupported event source type'
+        )
+
+    batch_size = batch_size or batch_size_entry[0]
+    if batch_size > batch_size_entry[1]:
+        raise ValueError(
+            INVALID_PARAMETER_VALUE_EXCEPTION,
+            'BatchSize {} exceeds the max of {}'.format(batch_size, batch_size_entry[1])
+        )
+
+    return batch_size
+
+
 def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     arn = func_arn(lambda_name)
     arn_to_lambda[arn].versions.get('$LATEST')['Function'] = lambda_handler
@@ -160,7 +183,7 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
 
 
 def add_event_source(function_name, source_arn, enabled, batch_size=None):
-    batch_size = batch_size or DEFAULT_BATCH_SIZE
+    batch_size = check_batch_size_range(source_arn, batch_size)
 
     mapping = {
         'UUID': str(uuid.uuid4()),
@@ -182,10 +205,15 @@ def update_event_source(uuid_value, function_name, enabled, batch_size):
         if uuid_value == m['UUID']:
             if function_name:
                 m['FunctionArn'] = func_arn(function_name)
+
+            batch_size = check_batch_size_range(m['EventSourceArn'], batch_size or m['BatchSize'])
+
             m['BatchSize'] = batch_size
             m['State'] = 'Enabled' if enabled is True else 'Disabled'
             m['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
+
             return m
+
     return {}
 
 
@@ -1226,10 +1254,14 @@ def create_event_source_mapping():
               in: body
     """
     data = json.loads(to_str(request.data))
-    mapping = add_event_source(
-        data['FunctionName'], data['EventSourceArn'], data.get('Enabled'), data.get('BatchSize')
-    )
-    return jsonify(mapping)
+    try:
+        mapping = add_event_source(
+            data['FunctionName'], data['EventSourceArn'], data.get('Enabled'), data.get('BatchSize')
+        )
+        return jsonify(mapping)
+    except ValueError as error:
+        error_type, message = error.args
+        return error_response(message, code=400, error_type=error_type)
 
 
 @app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['PUT'])
@@ -1244,11 +1276,17 @@ def update_event_source_mapping(mapping_uuid):
     data = json.loads(request.data)
     if not mapping_uuid:
         return jsonify({})
+
     function_name = data.get('FunctionName') or ''
     enabled = data.get('Enabled', True)
-    batch_size = data.get('BatchSize') or 100
-    mapping = update_event_source(mapping_uuid, function_name, enabled, batch_size)
-    return jsonify(mapping)
+    batch_size = data.get('BatchSize')
+
+    try:
+        mapping = update_event_source(mapping_uuid, function_name, enabled, batch_size)
+        return jsonify(mapping)
+    except ValueError as error:
+        error_type, message = error.args
+        return error_response(message, code=400, error_type=error_type)
 
 
 @app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['DELETE'])
