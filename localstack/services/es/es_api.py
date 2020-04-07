@@ -13,6 +13,8 @@ from localstack.services.plugins import check_infra, Plugin
 APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'
 
+DEFAULT_ES_VERSION = '7.1'
+
 ES_DOMAINS = {}
 
 app = Flask(APP_NAME)
@@ -129,6 +131,7 @@ def get_domain_config(domain_name):
 
 
 def get_domain_status(domain_name, deleted=False):
+    status = ES_DOMAINS.get(domain_name) or {}
     return {
         'DomainStatus': {
             'ARN': 'arn:aws:es:%s:%s:domain/%s' % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),
@@ -144,7 +147,7 @@ def get_domain_status(domain_name, deleted=False):
                 'InstanceType': 'm3.medium.elasticsearch',
                 'ZoneAwarenessEnabled': False
             },
-            'ElasticsearchVersion': '7.1',
+            'ElasticsearchVersion': status.get('ElasticsearchVersion') or DEFAULT_ES_VERSION,
             'Endpoint': aws_stack.get_elasticsearch_endpoint(domain_name),
             'Processing': False,
             'EBSOptions': {
