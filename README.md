@@ -307,6 +307,21 @@ aws --endpoint-url=http://localhost:4568 kinesis list-streams
 }
 ```
 
+Use the below command to install `aws CLI`, if not installed already.
+
+```
+pip install awscli
+```
+### Setting up local region and credentials to run localstack
+
+aws requires the region and the credentials to be set in order to run the aws commands. Create the default configuration & the credentials. Below key will ask for the Access key id, secret Access Key, region & output format.
+
+```
+aws configure --profile default
+
+# Config & credential file will be created under ~/.aws folder
+```
+
 **NEW**: Check out [awslocal](https://github.com/localstack/awscli-local), a thin CLI wrapper
 that runs commands directly against LocalStack (no need to specify `--endpoint-url` anymore).
 Install it via `pip install awscli-local`, and then use it as follows:
