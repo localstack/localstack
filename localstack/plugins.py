@@ -37,8 +37,9 @@ def do_register_localstack_plugins():
         from localstack.services.sns import sns_listener
         from localstack.services.sqs import sqs_listener, sqs_starter
         from localstack.services.iam import iam_listener, iam_starter
-        from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.ses import ses_starter
+        from localstack.services.ssm import ssm_listener
+        from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.infra import (
             start_sns, start_route53, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
             start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams
@@ -153,7 +154,8 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'ssm',
-            start=start_ssm))
+            start=start_ssm,
+            listener=ssm_listener.UPDATE_SSM))
 
         register_plugin(Plugin(
             'sts',
