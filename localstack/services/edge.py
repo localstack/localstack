@@ -103,6 +103,13 @@ def get_api_from_headers(headers, path=None):
 
 
 def do_start_edge(port, use_ssl, asynchronous=False):
+    try:
+        # start local DNS server, if present
+        from localstack_ext.services import dns_server
+        dns_server.start_servers()
+    except Exception:
+        pass
+
     # get port and start Edge
     print('Starting edge router (http%s port %s)...' % ('s' if use_ssl else '', port))
     # use use=True here because our proxy allows both, HTTP and HTTPS traffic
@@ -111,6 +118,20 @@ def do_start_edge(port, use_ssl, asynchronous=False):
     if not asynchronous:
         proxy.join()
     return proxy
+
+
+def can_use_sudo():
+    try:
+        run('echo | sudo -S echo', print_error=False)
+        return True
+    except Exception:
+        return False
+
+
+def ensure_can_use_sudo():
+    if not is_root() and not can_use_sudo():
+        print('Please enter your sudo password (required to configure local network):')
+        run('sudo echo', stdin=True)
 
 
 def start_edge(port=None, use_ssl=True, asynchronous=False):
@@ -132,6 +153,9 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
                 requests.post(url, headers={HEADER_KILL_SIGNAL: 'kill'})
             except Exception:
                 pass
+
+    # make sure we can run sudo commands
+    ensure_can_use_sudo()
 
     # register a signal handler to terminate the sudo process later on
     TMP_THREADS.append(Terminator())
