@@ -142,6 +142,25 @@ class SNSTest(unittest.TestCase):
         num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_2, num_msgs_1)
 
+    def test_data_type_sns_message(self):
+        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_2)
+        filter_policy = {'attr1': [{'numeric': ['>', 0, '<=', 100]}]}
+        self.sns_client.subscribe(
+            TopicArn=self.topic_arn,
+            Protocol='sqs',
+            Endpoint=queue_arn,
+            Attributes={
+                'FilterPolicy': json.dumps(filter_policy)
+            }
+        )
+
+        # publish message that satisfies the filter policy, assert that message is received
+        message = u'This is a test message'
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+                                MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
+        messages = self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages']
+        self.assertEqual(json.loads(messages[0]['Body'])['MessageAttributes']['attr1']['Value'], '99.12')
+
     def test_unknown_topic_publish(self):
         fake_arn = 'arn:aws:sns:us-east-1:123456789012:i_dont_exist'
         message = u'This is a test message'

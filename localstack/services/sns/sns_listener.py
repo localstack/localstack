@@ -521,9 +521,6 @@ def get_message_attributes(req_data):
             elif binary_value is not None:
                 attribute['Value'] = binary_value
 
-            if attribute['Type'] == 'Number':
-                attribute['Value'] = float(attribute['Value'])
-
             attributes[name] = attribute
             x += 1
         else:
@@ -553,8 +550,9 @@ def evaluate_numeric_condition(conditions, value):
         return False
 
     for i in range(0, len(conditions), 2):
+        value = float(value)
         operator = conditions[i]
-        operand = conditions[i + 1]
+        operand = float(conditions[i + 1])
 
         if operator == '=':
             if value != operand:
