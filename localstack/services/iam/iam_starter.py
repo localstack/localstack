@@ -69,10 +69,10 @@ USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>
          <Arn>{{ user.arn }}</Arn>
          <CreateDate>{{ user.created_iso_8601 }}</CreateDate>
          <Tags>
-            {% for tag in user.tags %}<Tag>
+            {% for tag in user.tags %}<member>
                 <Key>{{ tag.Key }}</Key>
                 <Value>{{ tag.Value }}</Value>
-            </Tag>{% endfor %}
+            </member>{% endfor %}
          </Tags>
      </User>
    </{{ action }}UserResult>
