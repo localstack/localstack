@@ -70,10 +70,8 @@ INVALID_PARAMETER_VALUE_EXCEPTION = 'InvalidParameterValueException'
 BATCH_SIZE_MAP = {
     'kinesis': (100, 10000),
     'dynamodb': (100, 1000),
-    'sqs': (10, 10),
+    'sqs': (10, 10)
 }
-
-# DEFAULT_BATCH_SIZE = 10
 
 app = Flask(APP_NAME)
 
