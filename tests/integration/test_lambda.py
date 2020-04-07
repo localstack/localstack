@@ -22,7 +22,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_MAP, INVALID_PARAMETER_VALUE_EXCEPTION
+    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION
 )
 from .lambdas import lambda_integration
 
@@ -204,7 +204,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             EventSourceArn=queue_arn_1,
             FunctionName=function_name
         )
-        self.assertEqual(rs['BatchSize'], BATCH_SIZE_MAP['sqs'][0])
+        self.assertEqual(rs['BatchSize'], BATCH_SIZE_RANGES['sqs'][0])
 
         uuid = rs['UUID']
 
@@ -213,7 +213,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             lambda_client.update_event_source_mapping(
                 UUID=uuid,
                 FunctionName=function_name,
-                BatchSize=BATCH_SIZE_MAP['sqs'][1] + 1
+                BatchSize=BATCH_SIZE_RANGES['sqs'][1] + 1
             )
             self.fail('This call should not be successful as the batch size > MAX_BATCH_SIZE')
 
@@ -228,7 +228,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             lambda_client.create_event_source_mapping(
                 EventSourceArn=queue_arn_2,
                 FunctionName=function_name,
-                BatchSize=BATCH_SIZE_MAP['sqs'][1] + 1
+                BatchSize=BATCH_SIZE_RANGES['sqs'][1] + 1
             )
             self.fail('This call should not be successful as the batch size > MAX_BATCH_SIZE')
 
@@ -240,7 +240,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             EventSourceArn=table_arn,
             FunctionName=function_name
         )
-        self.assertEqual(rs['BatchSize'], BATCH_SIZE_MAP['dynamodb'][0])
+        self.assertEqual(rs['BatchSize'], BATCH_SIZE_RANGES['dynamodb'][0])
 
         # clean up
         dynamodb_client = aws_stack.connect_to_service('dynamodb')

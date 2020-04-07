@@ -67,7 +67,7 @@ LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
 
 INVALID_PARAMETER_VALUE_EXCEPTION = 'InvalidParameterValueException'
 
-BATCH_SIZE_MAP = {
+BATCH_SIZE_RANGES = {
     'kinesis': (100, 10000),
     'dynamodb': (100, 1000),
     'sqs': (10, 10)
@@ -159,15 +159,21 @@ def func_arn(function_name):
     return aws_stack.lambda_function_arn(function_name)
 
 
-def get_batch_size_entry(source_arn):
-    source_type = source_arn.split(':')[2].lower()
-    batch_size_entry = BATCH_SIZE_MAP.get(source_type)
+def check_batch_size_range(source_arn, batch_size=None):
+    batch_size_entry = BATCH_SIZE_RANGES.get(source_arn.split(':')[2].lower())
     if not batch_size_entry:
         raise ValueError(
             INVALID_PARAMETER_VALUE_EXCEPTION, 'Unsupported event source type'
         )
 
-    return batch_size_entry
+    batch_size = batch_size or batch_size_entry[0]
+    if batch_size > batch_size_entry[1]:
+        raise ValueError(
+            INVALID_PARAMETER_VALUE_EXCEPTION,
+            'BatchSize {} exceeds the max of {}'.format(batch_size, batch_size_entry[1])
+        )
+
+    return batch_size
 
 
 def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
@@ -177,14 +183,7 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
 
 
 def add_event_source(function_name, source_arn, enabled, batch_size=None):
-    batch_size_entry = get_batch_size_entry(source_arn)
-
-    batch_size = batch_size or batch_size_entry[0]
-    if batch_size > batch_size_entry[1]:
-        raise ValueError(
-            INVALID_PARAMETER_VALUE_EXCEPTION,
-            'BatchSize {} exceeds the max of {}'.format(batch_size, batch_size_entry[1])
-        )
+    batch_size = check_batch_size_range(source_arn, batch_size)
 
     mapping = {
         'UUID': str(uuid.uuid4()),
@@ -207,14 +206,7 @@ def update_event_source(uuid_value, function_name, enabled, batch_size):
             if function_name:
                 m['FunctionArn'] = func_arn(function_name)
 
-            batch_size_entry = get_batch_size_entry(m['EventSourceArn'])
-            batch_size = batch_size or m['BatchSize']
-
-            if batch_size > batch_size_entry[1]:
-                raise ValueError(
-                    INVALID_PARAMETER_VALUE_EXCEPTION,
-                    'BatchSize {} exceeds the max of {}'.format(batch_size, batch_size_entry[1])
-                )
+            batch_size = check_batch_size_range(m['EventSourceArn'], batch_size or m['BatchSize'])
 
             m['BatchSize'] = batch_size
             m['State'] = 'Enabled' if enabled is True else 'Disabled'
@@ -1269,8 +1261,7 @@ def create_event_source_mapping():
         return jsonify(mapping)
     except ValueError as error:
         error_type, message = error.args
-        return error_response(message,
-                              code=400, error_type=error_type)
+        return error_response(message, code=400, error_type=error_type)
 
 
 @app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['PUT'])
@@ -1295,8 +1286,7 @@ def update_event_source_mapping(mapping_uuid):
         return jsonify(mapping)
     except ValueError as error:
         error_type, message = error.args
-        return error_response(message,
-                              code=400, error_type=error_type)
+        return error_response(message, code=400, error_type=error_type)
 
 
 @app.route('%s/event-source-mappings/<mapping_uuid>' % PATH_ROOT, methods=['DELETE'])

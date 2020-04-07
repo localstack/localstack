@@ -11,7 +11,7 @@ from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.constants import LAMBDA_TEST_ROLE
 
 
-TEST_ARN = 'arn:aws:sqs:eu-west-1:000000000000:testq'
+TEST_EVENT_SOURCE_ARN = 'arn:aws:sqs:eu-west-1:000000000000:testq'
 
 
 class TestLambdaAPI(unittest.TestCase):
@@ -220,7 +220,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_create_event_source_mapping(self):
         self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
-            data=json.dumps({'FunctionName': 'test-lambda-function', 'EventSourceArn': TEST_ARN}))
+            data=json.dumps({'FunctionName': 'test-lambda-function', 'EventSourceArn': TEST_EVENT_SOURCE_ARN}))
 
         listResponse = self.client.get('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT))
         listResult = json.loads(listResponse.get_data())
@@ -233,7 +233,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_create_disabled_event_source_mapping(self):
         createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
                             data=json.dumps({'FunctionName': 'test-lambda-function',
-                                             'EventSourceArn': TEST_ARN,
+                                             'EventSourceArn': TEST_EVENT_SOURCE_ARN,
                                              'Enabled': 'false'}))
         createResult = json.loads(createResponse.get_data())
 
@@ -248,7 +248,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_update_event_source_mapping(self):
         createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
                             data=json.dumps({'FunctionName': 'test-lambda-function',
-                                             'EventSourceArn': TEST_ARN,
+                                             'EventSourceArn': TEST_EVENT_SOURCE_ARN,
                                              'Enabled': 'true'}))
         createResult = json.loads(createResponse.get_data())
 
