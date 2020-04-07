@@ -296,6 +296,13 @@ local directory **ls_tmp** must contains the three files (server.test.pem, serve
 
 You can point your `aws` CLI to use the local infrastructure, for example:
 
+```
+aws --endpoint-url=http://localhost:4568 kinesis list-streams
+{
+    "StreamNames": []
+}
+```
+
 Use the below command to install `aws CLI`, if not installed already.
 
 ```
@@ -309,13 +316,6 @@ aws requires the region and the credentials to be set in order to run the aws co
 aws configure --profile default
 
 # Config & credential file will be created under ~/.aws folder
-```
-
-```
-aws --endpoint-url=http://localhost:4568 kinesis list-streams
-{
-    "StreamNames": []
-}
 ```
 
 **NEW**: Check out [awslocal](https://github.com/localstack/awscli-local), a thin CLI wrapper
