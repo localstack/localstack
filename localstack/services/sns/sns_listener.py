@@ -105,11 +105,11 @@ class ProxyListenerSNS(ProxyListener):
 
                 # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well
-                if topic_arn:
+                if 'PhoneNumber' not in req_data and 'TargetArn' not in req_data:
                     if topic_arn not in SNS_SUBSCRIPTIONS.keys():
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
 
-                    publish_message(topic_arn, req_data)
+                publish_message(topic_arn, req_data)
 
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action)
@@ -313,6 +313,7 @@ def do_confirm_subscription(topic_arn, token):
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
+    print('do_subscribe: {}'.format(topic_arn))
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
     for existing_topic_subscription in SNS_SUBSCRIPTIONS.get(topic_arn, []):
@@ -340,6 +341,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
             'Status': 'Not Subscribed'
         }
     )
+    print('SUBSCRIPTION_STATUS: {}'.format(SUBSCRIPTION_STATUS))
     # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
     if protocol in ['http', 'https']:
         token = short_uid()
