@@ -2,6 +2,7 @@ import os
 import json
 import glob
 import tempfile
+import time
 import requests
 import shutil
 import zipfile
@@ -18,6 +19,7 @@ from localstack.services.awslambda.lambda_api import (
 )
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
+DEFAULT_GET_LOG_EVENTS_DELAY = 3
 
 
 def copy_dir(source, target):
@@ -318,22 +320,28 @@ def create_sqs_queue(queue_name):
     }
 
 
-# get lambda log stream
-def get_lambda_log_stream(function_name):
-    logs = aws_stack.connect_to_service('logs')
-    rs = logs.describe_log_streams(
-        logGroupName='/aws/lambda/{}'.format(function_name)
-    )
-
-    return rs['logStreams'][0]['logStreamName']
+def get_lambda_log_group_name(function_name):
+    return '/aws/lambda/{}'.format(function_name)
 
 
-def get_event_message(events):
+def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY):
+    def get_log_events(function_name, delay_time):
+        time.sleep(delay_time)
+
+        logs = aws_stack.connect_to_service('logs')
+        rs = logs.filter_log_events(
+            logGroupName=get_lambda_log_group_name(function_name)
+        )
+
+        return rs['events']
+
+    events = get_log_events(function_name, delay_time)
+    rs = []
     for event in events:
         raw_message = event['message']
         if 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
             continue
 
-        return json.loads(raw_message)
+        rs.append(json.loads(raw_message))
 
-    return None
+    return rs

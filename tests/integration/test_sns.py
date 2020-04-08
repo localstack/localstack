@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
 import unittest
 from botocore.exceptions import ClientError
 from localstack.config import external_service_url
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid)
+    to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid
+)
+from localstack.utils.testutil import get_lambda_log_events
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns.sns_listener import SUBSCRIPTION_STATUS
@@ -20,6 +23,9 @@ TEST_QUEUE_NAME = 'TestQueue_snsTest'
 TEST_QUEUE_NAME_2 = 'TestQueue_snsTest2'
 TEST_QUEUE_DLQ_NAME = 'TestQueue_DLQ_snsTest'
 TEST_TOPIC_NAME_2 = 'topic-test-2'
+
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 
 
 class SNSTest(unittest.TestCase):
@@ -404,3 +410,54 @@ class SNSTest(unittest.TestCase):
 
         # clean up
         self.sns_client.delete_topic(TopicArn=topic_arn)
+
+    def test_publish_message_by_target_arn(self):
+        self.unsubscribe_all_from_sns()
+
+        topic_name = 'queue-{}'.format(short_uid())
+        func_name = 'lambda-%s' % short_uid()
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=func_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+        lambda_arn = aws_stack.lambda_function_arn(func_name)
+
+        subscription_arn = self.sns_client.subscribe(
+            TopicArn=topic_arn, Protocol='lambda', Endpoint=lambda_arn
+        )['SubscriptionArn']
+
+        self.sns_client.publish(
+            TopicArn=topic_arn,
+            Message='test_message_1',
+            Subject='test subject'
+        )
+
+        events = get_lambda_log_events(func_name)
+        # Lambda invoked 1 time
+        self.assertEqual(len(events), 1)
+
+        message = events[0]['Records'][0]
+        self.assertEqual(message['EventSubscriptionArn'], subscription_arn)
+
+        self.sns_client.publish(
+            TargetArn=topic_arn,
+            Message='test_message_2',
+            Subject='test subject'
+        )
+
+        events = get_lambda_log_events(func_name)
+        # Lambda invoked 1 more time
+        self.assertEqual(len(events), 2)
+
+        for event in events:
+            message = event['Records'][0]
+            self.assertEqual(message['EventSubscriptionArn'], subscription_arn)
+
+        # clean up
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.delete_function(FunctionName=func_name)
