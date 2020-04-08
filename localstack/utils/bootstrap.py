@@ -178,9 +178,14 @@ def docker_container_running(container_name):
 
 
 def get_docker_container_names():
-    output = to_str(run("docker ps --format '{{.Names}}'"))
-    container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
-    return container_names
+    cmd = "docker ps --format '{{.Names}}'"
+    try:
+        output = to_str(run(cmd))
+        container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
+        return container_names
+    except Exception as e:
+        LOG.info('Unable to list Docker containers via "%s": %s' % (cmd, e))
+        return []
 
 
 def setup_logging():
@@ -359,7 +364,9 @@ def start_infra_in_docker():
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
     web_ui_flags = ''
     if config.START_WEB:
-        web_ui_flags = '-p {p}:{p} -p {p1}:{p1} '.format(p=config.PORT_WEB_UI, p1=config.PORT_WEB_UI_SSL)
+        for port in [config.PORT_WEB_UI, config.PORT_WEB_UI_SSL]:
+            if not is_mapped(port):
+                web_ui_flags += ' -p {port}:{port}'.format(port=port)
 
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +

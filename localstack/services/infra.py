@@ -43,7 +43,6 @@ LOG = logging.getLogger(__name__)
 # CONFIG UPDATE BACKDOOR
 # -----------------------
 
-
 def update_config_variable(variable, new_value):
     if new_value is not None:
         LOG.info('Updating value of config variable "%s": %s' % (variable, new_value))
@@ -343,9 +342,13 @@ def start_infra(asynchronous=False, apis=None):
         is_in_docker = in_docker()
         # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
         if not is_in_docker and 'docker' in config.LAMBDA_EXECUTOR and not is_linux():
-            print(('!WARNING! - Running outside of Docker with LAMBDA_EXECUTOR=%s can lead to '
+            print(('!WARNING! - Running outside of Docker with $LAMBDA_EXECUTOR=%s can lead to '
                    'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
                    'be properly set in your Lambdas.') % config.LAMBDA_EXECUTOR)
+
+        if is_in_docker and config.LAMBDA_REMOTE_DOCKER and not os.environ.get('HOST_TMP_FOLDER'):
+            print('!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=1 - '
+                  "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR")
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
