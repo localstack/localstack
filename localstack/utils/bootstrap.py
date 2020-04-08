@@ -178,9 +178,14 @@ def docker_container_running(container_name):
 
 
 def get_docker_container_names():
-    output = to_str(run("docker ps --format '{{.Names}}'"))
-    container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
-    return container_names
+    cmd = "docker ps --format '{{.Names}}'"
+    try:
+        output = to_str(run(cmd))
+        container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
+        return container_names
+    except Exception as e:
+        LOG.info('Unable to list Docker containers via "%s": %s' % (cmd, e))
+        return []
 
 
 def setup_logging():
