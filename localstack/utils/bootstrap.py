@@ -364,7 +364,9 @@ def start_infra_in_docker():
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
     web_ui_flags = ''
     if config.START_WEB:
-        web_ui_flags = '-p {p}:{p} -p {p1}:{p1} '.format(p=config.PORT_WEB_UI, p1=config.PORT_WEB_UI_SSL)
+        for port in [config.PORT_WEB_UI, config.PORT_WEB_UI_SSL]:
+            if not is_mapped(port):
+                web_ui_flags += ' -p {port}:{port}'.format(port=port)
 
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +
