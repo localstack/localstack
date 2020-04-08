@@ -30,3 +30,15 @@ class SSMParameter(BaseModel):
 
 class LogsLogGroup(BaseModel):
     pass
+
+
+class FirehoseDeliveryStream(BaseModel):
+    pass
+
+
+class SecretsManagerSecret(BaseModel):
+    pass
+
+
+class ElasticsearchDomain(BaseModel):
+    pass
