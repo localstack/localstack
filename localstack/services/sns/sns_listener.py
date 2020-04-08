@@ -313,7 +313,6 @@ def do_confirm_subscription(topic_arn, token):
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
-    print('do_subscribe: {}'.format(topic_arn))
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
     for existing_topic_subscription in SNS_SUBSCRIPTIONS.get(topic_arn, []):
@@ -341,7 +340,6 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
             'Status': 'Not Subscribed'
         }
     )
-    print('SUBSCRIPTION_STATUS: {}'.format(SUBSCRIPTION_STATUS))
     # Send out confirmation message for HTTP(S), fix for https://github.com/localstack/localstack/issues/881
     if protocol in ['http', 'https']:
         token = short_uid()
