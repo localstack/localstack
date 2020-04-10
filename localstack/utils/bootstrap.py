@@ -277,6 +277,60 @@ def start_infra_locally():
     return infra.start_infra()
 
 
+class PortMappings(object):
+    """ Maps source to target port ranges for Docker port mappings. """
+
+    class HashableList(list):
+        def __hash__(self):
+            result = 0
+            for i in self:
+                result += hash(i)
+            return result
+
+    def __init__(self):
+        self.mappings = {}
+
+    def add(self, port, mapped=None):
+        mapped = mapped or port
+        if isinstance(port, list):
+            for i in range(port[1] - port[0] + 1):
+                self.add(port[0] + i, mapped[0] + i)
+            return
+        for from_range, to_range in self.mappings.items():
+            if not self.in_expanded_range(port, from_range):
+                continue
+            if not self.in_expanded_range(mapped, to_range):
+                continue
+            self.expand_range(port, from_range)
+            self.expand_range(mapped, to_range)
+            return
+        self.mappings[self.HashableList([port, port])] = [mapped, mapped]
+
+    def to_str(self):
+        def entry(k, v):
+            if k[0] == k[1] and v[0] == v[1]:
+                return '-p %s:%s' % (k[0], v[0])
+            return '-p %s-%s:%s-%s' % (k[0], k[1], v[0], v[1])
+
+        return ' '.join([entry(k, v) for k, v in self.mappings.items()])
+
+    def in_range(self, port, range):
+        return port >= range[0] and port <= range[1]
+
+    def in_expanded_range(self, port, range):
+        return port >= range[0] - 1 and port <= range[1] + 1
+
+    def expand_range(self, port, range):
+        if self.in_range(port, range):
+            return
+        if port == range[0] - 1:
+            range[0] = port
+        elif port == range[1] + 1:
+            range[1] = port
+        else:
+            raise Exception('Unable to add port %s to existing range %s' % (port, range))
+
+
 def start_infra_in_docker():
 
     container_name = MAIN_CONTAINER_NAME
@@ -304,6 +358,9 @@ def start_infra_in_docker():
     plugin_run_params = ' '.join([
         entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
 
+    # container for port mappings
+    port_mappings = PortMappings()
+
     # get port ranges defined via DOCKER_FLAGS (if any)
     regex = r'.*-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-[0-9]+)?.*'
     match = re.match(regex, user_flags)
@@ -311,37 +368,16 @@ def start_infra_in_docker():
     if match:
         start = int(match.group(1))
         end = int(match.group(3) or match.group(1))
+        port_mappings.add([start, end])
 
-    def is_mapped(start_port, end_port=None):
-        existing_range = range(start, end)
-        return (int(start_port) in existing_range) or (start_port and int(start_port) in existing_range)
-
-    # construct port mappings
-    ports_list = sorted(service_ports.values())
-    start_port = 0
-    last_port = 0
-    port_ranges = []
-    for i in range(0, len(ports_list)):
-        if not start_port:
-            start_port = ports_list[i]
-        if not last_port:
-            last_port = ports_list[i]
-        if ports_list[i] > last_port + 1:
-            port_ranges.append([start_port, last_port])
-            start_port = ports_list[i]
-        elif i >= len(ports_list) - 1:
-            port_ranges.append([start_port, ports_list[i]])
-        last_port = ports_list[i]
-    port_mappings = ' '.join([
-        '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
-        if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
-        for entry in port_ranges if not is_mapped(entry[0], entry[1])])
+    # construct default port mappings
+    for port in service_ports.values():
+        port_mappings.add(port)
 
     if services:
-        port_mappings = ''
+        port_mappings = PortMappings()
         for port in set(service_ports.values()):
-            if not is_mapped(port):
-                port_mappings += ' -p {port}:{port}'.format(port=port)
+            port_mappings.add(port)
 
     env_str = ''
     for env_var in config.CONFIG_ENV_VARS:
@@ -362,21 +398,19 @@ def start_infra_in_docker():
     user_flags = '%s ' % user_flags if user_flags else user_flags
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
-    web_ui_flags = ''
     if config.START_WEB:
         for port in [config.PORT_WEB_UI, config.PORT_WEB_UI_SSL]:
-            if not is_mapped(port):
-                web_ui_flags += ' -p {port}:{port}'.format(port=port)
+            port_mappings.add(port)
 
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +
         '--name %s ' +
-        '%s %s %s ' +
+        '%s %s ' +
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
             config.DOCKER_CMD, interactive, entrypoint, env_str, user_flags, plugin_run_params,
-            container_name, web_ui_flags, port_mappings, data_dir_mount,
+            container_name, port_mappings.to_str(), data_dir_mount,
             config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
             config.HOST_TMP_FOLDER, image_name, cmd
     )

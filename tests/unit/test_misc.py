@@ -4,6 +4,7 @@ import datetime
 import unittest
 from requests.models import Response
 from localstack.utils.aws import aws_stack
+from localstack.utils.bootstrap import PortMappings
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.utils.common import (
     download, parallelize, TMP_FILES, load_file, parse_chunked_data, json_safe, now_utc)
@@ -37,6 +38,25 @@ class TestMisc(unittest.TestCase):
         t1 = now_utc()
         t2 = now_utc(millis=True)
         self.assertLessEqual(t2 - t1, 1)
+
+    def test_port_mappings(self):
+        map = PortMappings()
+        map.add(123)
+        self.assertEqual(map.to_str(), '-p 123:123')
+        map.add(124)
+        self.assertEqual(map.to_str(), '-p 123-124:123-124')
+        map.add(234)
+        self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234:234')
+        map.add(345, 346)
+        self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234:234 -p 345:346')
+        map.add([456, 458])
+        self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234:234 -p 345:346 -p 456-458:456-458')
+
+        map = PortMappings()
+        map.add([123, 124])
+        self.assertEqual(map.to_str(), '-p 123-124:123-124')
+        map.add([234, 237], [345, 348])
+        self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234-237:345-348')
 
 
 # This test is not enabled in CI, it is just used for manual
