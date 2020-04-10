@@ -1,8 +1,8 @@
 import re
 import os
 import json
-import time
 import shutil
+import time
 import unittest
 import six
 from botocore.exceptions import ClientError
@@ -10,7 +10,7 @@ from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER
 from localstack.utils import testutil
-from localstack.utils.testutil import get_lambda_log_stream, get_event_message
+from localstack.utils.testutil import get_lambda_log_events
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
@@ -502,17 +502,9 @@ class TestPythonRuntimes(LambdaTestBase):
             Message=message
         )
 
-        logs = aws_stack.connect_to_service('logs')
-
-        log_stream = retry(get_lambda_log_stream, retries=3, sleep=2, function_name=function_name)
-        rs = logs.get_log_events(
-            logGroupName='/aws/lambda/{}'.format(function_name),
-            logStreamName=log_stream
-        )
-
-        message = get_event_message(rs['events'])
-        self.assertEqual(len(message['Records']), 1)
-        notification = message['Records'][0]['Sns']
+        events = get_lambda_log_events(function_name)
+        self.assertEqual(len(events), 1)
+        notification = events[0]['Records'][0]['Sns']
 
         self.assertIn('Subject', notification)
         self.assertEqual(notification['Subject'], subject)

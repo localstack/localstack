@@ -4,7 +4,7 @@ import time
 import unittest
 
 from localstack.utils import testutil
-from localstack.utils.testutil import get_lambda_log_stream, get_event_message
+from localstack.utils.testutil import get_lambda_log_events, get_lambda_log_group_name
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry
 from .lambdas import lambda_integration
@@ -421,18 +421,10 @@ class SQSTest(unittest.TestCase):
             MessageAttributes=TEST_MESSAGE_ATTRIBUTES
         )
 
-        logs = aws_stack.connect_to_service('logs')
+        events = get_lambda_log_events(function_name)
+        self.assertEqual(len(events), 1)
 
-        log_stream = retry(get_lambda_log_stream, retries=3, sleep=2, function_name=function_name)
-        rs = logs.get_log_events(
-            logGroupName='/aws/lambda/{}'.format(function_name),
-            logStreamName=log_stream
-        )
-
-        message = get_event_message(rs['events'])
-        self.assertEqual(len(message['Records']), 1)
-
-        sqs_msg = message['Records'][0]
+        sqs_msg = events[0]['Records'][0]
         self.assertEqual(sqs_msg['body'], 'hello world.')
 
         self.assertIn('messageAttributes', sqs_msg)
@@ -524,8 +516,6 @@ class SQSTest(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36
         )
 
-        lambda_log_group_name = '/aws/lambda/{}'.format(function_name)
-
         lambda_client = aws_stack.connect_to_service('lambda')
         lambda_client.create_event_source_mapping(
             EventSourceArn=queue_arn,
@@ -546,22 +536,17 @@ class SQSTest(unittest.TestCase):
         # There is no log group for this lambda (lambda not invoked yet)
         rs = logs.describe_log_groups()
         self.assertEqual(
-            len([lg['logGroupName'] for lg in rs['logGroups'] if lg['logGroupName'] == lambda_log_group_name]),
+            len([lg['logGroupName']
+                 for lg in rs['logGroups'] if lg['logGroupName'] == get_lambda_log_group_name(function_name)]),
             0
         )
 
         # After delay time, lambda invoked by sqs
-        log_stream = retry(get_lambda_log_stream, retries=3, sleep=delay_time, function_name=function_name)
-        rs = logs.get_log_events(
-            logGroupName=lambda_log_group_name,
-            logStreamName=log_stream
-        )
-
-        event = get_event_message(rs['events'])
+        events = get_lambda_log_events(function_name, delay_time * 1.5)
         # Lambda just invoked 1 time
-        self.assertEqual(len(event['Records']), 1)
+        self.assertEqual(len(events), 1)
 
-        message = event['Records'][0]
+        message = events[0]['Records'][0]
         self.assertEqual(message['eventSourceARN'], queue_arn)
         self.assertEqual(message['messageId'], message_id)
 
