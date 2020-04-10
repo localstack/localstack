@@ -35,7 +35,7 @@ RUN make install-web
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
-# expose service & web dashboard ports
+# expose service & web dashboard ports (including edge)
 EXPOSE 4566-4597 8080
 
 # define command at startup
