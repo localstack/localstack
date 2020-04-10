@@ -261,9 +261,7 @@ RESOURCE_TO_FUNCTION = {
     'SecretsManager::Secret': {
         'create': {
             'function': 'create_secret',
-            'parameters': {
-                'Name': 'Name',
-            }
+            'parameters': select_parameters('Name', 'Description', 'SecretString', 'KmsKeyId', 'Tags')
         },
         'delete': {
             'function': 'delete_secret',
@@ -288,9 +286,10 @@ RESOURCE_TO_FUNCTION = {
     'Elasticsearch::Domain': {
         'create': {
             'function': 'create_elasticsearch_domain',
-            'parameters': {
-                'DomainName': 'DomainName'
-            },
+            'parameters': select_parameters('AccessPolicies', 'AdvancedOptions', 'CognitoOptions',
+                'DomainName', 'EBSOptions', 'ElasticsearchClusterConfig', 'ElasticsearchVersion',
+                'EncryptionAtRestOptions', 'LogPublishingOptions', 'NodeToNodeEncryptionOptions',
+                'SnapshotOptions', 'Tags', 'VPCOptions')
         },
         'delete': {
             'function': 'delete_elasticsearch_domain',

@@ -188,6 +188,9 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: !Ref "SecretName"
+      Tags:
+        - Key: AppName
+          Value: AppA
 """
 
 TEST_TEMPLATE_12 = """
@@ -332,6 +335,17 @@ def get_topic_arns():
 
 
 class CloudFormationTest(unittest.TestCase):
+
+    def _await_stack_status(self, stack_name, expected_status, retries=3, sleep=2):
+        def check_stack():
+            stack = get_stack_details(stack_name)
+            self.assertEqual(stack['StackStatus'], expected_status)
+            return stack
+        return retry(check_stack, retries, sleep)
+
+    def _await_stack_completion(self, stack_name, retries=3, sleep=2):
+        return self._await_stack_status(stack_name, 'CREATE_COMPLETE', retries, sleep)
+
     def test_create_delete_stack(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -345,12 +359,7 @@ class CloudFormationTest(unittest.TestCase):
         stack_name = 'stack-%s' % short_uid()
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=2)
+        self._await_stack_completion(stack_name)
 
         # assert that resources have been created
         assert bucket_exists('cf-test-bucket-1')
@@ -444,12 +453,7 @@ class CloudFormationTest(unittest.TestCase):
         stack_name = 'stack-%s' % short_uid()
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-            return stack
-
-        details = retry(check_stack, retries=3, sleep=2)
+        details = self._await_stack_completion(stack_name)
 
         stack_summaries = list_stack_resources(stack_name)
         queue_urls = get_queue_urls()
@@ -545,12 +549,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn('StackId', rs)
         self.assertIn(stack_name, rs['StackId'])
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=2)
+        self._await_stack_completion(stack_name)
 
         rs = lambda_client.list_functions()
 
@@ -639,12 +638,7 @@ class CloudFormationTest(unittest.TestCase):
 
         cfn.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_8))
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=2)
+        self._await_stack_completion(stack_name)
 
         self.assertTrue(bucket_exists(bucket_name))
 
@@ -667,12 +661,7 @@ class CloudFormationTest(unittest.TestCase):
 
         cfn.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_9)
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=1)
+        self._await_stack_completion(stack_name)
 
         rs = logs_client.describe_log_groups(
             logGroupNamePrefix=log_group_prefix
@@ -703,12 +692,7 @@ class CloudFormationTest(unittest.TestCase):
             Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
         )
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=2)
+        self._await_stack_completion(stack_name)
 
         rs = es_client.describe_elasticsearch_domain(
             DomainName=domain_name
@@ -725,12 +709,8 @@ class CloudFormationTest(unittest.TestCase):
         params = [{'ParameterKey': 'SecretName', 'ParameterValue': secret_name}]
         cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_11, Parameters=params)
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
+        self._await_stack_completion(stack_name)
 
-        retry(check_stack, retries=3, sleep=2)
         secretsmanager_client = aws_stack.connect_to_service('secretsmanager')
 
         rs = secretsmanager_client.describe_secret(
@@ -754,12 +734,8 @@ class CloudFormationTest(unittest.TestCase):
         params = [{'ParameterKey': 'DeliveryStreamName', 'ParameterValue': firehose_name}]
         cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_12, Parameters=params)
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
+        self._await_stack_completion(stack_name)
 
-        retry(check_stack, retries=3, sleep=2)
         firehose_client = aws_stack.connect_to_service('firehose')
 
         rs = firehose_client.describe_delivery_stream(
