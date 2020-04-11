@@ -163,6 +163,70 @@ Resources:
             - !FindInMap [ AccountInfo, !Ref "AWS::AccountId", ENV ]
 """ % MOTO_ACCOUNT_ID
 
+
+TEST_TEMPLATE_10 = """
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  DomainName:
+    Type: String
+    Default: dev
+Resources:
+  MyElasticsearchDomain:
+    Type: AWS::Elasticsearch::Domain
+    Properties:
+      DomainName: !Ref "DomainName"
+"""
+
+TEST_TEMPLATE_11 = """
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  SecretName:
+    Type: String
+    Default: dev
+Resources:
+  MySecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Ref "SecretName"
+      Tags:
+        - Key: AppName
+          Value: AppA
+"""
+
+TEST_TEMPLATE_12 = """
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  DeliveryStreamName:
+    Type: String
+    Default: dev
+Resources:
+    MyRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Statement:
+            - Effect: Allow
+              Action: "*"
+              Resource: "*"
+    MyBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+          BucketName: !Ref "DeliveryStreamName"
+    MyStream:
+      Type: AWS::KinesisFirehose::DeliveryStream
+      Properties:
+        DeliveryStreamName: !Ref "DeliveryStreamName"
+        DeliveryStreamType: DirectPut
+        S3DestinationConfiguration:
+          BucketARN: !Ref MyBucket
+          BufferingHints:
+            IntervalInSeconds: 600
+            SizeInMBs: 50
+          CompressionFormat: UNCOMPRESSED
+          Prefix: raw/
+          RoleARN: !GetAtt "MyRole.Arn"
+"""
+
 TEST_CHANGE_SET_BODY = """
 Parameters:
   EnvironmentType:
@@ -271,6 +335,17 @@ def get_topic_arns():
 
 
 class CloudFormationTest(unittest.TestCase):
+
+    def _await_stack_status(self, stack_name, expected_status, retries=3, sleep=2):
+        def check_stack():
+            stack = get_stack_details(stack_name)
+            self.assertEqual(stack['StackStatus'], expected_status)
+            return stack
+        return retry(check_stack, retries, sleep)
+
+    def _await_stack_completion(self, stack_name, retries=3, sleep=2):
+        return self._await_stack_status(stack_name, 'CREATE_COMPLETE', retries, sleep)
+
     def test_create_delete_stack(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -284,12 +359,7 @@ class CloudFormationTest(unittest.TestCase):
         stack_name = 'stack-%s' % short_uid()
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=2)
+        self._await_stack_completion(stack_name)
 
         # assert that resources have been created
         assert bucket_exists('cf-test-bucket-1')
@@ -383,12 +453,7 @@ class CloudFormationTest(unittest.TestCase):
         stack_name = 'stack-%s' % short_uid()
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-            return stack
-
-        details = retry(check_stack, retries=3, sleep=2)
+        details = self._await_stack_completion(stack_name)
 
         stack_summaries = list_stack_resources(stack_name)
         queue_urls = get_queue_urls()
@@ -484,12 +549,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn('StackId', rs)
         self.assertIn(stack_name, rs['StackId'])
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=2)
+        self._await_stack_completion(stack_name)
 
         rs = lambda_client.list_functions()
 
@@ -578,12 +638,7 @@ class CloudFormationTest(unittest.TestCase):
 
         cfn.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_8))
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=2)
+        self._await_stack_completion(stack_name)
 
         self.assertTrue(bucket_exists(bucket_name))
 
@@ -606,12 +661,7 @@ class CloudFormationTest(unittest.TestCase):
 
         cfn.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_9)
 
-        # wait for deployment to finish
-        def check_stack():
-            stack = get_stack_details(stack_name)
-            self.assertEqual(stack['StackStatus'], 'CREATE_COMPLETE')
-
-        retry(check_stack, retries=3, sleep=1)
+        self._await_stack_completion(stack_name)
 
         rs = logs_client.describe_log_groups(
             logGroupNamePrefix=log_group_prefix
@@ -628,3 +678,70 @@ class CloudFormationTest(unittest.TestCase):
         )
 
         self.assertEqual(len(rs['logGroups']), 0)
+
+    def test_cfn_handle_elasticsearch_domain(self):
+        stack_name = 'stack-%s' % short_uid()
+        domain_name = 'es-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        es_client = aws_stack.connect_to_service('es')
+
+        cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=TEST_TEMPLATE_10,
+            Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
+        )
+
+        self._await_stack_completion(stack_name)
+
+        rs = es_client.describe_elasticsearch_domain(
+            DomainName=domain_name
+        )
+        self.assertEqual(domain_name, rs['DomainStatus']['DomainName'])
+
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_cfn_handle_secretsmanager_secret(self):
+        stack_name = 'stack-%s' % short_uid()
+        secret_name = 'secret-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        params = [{'ParameterKey': 'SecretName', 'ParameterValue': secret_name}]
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_11, Parameters=params)
+
+        self._await_stack_completion(stack_name)
+
+        secretsmanager_client = aws_stack.connect_to_service('secretsmanager')
+
+        rs = secretsmanager_client.describe_secret(
+            SecretId=secret_name
+        )
+
+        self.assertEqual(secret_name, rs['Name'])
+        self.assertNotIn('DeletedDate', rs)
+        cloudformation.delete_stack(StackName=stack_name)
+
+        rs = secretsmanager_client.describe_secret(
+            SecretId=secret_name
+        )
+        self.assertIn('DeletedDate', rs)
+
+    def test_cfn_handle_firehose(self):
+        stack_name = 'stack-%s' % short_uid()
+        firehose_name = 'firehose-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        params = [{'ParameterKey': 'DeliveryStreamName', 'ParameterValue': firehose_name}]
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_12, Parameters=params)
+
+        self._await_stack_completion(stack_name)
+
+        firehose_client = aws_stack.connect_to_service('firehose')
+
+        rs = firehose_client.describe_delivery_stream(
+            DeliveryStreamName=firehose_name
+        )
+
+        self.assertEqual(firehose_name, rs['DeliveryStreamDescription']['DeliveryStreamName'])
+
+        cloudformation.delete_stack(StackName=stack_name)

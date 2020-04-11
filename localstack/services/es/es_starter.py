@@ -27,6 +27,7 @@ def stop_elasticsearch():
         return
     LOG.info('Terminating Elasticsearch instance, as all clusters have been removed')
     thread.stop()
+    del STATE['_thread_']
 
 
 def start_elasticsearch(port=None, delete_data=True, asynchronous=False, update_listener=None):

@@ -58,7 +58,10 @@ MODEL_MAP = {
     'AWS::StepFunctions::StateMachine': sfn_models.StateMachine,
     'AWS::CloudFormation::Stack': service_models.CloudFormationStack,
     'AWS::SSM::Parameter': service_models.SSMParameter,
-    'AWS::Logs::LogGroup': service_models.LogsLogGroup
+    'AWS::Logs::LogGroup': service_models.LogsLogGroup,
+    'AWS::KinesisFirehose::DeliveryStream': service_models.FirehoseDeliveryStream,
+    'AWS::SecretsManager::Secret': service_models.SecretsManagerSecret,
+    'AWS::Elasticsearch::Domain': service_models.ElasticsearchDomain
 }
 
 
@@ -150,6 +153,15 @@ def update_physical_resource_id(resource):
 
         elif isinstance(resource, service_models.LogsLogGroup):
             resource.physical_resource_id = resource.params.get('LogGroupName')
+
+        elif isinstance(resource, service_models.FirehoseDeliveryStream):
+            resource.physical_resource_id = resource.params.get('DeliveryStreamName')
+
+        elif isinstance(resource, service_models.SecretsManagerSecret):
+            resource.physical_resource_id = resource.params.get('Name')
+
+        elif isinstance(resource, service_models.ElasticsearchDomain):
+            resource.physical_resource_id = resource.params.get('DomainName')
 
         else:
             LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))

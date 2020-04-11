@@ -258,6 +258,46 @@ RESOURCE_TO_FUNCTION = {
                 'Name', 'Type', 'Value', 'Description', 'AllowedPattern', 'Policies', 'Tier'))
         }
     },
+    'SecretsManager::Secret': {
+        'create': {
+            'function': 'create_secret',
+            'parameters': select_parameters('Name', 'Description', 'SecretString', 'KmsKeyId', 'Tags')
+        },
+        'delete': {
+            'function': 'delete_secret',
+            'parameters': {
+                'SecretId': 'PhysicalResourceId'
+            }
+        }
+    },
+    'KinesisFirehose::DeliveryStream': {
+        'create': {
+            'function': 'create_delivery_stream',
+            'parameters': select_parameters('DeliveryStreamName', 'DeliveryStreamType',
+                'S3DestinationConfiguration', 'ElasticsearchDestinationConfiguration')
+        },
+        'delete': {
+            'function': 'delete_delivery_stream',
+            'parameters': {
+                'DeliveryStreamName': 'PhysicalResourceId'
+            }
+        }
+    },
+    'Elasticsearch::Domain': {
+        'create': {
+            'function': 'create_elasticsearch_domain',
+            'parameters': select_parameters('AccessPolicies', 'AdvancedOptions', 'CognitoOptions',
+                'DomainName', 'EBSOptions', 'ElasticsearchClusterConfig', 'ElasticsearchVersion',
+                'EncryptionAtRestOptions', 'LogPublishingOptions', 'NodeToNodeEncryptionOptions',
+                'SnapshotOptions', 'Tags', 'VPCOptions')
+        },
+        'delete': {
+            'function': 'delete_elasticsearch_domain',
+            'parameters': {
+                'DomainName': 'PhysicalResourceId'
+            }
+        }
+    },
     'Logs::LogGroup': {
         'create': {
             'function': 'create_log_group',
@@ -538,6 +578,10 @@ def get_service_name(resource):
         return 'cognito-idp'
     if parts[-2] == 'Cognito':
         return 'cognito-idp'
+    if parts[-2] == 'Elasticsearch':
+        return 'es'
+    if parts[-2] == 'KinesisFirehose':
+        return 'firehose'
     return parts[1].lower()
 
 
@@ -746,6 +790,18 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             if not result:
                 return None
             return result[0]
+        elif resource_type == 'SecretsManager::Secret':
+            param_name = resource_props.get('Name') or resource_id
+            param_name = resolve_refs_recursively(stack_name, param_name, resources)
+            return aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=param_name)
+        elif resource_type == 'Elasticsearch::Domain':
+            param_name = resource_props.get('DomainName') or resource_id
+            param_name = resolve_refs_recursively(stack_name, param_name, resources)
+            return aws_stack.connect_to_service('es').describe_elasticsearch_domain(DomainName=param_name)
+        elif resource_type == 'KinesisFirehose::DeliveryStream':
+            param_name = resource_props.get('DeliveryStreamName') or resource_id
+            param_name = resolve_refs_recursively(stack_name, param_name, resources)
+            return aws_stack.connect_to_service('firehose').describe_delivery_stream(DeliveryStreamName=param_name)
         if is_deployable_resource(resource):
             LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
                         (resource_type, resource_id, resource))
