@@ -4,7 +4,8 @@ import unittest
 from nose.tools import assert_equal, assert_in, assert_not_in
 from botocore.exceptions import ClientError
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import safe_requests as requests
+from localstack.utils.common import short_uid, safe_requests as requests
+from localstack.services.es.es_api import DEFAULT_ES_VERSION
 
 TEST_INDEX = 'megacorp'
 TEST_DOC_ID = 1
@@ -43,6 +44,17 @@ class ElasticsearchTest(unittest.TestCase):
         es_client.delete_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
         assert_not_in(TEST_DOMAIN_NAME,
             [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
+
+    def test_domain_es_version(self):
+        es_client = aws_stack.connect_to_service('es')
+
+        status = es_client.describe_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)['DomainStatus']
+        self.assertEqual(status['ElasticsearchVersion'], DEFAULT_ES_VERSION)
+
+        domain_name = 'es-%s' % short_uid()
+        self._create_domain(name=domain_name, version='6.8')
+        status = es_client.describe_elasticsearch_domain(DomainName=domain_name)['DomainStatus']
+        self.assertEqual(status['ElasticsearchVersion'], '6.8')
 
     def test_domain_creation(self):
         es_client = aws_stack.connect_to_service('es')
@@ -110,8 +122,11 @@ class ElasticsearchTest(unittest.TestCase):
         return resp
 
     @classmethod
-    def _create_domain(cls):
+    def _create_domain(cls, name=None, version=None):
         es_client = aws_stack.connect_to_service('es')
-        es_client.create_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        assert_in(TEST_DOMAIN_NAME,
-            [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
+        name = name or TEST_DOMAIN_NAME
+        kwargs = {}
+        if version:
+            kwargs['ElasticsearchVersion'] = version
+        es_client.create_elasticsearch_domain(DomainName=name, **kwargs)
+        assert_in(name, [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])

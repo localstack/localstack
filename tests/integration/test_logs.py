@@ -62,3 +62,24 @@ class CloudWatchLogsTest(unittest.TestCase):
         self.logs_client.delete_log_group(
             logGroupName=group
         )
+
+    def test_list_tags_log_group(self):
+        group = 'lg-%s' % short_uid()
+        self.logs_client.create_log_group(
+            logGroupName=group,
+            tags={
+                'env': 'testing1'
+            }
+        )
+
+        rs = self.logs_client.list_tags_log_group(
+            logGroupName=group
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('tags', rs)
+        self.assertEqual(rs['tags']['env'], 'testing1')
+
+        # clean up
+        self.logs_client.delete_log_group(
+            logGroupName=group
+        )

@@ -190,7 +190,7 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(result['attr2']['DataType'], 'Binary')
         self.assertEqual(result['attr2']['BinaryValue'], 'value2'.encode('utf-8'))
         self.assertEqual(result['attr3']['DataType'], 'Number')
-        self.assertEqual(result['attr3']['StringValue'], '3.0')
+        self.assertEqual(result['attr3']['StringValue'], '3')
 
     def test_create_sns_message_timestamp_millis(self):
         action = {

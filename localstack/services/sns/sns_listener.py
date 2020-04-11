@@ -109,7 +109,7 @@ class ProxyListenerSNS(ProxyListener):
                     if topic_arn not in SNS_SUBSCRIPTIONS.keys():
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
 
-                    publish_message(topic_arn, req_data)
+                publish_message(topic_arn, req_data)
 
                 # return response here because we do not want the request to be forwarded to SNS backend
                 return make_response(req_action)
@@ -149,7 +149,8 @@ class ProxyListenerSNS(ProxyListener):
 
         return True
 
-    def _extract_tags(self, topic_arn, req_data):
+    @staticmethod
+    def _extract_tags(topic_arn, req_data):
         tags = []
         req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
         for i in range(int(len(req_tags.keys()) / 2)):
@@ -158,7 +159,8 @@ class ProxyListenerSNS(ProxyListener):
             tags.append({'Key': key, 'Value': value})
         do_tag_resource(topic_arn, tags)
 
-    def _reset_account_id(self, data):
+    @staticmethod
+    def _reset_account_id(data):
         """ Fix account ID in request payload. All external-facing responses contain our
             predefined account ID (defaults to 000000000000), whereas the backend endpoint
             from moto expects a different hardcoded account ID (123456789012). """
@@ -521,9 +523,6 @@ def get_message_attributes(req_data):
             elif binary_value is not None:
                 attribute['Value'] = binary_value
 
-            if attribute['Type'] == 'Number':
-                attribute['Value'] = float(attribute['Value'])
-
             attributes[name] = attribute
             x += 1
         else:
@@ -553,8 +552,9 @@ def evaluate_numeric_condition(conditions, value):
         return False
 
     for i in range(0, len(conditions), 2):
+        value = float(value)
         operator = conditions[i]
-        operand = conditions[i + 1]
+        operand = float(conditions[i + 1])
 
         if operator == '=':
             if value != operand:

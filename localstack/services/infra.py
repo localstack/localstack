@@ -13,7 +13,7 @@ from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS,
     DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_EVENTS_BACKEND,
-    DEFAULT_SERVICE_PORTS)
+    DEFAULT_PORT_SSM_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
@@ -42,7 +42,6 @@ LOG = logging.getLogger(__name__)
 # -----------------------
 # CONFIG UPDATE BACKDOOR
 # -----------------------
-
 
 def update_config_variable(variable, new_value):
     if new_value is not None:
@@ -143,9 +142,10 @@ def start_lambda(port=None, asynchronous=False):
     return start_local_api('Lambda', port, method=lambda_api.serve, asynchronous=asynchronous)
 
 
-def start_ssm(port=None, asynchronous=False):
+def start_ssm(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_SSM
-    return start_moto_server('ssm', port, name='SSM', asynchronous=asynchronous)
+    return start_moto_server('ssm', port, name='SSM', asynchronous=asynchronous,
+        backend_port=DEFAULT_PORT_SSM_BACKEND, update_listener=update_listener)
 
 
 def start_secretsmanager(port=None, asynchronous=False):
@@ -342,9 +342,13 @@ def start_infra(asynchronous=False, apis=None):
         is_in_docker = in_docker()
         # print a warning if we're not running in Docker but using Docker based LAMBDA_EXECUTOR
         if not is_in_docker and 'docker' in config.LAMBDA_EXECUTOR and not is_linux():
-            print(('!WARNING! - Running outside of Docker with LAMBDA_EXECUTOR=%s can lead to '
+            print(('!WARNING! - Running outside of Docker with $LAMBDA_EXECUTOR=%s can lead to '
                    'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
                    'be properly set in your Lambdas.') % config.LAMBDA_EXECUTOR)
+
+        if is_in_docker and config.LAMBDA_REMOTE_DOCKER and not os.environ.get('HOST_TMP_FOLDER'):
+            print('!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=1 - '
+                  "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR")
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
@@ -377,7 +381,7 @@ def start_infra(asynchronous=False, apis=None):
 
         # loop through plugins and start each service
         for name, plugin in SERVICE_PLUGINS.items():
-            if name in apis:
+            if plugin.is_enabled(api_names=apis):
                 record_service_health(name, 'starting')
                 t1 = plugin.start(asynchronous=True)
                 thread = thread or t1
