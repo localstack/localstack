@@ -203,6 +203,7 @@ Resources:
     MyRole:
       Type: AWS::IAM::Role
       Properties:
+        RoleName: %s
         AssumeRolePolicyDocument:
           Statement:
             - Effect: Allow
@@ -757,10 +758,11 @@ class CloudFormationTest(unittest.TestCase):
     def test_cfn_handle_firehose(self):
         stack_name = 'stack-%s' % short_uid()
         firehose_name = 'firehose-%s' % short_uid()
+        role_name = 'firehose-role-%s' % short_uid()
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
         params = [{'ParameterKey': 'DeliveryStreamName', 'ParameterValue': firehose_name}]
-        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_12, Parameters=params)
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_12 % role_name, Parameters=params)
 
         _await_stack_completion(stack_name)
 
