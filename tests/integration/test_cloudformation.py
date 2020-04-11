@@ -363,7 +363,7 @@ def _deploy_stack(stack_name, template_body):
     return _await_stack_completion(stack_name)
 
 
-def _await_stack_status(self, stack_name, expected_status, retries=3, sleep=2):
+def _await_stack_status(stack_name, expected_status, retries=3, sleep=2):
     def check_stack():
         stack = get_stack_details(stack_name)
         assert stack['StackStatus'] == expected_status
@@ -372,7 +372,7 @@ def _await_stack_status(self, stack_name, expected_status, retries=3, sleep=2):
 
 
 def _await_stack_completion(stack_name, retries=3, sleep=2):
-    return _await_stack_status(stack_name, 'CREATE_COMPLETE', retries, sleep)
+    return _await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
 
 
 class CloudFormationTest(unittest.TestCase):
