@@ -15,6 +15,7 @@ from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns.sns_listener import SUBSCRIPTION_STATUS
 
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
 
@@ -410,6 +411,12 @@ class SNSTest(unittest.TestCase):
 
         # clean up
         self.sns_client.delete_topic(TopicArn=topic_arn)
+
+    def test_create_topic_test_arn(self):
+        response = self.sns_client.create_topic(Name=TEST_TOPIC_NAME)
+        topicArnParams = response['TopicArn'].split(':')
+        self.assertEqual(topicArnParams[4], TEST_AWS_ACCOUNT_ID)
+        self.assertEqual(topicArnParams[5], TEST_TOPIC_NAME)
 
     def test_publish_message_by_target_arn(self):
         self.unsubscribe_all_from_sns()
