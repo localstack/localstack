@@ -175,6 +175,11 @@ Resources:
     Type: AWS::Elasticsearch::Domain
     Properties:
       DomainName: !Ref "DomainName"
+      Tags:
+        - Key: k1
+          Value: v1
+        - Key: k2
+          Value: v2
 """
 
 TEST_TEMPLATE_11 = """
@@ -182,7 +187,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   SecretName:
     Type: String
-    Default: dev
 Resources:
   MySecret:
     Type: AWS::SecretsManager::Secret
@@ -198,7 +202,6 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   DeliveryStreamName:
     Type: String
-    Default: dev
 Resources:
     MyRole:
       Type: AWS::IAM::Role
@@ -697,7 +700,11 @@ class CloudFormationTest(unittest.TestCase):
         rs = es_client.describe_elasticsearch_domain(
             DomainName=domain_name
         )
-        self.assertEqual(domain_name, rs['DomainStatus']['DomainName'])
+        status = rs['DomainStatus']
+        self.assertEqual(domain_name, status['DomainName'])
+
+        tags = es_client.list_tags(ARN=status['ARN'])['TagList']
+        self.assertEqual([{'Key': 'k1', 'Value': 'v1'}, {'Key': 'k2', 'Value': 'v2'}], tags)
 
         cloudformation.delete_stack(StackName=stack_name)
 

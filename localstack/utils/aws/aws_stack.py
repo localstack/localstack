@@ -483,14 +483,19 @@ def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
     return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
-def kinesis_stream_arn(stream_name, account_id=None):
-    account_id = get_account_id(account_id)
-    return 'arn:aws:kinesis:%s:%s:stream/%s' % (get_region(), account_id, stream_name)
+def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:kinesis:%s:%s:stream/%s'
+    return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def firehose_stream_arn(stream_name, account_id=None):
-    account_id = get_account_id(account_id)
-    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (get_region(), account_id, stream_name))
+def firehose_stream_arn(stream_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:firehose:%s:%s:deliverystream/%s'
+    return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def es_domain_arn(domain_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:es:%s:%s:domain/%s'
+    return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
 def s3_bucket_arn(bucket_name, account_id=None):

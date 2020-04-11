@@ -122,6 +122,12 @@ def sns_subscription_params(params, **kwargs):
     return result
 
 
+def es_add_tags_params(params, **kwargs):
+    es_arn = aws_stack.es_domain_arn(params.get('DomainName'))
+    tags = params.get('Tags', [])
+    return {'ARN': es_arn, 'TagList': tags}
+
+
 def s3_bucket_notification_config(params, **kwargs):
     notif_config = params.get('NotificationConfiguration')
     if not notif_config:
@@ -284,13 +290,16 @@ RESOURCE_TO_FUNCTION = {
         }
     },
     'Elasticsearch::Domain': {
-        'create': {
+        'create': [{
             'function': 'create_elasticsearch_domain',
             'parameters': select_parameters('AccessPolicies', 'AdvancedOptions', 'CognitoOptions',
                 'DomainName', 'EBSOptions', 'ElasticsearchClusterConfig', 'ElasticsearchVersion',
                 'EncryptionAtRestOptions', 'LogPublishingOptions', 'NodeToNodeEncryptionOptions',
-                'SnapshotOptions', 'Tags', 'VPCOptions')
-        },
+                'SnapshotOptions', 'VPCOptions')
+        }, {
+            'function': 'add_tags',
+            'parameters': es_add_tags_params
+        }],
         'delete': {
             'function': 'delete_elasticsearch_domain',
             'parameters': {
@@ -791,17 +800,17 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                 return None
             return result[0]
         elif resource_type == 'SecretsManager::Secret':
-            param_name = resource_props.get('Name') or resource_id
-            param_name = resolve_refs_recursively(stack_name, param_name, resources)
-            return aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=param_name)
+            secret_name = resource_props.get('Name') or resource_id
+            secret_name = resolve_refs_recursively(stack_name, secret_name, resources)
+            return aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
         elif resource_type == 'Elasticsearch::Domain':
-            param_name = resource_props.get('DomainName') or resource_id
-            param_name = resolve_refs_recursively(stack_name, param_name, resources)
-            return aws_stack.connect_to_service('es').describe_elasticsearch_domain(DomainName=param_name)
+            domain_name = resource_props.get('DomainName') or resource_id
+            domain_name = resolve_refs_recursively(stack_name, domain_name, resources)
+            return aws_stack.connect_to_service('es').describe_elasticsearch_domain(DomainName=domain_name)
         elif resource_type == 'KinesisFirehose::DeliveryStream':
-            param_name = resource_props.get('DeliveryStreamName') or resource_id
-            param_name = resolve_refs_recursively(stack_name, param_name, resources)
-            return aws_stack.connect_to_service('firehose').describe_delivery_stream(DeliveryStreamName=param_name)
+            stream_name = resource_props.get('DeliveryStreamName') or resource_id
+            stream_name = resolve_refs_recursively(stack_name, stream_name, resources)
+            return aws_stack.connect_to_service('firehose').describe_delivery_stream(DeliveryStreamName=stream_name)
         if is_deployable_resource(resource):
             LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
                         (resource_type, resource_id, resource))
