@@ -99,6 +99,7 @@ TEST_TEMPLATE_7 = {
         'LambdaExecutionRole': {
             'Type': 'AWS::IAM::Role',
             'Properties': {
+                'RoleName': '',
                 'AssumeRolePolicyDocument': {
                     'Version': '2012-10-17',
                     'Statement': [
@@ -512,6 +513,8 @@ class CloudFormationTest(unittest.TestCase):
         lambdas_before = len(rs['Functions'])
 
         stack_name = 'stack-%s' % short_uid()
+        lambda_role_name = 'lambda-role-%s' % short_uid()
+        TEST_TEMPLATE_7['Resources']['LambdaExecutionRole']['Properties']['RoleName'] = lambda_role_name
         rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_7))
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
