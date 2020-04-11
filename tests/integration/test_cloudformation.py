@@ -246,7 +246,7 @@ Resources:
               - 'sts:AssumeRole'
             Resource:
               - !Sub >-
-                arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/aws-dev-hello:*
+                arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/aws-dev-log:*
 """
 
 TEST_CHANGE_SET_BODY = """
