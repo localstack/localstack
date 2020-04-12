@@ -548,6 +548,23 @@ def apply_patches():
     IAM_Role_get_cfn_attribute_orig = iam_models.Role.get_cfn_attribute
     iam_models.Role.get_cfn_attribute = IAM_Role_get_cfn_attribute
 
+    # Patch IAM Role model
+    # https://github.com/localstack/localstack/issues/925
+    @property
+    def IAM_Role_physical_resource_id(self):
+        return self.name
+
+    iam_models.Role.physical_resource_id = IAM_Role_physical_resource_id
+
+    IAM_Role_create_from_cloudformation_json_orig = iam_models.Role.create_from_cloudformation_json
+
+    @classmethod
+    def IAM_Role_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
+        resource_name = cloudformation_json['Properties']['RoleName']
+        return IAM_Role_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+
+    iam_models.Role.create_from_cloudformation_json = IAM_Role_create_from_cloudformation_json
+
     # Patch SNS Topic get_cfn_attribute(..) method in moto
     def SNS_Topic_get_cfn_attribute(self, attribute_name):
         result = SNS_Topic_get_cfn_attribute_orig(self, attribute_name)

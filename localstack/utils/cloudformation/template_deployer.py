@@ -414,7 +414,13 @@ RESOURCE_TO_FUNCTION = {
                         select_parameters('Path', 'RoleName', 'AssumeRolePolicyDocument',
                             'Description', 'MaxSessionDuration', 'PermissionsBoundary', 'Tags'),
                         'AssumeRolePolicyDocument'),
-                    {'RoleName': PLACEHOLDER_RESOURCE_NAME})
+                    {'RoleName': 'RoleName'})
+        },
+        'delete': {
+            'function': 'delete_role',
+            'parameters': {
+                'RoleName': 'PhysicalResourceId'
+            }
         }
     },
     'ApiGateway::RestApi': {
