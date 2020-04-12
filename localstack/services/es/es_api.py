@@ -7,6 +7,7 @@ from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import to_str
+from localstack.utils.tagging import TaggingService
 from localstack.utils.analytics import event_publisher
 from localstack.services.plugins import check_infra, Plugin
 
@@ -16,6 +17,8 @@ API_PREFIX = '/2015-01-01'
 DEFAULT_ES_VERSION = '7.1'
 
 ES_DOMAINS = {}
+
+TAGS = TaggingService()
 
 app = Flask(APP_NAME)
 app.url_map.strict_slashes = False
@@ -273,18 +276,15 @@ def get_compatible_versions():
 
 @app.route('%s/tags' % API_PREFIX, methods=['GET', 'POST'])
 def add_list_tags():
+    if request.method == 'POST':
+        data = json.loads(to_str(request.data) or '{}')
+        arn = data.get('ARN')
+        TAGS.tag_resource(arn, data.get('TagList', []))
     if request.method == 'GET' and request.args.get('arn'):
+        arn = request.args.get('arn')
+        tags = TAGS.list_tags_for_resource(arn)
         response = {
-            'TagList': [
-                {
-                    'Key': 'Example1',
-                    'Value': 'Value'
-                },
-                {
-                    'Key': 'Example2',
-                    'Value': 'Value'
-                }
-            ]
+            'TagList': tags.get('Tags')
         }
         return jsonify(response)
 
