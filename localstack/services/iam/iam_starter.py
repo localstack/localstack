@@ -1,6 +1,6 @@
 import uuid
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE
-from moto.iam.models import iam_backend as moto_iam_backend, User
+from moto.iam.models import iam_backend as moto_iam_backend, User, IAMNotFoundException
 from localstack import config
 from localstack.constants import DEFAULT_PORT_IAM_BACKEND
 from localstack.services.infra import start_moto_server
@@ -50,6 +50,16 @@ def apply_patches():
 
     if not hasattr(IamResponse, 'delete_policy'):
         IamResponse.delete_policy = iam_response_delete_policy
+
+    def iam_backend_detach_role_policy(policy_arn, role_name):
+        try:
+            role = moto_iam_backend.get_role(role_name)
+            policy = role.managed_policies[policy_arn]
+            policy.detach_from(role)
+        except KeyError:
+            raise IAMNotFoundException('Policy {0} was not found.'.format(policy_arn))
+
+    moto_iam_backend.detach_role_policy = iam_backend_detach_role_policy
 
 
 def start_iam(port=None, asynchronous=False, update_listener=None):
