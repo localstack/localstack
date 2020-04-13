@@ -1,5 +1,5 @@
 from docopt import docopt
-from localstack import config
+from localstack import config, constants
 from localstack.utils.bootstrap import (
     start_infra_in_docker, start_infra_locally, run, MAIN_CONTAINER_NAME, docker_container_running)
 
@@ -18,6 +18,7 @@ Options:
   --docker          Run the infrastructure in a Docker container (default)
   --host            Run the infrastructure on the local host
     """
+    print('localstack version - "%s"' % (constants.VERSION))
     if argv[0] == 'start':
         argv = ['infra', 'start'] + argv[1:]
         args['<command>'] = 'infra'
@@ -45,6 +46,7 @@ Commands:
 Options:
   --port=<>           Network port for running the Web server (default: 8080)
     """
+    print('localstack version - "%s"' % (constants.VERSION))
     if len(argv) <= 1 or argv[1] != 'start':
         argv = ['web', 'start'] + argv[1:]
         args['<args>'] = ['start'] + args['<args>']
