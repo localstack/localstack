@@ -1,12 +1,20 @@
 import uuid
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE
-from moto.iam.models import iam_backend as moto_iam_backend, User
+from moto.iam.models import (
+    iam_backend as moto_iam_backend, aws_managed_policies, AWSManagedPolicy, IAMNotFoundException, User
+)
 from localstack import config
 from localstack.constants import DEFAULT_PORT_IAM_BACKEND
 from localstack.services.infra import start_moto_server
 
 
 def apply_patches():
+    # Add missing managed polices
+    aws_managed_policies.extend([
+        AWSManagedPolicy.from_data(k, v)
+        for k, v in ADDITIONAL_MANAGED_POLICIES.items()
+    ])
+
     def iam_response_create_user(self):
         user = moto_iam_backend.create_user(
             self._get_param('UserName'),
@@ -51,6 +59,16 @@ def apply_patches():
     if not hasattr(IamResponse, 'delete_policy'):
         IamResponse.delete_policy = iam_response_delete_policy
 
+    def iam_backend_detach_role_policy(policy_arn, role_name):
+        try:
+            role = moto_iam_backend.get_role(role_name)
+            policy = role.managed_policies[policy_arn]
+            policy.detach_from(role)
+        except KeyError:
+            raise IAMNotFoundException('Policy {0} was not found.'.format(policy_arn))
+
+    moto_iam_backend.detach_role_policy = iam_backend_detach_role_policy
+
 
 def start_iam(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_IAM
@@ -80,3 +98,34 @@ USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>
       <RequestId>{{request_id}}</RequestId>
    </ResponseMetadata>
 </{{ action }}UserResponse>"""
+
+
+ADDITIONAL_MANAGED_POLICIES = {
+    'AWSLambdaExecute': {
+        'Arn': 'arn:aws:iam::aws:policy/AWSLambdaExecute',
+        'Path': '/',
+        'CreateDate': '2017-10-20T17:23:10+00:00',
+        'DefaultVersionId': 'v4',
+        'Document': {
+            'Version': '2012-10-17',
+            'Statement': [
+                {
+                    'Effect': 'Allow',
+                    'Action': [
+                        'logs:*'
+                    ],
+                    'Resource': 'arn:aws:logs:*:*:*'
+                },
+                {
+                    'Effect': 'Allow',
+                    'Action': [
+                        's3:GetObject',
+                        's3:PutObject'
+                    ],
+                    'Resource': 'arn:aws:s3:::*'
+                }
+            ]
+        },
+        'UpdateDate': '2019-05-20T18:22:18+00:00',
+    }
+}
