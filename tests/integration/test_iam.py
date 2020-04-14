@@ -6,6 +6,7 @@ import unittest
 from botocore.exceptions import ClientError
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.services.iam.iam_starter import ADDITIONAL_MANAGED_POLICIES
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.utils.kinesis import kinesis_connector
@@ -130,4 +131,84 @@ class TestIAMIntegrations(unittest.TestCase):
         # clean up
         self.iam_client.delete_user(
             UserName=user_name
+        )
+
+    def test_attach_detach_role_policy(self):
+        role_name = 's3-role-{}'.format(short_uid())
+        policy_name = 's3-role-policy-{}'.format(short_uid())
+
+        policy_arns = [p['Arn'] for p in ADDITIONAL_MANAGED_POLICIES.values()]
+
+        assume_policy_document = {
+            'Version': '2012-10-17',
+            'Statement': [
+                {
+                    'Action': 'sts:AssumeRole',
+                    'Principal': {'Service': 's3.amazonaws.com'}
+                }
+            ]
+        }
+
+        policy_document = {
+            'Version': '2012-10-17',
+            'Statement': [
+                {
+                    'Action': [
+                        's3:GetReplicationConfiguration',
+                        's3:GetObjectVersion',
+                        's3:ListBucket'
+                    ],
+                    'Effect': 'Allow',
+                    'Resource': [
+                        'arn:aws:s3:::bucket_name'
+                    ]
+                }
+            ]
+        }
+
+        self.iam_client.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(assume_policy_document)
+        )
+
+        policy_arn = self.iam_client.create_policy(
+            PolicyName=policy_name,
+            Path='/',
+            PolicyDocument=json.dumps(policy_document)
+        )['Policy']['Arn']
+        policy_arns.append(policy_arn)
+
+        # Attach some polices
+        for policy_arn in policy_arns:
+            rs = self.iam_client.attach_role_policy(
+                RoleName=role_name,
+                PolicyArn=policy_arn
+            )
+            self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        try:
+            # Try to delete role
+            self.iam_client.delete_role(
+                RoleName=role_name
+            )
+            self.fail('This call should not be successful as the role has policies attached')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'DeleteConflict')
+
+        for policy_arn in policy_arns:
+            rs = self.iam_client.detach_role_policy(
+                RoleName=role_name,
+                PolicyArn=policy_arn
+            )
+            self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        # clean up
+        rs = self.iam_client.delete_role(
+            RoleName=role_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        self.iam_client.delete_policy(
+            PolicyArn=policy_arn
         )
