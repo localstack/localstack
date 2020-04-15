@@ -579,10 +579,7 @@ def evaluate_exists_condition(conditions, message_attributes, criteria):
     # filtering should not match any messages if the exists is set to false,As per aws docs
     # https://docs.aws.amazon.com/sns/latest/dg/sns-subscription-filter-policies.html
     if conditions:
-        if message_attributes.get(criteria):
-            return True
-        else:
-            return False
+        return bool(message_attributes.get(criteria))
     return False
 
 

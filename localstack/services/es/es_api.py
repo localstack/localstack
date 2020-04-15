@@ -1,15 +1,18 @@
 import json
 import time
+import logging
 from random import randint
 from flask import Flask, jsonify, request, make_response
 from localstack.utils import persistence
-from localstack.services import generic_proxy
+from localstack.services import generic_proxy, install
 from localstack.utils.aws import aws_stack
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, ELASTICSEARCH_DEFAULT_VERSION
 from localstack.utils.common import to_str
 from localstack.utils.tagging import TaggingService
 from localstack.utils.analytics import event_publisher
-from localstack.services.plugins import check_infra, Plugin
+from localstack.services.plugins import check_infra
+
+LOG = logging.getLogger(__name__)
 
 APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'
@@ -166,22 +169,34 @@ def get_domain_status(domain_name, deleted=False):
     }
 
 
-def start_elasticsearch_instance():
+def get_install_version_for_api_version(version):
+    result = ELASTICSEARCH_DEFAULT_VERSION
+    if version.startswith('6.'):
+        result = '6.7.0'
+    elif version == '7.4':
+        result = '7.4.0'
+    if not result.startswith(result):
+        LOG.info('Elasticsearch version %s not yet supported, defaulting to %s' % (version, result))
+    return result
+
+
+def start_elasticsearch_instance(version):
     # Note: keep imports here to avoid circular dependencies
     from localstack.services.es import es_starter
 
-    api_name = 'elasticsearch'
-    plugin = Plugin(api_name, start=es_starter.start_elasticsearch, check=es_starter.check_elasticsearch)
-    t1 = plugin.start(asynchronous=True)
+    # install ES version
+    install_version = get_install_version_for_api_version(version)
+    install.install_elasticsearch(install_version)
+
+    t1 = es_starter.start_elasticsearch(asynchronous=True, version=install_version)
     # sleep some time to give Elasticsearch enough time to come up
     time.sleep(8)
-    apis = [api_name]
     # ensure that all infra components are up and running
-    check_infra(apis=apis, additional_checks=[es_starter.check_elasticsearch])
+    check_infra(apis=[], additional_checks=[es_starter.check_elasticsearch])
     return t1
 
 
-def cleanup_elasticsearch_instance():
+def cleanup_elasticsearch_instance(status):
     # Note: keep imports here to avoid circular dependencies
     from localstack.services.es import es_starter
     es_starter.stop_elasticsearch()
@@ -203,7 +218,8 @@ def create_domain():
         return error_response(error_type='ResourceAlreadyExistsException')
     ES_DOMAINS[domain_name] = data
     # start actual Elasticsearch instance
-    start_elasticsearch_instance()
+    version = data.get('ElasticsearchVersion') or DEFAULT_ES_VERSION
+    start_elasticsearch_instance(version=version)
     result = get_domain_status(domain_name)
 
     # record event
@@ -247,9 +263,9 @@ def delete_domain(domain_name):
     if domain_name not in ES_DOMAINS:
         return error_response(error_type='ResourceNotFoundException')
     result = get_domain_status(domain_name, deleted=True)
-    ES_DOMAINS.pop(domain_name)
+    status = ES_DOMAINS.pop(domain_name)
     if not ES_DOMAINS:
-        cleanup_elasticsearch_instance()
+        cleanup_elasticsearch_instance(status)
 
     # record event
     event_publisher.fire_event(event_publisher.EVENT_ES_DELETE_DOMAIN,

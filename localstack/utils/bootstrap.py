@@ -121,6 +121,7 @@ def load_plugin_from_path(file_path, scope=None):
                 LOG.debug('Unable to load plugins from module %s: %s' % (module, e))
             return
         try:
+            LOG.debug('Loading plugins - scope "%s", module "%s": %s' % (scope, module, method_to_execute))
             return method_to_execute()
         except Exception as e:
             if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):

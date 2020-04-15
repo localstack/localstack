@@ -38,8 +38,9 @@ from localstack.utils import cli, bootstrap
 # set up logger
 LOG = logging.getLogger(__name__)
 
-if __name__ == '__main__':
-    LOG.info('localstack version - "%s"' % (constants.VERSION))
+
+def main():
+    LOG.info('LocalStack version: %s' % constants.VERSION)
     # set basic CLI commands
     config.CLI_COMMANDS['infra'] = {
         'description': 'Commands to manage the infrastructure',
@@ -95,3 +96,7 @@ if __name__ == '__main__':
     else:
         print('ERROR: Invalid command "%s"' % args['<command>'])
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()

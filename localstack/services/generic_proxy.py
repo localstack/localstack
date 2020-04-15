@@ -7,7 +7,6 @@ import socket
 import inspect
 import logging
 import traceback
-import click
 import requests
 from ssl import SSLError
 from flask_cors import CORS
@@ -454,6 +453,11 @@ def serve_flask_app(app, port, quiet=True, host=None, cors=True):
     def noecho(*args, **kwargs):
         pass
 
-    click.echo = noecho
+    try:
+        import click
+        click.echo = noecho
+    except Exception:
+        pass
+
     app.run(port=int(port), threaded=True, host=host, ssl_context=ssl_context)
     return app
