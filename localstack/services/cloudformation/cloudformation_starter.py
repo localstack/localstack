@@ -580,9 +580,12 @@ def apply_patches():
         if attribute_name in ['Arn', 'DomainArn']:
             return aws_stack.es_domain_arn(self.params.get('DomainName'))
         if attribute_name == 'DomainEndpoint':
-            es_details = aws_stack.connect_to_service('es').describe_elasticsearch_domain(
-                DomainName=self.params.get('DomainName'))
-            return es_details['DomainStatus']['Endpoint']
+            if attribute_name == 'DomainEndpoint':
+                if not hasattr(self, '_domain_endpoint'):
+                    es_details = aws_stack.connect_to_service('es').describe_elasticsearch_domain(
+                        DomainName=self.params.get('DomainName'))
+                    self._domain_endpoint = es_details['DomainStatus']['Endpoint']
+            return self._domain_endpoint
         raise UnformattedGetAttTemplateException()
 
     service_models.ElasticsearchDomain.get_cfn_attribute = ES_get_cfn_attribute

@@ -755,7 +755,7 @@ class CloudFormationTest(unittest.TestCase):
             elif o['OutputKey'] == 'MyElasticsearchDomainEndpoint':
                 self.assertEqual(o['OutputValue'], status['Endpoint'])
             else:
-                self.fail('unknown output')
+                self.fail('Unexpected output: %s' % o)
         cloudformation.delete_stack(StackName=stack_name)
 
     def test_cfn_handle_secretsmanager_secret(self):
