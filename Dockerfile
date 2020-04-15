@@ -58,7 +58,7 @@ ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
 
 # fix some permissions and create local user
-RUN ES_BASE_DIR=/tmp/localstack/elasticsearch/7.1.0; \
+RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     mkdir -p /.npm && \
     mkdir -p $ES_BASE_DIR/data && \
     mkdir -p $ES_BASE_DIR/logs && \
