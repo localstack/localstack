@@ -153,14 +153,17 @@ class SNSTest(unittest.TestCase):
         # connect SNS topic to an SQS queue
         queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_2)
         filter_policy = {'store': [{'exists': True}]}
-        self.sns_client.subscribe(
-            TopicArn=self.topic_arn,
-            Protocol='sqs',
-            Endpoint=queue_arn,
-            Attributes={
-                'FilterPolicy': json.dumps(filter_policy)
-            }
-        )
+
+        def do_subscribe(self, filter_policy, queue_arn):
+            self.sns_client.subscribe(
+                TopicArn=self.topic_arn,
+                Protocol='sqs',
+                Endpoint=queue_arn,
+                Attributes={
+                    'FilterPolicy': json.dumps(filter_policy)
+                }
+            )
+        do_subscribe(self, filter_policy, queue_arn)
 
         # get number of messages
         num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2).get('Messages', []))
@@ -183,15 +186,7 @@ class SNSTest(unittest.TestCase):
         # test with exist operator set to false.
         queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME)
         filter_policy = {'store': [{'exists': False}]}
-        self.sns_client.subscribe(
-            TopicArn=self.topic_arn,
-            Protocol='sqs',
-            Endpoint=queue_arn,
-            Attributes={
-                'FilterPolicy': json.dumps(filter_policy)
-            }
-        )
-
+        do_subscribe(self, filter_policy, queue_arn)
         # get number of messages
         num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url).get('Messages', []))
 
