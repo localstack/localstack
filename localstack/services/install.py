@@ -88,8 +88,10 @@ def install_elasticsearch(version=None):
                 # https://github.com/pires/docker-elasticsearch/issues/56
                 os.environ['ES_TMPDIR'] = '/tmp'
             plugin_binary = os.path.join(install_dir, 'bin', 'elasticsearch-plugin')
-            print('install elasticsearch-plugin %s' % (plugin))
-            run('%s install -b  %s' % (plugin_binary, plugin))
+            plugin_dir = os.path.join(install_dir, 'plugins', plugin)
+            if not os.path.exists(plugin_dir):
+                print('install elasticsearch-plugin %s' % (plugin))
+                run('%s install -b %s' % (plugin_binary, plugin))
 
     # delete some plugins to free up space
     for plugin in ELASTICSEARCH_DELETE_MODULES:
