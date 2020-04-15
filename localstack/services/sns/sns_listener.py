@@ -575,7 +575,18 @@ def evaluate_numeric_condition(conditions, value):
     return True
 
 
-def evaluate_condition(value, condition):
+def evaluate_exists_condition(conditions, message_attributes, criteria):
+    # filtering should not match any messages if the exists is set to false,As per aws docs
+    # https://docs.aws.amazon.com/sns/latest/dg/sns-subscription-filter-policies.html
+    if conditions:
+        if message_attributes.get(criteria):
+            return True
+        else:
+            return False
+    return False
+
+
+def evaluate_condition(value, condition, message_attributes, criteria):
     if type(condition) is not dict:
         return value == condition
     elif condition.get('anything-but'):
@@ -585,11 +596,13 @@ def evaluate_condition(value, condition):
         return value.startswith(prefix)
     elif condition.get('numeric'):
         return evaluate_numeric_condition(condition.get('numeric'), value)
+    elif condition.get('exists'):
+        return evaluate_exists_condition(condition.get('exists'), message_attributes, criteria)
 
     return False
 
 
-def evaluate_filter_policy_conditions(conditions, attribute):
+def evaluate_filter_policy_conditions(conditions, attribute, message_attributes, criteria):
     if type(conditions) is not list:
         conditions = [conditions]
 
@@ -597,11 +610,11 @@ def evaluate_filter_policy_conditions(conditions, attribute):
         values = ast.literal_eval(attribute['Value'])
         for value in values:
             for condition in conditions:
-                if evaluate_condition(value, condition):
+                if evaluate_condition(value, condition, message_attributes, criteria):
                     return True
     else:
         for condition in conditions:
-            if evaluate_condition(attribute['Value'], condition):
+            if evaluate_condition(attribute['Value'], condition, message_attributes, criteria):
                 return True
 
     return False
@@ -614,11 +627,10 @@ def check_filter_policy(filter_policy, message_attributes):
     for criteria in filter_policy:
         conditions = filter_policy.get(criteria)
         attribute = message_attributes.get(criteria)
-
         if attribute is None:
             return False
 
-        if evaluate_filter_policy_conditions(conditions, attribute) is False:
+        if evaluate_filter_policy_conditions(conditions, attribute, message_attributes, criteria) is False:
             return False
 
     return True

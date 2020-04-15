@@ -149,6 +149,64 @@ class SNSTest(unittest.TestCase):
         num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_2, num_msgs_1)
 
+    def test_exists_filter_policy(self):
+        # connect SNS topic to an SQS queue
+        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_2)
+        filter_policy = {'store': [{'exists': True}]}
+
+        def do_subscribe(self, filter_policy, queue_arn):
+            self.sns_client.subscribe(
+                TopicArn=self.topic_arn,
+                Protocol='sqs',
+                Endpoint=queue_arn,
+                Attributes={
+                    'FilterPolicy': json.dumps(filter_policy)
+                }
+            )
+        do_subscribe(self, filter_policy, queue_arn)
+
+        # get number of messages
+        num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2).get('Messages', []))
+
+        # publish message that satisfies the filter policy, assert that message is received
+        message = u'This is a test message'
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+                                MessageAttributes={'store': {'DataType': 'Number', 'StringValue': '99'},
+                                                   'def': {'DataType': 'Number', 'StringValue': '99'}})
+        num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        self.assertEqual(num_msgs_1, num_msgs_0 + 1)
+
+        # publish message that does not satisfy the filter policy, assert that message is not received
+        message = u'This is a test message'
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+                                MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '111'}})
+        num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        self.assertEqual(num_msgs_2, num_msgs_1)
+
+        # test with exist operator set to false.
+        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME)
+        filter_policy = {'store': [{'exists': False}]}
+        do_subscribe(self, filter_policy, queue_arn)
+        # get number of messages
+        num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url).get('Messages', []))
+
+        # publish message with the attribute and see if its getting filtered.
+        message = u'This is a test message'
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+                                MessageAttributes={'store': {'DataType': 'Number', 'StringValue': '99'},
+                                                   'def': {'DataType': 'Number', 'StringValue': '99'}})
+        num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url,
+                                                         VisibilityTimeout=0).get('Messages', []))
+        self.assertEqual(num_msgs_1, num_msgs_0)
+
+        # publish message that without the attribute and see if its getting filtered.
+        message = u'This is a test message'
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+                                MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '111'}})
+        num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url,
+                                                         VisibilityTimeout=0).get('Messages', []))
+        self.assertEqual(num_msgs_2, num_msgs_1)
+
     def test_data_type_sns_message(self):
         queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_2)
         filter_policy = {'attr1': [{'numeric': ['>', 0, '<=', 100]}]}
