@@ -200,6 +200,36 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_4)
 
+    def test_return_values_in_put_item(self):
+        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        table = self.dynamodb.Table(TEST_DDB_TABLE_NAME)
+
+        # items which are being used to put in the table
+        item1 = {PARTITION_KEY: 'id1', 'data': 'foobar'}
+        item2 = {PARTITION_KEY: 'id2', 'data': 'foobar'}
+
+        response = table.put_item(Item=item1, ReturnValues='ALL_OLD')
+        # there is no data present in the table already so even if return values
+        # is set to 'ALL_OLD' as there is no data it will not return any data.
+        self.assertFalse(response.get('Attributes'))
+        # now the same data is present so when we pass return values as 'ALL_OLD'
+        # it should give us attributes
+        response = table.put_item(Item=item1, ReturnValues='ALL_OLD')
+        self.assertTrue(response.get('Attributes'))
+        self.assertEqual(response.get('Attributes').get('id'), item1.get('id'))
+        self.assertEqual(response.get('Attributes').get('data'), item1.get('data'))
+
+        response = table.put_item(Item=item2)
+        # we do not have any same item as item2 already so when we add this by default
+        # return values is set to None so no Attribute values should be returned
+        self.assertFalse(response.get('Attributes'))
+
+        response = table.put_item(Item=item2)
+        # in this case we already have item2 in the table so on this request
+        # it should not return any data as return values is set to None so no
+        # Attribute values should be returned
+        self.assertFalse(response.get('Attributes'))
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service('dynamodb')
