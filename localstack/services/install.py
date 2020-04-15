@@ -7,11 +7,12 @@ import glob
 import shutil
 import logging
 import tempfile
+from localstack import config
 from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
-    ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, ELASTICSEARCH_DELETE_MODULES,
-    DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL,
-    KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
+    ELASTICSEARCH_URLS, ELASTICSEARCH_DEFAULT_VERSION, ELASTICSEARCH_PLUGIN_LIST,
+    ELASTICSEARCH_DELETE_MODULES, DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION,
+    STEPFUNCTIONS_ZIP_URL, KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_ROOT_FOLDER)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
@@ -24,7 +25,6 @@ ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
 
 INSTALL_DIR_INFRA = '%s/infra' % ROOT_PATH
 INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
-INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
 INSTALL_DIR_KCL = '%s/amazon-kinesis-client' % INSTALL_DIR_INFRA
 INSTALL_DIR_STEPFUNCTIONS = '%s/stepfunctions' % INSTALL_DIR_INFRA
@@ -47,20 +47,42 @@ OVERWRITE_DDB_FILES_IN_DOCKER = False
 LOGGER = logging.getLogger(__name__)
 
 
-def install_elasticsearch():
-    if not os.path.exists(INSTALL_DIR_ES):
-        log_install_msg('Elasticsearch')
-        mkdir(INSTALL_DIR_INFRA)
+def get_elasticsearch_install_version(version=None):
+    if config.SKIP_INFRA_DOWNLOADS:
+        return ELASTICSEARCH_DEFAULT_VERSION
+    return version or ELASTICSEARCH_DEFAULT_VERSION
+
+
+def get_elasticsearch_install_dir(version=None):
+    version = get_elasticsearch_install_version(version)
+    if version == ELASTICSEARCH_DEFAULT_VERSION:
+        # install the default version into a subfolder of the code base
+        install_dir = os.path.join(LOCALSTACK_ROOT_FOLDER, 'infra', 'elasticsearch')
+    else:
+        install_dir = os.path.join(config.TMP_FOLDER, 'elasticsearch', version)
+    return install_dir
+
+
+def install_elasticsearch(version=None):
+    version = get_elasticsearch_install_version(version)
+    install_dir = get_elasticsearch_install_dir(version)
+    if not os.path.exists(install_dir):
+        log_install_msg('Elasticsearch (%s)' % version)
+        es_url = ELASTICSEARCH_URLS.get(version)
+        if not es_url:
+            raise Exception('Unable to find download URL for Elasticsearch version "%s"' % version)
+        install_dir_parent = os.path.dirname(install_dir)
+        mkdir(install_dir_parent)
         # download and extract archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.es.tar.gz')
-        download_and_extract_with_retry(ELASTICSEARCH_JAR_URL, tmp_archive, INSTALL_DIR_INFRA)
-        elasticsearch_dir = glob.glob(os.path.join(INSTALL_DIR_INFRA, 'elasticsearch*'))
+        tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.%s' % os.path.basename(es_url))
+        download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
+        elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, 'elasticsearch*'))
         if not elasticsearch_dir:
-            raise Exception('Unable to find Elasticsearch folder in %s' % INSTALL_DIR_INFRA)
-        shutil.move(elasticsearch_dir[0], INSTALL_DIR_ES)
+            raise Exception('Unable to find Elasticsearch folder in %s' % install_dir_parent)
+        shutil.move(elasticsearch_dir[0], install_dir)
 
         for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
-            dir_path = '%s/%s' % (INSTALL_DIR_ES, dir_name)
+            dir_path = os.path.join(install_dir, dir_name)
             mkdir(dir_path)
             chmod_r(dir_path, 0o777)
 
@@ -69,21 +91,23 @@ def install_elasticsearch():
             if is_alpine():
                 # https://github.com/pires/docker-elasticsearch/issues/56
                 os.environ['ES_TMPDIR'] = '/tmp'
-            plugin_binary = os.path.join(INSTALL_DIR_ES, 'bin', 'elasticsearch-plugin')
-            print('install elasticsearch-plugin %s' % (plugin))
-            run('%s install -b  %s' % (plugin_binary, plugin))
+            plugin_binary = os.path.join(install_dir, 'bin', 'elasticsearch-plugin')
+            plugin_dir = os.path.join(install_dir, 'plugins', plugin)
+            if not os.path.exists(plugin_dir):
+                print('install elasticsearch-plugin %s' % (plugin))
+                run('%s install -b %s' % (plugin_binary, plugin))
 
     # delete some plugins to free up space
     for plugin in ELASTICSEARCH_DELETE_MODULES:
-        module_dir = os.path.join(INSTALL_DIR_ES, 'modules', plugin)
+        module_dir = os.path.join(install_dir, 'modules', plugin)
         rm_rf(module_dir)
 
     # disable x-pack-ml plugin (not working on Alpine)
-    xpack_dir = os.path.join(INSTALL_DIR_ES, 'modules', 'x-pack-ml', 'platform')
+    xpack_dir = os.path.join(install_dir, 'modules', 'x-pack-ml', 'platform')
     rm_rf(xpack_dir)
 
     # patch JVM options file - replace hardcoded heap size settings
-    jvm_options_file = os.path.join(INSTALL_DIR_ES, 'config', 'jvm.options')
+    jvm_options_file = os.path.join(install_dir, 'config', 'jvm.options')
     if os.path.exists(jvm_options_file):
         jvm_options = load_file(jvm_options_file)
         jvm_options_replaced = re.sub(r'(^-Xm[sx][a-zA-Z0-9\.]+$)', r'# \1', jvm_options, flags=re.MULTILINE)

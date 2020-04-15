@@ -160,6 +160,9 @@ class ShellCommandThread(FuncThread):
         # (Error: libc.musl-x86_64.so.1: cannot open shared object file)
         import psutil
 
+        if getattr(self, 'stopped', False):
+            return
+
         if not self.process:
             LOG.warning("No process found for command '%s'" % self.cmd)
             return
@@ -174,6 +177,7 @@ class ShellCommandThread(FuncThread):
         except Exception:
             if not quiet:
                 LOG.warning('Unable to kill process with pid %s' % parent_pid)
+        self.stopped = True
 
 
 class JsonObject(object):

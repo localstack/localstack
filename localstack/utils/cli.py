@@ -18,7 +18,7 @@ Options:
   --docker          Run the infrastructure in a Docker container (default)
   --host            Run the infrastructure on the local host
     """
-    print('localstack version - "%s"' % (constants.VERSION))
+    print_version()
     if argv[0] == 'start':
         argv = ['infra', 'start'] + argv[1:]
         args['<command>'] = 'infra'
@@ -46,7 +46,7 @@ Commands:
 Options:
   --port=<>           Network port for running the Web server (default: 8080)
     """
-    print('localstack version - "%s"' % (constants.VERSION))
+    print_version()
     if len(argv) <= 1 or argv[1] != 'start':
         argv = ['web', 'start'] + argv[1:]
         args['<args>'] = ['start'] + args['<args>']
@@ -75,3 +75,7 @@ Options:
         process.wait()
     except KeyboardInterrupt:
         pass
+
+
+def print_version():
+    print('LocalStack version: %s' % constants.VERSION)

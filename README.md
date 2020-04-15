@@ -70,6 +70,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **ECS/EKS**
 * **ElastiCache**
 * **EMR**
+* **Glacier** / **S3 Select**
 * **IoT**
 * **Lambda Layers**
 * **RDS**
@@ -215,6 +216,7 @@ You can pass the following environment variables to LocalStack:
 * `FORCE_NONINTERACTIVE`: when running with Docker, disables the `--interactive` and `--tty` flags. Useful when running headless.
 * `DOCKER_FLAGS`: Allows to pass custom flags (e.g., volume mounts) to "docker run" when running LocalStack in Docker.
 * `DOCKER_CMD`: Shell command used to run Docker containers, e.g., set to `"sudo docker"` to run as sudo (default: `docker`).
+* `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
 * `START_WEB`: Flag to control whether the Web API should be started in Docker (values: `0`/`1`; default: `1`).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header

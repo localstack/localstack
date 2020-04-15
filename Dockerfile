@@ -49,7 +49,7 @@ ENV MAVEN_CONFIG=/opt/code/localstack \
 # clean up and prepare for squashing the image
 RUN apk del --purge git
 RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
-RUN rm -rf /tmp/* /root/.cache /opt/yarn-v1.15.2; mkdir -p /tmp/localstack
+RUN rm -rf /tmp/*.zip /tmp/*.jar /tmp/*.tar.gz /tmp/*.tgz /root/.cache /opt/yarn-v1.15.2
 RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
 ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages
 
@@ -58,15 +58,16 @@ ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
 
 # fix some permissions and create local user
-RUN mkdir -p /.npm && \
-    mkdir -p localstack/infra/elasticsearch/data && \
-    mkdir -p localstack/infra/elasticsearch/logs && \
+RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
+    mkdir -p /.npm && \
+    mkdir -p $ES_BASE_DIR/data && \
+    mkdir -p $ES_BASE_DIR/logs && \
     chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm && \
-    chmod -R 777 localstack/infra/elasticsearch/config && \
-    chmod -R 777 localstack/infra/elasticsearch/data && \
-    chmod -R 777 localstack/infra/elasticsearch/logs && \
+    chmod -R 777 $ES_BASE_DIR/config && \
+    chmod -R 777 $ES_BASE_DIR/data && \
+    chmod -R 777 $ES_BASE_DIR/logs && \
     chmod -R 777 /tmp/localstack && \
     adduser -D localstack && \
     chown -R localstack:localstack . /tmp/localstack && \
