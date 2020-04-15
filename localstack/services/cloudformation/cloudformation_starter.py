@@ -575,6 +575,28 @@ def apply_patches():
     SNS_Topic_get_cfn_attribute_orig = sns_models.Topic.get_cfn_attribute
     sns_models.Topic.get_cfn_attribute = SNS_Topic_get_cfn_attribute
 
+    # Patch ES get_cfn_attribute(..) method
+    def ES_get_cfn_attribute(self, attribute_name):
+        if attribute_name in ['Arn', 'DomainArn']:
+            return aws_stack.es_domain_arn(self.params.get('DomainName'))
+        if attribute_name == 'DomainEndpoint':
+            if not hasattr(self, '_domain_endpoint'):
+                es_details = aws_stack.connect_to_service('es').describe_elasticsearch_domain(
+                    DomainName=self.params.get('DomainName'))
+                self._domain_endpoint = es_details['DomainStatus']['Endpoint']
+            return self._domain_endpoint
+        raise UnformattedGetAttTemplateException()
+
+    service_models.ElasticsearchDomain.get_cfn_attribute = ES_get_cfn_attribute
+
+    # Patch Firehose get_cfn_attribute(..) method
+    def Firehose_get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'Arn':
+            return aws_stack.firehose_stream_arn(self.params.get('DeliveryStreamName'))
+        raise UnformattedGetAttTemplateException()
+
+    service_models.FirehoseDeliveryStream.get_cfn_attribute = Firehose_get_cfn_attribute
+
     # Patch LambdaFunction create_from_cloudformation_json(..) method in moto
     @classmethod
     def Lambda_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):

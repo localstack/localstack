@@ -180,6 +180,15 @@ Resources:
           Value: v1
         - Key: k2
           Value: v2
+Outputs:
+  MyElasticsearchDomainEndpoint:
+    Value: !GetAtt "MyElasticsearchDomain.DomainEndpoint"
+
+  MyElasticsearchArn:
+    Value: !GetAtt "MyElasticsearchDomain.Arn"
+
+  MyElasticsearchDomainArn:
+    Value: !GetAtt "MyElasticsearchDomain.DomainArn"
 """
 
 TEST_TEMPLATE_11 = """
@@ -203,32 +212,35 @@ Parameters:
   DeliveryStreamName:
     Type: String
 Resources:
-    MyRole:
-      Type: AWS::IAM::Role
+  MyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: %s
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: "*"
+            Resource: "*"
+  MyBucket:
+      Type: AWS::S3::Bucket
       Properties:
-        RoleName: %s
-        AssumeRolePolicyDocument:
-          Statement:
-            - Effect: Allow
-              Action: "*"
-              Resource: "*"
-    MyBucket:
-        Type: AWS::S3::Bucket
-        Properties:
-          BucketName: !Ref "DeliveryStreamName"
-    MyStream:
-      Type: AWS::KinesisFirehose::DeliveryStream
-      Properties:
-        DeliveryStreamName: !Ref "DeliveryStreamName"
-        DeliveryStreamType: DirectPut
-        S3DestinationConfiguration:
-          BucketARN: !Ref MyBucket
-          BufferingHints:
-            IntervalInSeconds: 600
-            SizeInMBs: 50
-          CompressionFormat: UNCOMPRESSED
-          Prefix: raw/
-          RoleARN: !GetAtt "MyRole.Arn"
+        BucketName: !Ref "DeliveryStreamName"
+  MyStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties:
+      DeliveryStreamName: !Ref "DeliveryStreamName"
+      DeliveryStreamType: DirectPut
+      S3DestinationConfiguration:
+        BucketARN: !Ref MyBucket
+        BufferingHints:
+          IntervalInSeconds: 600
+          SizeInMBs: 50
+        CompressionFormat: UNCOMPRESSED
+        Prefix: raw/
+        RoleARN: !GetAtt "MyRole.Arn"
+Outputs:
+  MyStreamArn:
+    Value: !GetAtt "MyStream.Arn"
 """
 
 TEST_TEMPLATE_13 = """
@@ -724,7 +736,9 @@ class CloudFormationTest(unittest.TestCase):
             Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
         )
 
-        _await_stack_completion(stack_name)
+        details = _await_stack_completion(stack_name)
+        outputs = details.get('Outputs', [])
+        self.assertEqual(len(outputs), 3)
 
         rs = es_client.describe_elasticsearch_domain(
             DomainName=domain_name
@@ -735,6 +749,13 @@ class CloudFormationTest(unittest.TestCase):
         tags = es_client.list_tags(ARN=status['ARN'])['TagList']
         self.assertEqual([{'Key': 'k1', 'Value': 'v1'}, {'Key': 'k2', 'Value': 'v2'}], tags)
 
+        for o in outputs:
+            if o['OutputKey'] in ['MyElasticsearchArn', 'MyElasticsearchDomainArn']:
+                self.assertEqual(o['OutputValue'], status['ARN'])
+            elif o['OutputKey'] == 'MyElasticsearchDomainEndpoint':
+                self.assertEqual(o['OutputValue'], status['Endpoint'])
+            else:
+                self.fail('Unexpected output: %s' % o)
         cloudformation.delete_stack(StackName=stack_name)
 
     def test_cfn_handle_secretsmanager_secret(self):
@@ -771,7 +792,10 @@ class CloudFormationTest(unittest.TestCase):
         params = [{'ParameterKey': 'DeliveryStreamName', 'ParameterValue': firehose_name}]
         cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_12 % role_name, Parameters=params)
 
-        _await_stack_completion(stack_name)
+        details = _await_stack_completion(stack_name)
+
+        outputs = details.get('Outputs', [])
+        self.assertEqual(len(outputs), 1)
 
         firehose_client = aws_stack.connect_to_service('firehose')
 
@@ -780,7 +804,7 @@ class CloudFormationTest(unittest.TestCase):
         )
 
         self.assertEqual(firehose_name, rs['DeliveryStreamDescription']['DeliveryStreamName'])
-
+        self.assertEqual(outputs[0]['OutputValue'], rs['DeliveryStreamDescription']['DeliveryStreamARN'])
         cloudformation.delete_stack(StackName=stack_name)
 
     def test_cfn_handle_iam_role_resource(self):
