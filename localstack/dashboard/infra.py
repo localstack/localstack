@@ -8,7 +8,7 @@ from six import iteritems
 from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (short_uid, parallelize, is_port_open, new_tmp_file,
-    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, run, md5)
+    to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, run, md5, resolve_string_or_variable)
 from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
     KinesisShard, KinesisStream, LambdaFunction)
@@ -156,14 +156,6 @@ def get_sqs_queues(filter='.*', pool={}, env=None):
     except socket.error:
         pass
     return result
-
-
-# TODO move to util
-def resolve_string_or_variable(string, code_map):
-    if re.match(r'^["\'].*["\']$', string):
-        return string.replace('"', '').replace("'", '')
-    LOG.warning('Variable resolution not implemented')
-    return None
 
 
 # TODO move to util

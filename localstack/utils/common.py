@@ -1128,5 +1128,12 @@ def isoformat_milliseconds(t):
         return t.isoformat()[:-3]
 
 
+def resolve_string_or_variable(string, code_map):
+    if re.match(r'^["\'].*["\']$', string):
+        return string.replace('"', '').replace("'", '')
+    LOG.warning('Variable resolution not implemented')
+    return None
+
+
 # Code that requires util functions from above
 CACHE_FILE_PATTERN = CACHE_FILE_PATTERN.replace('_random_dir_', short_uid())
