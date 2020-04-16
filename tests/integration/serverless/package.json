@@ -1,0 +1,12 @@
+{
+  "name": "sls-localstack-test",
+  "version": "0.0.1",
+  "description": "Simple Serverless tests for LocalStack",
+  "scripts": {
+    "serverless": "serverless deploy --stage local"
+  },
+  "devDependencies": {
+    "serverless": "^1.67.1",
+    "serverless-localstack": "^0.4.24"
+  }
+}

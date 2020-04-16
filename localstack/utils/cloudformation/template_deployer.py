@@ -780,8 +780,11 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
             return aws_stack.connect_to_service('s3').get_bucket_policy(Bucket=bucket_name)
         elif resource_type == 'Logs::LogGroup':
-            # TODO implement
-            raise Exception('ResourceNotFound')
+            group_name = resource_props.get('LogGroupName')
+            group_name = resolve_refs_recursively(stack_name, group_name, resources)
+            logs = aws_stack.connect_to_service('logs')
+            groups = logs.describe_log_groups(logGroupNamePrefix=group_name)['logGroups']
+            return ([g for g in groups if g['logGroupName'] == group_name] or [None])[0]
         elif resource_type == 'Kinesis::Stream':
             stream_name = resolve_refs_recursively(stack_name, resource_props['Name'], resources)
             result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
@@ -1258,6 +1261,7 @@ def all_dependencies_satisfied(resources, stack_name, all_resources, depending_r
     for resource_id, resource in iteritems(resources):
         if is_deployable_resource(resource):
             if not is_deployed(resource_id, all_resources, stack_name):
+                LOG.debug('Dependency for resource %s not yet deployed: %s' % (depending_resource, resource_id))
                 return False
     return True
 
