@@ -61,7 +61,9 @@ MODEL_MAP = {
     'AWS::Logs::LogGroup': service_models.LogsLogGroup,
     'AWS::KinesisFirehose::DeliveryStream': service_models.FirehoseDeliveryStream,
     'AWS::SecretsManager::Secret': service_models.SecretsManagerSecret,
-    'AWS::Elasticsearch::Domain': service_models.ElasticsearchDomain
+    'AWS::Elasticsearch::Domain': service_models.ElasticsearchDomain,
+    'AWS::Events::Rule': service_models.EventsRule,
+    'AWS::S3::BucketPolicy': service_models.S3BucketPolicy
 }
 
 
@@ -158,6 +160,9 @@ def update_physical_resource_id(resource):
             resource.physical_resource_id = resource.params.get('DeliveryStreamName')
 
         elif isinstance(resource, service_models.SecretsManagerSecret):
+            resource.physical_resource_id = resource.params.get('Name')
+
+        elif isinstance(resource, service_models.EventsRule):
             resource.physical_resource_id = resource.params.get('Name')
 
         elif isinstance(resource, service_models.ElasticsearchDomain):

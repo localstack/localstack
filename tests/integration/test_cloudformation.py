@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import unittest
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
@@ -123,6 +124,26 @@ TEST_TEMPLATE_8 = {
             'Properties': {
                 'BucketName': ''
             }
+        },
+        'S3BucketPolicy': {
+            'Type': 'AWS::S3::BucketPolicy',
+            'Properties': {
+                'Bucket': {
+                    'Ref': 'S3Bucket'
+                },
+                'PolicyDocument': {
+                    'Statement': [
+                        {
+                            'Effect': 'Allow',
+                            'Action': [
+                                's3:GetObject',
+                                's3:PutObject'
+                            ],
+                            'Resource': ['*']
+                        }
+                    ]
+                }
+            }
         }
     }
 }
@@ -209,6 +230,8 @@ Resources:
 TEST_TEMPLATE_12 = """
 AWSTemplateFormatVersion: 2010-09-09
 Parameters:
+  KinesisStreamName:
+    Type: String
   DeliveryStreamName:
     Type: String
 Resources:
@@ -225,7 +248,12 @@ Resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: !Ref "DeliveryStreamName"
-  MyStream:
+  KinesisStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name : !Ref "KinesisStreamName"
+      ShardCount : 5
+  DeliveryStream:
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties:
       DeliveryStreamName: !Ref "DeliveryStreamName"
@@ -240,7 +268,7 @@ Resources:
         RoleARN: !GetAtt "MyRole.Arn"
 Outputs:
   MyStreamArn:
-    Value: !GetAtt "MyStream.Arn"
+    Value: !GetAtt "DeliveryStream.Arn"
 """
 
 TEST_TEMPLATE_13 = """
@@ -263,6 +291,33 @@ Resources:
             Resource:
               - !Sub >-
                 arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/aws-dev-log:*
+"""
+
+TEST_TEMPLATE_14 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  SQSQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+        QueueName: %s
+"""
+
+TEST_TEMPLATE_15 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MyBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: %s
+  ScheduledRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: %s
+      ScheduleExpression: rate(10 minutes)
+      State: ENABLED
+      Targets:
+        - Id: TargetBucketV1
+          Arn: !GetAtt "MyBucket.Arn"
 """
 
 TEST_CHANGE_SET_BODY = """
@@ -392,7 +447,6 @@ def _await_stack_completion(stack_name, retries=3, sleep=2):
 
 
 class CloudFormationTest(unittest.TestCase):
-
     def test_create_delete_stack(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -683,14 +737,33 @@ class CloudFormationTest(unittest.TestCase):
 
         self.assertFalse(bucket_exists(bucket_name))
 
+        s3 = aws_stack.connect_to_service('s3')
         cfn = aws_stack.connect_to_service('cloudformation')
+
         _deploy_stack(stack_name=stack_name, template_body=json.dumps(TEST_TEMPLATE_8))
 
         self.assertTrue(bucket_exists(bucket_name))
 
+        rs = s3.get_bucket_policy(
+            Bucket=bucket_name
+        )
+
+        self.assertIn('Policy', rs)
+        self.assertEqual(json.loads(rs['Policy']),
+                         TEST_TEMPLATE_8['Resources']['S3BucketPolicy']['Properties']['PolicyDocument'])
+
         cfn.delete_stack(StackName=stack_name)
 
         self.assertFalse(bucket_exists(bucket_name))
+
+        try:
+            s3.get_bucket_policy(
+                Bucket=bucket_name
+            )
+            self.fail('This call should not be successful as the bucket policy was deleted')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NoSuchBucket')
 
         rs = cfn.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_8))
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -783,29 +856,49 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertIn('DeletedDate', rs)
 
-    def test_cfn_handle_firehose(self):
+    def test_cfn_handle_kinesis_firehose_resources(self):
         stack_name = 'stack-%s' % short_uid()
-        firehose_name = 'firehose-%s' % short_uid()
-        role_name = 'firehose-role-%s' % short_uid()
+        kinesis_stream_name = 'kinesis-stream-%s' % short_uid()
+        firehose_role_name = 'firehose-role-%s' % short_uid()
+        firehose_stream_name = 'firehose-stream-%s' % short_uid()
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
-        params = [{'ParameterKey': 'DeliveryStreamName', 'ParameterValue': firehose_name}]
-        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_12 % role_name, Parameters=params)
+        cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=TEST_TEMPLATE_12 % firehose_role_name,
+            Parameters=[
+                {'ParameterKey': 'KinesisStreamName', 'ParameterValue': kinesis_stream_name},
+                {'ParameterKey': 'DeliveryStreamName', 'ParameterValue': firehose_stream_name}
+            ]
+        )
 
         details = _await_stack_completion(stack_name)
 
         outputs = details.get('Outputs', [])
         self.assertEqual(len(outputs), 1)
 
+        kinesis_client = aws_stack.connect_to_service('kinesis')
         firehose_client = aws_stack.connect_to_service('firehose')
 
         rs = firehose_client.describe_delivery_stream(
-            DeliveryStreamName=firehose_name
+            DeliveryStreamName=firehose_stream_name
         )
-
-        self.assertEqual(firehose_name, rs['DeliveryStreamDescription']['DeliveryStreamName'])
         self.assertEqual(outputs[0]['OutputValue'], rs['DeliveryStreamDescription']['DeliveryStreamARN'])
+        self.assertEqual(firehose_stream_name, rs['DeliveryStreamDescription']['DeliveryStreamName'])
+
+        rs = kinesis_client.describe_stream(
+            StreamName=kinesis_stream_name
+        )
+        self.assertEqual(rs['StreamDescription']['StreamName'], kinesis_stream_name)
+
         cloudformation.delete_stack(StackName=stack_name)
+        time.sleep(2)
+
+        rs = kinesis_client.list_streams()
+        self.assertNotIn(kinesis_stream_name, rs['StreamNames'])
+
+        rs = firehose_client.list_delivery_streams()
+        self.assertNotIn(firehose_stream_name, rs['DeliveryStreamNames'])
 
     def test_cfn_handle_iam_role_resource(self):
         stack_name = 'stack-%s' % short_uid()
@@ -834,3 +927,53 @@ class CloudFormationTest(unittest.TestCase):
         )
 
         self.assertEqual(len(rs['Roles']), 0)
+
+    def test_cfn_handle_sqs_resource(self):
+        stack_name = 'stack-%s' % short_uid()
+        queue_name = 'queue-%s' % short_uid()
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        sqs = aws_stack.connect_to_service('sqs')
+
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_14 % queue_name)
+
+        rs = sqs.get_queue_url(QueueName=queue_name)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        cfn.delete_stack(StackName=stack_name)
+
+        try:
+            sqs.get_queue_url(QueueName=queue_name)
+            self.fail('This call should not be successful as the queue was deleted')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'AWS.SimpleQueueService.NonExistentQueue')
+
+    def test_cfn_handle_events_rule(self):
+        stack_name = 'stack-%s' % short_uid()
+        bucket_name = 'target-%s' % short_uid()
+        rule_prefix = 's3-rule-%s' % short_uid()
+        rule_name = '%s-%s' % (rule_prefix, short_uid())
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        events = aws_stack.connect_to_service('events')
+
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_15 % (bucket_name, rule_name))
+
+        rs = events.list_rules(
+            NamePrefix=rule_prefix
+        )
+        self.assertIn(rule_name, [rule['Name'] for rule in rs['Rules']])
+
+        target_arn = aws_stack.s3_bucket_arn(bucket_name)
+        rs = events.list_targets_by_rule(
+            Rule=rule_name
+        )
+        self.assertIn(target_arn, [target['Arn'] for target in rs['Targets']])
+
+        cfn.delete_stack(StackName=stack_name)
+
+        rs = events.list_rules(
+            NamePrefix=rule_prefix
+        )
+        self.assertNotIn(rule_name, [rule['Name'] for rule in rs['Rules']])

@@ -212,12 +212,17 @@ RESOURCE_TO_FUNCTION = {
             'function': 'put_bucket_notification_configuration',
             'parameters': s3_bucket_notification_config
         }],
-        'delete': {
+        'delete': [{
+            'function': 'delete_bucket_policy',
+            'parameters': {
+                'Bucket': 'PhysicalResourceId'
+            }
+        }, {
             'function': 'delete_bucket',
             'parameters': {
                 'Bucket': 'PhysicalResourceId'
             }
-        }
+        }]
     },
     'S3::BucketPolicy': {
         'create': {
@@ -403,7 +408,14 @@ RESOURCE_TO_FUNCTION = {
                 'EventBusName': 'EventBusName',
                 'Targets': 'Targets'
             }
-        }]
+        }],
+        'delete': {
+            'function': 'delete_rule',
+            'parameters': {
+                'Name': 'PhysicalResourceId'
+            }
+
+        }
     },
     'IAM::Role': {
         'create': {
