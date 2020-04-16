@@ -12,7 +12,7 @@ MAX_HEAP_SIZE = '256m'
 
 
 def get_command():
-    lambda_endpoint = aws_stack.get_local_service_url('lambda')
+    lambda_endpoint = config.STEPFUNCTIONS_LAMBDA_ENDPOINT or aws_stack.get_local_service_url('lambda')
     dynamodb_endpoint = aws_stack.get_local_service_url('dynamodb')
     sns_endpoint = aws_stack.get_local_service_url('sns')
     sqs_endpoint = aws_stack.get_local_service_url('sqs')
