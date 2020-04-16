@@ -76,3 +76,4 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
+RUN rm -rf /tmp/localstack/elasticsearch

@@ -12,7 +12,7 @@ from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
     ELASTICSEARCH_URLS, ELASTICSEARCH_DEFAULT_VERSION, ELASTICSEARCH_PLUGIN_LIST,
     ELASTICSEARCH_DELETE_MODULES, DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION,
-    STEPFUNCTIONS_ZIP_URL, KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS, LOCALSTACK_ROOT_FOLDER)
+    STEPFUNCTIONS_ZIP_URL, KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
@@ -57,7 +57,7 @@ def get_elasticsearch_install_dir(version=None):
     version = get_elasticsearch_install_version(version)
     if version == ELASTICSEARCH_DEFAULT_VERSION:
         # install the default version into a subfolder of the code base
-        install_dir = os.path.join(LOCALSTACK_ROOT_FOLDER, 'infra', 'elasticsearch')
+        install_dir = os.path.join(INSTALL_DIR_INFRA, 'elasticsearch')
     else:
         install_dir = os.path.join(config.TMP_FOLDER, 'elasticsearch', version)
     return install_dir
