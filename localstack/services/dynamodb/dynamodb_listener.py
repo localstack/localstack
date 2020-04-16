@@ -77,10 +77,8 @@ class ProxyListenerDynamoDB(ProxyListener):
 
             # Fix incorrect values if ReturnValues==ALL_OLD and ReturnConsumedCapacity is
             # empty, see https://github.com/localstack/localstack/issues/2049
-            # As per amazon docs referenced here
-            # only two values ALL_OLD and None are possible for ReturnValues hence removing the condition.
-            # https://docs.aws.amazon.com/cli/latest/reference/dynamodb/put-item.html
-            if not data.get('ReturnConsumedCapacity'):
+            if ((data.get('ReturnValues') == 'ALL_OLD') or (not data.get('ReturnValues'))) \
+                    and not data.get('ReturnConsumedCapacity'):
                 data['ReturnConsumedCapacity'] = 'TOTAL'
                 return Request(data=json.dumps(data), method=method, headers=headers)
 
