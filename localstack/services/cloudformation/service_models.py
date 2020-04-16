@@ -8,6 +8,34 @@ class BaseModel(object):
         return cls(**props)
 
 
+class CloudFormationStack(BaseModel):
+    pass
+
+
+class EventsRule(BaseModel):
+    pass
+
+
+class ElasticsearchDomain(BaseModel):
+    pass
+
+
+class FirehoseDeliveryStream(BaseModel):
+    pass
+
+
+class GatewayResponse(BaseModel):
+    pass
+
+
+class LogsLogGroup(BaseModel):
+    pass
+
+
+class S3BucketPolicy(BaseModel):
+    pass
+
+
 class StepFunctionsActivity(BaseModel):
     pass
 
@@ -16,29 +44,9 @@ class SNSSubscription(BaseModel):
     pass
 
 
-class GatewayResponse(BaseModel):
-    pass
-
-
-class CloudFormationStack(BaseModel):
-    pass
-
-
 class SSMParameter(BaseModel):
     pass
 
 
-class LogsLogGroup(BaseModel):
-    pass
-
-
-class FirehoseDeliveryStream(BaseModel):
-    pass
-
-
 class SecretsManagerSecret(BaseModel):
-    pass
-
-
-class ElasticsearchDomain(BaseModel):
     pass

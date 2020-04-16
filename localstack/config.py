@@ -119,6 +119,9 @@ DISABLE_EVENTS = os.environ.get('DISABLE_EVENTS') in TRUE_STRINGS
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get('SKIP_INFRA_DOWNLOADS', '').strip()
 
+# Stepfunctions lambda endpoint override
+STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get('STEPFUNCTIONS_LAMBDA_ENDPOINT', '').strip()
+
 
 def has_docker():
     try:
@@ -159,7 +162,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'USE_SSL', 'DEBUG', 'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI',
                    'START_WEB', 'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
                    'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS', 'EDGE_PORT',
-                   'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS']
+                   'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS', 'STEPFUNCTIONS_LAMBDA_ENDPOINT']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')

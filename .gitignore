@@ -39,3 +39,4 @@ node_modules/
 !bin/docker-entrypoint.sh
 
 requirements.copy.txt
+.serverless/

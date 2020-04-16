@@ -1,0 +1,21 @@
+service: sls-test
+
+provider:
+  stage: "${opt:stage, self:provider.environment.stage}"
+  name: "aws"
+  memorySize: 384
+  versionFunctions: false
+  timeout: 900
+  runtime: "nodejs12.x"
+
+functions:
+  test:
+    handler: "handler.test"
+    events: []
+
+plugins:
+  - "serverless-localstack"
+
+custom:
+  localstack:
+    stages: "local"
