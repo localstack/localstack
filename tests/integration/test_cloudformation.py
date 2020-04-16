@@ -265,6 +265,16 @@ Resources:
                 arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/aws-dev-log:*
 """
 
+TEST_TEMPLATE_14 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  IamRoleLambdaExecution:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument: {}
+      Path: %s
+"""
+
 TEST_CHANGE_SET_BODY = """
 Parameters:
   EnvironmentType:
@@ -826,6 +836,29 @@ class CloudFormationTest(unittest.TestCase):
         role = rs['Roles'][0]
 
         self.assertEqual(role['RoleName'], role_name)
+
+        cfn.delete_stack(StackName=stack_name)
+
+        rs = iam.list_roles(
+            PathPrefix=role_path_prefix
+        )
+
+        self.assertEqual(len(rs['Roles']), 0)
+
+    def test_cfn_handle_iam_role_resource_no_role_name(self):
+        stack_name = 'stack-%s' % short_uid()
+        role_path_prefix = '/role-prefix-%s/' % short_uid()
+
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_14 % role_path_prefix)
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        iam = aws_stack.connect_to_service('iam')
+
+        rs = iam.list_roles(
+            PathPrefix=role_path_prefix
+        )
+
+        self.assertEqual(len(rs['Roles']), 1)
 
         cfn.delete_stack(StackName=stack_name)
 

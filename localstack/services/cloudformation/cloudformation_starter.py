@@ -560,7 +560,7 @@ def apply_patches():
 
     @classmethod
     def IAM_Role_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
-        resource_name = cloudformation_json['Properties']['RoleName']
+        resource_name = cloudformation_json['Properties'].get('RoleName', short_uid())
         return IAM_Role_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
 
     iam_models.Role.create_from_cloudformation_json = IAM_Role_create_from_cloudformation_json
