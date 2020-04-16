@@ -231,7 +231,6 @@ class ProxyListenerDynamoDB(ProxyListener):
                 # fix response
                 if response._content == '{}':
                     response._content = update_put_item_response_content(data, response._content)
-                    # response._content = json.dumps({'Attributes': data['Item']})
                     fix_headers_for_updated_response(response)
                 # prepare record keys
                 record['dynamodb']['Keys'] = keys
