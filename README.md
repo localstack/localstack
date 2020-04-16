@@ -186,6 +186,8 @@ You can pass the following environment variables to LocalStack:
 * `KINESIS_LATENCY`: Integer value (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call.
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
+* `STEPFUNCTIONS_LAMBDA_ENDPOINT`: URL to use as the lambda service endpoint in step functions.
+  By default this is the localstack lambda endpoint.
 * `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Possible values are:
     - `local`: run Lambda functions in a temporary directory on the local machine
     - `docker`: run each function invocation in a separate Docker container
