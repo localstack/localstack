@@ -479,7 +479,7 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.put_bucket_cors(Bucket=bucket_name,
             CORSConfiguration={
                 'CORSRules': [{
-                    'AllowedMethods': ['GET', 'PUT', 'POST'],
+                    'AllowedMethods': ['GET', 'PUT', 'POST', 'DELETE'],
                     'AllowedOrigins': ['*'],
                     'ExposeHeaders': [
                         'ETag', 'x-amz-version-id'
@@ -495,6 +495,52 @@ class S3ListenerTest(unittest.TestCase):
         response = requests.get(url, verify=False)
         self.assertEquals(response.headers['Access-Control-Expose-Headers'], 'ETag,x-amz-version-id')
         # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_cors_policies(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        object_key = 'key-by-hostname'
+        # deleting the bucket before imposing the CORS policies
+        self._delete_bucket(bucket_name, [object_key])
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        # put object and CORS configuration
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        self.s3_client.put_bucket_cors(Bucket=bucket_name,
+                                       CORSConfiguration={
+                                           'CORSRules': [{
+                                               'AllowedMethods': ['GET', 'PUT', 'POST'],
+                                               'AllowedOrigins': ['*'],
+                                               'ExposeHeaders': [
+                                                   'ETag', 'x-amz-version-id'
+                                               ]
+                                           }]
+                                       },
+                                       )
+
+        object_key = 'key-by-hostname'
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something_test')
+        raised = False
+        try:
+            self._delete_bucket(bucket_name, [object_key])
+        except Exception:
+            raised = True
+        if not raised:
+            raise Exception('CORS Policy ERROR should have been raised as Delete method is not allowed.')
+
+        # adding the delete method to supportive methods to allow delete method.
+        self.s3_client.put_bucket_cors(Bucket=bucket_name,
+                                       CORSConfiguration={
+                                           'CORSRules': [{
+                                               'AllowedMethods': ['GET', 'PUT', 'POST', 'DELETE'],
+                                               'AllowedOrigins': ['localhost'],
+                                               'ExposeHeaders': [
+                                                   'ETag', 'x-amz-version-id'
+                                               ]
+                                           }]
+                                       },
+                                       )
         self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_get_response_header_overrides(self):

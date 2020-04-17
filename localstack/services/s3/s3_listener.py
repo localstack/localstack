@@ -591,6 +591,29 @@ def bucket_exists(bucket_name):
     return True, 200
 
 
+def is_request_satisfying_cors_policy(bucket_name, headers, method):
+    if method != 'HEAD':
+        cors = get_cors(bucket_name)
+        if cors.content and cors.status_code == 200 and \
+                cors.content != '<?xml version="1.0" encoding="utf-8"?>\n':
+            cors_policy = xmltodict.parse(cors.content)
+            cors_configuration = cors_policy.get('CORSConfiguration')
+            cors_rules = cors_configuration.get('CORSRule')
+            allowed_origins = cors_rules.get('AllowedOrigin')
+            allowed_headers = cors_rules.get('AllowedHeader')
+            allowed_methods = cors_rules.get('AllowedMethod')
+            if method not in allowed_methods:
+                return False
+            if (headers.get('host') not in allowed_origins) and ('*' not in allowed_origins):
+                return False
+            request_headers = headers.get('AccessControlRequestHeaders')
+            if request_headers:
+                for header in request_headers:
+                    if header not in allowed_headers:
+                        return False
+    return True
+
+
 def check_content_md5(data, headers):
     actual = md5(strip_chunk_signatures(data))
     expected = headers['Content-MD5']
@@ -811,6 +834,11 @@ class ProxyListenerS3(ProxyListener):
         bucket = path.split('/')[1]
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
 
+        if bucket_name and query != 'cors' and 'cors' not in query_map:
+            if not is_request_satisfying_cors_policy(bucket_name, headers, method):
+                return error_response('Request does not satisy the cors policies imposed on the Bucket.',
+                                      'CORS_ERROR', status_code=403)
+
         # remap metadata query params (not supported in moto) to request headers
         append_metadata_headers(method, query_map, headers)
 
@@ -982,7 +1010,6 @@ class ProxyListenerS3(ProxyListener):
 
         if response:
             reset_content_length = False
-
             # append CORS headers and other annotations/patches to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
             append_last_modified_headers(response=response)
