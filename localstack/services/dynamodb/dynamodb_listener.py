@@ -77,7 +77,8 @@ class ProxyListenerDynamoDB(ProxyListener):
 
             # Fix incorrect values if ReturnValues==ALL_OLD and ReturnConsumedCapacity is
             # empty, see https://github.com/localstack/localstack/issues/2049
-            if data.get('ReturnValues') == 'ALL_OLD' and not data.get('ReturnConsumedCapacity'):
+            if ((data.get('ReturnValues') == 'ALL_OLD') or (not data.get('ReturnValues'))) \
+                    and not data.get('ReturnConsumedCapacity'):
                 data['ReturnConsumedCapacity'] = 'TOTAL'
                 return Request(data=json.dumps(data), method=method, headers=headers)
 
@@ -227,7 +228,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     return keys
                 # fix response
                 if response._content == '{}':
-                    response._content = json.dumps({'Attributes': data['Item']})
+                    response._content = update_put_item_response_content(data, response._content)
                     fix_headers_for_updated_response(response)
                 # prepare record keys
                 record['dynamodb']['Keys'] = keys
@@ -448,6 +449,15 @@ def get_table_not_found_error():
 def fix_headers_for_updated_response(response):
     response.headers['content-length'] = len(to_bytes(response.content))
     response.headers['x-amz-crc32'] = calculate_crc32(response)
+
+
+def update_put_item_response_content(data, response_content):
+    # when return-values variable is set only then attribute data should be returned
+    # in the response otherwise by default is should not return any data.
+    # https://github.com/localstack/localstack/issues/2121
+    if data.get('ReturnValues'):
+        response_content = json.dumps({'Attributes': data['Item']})
+    return response_content
 
 
 def calculate_crc32(response):
