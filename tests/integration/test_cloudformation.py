@@ -947,17 +947,13 @@ class CloudFormationTest(unittest.TestCase):
         cfn = aws_stack.connect_to_service('cloudformation')
         iam = aws_stack.connect_to_service('iam')
 
-        rs = iam.list_roles(
-            PathPrefix=role_path_prefix
-        )
+        rs = iam.list_roles(PathPrefix=role_path_prefix)
 
         self.assertEqual(len(rs['Roles']), 1)
 
         cfn.delete_stack(StackName=stack_name)
 
-        rs = iam.list_roles(
-            PathPrefix=role_path_prefix
-        )
+        rs = iam.list_roles(PathPrefix=role_path_prefix)
 
         self.assertEqual(len(rs['Roles']), 0)
 
