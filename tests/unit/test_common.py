@@ -1,6 +1,4 @@
 import unittest
-# from requests.models import Response
-# from localstack.utils.aws import aws_stack
 from datetime import datetime
 from localstack.utils import common
 
