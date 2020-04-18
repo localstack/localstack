@@ -52,6 +52,7 @@ TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
+TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_send_message.py')
 TEST_LAMBDA_FUNCTION_PREFIX = 'lambda-function'
 TEST_SNS_TOPIC_NAME = 'sns-topic-1'
 
@@ -133,7 +134,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON, func_name=lambda_name, libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON36, DeadLetterConfig={'TargetArn': queue_arn})
+            runtime=LAMBDA_RUNTIME_PYTHON36, DeadLetterConfig={'TargetArn': queue_arn}
+        )
 
         # invoke Lambda, triggering an error
         payload = {
@@ -276,7 +278,8 @@ class TestPythonRuntimes(LambdaTestBase):
     def test_invocation_type_request_response(self):
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_PY,
-            Payload=b'{}', InvocationType='RequestResponse')
+            Payload=b'{}', InvocationType='RequestResponse'
+        )
         result_data = result['Payload'].read()
         result_data = json.loads(to_str(result_data))
 
@@ -438,7 +441,7 @@ class TestPythonRuntimes(LambdaTestBase):
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(result_data['event'], json.loads('{}'))
 
-    def test_python3_runtime_multple_create_with_conflicting_module(self):
+    def test_python3_runtime_multiple_create_with_conflicting_module(self):
         original_do_use_docker = lambda_api.DO_USE_DOCKER
         try:
             # always use the local runner
@@ -508,6 +511,42 @@ class TestPythonRuntimes(LambdaTestBase):
 
         self.assertIn('Subject', notification)
         self.assertEqual(notification['Subject'], subject)
+
+    def test_lambda_send_message_to_sqs(self):
+        function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
+        queue_name = 'lambda-queue-{}'.format(short_uid())
+
+        sqs_client = aws_stack.connect_to_service('sqs')
+
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_SEND_MESSAGE_FILE,
+                                        func_name=function_name,
+                                        runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        event = {
+            'message': 'message-from-test-lambda-{}'.format(short_uid()),
+            'queue_name': queue_name,
+            'region_name': config.DEFAULT_REGION
+        }
+
+        self.lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps(event)
+        )
+
+        # assert that message has been received on the Queue
+        def receive_message():
+            rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+            self.assertGreater(len(rs['Messages']), 0)
+            return rs['Messages'][0]
+
+        message = retry(receive_message, retries=3, sleep=2)
+        self.assertEqual(message['Body'], event['message'])
+
+        # clean up
+        testutil.delete_lambda_function(function_name)
+        sqs_client.delete_queue(QueueUrl=queue_url)
 
 
 class TestNodeJSRuntimes(LambdaTestBase):
