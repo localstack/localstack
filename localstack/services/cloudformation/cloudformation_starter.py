@@ -257,6 +257,10 @@ def apply_patches():
             except Exception as e:
                 moto_create_error = e
 
+        # apply some fixes which otherwise cause deployments to fail
+        if resource_json['Type'] == 'AWS::IAM::Role' and not props.get('RoleName'):
+            props['RoleName'] = resource.physical_resource_id
+
         # check whether this resource needs to be deployed
         resource_map_new = dict(resources_map._resource_json_map)
         resource_map_new[logical_id] = resource_json
@@ -560,15 +564,6 @@ def apply_patches():
         return self.name
 
     iam_models.Role.physical_resource_id = IAM_Role_physical_resource_id
-
-    IAM_Role_create_from_cloudformation_json_orig = iam_models.Role.create_from_cloudformation_json
-
-    @classmethod
-    def IAM_Role_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
-        resource_name = cloudformation_json['Properties']['RoleName']
-        return IAM_Role_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
-
-    iam_models.Role.create_from_cloudformation_json = IAM_Role_create_from_cloudformation_json
 
     # Patch SNS Topic get_cfn_attribute(..) method in moto
     def SNS_Topic_get_cfn_attribute(self, attribute_name):

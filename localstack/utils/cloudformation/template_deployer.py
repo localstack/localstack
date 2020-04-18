@@ -426,7 +426,7 @@ RESOURCE_TO_FUNCTION = {
                         select_parameters('Path', 'RoleName', 'AssumeRolePolicyDocument',
                             'Description', 'MaxSessionDuration', 'PermissionsBoundary', 'Tags'),
                         'AssumeRolePolicyDocument'),
-                    {'RoleName': 'RoleName'})
+                    {'RoleName': PLACEHOLDER_RESOURCE_NAME})
         },
         'delete': {
             'function': 'delete_role',

@@ -296,13 +296,23 @@ Resources:
 TEST_TEMPLATE_14 = """
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
+  IamRoleLambdaExecution:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument: {}
+      Path: %s
+"""
+
+TEST_TEMPLATE_15 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
   SQSQueue:
     Type: 'AWS::SQS::Queue'
     Properties:
         QueueName: %s
 """
 
-TEST_TEMPLATE_15 = """
+TEST_TEMPLATE_16 = """
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
   MyBucket:
@@ -928,6 +938,25 @@ class CloudFormationTest(unittest.TestCase):
 
         self.assertEqual(len(rs['Roles']), 0)
 
+    def test_cfn_handle_iam_role_resource_no_role_name(self):
+        stack_name = 'stack-%s' % short_uid()
+        role_path_prefix = '/role-prefix-%s/' % short_uid()
+
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_14 % role_path_prefix)
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        iam = aws_stack.connect_to_service('iam')
+
+        rs = iam.list_roles(PathPrefix=role_path_prefix)
+
+        self.assertEqual(len(rs['Roles']), 1)
+
+        cfn.delete_stack(StackName=stack_name)
+
+        rs = iam.list_roles(PathPrefix=role_path_prefix)
+
+        self.assertEqual(len(rs['Roles']), 0)
+
     def test_cfn_handle_sqs_resource(self):
         stack_name = 'stack-%s' % short_uid()
         queue_name = 'queue-%s' % short_uid()
@@ -935,7 +964,7 @@ class CloudFormationTest(unittest.TestCase):
         cfn = aws_stack.connect_to_service('cloudformation')
         sqs = aws_stack.connect_to_service('sqs')
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_14 % queue_name)
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_15 % queue_name)
 
         rs = sqs.get_queue_url(QueueName=queue_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -958,7 +987,7 @@ class CloudFormationTest(unittest.TestCase):
         cfn = aws_stack.connect_to_service('cloudformation')
         events = aws_stack.connect_to_service('events')
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_15 % (bucket_name, rule_name))
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_16 % (bucket_name, rule_name))
 
         rs = events.list_rules(
             NamePrefix=rule_prefix
