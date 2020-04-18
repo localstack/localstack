@@ -7,7 +7,7 @@ from localstack.utils import persistence
 from localstack.services import generic_proxy, install
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID, ELASTICSEARCH_DEFAULT_VERSION
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, FuncThread
 from localstack.utils.tagging import TaggingService
 from localstack.utils.analytics import event_publisher
 from localstack.services.plugins import check_infra
@@ -141,7 +141,7 @@ def get_domain_status(domain_name, deleted=False):
     return {
         'DomainStatus': {
             'ARN': 'arn:aws:es:%s:%s:domain/%s' % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),
-            'Created': True,
+            'Created': status.get('Created', True),
             'Deleted': deleted,
             'DomainId': '%s/%s' % (TEST_AWS_ACCOUNT_ID, domain_name),
             'DomainName': domain_name,
@@ -217,9 +217,18 @@ def create_domain():
     if domain_name in ES_DOMAINS:
         return error_response(error_type='ResourceAlreadyExistsException')
     ES_DOMAINS[domain_name] = data
-    # start actual Elasticsearch instance
-    version = data.get('ElasticsearchVersion') or DEFAULT_ES_VERSION
-    start_elasticsearch_instance(version=version)
+    data['Created'] = False
+
+    def do_start(*args):
+        # start actual Elasticsearch instance
+        version = data.get('ElasticsearchVersion') or DEFAULT_ES_VERSION
+        start_elasticsearch_instance(version=version)
+        data['Created'] = True
+
+    # start ES instance in the background
+    FuncThread(do_start).start()
+    # sleep a short while, then return
+    time.sleep(5)
     result = get_domain_status(domain_name)
 
     # record event

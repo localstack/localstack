@@ -4,7 +4,7 @@ import unittest
 from nose.tools import assert_equal, assert_in, assert_not_in
 from botocore.exceptions import ClientError
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, safe_requests as requests
+from localstack.utils.common import short_uid, retry, safe_requests as requests
 from localstack.services.es.es_api import DEFAULT_ES_VERSION
 
 TEST_INDEX = 'megacorp'
@@ -130,3 +130,9 @@ class ElasticsearchTest(unittest.TestCase):
             kwargs['ElasticsearchVersion'] = version
         es_client.create_elasticsearch_domain(DomainName=name, **kwargs)
         assert_in(name, [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
+
+        # wait for completion status
+        def check_cluster_ready(*args):
+            status = es_client.describe_elasticsearch_domain(DomainName=name)
+            assert status['DomainStatus']['Created']
+        retry(check_cluster_ready, sleep=6, retries=10)
