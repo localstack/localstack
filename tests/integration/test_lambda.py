@@ -523,12 +523,10 @@ class TestPythonRuntimes(LambdaTestBase):
                                         runtime=LAMBDA_RUNTIME_PYTHON36)
 
         queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
-        sqs_endpoint_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
 
         event = {
             'message': 'message-from-test-lambda-{}'.format(short_uid()),
-            'sqs_endpoint_url': sqs_endpoint_url,
-            'queue_url': queue_url
+            'queue_name': queue_name
         }
 
         rs = self.lambda_client.invoke(
