@@ -526,7 +526,8 @@ class TestPythonRuntimes(LambdaTestBase):
 
         event = {
             'message': 'message-from-test-lambda-{}'.format(short_uid()),
-            'queue_name': queue_name
+            'queue_name': queue_name,
+            'region_name': config.DEFAULT_REGION
         }
 
         rs = self.lambda_client.invoke(
