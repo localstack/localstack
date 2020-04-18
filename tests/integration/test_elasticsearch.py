@@ -3,6 +3,7 @@ import time
 import unittest
 from nose.tools import assert_equal, assert_in, assert_not_in
 from botocore.exceptions import ClientError
+from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry, safe_requests as requests
 from localstack.services.es.es_api import DEFAULT_ES_VERSION
@@ -68,7 +69,7 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertTrue(status['DomainStatus']['Created'])
         self.assertFalse(status['DomainStatus']['Processing'])
         self.assertFalse(status['DomainStatus']['Deleted'])
-        self.assertEqual(status['DomainStatus']['Endpoint'], aws_stack.get_elasticsearch_endpoint())
+        self.assertEqual(status['DomainStatus']['Endpoint'], 'http://localhost:%s' % config.PORT_ELASTICSEARCH)
         self.assertTrue(status['DomainStatus']['EBSOptions']['EBSEnabled'])
 
         # make sure we can fake adding tags to a domain
