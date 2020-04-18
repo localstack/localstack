@@ -7,7 +7,6 @@ import traceback
 import moto.cloudformation.utils
 from six import iteritems
 from localstack.services.s3 import s3_listener
-from localstack.services.s3.s3_listener import S3_NOTIFICATIONS
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
@@ -1050,7 +1049,7 @@ def deploy_resource(resource_id, resources, stack_name):
 def delete_resource(resource_id, resources, stack_name):
     for res_id, res in resources.items():
         if res['ResourceType'] == 'AWS::S3::Bucket':
-            S3_NOTIFICATIONS.pop(res['PhysicalResourceId'], None)
+            s3_listener.remove_bucket_notification(res['PhysicalResourceId'])
 
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
