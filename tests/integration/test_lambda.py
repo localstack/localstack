@@ -530,11 +530,10 @@ class TestPythonRuntimes(LambdaTestBase):
             'region_name': config.DEFAULT_REGION
         }
 
-        rs = self.lambda_client.invoke(
+        self.lambda_client.invoke(
             FunctionName=function_name,
             Payload=json.dumps(event)
         )
-        message_id = to_str(rs['Payload'].read())
 
         # assert that message has been received on the Queue
         def receive_message():
@@ -543,7 +542,6 @@ class TestPythonRuntimes(LambdaTestBase):
             return rs['Messages'][0]
 
         message = retry(receive_message, retries=3, sleep=2)
-        self.assertEqual(message['MessageId'], message_id)
         self.assertEqual(message['Body'], event['message'])
 
         # clean up
