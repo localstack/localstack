@@ -18,7 +18,8 @@ from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol)
+    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol
+)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.services.s3 import multipart_content
@@ -222,6 +223,7 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
         except Exception:
             LOGGER.warning('Unable to send notification for S3 bucket "%s" to Lambda function "%s".' %
                 (bucket_name, lambda_function_config))
+
     if not filter(lambda x: notif.get(x), NOTIFICATION_DESTINATION_TYPES):
         LOGGER.warning('Neither of %s defined for S3 notification.' %
             '/'.join(NOTIFICATION_DESTINATION_TYPES))
@@ -258,6 +260,7 @@ def set_cors(bucket_name, cors):
 
     if not isinstance(cors, dict):
         cors = xmltodict.parse(cors)
+
     BUCKET_CORS[bucket_name] = cors
     response.status_code = 200
     return response
@@ -283,6 +286,7 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
         return
+
     origin = request_headers.get('Origin', '')
     rules = cors['CORSConfiguration']['CORSRule']
     if not isinstance(rules, list):
@@ -421,6 +425,7 @@ def fix_metadata_key_underscores(request_headers={}, response=None):
 def fix_creation_date(method, path, response):
     if method != 'GET' or path != '/':
         return
+
     response._content = re.sub(r'([0-9])</CreationDate>', r'\1Z</CreationDate>', to_str(response._content))
 
 
@@ -450,8 +455,6 @@ def remove_xml_preamble(response):
 # HELPER METHODS
 #   for lifecycle/replication/encryption/...
 # --------------
-
-
 def get_lifecycle(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
@@ -559,8 +562,6 @@ def set_object_lock(bucket_name, lock_config):
 # -------------
 # UTIL METHODS
 # -------------
-
-
 def strip_chunk_signatures(data):
     # For clients that use streaming v4 authentication, the request contains chunk signatures
     # in the HTTP body (see example below) which we need to strip as moto cannot handle them
@@ -747,13 +748,56 @@ def handle_notification_request(bucket, method, data):
     return response
 
 
-class ProxyListenerS3(ProxyListener):
+def remove_bucket_notification(bucket):
+    S3_NOTIFICATIONS.pop(bucket, None)
 
-    def is_s3_copy_request(self, headers, path):
+
+class ProxyListenerS3(ProxyListener):
+    @staticmethod
+    def is_s3_copy_request(headers, path):
         return 'x-amz-copy-source' in headers or 'x-amz-copy-source' in path
 
-    def forward_request(self, method, path, data, headers):
+    @staticmethod
+    def get_201_response(key, bucket_name):
+        return """
+                <PostResponse>
+                    <Location>{protocol}://{host}/{encoded_key}</Location>
+                    <Bucket>{bucket}</Bucket>
+                    <Key>{key}</Key>
+                    <ETag>{etag}</ETag>
+                </PostResponse>
+                """.format(
+            protocol=get_service_protocol(),
+            host=config.HOSTNAME_EXTERNAL,
+            encoded_key=urlparse.quote(key, safe=''),
+            key=key,
+            bucket=bucket_name,
+            etag='d41d8cd98f00b204e9800998ecf8427f',
+        )
 
+    @staticmethod
+    def _update_location(content, bucket_name):
+        bucket_name = normalize_bucket_name(bucket_name)
+
+        host = config.HOSTNAME_EXTERNAL
+        if ':' not in host:
+            host = '%s:%s' % (host, config.PORT_S3)
+        return re.sub(r'<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>',
+                      r'<Location>%s://%s/%s/\2</Location>' % (get_service_protocol(), host, bucket_name),
+                      content, flags=re.MULTILINE)
+
+    @staticmethod
+    def is_query_allowable(method, query):
+        # Generally if there is a query (some/path/with?query) we don't want to send notifications
+        if not query:
+            return True
+        # Except we do want to notify on multipart and presigned url upload completion
+        contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
+        contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
+        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
+            return True
+
+    def forward_request(self, method, path, data, headers):
         # parse path and query params
         parsed_path = urlparse.urlparse(path)
 
@@ -777,6 +821,7 @@ class ProxyListenerS3(ProxyListener):
                 return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
                     'configured to use path style addressing, or send a valid <Bucket>.s3.amazonaws.com "Host" header',
                     'InvalidBucketName', status_code=400)
+
             return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
@@ -858,23 +903,6 @@ class ProxyListenerS3(ProxyListener):
             return Request(data=modified_data or data, headers=headers, method=method)
         return True
 
-    def get_201_reponse(self, key, bucket_name):
-        return """
-            <PostResponse>
-                <Location>{protocol}://{host}/{encoded_key}</Location>
-                <Bucket>{bucket}</Bucket>
-                <Key>{key}</Key>
-                <ETag>{etag}</ETag>
-            </PostResponse>
-            """.format(
-            protocol=get_service_protocol(),
-            host=config.HOSTNAME_EXTERNAL,
-            encoded_key=urlparse.quote(key, safe=''),
-            key=key,
-            bucket=bucket_name,
-            etag='d41d8cd98f00b204e9800998ecf8427f',
-        )
-
     def get_forward_url(self, method, path, data, headers):
         def sub(match):
             # make sure to convert any bucket names to lower case
@@ -884,11 +912,11 @@ class ProxyListenerS3(ProxyListener):
         path_new = re.sub(r'/([^?/]+)([?/].*)?', sub, path)
         if path == path_new:
             return
+
         url = 'http://%s:%s%s' % (constants.LOCALHOST, constants.DEFAULT_PORT_S3_BACKEND, path_new)
         return url
 
     def return_response(self, method, path, data, headers, response):
-
         path = to_str(path)
         method = to_str(method)
         bucket_name = get_bucket_name(path, headers)
@@ -914,10 +942,12 @@ class ProxyListenerS3(ProxyListener):
                 LOGGER.debug('S3 POST {} to {}'.format(response.status_code, response.headers['Location']))
 
             key, status_code = multipart_content.find_multipart_key_value(
-                data, headers, 'success_action_status')
+                data, headers, 'success_action_status'
+            )
+
             if response.status_code == 200 and status_code == '201' and key:
                 response.status_code = 201
-                response._content = self.get_201_reponse(key, bucket_name)
+                response._content = self.get_201_response(key, bucket_name)
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
@@ -961,7 +991,6 @@ class ProxyListenerS3(ProxyListener):
             return response
 
         # emulate ErrorDocument functionality if a website is configured
-
         if method == 'GET' and response.status_code == 404 and parsed.query != 'website':
             s3_client = aws_stack.connect_to_service('s3')
 
@@ -982,7 +1011,6 @@ class ProxyListenerS3(ProxyListener):
 
         if response:
             reset_content_length = False
-
             # append CORS headers and other annotations/patches to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
             append_last_modified_headers(response=response)
@@ -1051,27 +1079,6 @@ class ProxyListenerS3(ProxyListener):
 
             if reset_content_length:
                 response.headers['content-length'] = len(response._content)
-
-    def _update_location(self, content, bucket_name):
-        bucket_name = normalize_bucket_name(bucket_name)
-
-        host = config.HOSTNAME_EXTERNAL
-        if ':' not in host:
-            host = '%s:%s' % (host, config.PORT_S3)
-        return re.sub(r'<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>',
-            r'<Location>%s://%s/%s/\2</Location>' % (get_service_protocol(), host, bucket_name),
-            content, flags=re.MULTILINE)
-
-    @staticmethod
-    def is_query_allowable(method, query):
-        # Generally if there is a query (some/path/with?query) we don't want to send notifications
-        if not query:
-            return True
-        # Except we do want to notify on multipart and presigned url upload completion
-        contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
-        contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
-        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
-            return True
 
 
 # instantiate listener

@@ -330,6 +330,27 @@ Resources:
           Arn: !GetAtt "MyBucket.Arn"
 """
 
+TEST_TEMPLATE_17 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  TestQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: %s
+      ReceiveMessageWaitTimeSeconds: 0
+      VisibilityTimeout: 30
+      MessageRetentionPeriod: 1209600
+
+  TestBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: %s
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: s3:ObjectCreated:*
+            Queue: %s
+"""
+
 TEST_CHANGE_SET_BODY = """
 Parameters:
   EnvironmentType:
@@ -1006,3 +1027,31 @@ class CloudFormationTest(unittest.TestCase):
             NamePrefix=rule_prefix
         )
         self.assertNotIn(rule_name, [rule['Name'] for rule in rs['Rules']])
+
+    def test_cfn_handle_s3_notification_configuration(self):
+        stack_name = 'stack-%s' % short_uid()
+        bucket_name = 'target-%s' % short_uid()
+        queue_name = 'queue-%s' % short_uid()
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        s3 = aws_stack.connect_to_service('s3')
+
+        _deploy_stack(
+            stack_name=stack_name,
+            template_body=TEST_TEMPLATE_17 % (queue_name, bucket_name, queue_arn)
+        )
+
+        rs = s3.get_bucket_notification_configuration(
+            Bucket=bucket_name
+        )
+        self.assertIn('QueueConfigurations', rs)
+        self.assertEqual(len(rs['QueueConfigurations']), 1)
+        self.assertEqual(rs['QueueConfigurations'][0]['QueueArn'], queue_arn)
+
+        cfn.delete_stack(StackName=stack_name)
+
+        rs = s3.get_bucket_notification_configuration(
+            Bucket=bucket_name
+        )
+        self.assertNotIn('QueueConfigurations', rs)

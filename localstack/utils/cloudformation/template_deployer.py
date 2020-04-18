@@ -6,12 +6,11 @@ import logging
 import traceback
 import moto.cloudformation.utils
 from six import iteritems
-from six import string_types
+from localstack.services.s3 import s3_listener
+from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.services.s3 import s3_listener
 from localstack.utils.testutil import create_zip_file
-from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -1048,6 +1047,10 @@ def deploy_resource(resource_id, resources, stack_name):
 
 
 def delete_resource(resource_id, resources, stack_name):
+    for res_id, res in resources.items():
+        if res['ResourceType'] == 'AWS::S3::Bucket':
+            s3_listener.remove_bucket_notification(res['PhysicalResourceId'])
+
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
 
@@ -1187,42 +1190,12 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     return result
 
 
-# TODO remove?
-def deploy_template(template, stack_name):
-    if isinstance(template, string_types):
-        template = parse_template(template)
-
-    resource_map = template.get('Resources')
-    if not resource_map:
-        LOG.warning('CloudFormation template contains no Resources section')
-        return
-
-    next = resource_map
-
-    iters = 10
-    for i in range(0, iters):
-
-        # get resource details
-        for resource_id, resource in next.items():
-            stack_resource = describe_stack_resource(stack_name, resource_id)
-            resource['__details__'] = stack_resource
-
-        next = resources_to_deploy_next(resource_map, stack_name)
-        if not next:
-            return
-
-        for resource_id, resource in next.items():
-            deploy_resource(resource_id, resource_map, stack_name=stack_name)
-
-    LOG.warning('Unable to resolve all dependencies and deploy all resources ' +
-        'after %s iterations. Remaining (%s): %s' % (iters, len(next), next))
-
-
 def delete_stack(stack_name, stack_resources):
     resources = dict([(r['LogicalResourceId'], common.clone_safe(r)) for r in stack_resources])
     for key, resource in resources.items():
         resources[key]['Properties'] = common.clone_safe(resource)
-    for resource_id, resource in resources.items():
+
+    for resource_id in resources.keys():
         delete_resource(resource_id, resources, stack_name)
 
 
