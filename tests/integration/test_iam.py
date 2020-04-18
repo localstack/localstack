@@ -2,9 +2,7 @@ import os
 import logging
 import json
 import unittest
-
 from botocore.exceptions import ClientError
-
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.iam.iam_starter import ADDITIONAL_MANAGED_POLICIES
 from localstack.utils.aws import aws_stack

@@ -20,6 +20,8 @@ class ProxyListenerIAM(ProxyListener):
             self._fix_account_id(response)
             # fix dates returned from this API (fixes an issue with Terraform)
             self._fix_date_format(response)
+            # fix error codes
+            self._fix_error_codes(method, data, response)
             # fix content-length header
             response.headers['content-length'] = str(len(response._content))
 
@@ -33,6 +35,14 @@ class ProxyListenerIAM(ProxyListener):
     def _fix_account_id(response):
         return aws_stack.fix_account_id_in_arns(
             response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
+
+    @staticmethod
+    def _fix_error_codes(method, data, response):
+        if method == 'POST' and 'Action=CreateRole' in to_str(data) and response.status_code >= 400:
+            content = to_str(response.content)
+            flags = re.MULTILINE | re.DOTALL
+            # remove the <Errors> wrapper element, as this breaks AWS Java SDKs (issue #2231)
+            response._content = re.sub(r'<Errors>\s*(<Error>(\s|.)*</Error>)\s*</Errors>', r'\1', content, flags)
 
     @staticmethod
     def _reset_account_id(data):
