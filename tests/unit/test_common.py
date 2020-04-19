@@ -9,10 +9,6 @@ class TestCommon(unittest.TestCase):
         env = common.first_char_to_lower('Foobar')
         self.assertEqual(env, 'foobar')
 
-    def test_is_root(self):
-        env = common.is_root()
-        self.assertEqual(env, False)
-
     def test_truncate(self):
         env = common.truncate('foobar', 3)
         self.assertEqual(env, 'foo...')
