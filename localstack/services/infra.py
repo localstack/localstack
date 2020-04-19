@@ -269,7 +269,8 @@ def start_proxy(port, backend_url, update_listener=None, quiet=False, params={},
 def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
     if not name:
         name = key
-    print('Starting mock %s (%s port %s)...' % (name, get_service_protocol(), port))
+    print('Starting mock %s service in %s ports %s (recommended) and %s (deprecated)...' % (
+        name, get_service_protocol(), config.EDGE_PORT, port))
     if config.USE_SSL and not backend_port:
         backend_port = get_free_tcp_port()
     if backend_port:
@@ -288,7 +289,8 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
 
 
 def start_local_api(name, port, method, asynchronous=False):
-    print('Starting mock %s service (%s port %s)...' % (name, get_service_protocol(), port))
+    print('Starting mock %s service in %s ports %s (recommended) and %s (deprecated)...' % (
+        name, get_service_protocol(), config.EDGE_PORT, port))
     if asynchronous:
         thread = FuncThread(method, port, quiet=True)
         thread.start()

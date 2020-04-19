@@ -57,6 +57,7 @@ def start_sqs(port=None, asynchronous=False, update_listener=None):
     # start process
     cmd = ('java -Dconfig.file=%s -Xmx%s -jar %s/elasticmq-server.jar' % (
         config_file, MAX_HEAP_SIZE, INSTALL_DIR_ELASTICMQ))
-    print('Starting mock SQS (%s port %s)...' % (get_service_protocol(), port))
+    print('Starting mock SQS service in %s ports %s (recommended) and %s (deprecated)...' % (
+        get_service_protocol(), config.EDGE_PORT, port))
     start_proxy_for_service('sqs', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)

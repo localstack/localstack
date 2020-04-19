@@ -70,7 +70,8 @@ MODEL_MAP = {
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_CLOUDFORMATION
     backend_port = DEFAULT_PORT_CLOUDFORMATION_BACKEND
-    print('Starting mock CloudFormation (%s port %s)...' % (get_service_protocol(), port))
+    print('Starting mock CloudFormation service in %s ports %s (recommended) and %s (deprecated)...' % (
+        get_service_protocol(), config.EDGE_PORT, port))
     start_proxy_for_service('cloudformation', port, backend_port, update_listener)
     if RUN_SERVER_IN_PROCESS:
         cmd = 'python "%s" cloudformation -p %s -H 0.0.0.0' % (__file__, backend_port)
