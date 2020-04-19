@@ -495,6 +495,7 @@ For pull requests, please stick to the following guidelines:
 * Add tests for any new features and bug fixes. Ideally, each PR should increase the test coverage.
 * Follow the existing code style (e.g., indents). A PEP8 code linting target is included in the Makefile.
 * Put a reasonable amount of comments into the code.
+* Fork localstack on your github user account, do your changes there and then create a PR against main localstack repository.
 * Separate unrelated changes into multiple pull requests.
 * 1 commit per PR: Please squash/rebase multiple commits into one single commit (to keep the history clean).
 
