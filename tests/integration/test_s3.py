@@ -319,8 +319,7 @@ class S3ListenerTest(unittest.TestCase):
         resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key, Range=range_header)
         self.assertEqual(resp.get('AcceptRanges'), 'bytes')
         self.assertIn('x-amz-request-id', resp['ResponseMetadata']['HTTPHeaders'])
-        self.assertTrue('x-amz-id-2', resp['ResponseMetadata']['HTTPHeaders'])
-
+        self.assertIn('x-amz-id-2', resp['ResponseMetadata']['HTTPHeaders'])
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
