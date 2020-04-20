@@ -17,6 +17,7 @@ class ProxyListenerIAM(ProxyListener):
             MessageConversion._fix_account_id(response)
             # fix dates returned from this API (fixes an issue with Terraform)
             MessageConversion._fix_date_format(response)
+            MessageConversion._fix_error_codes(method, data, response)
             # fix content-length header
             response.headers['content-length'] = str(len(response._content))
 
