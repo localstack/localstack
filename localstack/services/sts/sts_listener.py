@@ -3,7 +3,7 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import MessageConversion
 
 
-class ProxyListenerIAM(ProxyListener):
+class ProxyListenerSTS(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'POST' and path == '/':
             data = MessageConversion._reset_account_id(data)
@@ -17,10 +17,11 @@ class ProxyListenerIAM(ProxyListener):
             MessageConversion._fix_account_id(response)
             # fix dates returned from this API (fixes an issue with Terraform)
             MessageConversion._fix_date_format(response)
+
             MessageConversion._fix_error_codes(method, data, response)
             # fix content-length header
             response.headers['content-length'] = str(len(response._content))
 
 
 # instantiate listener
-UPDATE_IAM = ProxyListenerIAM()
+UPDATE_STS = ProxyListenerSTS()

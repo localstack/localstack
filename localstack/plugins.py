@@ -37,6 +37,7 @@ def do_register_localstack_plugins():
         from localstack.services.sns import sns_listener
         from localstack.services.sqs import sqs_listener, sqs_starter
         from localstack.services.iam import iam_listener, iam_starter
+        from localstack.services.sts import sts_starter, sts_listener
         from localstack.services.ses import ses_starter
         from localstack.services.ssm import ssm_listener
         from localstack.services.logs import logs_listener, logs_starter
@@ -98,6 +99,11 @@ def do_register_localstack_plugins():
             'iam',
             start=iam_starter.start_iam,
             listener=iam_listener.UPDATE_IAM))
+
+        register_plugin(Plugin(
+            'sts',
+            start=sts_starter.start_sts,
+            listener=sts_listener.UPDATE_STS))
 
         register_plugin(Plugin(
             'kinesis',
