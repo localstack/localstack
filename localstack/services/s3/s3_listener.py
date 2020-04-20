@@ -1,3 +1,4 @@
+import random
 import re
 import logging
 import json
@@ -304,6 +305,19 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                         response.headers['Access-Control-Expose-Headers'] = \
                             ','.join(expose_headers) if isinstance(expose_headers, list) else expose_headers
                     break
+
+
+def append_aws_request_troubleshooting_headers(response):
+    gen_amz_request_id = ''.join(random.choice('0123456789ABCDEF') for i in range(16))
+    if response.headers.get('x-amz-request-id') is None:
+        response.headers['x-amz-request-id'] = gen_amz_request_id
+    if response.headers.get('x-amz-id-2') is None:
+        response.headers['x-amz-id-2'] = 'MzRISOwyjmnup' + gen_amz_request_id + '7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp'
+
+
+def add_accept_range_header(response):
+    if response.headers.get('accept-ranges') is None:
+        response.headers['accept-ranges'] = 'bytes'
 
 
 def append_last_modified_headers(response, content=None):
@@ -1021,6 +1035,7 @@ class ProxyListenerS3(ProxyListener):
             fix_metadata_key_underscores(response=response)
             fix_creation_date(method, path, response=response)
             fix_etag_for_multipart(data, headers, response)
+            append_aws_request_troubleshooting_headers(response)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
@@ -1038,6 +1053,7 @@ class ProxyListenerS3(ProxyListener):
             # Honor response header overrides
             # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
             if method == 'GET':
+                add_accept_range_header(response)
                 query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
                 for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:
