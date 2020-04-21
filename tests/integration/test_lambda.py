@@ -487,9 +487,7 @@ class TestPythonRuntimes(LambdaTestBase):
         testutil.create_lambda_function(handler_file=TEST_LAMBDA_ECHO_FILE,
                                         func_name=function_name, runtime=LAMBDA_RUNTIME_PYTHON36)
 
-        topic = self.sns_client.create_topic(
-            Name=TEST_SNS_TOPIC_NAME
-        )
+        topic = self.sns_client.create_topic(Name=TEST_SNS_TOPIC_NAME)
         topic_arn = topic['TopicArn']
 
         self.sns_client.subscribe(
