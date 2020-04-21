@@ -13,7 +13,8 @@ def start_kms(port=None, backend_port=None, asynchronous=None, update_listener=N
     port = port or config.PORT_KMS
     backend_port = DEFAULT_PORT_KMS_BACKEND
     kms_binary = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', get_arch())
-    print('Starting mock KMS (%s port %s)...' % (get_service_protocol(), port))
+    print('Starting mock KMS service in %s ports %s (recommended) and %s (deprecated)...' % (
+        get_service_protocol(), config.EDGE_PORT, port))
     start_proxy_for_service('kms', port, backend_port, update_listener)
     env_vars = {
         'PORT': str(backend_port),

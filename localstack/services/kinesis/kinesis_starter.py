@@ -28,7 +28,8 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
         ROOT_PATH, config.KINESIS_SHARD_LIMIT, backend_port,
         latency, latency, latency, kinesis_data_dir_param
     )
-    print('Starting mock Kinesis (%s port %s)...' % (get_service_protocol(), port))
+    print('Starting mock Kinesis service in %s ports %s (recommended) and %s (deprecated)...' % (
+        get_service_protocol(), config.EDGE_PORT, port))
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
 
