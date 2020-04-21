@@ -53,6 +53,7 @@ TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_send_message.py')
+TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_put_item.py')
 TEST_LAMBDA_FUNCTION_PREFIX = 'lambda-function'
 TEST_SNS_TOPIC_NAME = 'sns-topic-1'
 
@@ -547,6 +548,46 @@ class TestPythonRuntimes(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(function_name)
         sqs_client.delete_queue(QueueUrl=queue_url)
+
+    def test_lambda_put_item_to_dynamodb(self):
+        table_name = 'ddb-table-{}'.format(short_uid())
+        function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
+
+        aws_stack.create_dynamodb_table(table_name, partition_key='id')
+
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_PUT_ITEM_FILE,
+                                        func_name=function_name,
+                                        runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        data = {
+            short_uid(): 'data-{}'.format(i)
+            for i in range(3)
+        }
+
+        event = {
+            'table_name': table_name,
+            'region_name': config.DEFAULT_REGION,
+            'items': [{'id': k, 'data': v} for k, v in data.items()]
+        }
+
+        self.lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps(event)
+        )
+
+        dynamodb = aws_stack.connect_to_resource('dynamodb')
+        rs = dynamodb.Table(table_name).scan()
+        items = rs['Items']
+
+        self.assertEqual(len(items), len(data.keys()))
+        for item in items:
+            self.assertEqual(data[item['id']], item['data'])
+
+        # clean up
+        testutil.delete_lambda_function(function_name)
+
+        dynamodb_client = aws_stack.connect_to_service('dynamodb')
+        dynamodb_client.delete_table(TableName=table_name)
 
 
 class TestNodeJSRuntimes(LambdaTestBase):
