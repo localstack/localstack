@@ -435,7 +435,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         )
 
     def test_api_gateway_handle_domain_name(self):
-        domain_name = '%s.localstack.com' % short_uid()
+        domain_name = '%s.example.com' % short_uid()
         apigw_client = aws_stack.connect_to_service('apigateway')
 
         rs = apigw_client.create_domain_name(
