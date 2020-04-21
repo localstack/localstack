@@ -433,6 +433,11 @@ To develop new features, or to start the stack locally (outside of Docker), the 
 * `npm` (node.js package manager)
 * `java`/`javac` (Java 8 runtime environment and compiler)
 * `mvn` (Maven, the build system for Java)
+* `moto`(for testing)
+* `docker-compose` (for running the localstack using docker-compose)
+* `mock` (for unit testing)
+* `pytest` (for unit testing)
+* `pytest-cov` (to check the unit-testing coverage)
 
 ### Development Environment
 
@@ -466,6 +471,21 @@ target:
 
 ```
 make test
+```
+
+## To check the Code Coverage
+
+Once the new feature / bug fix is done, run the unit testing and check for the coverage.
+
+```
+# To run the particular test file (sample)
+pytest --cov=localstack tests/unit/test_common.py 
+
+# To check the coverage in the console
+coverage report 
+
+# To check the coverage as html (output will be redirected to the html folder)
+coverage html
 ```
 
 ## Web Dashboard
