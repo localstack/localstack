@@ -1,12 +1,16 @@
+import datetime
 import io
 import os
 import ssl
 import gzip
 import json
+import time
 import uuid
 import unittest
 import requests
 from io import BytesIO
+
+from pytz import timezone
 from six.moves.urllib.request import Request, urlopen
 from localstack import config
 from localstack.utils.aws import aws_stack
@@ -250,6 +254,65 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Metadata=metadata, Body='foo')
         metadata_saved = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)['Metadata']
         self.assertEqual(metadata, metadata_saved)
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_object_expiry(self):
+        # handle s3 object expiry
+        # https://github.com/localstack/localstack/issues/1685
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put object
+        object_key = 'key-with-metadata'
+        metadata = {'test_meta_1': 'foo', '__meta_2': 'bar'}
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Metadata=metadata, Body='foo',
+                                  Expires=datetime.datetime.now(timezone('GMT')) - datetime.timedelta(hours=1))
+        # try to fetch an object which is already expired
+        self.assertRaises(Exception, self.s3_client.get_object, Bucket=bucket_name, Key=object_key.lower())
+
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Metadata=metadata, Body='foo',
+                                  Expires=datetime.datetime.now(timezone('GMT')) + datetime.timedelta(hours=1))
+
+        # try to fetch has not been expired yet.
+        resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+
+        self.assertIn('Expires', resp)
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_predesigned_url_expired(self):
+
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put object and CORS configuration
+        object_key = 'key-by-hostname'
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+
+        # get object and assert headers
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=2
+        )
+        # retrieving it before expiry
+        resp = requests.get(url, verify=False)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, 'something')
+
+        # waiting for the url to expire
+        time.sleep(3)
+        resp = requests.get(url, verify=False)
+        self.assertEqual(resp.status_code, 400)
+
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=120
+        )
+
+        resp = requests.get(url, verify=False)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, 'something')
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])

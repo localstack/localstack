@@ -2,6 +2,8 @@ import random
 import re
 import logging
 import json
+import time
+from pytz import timezone
 import uuid
 import base64
 import codecs
@@ -46,6 +48,9 @@ BUCKET_ENCRYPTIONS = {}
 
 # maps bucket name to object lock settings
 OBJECT_LOCK_CONFIGS = {}
+
+# map to store the s3 expiry dates
+OBJECT_EXPIRY = {}
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -318,6 +323,30 @@ def append_aws_request_troubleshooting_headers(response):
 def add_accept_range_header(response):
     if response.headers.get('accept-ranges') is None:
         response.headers['accept-ranges'] = 'bytes'
+
+
+def is_object_expired(path):
+    object_expiry = get_object_expiry(path)
+    if not object_expiry:
+        return False
+    if dateutil.parser.parse(object_expiry) > \
+            datetime.datetime.now(timezone(dateutil.parser.parse(object_expiry).tzname())):
+        return False
+    return True
+
+
+def set_object_expiry(path, headers):
+    OBJECT_EXPIRY[path] = headers.get('expires')
+
+
+def get_object_expiry(path):
+    return OBJECT_EXPIRY.get(path)
+
+
+def is_url_already_expired(expiry_timestamp):
+    if int(expiry_timestamp) < int(time.time()):
+        return True
+    return False
 
 
 def add_reponse_metadata_headers(response):
@@ -633,6 +662,24 @@ def error_response(message, code, status_code=400):
     return requests_response(content, status_code=status_code, headers=headers)
 
 
+def no_such_key_error(resource, requestId=None, status_code=400):
+    result = {'Error': {'Code': 'NoSuchKey',
+            'Message': 'The resource you requested does not exist',
+            'Resource': resource, 'RequestId': requestId}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
+def token_expired_error(resource, requestId=None, status_code=400):
+    result = {'Error': {'Code': 'ExpiredToken',
+            'Message': 'The provided token has expired.',
+            'Resource': resource, 'RequestId': requestId}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
 def expand_redirect_url(starting_url, key, bucket):
     """ Add key and bucket parameters to starting URL query string. """
     parsed = urlparse.urlparse(starting_url)
@@ -890,6 +937,11 @@ class ProxyListenerS3(ProxyListener):
             response = handle_notification_request(bucket, method, data)
             return response
 
+        # if the Expires key in the url is already expired then return error
+        if method == 'GET' and 'Expires' in query_map:
+            if is_url_already_expired(query_map.get('Expires')[0]):
+                return token_expired_error(path, headers.get('x-amz-request-id'), 400)
+
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
                 return get_cors(bucket)
@@ -1046,6 +1098,9 @@ class ProxyListenerS3(ProxyListener):
             fix_etag_for_multipart(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
 
+            if method == 'PUT':
+                set_object_expiry(path, headers)
+
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
             if method == 'PUT' and ('X-Amz-Security-Token=' in path or
@@ -1064,6 +1119,9 @@ class ProxyListenerS3(ProxyListener):
             if method == 'GET':
                 add_accept_range_header(response)
                 add_reponse_metadata_headers(response)
+                if is_object_expired(path):
+                    return no_such_key_error(path, headers.get('x-amz-request-id'), 400)
+
                 query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
                 for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:
