@@ -434,6 +434,26 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             restApiId=api_id
         )
 
+    def test_api_gateway_handle_domain_name(self):
+        domain_name = '%s.example.com' % short_uid()
+        apigw_client = aws_stack.connect_to_service('apigateway')
+
+        rs = apigw_client.create_domain_name(
+            domainName=domain_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = apigw_client.get_domain_name(
+            domainName=domain_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['domainName'], domain_name)
+
+        # clean up
+        apigw_client.delete_domain_name(
+            domainName=domain_name
+        )
+
     def _test_api_gateway_lambda_proxy_integration_any_method(self, fn_name, path):
         self.create_lambda_function(fn_name)
 

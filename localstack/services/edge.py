@@ -38,6 +38,10 @@ class ProxyListenerEdge(ProxyListener):
             # detect S3 presigned URLs
             if 'AWSAccessKeyId=' in path or 'Signature=' in path:
                 port = config.PORT_S3
+            # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
+            # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
+            if method == 'GET' and '/' in path.strip('/'):
+                port = config.PORT_S3
 
         if not port:
             LOG.info('Unable to find forwarding rule for host "%s", path "%s", target header "%s", auth header "%s"' %
