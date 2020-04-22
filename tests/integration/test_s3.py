@@ -294,10 +294,15 @@ class S3ListenerTest(unittest.TestCase):
 
         # get object and assert headers
         url = self.s3_client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=1
+            'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=2
         )
+        # retrieving it before expiry
+        resp = requests.get(url, verify=False)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, 'something')
+
         # waiting for the url to expire
-        time.sleep(2)
+        time.sleep(3)
         resp = requests.get(url, verify=False)
         self.assertEqual(resp.status_code, 400)
 
