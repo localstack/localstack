@@ -320,6 +320,10 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual(resp.get('AcceptRanges'), 'bytes')
         self.assertIn('x-amz-request-id', resp['ResponseMetadata']['HTTPHeaders'])
         self.assertIn('x-amz-id-2', resp['ResponseMetadata']['HTTPHeaders'])
+        self.assertIn('content-language', resp['ResponseMetadata']['HTTPHeaders'])
+        self.assertIn('cache-control', resp['ResponseMetadata']['HTTPHeaders'])
+        self.assertIn('content-encoding', resp['ResponseMetadata']['HTTPHeaders'])
+
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 

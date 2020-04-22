@@ -320,6 +320,15 @@ def add_accept_range_header(response):
         response.headers['accept-ranges'] = 'bytes'
 
 
+def add_reponse_metadata_headers(response):
+    if response.headers.get('content-language') is None:
+        response.headers['content-language'] = 'en-US'
+    if response.headers.get('cache-control') is None:
+        response.headers['cache-control'] = 'no-cache'
+    if response.headers.get('content-encoding') is None:
+        response.headers['content-encoding'] = 'identity'
+
+
 def append_last_modified_headers(response, content=None):
     """Add Last-Modified header with current time
     (if the response content is an XML containing <LastModified>, add that instead)"""
@@ -1054,6 +1063,7 @@ class ProxyListenerS3(ProxyListener):
             # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
             if method == 'GET':
                 add_accept_range_header(response)
+                add_reponse_metadata_headers(response)
                 query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
                 for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:
