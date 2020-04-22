@@ -722,6 +722,10 @@ def fix_json_keys(item):
     return item_copy
 
 
+def canonical_json(obj):
+    return json.dumps(obj, sort_keys=True)
+
+
 def save_file(file, content, append=False):
     mode = 'a' if append else 'w+'
     if not isinstance(content, six.string_types):

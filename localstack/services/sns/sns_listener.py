@@ -1,16 +1,14 @@
 import ast
 import json
+import uuid
 import logging
 import traceback
-import uuid
-
-import requests
 import six
+import requests
 import xmltodict
 from flask import Response as FlaskResponse
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
-
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api
