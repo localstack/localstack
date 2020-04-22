@@ -307,6 +307,7 @@ class S3ListenerTest(unittest.TestCase):
 
         resp = requests.get(url, verify=False)
         self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, 'something')
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])

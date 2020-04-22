@@ -327,10 +327,10 @@ def add_accept_range_header(response):
 
 def is_object_expired(path):
     object_expiry = get_object_expiry(path)
-    timezone_from_time = str(object_expiry)[len(str(object_expiry)) - 3:]
     if not object_expiry:
         return False
-    if dateutil.parser.parse(object_expiry) > datetime.datetime.now(timezone(timezone_from_time)):
+    if dateutil.parser.parse(object_expiry) > \
+            datetime.datetime.now(timezone(dateutil.parser.parse(object_expiry).tzname())):
         return False
     return True
 
@@ -653,6 +653,24 @@ def error_response(message, code, status_code=400):
     return requests_response(content, status_code=status_code, headers=headers)
 
 
+def no_such_key_error(resource, requestId=None, status_code=400):
+    result = {'Error': {'Code': 'NoSuchKey',
+            'Message': 'The resource you requested does not exist',
+            'Resource': resource, 'RequestId': requestId}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
+def token_expired_error(resource, requestId=None, status_code=400):
+    result = {'Error': {'Code': 'ExpiredToken',
+            'Message': 'The provided token has expired.',
+            'Resource': resource, 'RequestId': requestId}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
 def expand_redirect_url(starting_url, key, bucket):
     """ Add key and bucket parameters to starting URL query string. """
     parsed = urlparse.urlparse(starting_url)
@@ -913,7 +931,7 @@ class ProxyListenerS3(ProxyListener):
         # if the Expires key in the url is already expired then return error
         if method == 'GET' and 'Expires' in query_map:
             if is_url_already_expired(query_map.get('Expires')[0]):
-                return error_response('URL HAS BEEN EXPIRED', 'URL_OBJECT_EXPIRED', status_code=400)
+                return token_expired_error(path, headers.get('x-amz-request-id'), 400)
 
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
@@ -1092,7 +1110,7 @@ class ProxyListenerS3(ProxyListener):
             if method == 'GET':
                 add_accept_range_header(response)
                 if is_object_expired(path):
-                    return error_response('OBJECT HAS BEEN EXPIRED', 'OBJECT_EXPIRED', status_code=400)
+                    return no_such_key_error(path, headers.get('x-amz-request-id'), 400)
                 query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
                 for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:
