@@ -23,15 +23,15 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(error.status_code, 400)
 
     def test_unsubscribe_should_remove_listener(self):
-        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
-        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+        sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+        topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
         sns_listener.do_create_topic(topic_arn)
         self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
         sns_listener.do_subscribe(
             topic_arn,
-            'arn:aws:sqs:us-east-1:123456789012:test-queue',
+            'arn:aws:sqs:us-east-1:000000000000:test-queue',
             'sqs',
             sub_arn,
             {}
@@ -205,8 +205,8 @@ class SNSTests(unittest.TestCase):
         self.assertTrue(match is not None)
 
     def test_only_one_subscription_per_topic_per_endpoint(self):
-        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
-        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+        sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+        topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
         sns_listener.do_create_topic(topic_arn)
@@ -214,7 +214,7 @@ class SNSTests(unittest.TestCase):
         for i in [1, 2]:
             sns_listener.do_subscribe(
                 topic_arn,
-                'arn:aws:sqs:us-east-1:123456789012:test-queue-1',
+                'arn:aws:sqs:us-east-1:000000000000:test-queue-1',
                 'sqs',
                 sub_arn,
                 {}
