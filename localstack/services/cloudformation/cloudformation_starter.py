@@ -340,7 +340,8 @@ def apply_patches():
             LOG.debug('Updating resource id: %s - %s, %s - %s' % (existing_id, new_res_id, resource, resource_json))
             if new_res_id:
                 LOG.info('Updating resource ID from %s to %s (%s)' % (existing_id, new_res_id, region_name))
-                update_resource_id(resource, new_res_id, props, region_name)
+                update_resource_id(resource, new_res_id, props,
+                    region_name, stack_name, resources_map._resource_json_map)
             else:
                 LOG.warning('Unable to extract id for resource %s: %s' % (logical_id, result))
 
@@ -356,7 +357,7 @@ def apply_patches():
         if isinstance(resource, sfn_models.StateMachine) and not props.get('StateMachineName'):
             props['StateMachineName'] = resource.name
 
-    def update_resource_id(resource, new_id, props, region_name):
+    def update_resource_id(resource, new_id, props, region_name, stack_name, resource_map):
         """ Update and fix the ID(s) of the given resource. """
 
         # NOTE: this is a bit of a hack, which is required because
@@ -391,11 +392,13 @@ def apply_patches():
             resource.id = new_id
         elif isinstance(resource, apigw_models.Resource):
             api_id = props['RestApiId']
+            api_id = template_deployer.resolve_refs_recursively(stack_name, api_id, resource_map)
             backend.apis[api_id].resources.pop(resource.id, None)
             backend.apis[api_id].resources[new_id] = resource
             resource.id = new_id
         elif isinstance(resource, apigw_models.Deployment):
             api_id = props['RestApiId']
+            api_id = template_deployer.resolve_refs_recursively(stack_name, api_id, resource_map)
             backend.apis[api_id].deployments.pop(resource['id'], None)
             backend.apis[api_id].deployments[new_id] = resource
             resource['id'] = new_id
