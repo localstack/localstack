@@ -2,7 +2,6 @@ import json
 import os
 import re
 import time
-import uuid
 from requests.models import Response
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
@@ -22,27 +21,36 @@ class ProxyListenerEvents(ProxyListener):
         action = headers.get('X-Amz-Target')
         if method == 'POST' and path == '/':
             parsed_data = json.loads(to_str(data))
-            if action == 'AWSEvents.PutEvents':
-                events_with_added_uuid = list(
-                    map(lambda event: {'event': event, 'uuid': str(uuid.uuid4())}, parsed_data['Entries']))
-                content = {'Entries': list(map(lambda event: {'EventId': event['uuid']}, events_with_added_uuid))}
-                self._create_and_register_temp_dir()
-                self._dump_events_to_files(events_with_added_uuid)
-                return make_response(content)
-            elif action == 'AWSEvents.ListTagsForResource':
-                return make_response(self.svc.list_tags_for_resource(
-                    parsed_data['ResourceARN']))
+
+            # if action == 'AWSEvents.PutEvents':
+            #     events_with_added_uuid = list(
+            #         map(lambda event: {'event': event, 'uuid': str(uuid.uuid4())}, parsed_data['Entries'])
+            #     )
+            #
+            #     self._create_and_register_temp_dir()
+            #     self._dump_events_to_files(events_with_added_uuid)
+            #
+            #     self.process_events(events_with_added_uuid)
+            #
+            #     content = {
+            #         'Entries': list(map(lambda event: {'EventId': event['uuid']}, events_with_added_uuid))
+            #     }
+            #     return make_response(content)
+
+            if action == 'AWSEvents.ListTagsForResource':
+                return make_response(self.svc.list_tags_for_resource(parsed_data['ResourceARN']))
+
             elif action == 'AWSEvents.TagResource':
-                self.svc.tag_resource(
-                    parsed_data['ResourceARN'], parsed_data['Tags'])
+                self.svc.tag_resource(parsed_data['ResourceARN'], parsed_data['Tags'])
                 return make_response()
+
             elif action == 'AWSEvents.UntagResource':
-                self.svc.untag_resource(
-                    parsed_data['ResourceARN'], parsed_data['TagKeys'])
+                self.svc.untag_resource(parsed_data['ResourceARN'], parsed_data['TagKeys'])
                 return make_response()
 
         if method == 'OPTIONS':
             return 200
+
         return True
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
@@ -54,12 +62,14 @@ class ProxyListenerEvents(ProxyListener):
             # fix content-length header
             response.headers['content-length'] = len(response._content)
 
-    def _create_and_register_temp_dir(self):
+    @staticmethod
+    def _create_and_register_temp_dir():
         if EVENTS_TMP_DIR not in TMP_FILES:
             mkdir(EVENTS_TMP_DIR)
             TMP_FILES.append(EVENTS_TMP_DIR)
 
-    def _dump_events_to_files(self, events_with_added_uuid):
+    @staticmethod
+    def _dump_events_to_files(events_with_added_uuid):
         current_time_millis = int(round(time.time() * 1000))
         for event in events_with_added_uuid:
             save_file(os.path.join(EVENTS_TMP_DIR, '%s_%s' % (current_time_millis, event['uuid'])),
@@ -71,11 +81,13 @@ class ProxyListenerEvents(ProxyListener):
         replacement = r'<CreateDate>\1T\2Z</CreateDate>'
         self._replace(response, pattern, replacement)
 
-    def _fix_account_id(self, response):
+    @staticmethod
+    def _fix_account_id(response):
         return aws_stack.fix_account_id_in_arns(
             response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
 
-    def _replace(self, response, pattern, replacement):
+    @staticmethod
+    def _replace(response, pattern, replacement):
         content = to_str(response.content)
         response._content = re.sub(pattern, replacement, content)
 
