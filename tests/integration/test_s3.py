@@ -299,7 +299,7 @@ class S3ListenerTest(unittest.TestCase):
         # retrieving it before expiry
         resp = requests.get(url, verify=False)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, 'something')
+        self.assertEqual(to_str(resp.content), 'something')
 
         # waiting for the url to expire
         time.sleep(3)
@@ -312,7 +312,7 @@ class S3ListenerTest(unittest.TestCase):
 
         resp = requests.get(url, verify=False)
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.content, 'something')
+        self.assertEqual(to_str(resp.content), 'something')
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -467,7 +467,7 @@ class S3ListenerTest(unittest.TestCase):
         # put object
         files = {'file': body}
         response = requests.post(presigned_request['url'], data=presigned_request['fields'], files=files, verify=False)
-        self.assertEqual(response.status_code, 200)
+        self.assertIn(response.status_code, [200, 204])
         # get object and compare results
         downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
         download_object = downloaded_object['Body'].read()

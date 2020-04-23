@@ -26,7 +26,7 @@ from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTem
 from localstack import config
 from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
-from localstack.utils.common import FuncThread, short_uid, recurse_object, clone, json_safe
+from localstack.utils.common import FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names
@@ -218,6 +218,7 @@ def apply_patches():
             update=False, force_create=False):
         stack_name = resources_map.get('AWS::StackName')
         resource_hash_key = (stack_name, logical_id)
+        props = resource_json['Properties'] = resource_json.get('Properties') or {}
 
         # If the current stack is being updated, avoid infinite recursion
         updating = CURRENTLY_UPDATING_RESOURCES.get(resource_hash_key)
@@ -231,10 +232,19 @@ def apply_patches():
             return None
         _, resource_json, _ = resource_tuple
 
-        # add some missing default props which otherwise cause deployments to fail
-        props = resource_json['Properties'] = resource_json.get('Properties') or {}
-        if resource_json['Type'] == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
-            props['StartingPosition'] = 'LATEST'
+        def add_default_props(resource_props):
+            # apply some fixes which otherwise cause deployments to fail
+            res_type = resource_props['Type']
+            props = resource_props.get('Properties', {})
+            if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
+                props['StartingPosition'] = 'LATEST'
+            if res_type == 'AWS::IAM::Role' and not props.get('RoleName'):
+                props['RoleName'] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
+
+        # add some fixes and default props which otherwise cause deployments to fail
+        add_default_props(resource_json)
+        for resource in resources_map._resource_json_map.values():
+            add_default_props(resource)
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
@@ -257,10 +267,6 @@ def apply_patches():
                 resource.logical_id = logical_id
             except Exception as e:
                 moto_create_error = e
-
-        # apply some fixes which otherwise cause deployments to fail
-        if resource_json['Type'] == 'AWS::IAM::Role' and not props.get('RoleName'):
-            props['RoleName'] = resource.physical_resource_id
 
         # check whether this resource needs to be deployed
         resource_map_new = dict(resources_map._resource_json_map)

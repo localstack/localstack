@@ -28,6 +28,7 @@ RUN_SERVER_IN_PROCESS = False
 
 
 def patch_moto_server():
+
     def create_backend_app(service):
         backend_app = create_backend_app_orig(service)
         CORS(backend_app)
@@ -38,6 +39,7 @@ def patch_moto_server():
 
 
 def start_api_server_locally(request):
+
     api = request.get('api')
     port = request.get('port')
     if api in API_SERVERS:

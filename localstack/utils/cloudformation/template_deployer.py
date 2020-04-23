@@ -697,7 +697,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                 raise Exception('ResourceNotFound')
             return mapping[0]
         elif resource_type == 'IAM::Role':
-            role_name = resource_props.get('RoleName') or resource_id
+            role_name = resource_props.get('RoleName')
             role_name = resolve_refs_recursively(stack_name, role_name, resources)
             return aws_stack.connect_to_service('iam').get_role(RoleName=role_name)['Role']
         elif resource_type == 'SSM::Parameter':

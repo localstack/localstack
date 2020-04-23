@@ -1,3 +1,6 @@
+from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
+
+
 class BaseModel(object):
     def __init__(self, **params):
         self.params = params
@@ -6,6 +9,14 @@ class BaseModel(object):
     def create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
         return cls(**props)
+
+    def get_cfn_attribute(self, attribute_name):
+        attr = self.params.get(attribute_name)
+        if attr is None:
+            attr = getattr(self, attribute_name.lower(), None)
+            if attr is None:
+                raise UnformattedGetAttTemplateException()
+        return attr
 
 
 class CloudFormationStack(BaseModel):
