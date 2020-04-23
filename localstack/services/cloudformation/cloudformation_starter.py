@@ -235,7 +235,7 @@ def apply_patches():
         def add_default_props(resource_props):
             # apply some fixes which otherwise cause deployments to fail
             res_type = resource_props['Type']
-            props = resource_props['Properties']
+            props = resource_props.get('Properties', {})
             if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
                 props['StartingPosition'] = 'LATEST'
             if res_type == 'AWS::IAM::Role' and not props.get('RoleName'):

@@ -4,6 +4,7 @@ import logging
 import subprocess
 import requests
 from flask_cors import CORS
+from moto import server as moto_server
 from requests.models import Response
 from localstack import constants
 from localstack.utils.common import (
@@ -27,10 +28,6 @@ RUN_SERVER_IN_PROCESS = False
 
 
 def patch_moto_server():
-    patch_ec2()
-
-    # Note: leave imports here to avoid KeyError in unpatched moto
-    from moto import server as moto_server
 
     def create_backend_app(service):
         backend_app = create_backend_app_orig(service)
@@ -41,20 +38,7 @@ def patch_moto_server():
     moto_server.create_backend_app = create_backend_app
 
 
-def patch_ec2():
-    from moto.ec2 import models as ec2_models
-
-    for region, backend in ec2_models.ec2_backends.items():
-        # add missing regions to avoid KeyError
-        if 'af-south-1' not in backend.zones:
-            backend.zones['af-south-1'] = [
-                ec2_models.Zone(region_name='af-south-1', name='af-south-1a', zone_id='afs1-az1'),
-                ec2_models.Zone(region_name='af-south-1', name='af-south-1b', zone_id='afs1-az2')]
-
-
 def start_api_server_locally(request):
-    # Note: leave imports here to avoid KeyError in unpatched moto
-    from moto import server as moto_server
 
     api = request.get('api')
     port = request.get('port')
