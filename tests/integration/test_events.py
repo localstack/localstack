@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 import json
+import os
 import unittest
+import uuid
 
+from localstack.services.events.events_listener import EVENTS_TMP_DIR
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import retry, short_uid
+from localstack.utils.common import load_file, retry, short_uid
 
 TEST_EVENT_BUS_NAME = 'command-bus-dev'
 
@@ -38,23 +41,24 @@ class EventsTest(unittest.TestCase):
             Force=True
         )
 
-    # TODO Can be removed?
-    # def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(self):
-    #     event_type = str(uuid.uuid4())
-    #     event_details_to_publish = list(map(lambda n: 'event %s' % n, range(100)))
-    #
-    #     for detail in event_details_to_publish:
-    #         self.events_client.put_events(Entries=[{
-    #             'DetailType': event_type,
-    #             'Detail': detail
-    #         }])
-    #
-    #     sorted_events_written_to_disk = map(
-    #         lambda filename: json.loads(str(load_file(os.path.join(EVENTS_TMP_DIR, filename)))),
-    #         sorted(os.listdir(EVENTS_TMP_DIR)))
-    #     sorted_events = list(filter(lambda event: event['DetailType'] == event_type,
-    #                                 sorted_events_written_to_disk))
-    #     self.assertListEqual(event_details_to_publish, list(map(lambda event: event['Detail'], sorted_events)))
+    def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(self):
+        event_type = str(uuid.uuid4())
+        event_details_to_publish = list(map(lambda n: 'event %s' % n, range(10)))
+
+        for detail in event_details_to_publish:
+            self.events_client.put_events(Entries=[{
+                'DetailType': event_type,
+                'Detail': detail
+            }])
+
+        sorted_events_written_to_disk = map(
+            lambda filename: json.loads(str(load_file(os.path.join(EVENTS_TMP_DIR, filename)))),
+            sorted(os.listdir(EVENTS_TMP_DIR))
+        )
+        sorted_events = list(filter(lambda event: event['DetailType'] == event_type,
+                                    sorted_events_written_to_disk))
+
+        self.assertListEqual(event_details_to_publish, list(map(lambda event: event['Detail'], sorted_events)))
 
     def test_list_tags_for_resource(self):
         rule_name = 'rule-{}'.format(short_uid())

@@ -1,4 +1,5 @@
 import json
+import logging
 import uuid
 
 from moto.events.models import Rule as rule_model
@@ -11,13 +12,16 @@ from localstack.constants import (
 from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
+from .events_listener import _create_and_register_temp_dir, _dump_events_to_files
 
+
+LOG = logging.getLogger(__name__)
 
 DEFAULT_EVENT_BUS_NAME = 'default'
 
 # Event rules storage
 EVENT_RULES = {
-    DEFAULT_EVENT_BUS_NAME: []
+    DEFAULT_EVENT_BUS_NAME: set()
 }
 
 
@@ -36,7 +40,8 @@ def process_events(event, targets):
         if service == 'sqs':
             send_event_to_sqs(event, arn)
 
-        # TODO implement for more target type: lambda,sns,...
+        else:
+            LOG.warning('Unsupported Events target service type "%s"' % service)
 
 
 def apply_patches():
@@ -50,14 +55,12 @@ def apply_patches():
 
     def events_handler_put_rule(self):
         name = self._get_param('Name')
-        event_bus = self._get_param('EventBusName')
-        if not event_bus:
-            EVENT_RULES[DEFAULT_EVENT_BUS_NAME].append(name)
+        event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
         if event_bus not in EVENT_RULES:
-            EVENT_RULES[event_bus] = []
+            EVENT_RULES[event_bus] = set()
 
-        EVENT_RULES[event_bus].append(name)
+        EVENT_RULES[event_bus].add(name)
 
         return events_handler_put_rule_orig(self)
 
@@ -65,11 +68,9 @@ def apply_patches():
 
     def events_handler_delete_rule(self):
         name = self._get_param('Name')
-        event_bus = self._get_param('EventBusName')
-        if not event_bus:
-            EVENT_RULES[DEFAULT_EVENT_BUS_NAME].remove(name)
+        event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
-        EVENT_RULES.get(event_bus, []).remove(name)
+        EVENT_RULES.get(event_bus, set()).remove(name)
 
         return events_handler_delete_rule_orig(self)
 
@@ -97,14 +98,14 @@ def apply_patches():
             map(lambda event: {'event': event, 'uuid': str(uuid.uuid4())}, entries)
         )
 
+        _create_and_register_temp_dir()
+        _dump_events_to_files(events)
+
         for event in events:
             event = event['event']
-            event_bus = event.get('EventBusName', None)
+            event_bus = event.get('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
-            if not event_bus:
-                rules = EVENT_RULES.get(DEFAULT_EVENT_BUS_NAME, [])
-            else:
-                rules = EVENT_RULES.get(event_bus, [])
+            rules = EVENT_RULES.get(event_bus, [])
 
             targets = []
             for rule in rules:
@@ -116,6 +117,7 @@ def apply_patches():
         content = {
             'Entries': list(map(lambda event: {'EventId': event['uuid']}, events))
         }
+
         self.response_headers.update({
             'Content-Type': APPLICATION_AMZ_JSON_1_1,
             'x-amzn-RequestId': short_uid()
