@@ -14,13 +14,13 @@ from localstack.constants import APPLICATION_AMZ_JSON_1_1
 EVENTS_TMP_DIR = os.path.join(config.TMP_FOLDER, 'cw_events')
 
 
-def _fix_account_id(response):
-    return aws_stack.fix_account_id_in_arns(response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
-
-
 def _replace(response, pattern, replacement):
     content = to_str(response.content)
     response._content = re.sub(pattern, replacement, content)
+
+
+def _fix_account_id(response):
+    return aws_stack.fix_account_id_in_arns(response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
 
 
 def _fix_date_format(response):

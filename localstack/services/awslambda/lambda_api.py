@@ -469,8 +469,7 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 @cloudwatched('lambda')
-def run_lambda(event, context, func_arn, version=None, suppress_output=False,
-        asynchronous=False, callback=None):
+def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False, callback=None):
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
