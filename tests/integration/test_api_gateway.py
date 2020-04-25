@@ -280,6 +280,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
         self.assertEqual(result.status_code, 203)
         self.assertEqual(result.headers.get('foo'), 'bar123')
+        self.assertIn('set-cookie', result.headers)
 
         parsed_body = json.loads(to_str(result.content))
         self.assertEqual(parsed_body.get('return_status_code'), 203)
@@ -541,6 +542,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         )
 
     def connect_api_gateway_to_http_with_lambda_proxy(self, gateway_name, target_uri, methods=[], path=None):
+
         if not methods:
             methods = ['GET', 'POST']
         if not path:

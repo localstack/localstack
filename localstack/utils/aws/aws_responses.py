@@ -5,6 +5,7 @@ from requests.models import Response as RequestsResponse
 from localstack.utils.common import to_str
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
+from requests.models import CaseInsensitiveDict
 
 
 def flask_error_response(msg, code=500, error_type='InternalFailure'):
@@ -44,6 +45,15 @@ def requests_to_flask_response(r):
 def response_regex_replace(response, search, replace):
     response._content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
     response.headers['Content-Length'] = str(len(response._content))
+
+
+class LambdaResponse(object):
+    # this object has been created to support multi_value_headers in aws responses.
+    def __init__(self):
+        self.content = False
+        self.status_code = None
+        self.multi_value_headers = CaseInsensitiveDict()
+        self.headers = CaseInsensitiveDict()
 
 
 class MessageConversion(object):
