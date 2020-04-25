@@ -10,6 +10,7 @@ from localstack.constants import (
     APPLICATION_AMZ_JSON_1_1, DEFAULT_PORT_EVENTS_BACKEND, TEST_AWS_ACCOUNT_ID
 )
 from localstack.services.infra import start_moto_server
+from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from .events_listener import _create_and_register_temp_dir, _dump_events_to_files
@@ -32,6 +33,10 @@ def send_event_to_sqs(event, arn):
     sqs_client.send_message(QueueUrl=queue_url, MessageBody=event['Detail'])
 
 
+def send_event_to_lambda(event, arn):
+    run_lambda(event=json.loads(event['Detail']), context={}, func_arn=arn, asynchronous=True)
+
+
 def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
@@ -39,6 +44,9 @@ def process_events(event, targets):
 
         if service == 'sqs':
             send_event_to_sqs(event, arn)
+
+        elif service == 'lambda':
+            send_event_to_lambda(event, arn)
 
         else:
             LOG.warning('Unsupported Events target service type "%s"' % service)
