@@ -9,6 +9,7 @@ from requests.models import Request
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
+from localstack.services.sns import sns_listener
 from localstack.utils.common import to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
@@ -209,7 +210,9 @@ class ProxyListenerSQS(ProxyListener):
                     return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
 
             elif action == 'DeleteQueue':
-                QUEUE_ATTRIBUTES.pop(_queue_url(path, req_data, headers), None)
+                queue_url = _queue_url(path, req_data, headers)
+                QUEUE_ATTRIBUTES.pop(queue_url, None)
+                sns_listener.unsubscribe_sqs_queue(queue_url)
 
             elif action == 'ListDeadLetterSourceQueues':
                 queue_url = _queue_url(path, req_data, headers)
