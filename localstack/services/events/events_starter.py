@@ -34,7 +34,7 @@ def send_event_to_sqs(event, arn):
 
 
 def send_event_to_lambda(event, arn):
-    run_lambda(event=json.loads(event['Detail']), context={}, func_arn=arn)
+    run_lambda(event=json.loads(event['Detail']), context={}, func_arn=arn, asynchronous=True)
 
 
 def process_events(event, targets):
