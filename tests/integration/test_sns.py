@@ -434,20 +434,18 @@ class SNSTest(unittest.TestCase):
     def test_redrive_policy_queue_subscription(self):
         self.unsubscribe_all_from_sns()
 
-        temp_queue_name = 'TestQueue_tmp_snsTest'
-        tmp_queue_url = self.sqs_client.create_queue(QueueName=temp_queue_name)['QueueUrl']
-        tmp_queue_arn = aws_stack.sqs_queue_arn(temp_queue_name)
-
-        subscription = self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='sqs', Endpoint=tmp_queue_arn)
+        topic_arn = self.sns_client.create_topic(Name='topic-%s' % short_uid())['TopicArn']
+        invalid_queue_arn = aws_stack.sqs_queue_arn('invalid_queue')
+        # subscribe with an invalid queue ARN, to trigger event on DLQ below
+        subscription = self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=invalid_queue_arn)
 
         self.sns_client.set_subscription_attributes(
             SubscriptionArn=subscription['SubscriptionArn'],
             AttributeName='RedrivePolicy',
             AttributeValue=json.dumps({'deadLetterTargetArn': aws_stack.sqs_queue_arn(TEST_QUEUE_DLQ_NAME)})
         )
-        self.sqs_client.delete_queue(QueueUrl=tmp_queue_url)
 
-        self.sns_client.publish(TopicArn=self.topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
+        self.sns_client.publish(TopicArn=topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
 
         def receive_dlq():
             result = self.sqs_client.receive_message(QueueUrl=self.dlq_url, MessageAttributeNames=['All'])

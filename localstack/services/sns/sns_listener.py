@@ -258,11 +258,10 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                     MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
                 )
             except Exception as exc:
+                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
                 if 'NonExistentQueue' in str(exc):
                     LOG.info('Removing non-existent queue "%s" subscribed to topic "%s"' % (queue_url, topic_arn))
                     subscriptions.remove(subscriber)
-                else:
-                    sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
 
         elif subscriber['Protocol'] == 'lambda':
             try:
