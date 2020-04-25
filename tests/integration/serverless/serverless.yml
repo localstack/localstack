@@ -11,7 +11,16 @@ provider:
 functions:
   test:
     handler: "handler.test"
-    events: []
+    events:
+      - cloudwatchEvent:
+          name: sls-test-cf-event
+          event:
+            source: aws.cloudformation
+            detail-type: AWS API Call from CloudFormation
+            detail:
+              eventName:
+                - CreateStack
+                - UpdateStack
 
 plugins:
   - "serverless-localstack"

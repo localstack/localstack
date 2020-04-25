@@ -30,19 +30,22 @@ TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 
 
 class SNSTest(unittest.TestCase):
-    def setUp(self):
-        self.sqs_client = aws_stack.connect_to_service('sqs')
-        self.sns_client = aws_stack.connect_to_service('sns')
-        self.topic_arn = self.sns_client.create_topic(Name=TEST_TOPIC_NAME)['TopicArn']
-        self.queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)['QueueUrl']
-        self.queue_url_2 = self.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME_2)['QueueUrl']
-        self.dlq_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_DLQ_NAME)['QueueUrl']
 
-    def tearDown(self):
-        self.sqs_client.delete_queue(QueueUrl=self.queue_url)
-        self.sqs_client.delete_queue(QueueUrl=self.queue_url_2)
-        self.sqs_client.delete_queue(QueueUrl=self.dlq_url)
-        self.sns_client.delete_topic(TopicArn=self.topic_arn)
+    @classmethod
+    def setUpClass(cls):
+        cls.sqs_client = aws_stack.connect_to_service('sqs')
+        cls.sns_client = aws_stack.connect_to_service('sns')
+        cls.topic_arn = cls.sns_client.create_topic(Name=TEST_TOPIC_NAME)['TopicArn']
+        cls.queue_url = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)['QueueUrl']
+        cls.queue_url_2 = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME_2)['QueueUrl']
+        cls.dlq_url = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_DLQ_NAME)['QueueUrl']
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.sqs_client.delete_queue(QueueUrl=cls.queue_url)
+        cls.sqs_client.delete_queue(QueueUrl=cls.queue_url_2)
+        cls.sqs_client.delete_queue(QueueUrl=cls.dlq_url)
+        cls.sns_client.delete_topic(TopicArn=cls.topic_arn)
 
     def test_publish_unicode_chars(self):
         # connect the SNS topic to the SQS queue
