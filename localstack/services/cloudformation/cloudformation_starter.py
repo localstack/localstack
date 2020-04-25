@@ -638,6 +638,18 @@ def apply_patches():
     if not hasattr(lambda_models.LambdaFunction, 'update_from_cloudformation_json'):
         lambda_models.LambdaFunction.update_from_cloudformation_json = Lambda_update_from_cloudformation_json
 
+    # Patch Role update_from_cloudformation_json(..) method
+    @classmethod
+    def Role_update_from_cloudformation_json(cls,
+            original_resource, new_resource_name, cloudformation_json, region_name):
+        props = cloudformation_json.get('Properties', {})
+        original_resource.name = props.get('RoleName') or original_resource.name
+        original_resource.assume_role_policy_document = props.get('AssumeRolePolicyDocument')
+        return original_resource
+
+    if not hasattr(iam_models.Role, 'update_from_cloudformation_json'):
+        iam_models.Role.update_from_cloudformation_json = Role_update_from_cloudformation_json
+
     # patch ApiGateway Deployment
     def depl_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
@@ -790,7 +802,7 @@ def apply_patches():
                     break
             set_status('%s_FAILED' % action)
             raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
-                'dependency tree (maximum depth %s reached): %s' % (MAX_DEPENDENCY_DEPTH, unresolved.keys()))
+                'dependency tree (maximum depth %s reached): %s' % (MAX_DEPENDENCY_DEPTH, list(unresolved.keys())))
 
         # NOTE: We're running the loop in the background, as it might take some time to complete
         FuncThread(run_loop).start()

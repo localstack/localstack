@@ -1,4 +1,5 @@
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
+from localstack.utils.aws import aws_stack
 
 
 class BaseModel(object):
@@ -24,7 +25,11 @@ class CloudFormationStack(BaseModel):
 
 
 class EventsRule(BaseModel):
-    pass
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'Arn':
+            return self.params.get('Arn') or aws_stack.events_rule_arn(self.params.get('Name'))
+        return super(EventsRule, self).get_cfn_attribute(attribute_name)
 
 
 class ElasticsearchDomain(BaseModel):

@@ -21,7 +21,6 @@ from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBD
 
 TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
-TEST_QUEUE_NAME_2 = 'TestQueue_snsTest2'
 TEST_QUEUE_DLQ_NAME = 'TestQueue_DLQ_snsTest'
 TEST_TOPIC_NAME_2 = 'topic-test-2'
 
@@ -30,33 +29,37 @@ TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 
 
 class SNSTest(unittest.TestCase):
-    def setUp(self):
-        self.sqs_client = aws_stack.connect_to_service('sqs')
-        self.sns_client = aws_stack.connect_to_service('sns')
-        self.topic_arn = self.sns_client.create_topic(Name=TEST_TOPIC_NAME)['TopicArn']
-        self.queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)['QueueUrl']
-        self.queue_url_2 = self.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME_2)['QueueUrl']
-        self.dlq_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_DLQ_NAME)['QueueUrl']
 
-    def tearDown(self):
-        self.sqs_client.delete_queue(QueueUrl=self.queue_url)
-        self.sqs_client.delete_queue(QueueUrl=self.queue_url_2)
-        self.sqs_client.delete_queue(QueueUrl=self.dlq_url)
-        self.sns_client.delete_topic(TopicArn=self.topic_arn)
+    @classmethod
+    def setUpClass(cls):
+        cls.sqs_client = aws_stack.connect_to_service('sqs')
+        cls.sns_client = aws_stack.connect_to_service('sns')
+        cls.topic_arn = cls.sns_client.create_topic(Name=TEST_TOPIC_NAME)['TopicArn']
+        cls.queue_url = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_NAME)['QueueUrl']
+        cls.dlq_url = cls.sqs_client.create_queue(QueueName=TEST_QUEUE_DLQ_NAME)['QueueUrl']
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.sqs_client.delete_queue(QueueUrl=cls.queue_url)
+        cls.sqs_client.delete_queue(QueueUrl=cls.dlq_url)
+        cls.sns_client.delete_topic(TopicArn=cls.topic_arn)
 
     def test_publish_unicode_chars(self):
-        # connect the SNS topic to the SQS queue
-        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME)
+        # connect an SNS topic to a new SQS queue
+        _, queue_arn, queue_url = self._create_queue()
         self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='sqs', Endpoint=queue_arn)
 
         # publish message to SNS, receive it from SQS, assert that messages are equal
         message = u'ö§a1"_!?,. £$-'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message)
-        msgs = self.sqs_client.receive_message(QueueUrl=self.queue_url)
+        msgs = self.sqs_client.receive_message(QueueUrl=queue_url)
         msg_received = msgs['Messages'][0]
         msg_received = json.loads(to_str(msg_received['Body']))
         msg_received = msg_received['Message']
         self.assertEqual(message, msg_received)
+
+        # clean up
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
 
     def test_subscribe_http_endpoint(self):
         # create HTTP endpoint and connect it to SNS topic
@@ -121,7 +124,8 @@ class SNSTest(unittest.TestCase):
 
     def test_filter_policy(self):
         # connect SNS topic to an SQS queue
-        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_2)
+        queue_name, queue_arn, queue_url = self._create_queue()
+
         filter_policy = {'attr1': [{'numeric': ['>', 0, '<=', 100]}]}
         self.sns_client.subscribe(
             TopicArn=self.topic_arn,
@@ -133,25 +137,28 @@ class SNSTest(unittest.TestCase):
         )
 
         # get number of messages
-        num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2).get('Messages', []))
+        num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=queue_url).get('Messages', []))
 
         # publish message that satisfies the filter policy, assert that message is received
         message = u'This is a test message'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
             MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99'}})
-        num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_1, num_msgs_0 + 1)
 
         # publish message that does not satisfy the filter policy, assert that message is not received
         message = u'This is a test message'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
             MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '111'}})
-        num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_2, num_msgs_1)
+
+        # clean up
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
 
     def test_exists_filter_policy(self):
         # connect SNS topic to an SQS queue
-        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_2)
+        queue_name, queue_arn, queue_url = self._create_queue()
         filter_policy = {'store': [{'exists': True}]}
 
         def do_subscribe(self, filter_policy, queue_arn):
@@ -166,21 +173,21 @@ class SNSTest(unittest.TestCase):
         do_subscribe(self, filter_policy, queue_arn)
 
         # get number of messages
-        num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2).get('Messages', []))
+        num_msgs_0 = len(self.sqs_client.receive_message(QueueUrl=queue_url).get('Messages', []))
 
         # publish message that satisfies the filter policy, assert that message is received
         message = u'This is a test message'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
                                 MessageAttributes={'store': {'DataType': 'Number', 'StringValue': '99'},
                                                    'def': {'DataType': 'Number', 'StringValue': '99'}})
-        num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_1, num_msgs_0 + 1)
 
         # publish message that does not satisfy the filter policy, assert that message is not received
         message = u'This is a test message'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
                                 MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '111'}})
-        num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages'])
+        num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_2, num_msgs_1)
 
         # test with exist operator set to false.
@@ -207,8 +214,12 @@ class SNSTest(unittest.TestCase):
                                                          VisibilityTimeout=0).get('Messages', []))
         self.assertEqual(num_msgs_2, num_msgs_1)
 
+        # clean up
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+
     def test_data_type_sns_message(self):
-        queue_arn = aws_stack.sqs_queue_arn(TEST_QUEUE_NAME_2)
+        queue_name, queue_arn, queue_url = self._create_queue()
+
         filter_policy = {'attr1': [{'numeric': ['>', 0, '<=', 100]}]}
         self.sns_client.subscribe(
             TopicArn=self.topic_arn,
@@ -223,8 +234,11 @@ class SNSTest(unittest.TestCase):
         message = u'This is a test message'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
                                 MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
-        messages = self.sqs_client.receive_message(QueueUrl=self.queue_url_2, VisibilityTimeout=0)['Messages']
+        messages = self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages']
         self.assertEqual(json.loads(messages[0]['Body'])['MessageAttributes']['attr1']['Value'], '99.12')
+
+        # clean up
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
 
     def test_unknown_topic_publish(self):
         fake_arn = 'arn:aws:sns:us-east-1:123456789012:i_dont_exist'
@@ -420,20 +434,18 @@ class SNSTest(unittest.TestCase):
     def test_redrive_policy_queue_subscription(self):
         self.unsubscribe_all_from_sns()
 
-        temp_queue_name = 'TestQueue_tmp_snsTest'
-        tmp_queue_url = self.sqs_client.create_queue(QueueName=temp_queue_name)['QueueUrl']
-        tmp_queue_arn = aws_stack.sqs_queue_arn(temp_queue_name)
-
-        subscription = self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='sqs', Endpoint=tmp_queue_arn)
+        topic_arn = self.sns_client.create_topic(Name='topic-%s' % short_uid())['TopicArn']
+        invalid_queue_arn = aws_stack.sqs_queue_arn('invalid_queue')
+        # subscribe with an invalid queue ARN, to trigger event on DLQ below
+        subscription = self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=invalid_queue_arn)
 
         self.sns_client.set_subscription_attributes(
             SubscriptionArn=subscription['SubscriptionArn'],
             AttributeName='RedrivePolicy',
             AttributeValue=json.dumps({'deadLetterTargetArn': aws_stack.sqs_queue_arn(TEST_QUEUE_DLQ_NAME)})
         )
-        self.sqs_client.delete_queue(QueueUrl=tmp_queue_url)
 
-        self.sns_client.publish(TopicArn=self.topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
+        self.sns_client.publish(TopicArn=topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
 
         def receive_dlq():
             result = self.sqs_client.receive_message(QueueUrl=self.dlq_url, MessageAttributeNames=['All'])
@@ -526,3 +538,9 @@ class SNSTest(unittest.TestCase):
         self.sns_client.delete_topic(TopicArn=topic_arn)
         lambda_client = aws_stack.connect_to_service('lambda')
         lambda_client.delete_function(FunctionName=func_name)
+
+    def _create_queue(self):
+        queue_name = 'queue-%s' % short_uid()
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        return queue_name, queue_arn, queue_url

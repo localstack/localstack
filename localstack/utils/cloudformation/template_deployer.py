@@ -121,6 +121,25 @@ def sns_subscription_params(params, **kwargs):
     return result
 
 
+def events_put_rule_params(params, **kwargs):
+    attrs = ['ScheduleExpression', 'EventPattern', 'State', 'Description', 'Name']
+    result = select_parameters(*attrs)(params, **kwargs)
+    result['Name'] = result.get('Name') or PLACEHOLDER_RESOURCE_NAME
+
+    def wrap_in_lists(o, **kwargs):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if not isinstance(v, (dict, list)):
+                    o[k] = [v]
+        return o
+
+    pattern = result.get('EventPattern')
+    if isinstance(pattern, dict):
+        wrapped = common.recurse_object(pattern, wrap_in_lists)
+        result['EventPattern'] = json.dumps(wrapped)
+    return result
+
+
 def es_add_tags_params(params, **kwargs):
     es_arn = aws_stack.es_domain_arn(params.get('DomainName'))
     tags = params.get('Tags', [])
@@ -393,13 +412,7 @@ RESOURCE_TO_FUNCTION = {
     'Events::Rule': {
         'create': [{
             'function': 'put_rule',
-            'parameters': {
-                'Name': PLACEHOLDER_RESOURCE_NAME,
-                'ScheduleExpression': 'ScheduleExpression',
-                'EventPattern': 'EventPattern',
-                'State': 'State',
-                'Description': 'Description'
-            }
+            'parameters': events_put_rule_params
         }, {
             'function': 'put_targets',
             'parameters': {

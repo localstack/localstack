@@ -19,6 +19,9 @@ from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.common import timestamp_millis, short_uid, to_str
 
+# set up logger
+LOG = logging.getLogger(__name__)
+
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
 
@@ -27,9 +30,6 @@ SUBSCRIPTION_STATUS = {}
 
 # mappings for SNS tags
 SNS_TAGS = {}
-
-# set up logger
-LOGGER = logging.getLogger(__name__)
 
 
 class ProxyListenerSNS(ProxyListener):
@@ -214,13 +214,24 @@ class ProxyListenerSNS(ProxyListener):
 UPDATE_SNS = ProxyListenerSNS()
 
 
+def unsubscribe_sqs_queue(queue_url):
+    """ Called upon deletion of an SQS queue, to remove the queue from subscriptions """
+    for topic_arn, subscriptions in SNS_SUBSCRIPTIONS.items():
+        subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
+        for subscriber in list(subscriptions):
+            sub_url = subscriber.get('sqs_queue_url') or subscriber['Endpoint']
+            if queue_url == sub_url:
+                subscriptions.remove(subscriber)
+
+
 def publish_message(topic_arn, req_data, subscription_arn=None):
     message = req_data['Message'][0]
     sqs_client = aws_stack.connect_to_service('sqs')
 
-    LOGGER.debug('Publishing message to TopicArn: %s | Message:  %s' % (topic_arn, message))
+    LOG.debug('Publishing message to TopicArn: %s | Message:  %s' % (topic_arn, message))
 
-    for subscriber in SNS_SUBSCRIPTIONS.get(topic_arn, []):
+    subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
+    for subscriber in list(subscriptions):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
             continue
         filter_policy = json.loads(subscriber.get('FilterPolicy') or '{}')
@@ -229,6 +240,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
             continue
 
         if subscriber['Protocol'] == 'sqs':
+            queue_url = None
             try:
                 endpoint = subscriber['Endpoint']
                 if 'sqs_queue_url' in subscriber:
@@ -247,7 +259,9 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 )
             except Exception as exc:
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
-                return make_error(message=str(exc), code=400)
+                if 'NonExistentQueue' in str(exc):
+                    LOG.info('Removing non-existent queue "%s" subscribed to topic "%s"' % (queue_url, topic_arn))
+                    subscriptions.remove(subscriber)
 
         elif subscriber['Protocol'] == 'lambda':
             try:
@@ -262,16 +276,15 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 if isinstance(response, FlaskResponse):
                     response.raise_for_status()
             except Exception as exc:
-                LOGGER.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
+                LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
-                return make_error(message=str(exc), code=400)
 
         elif subscriber['Protocol'] in ['http', 'https']:
             msg_type = (req_data.get('Type') or ['Notification'])[0]
             try:
                 message_body = create_sns_message_body(subscriber, req_data)
-            except Exception as exc:
-                return make_error(message=str(exc), code=400)
+            except Exception:
+                continue
             try:
                 response = requests.post(
                     subscriber['Endpoint'],
@@ -290,9 +303,8 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 response.raise_for_status()
             except Exception as exc:
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
-                return make_error(message=str(exc), code=400)
         else:
-            LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
+            LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
 
 def do_create_topic(topic_arn):

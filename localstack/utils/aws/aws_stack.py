@@ -426,6 +426,11 @@ def log_group_arn(group_name, account_id=None, region_name=None):
     return _resource_arn(group_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def events_rule_arn(rule_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:events:%s:%s:rule/%s'
+    return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def lambda_function_arn(function_name, account_id=None, region_name=None):
     return lambda_function_or_layer_arn('function', function_name, account_id=account_id, region_name=region_name)
 
