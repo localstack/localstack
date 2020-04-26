@@ -52,7 +52,8 @@ def handler(event, context):
         return {
             'body': body,
             'statusCode': status_code,
-            'headers': headers
+            'headers': headers,
+            'multiValueHeaders': {'set-cookie': ['language=en-US', 'theme=blue moon']},
         }
 
     if 'Records' not in event:

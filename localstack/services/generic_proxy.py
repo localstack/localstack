@@ -19,6 +19,7 @@ from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
+from localstack.utils.aws.aws_responses import LambdaResponse
 
 QUIET = False
 
@@ -248,6 +249,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 if isinstance(listener_result, Response):
                     response = listener_result
                     break
+                if isinstance(listener_result, LambdaResponse):
+                    response = listener_result
+                    break
                 if isinstance(listener_result, dict):
                     response = Response()
                     response._content = json.dumps(listener_result)
@@ -312,8 +316,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 if header_key.lower() not in ('transfer-encoding', 'date', 'server'):
                     self.send_header(header_key, header_value)
                     content_length_sent = content_length_sent or header_key.lower() == 'content-length'
+
             if not content_length_sent:
                 self.send_header('Content-Length', '%s' % len(response.content) if response.content else 0)
+
+            if isinstance(response, LambdaResponse):
+                self.send_multi_value_headers(response.multi_value_headers)
 
             # allow pre-flight CORS headers by default
             self._send_cors_headers(response)
@@ -366,6 +374,11 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
         return
+
+    def send_multi_value_headers(self, multi_value_headers):
+        for key, values in multi_value_headers.items():
+            for value in values:
+                self.send_header(key, value)
 
 
 class DuplexSocket(ssl.SSLSocket):

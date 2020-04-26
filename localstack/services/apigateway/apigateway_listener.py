@@ -15,7 +15,7 @@ from localstack.services.kinesis import kinesis_listener
 from localstack.services.awslambda import lambda_api
 from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response
+from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
 from localstack.services.apigateway.helpers import (get_resource_for_path,
     handle_authorizers, extract_query_string_params,
     extract_path_params, make_error_response, get_cors_response)
@@ -240,13 +240,12 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                 headers, path_params=path_params, query_string_params=query_string_params,
                 method=method, resource_path=path, request_context=request_context)
-
             if isinstance(result, FlaskResponse):
                 return flask_to_requests_response(result)
             if isinstance(result, Response):
                 return result
 
-            response = Response()
+            response = LambdaResponse()
             parsed_result = result if isinstance(result, dict) else json.loads(str(result))
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
@@ -256,12 +255,13 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 response.headers.update(parsed_headers)
             try:
                 if isinstance(parsed_result['body'], dict):
-                    response._content = json.dumps(parsed_result['body'])
+                    response.content = json.dumps(parsed_result['body'])
                 else:
-                    response._content = to_bytes(parsed_result['body'])
+                    response.content = to_bytes(parsed_result['body'])
             except Exception:
                 response._content = '{}'
-            response.headers['Content-Length'] = len(response._content)
+            response.headers['Content-Length'] = len(response.content)
+            response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
             return response
         else:
             msg = 'API Gateway action uri "%s" not yet implemented' % uri
