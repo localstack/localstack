@@ -80,12 +80,7 @@ def _run_forward_to_fallback_url(url, num_requests=3):
 
 class LambdaTestBase(unittest.TestCase):
     def check_lambda_logs(self, func_name, expected_lines=[]):
-        logs_client = aws_stack.connect_to_service('logs')
-        log_group_name = '/aws/lambda/%s' % func_name
-        streams = logs_client.describe_log_streams(logGroupName=log_group_name)['logStreams']
-        streams = sorted(streams, key=lambda x: x['creationTime'], reverse=True)
-        log_events = logs_client.get_log_events(
-            logGroupName=log_group_name, logStreamName=streams[0]['logStreamName'])['events']
+        log_events = LambdaTestBase.get_lambda_logs(func_name)
         log_messages = [e['message'] for e in log_events]
         for line in expected_lines:
             if '.*' in line:
@@ -93,6 +88,16 @@ class LambdaTestBase(unittest.TestCase):
                 if any(found):
                     continue
             self.assertIn(line, log_messages)
+
+    @staticmethod
+    def get_lambda_logs(func_name):
+        logs_client = aws_stack.connect_to_service('logs')
+        log_group_name = '/aws/lambda/%s' % func_name
+        streams = logs_client.describe_log_streams(logGroupName=log_group_name)['logStreams']
+        streams = sorted(streams, key=lambda x: x['creationTime'], reverse=True)
+        log_events = logs_client.get_log_events(
+            logGroupName=log_group_name, logStreamName=streams[0]['logStreamName'])['events']
+        return log_events
 
 
 class TestLambdaBaseFeatures(unittest.TestCase):

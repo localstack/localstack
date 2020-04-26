@@ -9,12 +9,12 @@ from datetime import datetime, timedelta
 from nose.tools import assert_raises
 from localstack.utils import testutil
 from localstack.utils.common import (
-    load_file, short_uid, clone, to_bytes, to_str, run_safe, retry)
+    load_file, save_file, short_uid, clone, to_bytes, to_str, run_safe, retry, new_tmp_file)
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from .lambdas import lambda_integration
-from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_LIBS
+from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_LIBS, LambdaTestBase
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
@@ -38,11 +38,36 @@ PARTITION_KEY = 'id'
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
+TEST_HANDLER = """
+def handler(event, *args):
+    return {}
+"""
+
 
 class IntegrationTest(unittest.TestCase):
 
-    def test_firehose_s3(self):
+    @classmethod
+    def setUpClass(cls):
+        # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
 
+        # create test Lambda
+        cls.scheduled_lambda_name = 'scheduled-%s' % short_uid()
+        handler_file = new_tmp_file()
+        save_file(handler_file, TEST_HANDLER)
+        resp = testutil.create_lambda_function(handler_file=handler_file, func_name=cls.scheduled_lambda_name)
+        func_arn = resp['CreateFunctionResponse']['FunctionArn']
+
+        # create scheduled Lambda function
+        rule_name = 'rule-%s' % short_uid()
+        events = aws_stack.connect_to_service('events')
+        events.put_rule(Name=rule_name, ScheduleExpression='rate(1 minutes)')
+        events.put_targets(Rule=rule_name, Targets=[{'Id': 'target-%s' % short_uid(), 'Arn': func_arn}])
+
+    @classmethod
+    def tearDownClass(cls):
+        testutil.delete_lambda_function(cls.scheduled_lambda_name)
+
+    def test_firehose_s3(self):
         s3_resource = aws_stack.connect_to_resource('s3')
         firehose = aws_stack.connect_to_service('firehose')
 
@@ -480,17 +505,12 @@ class IntegrationTest(unittest.TestCase):
         # deploy test lambda connected to SQS queue
         sqs_queue_info = testutil.create_sqs_queue(TEST_LAMBDA_NAME_QUEUE_BATCH)
         queue_url = sqs_queue_info['QueueUrl']
-        zip_file = testutil.create_lambda_archive(
-            load_file(TEST_LAMBDA_PYTHON_ECHO),
-            get_content=True,
-            libs=TEST_LAMBDA_LIBS,
-            runtime=LAMBDA_RUNTIME_PYTHON27
-        )
         resp = testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
             func_name=TEST_LAMBDA_NAME_QUEUE_BATCH,
-            zip_file=zip_file,
             event_source_arn=sqs_queue_info['QueueArn'],
-            runtime=LAMBDA_RUNTIME_PYTHON27
+            runtime=LAMBDA_RUNTIME_PYTHON27,
+            libs=TEST_LAMBDA_LIBS
         )
 
         event_source_id = resp['CreateEventSourceMappingResponse']['UUID']
@@ -564,6 +584,15 @@ class IntegrationTest(unittest.TestCase):
 
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_QUEUE_BATCH)
         sqs.delete_queue(QueueUrl=queue_url)
+
+    def test_scheduled_lambda(self):
+        def check_invocation(*args):
+            log_events = LambdaTestBase.get_lambda_logs(self.scheduled_lambda_name)
+            self.assertGreater(len(log_events), 0)
+
+        # wait for up to 1 min for invocations to get triggered
+        retry(check_invocation, retries=14, sleep=5)
+
 
 # ---------------
 # HELPER METHODS

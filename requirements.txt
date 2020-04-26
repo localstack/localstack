@@ -18,6 +18,7 @@ boto3>=1.9.71                  #basic-lib
 botocore>=1.12.13
 cachetools>=3.1.1,<4.0.0
 coverage==4.5.4
+crontab>=0.22.6
 dnspython==1.16.0              #basic-lib
 docopt>=0.6.2                  #basic-lib
 elasticsearch>=7.0.0,<8.0.0

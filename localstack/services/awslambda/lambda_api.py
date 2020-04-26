@@ -486,7 +486,6 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
             version=version, asynchronous=asynchronous, callback=callback)
     except Exception as e:
-
         return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
     finally:
         if suppress_output:

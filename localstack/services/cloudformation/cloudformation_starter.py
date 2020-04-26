@@ -233,13 +233,16 @@ def apply_patches():
         _, resource_json, _ = resource_tuple
 
         def add_default_props(resource_props):
-            # apply some fixes which otherwise cause deployments to fail
+            """ apply some fixes which otherwise cause deployments to fail """
             res_type = resource_props['Type']
             props = resource_props.get('Properties', {})
             if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
                 props['StartingPosition'] = 'LATEST'
-            if res_type == 'AWS::IAM::Role' and not props.get('RoleName'):
-                props['RoleName'] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
+            # generate default names for certain resource types
+            default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
+            for entry in default_attrs:
+                if res_type == entry[0] and not props.get(entry[1]):
+                    props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
 
         # add some fixes and default props which otherwise cause deployments to fail
         add_default_props(resource_json)

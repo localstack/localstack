@@ -1,17 +1,23 @@
-import json
 import os
 import re
+import json
 import time
-from requests.models import Response
+import logging
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
-from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_str, save_file, TMP_FILES, mkdir
+from localstack.utils.common import to_str, save_file, TMP_FILES, mkdir
 from localstack.utils.tagging import TaggingService
-from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.services.awslambda import lambda_api
+from localstack.services.generic_proxy import ProxyListener
+from localstack.services.events.scheduler import JobScheduler
+
+LOG = logging.getLogger(__name__)
 
 EVENTS_TMP_DIR = os.path.join(config.TMP_FOLDER, 'cw_events')
+
+# maps job IDs to scheduled rule details
+RULE_SCHEDULED_JOBS = {}
 
 
 def _replace(response, pattern, replacement):
@@ -45,36 +51,79 @@ def _dump_events_to_files(events_with_added_uuid):
         )
 
 
-def make_response(content={}):
-    response = Response()
-    response.headers['x-amzn-RequestId'] = short_uid()
-    response.headers['Content-Type'] = APPLICATION_AMZ_JSON_1_1
-    response.status_code = 200
-    response._content = json.dumps(content)
-    return response
+def get_scheduled_rule_func(data):
+    def func(*args):
+        rule_name = data.get('Name')
+        client = aws_stack.connect_to_service('events')
+        targets = client.list_targets_by_rule(Rule=rule_name)['Targets']
+        if targets:
+            LOG.debug('Notifying %s targets in response to triggered Events rule %s' % (len(targets), rule_name))
+        for target in targets:
+            arn = target.get('Arn')
+            if ':lambda:' in arn:
+                event = json.loads(target.get('Input') or '{}')
+                lambda_api.run_lambda(event=event, context={}, func_arn=arn)
+            else:
+                LOG.info('Unsupported Events rule target ARN "%s"' % arn)
+    return func
+
+
+def convert_schedule_to_cron(schedule):
+    """ Convert Events schedule like "cron(0 20 * * ? *)" or "rate(5 minutes)" """
+    cron_regex = r'\s*cron\s*\(([^\)]*)\)\s*'
+    if re.match(cron_regex, schedule):
+        cron = re.sub(cron_regex, r'\1', schedule)
+        return cron
+    rate_regex = r'\s*rate\s*\(([^\)]*)\)\s*'
+    if re.match(rate_regex, schedule):
+        rate = re.sub(rate_regex, r'\1', schedule)
+        value, unit = re.split(r'\s+', rate.strip())
+        if 'minute' in unit:
+            return '*/%s * * * *' % value
+        if 'hour' in unit:
+            return '* */%s * * *' % value
+        if 'day' in unit:
+            return '* * */%s * *' % value
+        raise Exception('Unable to parse events schedule expression: %s' % schedule)
+    return schedule
+
+
+def put_rule(data):
+    schedule = data.get('ScheduleExpression')
+    if schedule:
+        job_func = get_scheduled_rule_func(data)
+        cron = convert_schedule_to_cron(schedule)
+        LOG.debug('Adding new scheduled Events rule with cron schedule %s' % cron)
+        # TODO cancel job later on if DeleteRule API call is received
+        job_id = JobScheduler.instance().add_job(job_func, cron)
+        RULE_SCHEDULED_JOBS[job_id] = data
+    return True
 
 
 class ProxyListenerEvents(ProxyListener):
     svc = TaggingService()
 
     def forward_request(self, method, path, data, headers):
+        if method == 'OPTIONS':
+            return 200
+
         action = headers.get('X-Amz-Target')
         if method == 'POST' and path == '/':
             parsed_data = json.loads(to_str(data))
 
-            if action == 'AWSEvents.ListTagsForResource':
-                return make_response(self.svc.list_tags_for_resource(parsed_data['ResourceARN']))
+            if action == 'AWSEvents.PutRule':
+                return put_rule(parsed_data)
+
+            elif action == 'AWSEvents.ListTagsForResource':
+                return self.svc.list_tags_for_resource(parsed_data['ResourceARN']) or {}
 
             elif action == 'AWSEvents.TagResource':
                 self.svc.tag_resource(parsed_data['ResourceARN'], parsed_data['Tags'])
-                return make_response()
+                return {}
 
             elif action == 'AWSEvents.UntagResource':
                 self.svc.untag_resource(parsed_data['ResourceARN'], parsed_data['TagKeys'])
-                return make_response()
-
-        if method == 'OPTIONS':
-            return 200
+                return {}
 
         return True
 
