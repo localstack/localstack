@@ -35,3 +35,11 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(env, True)
         env = common.is_ip_address('abcde')
         self.assertEqual(env, False)
+
+    def test_is_base64(self):
+        env = common.is_base64('foobar')
+        self.assertEqual(env, None)
+
+    def test_mktime(self):
+        env = common.mktime(datetime(2010, 3, 20, 7, 24, 00, 0), True)
+        self.assertEqual(env, 1269069840.0)
