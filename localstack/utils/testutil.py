@@ -342,6 +342,9 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
         if 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
             continue
 
-        rs.append(json.loads(raw_message))
+        try:
+            rs.append(json.loads(raw_message))
+        except Exception:
+            rs.append(raw_message)
 
     return rs
