@@ -54,6 +54,8 @@ TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 TEST_LAMBDA_SEND_MESSAGE_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_send_message.py')
 TEST_LAMBDA_PUT_ITEM_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_put_item.py')
+TEST_LAMBDA_START_EXECUTION_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_start_execution.py')
+
 TEST_LAMBDA_FUNCTION_PREFIX = 'lambda-function'
 TEST_SNS_TOPIC_NAME = 'sns-topic-1'
 
@@ -591,6 +593,66 @@ class TestPythonRuntimes(LambdaTestBase):
 
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
         dynamodb_client.delete_table(TableName=table_name)
+
+    def test_lambda_start_stepfunctions_execution(self):
+        function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
+        resource_lambda_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
+        state_machine_name = 'state-machine-{}'.format(short_uid())
+
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_START_EXECUTION_FILE,
+                                        func_name=function_name,
+                                        runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_ECHO_FILE,
+                                        func_name=resource_lambda_name,
+                                        runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        state_machine_def = {
+            'StartAt': 'step1',
+            'States': {
+                'step1': {
+                    'Type': 'Task',
+                    'Resource': aws_stack.lambda_function_arn(resource_lambda_name),
+                    'ResultPath': '$.result_value',
+                    'End': True
+                }
+            }
+        }
+
+        sfn_client = aws_stack.connect_to_service('stepfunctions')
+        rs = sfn_client.create_state_machine(
+            name=state_machine_name,
+            definition=json.dumps(state_machine_def),
+            roleArn=aws_stack.role_arn('sfn_role')
+        )
+        sm_arn = rs['stateMachineArn']
+
+        self.lambda_client.invoke(
+            FunctionName=function_name,
+            Payload=json.dumps({
+                'state_machine_arn': sm_arn,
+                'region_name': config.DEFAULT_REGION,
+                'input': {}
+            })
+        )
+        time.sleep(1)
+
+        rs = sfn_client.list_executions(
+            stateMachineArn=sm_arn
+        )
+
+        # assert that state machine get executed 1 time
+        self.assertEqual(
+            len([ex for ex in rs['executions'] if ex['stateMachineArn'] == sm_arn]),
+            1
+        )
+
+        # clean up
+        testutil.delete_lambda_function(function_name)
+        testutil.delete_lambda_function(resource_lambda_name)
+
+        # clean up
+        sfn_client.delete_state_machine(stateMachineArn=sm_arn)
 
 
 class TestNodeJSRuntimes(LambdaTestBase):
