@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-import json
 import os
-import unittest
+import json
 import uuid
-
+import unittest
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.events.events_listener import EVENTS_TMP_DIR
 from localstack.utils import testutil

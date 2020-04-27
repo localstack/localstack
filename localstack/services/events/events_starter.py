@@ -1,19 +1,17 @@
 import json
-import logging
 import uuid
-
+import logging
 from moto.events.models import Rule as rule_model
 from moto.events.responses import EventsHandler as events_handler
-
 from localstack import config
 from localstack.constants import (
-    APPLICATION_AMZ_JSON_1_1, DEFAULT_PORT_EVENTS_BACKEND, TEST_AWS_ACCOUNT_ID
-)
-from localstack.services.infra import start_moto_server
-from localstack.services.awslambda.lambda_api import run_lambda
+    APPLICATION_AMZ_JSON_1_1, DEFAULT_PORT_EVENTS_BACKEND, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
-from .events_listener import _create_and_register_temp_dir, _dump_events_to_files
+from localstack.services.infra import start_moto_server
+from localstack.services.events.scheduler import JobScheduler
+from localstack.services.awslambda.lambda_api import run_lambda
+from localstack.services.events.events_listener import _create_and_register_temp_dir, _dump_events_to_files
 
 
 LOG = logging.getLogger(__name__)
@@ -140,11 +138,16 @@ def apply_patches():
     events_handler.put_events = events_handler_put_events
 
 
+def start_scheduler():
+    JobScheduler.start()
+
+
 def start_events(port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_EVENTS
     backend_port = DEFAULT_PORT_EVENTS_BACKEND
 
     apply_patches()
+    start_scheduler()
 
     return start_moto_server(
         key='events',

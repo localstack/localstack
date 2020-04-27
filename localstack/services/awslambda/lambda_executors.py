@@ -669,8 +669,10 @@ class LambdaExecutorLocal(LambdaExecutor):
         with CaptureOutput() as c:
             process.run()
         result = queue.get()
+
+        # Make sure to keep the log line below, to ensure the log stream gets created
+        log_output = 'START: Lambda %s started via "local" executor ...' % func_arn
         # TODO: Interweaving stdout/stderr currently not supported
-        log_output = ''
         for stream in (c.stdout(), c.stderr()):
             if stream:
                 log_output += ('\n' if log_output else '') + stream
