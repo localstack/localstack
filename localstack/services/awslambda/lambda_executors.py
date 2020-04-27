@@ -671,7 +671,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         result = queue.get()
 
         # Make sure to keep the log line below, to ensure the log stream gets created
-        log_output = 'Lambda %s started via "local" executor ...' % func_arn
+        log_output = 'START: Lambda %s started via "local" executor ...' % func_arn
         # TODO: Interweaving stdout/stderr currently not supported
         for stream in (c.stdout(), c.stderr()):
             if stream:
