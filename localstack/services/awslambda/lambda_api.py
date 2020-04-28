@@ -33,6 +33,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_DOTNETCORE2,
     LAMBDA_RUNTIME_DOTNETCORE21,
+    LAMBDA_RUNTIME_DOTNETCORE31,
     LAMBDA_RUNTIME_GOLANG,
     LAMBDA_RUNTIME_RUBY,
     LAMBDA_RUNTIME_RUBY25,
@@ -52,7 +53,7 @@ LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
 
 # List of Lambda runtime names. Keep them in this list, mainly to silence the linter
 LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_PYTHON37,
-    LAMBDA_RUNTIME_PYTHON38, LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21,
+    LAMBDA_RUNTIME_PYTHON38, LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21, LAMBDA_RUNTIME_DOTNETCORE31,
     LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810,
     LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_RUBY, LAMBDA_RUNTIME_RUBY25]
 
@@ -548,7 +549,7 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
         file_ext = '.js'
     elif runtime.startswith(LAMBDA_RUNTIME_GOLANG):
         file_ext = ''
-    elif runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2) or runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE21):
+    elif runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21, LAMBDA_RUNTIME_DOTNETCORE31):
         file_ext = '.dll'
         delimiter = ':'
     elif runtime.startswith(LAMBDA_RUNTIME_RUBY):
@@ -561,7 +562,7 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
 
 def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
     # TODO: support Java Lambdas in the future
-    if runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2) or runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE21):
+    if runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21, LAMBDA_RUNTIME_DOTNETCORE31):
         return handler_name.split(':')[-1]
     else:
         return handler_name.split('.')[-1]
