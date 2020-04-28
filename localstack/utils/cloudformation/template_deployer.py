@@ -253,8 +253,9 @@ RESOURCE_TO_FUNCTION = {
             'function': 'create_queue',
             'parameters': {
                 'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME],
-                'Attributes': params_select_attributes('DelaySeconds', 'MaximumMessageSize',
-                    'MessageRetentionPeriod', 'VisibilityTimeout', 'RedrivePolicy'),
+                'Attributes': params_select_attributes('ContentBasedDeduplication', 'DelaySeconds', 'FifoQueue',
+                                                       'MaximumMessageSize', 'MessageRetentionPeriod',
+                                                       'VisibilityTimeout', 'RedrivePolicy'),
                 'tags': params_list_to_dict('Tags')
             }
         },
