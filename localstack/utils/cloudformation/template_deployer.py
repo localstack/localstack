@@ -529,6 +529,12 @@ RESOURCE_TO_FUNCTION = {
                 'definition': 'DefinitionString',
                 'roleArn': lambda params, **kwargs: get_role_arn(params.get('RoleArn'), **kwargs)
             }
+        },
+        'delete': {
+            'function': 'delete_state_machine',
+            'parameters': {
+                'stateMachineArn': 'PhysicalResourceId'
+            }
         }
     },
     'StepFunctions::Activity': {
