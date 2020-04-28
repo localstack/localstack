@@ -1080,7 +1080,7 @@ class CloudFormationTest(unittest.TestCase):
         time.sleep(1)
 
         rs = events.list_rules()
-        self.assertNotIn(rule['Name'], [rule['Name'] for rule in rs['Rules']])
+        self.assertNotIn(rule['Name'], [r['Name'] for r in rs['Rules']])
 
     def test_cfn_handle_s3_notification_configuration(self):
         stack_name = 'stack-%s' % short_uid()
