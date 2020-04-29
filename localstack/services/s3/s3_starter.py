@@ -144,7 +144,7 @@ def apply_patches():
             self._set_action('KEY', 'DELETE', query)
             self._authenticate_and_authorize_s3_action()
             key = self.backend.get_key(bucket_name, key_name)
-            key.tags = s3_models.FakeTagging()
+            key.tags = {}
             return 204, {}, ''
         result = s3_key_response_delete_orig(bucket_name, query, key_name, *args, **kwargs)
         return result

@@ -77,4 +77,4 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
 # clean up temporary files created during test execution
-RUN rm -rf /tmp/localstack/elasticsearch /tmp/localstack.* tests/
+RUN rm -rf /tmp/localstack/elasticsearch /tmp/localstack.* tests/ /root/.npm/*cache

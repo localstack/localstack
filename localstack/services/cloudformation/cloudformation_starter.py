@@ -811,6 +811,7 @@ def apply_patches():
         FuncThread(run_loop).start()
 
     def initialize_resources(self):
+        self.resource_map.load()
         self.resource_map.create()
         self.output_map.create()
         run_dependencies_deployment_loop(self, 'CREATE')
