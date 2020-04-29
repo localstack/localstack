@@ -351,6 +351,37 @@ Resources:
             Queue: %s
 """
 
+TEST_TEMPLATE_18 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  TestStateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      RoleArn: %s
+      DefinitionString:
+        !Sub
+        - |-
+          {
+            "StartAt": "state1",
+            "States": {
+              "state1": {
+                "Type": "Pass",
+                "Result": "Hello World",
+                "End": true
+              }
+            }
+          }
+        - {}
+  ScheduledRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      ScheduleExpression: "cron(0/1 * * * ? *)"
+      State: ENABLED
+      Targets:
+        - Id: TestStateMachine
+          Arn: !Ref TestStateMachine
+"""
+
 TEST_CHANGE_SET_BODY = """
 Parameters:
   EnvironmentType:
@@ -1027,6 +1058,29 @@ class CloudFormationTest(unittest.TestCase):
             NamePrefix=rule_prefix
         )
         self.assertNotIn(rule_name, [rule['Name'] for rule in rs['Rules']])
+
+    def test_cfn_handle_events_rule_without_name(self):
+        events = aws_stack.connect_to_service('events')
+
+        rs = events.list_rules()
+        rule_names = [rule['Name'] for rule in rs['Rules']]
+
+        stack_name = 'stack-%s' % short_uid()
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_18 % aws_stack.role_arn('sfn_role'))
+
+        rs = events.list_rules()
+        new_rules = [rule for rule in rs['Rules'] if rule['Name'] not in rule_names]
+        self.assertEqual(len(new_rules), 1)
+        rule = new_rules[0]
+
+        self.assertEqual(rule['ScheduleExpression'], 'cron(0/1 * * * ? *)')
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.delete_stack(StackName=stack_name)
+        time.sleep(1)
+
+        rs = events.list_rules()
+        self.assertNotIn(rule['Name'], [r['Name'] for r in rs['Rules']])
 
     def test_cfn_handle_s3_notification_configuration(self):
         stack_name = 'stack-%s' % short_uid()
