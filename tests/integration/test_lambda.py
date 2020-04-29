@@ -20,7 +20,7 @@ from localstack.services.infra import start_proxy
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
-    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
+    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
     LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION
 )
@@ -33,6 +33,7 @@ TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_python3.py')
 TEST_LAMBDA_NODEJS = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js')
 TEST_LAMBDA_RUBY = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.rb')
 TEST_LAMBDA_DOTNETCORE2 = os.path.join(THIS_FOLDER, 'lambdas', 'dotnetcore2', 'dotnetcore2.zip')
+TEST_LAMBDA_DOTNETCORE31 = os.path.join(THIS_FOLDER, 'lambdas', 'dotnetcore31', 'dotnetcore31.zip')
 TEST_LAMBDA_CUSTOM_RUNTIME = os.path.join(THIS_FOLDER, 'lambdas', 'custom-runtime')
 TEST_LAMBDA_JAVA = os.path.join(LOCALSTACK_ROOT_FOLDER, 'localstack', 'infra', 'localstack-utils-tests.jar')
 TEST_LAMBDA_JAVA_WITH_LIB = os.path.join(THIS_FOLDER, 'lambdas', 'java', 'lambda-function-with-lib-0.0.1.jar')
@@ -45,6 +46,7 @@ TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
 TEST_LAMBDA_NAME_JS = 'test_lambda_js'
 TEST_LAMBDA_NAME_RUBY = 'test_lambda_ruby'
 TEST_LAMBDA_NAME_DOTNETCORE2 = 'test_lambda_dotnetcore2'
+TEST_LAMBDA_NAME_DOTNETCORE31 = 'test_lambda_dotnetcore31'
 TEST_LAMBDA_NAME_CUSTOM_RUNTIME = 'test_lambda_custom_runtime'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
@@ -723,7 +725,7 @@ class TestCustomRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_CUSTOM_RUNTIME)
 
 
-class TestDotNetCoreRuntimes(LambdaTestBase):
+class TestDotNetCore2Runtimes(LambdaTestBase):
     @classmethod
     def setUpClass(cls):
         cls.lambda_client = aws_stack.connect_to_service('lambda')
@@ -752,11 +754,47 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
         self.assertEqual(to_str(result_data).strip(), '{}')
 
         # assert that logs are present
-        expected = ['Running .NET Core 2.0 Lambda']
+        expected = ['Running .NET Core 2.1 Lambda']
         self.check_lambda_logs(TEST_LAMBDA_NAME_DOTNETCORE2, expected_lines=expected)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE2)
+
+
+class TestDotNetCore31Runtimes(LambdaTestBase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lambda_client = aws_stack.connect_to_service('lambda')
+
+        # lambda .NET Core 3.1 is already a zip
+        zip_file = TEST_LAMBDA_DOTNETCORE31
+        cls.zip_file_content = None
+        with open(zip_file, 'rb') as file_obj:
+            cls.zip_file_content = file_obj.read()
+
+    def test_dotnet_lambda_running_in_docker(self):
+        if not use_docker():
+            return
+
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_DOTNETCORE31,
+            zip_file=self.zip_file_content,
+            handler='dotnetcore31::dotnetcore31.Function::FunctionHandler',
+            runtime=LAMBDA_RUNTIME_DOTNETCORE31
+        )
+        result = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_DOTNETCORE31, Payload=b'{}')
+        result_data = result['Payload'].read()
+
+        self.assertEqual(result['StatusCode'], 200)
+        self.assertEqual(to_str(result_data).strip(), '{}')
+
+        # assert that logs are present
+        expected = ['Running .NET Core 3.1 Lambda']
+        self.check_lambda_logs(TEST_LAMBDA_NAME_DOTNETCORE31, expected_lines=expected)
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE31)
 
 
 class TestRubyRuntimes(LambdaTestBase):
