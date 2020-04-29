@@ -735,6 +735,11 @@ class TestDotNetCore2Runtimes(LambdaTestBase):
         cls.zip_file_content = None
         with open(zip_file, 'rb') as file_obj:
             cls.zip_file_content = file_obj.read()
+    
+    @classmethod
+    def tearDownClass(cls):
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE2)
 
     def test_dotnet_lambda_running_in_docker(self):
         if not use_docker():
@@ -754,11 +759,8 @@ class TestDotNetCore2Runtimes(LambdaTestBase):
         self.assertEqual(to_str(result_data).strip(), '{}')
 
         # assert that logs are present
-        expected = ['Running .NET Core 2.1 Lambda']
+        expected = ['Running .NET Core 2.0 Lambda']
         self.check_lambda_logs(TEST_LAMBDA_NAME_DOTNETCORE2, expected_lines=expected)
-
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE2)
 
 
 class TestDotNetCore31Runtimes(LambdaTestBase):
@@ -771,6 +773,11 @@ class TestDotNetCore31Runtimes(LambdaTestBase):
         cls.zip_file_content = None
         with open(zip_file, 'rb') as file_obj:
             cls.zip_file_content = file_obj.read()
+    
+    @classmethod
+    def tearDownClass(cls):
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE31)
 
     def test_dotnet_lambda_running_in_docker(self):
         if not use_docker():
@@ -792,9 +799,6 @@ class TestDotNetCore31Runtimes(LambdaTestBase):
         # assert that logs are present
         expected = ['Running .NET Core 3.1 Lambda']
         self.check_lambda_logs(TEST_LAMBDA_NAME_DOTNETCORE31, expected_lines=expected)
-
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE31)
 
 
 class TestRubyRuntimes(LambdaTestBase):

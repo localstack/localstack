@@ -22,8 +22,8 @@ namespace dotnetcore31
         /// <returns></returns>
         public object FunctionHandler(Stream input, ILambdaContext context)
         {
-            context.Logger.Log("Running .NET Core 3.1 Lambda");
-
+            context.Logger.LogLine("Running .NET Core 3.1 Lambda");
+            
             return new { };
         }
     }
