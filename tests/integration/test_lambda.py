@@ -735,7 +735,7 @@ class TestDotNetCore2Runtimes(LambdaTestBase):
         cls.zip_file_content = None
         with open(zip_file, 'rb') as file_obj:
             cls.zip_file_content = file_obj.read()
-    
+
     @classmethod
     def tearDownClass(cls):
         # clean up
@@ -773,7 +773,7 @@ class TestDotNetCore31Runtimes(LambdaTestBase):
         cls.zip_file_content = None
         with open(zip_file, 'rb') as file_obj:
             cls.zip_file_content = file_obj.read()
-    
+
     @classmethod
     def tearDownClass(cls):
         # clean up
