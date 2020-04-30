@@ -310,6 +310,8 @@ Resources:
     Type: 'AWS::SQS::Queue'
     Properties:
         QueueName: %s
+        ContentBasedDeduplication: "false"
+        FifoQueue: "true"
 """
 
 TEST_TEMPLATE_16 = """
@@ -1011,7 +1013,7 @@ class CloudFormationTest(unittest.TestCase):
 
     def test_cfn_handle_sqs_resource(self):
         stack_name = 'stack-%s' % short_uid()
-        queue_name = 'queue-%s' % short_uid()
+        queue_name = 'queue-%s.fifo' % short_uid()
 
         cfn = aws_stack.connect_to_service('cloudformation')
         sqs = aws_stack.connect_to_service('sqs')
@@ -1020,6 +1022,20 @@ class CloudFormationTest(unittest.TestCase):
 
         rs = sqs.get_queue_url(QueueName=queue_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        queue_url = rs['QueueUrl']
+
+        rs = sqs.get_queue_attributes(
+            QueueUrl=queue_url,
+            AttributeNames=['All']
+        )
+
+        attributes = rs['Attributes']
+
+        self.assertIn('ContentBasedDeduplication', attributes)
+        self.assertIn('FifoQueue', attributes)
+        self.assertEqual(attributes['ContentBasedDeduplication'], 'false')
+        self.assertEqual(attributes['FifoQueue'], 'true')
 
         cfn.delete_stack(StackName=stack_name)
 
