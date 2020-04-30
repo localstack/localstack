@@ -21,13 +21,16 @@ XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 # list of valid attribute names, and names not supported by the backend (elasticmq)
 VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
                          'ReceiveMessageWaitTimeSeconds', 'RedrivePolicy', 'VisibilityTimeout',
-                         'ContentBasedDeduplication', 'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds',
-                         'CreatedTimestamp', 'LastModifiedTimestamp', 'FifoQueue',
+                         'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds',
+                         'CreatedTimestamp', 'LastModifiedTimestamp',
                          'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible']
 
 UNSUPPORTED_ATTRIBUTE_NAMES = [
+    # elasticmq store 'FifoQueue', 'ContentBasedDeduplication' as queue's properties
+    # currently can't get them as queue attributes
+    'FifoQueue', 'ContentBasedDeduplication',
     'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy',
-    'ContentBasedDeduplication', 'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds', 'FifoQueue'
+    'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds'
 ]
 
 # maps queue URLs to attributes set via the API
