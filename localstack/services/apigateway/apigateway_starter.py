@@ -56,6 +56,7 @@ def apply_patches():
         self['passthroughBehavior'] = pass_through_behavior
         self['cacheKeyParameters'] = cache_key_parameters
         self['cacheNamespace'] = short_uid()
+        self['integrationResponses'] = {'200': apigateway_models.IntegrationResponse(200)}
         if request_templates:
             self['requestTemplates'] = request_templates
 
