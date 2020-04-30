@@ -390,10 +390,15 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             restApiId=api_id,
             resourceId=api_resource['id'],
             httpMethod='GET',
+            integrationHttpMethod='GET',
             type='AWS',
             uri=target_uri
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        for key in ['httpMethod', 'type', 'passthroughBehavior', 'cacheKeyParameters', 'uri', 'cacheNamespace']:
+            self.assertIn(key, rs)
+
+        self.assertNotIn('responseTemplates', rs)
 
         rs = apigw_client.get_integration(
             restApiId=api_id,
