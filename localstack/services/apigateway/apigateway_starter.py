@@ -6,6 +6,7 @@ from moto.apigateway.exceptions import (
 from localstack import config
 from localstack.constants import DEFAULT_PORT_APIGATEWAY_BACKEND
 from localstack.services.infra import start_moto_server
+from localstack.utils.common import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -39,10 +40,33 @@ def apply_patches():
 
         return {}
 
+    def apigateway_models_IntegrationResponse_init(self, status_code, selection_pattern=None):
+        self['statusCode'] = status_code
+        if selection_pattern:
+            self['selectionPattern'] = selection_pattern
+
+    def apigateway_models_Integration_init(
+            self, integration_type, uri, http_method,
+            request_templates=None, pass_through_behavior='WHEN_NO_MATCH', cache_key_parameters=[]
+    ):
+        super(apigateway_models.Integration, self).__init__()
+        self['type'] = integration_type
+        self['uri'] = uri
+        self['httpMethod'] = http_method
+        self['passthroughBehavior'] = pass_through_behavior
+        self['cacheKeyParameters'] = cache_key_parameters
+        self['cacheNamespace'] = short_uid()
+        self['integrationResponses'] = {'200': apigateway_models.IntegrationResponse(200)}
+        if request_templates:
+            self['requestTemplates'] = request_templates
+
     apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
+
+    apigateway_models.IntegrationResponse.__init__ = apigateway_models_IntegrationResponse_init
+    apigateway_models.Integration.__init__ = apigateway_models_Integration_init
 
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
