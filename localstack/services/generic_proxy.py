@@ -209,7 +209,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         forward_headers = CaseInsensitiveDict(self.headers)
 
         # force close connection
-        if forward_headers.get('Connection') not in ['keep-alive', None]:
+        connection_header = forward_headers.get('Connection') or ''
+        if connection_header.lower() not in ['keep-alive', '']:
             self.close_connection = 1
 
         def is_full_url(url):
@@ -275,7 +276,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
             # perform the actual invocation of the backend service
             if response is None:
-                forward_headers['Connection'] = forward_headers.get('Connection') or 'close'
+                forward_headers['Connection'] = connection_header or 'close'
                 data_to_send = self.data_bytes
                 request_url = proxy_url
                 if modified_request:

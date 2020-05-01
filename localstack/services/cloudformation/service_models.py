@@ -20,15 +20,23 @@ class BaseModel(object):
         return attr
 
 
-class CloudFormationStack(BaseModel):
-    pass
-
-
 class EventsRule(BaseModel):
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == 'Arn':
             return self.params.get('Arn') or aws_stack.events_rule_arn(self.params.get('Name'))
         return super(EventsRule, self).get_cfn_attribute(attribute_name)
+
+
+class LogsLogGroup(BaseModel):
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'Arn':
+            return self.params.get('Arn') or aws_stack.log_group_arn(self.params.get('LogGroupName'))
+        return super(LogsLogGroup, self).get_cfn_attribute(attribute_name)
+
+
+class CloudFormationStack(BaseModel):
+    pass
 
 
 class ElasticsearchDomain(BaseModel):
@@ -40,10 +48,6 @@ class FirehoseDeliveryStream(BaseModel):
 
 
 class GatewayResponse(BaseModel):
-    pass
-
-
-class LogsLogGroup(BaseModel):
     pass
 
 
