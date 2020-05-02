@@ -34,6 +34,7 @@ INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_IN
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, 'local-kms.<arch>.bin')
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
+MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
@@ -55,7 +56,7 @@ def get_elasticsearch_install_version(version=None):
 
 def get_elasticsearch_install_dir(version=None):
     version = get_elasticsearch_install_version(version)
-    if version == ELASTICSEARCH_DEFAULT_VERSION:
+    if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
         # install the default version into a subfolder of the code base
         install_dir = os.path.join(INSTALL_DIR_INFRA, 'elasticsearch')
     else:
@@ -74,7 +75,7 @@ def install_elasticsearch(version=None):
         install_dir_parent = os.path.dirname(install_dir)
         mkdir(install_dir_parent)
         # download and extract archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.%s' % os.path.basename(es_url))
+        tmp_archive = os.path.join(config.TMP_FOLDER, 'localstack.%s' % os.path.basename(es_url))
         download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
         elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, 'elasticsearch*'))
         if not elasticsearch_dir:
@@ -220,7 +221,6 @@ def install_component(name):
     installers = {
         'kinesis': install_kinesalite,
         'dynamodb': install_dynamodb_local,
-        'es': install_elasticsearch,
         'sqs': install_elasticmq,
         'stepfunctions': install_stepfunctions_local,
         'kms': install_local_kms

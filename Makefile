@@ -1,5 +1,6 @@
 IMAGE_NAME ?= localstack/localstack
 IMAGE_NAME_BASE ?= localstack/java-maven-node-python
+IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
@@ -76,8 +77,8 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		((! (git diff HEAD~1 localstack/constants.py | grep '^+VERSION =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG) && \
-				docker push $(IMAGE_NAME):$(IMAGE_TAG))) && \
-		docker push $(IMAGE_NAME):latest \
+				docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG))) && \
+		docker push $(IMAGE_NAME):latest && docker push $(IMAGE_NAME_LIGHT):latest \
 	)
 
 docker-run:        ## Run Docker image locally
@@ -86,6 +87,13 @@ docker-run:        ## Run Docker image locally
 docker-mount-run:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
 		ENTRYPOINT="-v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/" make docker-run
+
+docker-build-light:
+	@img_name=$(IMAGE_NAME_LIGHT); \
+		docker build -t $$img_name -f bin/Dockerfile.light .; \
+		IMAGE_NAME=$$img_name make docker-squash; \
+		docker tag $$img_name $$img_name:$(IMAGE_TAG); \
+		docker tag $$img_name:$(IMAGE_TAG) $$img_name:latest
 
 docker-cp-coverage:
 	@echo 'Extracting .coverage file from Docker image'; \
