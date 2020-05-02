@@ -2,6 +2,7 @@ import os
 import sys
 from localstack import config
 from localstack.constants import TRUE_STRINGS
+from localstack.services.secretsmanager import secretsmanager_listener
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 
 
@@ -141,7 +142,9 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'secretsmanager',
-            start=secretsmanager_starter.start_secretsmanager))
+            start=secretsmanager_starter.start_secretsmanager,
+            check=secretsmanager_starter.check_secretsmanager,
+            listener=secretsmanager_listener.UPDATE_SECRETSMANAGER))
 
         register_plugin(Plugin(
             'ses',

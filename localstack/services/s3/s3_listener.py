@@ -18,15 +18,14 @@ from botocore.client import ClientError
 from requests.models import Response, Request
 from localstack import config, constants
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
-from localstack.utils import persistence
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol
 )
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_responses import requests_response
+from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.s3 import multipart_content
-from localstack.services.generic_proxy import ProxyListener
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
@@ -823,7 +822,10 @@ def remove_bucket_notification(bucket):
     S3_NOTIFICATIONS.pop(bucket, None)
 
 
-class ProxyListenerS3(ProxyListener):
+class ProxyListenerS3(PersistingProxyListener):
+    def api_name(self):
+        return 's3'
+
     @staticmethod
     def is_s3_copy_request(headers, path):
         return 'x-amz-copy-source' in headers or 'x-amz-copy-source' in path
@@ -992,15 +994,15 @@ class ProxyListenerS3(ProxyListener):
         url = 'http://%s:%s%s' % (constants.LOCALHOST, constants.DEFAULT_PORT_S3_BACKEND, path_new)
         return url
 
-    def return_response(self, method, path, data, headers, response):
+    def return_response(self, method, path, data, headers, response, request_handler=None):
         path = to_str(path)
         method = to_str(method)
-        bucket_name = get_bucket_name(path, headers)
 
         # persist this API call to disk
-        persistence.record('s3', method, path, data, headers, response=response)
+        super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
         # No path-name based bucket name? Try host-based
+        bucket_name = get_bucket_name(path, headers)
         hostname_parts = headers['host'].split('.')
         if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
             bucket_name = hostname_parts[0]
