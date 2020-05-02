@@ -1,7 +1,7 @@
 import json
 from requests.models import Request
 from localstack.utils.common import to_str
-from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.persistence import PersistingProxyListener
 
 ACTION_PUT_PARAM = 'AmazonSSM.PutParameter'
 ACTION_GET_PARAM = 'AmazonSSM.GetParameter'
@@ -16,7 +16,10 @@ def normalize_name(param_name):
     return param_name
 
 
-class ProxyListenerSSM(ProxyListener):
+class ProxyListenerSSM(PersistingProxyListener):
+    def api_name(self):
+        return 'ssm'
+
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
             return 200

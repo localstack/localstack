@@ -12,8 +12,7 @@ from requests.models import Response
 from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS,
-    DEFAULT_PORT_APIGATEWAY_BACKEND, DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_EVENTS_BACKEND,
-    DEFAULT_PORT_SSM_BACKEND, DEFAULT_SERVICE_PORTS)
+    DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_SSM_BACKEND, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
@@ -77,14 +76,6 @@ GenericProxyHandler.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
 # -----------------
 # API ENTRY POINTS
 # -----------------
-
-
-def start_apigateway(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_APIGATEWAY
-    return start_moto_server('apigateway', port, name='API Gateway', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_APIGATEWAY_BACKEND, update_listener=update_listener)
-
-
 def start_sns(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_SNS
     return start_moto_server('sns', port, name='SNS', asynchronous=asynchronous,
@@ -94,12 +85,6 @@ def start_sns(port=None, asynchronous=False, update_listener=None):
 def start_cloudwatch(port=None, asynchronous=False):
     port = port or config.PORT_CLOUDWATCH
     return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
-
-
-def start_events(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_EVENTS
-    return start_moto_server('events', port, name='CloudWatch Events', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_EVENTS_BACKEND, update_listener=update_listener)
 
 
 def start_sts(port=None, asynchronous=False):
@@ -146,11 +131,6 @@ def start_ssm(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_SSM
     return start_moto_server('ssm', port, name='SSM', asynchronous=asynchronous,
         backend_port=DEFAULT_PORT_SSM_BACKEND, update_listener=update_listener)
-
-
-def start_secretsmanager(port=None, asynchronous=False):
-    port = port or config.PORT_SECRETSMANAGER
-    return start_moto_server('secretsmanager', port, name='Secrets Manager', asynchronous=asynchronous)
 
 
 # ---------------
