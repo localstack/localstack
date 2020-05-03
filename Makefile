@@ -91,9 +91,8 @@ docker-mount-run:
 docker-build-light:
 	@img_name=$(IMAGE_NAME_LIGHT); \
 		docker build -t $$img_name -f bin/Dockerfile.light .; \
-		IMAGE_NAME=$$img_name make docker-squash; \
-		docker tag $$img_name $$img_name:$(IMAGE_TAG); \
-		docker tag $$img_name:$(IMAGE_TAG) $$img_name:latest
+		IMAGE_NAME=$$img_name IMAGE_TAG=latest make docker-squash; \
+		docker tag $$img_name:latest $$img_name:$(IMAGE_TAG)
 
 docker-cp-coverage:
 	@echo 'Extracting .coverage file from Docker image'; \
