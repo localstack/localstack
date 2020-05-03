@@ -47,9 +47,10 @@ ENV MAVEN_CONFIG=/opt/code/localstack \
     PYTHONUNBUFFERED=1
 
 # clean up and prepare for squashing the image
-RUN apk del --purge git
+RUN apk del --purge git; apk del --purge mvn || true
 RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
-RUN rm -rf /tmp/* /root/.cache /opt/yarn-v1.15.2 /root/.npm/*cache; mkdir -p /tmp/localstack
+RUN rm -rf /usr/share/maven .venv/lib/python3.*/site-packages/cfnlint
+RUN rm -rf /tmp/* /root/.cache /opt/yarn-* /root/.npm/*cache; mkdir -p /tmp/localstack
 RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
 ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages
 
@@ -77,4 +78,4 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
 # clean up temporary files created during test execution
-RUN rm -rf /tmp/localstack/elasticsearch /tmp/localstack.* tests/ /root/.npm/*cache
+RUN rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache

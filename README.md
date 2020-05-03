@@ -130,6 +130,8 @@ localstack start
 (Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR localstack start --docker` if
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
 
+**Note**: Instead of using the default Docker image (`localstack/localstack`), you may also choose the more light-weight image `localstack/localstack-light` which has some large dependency files like Elasticsearch removed (and lazily downloads them, if requested). Please refer to the `USE_LIGHT_IMAGE` configuration below (note that the light version may become the default in the future).
+
 ### Using `docker-compose`
 
 You can also use the `docker-compose.yml` file from the repository and use this command (currently requires `docker-compose` version 2.1+):
@@ -180,6 +182,7 @@ You can pass the following environment variables to LocalStack:
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`).
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
+* `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `0`). Overwritten by `IMAGE_NAME`.
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
 * `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
@@ -479,10 +482,10 @@ Once the new feature / bug fix is done, run the unit testing and check for the c
 
 ```
 # To run the particular test file (sample)
-pytest --cov=localstack tests/unit/test_common.py 
+pytest --cov=localstack tests/unit/test_common.py
 
 # To check the coverage in the console
-coverage report 
+coverage report
 
 # To check the coverage as html (output will be redirected to the html folder)
 coverage html
