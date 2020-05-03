@@ -53,6 +53,7 @@ def make_response(operation_name, content='', code=200):
 def validate_template(req_data):
     LOG.debug('Validate CloudFormation template: %s' % req_data)
     # TODO implement actual validation logic
+    # Note: if we enable this via moto, ensure that we have cfnlint module available (adds ~58MB in size :/)
     response_content = """
         <Capabilities></Capabilities>
         <CapabilitiesReason></CapabilitiesReason>

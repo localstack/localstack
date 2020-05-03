@@ -332,6 +332,15 @@ class PortMappings(object):
             raise Exception('Unable to add port %s to existing range %s' % (port, range))
 
 
+def get_docker_image_to_start():
+    image_name = os.environ.get('IMAGE_NAME')
+    if not image_name:
+        image_name = constants.DOCKER_IMAGE_NAME
+        if os.environ.get('USE_LIGHT_IMAGE') in constants.TRUE_STRINGS:
+            image_name = constants.DOCKER_IMAGE_NAME_LIGHT
+    return image_name
+
+
 def start_infra_in_docker():
 
     container_name = MAIN_CONTAINER_NAME
@@ -351,7 +360,7 @@ def start_infra_in_docker():
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
     user_flags = config.DOCKER_FLAGS
-    image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
+    image_name = get_docker_image_to_start()
     service_ports = config.SERVICE_PORTS
     force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
 
