@@ -10,6 +10,7 @@ from abc import ABCMeta, abstractmethod
 from localstack.config import DATA_DIR
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_bytes, to_str
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.services.generic_proxy import ProxyListener
 
 USE_SINGLE_DUMP_FILE = True
@@ -134,9 +135,12 @@ def prepare_replay_data(command):
 
 
 def replay_command(command):
+    api = command['a']
+    if not is_api_enabled(api):
+        return
     function = getattr(requests, command['m'].lower())
     data = prepare_replay_data(command)
-    endpoint = aws_stack.get_local_service_url(command['a'])
+    endpoint = aws_stack.get_local_service_url(api)
     full_url = (endpoint[:-1] if endpoint.endswith('/') else endpoint) + command['p']
     response = function(full_url, data=data, headers=command['h'], verify=False)
     return response
