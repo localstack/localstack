@@ -889,6 +889,22 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [key1, key2])
 
+    def test_s3_put_more_than_1000_items(self):
+
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_2)
+        for i in range(0, 1010, 1):
+            body = 'test-' + str(i)
+            key = 'test-key-' + str(i)
+            self.s3_client.put_object(Bucket=TEST_BUCKET_NAME_2, Key=key, Body=body)
+
+        # trying to get the last item of 1010 items added.
+        resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key='test-key-1009')
+        self.assertEqual(to_str(resp['Body'].read()), 'test-1009')
+
+        # trying to get the first item of 1010 items added.
+        resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key='test-key-0')
+        self.assertEqual(to_str(resp['Body'].read()), 'test-0')
+
     # ---------------
     # HELPER METHODS
     # ---------------
