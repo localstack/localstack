@@ -732,12 +732,6 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
         cls.zip_file_content2 = load_file(TEST_LAMBDA_DOTNETCORE2, mode='rb')
         cls.zip_file_content31 = load_file(TEST_LAMBDA_DOTNETCORE31, mode='rb')
 
-    @classmethod
-    def tearDownClass(cls):
-        # clean up
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE2)
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_DOTNETCORE31)
-
     def __run_test(self, func_name, zip_file, handler, runtime, expected_lines):
         if not use_docker():
             return
@@ -754,6 +748,8 @@ class TestDotNetCoreRuntimes(LambdaTestBase):
         self.assertEqual(to_str(result_data).strip(), '{}')
         # TODO make lambda log checks more resilient to various formats
         # self.check_lambda_logs(func_name, expected_lines=expected_lines)
+
+        testutil.delete_lambda_function(func_name)
 
     def test_dotnetcore2_lambda_running_in_docker(self):
         self.__run_test(
