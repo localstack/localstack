@@ -396,7 +396,7 @@ def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=['t
         return True
     url = '%s://%s:%s%s' % (protocol, host, port, http_path)
     try:
-        response = safe_requests.get(url)
+        response = safe_requests.get(url, verify=False)
         return not expect_success or response.status_code < 400
     except Exception:
         return False
