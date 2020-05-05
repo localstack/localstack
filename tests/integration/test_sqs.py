@@ -553,3 +553,22 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
         lambda_client.delete_function(FunctionName=function_name)
+
+    def test_get_queue_attributes(self):
+
+        sqs = self.client
+        queue_name1 = 'test-%s' % short_uid()
+        queue_name2 = 'test-%s' % short_uid()
+
+        sqs.create_queue(QueueName=queue_name1)
+        queue_arn1 = aws_stack.sqs_queue_arn(queue_name1)
+        policy = {'deadLetterTargetArn': queue_arn1, 'maxReceiveCount': 1}
+
+        queue_url2 = self.client.create_queue(QueueName=queue_name2,
+                                              Attributes={'RedrivePolicy': json.dumps(policy)})['QueueUrl']
+
+        response = sqs.get_queue_attributes(QueueUrl=queue_url2)
+
+        redrive_policy = json.loads(response['Attributes']['RedrivePolicy'])
+        self.assertEqual(redrive_policy['maxReceiveCount'], 1)
+        self.assertIn(redrive_policy['deadLetterTargetArn'], queue_arn1)
