@@ -643,7 +643,6 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
         # get models after adding
         result = client.get_models(restApiId=rest_api_id)
-        print(result)
         self.assertEqual(result['items'][0]['name'], model_name)
         self.assertEqual(result['items'][0]['description'], description)
 
