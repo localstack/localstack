@@ -840,8 +840,3 @@ def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
         while len(result) > count:
             result.pop(0)
     return result
-
-
-def get_lambda_name_from_arn(arn):
-    attributes = arn.split(':')
-    return attributes[-1]

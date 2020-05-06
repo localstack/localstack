@@ -136,14 +136,16 @@ class TestLambdaBaseFeatures(unittest.TestCase):
     def test_adding_fallback_function_name_in_headers(self):
 
         lambda_client = aws_stack.connect_to_service('lambda')
+        ddb_client = aws_stack.connect_to_service('dynamodb')
 
         db_table = 'lambda-records'
         config.LAMBDA_FALLBACK_URL = 'dynamodb://%s' % db_table
 
-        response = lambda_client.invoke(FunctionName='non-existing-lambda',
-                                Payload=b'{}', InvocationType='RequestResponse')
+        lambda_client.invoke(FunctionName='non-existing-lambda',
+                             Payload=b'{}', InvocationType='RequestResponse')
 
-        self.assertEqual(response['ResponseMetadata']['HTTPHeaders']['functionname'], 'non-existing-lambda')
+        result = run_safe(ddb_client.scan, TableName=db_table)
+        self.assertEqual(result['Items'][0]['function_name']['S'], 'non-existing-lambda')
 
     def test_dead_letter_queue(self):
         sqs_client = aws_stack.connect_to_service('sqs')

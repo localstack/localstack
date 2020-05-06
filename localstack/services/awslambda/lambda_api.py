@@ -792,23 +792,25 @@ def forward_to_fallback_url(func_arn, data):
     """ If LAMBDA_FALLBACK_URL is configured, forward the invocation of this non-existing
         Lambda to the configured URL. """
     if not config.LAMBDA_FALLBACK_URL:
-        return None, None
+        return None
 
-    lambda_name = aws_stack.get_lambda_name_from_arn(func_arn)
+    lambda_name = aws_stack.lambda_function_name(func_arn)
     if config.LAMBDA_FALLBACK_URL.startswith('dynamodb://'):
         table_name = urlparse(config.LAMBDA_FALLBACK_URL.replace('dynamodb://', 'http://')).netloc
         dynamodb = aws_stack.connect_to_service('dynamodb')
         item = {
             'id': {'S': short_uid()},
             'timestamp': {'N': str(now_utc())},
-            'payload': {'S': str(data)}
+            'payload': {'S': str(data)},
+            'function_name': {'S': lambda_name}
         }
         aws_stack.create_dynamodb_table(table_name, partition_key='id')
         dynamodb.put_item(TableName=table_name, Item=item)
-        return '', lambda_name
+        return ''
     if re.match(r'^https?://.+', config.LAMBDA_FALLBACK_URL):
-        response = safe_requests.post(config.LAMBDA_FALLBACK_URL, data)
-        return response.content, lambda_name
+        headers = {'lambda-function-name': lambda_name}
+        response = safe_requests.post(config.LAMBDA_FALLBACK_URL, data, headers=headers)
+        return response.content
     raise ClientError('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
 
 
@@ -1189,9 +1191,9 @@ def invoke_function(function):
         not_found = not_found_error('{0}:{1}'.format(arn, qualifier))
 
     if not_found:
-        forward_result, lambda_name = forward_to_fallback_url(arn, data)
+        forward_result = forward_to_fallback_url(arn, data)
         if forward_result is not None:
-            return _create_response(forward_result, headers={'FunctionName': lambda_name})
+            return _create_response(forward_result)
         return not_found
 
     if invocation_type == 'RequestResponse':
