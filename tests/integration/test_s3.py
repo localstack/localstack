@@ -905,6 +905,18 @@ class S3ListenerTest(unittest.TestCase):
         resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key='test-key-0')
         self.assertEqual(to_str(resp['Body'].read()), 'test-0')
 
+        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, MaxKeys=1010)
+        self.assertEqual(len(resp['Contents']), 1010)
+        print(resp['Contents'][0], resp['Contents'][1008], resp['Contents'][1009])
+
+        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2)
+        self.assertEqual(len(resp['Contents']), 1000)
+        next_marker = resp['NextMarker']
+
+        # Second list
+        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, Marker=next_marker)
+        self.assertEqual(len(resp['Contents']), 10)
+
     # ---------------
     # HELPER METHODS
     # ---------------

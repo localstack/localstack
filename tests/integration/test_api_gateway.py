@@ -582,7 +582,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
         rest_api_id = response['id']
-        dummy_rest_api_id = 'a12b3c4d'
+        dummy_rest_api_id = '_non_existing_'
         model_name = 'testModel'
         description = 'test model'
         content_type = 'application/json'
@@ -652,7 +652,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
         rest_api_id = response['id']
-        dummy_rest_api_id = 'a12b3c4d'
+        dummy_rest_api_id = '_non_existing_'
         model_name = 'testModel'
         description = 'test model'
         content_type = 'application/json'
