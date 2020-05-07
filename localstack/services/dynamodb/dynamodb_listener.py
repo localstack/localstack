@@ -48,6 +48,8 @@ class ProxyListenerDynamoDB(ProxyListener):
         if method == 'OPTIONS':
             return 200
 
+        if not data:
+            data = '{}'
         data = json.loads(to_str(data))
         ddb_client = aws_stack.connect_to_service('dynamodb')
         action = headers.get('X-Amz-Target')

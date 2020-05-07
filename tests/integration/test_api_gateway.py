@@ -577,3 +577,115 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             func_name=fn_name,
             runtime=LAMBDA_RUNTIME_PYTHON27
         )
+
+    def test_create_model(self):
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='this is my api')
+        rest_api_id = response['id']
+        dummy_rest_api_id = '_non_existing_'
+        model_name = 'testModel'
+        description = 'test model'
+        content_type = 'application/json'
+
+        # success case with valid params
+        response = client.create_model(
+            restApiId=rest_api_id,
+            name=model_name,
+            description=description,
+            contentType=content_type,
+        )
+        self.assertEqual(response['name'], model_name)
+        self.assertEqual(response['description'], description)
+
+        try:
+            client.create_model(
+                restApiId=dummy_rest_api_id,
+                name=model_name,
+                description=description,
+                contentType=content_type,
+            )
+            self.fail('This call should not be successful as the rest api is not valid.')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
+            self.assertEqual(e.response['Error']['Message'], 'Invalid Rest API Id specified')
+
+        try:
+            client.create_model(
+                restApiId=dummy_rest_api_id,
+                name='',
+                description=description,
+                contentType=content_type,
+            )
+            self.fail('This call should not be successful as the model name is not specified.')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'BadRequestException')
+            self.assertEqual(e.response['Error']['Message'], 'No Model Name specified')
+
+    def test_get_api_models(self):
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='this is my api')
+        rest_api_id = response['id']
+        model_name = 'testModel'
+        description = 'test model'
+        content_type = 'application/json'
+        # when no models are present
+        result = client.get_models(restApiId=rest_api_id)
+        self.assertEqual(result['items'], [])
+        # add a model
+        client.create_model(
+            restApiId=rest_api_id,
+            name=model_name,
+            description=description,
+            contentType=content_type,
+        )
+
+        # get models after adding
+        result = client.get_models(restApiId=rest_api_id)
+        self.assertEqual(result['items'][0]['name'], model_name)
+        self.assertEqual(result['items'][0]['description'], description)
+
+    def test_get_model_by_name(self):
+
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='this is my api')
+        rest_api_id = response['id']
+        dummy_rest_api_id = '_non_existing_'
+        model_name = 'testModel'
+        description = 'test model'
+        content_type = 'application/json'
+        # add a model
+        client.create_model(
+            restApiId=rest_api_id,
+            name=model_name,
+            description=description,
+            contentType=content_type,
+        )
+
+        # get models after adding
+        result = client.get_model(restApiId=rest_api_id, modelName=model_name)
+        self.assertEqual(result['name'], model_name)
+        self.assertEqual(result['description'], description)
+
+        try:
+            client.get_model(restApiId=dummy_rest_api_id, modelName=model_name)
+            self.fail('This call should not be successful as the model is not created.')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
+            self.assertEqual(e.response['Error']['Message'], 'Invalid Rest API Id specified')
+
+    def test_get_model_with_invalid_name(self):
+
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='this is my api')
+        rest_api_id = response['id']
+
+        # test with an invalid model name
+        try:
+            client.get_model(restApiId=rest_api_id, modelName='fake')
+            self.fail('This call should not be successful as the model is not created.')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
