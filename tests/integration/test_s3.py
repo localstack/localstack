@@ -865,6 +865,14 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [])
 
+    def test_bucket_versioning(self):
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_VERSIONING)
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+
+        result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
+        self.assertEqual(result['Status'], 'Enabled')
+
     def test_upload_big_file(self):
         bucket_name = 'bucket-big-file-%s' % short_uid()
         key1 = 'test_key1'
