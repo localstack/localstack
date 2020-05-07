@@ -539,6 +539,48 @@ class SNSTest(unittest.TestCase):
         lambda_client = aws_stack.connect_to_service('lambda')
         lambda_client.delete_function(FunctionName=func_name)
 
+    def test_publish_message_after_subscribe_topic(self):
+        self.unsubscribe_all_from_sns()
+
+        topic_name = 'queue-{}'.format(short_uid())
+        queue_name = 'test-%s' % short_uid()
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
+
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        rs = self.sns_client.publish(
+            TopicArn=topic_arn,
+            Subject='test subject',
+            Message='test_message_1'
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_arn)
+
+        message_subject = 'sqs subject'
+        message_body = 'test_message_2'
+
+        rs = self.sns_client.publish(
+            TopicArn=topic_arn,
+            Subject=message_subject,
+            Message=message_body
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        def get_message(q_url):
+            resp = self.sqs_client.receive_message(QueueUrl=q_url)
+            return json.loads(resp['Messages'][0]['Body'])
+
+        message = retry(get_message, retries=3, sleep=2, q_url=queue_url)
+        self.assertEqual(message['Subject'], message_subject)
+        self.assertEqual(message['Message'], message_body)
+
+        # clean up
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+
     def _create_queue(self):
         queue_name = 'queue-%s' % short_uid()
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
