@@ -40,7 +40,7 @@ def apply_patches():
 
         return {}
 
-    def apigateway_models_IntegrationResponse_init(self, status_code, selection_pattern=None):
+    def apigateway_models_IntegrationResponse_init(self, status_code, selection_pattern=None, response_templates=None):
         self['statusCode'] = status_code
         if selection_pattern:
             self['selectionPattern'] = selection_pattern
