@@ -120,7 +120,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
     def test_forward_to_fallback_url_http(self):
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
-                records.append(data)
+                records.append({'data': data, 'headers': headers})
                 return 200
 
         records = []
@@ -130,6 +130,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         items_before = len(records)
         _run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
         items_after = len(records)
+        for record in records:
+            self.assertIn('non-existing-lambda', record['headers']['lambda-function-name'])
+
         self.assertEqual(items_after, items_before + 3)
         proxy.stop()
 
