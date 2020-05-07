@@ -73,6 +73,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Glacier** / **S3 Select**
 * **IoT**
 * **Lambda Layers**
+* **QLDB**
 * **RDS**
 * **XRay**
 * **Interactive UIs to manage resources**

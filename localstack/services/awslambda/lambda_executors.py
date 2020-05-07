@@ -39,6 +39,7 @@ LAMBDA_RUNTIME_JAVA8 = 'java8'
 LAMBDA_RUNTIME_JAVA11 = 'java11'
 LAMBDA_RUNTIME_DOTNETCORE2 = 'dotnetcore2.0'
 LAMBDA_RUNTIME_DOTNETCORE21 = 'dotnetcore2.1'
+LAMBDA_RUNTIME_DOTNETCORE31 = 'dotnetcore3.1'
 LAMBDA_RUNTIME_GOLANG = 'go1.x'
 LAMBDA_RUNTIME_RUBY = 'ruby'
 LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
@@ -733,7 +734,7 @@ class Util:
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
         # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
         # See https://github.com/lambci/docker-lambda/pull/218
-        lambdas_to_add_prefix = ['dotnetcore', 'python2.7', 'python3.6', 'python3.7']
+        lambdas_to_add_prefix = ['dotnetcore2.0', 'dotnetcore2.1', 'python2.7', 'python3.6', 'python3.7']
         if docker_image == 'lambci/lambda' and any(img in docker_tag for img in lambdas_to_add_prefix):
             docker_tag = '20191117-%s' % docker_tag
         return '"%s:%s"' % (docker_image, docker_tag)
