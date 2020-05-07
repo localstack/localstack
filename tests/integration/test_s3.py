@@ -907,7 +907,6 @@ class S3ListenerTest(unittest.TestCase):
 
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, MaxKeys=1010)
         self.assertEqual(len(resp['Contents']), 1010)
-        print(resp['Contents'][0], resp['Contents'][1008], resp['Contents'][1009])
 
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2)
         self.assertEqual(len(resp['Contents']), 1000)
