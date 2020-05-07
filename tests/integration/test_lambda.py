@@ -120,7 +120,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
     def test_forward_to_fallback_url_http(self):
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
-                records.append(data)
+                records.append({'data': data, 'headers': headers})
                 return 200
 
         records = []
@@ -130,8 +130,25 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         items_before = len(records)
         _run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
         items_after = len(records)
+        for record in records:
+            self.assertIn('non-existing-lambda', record['headers']['lambda-function-name'])
+
         self.assertEqual(items_after, items_before + 3)
         proxy.stop()
+
+    def test_adding_fallback_function_name_in_headers(self):
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        ddb_client = aws_stack.connect_to_service('dynamodb')
+
+        db_table = 'lambda-records'
+        config.LAMBDA_FALLBACK_URL = 'dynamodb://%s' % db_table
+
+        lambda_client.invoke(FunctionName='non-existing-lambda',
+                             Payload=b'{}', InvocationType='RequestResponse')
+
+        result = run_safe(ddb_client.scan, TableName=db_table)
+        self.assertEqual(result['Items'][0]['function_name']['S'], 'non-existing-lambda')
 
     def test_dead_letter_queue(self):
         sqs_client = aws_stack.connect_to_service('sqs')
