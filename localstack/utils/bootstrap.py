@@ -25,7 +25,8 @@ LOG = logging.getLogger(os.path.basename(__file__))
 PLUGINS_LOADED = {}
 
 # predefined list of plugin modules, to speed up the plugin loading at startup
-PLUGIN_MODULES = ['localstack', 'localstack_ext']
+# note: make sure to load localstack_ext before localstack
+PLUGIN_MODULES = ['localstack_ext', 'localstack']
 
 # marker for extended/ignored libs in requirements.txt
 IGNORED_LIB_MARKER = '#extended-lib'
