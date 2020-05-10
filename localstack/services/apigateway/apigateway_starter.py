@@ -40,11 +40,6 @@ def apply_patches():
 
         return {}
 
-    def apigateway_models_IntegrationResponse_init(self, status_code, selection_pattern=None, response_templates=None):
-        self['statusCode'] = status_code
-        if selection_pattern:
-            self['selectionPattern'] = selection_pattern
-
     def apigateway_models_Integration_init(
             self, integration_type, uri, http_method,
             request_templates=None, pass_through_behavior='WHEN_NO_MATCH', cache_key_parameters=[]
@@ -65,7 +60,6 @@ def apply_patches():
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
 
-    apigateway_models.IntegrationResponse.__init__ = apigateway_models_IntegrationResponse_init
     apigateway_models.Integration.__init__ = apigateway_models_Integration_init
 
 
