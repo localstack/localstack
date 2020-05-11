@@ -691,48 +691,9 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
-        apigw_client = aws_stack.connect_to_service('apigateway')
 
-        response = apigw_client.create_rest_api(name='my_api', description='this is my api')
-        api_id = response['id']
-        resources = apigw_client.get_resources(restApiId=api_id)
-        root_id = [resource for resource in resources['items'] if resource['path'] == '/'][
-            0
-        ]['id']
-
-        apigw_client.put_method(
-            restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE'
-        )
-
-        apigw_client.put_method_response(
-            restApiId=api_id, resourceId=root_id, httpMethod='PUT', statusCode='200',
-        )
-
-        aws_stack.create_dynamodb_table('MusicCollection', partition_key='id')
-
-        # Ensure that it works fine when providing the integrationHttpMethod-argument
-        apigw_client.put_integration(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod='PUT',
-            type='AWS_PROXY',
-            uri='arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection',
-            integrationHttpMethod='PUT',
-        )
-
-        apigw_client.put_integration_response(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod='PUT',
-            statusCode='200',
-            selectionPattern='',
-            responseTemplates={}
-        )
-
-        apigw_client.create_deployment(restApiId=api_id, stageName='staging')
-
+        api_id = self.create_api_gateway_and_deploy({})
         url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
-
         response = requests.put(
             url,
             json.dumps({'id': 'id1', 'data': 'foobar123'}),
@@ -741,45 +702,10 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_put_integration_dynamodb_proxy_validation_with_response_template(self):
-        apigw_client = aws_stack.connect_to_service('apigateway')
-        response = apigw_client.create_rest_api(name='my_api', description='this is my api')
-        api_id = response['id']
-        resources = apigw_client.get_resources(restApiId=api_id)
-        root_id = [resource for resource in resources['items'] if resource['path'] == '/'][
-            0
-        ]['id']
+        response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
+                                         'Item': {'id': '$.Id', 'data': '$.data'}})}
 
-        apigw_client.put_method(
-            restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE'
-        )
-
-        apigw_client.put_method_response(
-            restApiId=api_id, resourceId=root_id, httpMethod='PUT', statusCode='200',
-        )
-
-        aws_stack.create_dynamodb_table('MusicCollection', partition_key='id')
-
-        # Ensure that it works fine when providing the integrationHttpMethod-argument
-        apigw_client.put_integration(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod='PUT',
-            type='AWS_PROXY',
-            uri='arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection',
-            integrationHttpMethod='PUT',
-        )
-
-        apigw_client.put_integration_response(
-            restApiId=api_id,
-            resourceId=root_id,
-            httpMethod='PUT',
-            statusCode='200',
-            selectionPattern='',
-            responseTemplates={'application/json': json.dumps({'TableName': 'MusicCollection',
-                                                               'Item': {'id': '$.Id', 'data': '$.data'}})})
-
-        apigw_client.create_deployment(restApiId=api_id, stageName='staging')
-
+        api_id = self.create_api_gateway_and_deploy(response_templates)
         url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
 
         response = requests.put(
@@ -792,3 +718,45 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         table = dynamo_client.Table('MusicCollection')
         result = table.get_item(Key={'id': 'id1'})
         self.assertEqual(result['Item']['data'], 'foobar123')
+
+    @staticmethod
+    def create_api_gateway_and_deploy(response_template):
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        response = apigw_client.create_rest_api(name='my_api', description='this is my api')
+        api_id = response['id']
+        resources = apigw_client.get_resources(restApiId=api_id)
+        root_id = [resource for resource in resources['items'] if resource['path'] == '/'][
+            0
+        ]['id']
+
+        apigw_client.put_method(
+            restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE'
+        )
+
+        apigw_client.put_method_response(
+            restApiId=api_id, resourceId=root_id, httpMethod='PUT', statusCode='200',
+        )
+
+        aws_stack.create_dynamodb_table('MusicCollection', partition_key='id')
+
+        # Ensure that it works fine when providing the integrationHttpMethod-argument
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod='PUT',
+            type='AWS_PROXY',
+            uri='arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection',
+            integrationHttpMethod='PUT',
+        )
+
+        apigw_client.put_integration_response(
+            restApiId=api_id,
+            resourceId=root_id,
+            httpMethod='PUT',
+            statusCode='200',
+            selectionPattern='',
+            responseTemplates=response_template)
+
+        apigw_client.create_deployment(restApiId=api_id, stageName='staging')
+
+        return api_id

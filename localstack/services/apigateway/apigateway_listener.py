@@ -279,7 +279,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                     msg = 'Invalid response template defined in integration response.'
                     return make_error_response(msg, 404)
 
-                response_template = eval(response_template)
+                response_template = json.loads(response_template)
                 if response_template['TableName'] != table_name:
                     msg = 'Invalid table name specified in integration response template.'
                     return make_error_response(msg, 404)
@@ -288,16 +288,12 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 table = dynamo_client.Table(table_name)
 
                 event_data = {}
+                data_dict = json.loads(data)
                 for key, _ in response_template['Item'].items():
-                    event_data[key] = json.loads(data)[key]
+                    event_data[key] = data_dict[key]
 
                 table.put_item(Item=event_data)
-
-                response = Response()
-                response.status_code = 200
-                response.headers = aws_stack.mock_aws_request_headers()
-                response._content = event_data
-
+                response = requests_response(event_data, headers=aws_stack.mock_aws_request_headers())
                 return response
         else:
             msg = 'API Gateway action uri "%s" not yet implemented' % uri
