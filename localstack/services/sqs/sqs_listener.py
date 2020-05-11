@@ -197,7 +197,7 @@ def get_external_port(headers, request_handler):
 
 
 def validate_empty_message_batch(data):
-    data = data.split('Entries=')
+    data = to_str(data).split('Entries=')
     if len(data) > 1 and data[1] == '':
         return True
     return False
