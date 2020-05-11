@@ -263,6 +263,38 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             response.headers['Content-Length'] = len(response.content)
             response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
             return response
+
+        elif uri.startswith('arn:aws:apigateway:') and ':dynamodb:action' in uri:
+            # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
+            table_name = uri.split(':dynamodb:action')[1].split('&Table=')[1]
+            action = uri.split(':dynamodb:action')[1].split('&Table=')[0]
+
+            if 'PutItem' in action and method == 'PUT':
+                response_template = path_map.get(relative_path, {}).get('resourceMethods', {})\
+                    .get(method, {}).get('methodIntegration', {}).\
+                    get('integrationResponses', {}).get('200', {}).get('responseTemplates', {})\
+                    .get('application/json', None)
+
+                if response_template is None:
+                    msg = 'Invalid response template defined in integration response.'
+                    return make_error_response(msg, 404)
+
+                response_template = json.loads(response_template)
+                if response_template['TableName'] != table_name:
+                    msg = 'Invalid table name specified in integration response template.'
+                    return make_error_response(msg, 404)
+
+                dynamo_client = aws_stack.connect_to_resource('dynamodb')
+                table = dynamo_client.Table(table_name)
+
+                event_data = {}
+                data_dict = json.loads(data)
+                for key, _ in response_template['Item'].items():
+                    event_data[key] = data_dict[key]
+
+                table.put_item(Item=event_data)
+                response = requests_response(event_data, headers=aws_stack.mock_aws_request_headers())
+                return response
         else:
             msg = 'API Gateway action uri "%s" not yet implemented' % uri
             LOGGER.warning(msg)
