@@ -449,7 +449,7 @@ class GenericProxy(FuncThread):
     @classmethod
     def get_flask_ssl_context(cls, serial_number=None):
         if USE_SSL:
-            combined_file, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
+            _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
             return (cert_file_name, key_file_name)
         return None
 

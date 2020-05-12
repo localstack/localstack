@@ -127,7 +127,7 @@ def profiled_via_yappi(lines=50):
                 result = list(yappi.get_func_stats())
                 yappi.stop()
                 yappi.clear_stats()
-                result = [l for l in result if all([s not in l.full_name for s in skipped_lines])]
+                result = [r for r in result if all([s not in r.full_name for s in skipped_lines])]
                 entries = result[:lines]
                 prefix = LOCALSTACK_ROOT_FOLDER
                 result = []

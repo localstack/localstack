@@ -205,8 +205,8 @@ class JsonObject(object):
         return result
 
     @classmethod
-    def from_json_list(cls, l):
-        return [cls.from_json(j) for j in l]
+    def from_json_list(cls, json_list):
+        return [cls.from_json(j) for j in json_list]
 
     @classmethod
     def as_dict(cls, obj):
@@ -775,9 +775,9 @@ def cleanup_threads_and_processes(quiet=True):
     clear_list(TMP_PROCESSES)
 
 
-def clear_list(l):
-    while len(l):
-        del l[0]
+def clear_list(list_obj):
+    while len(list_obj):
+        del list_obj[0]
 
 
 def cleanup_tmp_files():

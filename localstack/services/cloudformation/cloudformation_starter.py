@@ -878,7 +878,7 @@ def inject_stats_endpoint():
         all_objects = muppy.get_objects()
         result = summary.summarize(all_objects)
         result = result[0:20]
-        summary = '\n'.join([l for l in summary.format_(result)])
+        summary = '\n'.join([line for line in summary.format_(result)])
         result = '%s\n\n%s' % (summary, json.dumps(result))
         return result, 200, {'content-type': 'text/plain'}
 
