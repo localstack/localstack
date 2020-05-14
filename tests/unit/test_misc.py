@@ -8,6 +8,8 @@ from localstack.utils.bootstrap import PortMappings
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.utils.common import (
     download, parallelize, TMP_FILES, load_file, parse_chunked_data, json_safe, now_utc)
+from localstack.services import infra
+from localstack import config
 
 
 class TestMisc(unittest.TestCase):
@@ -57,6 +59,15 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(map.to_str(), '-p 123-124:123-124')
         map.add([234, 237], [345, 348])
         self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234-237:345-348')
+
+    def test_get_service_status(self):
+        env = infra.get_services_status()
+        self.assertNotEqual(env, None)
+        self.assertGreater(len(env), 0)
+
+    def test_update_config_variable(self):
+        infra.update_config_variable('foo', 'bar')
+        self.assertEquals(config.foo, 'bar')
 
 
 # This test is not enabled in CI, it is just used for manual
