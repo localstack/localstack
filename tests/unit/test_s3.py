@@ -113,7 +113,7 @@ class S3ListenerTest (unittest.TestCase):
             'Should see the interpolated filename')
 
     def test_get_bucket_lifecycle(self):
-        bucket_name = 'test-bucket'
+        bucket_name = 'test_bucket_lifecycle'
         returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
         self.assertRegexpMatches(returned_empty_lifecycle._content, r'The bucket does not exist')
 
