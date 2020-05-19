@@ -196,9 +196,9 @@ def get_external_port(headers, request_handler):
     return request_handler.proxy.port
 
 
-def validate_empty_message_batch(data):
+def validate_empty_message_batch(data, req_data):
     data = to_str(data).split('Entries=')
-    if len(data) > 1 and data[1] == '':
+    if len(data) > 1 and data[1] == '' and not req_data.get('Entries'):
         return True
     return False
 
@@ -282,7 +282,7 @@ class ProxyListenerSQS(ProxyListener):
                 _set_queue_attributes(queue_url, req_data)
 
         elif action == 'SendMessageBatch':
-            if validate_empty_message_batch(data):
+            if validate_empty_message_batch(data, req_data):
                 msg = 'There should be at least one SendMessageBatchRequestEntry in the request.'
                 return make_error(code=404, code_string='EmptyBatchRequest', message=msg)
 
