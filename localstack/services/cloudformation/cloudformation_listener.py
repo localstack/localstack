@@ -19,7 +19,7 @@ from localstack.services.generic_proxy import ProxyListener
 XMLNS_CLOUDFORMATION = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
 LOG = logging.getLogger(__name__)
 
-MOTO_CLOUDFORMATION_ACCOUNT_ID = '123456789'
+MOTO_CLOUDFORMATION_ACCOUNT_ID = '123456789012'
 
 
 def error_response(message, code=400, error_type='ValidationError'):
