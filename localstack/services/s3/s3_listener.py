@@ -634,7 +634,7 @@ def strip_chunk_signatures(data):
 
 
 def is_bucket_available(bucket_name):
-    body = {''}
+    body = {'Code': '200'}
     exists, code = bucket_exists(bucket_name)
     if not exists:
         body = {
