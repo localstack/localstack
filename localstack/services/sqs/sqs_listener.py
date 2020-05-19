@@ -13,7 +13,7 @@ from localstack.services.sns import sns_listener
 from localstack.utils.common import to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.persistence import PersistingProxyListener
 from localstack.utils.aws.aws_responses import requests_response
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
@@ -196,7 +196,10 @@ def get_external_port(headers, request_handler):
     return request_handler.proxy.port
 
 
-class ProxyListenerSQS(ProxyListener):
+class ProxyListenerSQS(PersistingProxyListener):
+    def api_name(self):
+        return 'sqs'
+
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
             return 200
@@ -235,6 +238,11 @@ class ProxyListenerSQS(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response, request_handler):
+        # persist requests to disk
+        super(ProxyListenerSQS, self).return_response(
+            method, path, data, headers, response, request_handler
+        )
+
         if method == 'OPTIONS' and path == '/':
             # Allow CORS preflight requests to succeed.
             return 200
