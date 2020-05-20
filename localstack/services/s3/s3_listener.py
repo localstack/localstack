@@ -516,7 +516,6 @@ def get_lifecycle(bucket_name):
     status_code = 200
 
     if not lifecycle:
-        # TODO: check if bucket actually exists
         lifecycle = {
             'Error': {
                 'Code': 'NoSuchLifecycleConfiguration',
@@ -643,12 +642,8 @@ def is_bucket_available(bucket_name):
                 'Message': 'The bucket does not exist'
             }
         }
-        exists = False
-        code = code
-        xmltodict.unparse(body)
         return exists, code, body
 
-    xmltodict.unparse(body)
     return True, 200, body
 
 
