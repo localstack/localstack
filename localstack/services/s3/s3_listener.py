@@ -508,10 +508,14 @@ def remove_xml_preamble(response):
 # --------------
 def get_lifecycle(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
     status_code = 200
+
     if not lifecycle:
-        # TODO: check if bucket actually exists
         lifecycle = {
             'Error': {
                 'Code': 'NoSuchLifecycleConfiguration',
@@ -626,6 +630,21 @@ def strip_chunk_signatures(data):
         data, flags=re.MULTILINE | re.DOTALL)
 
     return data_new
+
+
+def is_bucket_available(bucket_name):
+    body = {'Code': '200'}
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        body = {
+            'Error': {
+                'Code': code,
+                'Message': 'The bucket does not exist'
+            }
+        }
+        return exists, code, body
+
+    return True, 200, body
 
 
 def bucket_exists(bucket_name):
