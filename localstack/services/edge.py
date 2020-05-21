@@ -32,7 +32,7 @@ class ProxyListenerEdge(ProxyListener):
         headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
 
         # extract API details
-        _, port, path, host = get_api_from_headers(headers, path)
+        api, port, path, host = get_api_from_headers(headers, path)
 
         if not port:
             # detect S3 presigned URLs
@@ -44,8 +44,12 @@ class ProxyListenerEdge(ProxyListener):
                 port = config.PORT_S3
 
         if not port:
-            LOG.info('Unable to find forwarding rule for host "%s", path "%s", target header "%s", auth header "%s"' %
-                     (host, path, target, auth_header))
+            if api in ['', None, '_unknown_']:
+                LOG.info(('Unable to find forwarding rule for host "%s", path "%s", '
+                    'target header "%s", auth header "%s"') % (host, path, target, auth_header))
+            else:
+                LOG.info(('Unable to determine forwarding port for API "%s" - please '
+                    'make sure this API is enabled via the SERVICES configuration') % api)
             response = Response()
             response.status_code = 404
             response._content = '{"status": "running"}'

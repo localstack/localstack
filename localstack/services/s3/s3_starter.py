@@ -7,10 +7,9 @@ from moto.s3.responses import (
     minidom, MalformedXML, undo_clean_key_name
 )
 from localstack import config
-from localstack.constants import DEFAULT_PORT_S3_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import wait_for_port_open
+from localstack.utils.common import wait_for_port_open, get_free_tcp_port
 from localstack.services.infra import start_moto_server
 from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
@@ -27,7 +26,7 @@ def check_s3(expect_shutdown=False, print_error=False):
     out = None
     try:
         # wait for port to be opened
-        wait_for_port_open(DEFAULT_PORT_S3_BACKEND)
+        wait_for_port_open(s3_listener.PORT_S3_BACKEND)
         # check S3
         out = aws_stack.connect_to_service(service_name='s3').list_buckets()
     except Exception as e:
@@ -41,7 +40,7 @@ def check_s3(expect_shutdown=False, print_error=False):
 
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_S3
-    backend_port = backend_port or DEFAULT_PORT_S3_BACKEND
+    backend_port = s3_listener.PORT_S3_BACKEND = backend_port or get_free_tcp_port()
 
     apply_patches()
 

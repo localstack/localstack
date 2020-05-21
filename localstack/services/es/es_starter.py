@@ -5,8 +5,7 @@ import traceback
 from localstack import config
 from localstack.services import install
 from localstack.utils.aws import aws_stack
-from localstack.constants import DEFAULT_PORT_ELASTICSEARCH_BACKEND
-from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf
+from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port
 from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 
 LOG = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
     delete_all_elasticsearch_data(version)
 
     install.install_elasticsearch(version)
-    backend_port = DEFAULT_PORT_ELASTICSEARCH_BACKEND
+    backend_port = get_free_tcp_port()
     base_dir = install.get_elasticsearch_install_dir(version)
     es_data_dir = os.path.join(base_dir, 'data')
     es_tmp_dir = os.path.join(base_dir, 'tmp')

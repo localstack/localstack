@@ -24,9 +24,10 @@ from boto.cloudformation.stack import Output
 from moto.cloudformation.models import FakeStack, CloudFormationBackend, cloudformation_backends
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
-from localstack.constants import DEFAULT_PORT_CLOUDFORMATION_BACKEND, TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
-from localstack.utils.common import FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json
+from localstack.utils.common import (
+    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port)
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names
@@ -69,9 +70,9 @@ MODEL_MAP = {
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_CLOUDFORMATION
-    backend_port = DEFAULT_PORT_CLOUDFORMATION_BACKEND
     print('Starting mock CloudFormation service in %s ports %s (recommended) and %s (deprecated)...' % (
         get_service_protocol(), config.EDGE_PORT, port))
+    backend_port = get_free_tcp_port()
     start_proxy_for_service('cloudformation', port, backend_port, update_listener)
     if RUN_SERVER_IN_PROCESS:
         cmd = 'python "%s" cloudformation -p %s -H 0.0.0.0' % (__file__, backend_port)

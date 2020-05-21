@@ -11,8 +11,7 @@ import subprocess
 from requests.models import Response
 from localstack import constants, config
 from localstack.constants import (
-    ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS,
-    DEFAULT_PORT_SNS_BACKEND, DEFAULT_PORT_SSM_BACKEND, DEFAULT_SERVICE_PORTS)
+    ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
     FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
@@ -76,10 +75,11 @@ GenericProxyHandler.DEFAULT_LISTENERS.append(ConfigUpdateProxyListener())
 # -----------------
 # API ENTRY POINTS
 # -----------------
+
 def start_sns(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_SNS
     return start_moto_server('sns', port, name='SNS', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_SNS_BACKEND, update_listener=update_listener)
+        update_listener=update_listener)
 
 
 def start_cloudwatch(port=None, asynchronous=False):
@@ -130,7 +130,7 @@ def start_lambda(port=None, asynchronous=False):
 def start_ssm(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_SSM
     return start_moto_server('ssm', port, name='SSM', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_SSM_BACKEND, update_listener=update_listener)
+        update_listener=update_listener)
 
 
 # ---------------
@@ -230,10 +230,10 @@ def do_run(cmd, asynchronous, print_output=None, env_vars={}):
     return run(cmd, env_vars=env_vars)
 
 
-def start_proxy_for_service(service_name, port, default_backend_port, update_listener, quiet=False, params={}):
+def start_proxy_for_service(service_name, port, backend_port, update_listener, quiet=False, params={}):
     # check if we have a custom backend configured
     custom_backend_url = os.environ.get('%s_BACKEND' % service_name.upper())
-    backend_url = custom_backend_url or ('http://%s:%s' % (DEFAULT_BACKEND_HOST, default_backend_port))
+    backend_url = custom_backend_url or ('http://%s:%s' % (DEFAULT_BACKEND_HOST, backend_port))
     return start_proxy(port, backend_url=backend_url, update_listener=update_listener, quiet=quiet, params=params)
 
 
@@ -251,7 +251,7 @@ def start_moto_server(key, port, name=None, backend_port=None, asynchronous=Fals
         name = key
     print('Starting mock %s service in %s ports %s (recommended) and %s (deprecated)...' % (
         name, get_service_protocol(), config.EDGE_PORT, port))
-    if config.USE_SSL and not backend_port:
+    if not backend_port and (config.USE_SSL or update_listener):
         backend_port = get_free_tcp_port()
     if backend_port:
         start_proxy_for_service(key, port, backend_port, update_listener)
