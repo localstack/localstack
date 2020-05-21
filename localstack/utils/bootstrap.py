@@ -298,6 +298,8 @@ class PortMappings(object):
             for i in range(port[1] - port[0] + 1):
                 self.add(port[0] + i, mapped[0] + i)
             return
+        if int(port) <= 0:
+            raise Exception('Unable to add mapping for invalid port: %s' % port)
         for from_range, to_range in self.mappings.items():
             if not self.in_expanded_range(port, from_range):
                 continue
@@ -382,6 +384,8 @@ def start_infra_in_docker():
         port_mappings.add([start, end])
 
     # construct default port mappings
+    if service_ports.get('edge') == 0:
+        service_ports.pop('edge')
     for port in service_ports.values():
         port_mappings.add(port)
 

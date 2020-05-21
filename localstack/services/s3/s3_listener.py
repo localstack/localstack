@@ -30,6 +30,9 @@ from localstack.services.s3 import multipart_content
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
 
+# backend port (configured in s3_starter.py on startup)
+PORT_S3_BACKEND = None
+
 # mappings for S3 bucket notifications
 S3_NOTIFICATIONS = {}
 
@@ -1010,7 +1013,7 @@ class ProxyListenerS3(PersistingProxyListener):
         if path == path_new:
             return
 
-        url = 'http://%s:%s%s' % (constants.LOCALHOST, constants.DEFAULT_PORT_S3_BACKEND, path_new)
+        url = 'http://%s:%s%s' % (constants.LOCALHOST, PORT_S3_BACKEND, path_new)
         return url
 
     def return_response(self, method, path, data, headers, response, request_handler=None):

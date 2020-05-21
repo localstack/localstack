@@ -1,7 +1,6 @@
 from moto.ec2 import models as ec2_models
 from moto.ec2.exceptions import InvalidPermissionNotFoundError
 from localstack import config
-from localstack.constants import DEFAULT_PORT_EC2_BACKEND
 from localstack.services.infra import start_moto_server
 
 
@@ -25,5 +24,5 @@ def patch_ec2():
 def start_ec2(port=None, asynchronous=False, update_listener=None):
     patch_ec2()
     port = port or config.PORT_EC2
-    return start_moto_server('ec2', port, name='EC2', asynchronous=asynchronous,
-        backend_port=DEFAULT_PORT_EC2_BACKEND, update_listener=update_listener)
+
+    return start_moto_server('ec2', port, name='EC2', asynchronous=asynchronous, update_listener=update_listener)

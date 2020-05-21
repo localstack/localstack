@@ -4,7 +4,6 @@ from moto.iam.models import (
     iam_backend as moto_iam_backend, aws_managed_policies, AWSManagedPolicy, IAMNotFoundException, User
 )
 from localstack import config
-from localstack.constants import DEFAULT_PORT_IAM_BACKEND
 from localstack.services.infra import start_moto_server
 
 
@@ -74,8 +73,8 @@ def start_iam(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_IAM
 
     apply_patches()
-    return start_moto_server('iam', port, name='IAM', asynchronous=asynchronous,
-                             backend_port=DEFAULT_PORT_IAM_BACKEND, update_listener=update_listener)
+    return start_moto_server('iam', port, name='IAM',
+        asynchronous=asynchronous, update_listener=update_listener)
 
 
 USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>

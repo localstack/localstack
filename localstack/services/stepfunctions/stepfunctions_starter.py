@@ -2,7 +2,7 @@ import logging
 from localstack import config
 from localstack.services import install
 from localstack.utils.aws import aws_stack
-from localstack.constants import DEFAULT_PORT_STEPFUNCTIONS_BACKEND, TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
 
 LOG = logging.getLogger(__name__)
@@ -28,7 +28,6 @@ def get_command():
 def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_STEPFUNCTIONS
     install.install_stepfunctions_local()
-    backend_port = DEFAULT_PORT_STEPFUNCTIONS_BACKEND
     # TODO: local port is currently hard coded in Step Functions Local :/
     backend_port = 8083
     cmd = get_command()
