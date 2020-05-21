@@ -251,7 +251,7 @@ def start_moto_server(key, port, name=None, backend_port=None, asynchronous=Fals
         name = key
     print('Starting mock %s service in %s ports %s (recommended) and %s (deprecated)...' % (
         name, get_service_protocol(), config.EDGE_PORT, port))
-    if config.USE_SSL and not backend_port:
+    if not backend_port and (config.USE_SSL or update_listener):
         backend_port = get_free_tcp_port()
     if backend_port:
         start_proxy_for_service(key, port, backend_port, update_listener)
