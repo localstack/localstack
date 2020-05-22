@@ -532,10 +532,13 @@ def get_lifecycle(bucket_name):
 
 def get_replication(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     replication = BUCKET_REPLICATIONS.get(bucket_name)
     status_code = 200
     if not replication:
-        # TODO: check if bucket actually exists
         replication = {
             'Error': {
                 'Code': 'ReplicationConfigurationNotFoundError',
@@ -549,10 +552,13 @@ def get_replication(bucket_name):
 
 def get_encryption(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     encryption = BUCKET_ENCRYPTIONS.get(bucket_name)
     status_code = 200
     if not encryption:
-        # TODO: check if bucket actually exists
         encryption = {
             'Error': {
                 'Code': 'ServerSideEncryptionConfigurationNotFoundError',
@@ -566,10 +572,13 @@ def get_encryption(bucket_name):
 
 def get_object_lock(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     lock_config = OBJECT_LOCK_CONFIGS.get(bucket_name)
     status_code = 200
     if not lock_config:
-        # TODO: check if bucket actually exists
         lock_config = {
             'Error': {
                 'Code': 'ObjectLockConfigurationNotFoundError',
@@ -583,7 +592,10 @@ def get_object_lock(bucket_name):
 
 def set_lifecycle(bucket_name, lifecycle):
     bucket_name = normalize_bucket_name(bucket_name)
-    # TODO: check if bucket exists, otherwise return 404-like error
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     if isinstance(to_str(lifecycle), six.string_types):
         lifecycle = xmltodict.parse(lifecycle)
     BUCKET_LIFECYCLE[bucket_name] = lifecycle
@@ -592,7 +604,10 @@ def set_lifecycle(bucket_name, lifecycle):
 
 def set_replication(bucket_name, replication):
     bucket_name = normalize_bucket_name(bucket_name)
-    # TODO: check if bucket exists, otherwise return 404-like error
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     if isinstance(to_str(replication), six.string_types):
         replication = xmltodict.parse(replication)
     BUCKET_REPLICATIONS[bucket_name] = replication
@@ -601,7 +616,10 @@ def set_replication(bucket_name, replication):
 
 def set_encryption(bucket_name, encryption):
     bucket_name = normalize_bucket_name(bucket_name)
-    # TODO: check if bucket exists, otherwise return 404-like error
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     if isinstance(to_str(encryption), six.string_types):
         encryption = xmltodict.parse(encryption)
     BUCKET_ENCRYPTIONS[bucket_name] = encryption
@@ -610,7 +628,10 @@ def set_encryption(bucket_name, encryption):
 
 def set_object_lock(bucket_name, lock_config):
     bucket_name = normalize_bucket_name(bucket_name)
-    # TODO: check if bucket exists, otherwise return 404-like error
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     if isinstance(to_str(lock_config), six.string_types):
         lock_config = xmltodict.parse(lock_config)
     OBJECT_LOCK_CONFIGS[bucket_name] = lock_config
