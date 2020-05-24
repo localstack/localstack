@@ -180,7 +180,7 @@ class LambdaFunction(Component):
         self.on_successful_invocation = None
         self.max_retry_attempts = None
         self.max_event_age = None
-        self.description = None
+        self.description = ''
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')

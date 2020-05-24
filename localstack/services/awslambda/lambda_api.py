@@ -886,7 +886,7 @@ def create_function():
         func_details.versions = {'$LATEST': {'RevisionId': str(uuid.uuid4())}}
         func_details.vpc_config = data.get('VpcConfig', {})
         func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
-        func_details.description = data.get('Description')
+        func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
         func_details.runtime = data['Runtime']
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
