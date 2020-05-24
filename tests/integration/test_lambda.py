@@ -8,9 +8,10 @@ import six
 from botocore.exceptions import ClientError
 from io import BytesIO
 from localstack import config
-from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER
+from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
+from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37
 from localstack.utils import testutil
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import get_lambda_log_events, create_lambda_archive
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
@@ -22,8 +23,8 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION
-)
+    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION,
+    LAMBDA_DEFAULT_HANDLER)
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -83,6 +84,44 @@ def _run_forward_to_fallback_url(url, num_requests=3):
 
 
 class LambdaTestBase(unittest.TestCase):
+    def test_create_lambda_function(self):
+        func_name = 'lambda_func-{}'.format(short_uid())
+        kms_key_arn = 'arn:aws:kms:us-east-1:000000000000:key11'
+        vpc_config = {
+            'SubnetIds': ['subnet-123456789'],
+            'SecurityGroupIds': ['sg-123456789']
+        }
+        tags = {
+            'env': 'testing'
+        }
+
+        kwargs = {
+            'FunctionName': func_name,
+            'Runtime': LAMBDA_RUNTIME_PYTHON37,
+            'Handler': LAMBDA_DEFAULT_HANDLER,
+            'Role': LAMBDA_TEST_ROLE,
+            'KMSKeyArn': kms_key_arn,
+            'Code': {
+                'ZipFile': create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+            },
+            'Timeout': 3,
+            'VpcConfig': vpc_config,
+            'Tags': tags
+        }
+
+        client = aws_stack.connect_to_service('lambda')
+        client.create_function(**kwargs)
+
+        rs = client.get_function(
+            FunctionName=func_name
+        )
+
+        self.assertEqual(rs['Configuration'].get('KMSKeyArn', ''), kms_key_arn)
+        self.assertEqual(rs['Configuration'].get('VpcConfig', {}), vpc_config)
+        self.assertEqual(rs['Tags'], tags)
+
+        client.delete_function(FunctionName=func_name)
+
     def check_lambda_logs(self, func_name, expected_lines=[]):
         log_events = LambdaTestBase.get_lambda_logs(func_name)
         log_messages = [e['message'] for e in log_events]

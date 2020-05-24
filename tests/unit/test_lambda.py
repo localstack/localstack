@@ -284,6 +284,8 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Description'] = ''
             expected_result['MemorySize'] = self.MEMORY_SIZE
             expected_result['Role'] = self.ROLE
+            expected_result['KMSKeyArn'] = None
+            expected_result['VpcConfig'] = None
             expected_result['LastModified'] = self.LAST_MODIFIED
             expected_result['TracingConfig'] = self.TRACING_CONFIG
             expected_result['Version'] = '1'
@@ -324,6 +326,8 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['Description'] = ''
             latest_version['MemorySize'] = self.MEMORY_SIZE
             latest_version['Role'] = self.ROLE
+            latest_version['KMSKeyArn'] = None
+            latest_version['VpcConfig'] = None
             latest_version['LastModified'] = self.LAST_MODIFIED
             latest_version['TracingConfig'] = self.TRACING_CONFIG
             latest_version['Version'] = '$LATEST'
