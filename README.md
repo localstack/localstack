@@ -75,6 +75,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Lambda Layers**
 * **QLDB**
 * **RDS**
+* **Transfer**
 * **XRay**
 * **Interactive UIs to manage resources**
 * **Test report dashboards**
