@@ -8,7 +8,8 @@ from moto import server as moto_server
 from requests.models import Response
 from localstack import constants
 from localstack.utils.common import (
-    FuncThread, ShellCommandThread, TMP_THREADS, to_str, json_safe, wait_for_port_open, is_port_open)
+    FuncThread, ShellCommandThread, TMP_THREADS, to_str, json_safe,
+    wait_for_port_open, is_port_open, get_free_tcp_port)
 from localstack.utils.bootstrap import setup_logging
 from localstack.services.generic_proxy import ProxyListener, GenericProxy
 
@@ -17,8 +18,8 @@ LOG = logging.getLogger('localstack.multiserver')
 # maps API names to server details
 API_SERVERS = {}
 
-# network port for multiserver instance
-MULTI_SERVER_PORT = 51492
+# network port for multiserver instance (lazily initialized on startup)
+MULTI_SERVER_PORT = None
 
 # API paths
 API_PATH_SERVERS = '/servers'
@@ -88,7 +89,7 @@ def start_server(port, asynchronous=False):
 
 
 def start_api_server(api, port, server_port=None):
-    server_port = server_port or MULTI_SERVER_PORT
+    server_port = server_port or get_multi_server_port()
     thread = start_server_process(server_port)
     url = 'http://localhost:%s%s' % (server_port, API_PATH_SERVERS)
     payload = {
@@ -105,7 +106,7 @@ def start_api_server(api, port, server_port=None):
 def start_server_process(port):
     if '__server__' in API_SERVERS:
         return API_SERVERS['__server__']['thread']
-    port = port or MULTI_SERVER_PORT
+    port = port or get_multi_server_port()
     API_SERVERS['__server__'] = config = {'port': port}
     LOG.info('Starting multi API server process on port %s' % port)
     if RUN_SERVER_IN_PROCESS:
@@ -124,9 +125,15 @@ def start_server_process(port):
     return thread
 
 
+def get_multi_server_port():
+    global MULTI_SERVER_PORT
+    MULTI_SERVER_PORT = MULTI_SERVER_PORT or get_free_tcp_port()
+    return MULTI_SERVER_PORT
+
+
 def main():
     setup_logging()
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else MULTI_SERVER_PORT
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else get_multi_server_port()
     start_server(port)
 
 

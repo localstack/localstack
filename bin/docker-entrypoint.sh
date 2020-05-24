@@ -17,7 +17,7 @@ cat /dev/null > /tmp/localstack_infra.err
 supervisord -c /etc/supervisord.conf &
 
 function run_startup_scripts {
-  until grep -q "^Ready.$" /tmp/localstack_infra.log >/dev/null 2>&1 ; do
+  until grep -q '^Ready.' /tmp/localstack_infra.log >/dev/null 2>&1 ; do
     echo "Waiting for all LocalStack services to be ready"
     sleep 7
   done

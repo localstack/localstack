@@ -8,13 +8,10 @@ import logging
 import warnings
 import threading
 import traceback
-import pip as pip_mod
-import shutil
-try:
-    import subprocess32 as subprocess
-except Exception:
-    import subprocess
+import subprocess
 import six
+import shutil
+import pip as pip_mod
 from datetime import datetime
 from localstack import constants, config
 
@@ -61,9 +58,6 @@ MAIN_CONTAINER_NAME = 'localstack_main'
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
-
-# semaphore for locking access to Popen
-mutex_popen = threading.Semaphore(1)
 
 
 def bootstrap_installation():
@@ -509,14 +503,6 @@ class FuncThread(threading.Thread):
 def run(cmd, print_error=True, asynchronous=False, stdin=False,
         stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
         inherit_env=True, tty=False):
-    # don't use subprocess module in Python 2 as it is not thread-safe
-    # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
-    # TODO: should be removed, now that Python 2 has reached its EOL
-    if six.PY2:
-        import subprocess32 as subprocess
-    else:
-        import subprocess
-
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
@@ -535,41 +521,39 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
             output = subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict, cwd=cwd)
             return output.decode(config.DEFAULT_ENCODING)
 
-        # subprocess.Popen is not thread-safe, hence use a mutex here.. (TODO: mutex still needed?)
-        with mutex_popen:
-            stdin_arg = subprocess.PIPE if stdin else None
-            stdout_arg = open(outfile, 'ab') if isinstance(outfile, six.string_types) else outfile
-            stderr_arg = stderr
-            if tty:
-                # Note: leave the "pty" import here (not supported in Windows)
-                import pty
-                master_fd, slave_fd = pty.openpty()
-                stdin_arg = slave_fd
-                stdout_arg = stderr_arg = None
+        stdin_arg = subprocess.PIPE if stdin else None
+        stdout_arg = open(outfile, 'ab') if isinstance(outfile, six.string_types) else outfile
+        stderr_arg = stderr
+        if tty:
+            # Note: leave the "pty" import here (not supported in Windows)
+            import pty
+            master_fd, slave_fd = pty.openpty()
+            stdin_arg = slave_fd
+            stdout_arg = stderr_arg = None
 
-            # start the actual sub process
-            kwargs = {}
-            if is_linux() or is_mac_os():
-                kwargs['preexec_fn'] = os.setsid
-            process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
-                stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, **kwargs)
+        # start the actual sub process
+        kwargs = {}
+        if is_linux() or is_mac_os():
+            kwargs['preexec_fn'] = os.setsid
+        process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
+            stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, **kwargs)
 
-            if tty:
-                # based on: https://stackoverflow.com/questions/41542960
-                def pipe_streams(*args):
-                    while process.poll() is None:
-                        r, w, e = select.select([sys.stdin, master_fd], [], [])
-                        if sys.stdin in r:
-                            d = os.read(sys.stdin.fileno(), 10240)
-                            os.write(master_fd, d)
-                        elif master_fd in r:
-                            o = os.read(master_fd, 10240)
-                            if o:
-                                os.write(sys.stdout.fileno(), o)
+        if tty:
+            # based on: https://stackoverflow.com/questions/41542960
+            def pipe_streams(*args):
+                while process.poll() is None:
+                    r, w, e = select.select([sys.stdin, master_fd], [], [])
+                    if sys.stdin in r:
+                        d = os.read(sys.stdin.fileno(), 10240)
+                        os.write(master_fd, d)
+                    elif master_fd in r:
+                        o = os.read(master_fd, 10240)
+                        if o:
+                            os.write(sys.stdout.fileno(), o)
 
-                FuncThread(pipe_streams).start()
+            FuncThread(pipe_streams).start()
 
-            return process
+        return process
     except subprocess.CalledProcessError as e:
         if print_error:
             print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))

@@ -4,8 +4,8 @@ import sys
 import json
 import time
 import signal
-import traceback
 import logging
+import traceback
 import boto3
 import subprocess
 from requests.models import Response
@@ -14,7 +14,7 @@ from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
-    FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open)
+    FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open, sleep_forever)
 from localstack.utils.server import multiserver
 from localstack.utils.bootstrap import (
     setup_logging, is_debug, canonicalize_api_names, load_plugins, in_ci)
@@ -338,50 +338,9 @@ def start_infra(asynchronous=False, apis=None):
         # load plugins
         load_plugins()
 
-        event_publisher.fire_event(event_publisher.EVENT_START_INFRA,
-            {'d': is_in_docker and 1 or 0, 'c': in_ci() and 1 or 0})
+        # with plugins loaded, now start the infrastructure
+        do_start_infra(asynchronous, apis, is_in_docker)
 
-        # set up logging
-        setup_logging()
-
-        # prepare APIs
-        apis = canonicalize_api_names(apis)
-        # set environment
-        os.environ['AWS_REGION'] = config.DEFAULT_REGION
-        os.environ['ENV'] = ENV_DEV
-        # register signal handlers
-        if not os.environ.get(ENV_INTERNAL_TEST_RUN):
-            register_signal_handlers()
-        # make sure AWS credentials are configured, otherwise boto3 bails on us
-        check_aws_credentials()
-        # install libs if not present
-        install.install_components(apis)
-        # Some services take a bit to come up
-        sleep_time = 5
-        # start services
-        thread = None
-
-        # loop through plugins and start each service
-        for name, plugin in SERVICE_PLUGINS.items():
-            if plugin.is_enabled(api_names=apis):
-                record_service_health(name, 'starting')
-                t1 = plugin.start(asynchronous=True)
-                thread = thread or t1
-
-        time.sleep(sleep_time)
-        # ensure that all infra components are up and running
-        check_infra(apis=apis)
-        # restore persisted data
-        persistence.restore_persisted_data(apis=apis)
-        print('Ready.')
-        sys.stdout.flush()
-        if not asynchronous and thread:
-            # this is a bit of an ugly hack, but we need to make sure that we
-            # stay in the execution context of the main thread, otherwise our
-            # signal handlers don't work
-            while True:
-                time.sleep(1)
-        return thread
     except KeyboardInterrupt:
         print('Shutdown')
     except Exception as e:
@@ -391,3 +350,49 @@ def start_infra(asynchronous=False, apis=None):
     finally:
         if not asynchronous:
             stop_infra()
+
+
+def do_start_infra(asynchronous, apis, is_in_docker):
+    event_publisher.fire_event(event_publisher.EVENT_START_INFRA,
+        {'d': is_in_docker and 1 or 0, 'c': in_ci() and 1 or 0})
+
+    # set up logging
+    setup_logging()
+
+    # prepare APIs
+    apis = canonicalize_api_names(apis)
+    # set environment
+    os.environ['AWS_REGION'] = config.DEFAULT_REGION
+    os.environ['ENV'] = ENV_DEV
+    # register signal handlers
+    if not os.environ.get(ENV_INTERNAL_TEST_RUN):
+        register_signal_handlers()
+    # make sure AWS credentials are configured, otherwise boto3 bails on us
+    check_aws_credentials()
+    # install libs if not present
+    install.install_components(apis)
+    # Some services take a bit to come up
+    sleep_time = 5
+    # start services
+    thread = None
+
+    # loop through plugins and start each service
+    for name, plugin in SERVICE_PLUGINS.items():
+        if plugin.is_enabled(api_names=apis):
+            record_service_health(name, 'starting')
+            t1 = plugin.start(asynchronous=True)
+            thread = thread or t1
+
+    time.sleep(sleep_time)
+    # ensure that all infra components are up and running
+    check_infra(apis=apis)
+    # restore persisted data
+    persistence.restore_persisted_data(apis=apis)
+    print('Ready.')
+    sys.stdout.flush()
+    if not asynchronous and thread:
+        # this is a bit of an ugly hack, but we need to make sure that we
+        # stay in the execution context of the main thread, otherwise our
+        # signal handlers don't work
+        sleep_forever()
+    return thread

@@ -412,12 +412,21 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
     return retry(check, sleep=sleep_time, retries=retries)
 
 
-def get_free_tcp_port():
-    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp.bind(('', 0))
-    addr, port = tcp.getsockname()
-    tcp.close()
-    return port
+def get_free_tcp_port(blacklist=None):
+    blacklist = blacklist or []
+    for i in range(10):
+        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp.bind(('', 0))
+        addr, port = tcp.getsockname()
+        tcp.close()
+        if port not in blacklist:
+            return port
+    raise Exception('Unable to determine free TCP port with blacklist %s' % blacklist)
+
+
+def sleep_forever():
+    while True:
+        time.sleep(1)
 
 
 def get_service_protocol():
@@ -763,8 +772,12 @@ def cleanup(files=True, env=ENV_DEV, quiet=True):
 
 
 def cleanup_threads_and_processes(quiet=True):
-    for t in TMP_THREADS:
-        t.stop(quiet=quiet)
+    for thread in TMP_THREADS:
+        if thread:
+            try:
+                thread.stop(quiet=quiet)
+            except Exception as e:
+                print(e)
     for p in TMP_PROCESSES:
         try:
             p.terminate()
