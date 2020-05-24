@@ -10,16 +10,14 @@ import importlib
 from six import iteritems
 from localstack.utils.aws import aws_stack
 from localstack.constants import (
-    LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID
-)
+    LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
 from localstack.services.awslambda.lambda_api import (
-    get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION,
-    LAMBDA_DEFAULT_TIMEOUT
-)
+    get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
+LAMBDA_TIMEOUT_SEC = 6
 
 
 def copy_dir(source, target):
@@ -157,7 +155,7 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
         'Code': {
             'ZipFile': zip_file
         },
-        'Timeout': LAMBDA_DEFAULT_TIMEOUT,
+        'Timeout': LAMBDA_TIMEOUT_SEC,
         'Environment': dict(Variables=envvars),
         'Tags': tags
     }
