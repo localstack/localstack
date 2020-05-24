@@ -585,7 +585,8 @@ def dynamodb_get_item_raw(request):
     headers['X-Amz-Target'] = 'DynamoDB_20120810.GetItem'
     new_item = make_http_request(url=config.TEST_DYNAMODB_URL,
         method='POST', data=json.dumps(request), headers=headers)
-    new_item = json.loads(new_item.text)
+    new_item = new_item.text
+    new_item = new_item and json.loads(new_item)
     return new_item
 
 

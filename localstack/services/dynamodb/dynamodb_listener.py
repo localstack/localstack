@@ -431,6 +431,8 @@ def find_existing_item(put_item, table_name=None):
 
     req = {'TableName': table_name, 'Key': search_key}
     existing_item = aws_stack.dynamodb_get_item_raw(req)
+    if not existing_item:
+        return existing_item
     if 'Item' not in existing_item:
         if 'message' in existing_item:
             table_names = ddb_client.list_tables()['TableNames']
