@@ -2,7 +2,7 @@ import os
 import json
 import time
 import unittest
-
+from botocore.exceptions import ClientError
 from localstack.utils import testutil
 from localstack.utils.testutil import get_lambda_log_events, get_lambda_log_group_name
 from localstack.utils.aws import aws_stack
@@ -572,3 +572,30 @@ class SQSTest(unittest.TestCase):
         redrive_policy = json.loads(response['Attributes']['RedrivePolicy'])
         self.assertEqual(redrive_policy['maxReceiveCount'], 1)
         self.assertIn(redrive_policy['deadLetterTargetArn'], queue_arn1)
+
+    def test_send_message_batch_with_empty_list(self):
+        client = self.client
+        response = client.create_queue(QueueName='test-queue')
+        queue_url = response['QueueUrl']
+
+        try:
+            client.send_message_batch(QueueUrl=queue_url, Entries=[])
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'EmptyBatchRequest')
+            self.assertEqual(e.response['ResponseMetadata']['HTTPStatusCode'], 404)
+
+        entries = [{
+            'Id': 'message{:02d}'.format(0),
+            'MessageBody': 'msgBody{:02d}'.format(0),
+            'MessageAttributes': {
+                'CustomAttribute': {
+                    'DataType': 'String',
+                    'StringValue': 'CustomAttributeValue{:02d}'.format(0)
+                }
+            }
+        }]
+
+        result = client.send_message_batch(QueueUrl=queue_url, Entries=entries)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        # clean up
+        client.delete_queue(QueueUrl=queue_url)

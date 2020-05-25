@@ -14,7 +14,7 @@ from localstack.utils.common import to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.aws.aws_responses import requests_response
+from localstack.utils.aws.aws_responses import requests_response, make_error
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
@@ -196,6 +196,13 @@ def get_external_port(headers, request_handler):
     return request_handler.proxy.port
 
 
+def validate_empty_message_batch(data, req_data):
+    data = to_str(data).split('Entries=')
+    if len(data) > 1 and not req_data.get('Entries'):
+        return True
+    return False
+
+
 class ProxyListenerSQS(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
@@ -273,6 +280,11 @@ class ProxyListenerSQS(ProxyListener):
             if action == 'CreateQueue':
                 queue_url = re.match(r'.*<QueueUrl>(.*)</QueueUrl>', content_str, re.DOTALL).group(1)
                 _set_queue_attributes(queue_url, req_data)
+
+        elif action == 'SendMessageBatch':
+            if validate_empty_message_batch(data, req_data):
+                msg = 'There should be at least one SendMessageBatchRequestEntry in the request.'
+                return make_error(code=404, code_string='EmptyBatchRequest', message=msg)
 
         # instruct listeners to fetch new SQS message
         if action in ('SendMessage', 'SendMessageBatch'):
