@@ -7,7 +7,6 @@ class TestEc2Integrations(unittest.TestCase):
         self.ec2_client = aws_stack.connect_to_service('ec2')
 
     def test_create_vpc_end_point(self):
-
         ec2 = self.ec2_client
         vpc = ec2.create_vpc(CidrBlock='10.0.0.0/16')
         subnet = ec2.create_subnet(VpcId=vpc['Vpc']['VpcId'], CidrBlock='10.0.0.0/24')
@@ -51,3 +50,36 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertEquals(vpc_end_point['VpcEndpoint']['SubnetIds'][0], subnet['Subnet']['SubnetId'])
         self.assertEquals(vpc_end_point['VpcEndpoint']['VpcId'], vpc['Vpc']['VpcId'])
         self.assertGreater(len(vpc_end_point['VpcEndpoint']['DnsEntries']), 0)
+
+    def test_reserved_instance_api(self):
+        rs = self.ec2_client.describe_reserved_instances_offerings(
+            AvailabilityZone='us-east-1a',
+            IncludeMarketplace=True,
+            InstanceType='t2.small',
+            OfferingClass='standard',
+            ProductDescription='Linux/UNIX',
+            ReservedInstancesOfferingIds=[
+                'string',
+            ],
+            OfferingType='Heavy Utilization'
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = self.ec2_client.purchase_reserved_instances_offering(
+            InstanceCount=1,
+            ReservedInstancesOfferingId='string',
+            LimitPrice={
+                'Amount': 100.0,
+                'CurrencyCode': 'USD'
+            }
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = self.ec2_client.describe_reserved_instances(
+            OfferingClass='standard',
+            ReservedInstancesIds=[
+                'string',
+            ],
+            OfferingType='Heavy Utilization'
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
