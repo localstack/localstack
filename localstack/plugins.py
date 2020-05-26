@@ -2,7 +2,6 @@ import os
 import sys
 from localstack import config
 from localstack.constants import TRUE_STRINGS
-from localstack.services.secretsmanager import secretsmanager_listener
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 
 
@@ -46,13 +45,14 @@ def do_register_localstack_plugins():
             start_sns, start_route53, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
             start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams
         )
+        from localstack.services.events import events_listener, events_starter
         from localstack.services.plugins import Plugin, register_plugin
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
         from localstack.services.apigateway import apigateway_listener
         from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
         from localstack.services.cloudformation import cloudformation_listener, cloudformation_starter
-        from localstack.services.events import events_listener, events_starter
+        from localstack.services.secretsmanager import secretsmanager_listener
         from localstack.services.secretsmanager import secretsmanager_starter
 
         register_plugin(Plugin(

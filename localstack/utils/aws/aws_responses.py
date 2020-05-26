@@ -1,11 +1,11 @@
 import re
 import json
 from flask import Response
+from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 from localstack.utils.common import to_str
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from requests.models import CaseInsensitiveDict
 from localstack.utils.common import short_uid
 
 
