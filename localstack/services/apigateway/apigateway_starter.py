@@ -4,7 +4,6 @@ from moto.apigateway.exceptions import (
     MethodNotFoundException, NoIntegrationDefined
 )
 from localstack import config
-from localstack.constants import DEFAULT_PORT_APIGATEWAY_BACKEND
 from localstack.services.infra import start_moto_server
 from localstack.utils.common import short_uid
 
@@ -65,7 +64,6 @@ def apply_patches():
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_APIGATEWAY
-    backend_port = backend_port or DEFAULT_PORT_APIGATEWAY_BACKEND
 
     apply_patches()
 

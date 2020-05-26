@@ -32,7 +32,10 @@ class ProxyListenerEdge(ProxyListener):
         headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
 
         # extract API details
-        _, port, path, host = get_api_from_headers(headers, path)
+        api, port, path, host = get_api_from_headers(headers, path)
+
+        if port and int(port) < 0:
+            return 404
 
         if not port:
             # detect S3 presigned URLs
@@ -44,8 +47,12 @@ class ProxyListenerEdge(ProxyListener):
                 port = config.PORT_S3
 
         if not port:
-            LOG.info('Unable to find forwarding rule for host "%s", path "%s", target header "%s", auth header "%s"' %
-                     (host, path, target, auth_header))
+            if api in ['', None, '_unknown_']:
+                LOG.info(('Unable to find forwarding rule for host "%s", path "%s", '
+                    'target header "%s", auth header "%s"') % (host, path, target, auth_header))
+            else:
+                LOG.info(('Unable to determine forwarding port for API "%s" - please '
+                    'make sure this API is enabled via the SERVICES configuration') % api)
             response = Response()
             response.status_code = 404
             response._content = '{"status": "running"}'
@@ -78,9 +85,11 @@ def get_api_from_headers(headers, path=None):
     try:
         credential_scope = auth_header.split(',')[0].split()[1]
         _, _, _, service, _ = credential_scope.split('/')
-        result = service, config.service_port(service)
+        result = service, get_service_port_for_account(service, headers)
     except Exception:
         pass
+
+    result_before = result
 
     # Fallback rules and route customizations applied below
 
@@ -103,7 +112,12 @@ def get_api_from_headers(headers, path=None):
     elif ls_target == 'web' or path == '/graph':
         result = 'web', config.PORT_WEB_UI
 
-    return result[0], result[1], path, host
+    return result[0], result_before[1] or result[1], path, host
+
+
+def get_service_port_for_account(service, headers):
+    # assume we're only using a single account, hence return the static port mapping from config.py
+    return config.service_port(service)
 
 
 def do_start_edge(port, use_ssl, asynchronous=False):

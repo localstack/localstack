@@ -171,14 +171,16 @@ class LambdaFunction(Component):
         self.cwd = None
         self.timeout = None
         self.last_modified = None
-        self.description = ''
+        self.vpc_config = None
         self.role = None
+        self.kms_key_arn = None
         self.memory_size = None
         self.code = None
         self.dead_letter_config = None
         self.on_successful_invocation = None
         self.max_retry_attempts = None
         self.max_event_age = None
+        self.description = ''
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')

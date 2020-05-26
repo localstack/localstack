@@ -261,12 +261,12 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscriptionArn, message, message_attributes, subject='',):
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject='',):
     event = {
         'Records': [{
             'EventSource': 'localstack:sns',
             'EventVersion': '1.0',
-            'EventSubscriptionArn': subscriptionArn,
+            'EventSubscriptionArn': subscription_arn,
             'Sns': {
                 'Type': 'Notification',
                 'TopicArn': topic_arn,
@@ -751,7 +751,11 @@ def do_list_functions():
         if not func_details:
             # this can happen if we're accessing Lambdas from a different region (ARN mismatch)
             continue
-        funcs.append(format_func_details(func_details))
+
+        details = format_func_details(func_details)
+        details['Tags'] = func.tags
+
+        funcs.append(details)
     return funcs
 
 
@@ -761,7 +765,9 @@ def format_func_details(func_details, version=None, always_add_version=False):
     result = {
         'CodeSha256': func_version.get('CodeSha256'),
         'Role': func_details.role,
+        'KMSKeyArn': func_details.kms_key_arn,
         'Version': version,
+        'VpcConfig': func_details.vpc_config,
         'FunctionArn': func_details.arn(),
         'FunctionName': func_details.name(),
         'CodeSize': func_version.get('CodeSize'),
@@ -878,6 +884,7 @@ def create_function():
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
         func_details.versions = {'$LATEST': {'RevisionId': str(uuid.uuid4())}}
+        func_details.vpc_config = data.get('VpcConfig', {})
         func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
         func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
@@ -886,6 +893,7 @@ def create_function():
         func_details.tags = data.get('Tags', {})
         func_details.timeout = data.get('Timeout', LAMBDA_DEFAULT_TIMEOUT)
         func_details.role = data['Role']
+        func_details.kms_key_arn = data.get('KMSKeyArn')
         func_details.memory_size = data.get('MemorySize')
         func_details.code = data['Code']
         func_details.set_dead_letter_config(data)
@@ -925,7 +933,8 @@ def get_function(function):
                 'Configuration': func,
                 'Code': {
                     'Location': '%s/code' % request.url
-                }
+                },
+                'Tags': func['Tags']
             }
             lambda_details = arn_to_lambda.get(func['FunctionArn'])
             if lambda_details.concurrency is not None:
@@ -944,8 +953,9 @@ def list_functions():
               in: body
     """
     funcs = do_list_functions()
-    result = {}
-    result['Functions'] = funcs
+    result = {
+        'Functions': funcs
+    }
     return jsonify(result)
 
 

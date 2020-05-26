@@ -6,6 +6,7 @@ from localstack.utils.common import to_str
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from requests.models import CaseInsensitiveDict
+from localstack.utils.common import short_uid
 
 
 def flask_error_response(msg, code=500, error_type='InternalFailure'):
@@ -45,6 +46,18 @@ def requests_to_flask_response(r):
 def response_regex_replace(response, search, replace):
     response._content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
     response.headers['Content-Length'] = str(len(response._content))
+
+
+def make_error(message, code=400, code_string='InvalidParameter'):
+    response = Response()
+    response._content = """<ErrorResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/"><Error>
+        <Type>Sender</Type>
+        <Code>{code_string}</Code>
+        <Message>{message}</Message>
+        </Error><RequestId>{req_id}</RequestId>
+        </ErrorResponse>""".format(message=message, code_string=code_string, req_id=short_uid())
+    response.status_code = code
+    return response
 
 
 class LambdaResponse(object):

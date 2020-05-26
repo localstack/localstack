@@ -5,7 +5,7 @@ from moto.events.models import Rule as rule_model
 from moto.events.responses import EventsHandler as events_handler
 from localstack import config
 from localstack.constants import (
-    APPLICATION_AMZ_JSON_1_1, DEFAULT_PORT_EVENTS_BACKEND, TEST_AWS_ACCOUNT_ID)
+    APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 from localstack.services.infra import start_moto_server
@@ -144,7 +144,6 @@ def start_scheduler():
 
 def start_events(port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_EVENTS
-    backend_port = DEFAULT_PORT_EVENTS_BACKEND
 
     apply_patches()
     start_scheduler()
@@ -154,6 +153,5 @@ def start_events(port=None, asynchronous=None, update_listener=None):
         port=port,
         name='Cloudwatch Events',
         asynchronous=asynchronous,
-        backend_port=backend_port,
         update_listener=update_listener
     )
