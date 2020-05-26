@@ -22,7 +22,6 @@ TEST_TABLE_NAME = 'test_stream_table'
 TEST_LAMBDA_NAME_DDB = 'test_lambda_ddb'
 TEST_LAMBDA_NAME_STREAM = 'test_lambda_stream'
 TEST_LAMBDA_NAME_QUEUE = 'test_lambda_queue'
-TEST_LAMBDA_NAME_QUEUE_BATCH = 'test_lambda_queue_batch'
 TEST_FIREHOSE_NAME = 'test_firehose'
 TEST_BUCKET_NAME = lambda_integration.TEST_BUCKET_NAME
 TEST_TOPIC_NAME = 'test_topic'
@@ -502,12 +501,14 @@ class IntegrationTest(unittest.TestCase):
         sqs = aws_stack.connect_to_service('sqs')
         lambda_api = aws_stack.connect_to_service('lambda')
 
+        lambda_name_queue_batch = 'lambda_queue_batch-%s' % short_uid()
+
         # deploy test lambda connected to SQS queue
-        sqs_queue_info = testutil.create_sqs_queue(TEST_LAMBDA_NAME_QUEUE_BATCH)
+        sqs_queue_info = testutil.create_sqs_queue(lambda_name_queue_batch)
         queue_url = sqs_queue_info['QueueUrl']
         resp = testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,
-            func_name=TEST_LAMBDA_NAME_QUEUE_BATCH,
+            func_name=lambda_name_queue_batch,
             event_source_arn=sqs_queue_info['QueueArn'],
             runtime=LAMBDA_RUNTIME_PYTHON27,
             libs=TEST_LAMBDA_LIBS
@@ -566,11 +567,7 @@ class IntegrationTest(unittest.TestCase):
                     (not_visible_count, 0))
 
             invocation_count = get_lambda_invocations_count(
-                TEST_LAMBDA_NAME_QUEUE_BATCH,
-                period=120,
-                start_time=start_time,
-                end_time=datetime.now()
-            )
+                lambda_name_queue_batch, period=120, start_time=start_time, end_time=datetime.now())
             if invocation_count != 3:
                 LOGGER.warning(('Lambda invocations (actual/expected): %s/%s') %
                     (invocation_count, 3))
@@ -582,7 +579,7 @@ class IntegrationTest(unittest.TestCase):
         # wait for the queue to drain (max 90s)
         retry(wait_for_done, retries=18, sleep=5.0)
 
-        testutil.delete_lambda_function(TEST_LAMBDA_NAME_QUEUE_BATCH)
+        testutil.delete_lambda_function(lambda_name_queue_batch)
         sqs.delete_queue(QueueUrl=queue_url)
 
     def test_scheduled_lambda(self):
