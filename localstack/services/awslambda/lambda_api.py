@@ -261,7 +261,8 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_attributes, subject='',):
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
+        message_attributes, unsubscribe_url, subject='',):
     event = {
         'Records': [{
             'EventSource': 'localstack:sns',
@@ -269,10 +270,17 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message, mes
             'EventSubscriptionArn': subscription_arn,
             'Sns': {
                 'Type': 'Notification',
+                'MessageId': str(uuid.uuid4()),
                 'TopicArn': topic_arn,
                 'Subject': subject,
                 'Message': message,
                 'Timestamp': timestamp_millis(),
+                'SignatureVersion': '1',
+                # TODO Add a more sophisticated solution with an actual signature
+                # Hardcoded
+                'Signature': 'EXAMPLEpH+..',
+                'SigningCertUrl': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-000000000.pem',
+                'UnsubscribeUrl': unsubscribe_url,
                 'MessageAttributes': message_attributes
             }
         }]
