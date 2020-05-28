@@ -3,11 +3,17 @@ import os
 import json
 import uuid
 import unittest
+
+from localstack import config
+
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.events.events_listener import EVENTS_TMP_DIR
+from localstack.services.generic_proxy import ProxyListener
+from localstack.services.infra import start_proxy
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import load_file, retry, short_uid
+from localstack.utils.common import load_file, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, \
+    get_service_protocol
 from localstack.utils.testutil import get_lambda_log_events
 
 
@@ -26,6 +32,7 @@ TEST_EVENT_PATTERN = {
 class EventsTest(unittest.TestCase):
     def setUp(self):
         self.events_client = aws_stack.connect_to_service('events')
+        self.sns_client = aws_stack.connect_to_service('sns')
 
     def test_put_rule(self):
         rule_name = 'rule-{}'.format(short_uid())
@@ -230,3 +237,66 @@ class EventsTest(unittest.TestCase):
         self.events_client.delete_event_bus(
             Name=TEST_EVENT_BUS_NAME
         )
+
+    def test_schedule_expression_event_with_http_endpoint(self):
+        class HttpEndpointListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                event = json.loads(to_str(data))
+                events.append(event)
+                return 200
+
+        topic_name = 'topic-{}'.format(short_uid())
+        rule_name = 'rule-{}'.format(short_uid())
+        target_id = 'target-{}'.format(short_uid())
+        events = []
+
+        local_port = get_free_tcp_port()
+        proxy = start_proxy(local_port, backend_url=None, update_listener=HttpEndpointListener())
+        wait_for_port_open(local_port)
+
+        endpoint = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, local_port)
+
+        topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol='http', Endpoint=endpoint)
+
+        event = {
+            'env': 'testing'
+        }
+
+        self.events_client.put_rule(
+            Name=rule_name,
+            ScheduleExpression='rate(1 minutes)'
+        )
+
+        self.events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': topic_arn,
+                    'Input': json.dumps(event)
+                }
+            ]
+        )
+
+        def received():
+            self.assertGreaterEqual(len(events), 2)
+            notifications = [event['Message'] for event in events if event['Type'] == 'Notification']
+            self.assertGreaterEqual(len(notifications), 1)
+            return notifications[0]
+
+        notification = retry(received, retries=2, sleep=40)
+        self.assertEqual(json.loads(notification), event)
+        proxy.stop()
+
+        self.events_client.remove_targets(
+            Rule=rule_name,
+            Ids=[target_id],
+            Force=True
+        )
+        self.events_client.delete_rule(
+            Name=rule_name,
+            Force=True
+        )
+
+        self.sns_client.delete_topic(TopicArn=topic_arn)
