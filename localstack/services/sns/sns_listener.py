@@ -266,7 +266,8 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
         elif subscriber['Protocol'] == 'lambda':
             try:
                 external_url = external_service_url('sns')
-                unsubscribe_url='%s/?Action=Unsubscribe&SubscriptionArn=%s' % (external_url, subscriber['SubscriptionArn'])
+                unsubscribe_url = '%s/?Action=Unsubscribe&SubscriptionArn=%s' % (external_url,
+                                    subscriber['SubscriptionArn'])
                 response = lambda_api.process_sns_notification(
                     subscriber['Endpoint'],
                     topic_arn,
