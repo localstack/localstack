@@ -108,7 +108,7 @@ def handle_put_rule(data):
 
 
 def handle_delete_rule(rule_name):
-    job_id = RULE_SCHEDULED_JOBS.get(rule_name, None)
+    job_id = RULE_SCHEDULED_JOBS.get(rule_name)
     if job_id:
         LOG.debug('Removing scheduled Events: {} | job_id: {}'.format(rule_name, job_id))
         JobScheduler.instance().cancel_job(job_id=job_id)
