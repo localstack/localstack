@@ -125,6 +125,7 @@ STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get('STEPFUNCTIONS_LAMBDA_ENDPOINT', 
 # path prefix for windows volume mounting
 WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get('WINDOWS_DOCKER_MOUNT_PREFIX', '/host_mnt')
 
+
 def has_docker():
     try:
         with open(os.devnull, 'w') as devnull:
