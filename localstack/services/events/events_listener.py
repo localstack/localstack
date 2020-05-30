@@ -16,7 +16,7 @@ LOG = logging.getLogger(__name__)
 
 EVENTS_TMP_DIR = os.path.join(config.TMP_FOLDER, 'cw_events')
 
-# maps job IDs to scheduled rule details
+# maps rule to job_id
 RULE_SCHEDULED_JOBS = {}
 
 
@@ -60,9 +60,15 @@ def get_scheduled_rule_func(data):
             LOG.debug('Notifying %s targets in response to triggered Events rule %s' % (len(targets), rule_name))
         for target in targets:
             arn = target.get('Arn')
+            event = json.loads(target.get('Input') or '{}')
+
             if ':lambda:' in arn:
-                event = json.loads(target.get('Input') or '{}')
                 lambda_api.run_lambda(event=event, context={}, func_arn=arn)
+
+            elif ':sns:' in arn:
+                sns_client = aws_stack.connect_to_service('sns')
+                sns_client.publish(TopicArn=arn, Message=json.dumps(event))
+
             else:
                 LOG.info('Unsupported Events rule target ARN "%s"' % arn)
     return func
@@ -88,16 +94,27 @@ def convert_schedule_to_cron(schedule):
     return schedule
 
 
-def put_rule(data):
+def handle_put_rule(data):
     schedule = data.get('ScheduleExpression')
     if schedule:
         job_func = get_scheduled_rule_func(data)
         cron = convert_schedule_to_cron(schedule)
         LOG.debug('Adding new scheduled Events rule with cron schedule %s' % cron)
-        # TODO cancel job later on if DeleteRule API call is received
+
         job_id = JobScheduler.instance().add_job(job_func, cron)
-        RULE_SCHEDULED_JOBS[job_id] = data
+        region = aws_stack.get_region()
+        RULE_SCHEDULED_JOBS[region] = RULE_SCHEDULED_JOBS.get(region) or {}
+        RULE_SCHEDULED_JOBS[region][data['Name']] = job_id
+
     return True
+
+
+def handle_delete_rule(rule_name):
+    region = aws_stack.get_region()
+    job_id = RULE_SCHEDULED_JOBS.get(region, {}).get(rule_name)
+    if job_id:
+        LOG.debug('Removing scheduled Events: {} | job_id: {}'.format(rule_name, job_id))
+        JobScheduler.instance().cancel_job(job_id=job_id)
 
 
 class ProxyListenerEvents(ProxyListener):
@@ -112,7 +129,10 @@ class ProxyListenerEvents(ProxyListener):
             parsed_data = json.loads(to_str(data))
 
             if action == 'AWSEvents.PutRule':
-                return put_rule(parsed_data)
+                return handle_put_rule(parsed_data)
+
+            elif action == 'AWSEvents.DeleteRule':
+                handle_delete_rule(rule_name=parsed_data.get('Name', None))
 
             elif action == 'AWSEvents.ListTagsForResource':
                 return self.svc.list_tags_for_resource(parsed_data['ResourceARN']) or {}
