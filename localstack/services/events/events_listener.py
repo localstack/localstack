@@ -102,13 +102,16 @@ def handle_put_rule(data):
         LOG.debug('Adding new scheduled Events rule with cron schedule %s' % cron)
 
         job_id = JobScheduler.instance().add_job(job_func, cron)
-        RULE_SCHEDULED_JOBS[data['Name']] = job_id
+        region = aws_stack.get_region()
+        RULE_SCHEDULED_JOBS[region] = RULE_SCHEDULED_JOBS.get(region) or {}
+        RULE_SCHEDULED_JOBS[region][data['Name']] = job_id
 
     return True
 
 
 def handle_delete_rule(rule_name):
-    job_id = RULE_SCHEDULED_JOBS.get(rule_name)
+    region = aws_stack.get_region()
+    job_id = RULE_SCHEDULED_JOBS.get(region, {}).get(rule_name)
     if job_id:
         LOG.debug('Removing scheduled Events: {} | job_id: {}'.format(rule_name, job_id))
         JobScheduler.instance().cancel_job(job_id=job_id)
