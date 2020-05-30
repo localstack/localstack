@@ -362,7 +362,8 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
                 mount_volume = not config.LAMBDA_REMOTE_DOCKER
                 lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
-                lambda_cwd_on_host = Util.format_windows_path(lambda_cwd)
+                if (':' in lambda_cwd and '\\' in lambda_cwd):
+                    lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
                 mount_volume_str = '-v "%s":/var/task' % lambda_cwd_on_host if mount_volume else ''
 
                 # Create and start the container
@@ -726,6 +727,7 @@ class Util:
         temp = path.replace(':', '').replace('\\', '/')
         if len(temp) >= 1 and temp[:1] != '/':
             temp = '/' + temp
+        temp = '%s%s' % (config.WINDOWS_DOCKER_MOUNT_PREFIX, temp)
         return temp
 
     @classmethod

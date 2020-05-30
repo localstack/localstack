@@ -122,6 +122,9 @@ SKIP_INFRA_DOWNLOADS = os.environ.get('SKIP_INFRA_DOWNLOADS', '').strip()
 # Stepfunctions lambda endpoint override
 STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get('STEPFUNCTIONS_LAMBDA_ENDPOINT', '').strip()
 
+# path prefix for windows volume mounting
+WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get('WINDOWS_DOCKER_MOUNT_PREFIX', '/host_mnt')
+
 
 def has_docker():
     try:
