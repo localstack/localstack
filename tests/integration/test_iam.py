@@ -218,7 +218,6 @@ class TestIAMIntegrations(unittest.TestCase):
             'Statement': [
                 {
                     'Action': [
-                        's3:GetReplicationConfiguration',
                         's3:GetObjectVersion',
                         's3:ListBucket'
                     ],
