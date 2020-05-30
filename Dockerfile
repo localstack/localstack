@@ -58,6 +58,9 @@ ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages
 ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
 
+# add trusted CA certificates to the cert store
+RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
+
 # fix some permissions and create local user
 RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     mkdir -p /.npm && \
