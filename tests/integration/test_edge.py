@@ -1,14 +1,17 @@
+import io
 import unittest
+import requests
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, get_service_protocol
+from localstack.utils.common import short_uid, get_service_protocol, to_str
 from localstack.utils.bootstrap import is_api_enabled
 
 
 class TestEdgeAPI(unittest.TestCase):
 
     def test_invoke_apis_via_edge(self):
-        edge_url = '%s://localhost:%s' % (get_service_protocol(), config.EDGE_PORT)
+        edge_port = config.EDGE_PORT_HTTP or config.EDGE_PORT
+        edge_url = '%s://localhost:%s' % (get_service_protocol(), edge_port)
 
         if is_api_enabled('s3'):
             self._invoke_s3_via_edge(edge_url)
@@ -49,3 +52,17 @@ class TestEdgeAPI(unittest.TestCase):
         result = client.head_bucket(Bucket=bucket_name)
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         client.delete_bucket(Bucket=bucket_name)
+
+        bucket_name = 'edge-%s' % short_uid()
+        object_name = 'testobject'
+        bucket_url = '%s/%s' % (edge_url, bucket_name)
+        result = requests.put(bucket_url)
+        self.assertEqual(result.status_code, 200)
+        result = client.head_bucket(Bucket=bucket_name)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        result = requests.post(bucket_url, data='key=%s&file=file_content_123' % object_name, headers=headers)
+        self.assertEqual(result.status_code, 204)
+        result = io.BytesIO()
+        client.download_fileobj(bucket_name, object_name, result)
+        self.assertEqual('file_content_123', to_str(result.getvalue()))

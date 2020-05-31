@@ -6,7 +6,7 @@ import logging
 from requests.models import Response
 from localstack import config
 from localstack.constants import HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER
-from localstack.utils.common import run, is_root, TMP_THREADS
+from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import ProxyListener, GenericProxy
 
@@ -41,10 +41,18 @@ class ProxyListenerEdge(ProxyListener):
             # detect S3 presigned URLs
             if 'AWSAccessKeyId=' in path or 'Signature=' in path:
                 port = config.PORT_S3
-            # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
             # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
-            if method == 'GET' and '/' in path.strip('/'):
+            stripped = path.strip('/')
+            if method == 'GET' and '/' in stripped:
+                # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
                 port = config.PORT_S3
+            if stripped and '/' not in stripped:
+                if method == 'PUT':
+                    # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
+                    port = config.PORT_S3
+                elif method == 'POST' and to_bytes('key=') in to_bytes(data or ''):
+                    # assume that this is an S3 POST request with form parameters in the body
+                    port = config.PORT_S3
 
         if not port:
             if api in ['', None, '_unknown_']:
