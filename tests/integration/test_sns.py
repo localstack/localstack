@@ -581,6 +581,22 @@ class SNSTest(unittest.TestCase):
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sqs_client.delete_queue(QueueUrl=queue_url)
 
+    def test_create_duplicate_topic_with_different_tags(self):
+        topic_name = 'test-%s' % short_uid()
+        topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
+
+        with self.assertRaises(ClientError) as ctx:
+            self.sns_client.create_topic(Name=topic_name, Tags=[{'Key': '456', 'Value': 'pqr'}])
+            self.fail('This call should not be successful as the topic already exists with different tags')
+
+        e = ctx.exception
+        self.assertEqual(e.response['Error']['Code'], 'InvalidParameter')
+        self.assertEqual(e.response['Error']['Message'], 'Topic already exists with different tags')
+        self.assertEqual(e.response['ResponseMetadata']['HTTPStatusCode'], 400)
+
+        # clean up
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+
     def _create_queue(self):
         queue_name = 'queue-%s' % short_uid()
         queue_arn = aws_stack.sqs_queue_arn(queue_name)

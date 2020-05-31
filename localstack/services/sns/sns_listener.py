@@ -127,10 +127,14 @@ class ProxyListenerSNS(ProxyListener):
 
             elif req_action == 'CreateTopic':
                 topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
-                self._extract_tags(topic_arn, req_data)
+                tag_resource_success = self._extract_tags(topic_arn, req_data, True)
+                # in case if there is an error it returns an error , other wise it will continue as expected.
+                if not tag_resource_success:
+                    return make_error(code=400, code_string='InvalidParameter',
+                                  message='Topic already exists with different tags')
 
             elif req_action == 'TagResource':
-                self._extract_tags(topic_arn, req_data)
+                self._extract_tags(topic_arn, req_data, False)
                 return make_response(req_action)
 
             elif req_action == 'UntagResource':
@@ -148,14 +152,22 @@ class ProxyListenerSNS(ProxyListener):
         return True
 
     @staticmethod
-    def _extract_tags(topic_arn, req_data):
+    def _extract_tags(topic_arn, req_data, is_create_topic_request):
         tags = []
         req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
         for i in range(int(len(req_tags.keys()) / 2)):
             key = req_tags['Tags.member.' + str(i + 1) + '.Key'][0]
             value = req_tags['Tags.member.' + str(i + 1) + '.Value'][0]
             tags.append({'Key': key, 'Value': value})
+
+            # this means topic already created with empty tags and when we try to create it
+            # again with other tag value then it should fail according to aws documentation.
+            existing_tags = SNS_TAGS.get(topic_arn, None)
+            if is_create_topic_request and existing_tags is not None and existing_tags != tags:
+                return False
+
         do_tag_resource(topic_arn, tags)
+        return True
 
     @staticmethod
     def _reset_account_id(data):
