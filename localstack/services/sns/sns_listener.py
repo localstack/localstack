@@ -127,9 +127,9 @@ class ProxyListenerSNS(ProxyListener):
 
             elif req_action == 'CreateTopic':
                 topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
-                tag_error_response = self._extract_tags(topic_arn, req_data, True)
+                tag_resource_success = self._extract_tags(topic_arn, req_data, True)
                 # in case if there is an error it returns an error , other wise it will continue as expected.
-                if not tag_error_response:
+                if not tag_resource_success:
                     return make_error(code=400, code_string='InvalidParameter',
                                   message='Topic already exists with different tags')
 
