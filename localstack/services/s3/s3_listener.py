@@ -479,7 +479,6 @@ def fix_metadata_key_underscores(request_headers={}, response=None):
 def fix_creation_date(method, path, response):
     if method != 'GET' or path != '/':
         return
-
     response._content = re.sub(r'([0-9])</CreationDate>', r'\1Z</CreationDate>', to_str(response._content))
 
 
@@ -1130,7 +1129,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 # Pass on the 404 as usual
                 pass
 
-        if response:
+        if response is not None:
             reset_content_length = False
             # append CORS headers and other annotations/patches to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
