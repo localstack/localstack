@@ -38,21 +38,7 @@ class ProxyListenerEdge(ProxyListener):
             return 404
 
         if not port:
-            # detect S3 presigned URLs
-            if 'AWSAccessKeyId=' in path or 'Signature=' in path:
-                port = config.PORT_S3
-            # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
-            stripped = path.strip('/')
-            if method == 'GET' and '/' in stripped:
-                # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
-                port = config.PORT_S3
-            if stripped and '/' not in stripped:
-                if method == 'PUT':
-                    # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
-                    port = config.PORT_S3
-                elif method == 'POST' and to_bytes('key=') in to_bytes(data or ''):
-                    # assume that this is an S3 POST request with form parameters in the body
-                    port = config.PORT_S3
+            port = get_port_from_custom_rules(method, path, data, headers) or port
 
         if not port:
             if api in ['', None, '_unknown_']:
@@ -80,6 +66,8 @@ class ProxyListenerEdge(ProxyListener):
 
 
 def get_api_from_headers(headers, path=None):
+    """ Determine API and backend port based on Authorization headers. """
+
     target = headers.get('x-amz-target', '')
     host = headers.get('host', '')
     auth_header = headers.get('authorization', '')
@@ -121,6 +109,31 @@ def get_api_from_headers(headers, path=None):
         result = 'web', config.PORT_WEB_UI
 
     return result[0], result_before[1] or result[1], path, host
+
+
+def get_port_from_custom_rules(method, path, data, headers):
+    """ Determine backend port based on custom rules. """
+
+    # detect S3 presigned URLs
+    if 'AWSAccessKeyId=' in path or 'Signature=' in path:
+        return config.PORT_S3
+
+    # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
+    stripped = path.strip('/')
+    data_bytes = to_bytes(data or '')
+    if method == 'GET' and '/' in stripped:
+        # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
+        return config.PORT_S3
+    if stripped and '/' not in stripped:
+        if method == 'PUT':
+            # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
+            return config.PORT_S3
+        if method == 'POST' and to_bytes('key=') in data_bytes:
+            # assume that this is an S3 POST request with form parameters in the body
+            return config.PORT_S3
+
+    if path == '/' and to_bytes('QueueName=') in data_bytes:
+        return config.PORT_SQS
 
 
 def get_service_port_for_account(service, headers):
