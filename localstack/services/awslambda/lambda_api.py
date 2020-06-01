@@ -87,7 +87,7 @@ event_source_mappings = []
 LOG = logging.getLogger(__name__)
 
 # mutex for access to CWD and ENV
-exec_mutex = threading.Semaphore(1)
+EXEC_MUTEX = threading.Semaphore(1)
 
 # whether to use Docker for execution
 DO_USE_DOCKER = None
@@ -506,7 +506,7 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
 
 def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda_env=None):
     if lambda_cwd or lambda_env:
-        exec_mutex.acquire()
+        EXEC_MUTEX.acquire()
         if lambda_cwd:
             previous_cwd = os.getcwd()
             os.chdir(lambda_cwd)
@@ -545,7 +545,7 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
                 sys.path.pop(0)
             if lambda_env:
                 os.environ = previous_env
-            exec_mutex.release()
+            EXEC_MUTEX.release()
     return module_vars[handler_function]
 
 
@@ -750,9 +750,16 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
 
 def do_list_functions():
     funcs = []
+    this_region = aws_stack.get_region()
     for f_arn, func in arn_to_lambda.items():
         if type(func) != LambdaFunction:
             continue
+
+        # filter out functions of current region
+        func_region = f_arn.split(':')[3]
+        if func_region != this_region:
+            continue
+
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
         func_details = arn_to_lambda.get(arn)
