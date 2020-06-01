@@ -32,7 +32,9 @@ TEST_EVENT_PATTERN = {
 class EventsTest(unittest.TestCase):
     def setUp(self):
         self.events_client = aws_stack.connect_to_service('events')
+        self.iam_client = aws_stack.connect_to_service('iam')
         self.sns_client = aws_stack.connect_to_service('sns')
+        self.stepfunctions_client = aws_stack.connect_to_service('stepfunctions')
 
     def test_put_rule(self):
         rule_name = 'rule-{}'.format(short_uid())
@@ -300,3 +302,91 @@ class EventsTest(unittest.TestCase):
         )
 
         self.sns_client.delete_topic(TopicArn=topic_arn)
+
+    def test_schedule_expression_event_stepfunction(self):
+        state_machine_name = 'state-machine-{}'.format(short_uid())
+        role_name = 'role-{}'.format(short_uid())
+        rule_name = 'rule-{}'.format(short_uid())
+        target_id = 'target-{}'.format(short_uid())
+
+        state_machine_definition = """
+        {
+            "StartAt": "Hello",
+            "States": {
+                "Hello": {
+                    "Type": "Pass",
+                    "Result": "World",
+                    "End": true
+                }
+            }
+        }
+        """
+
+        assume_role_policy_document = """
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                        "Service": "events.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRole"
+                }
+            ]
+        }
+        """
+
+        state_machine_role_arn = self.iam_client.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=assume_role_policy_document
+        )['Role']['Arn']
+
+        state_machine_arn = self.stepfunctions_client.create_state_machine(
+            name=state_machine_name,
+            definition=state_machine_definition,
+            roleArn=state_machine_role_arn
+        )['stateMachineArn']
+
+        event = {
+            'env': 'testing'
+        }
+
+        self.events_client.put_rule(
+            Name=rule_name,
+            ScheduleExpression='rate(1 minutes)'
+        )
+
+        self.events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': state_machine_arn,
+                    'Input': json.dumps(event)
+                }
+            ]
+        )
+
+        def check_executions():
+            executions = self.stepfunctions_client.list_executions(stateMachineArn=state_machine_arn)['executions']
+            self.assertGreaterEqual(len(executions), 1)
+            execution_arn = executions[0]['executionArn']
+            execution_input = self.stepfunctions_client.describe_execution(executionArn=execution_arn)['input']
+            self.assertEqual(execution_input, json.dumps(event))
+
+        retry(check_executions, retries=2, sleep=40)
+
+        self.events_client.remove_targets(
+            Rule=rule_name,
+            Ids=[target_id],
+            Force=True
+        )
+        self.events_client.delete_rule(
+            Name=rule_name,
+            Force=True
+        )
+
+        self.iam_client.delete_role(RoleName=role_name)
+
+        self.stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)

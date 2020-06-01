@@ -69,6 +69,10 @@ def get_scheduled_rule_func(data):
                 sns_client = aws_stack.connect_to_service('sns')
                 sns_client.publish(TopicArn=arn, Message=json.dumps(event))
 
+            elif ':states' in arn:
+                stepfunctions_client = aws_stack.connect_to_service('stepfunctions')
+                stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
+
             else:
                 LOG.info('Unsupported Events rule target ARN "%s"' % arn)
     return func
