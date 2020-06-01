@@ -299,7 +299,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(request_context['identity']['userAgent'], 'python-requests/testing')
 
         result = requests.delete(url, data=json.dumps(data))
-        self.assertEqual(result.status_code, 404)
+        self.assertEqual(result.status_code, 204)
 
         # send message with non-ASCII chars
         body_msg = '🙀 - 参よ'
@@ -479,9 +479,12 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         for method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'):
             body = json.dumps(data) if method in ('POST', 'PUT', 'PATCH') else None
             result = getattr(requests, method.lower())(url, data=body)
-            self.assertEqual(result.status_code, 200)
-            parsed_body = json.loads(to_str(result.content))
-            self.assertEqual(parsed_body.get('httpMethod'), method)
+            if method != 'DELETE':
+                self.assertEqual(result.status_code, 200)
+                parsed_body = json.loads(to_str(result.content))
+                self.assertEqual(parsed_body.get('httpMethod'), method)
+            else:
+                self.assertEqual(result.status_code, 204)
 
     # =====================================================================
     # Helper methods
@@ -549,7 +552,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
     def connect_api_gateway_to_http_with_lambda_proxy(self, gateway_name, target_uri, methods=[], path=None):
 
         if not methods:
-            methods = ['GET', 'POST']
+            methods = ['GET', 'POST', 'DELETE']
         if not path:
             path = '/'
         resources = {}
