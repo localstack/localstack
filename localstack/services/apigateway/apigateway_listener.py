@@ -261,7 +261,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             except Exception:
                 response._content = '{}'
             if response.content:
-                response.headers['Content-Length'] = len(response.content)
+                response.headers['Content-Length'] = str(len(response.content))
             response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
             return response
 
