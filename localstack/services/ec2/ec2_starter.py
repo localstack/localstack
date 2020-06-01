@@ -19,8 +19,16 @@ def patch_ec2():
 
         return revoke_security_group_egress
 
+    def patch_delete_nat_gateway(backend):
+        def delete_nat_gateway(nat_gateway_id):
+            gateway = backend.nat_gateways.get(nat_gateway_id)
+            if gateway:
+                gateway.state = 'deleted'
+        return delete_nat_gateway
+
     for region, backend in ec2_models.ec2_backends.items():
         backend.revoke_security_group_egress = patch_revoke_security_group_egress(backend)
+        backend.delete_nat_gateway = patch_delete_nat_gateway(backend)
 
     # TODO Implement Reserved Instance backend
     # https://github.com/localstack/localstack/issues/2435

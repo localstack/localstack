@@ -218,7 +218,6 @@ class TestIAMIntegrations(unittest.TestCase):
             'Statement': [
                 {
                     'Action': [
-                        's3:GetReplicationConfiguration',
                         's3:GetObjectVersion',
                         's3:ListBucket'
                     ],
@@ -250,12 +249,11 @@ class TestIAMIntegrations(unittest.TestCase):
         evaluation_results = rs['EvaluationResults']
         self.assertEqual(len(evaluation_results), 2)
 
-        evaluation = [
-            evaluation for evaluation in evaluation_results if evaluation['EvalActionName'] == 's3:GetObjectVersion'
-        ][0]
-        self.assertEqual(evaluation['EvalDecision'], 'allowed')
-
-        evaluation = [
-            evaluation for evaluation in evaluation_results if evaluation['EvalActionName'] == 's3:PutObject'
-        ][0]
-        self.assertEqual(evaluation['EvalDecision'], 'explicitDeny')
+        actions = {
+            evaluation['EvalActionName']: evaluation
+            for evaluation in evaluation_results
+        }
+        self.assertIn('s3:PutObject', actions)
+        self.assertEqual(actions['s3:PutObject']['EvalDecision'], 'explicitDeny')
+        self.assertIn('s3:GetObjectVersion', actions)
+        self.assertEqual(actions['s3:GetObjectVersion']['EvalDecision'], 'allowed')
