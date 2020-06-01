@@ -25,6 +25,7 @@ from localstack.utils.common import (
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_responses import requests_response
 from localstack.utils.persistence import PersistingProxyListener
+from localstack.services.generic_proxy import ProxyListener
 from localstack.services.s3 import multipart_content
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
@@ -346,9 +347,7 @@ def get_object_expiry(path):
 
 
 def is_url_already_expired(expiry_timestamp):
-    if int(expiry_timestamp) < int(time.time()):
-        return True
-    return False
+    return int(expiry_timestamp) < int(time.time())
 
 
 def add_reponse_metadata_headers(response):
@@ -868,6 +867,24 @@ class ProxyListenerS3(PersistingProxyListener):
     def api_name(self):
         return 's3'
 
+    def handle_expect_100(self, http_handler):
+        path = http_handler.path
+        parsed_path = urlparse.urlparse(path)
+        query = parsed_path.query
+        query_map = urlparse.parse_qs(query, keep_blank_values=True)
+        if 'Expires' in query_map and is_url_already_expired(query_map.get('Expires')[0]):
+            request_id = http_handler.headers.get('x-amz-request-id')
+            expired = token_expired_error(path, request_id, 403)
+            http_handler.write_response(expired)
+            return False
+        else:
+            return ProxyListener.default_handle_expect_100(http_handler)
+
+        request_id = http_handler.headers.get('x-amz-request-id')
+        expired = token_expired_error(path, request_id, 403)
+        http_handler.write_response(expired)
+        return False
+
     @staticmethod
     def is_s3_copy_request(headers, path):
         return 'x-amz-copy-source' in headers or 'x-amz-copy-source' in path
@@ -983,9 +1000,8 @@ class ProxyListenerS3(PersistingProxyListener):
             return response
 
         # if the Expires key in the url is already expired then return error
-        if method == 'GET' and 'Expires' in query_map:
-            if is_url_already_expired(query_map.get('Expires')[0]):
-                return token_expired_error(path, headers.get('x-amz-request-id'), 400)
+        if 'Expires' in query_map and is_url_already_expired(query_map.get('Expires')[0]):
+            return token_expired_error(path, headers.get('x-amz-request-id'), 403)
 
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':

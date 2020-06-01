@@ -50,6 +50,13 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 class ProxyListener(object):
 
+    @staticmethod
+    def default_handle_expect_100(http_handler):
+        return BaseHTTPRequestHandler.handle_expect_100(http_handler)
+
+    def handle_expect_100(self, http_handler):
+        return ProxyListener.default_handle_expect_100(http_handler)
+
     def forward_request(self, method, path, data, headers):
         """ This interceptor method is called by the proxy when receiving a new request
             (*before* forwarding the request to the backend service). It receives details
@@ -106,6 +113,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         except Exception as e:
             if 'cannot read from timed out object' not in str(e):
                 LOG.warning('Unknown error: %s' % e)
+
+    def handle_expect_100(self):
+        if self.proxy.update_listener:
+            return self.proxy.update_listener.handle_expect_100(self)
+
+        return super().handle_expect_100()
 
     def parse_request(self):
         result = BaseHTTPRequestHandler.parse_request(self)
@@ -309,27 +322,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     response = updated_response
 
             # copy headers and return response
-            self.send_response(response.status_code)
-
-            content_length_sent = False
-            for header_key, header_value in iteritems(response.headers):
-                # filter out certain headers that we don't want to transmit
-                if header_key.lower() not in ('transfer-encoding', 'date', 'server'):
-                    self.send_header(header_key, header_value)
-                    content_length_sent = content_length_sent or header_key.lower() == 'content-length'
-
-            if not content_length_sent:
-                self.send_header('Content-Length', '%s' % len(response.content) if response.content else 0)
-
-            if isinstance(response, LambdaResponse):
-                self.send_multi_value_headers(response.multi_value_headers)
-
-            # allow pre-flight CORS headers by default
-            self._send_cors_headers(response)
-
-            self.end_headers()
-            if response.content and len(response.content):
-                self.wfile.write(to_bytes(response.content))
+            self.write_response(response)
         except Exception as e:
             trace = str(traceback.format_exc())
             conn_errors = ('ConnectionRefusedError', 'NewConnectionError',
@@ -355,6 +348,29 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
             except Exception as e:
                 LOG.warning('Unable to flush write file: %s' % e)
+
+    def write_response(self, response):
+        self.send_response(response.status_code)
+
+        content_length_sent = False
+        for header_key, header_value in iteritems(response.headers):
+            # filter out certain headers that we don't want to transmit
+            if header_key.lower() not in ('transfer-encoding', 'date', 'server'):
+                self.send_header(header_key, header_value)
+                content_length_sent = content_length_sent or header_key.lower() == 'content-length'
+
+        if not content_length_sent:
+            self.send_header('Content-Length', '%s' % len(response.content) if response.content else 0)
+
+        if isinstance(response, LambdaResponse):
+            self.send_multi_value_headers(response.multi_value_headers)
+
+        # allow pre-flight CORS headers by default
+        self._send_cors_headers(response)
+
+        self.end_headers()
+        if response.content and len(response.content):
+            self.wfile.write(to_bytes(response.content))
 
     def _send_cors_headers(self, response=None):
         # Note: Use "response is not None" here instead of "not response"!
