@@ -15,6 +15,7 @@ class TestEdgeAPI(unittest.TestCase):
 
         if is_api_enabled('s3'):
             self._invoke_s3_via_edge(edge_url)
+            self._invoke_s3_via_edge_multipart_form(edge_url)
         if is_api_enabled('kinesis'):
             self._invoke_kinesis_via_edge(edge_url)
         if is_api_enabled('dynamodbstreams'):
@@ -66,3 +67,23 @@ class TestEdgeAPI(unittest.TestCase):
         result = io.BytesIO()
         client.download_fileobj(bucket_name, object_name, result)
         self.assertEqual('file_content_123', to_str(result.getvalue()))
+
+    def _invoke_s3_via_edge_multipart_form(self, edge_url):
+        client = aws_stack.connect_to_service('s3', endpoint_url=edge_url)
+        bucket_name = 'edge-%s' % short_uid()
+        object_name = 'testobject'
+        object_data = b'testdata'
+
+        client.create_bucket(Bucket=bucket_name)
+        presigned_post = client.generate_presigned_post(bucket_name, object_name)
+
+        files = {'file': object_data}
+        r = requests.post(presigned_post['url'], data=presigned_post['fields'], files=files)
+        self.assertEqual(r.status_code, 204)
+
+        result = io.BytesIO()
+        client.download_fileobj(bucket_name, object_name, result)
+        self.assertEqual(to_str(object_data), to_str(result.getvalue()))
+
+        client.delete_object(Bucket=bucket_name, Key=object_name)
+        client.delete_bucket(Bucket=bucket_name)

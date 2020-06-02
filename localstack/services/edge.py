@@ -111,6 +111,16 @@ def get_api_from_headers(headers, path=None):
     return result[0], result_before[1] or result[1], path, host
 
 
+def is_s3_form_data(data_bytes):
+    if(to_bytes('key=') in data_bytes):
+        return True
+
+    if(to_bytes('Content-Disposition: form-data') in data_bytes and to_bytes('name="key"') in data_bytes):
+        return True
+
+    return False
+
+
 def get_port_from_custom_rules(method, path, data, headers):
     """ Determine backend port based on custom rules. """
 
@@ -128,8 +138,8 @@ def get_port_from_custom_rules(method, path, data, headers):
         if method == 'PUT':
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
             return config.PORT_S3
-        if method == 'POST' and to_bytes('key=') in data_bytes:
-            # assume that this is an S3 POST request with form parameters in the body
+        if method == 'POST' and is_s3_form_data(data_bytes):
+            # assume that this is an S3 POST request with form parameters or multipart form in the body
             return config.PORT_S3
 
     if path == '/' and to_bytes('QueueName=') in data_bytes:
