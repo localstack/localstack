@@ -46,6 +46,9 @@ def handler(event, context):
         body['requestContext'] = event.get('requestContext')
         body['queryStringParameters'] = event.get('queryStringParameters')
         body['httpMethod'] = event.get('httpMethod')
+        if body['httpMethod'] == 'DELETE':
+            return {'statusCode': 204}
+
         status_code = body.get('return_status_code', 200)
         headers = body.get('return_headers', {})
         body = body.get('return_raw_body') or body

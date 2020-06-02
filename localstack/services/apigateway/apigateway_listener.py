@@ -260,7 +260,8 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                     response.content = to_bytes(parsed_result['body'])
             except Exception:
                 response._content = '{}'
-            response.headers['Content-Length'] = len(response.content)
+            if response.content:
+                response.headers['Content-Length'] = str(len(response.content))
             response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
             return response
 
