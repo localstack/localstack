@@ -116,16 +116,6 @@ def apply_patches():
     delete_bucket_orig = s3_models.s3_backend.delete_bucket
     s3_models.s3_backend.delete_bucket = types.MethodType(delete_bucket, s3_models.s3_backend)
 
-    # patch _key_response_post(..)
-    def s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
-        result = s3_key_response_post_orig(request, body, bucket_name, query, key_name, *args, **kwargs)
-        s3_update_acls(self, request, query, bucket_name, key_name)
-        return result
-
-    s3_key_response_post_orig = s3_responses.S3ResponseInstance._key_response_post
-    s3_responses.S3ResponseInstance._key_response_post = types.MethodType(
-        s3_key_response_post, s3_responses.S3ResponseInstance)
-
     # patch _key_response_put(..)
     def s3_key_response_put(self, request, body, bucket_name, query, key_name, headers, *args, **kwargs):
         result = s3_key_response_put_orig(request, body, bucket_name, query, key_name, headers, *args, **kwargs)
@@ -239,7 +229,7 @@ def apply_patches():
 
     # Patch _key_response_post to handle storage_class
     # https://github.com/localstack/localstack/issues/2481
-    def s3_response_key_response_post(self, request, body, bucket_name, query, key_name):
+    def s3_key_response_post(self, request, body, bucket_name, query, key_name):
         self._set_action('KEY', 'POST', query)
         self._authenticate_and_authorize_s3_action()
 
@@ -293,6 +283,12 @@ def apply_patches():
             raise NotImplementedError(
                 'Method POST had only been implemented for multipart uploads and restore operations, so far'
             )
+
+    # patch _key_response_post(..)
+    def s3_response_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
+        response = s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs)
+        s3_update_acls(self, request, query, bucket_name, key_name)
+        return response
 
     s3_responses.S3ResponseInstance._key_response_post = types.MethodType(
         s3_response_key_response_post, s3_responses.S3ResponseInstance)
