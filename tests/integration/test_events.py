@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import json
-import uuid
 import unittest
+import uuid
 
 from localstack import config
 
@@ -12,8 +12,9 @@ from localstack.services.generic_proxy import ProxyListener
 from localstack.services.infra import start_proxy
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import load_file, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, \
-    get_service_protocol
+from localstack.utils.common import (
+    load_file, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, get_service_protocol
+)
 from localstack.utils.testutil import get_lambda_log_events
 
 
@@ -34,7 +35,7 @@ class EventsTest(unittest.TestCase):
         self.events_client = aws_stack.connect_to_service('events')
         self.iam_client = aws_stack.connect_to_service('iam')
         self.sns_client = aws_stack.connect_to_service('sns')
-        self.stepfunctions_client = aws_stack.connect_to_service('stepfunctions')
+        self.sfn_client = aws_stack.connect_to_service('stepfunctions')
 
     def test_put_rule(self):
         rule_name = 'rule-{}'.format(short_uid())
@@ -240,23 +241,44 @@ class EventsTest(unittest.TestCase):
             Name=TEST_EVENT_BUS_NAME
         )
 
-    def test_schedule_expression_event_with_http_endpoint(self):
+    def test_scheduled_expression_events(self):
         class HttpEndpointListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 event = json.loads(to_str(data))
                 events.append(event)
                 return 200
 
-        topic_name = 'topic-{}'.format(short_uid())
-        rule_name = 'rule-{}'.format(short_uid())
-        target_id = 'target-{}'.format(short_uid())
-        events = []
-
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, backend_url=None, update_listener=HttpEndpointListener())
         wait_for_port_open(local_port)
 
+        topic_name = 'topic-{}'.format(short_uid())
+        rule_name = 'rule-{}'.format(short_uid())
         endpoint = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, local_port)
+        sm_role_arn = aws_stack.role_arn('sfn_role')
+        sm_name = 'state-machine-{}'.format(short_uid())
+        topic_target_id = 'target-{}'.format(short_uid())
+        sm_target_id = 'target-{}'.format(short_uid())
+
+        events = []
+        state_machine_definition = """
+        {
+            "StartAt": "Hello",
+            "States": {
+                "Hello": {
+                    "Type": "Pass",
+                    "Result": "World",
+                    "End": true
+                }
+            }
+        }
+        """
+
+        state_machine_arn = self.sfn_client.create_state_machine(
+            name=sm_name,
+            definition=state_machine_definition,
+            roleArn=sm_role_arn
+        )['stateMachineArn']
 
         topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
         self.sns_client.subscribe(TopicArn=topic_arn, Protocol='http', Endpoint=endpoint)
@@ -274,26 +296,43 @@ class EventsTest(unittest.TestCase):
             Rule=rule_name,
             Targets=[
                 {
-                    'Id': target_id,
+                    'Id': topic_target_id,
                     'Arn': topic_arn,
+                    'Input': json.dumps(event)
+                },
+                {
+                    'Id': sm_target_id,
+                    'Arn': state_machine_arn,
                     'Input': json.dumps(event)
                 }
             ]
         )
 
         def received():
+            # state machine got executed
+            executions = self.sfn_client.list_executions(stateMachineArn=state_machine_arn)['executions']
+            self.assertGreaterEqual(len(executions), 1)
+
+            # http endpoint got events
             self.assertGreaterEqual(len(events), 2)
             notifications = [event['Message'] for event in events if event['Type'] == 'Notification']
             self.assertGreaterEqual(len(notifications), 1)
-            return notifications[0]
 
-        notification = retry(received, retries=2, sleep=40)
+            # get state machine execution detail
+            execution_arn = executions[0]['executionArn']
+            execution_input = self.sfn_client.describe_execution(executionArn=execution_arn)['input']
+
+            return execution_input, notifications[0]
+
+        execution_input, notification = retry(received, retries=5, sleep=15)
         self.assertEqual(json.loads(notification), event)
+        self.assertEqual(json.loads(execution_input), event)
+
         proxy.stop()
 
         self.events_client.remove_targets(
             Rule=rule_name,
-            Ids=[target_id],
+            Ids=[topic_target_id, sm_target_id],
             Force=True
         )
         self.events_client.delete_rule(
@@ -302,91 +341,4 @@ class EventsTest(unittest.TestCase):
         )
 
         self.sns_client.delete_topic(TopicArn=topic_arn)
-
-    def test_schedule_expression_event_stepfunction(self):
-        state_machine_name = 'state-machine-{}'.format(short_uid())
-        role_name = 'role-{}'.format(short_uid())
-        rule_name = 'rule-{}'.format(short_uid())
-        target_id = 'target-{}'.format(short_uid())
-
-        state_machine_definition = """
-        {
-            "StartAt": "Hello",
-            "States": {
-                "Hello": {
-                    "Type": "Pass",
-                    "Result": "World",
-                    "End": true
-                }
-            }
-        }
-        """
-
-        assume_role_policy_document = """
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {
-                        "Service": "events.amazonaws.com"
-                    },
-                    "Action": "sts:AssumeRole"
-                }
-            ]
-        }
-        """
-
-        state_machine_role_arn = self.iam_client.create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=assume_role_policy_document
-        )['Role']['Arn']
-
-        state_machine_arn = self.stepfunctions_client.create_state_machine(
-            name=state_machine_name,
-            definition=state_machine_definition,
-            roleArn=state_machine_role_arn
-        )['stateMachineArn']
-
-        event = {
-            'env': 'testing'
-        }
-
-        self.events_client.put_rule(
-            Name=rule_name,
-            ScheduleExpression='rate(1 minutes)'
-        )
-
-        self.events_client.put_targets(
-            Rule=rule_name,
-            Targets=[
-                {
-                    'Id': target_id,
-                    'Arn': state_machine_arn,
-                    'Input': json.dumps(event)
-                }
-            ]
-        )
-
-        def check_executions():
-            executions = self.stepfunctions_client.list_executions(stateMachineArn=state_machine_arn)['executions']
-            self.assertGreaterEqual(len(executions), 1)
-            execution_arn = executions[0]['executionArn']
-            execution_input = self.stepfunctions_client.describe_execution(executionArn=execution_arn)['input']
-            self.assertEqual(execution_input, json.dumps(event))
-
-        retry(check_executions, retries=2, sleep=40)
-
-        self.events_client.remove_targets(
-            Rule=rule_name,
-            Ids=[target_id],
-            Force=True
-        )
-        self.events_client.delete_rule(
-            Name=rule_name,
-            Force=True
-        )
-
-        self.iam_client.delete_role(RoleName=role_name)
-
-        self.stepfunctions_client.delete_state_machine(stateMachineArn=state_machine_arn)
+        self.sfn_client.delete_state_machine(stateMachineArn=state_machine_arn)
