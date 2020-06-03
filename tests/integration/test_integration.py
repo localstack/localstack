@@ -13,6 +13,7 @@ from localstack.utils.common import (
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
+from localstack.utils.testutil import get_lambda_log_events
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_LIBS, LambdaTestBase
 
@@ -44,7 +45,6 @@ def handler(event, *args):
 
 
 class IntegrationTest(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
@@ -534,8 +534,6 @@ class IntegrationTest(unittest.TestCase):
             for i in range(1, 12)
         ]
 
-        start_time = datetime.now()
-
         # send 11 messages (which should get split into 3 batches)
         sqs.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send[:10])
         sqs.send_message(
@@ -558,26 +556,20 @@ class IntegrationTest(unittest.TestCase):
 
             delayed_count = int(attributes.get('ApproximateNumberOfMessagesDelayed'))
             if delayed_count != 0:
-                LOGGER.warning(('SQS delayed message count (actual/expected): %s/%s') %
-                    (delayed_count, 0))
+                LOGGER.warning('SQS delayed message count (actual/expected): %s/%s' % (delayed_count, 0))
 
             not_visible_count = int(attributes.get('ApproximateNumberOfMessagesNotVisible'))
             if not_visible_count != 0:
-                LOGGER.warning(('SQS messages not visible (actual/expected): %s/%s') %
-                    (not_visible_count, 0))
-
-            invocation_count = get_lambda_invocations_count(
-                lambda_name_queue_batch, period=120, start_time=start_time, end_time=datetime.now())
-            if invocation_count != 3:
-                LOGGER.warning(('Lambda invocations (actual/expected): %s/%s') %
-                    (invocation_count, 3))
+                LOGGER.warning('SQS messages not visible (actual/expected): %s/%s' % (not_visible_count, 0))
 
             self.assertEqual(delayed_count, 0, 'no messages waiting for retry')
             self.assertEqual(delayed_count + not_visible_count, 0, 'no in flight messages')
-            self.assertEqual(invocation_count, 3, 'expected 3 lambda invocations')
 
-        # wait for the queue to drain (max 90s)
-        retry(wait_for_done, retries=18, sleep=5.0)
+        # wait for the queue to drain (max 60s)
+        retry(wait_for_done, retries=12, sleep=5.0)
+
+        events = get_lambda_log_events(lambda_name_queue_batch, 10)
+        self.assertEqual(len(events), 3, 'expected 3 lambda invocations')
 
         testutil.delete_lambda_function(lambda_name_queue_batch)
         sqs.delete_queue(QueueUrl=queue_url)
