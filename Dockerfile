@@ -1,7 +1,7 @@
 FROM localstack/java-maven-node-python
 
 MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
-LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com), Gianluca Bortoli (giallogiallo93@gmail.com)"
+LABEL authors="LocalStack Contributors"
 
 # install basic tools
 RUN pip install awscli awscli-local requests --upgrade
