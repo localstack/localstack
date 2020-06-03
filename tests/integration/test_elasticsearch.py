@@ -19,7 +19,6 @@ TEST_ENDPOINT_URL = 'http://localhost:4571'
 
 
 class ElasticsearchTest(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.es_url = aws_stack.get_local_service_url('elasticsearch')
@@ -33,8 +32,7 @@ class ElasticsearchTest(unittest.TestCase):
             'interests': ['music']
         }
         resp = cls._add_document(TEST_DOC_ID, document)
-        assert_equal(resp.status_code, 201,
-            msg='Request failed({}): {}'.format(resp.status_code, resp.text))
+        assert_equal(resp.status_code, 201, msg='Request failed({}): {}'.format(resp.status_code, resp.text))
 
     @classmethod
     def tearDownClass(cls):
@@ -43,8 +41,7 @@ class ElasticsearchTest(unittest.TestCase):
         # make sure domain deletion works
         es_client = aws_stack.connect_to_service('es')
         es_client.delete_elasticsearch_domain(DomainName=TEST_DOMAIN_NAME)
-        assert_not_in(TEST_DOMAIN_NAME,
-            [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
+        assert_not_in(TEST_DOMAIN_NAME, [d['DomainName'] for d in es_client.list_domain_names()['DomainNames']])
 
     def test_domain_es_version(self):
         es_client = aws_stack.connect_to_service('es')
@@ -136,4 +133,5 @@ class ElasticsearchTest(unittest.TestCase):
         def check_cluster_ready(*args):
             status = es_client.describe_elasticsearch_domain(DomainName=name)
             assert status['DomainStatus']['Created']
-        retry(check_cluster_ready, sleep=6, retries=10)
+
+        retry(check_cluster_ready, sleep=10, retries=6)
