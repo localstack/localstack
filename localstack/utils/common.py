@@ -1131,7 +1131,7 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN,
 
 
 def truncate(data, max_length=100):
-    return (data[:max_length] + '...') if len(data) > max_length else data
+    return ('%s...' % data[:max_length]) if len(data) > max_length else data
 
 
 def parallelize(func, list, size=None):
