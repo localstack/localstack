@@ -812,8 +812,9 @@ def apply_patches():
         FuncThread(run_loop).start()
 
     def initialize_resources(self):
+        self.resource_map._template = self.resource_map._template or self.template_dict
         self.resource_map.load()
-        self.resource_map.create()
+        self.resource_map.create(self.template_dict)
         self.output_map.create()
         run_dependencies_deployment_loop(self, 'CREATE')
 
