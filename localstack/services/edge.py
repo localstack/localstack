@@ -6,7 +6,7 @@ import logging
 from requests.models import Response
 from localstack import config
 from localstack.constants import HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER
-from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes
+from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import ProxyListener, GenericProxy
 
@@ -42,8 +42,9 @@ class ProxyListenerEdge(ProxyListener):
 
         if not port:
             if api in ['', None, '_unknown_']:
+                truncated = truncate(data)
                 LOG.info(('Unable to find forwarding rule for host "%s", path "%s", '
-                    'target header "%s", auth header "%s"') % (host, path, target, auth_header))
+                    'target header "%s", auth header "%s", data "%s"') % (host, path, target, auth_header, truncated))
             else:
                 LOG.info(('Unable to determine forwarding port for API "%s" - please '
                     'make sure this API is enabled via the SERVICES configuration') % api)
@@ -128,12 +129,21 @@ def get_port_from_custom_rules(method, path, data, headers):
     if 'AWSAccessKeyId=' in path or 'Signature=' in path:
         return config.PORT_S3
 
+    # heuristic for SQS queue URLs
+    if re.match(r'^/queue/[a-zA-Z0-9_-]+$', path):
+        return config.PORT_SQS
+
+    data_bytes = to_bytes(data or '')
+
+    if path == '/' and to_bytes('QueueName=') in data_bytes:
+        return config.PORT_SQS
+
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip('/')
-    data_bytes = to_bytes(data or '')
-    if method == 'GET' and '/' in stripped:
+    if method in ['GET', 'HEAD'] and '/' in stripped:
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
         return config.PORT_S3
+
     if stripped and '/' not in stripped:
         if method == 'PUT':
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
@@ -141,9 +151,6 @@ def get_port_from_custom_rules(method, path, data, headers):
         if method == 'POST' and is_s3_form_data(data_bytes):
             # assume that this is an S3 POST request with form parameters or multipart form in the body
             return config.PORT_S3
-
-    if path == '/' and to_bytes('QueueName=') in data_bytes:
-        return config.PORT_SQS
 
 
 def get_service_port_for_account(service, headers):

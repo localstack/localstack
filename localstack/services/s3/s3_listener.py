@@ -508,6 +508,7 @@ def remove_xml_preamble(response):
 # HELPER METHODS
 #   for lifecycle/replication/encryption/...
 # --------------
+
 def get_lifecycle(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
@@ -640,6 +641,7 @@ def set_object_lock(bucket_name, lock_config):
 # -------------
 # UTIL METHODS
 # -------------
+
 def strip_chunk_signatures(data):
     # For clients that use streaming v4 authentication, the request contains chunk signatures
     # in the HTTP body (see example below) which we need to strip as moto cannot handle them
