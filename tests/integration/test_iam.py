@@ -210,3 +210,50 @@ class TestIAMIntegrations(unittest.TestCase):
         self.iam_client.delete_policy(
             PolicyArn=policy_arn
         )
+
+    def test_simulate_principle_policy(self):
+        policy_name = 'policy-{}'.format(short_uid())
+        policy_document = {
+            'Version': '2012-10-17',
+            'Statement': [
+                {
+                    'Action': [
+                        's3:GetObjectVersion',
+                        's3:ListBucket'
+                    ],
+                    'Effect': 'Allow',
+                    'Resource': [
+                        'arn:aws:s3:::bucket_name'
+                    ]
+                }
+            ]
+        }
+
+        policy_arn = self.iam_client.create_policy(
+            PolicyName=policy_name,
+            Path='/',
+            PolicyDocument=json.dumps(policy_document)
+        )['Policy']['Arn']
+
+        rs = self.iam_client.simulate_principal_policy(
+            PolicySourceArn=policy_arn,
+            ActionNames=[
+                's3:PutObject',
+                's3:GetObjectVersion'
+            ],
+            ResourceArns=[
+                'arn:aws:s3:::bucket_name'
+            ]
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        evaluation_results = rs['EvaluationResults']
+        self.assertEqual(len(evaluation_results), 2)
+
+        actions = {
+            evaluation['EvalActionName']: evaluation
+            for evaluation in evaluation_results
+        }
+        self.assertIn('s3:PutObject', actions)
+        self.assertEqual(actions['s3:PutObject']['EvalDecision'], 'explicitDeny')
+        self.assertIn('s3:GetObjectVersion', actions)
+        self.assertEqual(actions['s3:GetObjectVersion']['EvalDecision'], 'allowed')
