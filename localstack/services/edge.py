@@ -133,10 +133,14 @@ def get_port_from_custom_rules(method, path, data, headers):
     if re.match(r'^/queue/[a-zA-Z0-9_-]+$', path):
         return config.PORT_SQS
 
+    data_bytes = to_bytes(data or '')
+
+    if path == '/' and to_bytes('QueueName=') in data_bytes:
+        return config.PORT_SQS
+
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip('/')
-    data_bytes = to_bytes(data or '')
-    if method == 'GET' and '/' in stripped:
+    if method in ['GET', 'HEAD'] and '/' in stripped:
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
         return config.PORT_S3
 
@@ -147,9 +151,6 @@ def get_port_from_custom_rules(method, path, data, headers):
         if method == 'POST' and is_s3_form_data(data_bytes):
             # assume that this is an S3 POST request with form parameters or multipart form in the body
             return config.PORT_S3
-
-    if path == '/' and to_bytes('QueueName=') in data_bytes:
-        return config.PORT_SQS
 
 
 def get_service_port_for_account(service, headers):
