@@ -2,6 +2,7 @@
 
 import json
 import os
+import base64
 import unittest
 from botocore.exceptions import ClientError
 from localstack.config import external_service_url
@@ -116,10 +117,16 @@ class SNSTest(unittest.TestCase):
 
         # publish message to SNS, receive it from SQS, assert that messages are equal and that they are Raw
         message = u'This is a test message'
-        self.sns_client.publish(TopicArn=self.topic_arn, Message=message)
+        # extending this test case to test support for binary message attribute data
+        # https://github.com/localstack/localstack/issues/2432
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+                                MessageAttributes={'store': {'DataType': 'Binary', 'BinaryValue': b'\x02\x03\x04'}})
 
-        msgs = self.sqs_client.receive_message(QueueUrl=self.queue_url)
+        msgs = self.sqs_client.receive_message(QueueUrl=self.queue_url, MessageAttributeNames=['All'])
         msg_received = msgs['Messages'][0]
+        msg_received['MessageAttributes'] = {'store': {'Type': 'Binary',
+                                                       'Value': base64.b64encode(b'\x02\x03\x04').decode()}}
+
         self.assertEqual(message, msg_received['Body'])
 
     def test_filter_policy(self):
