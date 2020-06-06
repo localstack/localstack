@@ -44,7 +44,6 @@ from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, en
     isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
 APP_NAME = 'lambda_api'
 PATH_ROOT = '/2015-03-31'
@@ -477,7 +476,6 @@ def do_update_alias(arn, alias, version, description=None):
     return new_alias
 
 
-@cloudwatched('lambda')
 def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False, callback=None):
     if suppress_output:
         stdout_ = sys.stdout
