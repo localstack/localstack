@@ -305,8 +305,8 @@ class CaptureOutput(object):
 # UTILITY METHODS
 # ----------------
 
-def start_thread(method, *args, quiet=None):
-    thread = FuncThread(method, *args, quiet=quiet)
+def start_thread(method, *args, **kwargs):
+    thread = FuncThread(method, *args, **kwargs)
     thread.start()
     TMP_THREADS.append(thread)
     return thread
