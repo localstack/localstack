@@ -287,7 +287,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
         listeners=None, request_handler=None, client_address=None, server_address=None):
-    listeners = listeners or []
+    listeners = [lis for lis in (listeners or []) if lis]
     data = data_bytes
 
     def is_full_url(url):
@@ -299,8 +299,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
     proxy_url = '%s%s' % (forward_base_url, path)
 
     for listener in listeners:
-        if listener:
-            proxy_url = listener.get_forward_url(method, path, data, headers) or proxy_url
+        proxy_url = listener.get_forward_url(method, path, data, headers) or proxy_url
 
     target_url = path
     if not is_full_url(target_url):
@@ -318,8 +317,6 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
 
     # update listener (pre-invocation)
     for listener in listeners:
-        if not listener:
-            continue
         listener_result = listener.forward_request(method=method,
             path=path, data=data, headers=headers)
         if isinstance(listener_result, Response):
