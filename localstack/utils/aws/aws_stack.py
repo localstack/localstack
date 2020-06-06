@@ -561,7 +561,7 @@ def sqs_receive_message(queue_arn):
 
 
 def firehose_name(firehose_arn):
-    return firehose_arn.split("/")[-1]
+    return firehose_arn.split('/')[-1]
 
 
 def mock_aws_request_headers(service='dynamodb', region_name=None):

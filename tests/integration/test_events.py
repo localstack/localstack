@@ -343,7 +343,6 @@ class EventsTest(unittest.TestCase):
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sfn_client.delete_state_machine(stateMachineArn=state_machine_arn)
 
-
     def test_put_events_with_target_firehose(self):
         s3_bucket = 's3-{}'.format(short_uid())
         s3_prefix = 'testeventdata'

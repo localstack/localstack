@@ -42,8 +42,7 @@ def send_event_to_firehose(event, arn):
         DeliveryStreamName=delivery_stream_name,
         Record={
             'Data': bytes(json.dumps(event['Detail']), 'utf-8')
-            }
-        )
+            })
 
 
 def process_events(event, targets):
