@@ -100,7 +100,7 @@ class LambdaExecutor(object):
         def do_execute(*args):
 
             @cloudwatched('lambda')
-            def _run(func_arn):
+            def _run(func_arn=None):
                 # set the invocation time in milliseconds
                 invocation_time = int(time.time() * 1000)
                 # start the execution
@@ -127,7 +127,7 @@ class LambdaExecutor(object):
                 # return final result
                 return result
 
-            return _run(func_arn)
+            return _run(func_arn=func_arn)
 
         # Inform users about asynchronous mode of the lambda execution.
         if asynchronous:
