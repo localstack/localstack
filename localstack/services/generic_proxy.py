@@ -18,7 +18,7 @@ from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
-from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes
+from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe
 from localstack.utils.aws.aws_responses import LambdaResponse
 
 QUIET = False
@@ -191,21 +191,9 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 except socket.timeout:
                     break
 
-    def build_x_forwarded_for(self, headers):
-        x_forwarded_for = headers.get('X-Forwarded-For')
-
-        client_address = self.client_address[0]
-        server_address = ':'.join(map(str, self.server.server_address))
-
-        if x_forwarded_for:
-            x_forwarded_for_list = (x_forwarded_for, client_address, server_address)
-        else:
-            x_forwarded_for_list = (client_address, server_address)
-
-        return ', '.join(x_forwarded_for_list)
-
     def forward(self, method):
         data = self.data_bytes
+        path = self.path
         forward_headers = CaseInsensitiveDict(self.headers)
 
         # force close connection
@@ -213,100 +201,15 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         if connection_header.lower() not in ['keep-alive', '']:
             self.close_connection = 1
 
-        def is_full_url(url):
-            return re.match(r'[a-zA-Z]+://.+', url)
-
-        path = self.path
-        if is_full_url(path):
-            path = path.split('://', 1)[1]
-            path = '/%s' % (path.split('/', 1)[1] if '/' in path else '')
-        forward_base_url = self.proxy.forward_base_url
-        proxy_url = '%s%s' % (forward_base_url, path)
-
-        for listener in self._listeners():
-            if listener:
-                proxy_url = listener.get_forward_url(method, path, data, forward_headers) or proxy_url
-
-        target_url = self.path
-        if not is_full_url(target_url):
-            target_url = '%s%s' % (forward_base_url, target_url)
-
-        # update original "Host" header (moto s3 relies on this behavior)
-        if not forward_headers.get('Host'):
-            forward_headers['host'] = urlparse(target_url).netloc
-        if 'localhost.atlassian.io' in forward_headers.get('Host'):
-            forward_headers['host'] = 'localhost'
-        forward_headers['X-Forwarded-For'] = self.build_x_forwarded_for(forward_headers)
+        client_address = self.client_address[0]
+        server_address = ':'.join(map(str, self.server.server_address))
 
         try:
-            response = None
-            modified_request = None
-            # update listener (pre-invocation)
-            for listener in self._listeners():
-                if not listener:
-                    continue
-                listener_result = listener.forward_request(method=method,
-                    path=path, data=data, headers=forward_headers)
-                if isinstance(listener_result, Response):
-                    response = listener_result
-                    break
-                if isinstance(listener_result, LambdaResponse):
-                    response = listener_result
-                    break
-                if isinstance(listener_result, dict):
-                    response = Response()
-                    response._content = json.dumps(listener_result)
-                    response.headers['Content-Type'] = APPLICATION_JSON
-                    response.status_code = 200
-                    break
-                elif isinstance(listener_result, Request):
-                    modified_request = listener_result
-                    data = modified_request.data
-                    forward_headers = modified_request.headers
-                    break
-                elif listener_result is not True:
-                    # get status code from response, or use Bad Gateway status code
-                    code = listener_result if isinstance(listener_result, int) else 503
-                    self.send_response(code)
-                    self.send_header('Content-Length', '0')
-                    # allow pre-flight CORS headers by default
-                    self._send_cors_headers()
-                    self.end_headers()
-                    return
-
-            # perform the actual invocation of the backend service
-            if response is None:
-                forward_headers['Connection'] = connection_header or 'close'
-                data_to_send = self.data_bytes
-                request_url = proxy_url
-                if modified_request:
-                    if modified_request.url:
-                        request_url = '%s%s' % (forward_base_url, modified_request.url)
-                    data_to_send = modified_request.data
-
-                response = self.method(request_url, data=data_to_send,
-                    headers=forward_headers, stream=True)
-
-                # prevent requests from processing response body
-                if not response._content_consumed and response.raw:
-                    response._content = response.raw.read()
-
-            # update listener (post-invocation)
-            if self.proxy.update_listener:
-                kwargs = {
-                    'method': method,
-                    'path': path,
-                    'data': self.data_bytes,
-                    'headers': forward_headers,
-                    'response': response
-                }
-                if 'request_handler' in inspect.getargspec(self.proxy.update_listener.return_response)[0]:
-                    # some listeners (e.g., sqs_listener.py) require additional details like the original
-                    # request port, hence we pass in a reference to this request handler as well.
-                    kwargs['request_handler'] = self
-                updated_response = self.proxy.update_listener.return_response(**kwargs)
-                if isinstance(updated_response, Response):
-                    response = updated_response
+            # run the actual response forwarding
+            response = modify_and_forward(method=method, path=path, data_bytes=data,
+                headers=forward_headers, forward_base_url=self.proxy.forward_base_url,
+                listeners=self._listeners(), request_handler=self,
+                client_address=client_address, server_address=server_address)
 
             # copy headers and return response
             self.send_response(response.status_code)
@@ -380,6 +283,117 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         for key, values in multi_value_headers.items():
             for value in values:
                 self.send_header(key, value)
+
+
+def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
+        listeners=None, request_handler=None, client_address=None, server_address=None):
+    listeners = [lis for lis in (listeners or []) if lis]
+    data = data_bytes
+
+    def is_full_url(url):
+        return re.match(r'[a-zA-Z]+://.+', url)
+
+    if is_full_url(path):
+        path = path.split('://', 1)[1]
+        path = '/%s' % (path.split('/', 1)[1] if '/' in path else '')
+    proxy_url = '%s%s' % (forward_base_url, path)
+
+    for listener in listeners:
+        proxy_url = listener.get_forward_url(method, path, data, headers) or proxy_url
+
+    target_url = path
+    if not is_full_url(target_url):
+        target_url = '%s%s' % (forward_base_url, target_url)
+
+    # update original "Host" header (moto s3 relies on this behavior)
+    if not headers.get('Host'):
+        headers['host'] = urlparse(target_url).netloc
+    if 'localhost.atlassian.io' in headers.get('Host'):
+        headers['host'] = 'localhost'
+    headers['X-Forwarded-For'] = build_x_forwarded_for(headers, client_address, server_address)
+
+    response = None
+    modified_request = None
+
+    # update listener (pre-invocation)
+    for listener in listeners:
+        listener_result = listener.forward_request(method=method,
+            path=path, data=data, headers=headers)
+        if isinstance(listener_result, Response):
+            response = listener_result
+            break
+        if isinstance(listener_result, LambdaResponse):
+            response = listener_result
+            break
+        if isinstance(listener_result, dict):
+            response = Response()
+            response._content = json.dumps(json_safe(listener_result))
+            response.headers['Content-Type'] = APPLICATION_JSON
+            response.status_code = 200
+            break
+        elif isinstance(listener_result, Request):
+            modified_request = listener_result
+            data = modified_request.data
+            headers = modified_request.headers
+            break
+        elif listener_result is not True:
+            # get status code from response, or use Bad Gateway status code
+            code = listener_result if isinstance(listener_result, int) else 503
+            response = Response()
+            response._content = ''
+            # TODO add CORS headers here?
+            response.headers['Content-Length'] = '0'
+            response.status_code = code
+            return response
+
+    # perform the actual invocation of the backend service
+    if response is None:
+        headers['Connection'] = headers.get('Connection') or 'close'
+        data_to_send = data_bytes
+        request_url = proxy_url
+        if modified_request:
+            if modified_request.url:
+                request_url = '%s%s' % (forward_base_url, modified_request.url)
+            data_to_send = modified_request.data
+
+        requests_method = getattr(requests, method.lower())
+        response = requests_method(request_url, data=data_to_send,
+            headers=headers, stream=True)
+
+        # prevent requests from processing response body
+        if not response._content_consumed and response.raw:
+            response._content = response.raw.read()
+
+    # update listener (post-invocation)
+    if listeners:
+        update_listener = listeners[-1]
+        kwargs = {
+            'method': method,
+            'path': path,
+            'data': data_bytes,
+            'headers': headers,
+            'response': response
+        }
+        if 'request_handler' in inspect.getargspec(update_listener.return_response)[0]:
+            # some listeners (e.g., sqs_listener.py) require additional details like the original
+            # request port, hence we pass in a reference to this request handler as well.
+            kwargs['request_handler'] = request_handler
+        updated_response = update_listener.return_response(**kwargs)
+        if isinstance(updated_response, Response):
+            response = updated_response
+
+    return response
+
+
+def build_x_forwarded_for(headers, client_address, server_address):
+    x_forwarded_for = headers.get('X-Forwarded-For')
+
+    if x_forwarded_for:
+        x_forwarded_for_list = (x_forwarded_for, client_address, server_address)
+    else:
+        x_forwarded_for_list = (client_address, server_address)
+
+    return ', '.join(x_forwarded_for_list)
 
 
 class DuplexSocket(ssl.SSLSocket):

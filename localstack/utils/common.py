@@ -292,15 +292,25 @@ class CaptureOutput(object):
         return threading.currentThread().ident
 
     def stdout(self):
-        return self._stdout.getvalue() if hasattr(self._stdout, 'getvalue') else self._stdout
+        return self._stream_value(self._stdout)
 
     def stderr(self):
-        return self._stderr.getvalue() if hasattr(self._stderr, 'getvalue') else self._stderr
+        return self._stream_value(self._stderr)
+
+    def _stream_value(self, stream):
+        return stream.getvalue() if hasattr(stream, 'getvalue') else stream
 
 
 # ----------------
 # UTILITY METHODS
 # ----------------
+
+def start_thread(method, *args, **kwargs):
+    thread = FuncThread(method, *args, **kwargs)
+    thread.start()
+    TMP_THREADS.append(thread)
+    return thread
+
 
 def synchronized(lock=None):
     """

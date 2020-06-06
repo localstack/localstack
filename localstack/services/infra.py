@@ -13,8 +13,8 @@ from localstack import constants, config
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
-from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux,
-    FuncThread, ShellCommandThread, get_service_protocol, in_docker, is_port_open, sleep_forever)
+from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux, start_thread,
+    ShellCommandThread, get_service_protocol, in_docker, is_port_open, sleep_forever)
 from localstack.utils.server import multiserver
 from localstack.utils.bootstrap import (
     setup_logging, is_debug, canonicalize_api_names, load_plugins, in_ci)
@@ -272,9 +272,7 @@ def start_local_api(name, port, method, asynchronous=False):
     print('Starting mock %s service in %s ports %s (recommended) and %s (deprecated)...' % (
         name, get_service_protocol(), config.EDGE_PORT, port))
     if asynchronous:
-        thread = FuncThread(method, port, quiet=True)
-        thread.start()
-        TMP_THREADS.append(thread)
+        thread = start_thread(method, port, quiet=True)
         return thread
     else:
         method(port)
