@@ -1,6 +1,7 @@
 import types
 import asyncio
 import logging
+from contextvars import copy_context
 from quart import make_response, request, Quart
 from localstack import config
 from localstack.utils.common import start_thread
@@ -15,6 +16,12 @@ def setup_quart_logging():
             log.removeHandler(hdl)
 
 
+async def run_sync(func, *args):
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(
+        None, copy_context().run, func, *args)
+
+
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
     app = Quart(__name__)
@@ -27,7 +34,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
         response = await make_response('{}')
         if handler:
             data = await request.get_data()
-            result = handler(request, data)
+            result = await run_sync(handler, request, data)
             if result:
                 response = await make_response(result.content)
                 response.headers.update(dict(result.headers))
@@ -36,7 +43,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
     cert_file_name, key_file_name = ssl_creds or (None, None)
 
-    def run_sync(*args, loop=None):
+    def run_app_sync(*args, loop=None):
         kwargs = {}
         if cert_file_name:
             kwargs['certfile'] = cert_file_name
@@ -59,10 +66,10 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
             add_signal_handler_orig = loop.add_signal_handler
             loop.add_signal_handler = types.MethodType(fix_add_signal_handler, loop)
             asyncio.set_event_loop(loop)
-            run_sync(loop=loop)
+            run_app_sync(loop=loop)
         start_thread(_run)
 
     if asynchronous:
         return run_in_thread()
 
-    return run_sync()
+    return run_app_sync()
