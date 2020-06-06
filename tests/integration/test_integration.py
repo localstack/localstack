@@ -260,7 +260,7 @@ class IntegrationTest(unittest.TestCase):
 
         # put 1 item to stream that will trigger an error in the Lambda
         kinesis.put_record(Data='{"%s": 1}' % lambda_integration.MSG_BODY_RAISE_ERROR_FLAG,
-            PartitionKey='testIderror', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
+            PartitionKey='testIdError', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
 
         # create SNS topic, connect it to the Lambda, publish test messages
         num_events_sns = 3
