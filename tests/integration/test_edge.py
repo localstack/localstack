@@ -1,10 +1,14 @@
 import io
+import json
+import time
 import unittest
 import requests
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, get_service_protocol, to_str
+from localstack.utils.common import short_uid, get_service_protocol, to_str, get_free_tcp_port
 from localstack.utils.bootstrap import is_api_enabled
+from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.server.http2_server import run_proxy_server
 
 
 class TestEdgeAPI(unittest.TestCase):
@@ -87,3 +91,20 @@ class TestEdgeAPI(unittest.TestCase):
 
         client.delete_object(Bucket=bucket_name, Key=object_name)
         client.delete_bucket(Bucket=bucket_name)
+
+    def test_http2_traffic(self):
+        port = get_free_tcp_port()
+
+        class MyListener(ProxyListener):
+            def forward_request(self, method, path, data, headers):
+                return {
+                    'method': method, 'path': path, 'data': data
+                }
+
+        url = 'https://localhost:%s/foo/bar' % port
+
+        listener = MyListener()
+        run_proxy_server(port, listener=listener, asynchronous=True)
+        time.sleep(1)
+        response = requests.post(url, verify=False)
+        self.assertEqual({'method': 'POST', 'path': '/foo/bar', 'data': ''}, json.loads(to_str(response.content)))

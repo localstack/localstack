@@ -24,7 +24,7 @@ from localstack.services.es import es_api
 from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import GenericProxy, GenericProxyHandler, ProxyListener
+from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 
 # flag to indicate whether signal handlers have been set up already
@@ -239,10 +239,8 @@ def start_proxy_for_service(service_name, port, backend_port, update_listener, q
 
 def start_proxy(port, backend_url, update_listener=None, quiet=False, params={}, use_ssl=None):
     use_ssl = config.USE_SSL if use_ssl is None else use_ssl
-    proxy_thread = GenericProxy(port=port, forward_url=backend_url,
-        ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
-    proxy_thread.start()
-    TMP_THREADS.append(proxy_thread)
+    proxy_thread = start_proxy_server(port=port, forward_url=backend_url,
+        use_ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
     return proxy_thread
 
 

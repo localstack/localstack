@@ -11,7 +11,7 @@ from localstack.utils.common import (
     FuncThread, ShellCommandThread, TMP_THREADS, to_str, json_safe,
     wait_for_port_open, is_port_open, get_free_tcp_port)
 from localstack.utils.bootstrap import setup_logging
-from localstack.services.generic_proxy import ProxyListener, GenericProxy
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 
 LOG = logging.getLogger('localstack.multiserver')
 
@@ -81,8 +81,7 @@ def start_server(port, asynchronous=False):
                 response._content = str(e)
             return response
 
-    proxy = GenericProxy(port, update_listener=ConfigListener())
-    proxy.start()
+    proxy = start_proxy_server(port, update_listener=ConfigListener())
     if asynchronous:
         return proxy
     proxy.join()

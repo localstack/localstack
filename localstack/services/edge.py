@@ -8,7 +8,7 @@ from localstack import config
 from localstack.constants import HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER
 from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate
 from localstack.utils.common import safe_requests as requests
-from localstack.services.generic_proxy import ProxyListener, GenericProxy
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 
 LOG = logging.getLogger(__name__)
 
@@ -169,8 +169,7 @@ def do_start_edge(port, use_ssl, asynchronous=False):
     # get port and start Edge
     print('Starting edge router (http%s port %s)...' % ('s' if use_ssl else '', port))
     # use use=True here because our proxy allows both, HTTP and HTTPS traffic
-    proxy = GenericProxy(port, ssl=True, update_listener=ProxyListenerEdge())
-    proxy.start()
+    proxy = start_proxy_server(port, use_ssl=True, update_listener=ProxyListenerEdge())
     if not asynchronous:
         proxy.join()
     return proxy

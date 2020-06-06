@@ -16,17 +16,22 @@ from six import iteritems
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
+from localstack import config
+from localstack.config import USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
-from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe
+from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS
 from localstack.utils.aws.aws_responses import LambdaResponse
 
-QUIET = False
+# set up logger
+LOG = logging.getLogger(__name__)
 
 # path for test certificate
-SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
+SERVER_CERT_PEM_FILE = 'server.test.pem'
 
+# whether to use a proxy server with HTTP/2 support
+USE_HTTP2_SERVER = True
 
+# CORS constants
 CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
     'x-amz-target', 'x-amz-acl', 'x-amz-version-id', 'x-localstack-target', 'x-amz-tagging']
@@ -38,9 +43,6 @@ CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATC
 CORS_EXPOSE_HEADERS = ('x-amz-version-id', )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
-
-# set up logger
-LOG = logging.getLogger(__name__)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -458,7 +460,8 @@ class GenericProxy(FuncThread):
 
     @classmethod
     def create_ssl_cert(cls, serial_number=None):
-        return generate_ssl_cert(SERVER_CERT_PEM_FILE, serial_number=serial_number)
+        cert_pem_file = os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
+        return generate_ssl_cert(cert_pem_file, serial_number=serial_number)
 
     @classmethod
     def get_flask_ssl_context(cls, serial_number=None):
@@ -466,6 +469,25 @@ class GenericProxy(FuncThread):
             _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
             return (cert_file_name, key_file_name)
         return None
+
+
+def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
+    if USE_HTTP2_SERVER:
+        return start_proxy_server_http2(port=port, forward_url=forward_url,
+            ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
+    proxy_thread = GenericProxy(port=port, forward_url=forward_url,
+        ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
+    proxy_thread.start()
+    TMP_THREADS.append(proxy_thread)
+    return proxy_thread
+
+
+def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
+    proxy_thread = GenericProxy(port=port, forward_url=forward_url,
+        ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
+    proxy_thread.start()
+    TMP_THREADS.append(proxy_thread)
+    return proxy_thread
 
 
 def serve_flask_app(app, port, quiet=True, host=None, cors=True):
