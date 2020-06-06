@@ -35,8 +35,8 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
         if handler:
             data = await request.get_data()
             result = await run_sync(handler, request, data)
-            if result:
-                response = await make_response(result.content)
+            if result is not None:
+                response = await make_response(result.content or '')
                 response.headers.update(dict(result.headers))
                 response.status_code = result.status_code
         return response
@@ -67,7 +67,8 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
             loop.add_signal_handler = types.MethodType(fix_add_signal_handler, loop)
             asyncio.set_event_loop(loop)
             run_app_sync(loop=loop)
-        start_thread(_run)
+
+        return start_thread(_run)
 
     if asynchronous:
         return run_in_thread()
