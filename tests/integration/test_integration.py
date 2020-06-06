@@ -446,6 +446,7 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(len(removes), num_delete)
 
             # assert that all inserts were received
+
             for i, event in enumerate(inserts):
                 self.assertNotIn('old_image', event)
                 item_id = 'testId%d' % i
@@ -453,14 +454,15 @@ class IntegrationTest(unittest.TestCase):
                 self.assertEqual(matching['new_image'], {'id': item_id, 'data': 'foobar123'})
 
             # assert that all updates were received
-            def assert_updates(updates, modifies):
+
+            def assert_updates(expected_updates, modifies):
                 def found(update):
                     for modif in modifies:
                         if modif['old_image']['id'] == update['id']:
                             self.assertEqual(modif['old_image'], {'id': update['id'], 'data': update['old']})
                             self.assertEqual(modif['new_image'], {'id': update['id'], 'data': update['new']})
                             return True
-                for update in updates:
+                for update in expected_updates:
                     self.assertTrue(found(update))
 
             updates1 = [
@@ -476,9 +478,13 @@ class IntegrationTest(unittest.TestCase):
             assert_updates(updates1, modifies[:2])
             assert_updates(updates2, modifies[2:])
 
+            # assert that all removes were received
+
             for i, event in enumerate(removes):
-                self.assertEqual(event['old_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
                 self.assertNotIn('new_image', event)
+                item_id = 'testId%d' % i
+                matching = [i for i in removes if i['old_image']['id'] == item_id][0]
+                self.assertEqual(matching['old_image'], {'id': item_id, 'data': 'foobar123'})
 
         # this can take a long time in CI, make sure we give it enough time/retries
         retry(check_events, retries=9, sleep=3)
