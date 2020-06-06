@@ -4,3 +4,4 @@ localstack/ext/java/target
 localstack/infra/
 !localstack/infra/localstack-*.jar
 localstack/node_modules/
+tests/integration/serverless/node_modules/

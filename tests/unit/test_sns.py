@@ -2,6 +2,7 @@ import json
 import uuid
 import unittest
 import dateutil.parser
+import re
 from localstack.services.sns import sns_listener
 
 
@@ -22,15 +23,15 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(error.status_code, 400)
 
     def test_unsubscribe_should_remove_listener(self):
-        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
-        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+        sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+        topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
         sns_listener.do_create_topic(topic_arn)
         self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
         sns_listener.do_subscribe(
             topic_arn,
-            'arn:aws:sqs:us-east-1:123456789012:test-queue',
+            'arn:aws:sqs:us-east-1:000000000000:test-queue',
             'sqs',
             sub_arn,
             {}
@@ -82,7 +83,18 @@ class SNSTests(unittest.TestCase):
             assert False, 'Timestamp missing in SNS response message body'
         except ValueError:
             assert False, 'SNS response Timestamp not a valid ISO 8601 date'
-        self.assertEqual(result, {'Message': 'msg', 'Type': 'Notification', 'TopicArn': 'arn'})
+
+        self.assertEqual(result, {
+            'Message': 'msg',
+            'Signature': 'EXAMPLEpH+..',
+            'SignatureVersion': '1',
+            'SigningCertURL':
+                'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
+            'SubscribeURL': None,
+            'Token': None,
+            'TopicArn': 'arn',
+            'Type': 'Notification'
+        })
 
         # Now add a subject
         action = {
@@ -103,9 +115,15 @@ class SNSTests(unittest.TestCase):
         del result['Timestamp']
         msg = {
             'Message': 'msg',
+            'Subject': 'subject',
+            'Signature': 'EXAMPLEpH+..',
+            'SignatureVersion': '1',
+            'SigningCertURL':
+                'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
+            'SubscribeURL': None,
+            'Token': None,
             'TopicArn': 'arn',
             'Type': 'Notification',
-            'Subject': 'subject',
             'MessageAttributes': {
                 'attr1': {
                     'Type': 'String',
@@ -172,11 +190,23 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(result['attr2']['DataType'], 'Binary')
         self.assertEqual(result['attr2']['BinaryValue'], 'value2'.encode('utf-8'))
         self.assertEqual(result['attr3']['DataType'], 'Number')
-        self.assertEqual(result['attr3']['StringValue'], '3.0')
+        self.assertEqual(result['attr3']['StringValue'], '3')
+
+    def test_create_sns_message_timestamp_millis(self):
+        action = {
+            'Message': ['msg']
+        }
+        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+        result = json.loads(result_str)
+        timestamp = result.pop('Timestamp')
+        end = timestamp[-5:]
+        matcher = re.compile(r'\.[0-9]{3}Z')
+        match = matcher.match(end)
+        self.assertTrue(match is not None)
 
     def test_only_one_subscription_per_topic_per_endpoint(self):
-        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
-        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+        sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+        topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
         sns_listener.do_create_topic(topic_arn)
@@ -184,7 +214,7 @@ class SNSTests(unittest.TestCase):
         for i in [1, 2]:
             sns_listener.do_subscribe(
                 topic_arn,
-                'arn:aws:sqs:us-east-1:123456789012:test-queue-1',
+                'arn:aws:sqs:us-east-1:000000000000:test-queue-1',
                 'sqs',
                 sub_arn,
                 {}
@@ -477,3 +507,20 @@ class SNSTests(unittest.TestCase):
             attributes = test[2]
             expected = test[3]
             self.assertEqual(sns_listener.check_filter_policy(filter_policy, attributes), expected, test_name)
+
+    def test_is_raw_message_delivery(self):
+        valid_true_values = ['true', 'True', True]
+
+        for true_value in valid_true_values:
+            self.subscriber['RawMessageDelivery'] = true_value
+            self.assertTrue(sns_listener.is_raw_message_delivery(self.subscriber))
+
+    def test_is_not_raw_message_delivery(self):
+        invalid_values = ['false', 'False', False, 'somevalue', '']
+
+        for invalid_values in invalid_values:
+            self.subscriber['RawMessageDelivery'] = invalid_values
+            self.assertFalse(sns_listener.is_raw_message_delivery(self.subscriber))
+
+        del self.subscriber['RawMessageDelivery']
+        self.assertFalse(sns_listener.is_raw_message_delivery(self.subscriber))

@@ -6,6 +6,19 @@ Resources:
     Properties:
       AccessControl: PublicRead
       BucketName: cf-test-bucket-1
+      NotificationConfiguration:
+        LambdaConfigurations:
+        - Event: "s3:ObjectCreated:*"
+          Function: aws:arn:lambda:test:testfunc
+        QueueConfigurations:
+        - Event: "s3:ObjectDeleted:*"
+          Queue: aws:arn:sqs:test:testqueue
+          Filter:
+            S3Key:
+              S3KeyFilter:
+                Rules:
+                  - { Name: name1, Value: value1 }
+                  - { Name: name2, Value: value2 }
       Tags:
         - Key: foobar
           Value:
@@ -14,6 +27,11 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: cf-test-queue-1
+      Tags:
+        - Key: key1
+          Value: value1
+        - Key: key2
+          Value: value2
   SNSTopic:
     Type: AWS::SNS::Topic
     Properties:
@@ -39,6 +57,15 @@ Resources:
       Name: cf-test-stream-1
   SQSQueueNoNameProperty:
     Type: AWS::SQS::Queue
+  TestParam:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: cf-test-param-1
+      Description: test param 1
+      Type: String
+      Value: value123
+      Tags:
+        tag1: value1
   ApiGatewayRestApi:
     Type: AWS::ApiGateway::RestApi
     Properties:

@@ -33,9 +33,9 @@ node_modules/
 .vscode
 
 **/obj/**
-**/bin/**
 **/lib/**
 
 !bin/docker-entrypoint.sh
 
 requirements.copy.txt
+.serverless/

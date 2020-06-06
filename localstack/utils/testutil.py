@@ -2,20 +2,22 @@ import os
 import json
 import glob
 import tempfile
+import time
 import requests
 import shutil
 import zipfile
 import importlib
 from six import iteritems
 from localstack.utils.aws import aws_stack
-from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
-    LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
-from localstack.utils.common import TMP_FILES, run, mkdir, to_str, save_file, is_alpine
-from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
-
+from localstack.constants import (
+    LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
+from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
+from localstack.services.awslambda.lambda_api import (
+    get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
+DEFAULT_GET_LOG_EVENTS_DELAY = 3
+LAMBDA_TIMEOUT_SEC = 6
 
 
 def copy_dir(source, target):
@@ -28,7 +30,8 @@ def copy_dir(source, target):
 def rm_dir(dir):
     if is_alpine():
         # Using the native command can be an order of magnitude faster on Travis-CI
-        return run('rm -r %s' % (dir))
+        return run('rm -r %s' % dir)
+
     shutil.rmtree(dir)
 
 
@@ -121,14 +124,19 @@ def create_zip_file(file_path, get_content=False):
     return zip_file_content
 
 
-def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=LAMBDA_DEFAULT_HANDLER,
-        starting_position=None, runtime=None, envvars={}, tags={}, delete=False, layers=None,
-        **kwargs):
+def create_lambda_function(func_name, zip_file=None, event_source_arn=None, handler_file=None,
+        handler=LAMBDA_DEFAULT_HANDLER, starting_position=None, runtime=None, envvars={},
+        tags={}, libs=[], delete=False, layers=None, **kwargs):
     """Utility method to create a new function via the Lambda API"""
 
     starting_position = starting_position or LAMBDA_DEFAULT_STARTING_POSITION
     runtime = runtime or LAMBDA_DEFAULT_RUNTIME
     client = aws_stack.connect_to_service('lambda')
+
+    # load zip file content if handler_file is specified
+    if not zip_file and handler_file:
+        zip_file = create_lambda_archive(load_file(handler_file), libs=libs,
+            get_content=True, runtime=runtime or LAMBDA_DEFAULT_RUNTIME)
 
     if delete:
         try:
@@ -147,21 +155,29 @@ def create_lambda_function(func_name, zip_file, event_source_arn=None, handler=L
         'Code': {
             'ZipFile': zip_file
         },
-        'Timeout': LAMBDA_DEFAULT_TIMEOUT,
+        'Timeout': LAMBDA_TIMEOUT_SEC,
         'Environment': dict(Variables=envvars),
         'Tags': tags
     }
     kwargs.update(additional_kwargs)
     if layers:
         kwargs['Layers'] = layers
-    client.create_function(**kwargs)
+    create_func_resp = client.create_function(**kwargs)
+
+    resp = {
+        'CreateFunctionResponse': create_func_resp,
+        'CreateEventSourceMappingResponse': None
+    }
+
     # create event source mapping
     if event_source_arn:
-        client.create_event_source_mapping(
+        resp['CreateEventSourceMappingResponse'] = client.create_event_source_mapping(
             FunctionName=func_name,
             EventSourceArn=event_source_arn,
             StartingPosition=starting_position
         )
+
+    return resp
 
 
 def assert_objects(asserts, all_objects):
@@ -300,3 +316,33 @@ def create_sqs_queue(queue_name):
         'QueueUrl': queue_url,
         'QueueArn': queue_arn,
     }
+
+
+def get_lambda_log_group_name(function_name):
+    return '/aws/lambda/{}'.format(function_name)
+
+
+def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY):
+    def get_log_events(function_name, delay_time):
+        time.sleep(delay_time)
+
+        logs = aws_stack.connect_to_service('logs')
+        rs = logs.filter_log_events(
+            logGroupName=get_lambda_log_group_name(function_name)
+        )
+
+        return rs['events']
+
+    events = get_log_events(function_name, delay_time)
+    rs = []
+    for event in events:
+        raw_message = event['message']
+        if not raw_message or 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
+            continue
+
+        try:
+            rs.append(json.loads(raw_message))
+        except Exception:
+            rs.append(raw_message)
+
+    return rs

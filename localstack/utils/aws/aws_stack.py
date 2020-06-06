@@ -6,6 +6,7 @@ import boto3
 import base64
 import logging
 import six
+from six.moves.urllib.parse import quote_plus, unquote_plus
 from localstack import config
 from localstack.constants import (
     REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
@@ -40,6 +41,9 @@ BOTO_CLIENTS_CACHE = {}
 
 # Assume role loop seconds
 DEFAULT_TIMER_LOOP_SECONDS = 60 * 50
+
+# maps SQS queue ARNs to queue URLs
+SQS_ARN_TO_URL_CACHE = {}
 
 
 class Environment(object):
@@ -224,6 +228,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
 class VelocityInput:
     """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
+
     def __init__(self, value):
         self.value = value
 
@@ -238,10 +243,14 @@ class VelocityInput:
     def json(self, path):
         return json.dumps(self.path(path))
 
+    def __repr__(self):
+        return '$input'
+
 
 class VelocityUtil:
     """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
+
     def base64Encode(self, s):
         if not isinstance(s, str):
             s = json.dumps(s)
@@ -257,9 +266,22 @@ class VelocityUtil:
     def toJson(self, obj):
         return obj and json.dumps(obj)
 
+    def urlEncode(self, s):
+        return quote_plus(s)
+
+    def urlDecode(self, s):
+        return unquote_plus(s)
+
+    def escapeJavaScript(self, s):
+        return str(s).replace("'", r"\'")
+
 
 def render_velocity_template(template, context, variables={}, as_json=False):
     import airspeed
+
+    # run a few fixes to properly prepare the template
+    template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
+
     t = airspeed.Template(template)
     var_map = {
         'input': VelocityInput(context),
@@ -323,6 +345,18 @@ def get_s3_client():
         verify=False)
 
 
+def sqs_queue_url_for_arn(queue_arn):
+    if '://' in queue_arn:
+        return queue_arn
+    if queue_arn in SQS_ARN_TO_URL_CACHE:
+        return SQS_ARN_TO_URL_CACHE[queue_arn]
+    sqs_client = connect_to_service('sqs')
+    parts = queue_arn.split(':')
+    result = sqs_client.get_queue_url(QueueName=parts[5], QueueOwnerAWSAccountId=parts[4])['QueueUrl']
+    SQS_ARN_TO_URL_CACHE[queue_arn] = result
+    return result
+
+
 def extract_region_from_auth_header(headers):
     auth = headers.get('Authorization') or ''
     region = re.sub(r'.*Credential=[^/]+/[^/]+/([^/]+)/.*', r'\1', auth)
@@ -366,6 +400,11 @@ def get_iam_role(resource, env=None):
     return 'role-%s' % resource
 
 
+def secretsmanager_secret_arn(secret_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:secretsmanager:%s:%s:secret:%s'
+    return _resource_arn(secret_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def cloudformation_stack_arn(stack_name, account_id=None, region_name=None):
     pattern = 'arn:aws:cloudformation:%s:%s:stack/%s/id-1234'
     return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)
@@ -387,6 +426,11 @@ def log_group_arn(group_name, account_id=None, region_name=None):
     return _resource_arn(group_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def events_rule_arn(rule_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:events:%s:%s:rule/%s'
+    return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def lambda_function_arn(function_name, account_id=None, region_name=None):
     return lambda_function_or_layer_arn('function', function_name, account_id=account_id, region_name=region_name)
 
@@ -406,7 +450,7 @@ def lambda_function_or_layer_arn(type, entity_name, version=None, account_id=Non
     pattern = re.sub(r'\([^\|]+\|.+\)', type, pattern)
     result = pattern.replace('.*', '%s') % (region_name, account_id, entity_name)
     if version:
-        result = '%s:%s' (result, version)
+        result = '%s:%s' % (result, version)
     return result
 
 
@@ -444,14 +488,19 @@ def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
     return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
-def kinesis_stream_arn(stream_name, account_id=None):
-    account_id = get_account_id(account_id)
-    return 'arn:aws:kinesis:%s:%s:stream/%s' % (get_region(), account_id, stream_name)
+def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:kinesis:%s:%s:stream/%s'
+    return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def firehose_stream_arn(stream_name, account_id=None):
-    account_id = get_account_id(account_id)
-    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (get_region(), account_id, stream_name))
+def firehose_stream_arn(stream_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:firehose:%s:%s:deliverystream/%s'
+    return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def es_domain_arn(domain_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:es:%s:%s:domain/%s'
+    return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
 def s3_bucket_arn(bucket_name, account_id=None):
@@ -536,7 +585,8 @@ def dynamodb_get_item_raw(request):
     headers['X-Amz-Target'] = 'DynamoDB_20120810.GetItem'
     new_item = make_http_request(url=config.TEST_DYNAMODB_URL,
         method='POST', data=json.dumps(request), headers=headers)
-    new_item = json.loads(new_item.text)
+    new_item = new_item.text
+    new_item = new_item and json.loads(new_item)
     return new_item
 
 

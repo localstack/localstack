@@ -1,9 +1,15 @@
 import time
+import yaml
+import datetime
 import unittest
 from requests.models import Response
 from localstack.utils.aws import aws_stack
+from localstack.utils.bootstrap import PortMappings
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-from localstack.utils.common import download, parallelize, TMP_FILES, load_file, parse_chunked_data
+from localstack.utils.common import (
+    download, parallelize, TMP_FILES, load_file, parse_chunked_data, json_safe, now_utc)
+from localstack.services import infra
+from localstack import config
 
 
 class TestMisc(unittest.TestCase):
@@ -20,6 +26,48 @@ class TestMisc(unittest.TestCase):
         expected = 'Wikipedia in\r\n\r\nchunks.'
         parsed = parse_chunked_data(chunked)
         self.assertEqual(parsed.strip(), expected.strip())
+
+    def test_convert_yaml_date_strings(self):
+        yaml_source = 'Version: 2012-10-17'
+        obj = yaml.safe_load(yaml_source)
+        self.assertIn(type(obj['Version']), (datetime.date, str))
+        if isinstance(obj['Version'], datetime.date):
+            obj = json_safe(obj)
+            self.assertEqual(type(obj['Version']), str)
+            self.assertEqual(obj['Version'], '2012-10-17')
+
+    def test_timstamp_millis(self):
+        t1 = now_utc()
+        t2 = now_utc(millis=True)
+        self.assertLessEqual(t2 - t1, 1)
+
+    def test_port_mappings(self):
+        map = PortMappings()
+        map.add(123)
+        self.assertEqual(map.to_str(), '-p 123:123')
+        map.add(124)
+        self.assertEqual(map.to_str(), '-p 123-124:123-124')
+        map.add(234)
+        self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234:234')
+        map.add(345, 346)
+        self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234:234 -p 345:346')
+        map.add([456, 458])
+        self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234:234 -p 345:346 -p 456-458:456-458')
+
+        map = PortMappings()
+        map.add([123, 124])
+        self.assertEqual(map.to_str(), '-p 123-124:123-124')
+        map.add([234, 237], [345, 348])
+        self.assertEqual(map.to_str(), '-p 123-124:123-124 -p 234-237:345-348')
+
+    def test_get_service_status(self):
+        env = infra.get_services_status()
+        self.assertNotEqual(env, None)
+        self.assertGreater(len(env), 0)
+
+    def test_update_config_variable(self):
+        infra.update_config_variable('foo', 'bar')
+        self.assertEquals(config.foo, 'bar')
 
 
 # This test is not enabled in CI, it is just used for manual

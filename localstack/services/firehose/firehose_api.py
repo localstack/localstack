@@ -162,8 +162,7 @@ def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream
     }
     DELIVERY_STREAMS[stream_name] = stream
     if elasticsearch_destination:
-        update_destination(stream_name=stream_name,
-                           destination_id=short_uid(),
+        update_destination(stream_name=stream_name, destination_id=short_uid(),
                            elasticsearch_update=elasticsearch_destination)
     if s3_destination:
         update_destination(stream_name=stream_name, destination_id=short_uid(), s3_update=s3_destination)
@@ -229,12 +228,16 @@ def post_request():
     elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         region_name = extract_region_from_auth_header(request.headers)
+        _s3_destination = data.get('S3DestinationConfiguration') or data.get('ExtendedS3DestinationConfiguration')
         response = create_stream(
-            stream_name, delivery_stream_type=data.get('DeliveryStreamType'),
+            stream_name,
+            delivery_stream_type=data.get('DeliveryStreamType'),
             delivery_stream_type_configuration=data.get('KinesisStreamSourceConfiguration'),
-            s3_destination=data.get('S3DestinationConfiguration'),
+            s3_destination=_s3_destination,
             elasticsearch_destination=data.get('ElasticsearchDestinationConfiguration'),
-            tags=data.get('Tags'), region_name=region_name)
+            tags=data.get('Tags'),
+            region_name=region_name
+        )
     elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
         stream_name = data['DeliveryStreamName']
         response = delete_stream(stream_name)
@@ -273,7 +276,7 @@ def post_request():
                            s3_update=s3_update, version_id=version_id)
         es_update = data['ESDestinationUpdate'] if 'ESDestinationUpdate' in data else None
         update_destination(stream_name=stream_name, destination_id=destination_id,
-                           es_update=es_update, version_id=version_id)
+                           elasticsearch_update=es_update, version_id=version_id)
         response = {}
     elif action == '%s.ListTagsForDeliveryStream' % ACTION_HEADER_PREFIX:
         response = get_delivery_stream_tags(data['DeliveryStreamName'], data.get('ExclusiveStartTagKey'),

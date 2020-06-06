@@ -8,13 +8,11 @@ import logging
 import warnings
 import threading
 import traceback
-import pip as pip_mod
-import shutil
-try:
-    import subprocess32 as subprocess
-except Exception:
-    import subprocess
+import subprocess
 import six
+import shutil
+import pip as pip_mod
+from datetime import datetime
 from localstack import constants, config
 
 # set up logger
@@ -22,6 +20,10 @@ LOG = logging.getLogger(os.path.basename(__file__))
 
 # maps plugin scope ("services", "commands") to flags which indicate whether plugins have been loaded
 PLUGINS_LOADED = {}
+
+# predefined list of plugin modules, to speed up the plugin loading at startup
+# note: make sure to load localstack_ext before localstack
+PLUGIN_MODULES = ['localstack_ext', 'localstack']
 
 # marker for extended/ignored libs in requirements.txt
 IGNORED_LIB_MARKER = '#extended-lib'
@@ -53,11 +55,9 @@ API_COMPOSITES = {
 # name of main Docker container
 MAIN_CONTAINER_NAME = 'localstack_main'
 
-# environment variable that indicates that we're executing in the context of the script that starts the Docker container
+# environment variable that indicates that we're executing in
+# the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
-
-# semaphore for locking access to Popen
-mutex_popen = threading.Semaphore(1)
 
 
 def bootstrap_installation():
@@ -116,6 +116,7 @@ def load_plugin_from_path(file_path, scope=None):
                 LOG.debug('Unable to load plugins from module %s: %s' % (module, e))
             return
         try:
+            LOG.debug('Loading plugins - scope "%s", module "%s": %s' % (scope, module, method_to_execute))
             return method_to_execute()
         except Exception as e:
             if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
@@ -127,17 +128,30 @@ def load_plugins(scope=None):
     if PLUGINS_LOADED.get(scope):
         return PLUGINS_LOADED[scope]
 
+    t1 = now_utc()
     setup_logging()
 
     loaded_files = []
     result = []
-    for module in pkgutil.iter_modules():
+
+    # Use a predefined list of plugin modules for now, to speed up the plugin loading at startup
+    # search_modules = pkgutil.iter_modules()
+    search_modules = PLUGIN_MODULES
+
+    for module in search_modules:
         file_path = None
-        if six.PY3 and not isinstance(module, tuple):
-            file_path = '%s/%s/plugins.py' % (module.module_finder.path, module.name)
+        if isinstance(module, six.string_types):
+            loader = pkgutil.get_loader(module)
+            if loader:
+                path = getattr(loader, 'path', '') or getattr(loader, 'filename', '')
+                if '__init__.py' in path:
+                    path = os.path.dirname(path)
+                file_path = os.path.join(path, 'plugins.py')
+        elif six.PY3 and not isinstance(module, tuple):
+            file_path = os.path.join(module.module_finder.path, module.name, 'plugins.py')
         elif six.PY3 or isinstance(module[0], pkgutil.ImpImporter):
             if hasattr(module[0], 'path'):
-                file_path = '%s/%s/plugins.py' % (module[0].path, module[1])
+                file_path = os.path.join(module[0].path, module[1], 'plugins.py')
         if file_path and file_path not in loaded_files:
             plugin_config = load_plugin_from_path(file_path, scope=scope)
             if plugin_config:
@@ -145,6 +159,12 @@ def load_plugins(scope=None):
             loaded_files.append(file_path)
     # set global flag
     PLUGINS_LOADED[scope] = result
+
+    # debug plugin loading time
+    load_time = now_utc() - t1
+    if load_time > 5:
+        LOG.debug('Plugin loading took %s sec' % load_time)
+
     return result
 
 
@@ -154,9 +174,14 @@ def docker_container_running(container_name):
 
 
 def get_docker_container_names():
-    output = to_str(run("docker ps --format '{{.Names}}'"))
-    container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
-    return container_names
+    cmd = "docker ps --format '{{.Names}}'"
+    try:
+        output = to_str(run(cmd))
+        container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
+        return container_names
+    except Exception as e:
+        LOG.info('Unable to list Docker containers via "%s": %s' % (cmd, e))
+        return []
 
 
 def setup_logging():
@@ -248,6 +273,71 @@ def start_infra_locally():
     return infra.start_infra()
 
 
+class PortMappings(object):
+    """ Maps source to target port ranges for Docker port mappings. """
+
+    class HashableList(list):
+        def __hash__(self):
+            result = 0
+            for i in self:
+                result += hash(i)
+            return result
+
+    def __init__(self):
+        self.mappings = {}
+
+    def add(self, port, mapped=None):
+        mapped = mapped or port
+        if isinstance(port, list):
+            for i in range(port[1] - port[0] + 1):
+                self.add(port[0] + i, mapped[0] + i)
+            return
+        if int(port) <= 0:
+            raise Exception('Unable to add mapping for invalid port: %s' % port)
+        for from_range, to_range in self.mappings.items():
+            if not self.in_expanded_range(port, from_range):
+                continue
+            if not self.in_expanded_range(mapped, to_range):
+                continue
+            self.expand_range(port, from_range)
+            self.expand_range(mapped, to_range)
+            return
+        self.mappings[self.HashableList([port, port])] = [mapped, mapped]
+
+    def to_str(self):
+        def entry(k, v):
+            if k[0] == k[1] and v[0] == v[1]:
+                return '-p %s:%s' % (k[0], v[0])
+            return '-p %s-%s:%s-%s' % (k[0], k[1], v[0], v[1])
+
+        return ' '.join([entry(k, v) for k, v in self.mappings.items()])
+
+    def in_range(self, port, range):
+        return port >= range[0] and port <= range[1]
+
+    def in_expanded_range(self, port, range):
+        return port >= range[0] - 1 and port <= range[1] + 1
+
+    def expand_range(self, port, range):
+        if self.in_range(port, range):
+            return
+        if port == range[0] - 1:
+            range[0] = port
+        elif port == range[1] + 1:
+            range[1] = port
+        else:
+            raise Exception('Unable to add port %s to existing range %s' % (port, range))
+
+
+def get_docker_image_to_start():
+    image_name = os.environ.get('IMAGE_NAME')
+    if not image_name:
+        image_name = constants.DOCKER_IMAGE_NAME
+        if os.environ.get('USE_LIGHT_IMAGE') in constants.TRUE_STRINGS:
+            image_name = constants.DOCKER_IMAGE_NAME_LIGHT
+    return image_name
+
+
 def start_infra_in_docker():
 
     container_name = MAIN_CONTAINER_NAME
@@ -267,13 +357,16 @@ def start_infra_in_docker():
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
     user_flags = config.DOCKER_FLAGS
-    image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
+    image_name = get_docker_image_to_start()
     service_ports = config.SERVICE_PORTS
     force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
 
     # get run params
     plugin_run_params = ' '.join([
         entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
+
+    # container for port mappings
+    port_mappings = PortMappings()
 
     # get port ranges defined via DOCKER_FLAGS (if any)
     regex = r'.*-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-[0-9]+)?.*'
@@ -282,37 +375,18 @@ def start_infra_in_docker():
     if match:
         start = int(match.group(1))
         end = int(match.group(3) or match.group(1))
+        port_mappings.add([start, end])
 
-    def is_mapped(start_port, end_port=None):
-        existing_range = range(start, end)
-        return (int(start_port) in existing_range) or (start_port and int(start_port) in existing_range)
-
-    # construct port mappings
-    ports_list = sorted(service_ports.values())
-    start_port = 0
-    last_port = 0
-    port_ranges = []
-    for i in range(0, len(ports_list)):
-        if not start_port:
-            start_port = ports_list[i]
-        if not last_port:
-            last_port = ports_list[i]
-        if ports_list[i] > last_port + 1:
-            port_ranges.append([start_port, last_port])
-            start_port = ports_list[i]
-        elif i >= len(ports_list) - 1:
-            port_ranges.append([start_port, ports_list[i]])
-        last_port = ports_list[i]
-    port_mappings = ' '.join([
-        '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
-        if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
-        for entry in port_ranges if not is_mapped(entry[0], entry[1])])
+    # construct default port mappings
+    if service_ports.get('edge') == 0:
+        service_ports.pop('edge')
+    for port in service_ports.values():
+        port_mappings.add(port)
 
     if services:
-        port_mappings = ''
+        port_mappings = PortMappings()
         for port in set(service_ports.values()):
-            if not is_mapped(port):
-                port_mappings += ' -p {port}:{port}'.format(port=port)
+            port_mappings.add(port)
 
     env_str = ''
     for env_var in config.CONFIG_ENV_VARS:
@@ -333,19 +407,19 @@ def start_infra_in_docker():
     user_flags = '%s ' % user_flags if user_flags else user_flags
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
-    web_ui_flags = ''
     if config.START_WEB:
-        web_ui_flags = '-p {p}:{p} -p {p1}:{p1} '.format(p=config.PORT_WEB_UI, p1=config.PORT_WEB_UI_SSL)
+        for port in [config.PORT_WEB_UI, config.PORT_WEB_UI_SSL]:
+            port_mappings.add(port)
 
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +
         '--name %s ' +
-        '%s %s %s ' +
+        '%s %s ' +
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
             config.DOCKER_CMD, interactive, entrypoint, env_str, user_flags, plugin_run_params,
-            container_name, web_ui_flags, port_mappings, data_dir_mount,
+            container_name, port_mappings.to_str(), data_dir_mount,
             config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
             config.HOST_TMP_FOLDER, image_name, cmd
     )
@@ -386,6 +460,10 @@ def start_infra_in_docker():
 # UTIL FUNCTIONS
 # ---------------
 
+def now_utc():
+    epoch = datetime.utcfromtimestamp(0)
+    return (datetime.utcnow() - epoch).total_seconds()
+
 
 def to_str(obj, errors='strict'):
     return obj.decode('utf-8', errors) if isinstance(obj, six.binary_type) else obj
@@ -425,16 +503,10 @@ class FuncThread(threading.Thread):
 def run(cmd, print_error=True, asynchronous=False, stdin=False,
         stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
         inherit_env=True, tty=False):
-    # don't use subprocess module inn Python 2 as it is not thread-safe
-    # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
-    if six.PY2:
-        import subprocess32 as subprocess
-    else:
-        import subprocess
-
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
+    env_dict = dict([(k, to_str(str(v))) for k, v in env_dict.items()])
 
     if tty:
         asynchronous = True
@@ -449,41 +521,39 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
             output = subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict, cwd=cwd)
             return output.decode(config.DEFAULT_ENCODING)
 
-        # subprocess.Popen is not thread-safe, hence use a mutex here.. (TODO: mutex still needed?)
-        with mutex_popen:
-            stdin_arg = subprocess.PIPE if stdin else None
-            stdout_arg = open(outfile, 'wb') if isinstance(outfile, six.string_types) else outfile
-            stderr_arg = stderr
-            if tty:
-                # Note: leave the "pty" import here (not supported in Windows)
-                import pty
-                master_fd, slave_fd = pty.openpty()
-                stdin_arg = slave_fd
-                stdout_arg = stderr_arg = None
+        stdin_arg = subprocess.PIPE if stdin else None
+        stdout_arg = open(outfile, 'ab') if isinstance(outfile, six.string_types) else outfile
+        stderr_arg = stderr
+        if tty:
+            # Note: leave the "pty" import here (not supported in Windows)
+            import pty
+            master_fd, slave_fd = pty.openpty()
+            stdin_arg = slave_fd
+            stdout_arg = stderr_arg = None
 
-            # start the actual sub process
-            kwargs = {}
-            if is_linux() or is_mac_os():
-                kwargs['preexec_fn'] = os.setsid
-            process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
-                stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, **kwargs)
+        # start the actual sub process
+        kwargs = {}
+        if is_linux() or is_mac_os():
+            kwargs['preexec_fn'] = os.setsid
+        process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
+            stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, **kwargs)
 
-            if tty:
-                # based on: https://stackoverflow.com/questions/41542960
-                def pipe_streams(*args):
-                    while process.poll() is None:
-                        r, w, e = select.select([sys.stdin, master_fd], [], [])
-                        if sys.stdin in r:
-                            d = os.read(sys.stdin.fileno(), 10240)
-                            os.write(master_fd, d)
-                        elif master_fd in r:
-                            o = os.read(master_fd, 10240)
-                            if o:
-                                os.write(sys.stdout.fileno(), o)
+        if tty:
+            # based on: https://stackoverflow.com/questions/41542960
+            def pipe_streams(*args):
+                while process.poll() is None:
+                    r, w, e = select.select([sys.stdin, master_fd], [], [])
+                    if sys.stdin in r:
+                        d = os.read(sys.stdin.fileno(), 10240)
+                        os.write(master_fd, d)
+                    elif master_fd in r:
+                        o = os.read(master_fd, 10240)
+                        if o:
+                            os.write(sys.stdout.fileno(), o)
 
-                FuncThread(pipe_streams).start()
+            FuncThread(pipe_streams).start()
 
-            return process
+        return process
     except subprocess.CalledProcessError as e:
         if print_error:
             print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))

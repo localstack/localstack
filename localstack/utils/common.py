@@ -27,7 +27,7 @@ import dns.resolver
 import functools
 from io import BytesIO
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, date
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
@@ -52,7 +52,7 @@ mutex_clean = threading.Semaphore(1)
 
 # misc. constants
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
-TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
+TIMESTAMP_FORMAT_MICROS = '%Y-%m-%dT%H:%M:%S.%fZ'
 CODEC_HANDLER_UNDERSCORE = 'underscore'
 
 # chunk size for file downloads
@@ -80,7 +80,7 @@ class CustomEncoder(json.JSONEncoder):
                 return float(o)
             else:
                 return int(o)
-        if isinstance(o, datetime):
+        if isinstance(o, (datetime, date)):
             return str(o)
         if isinstance(o, six.binary_type):
             return to_str(o)
@@ -160,6 +160,9 @@ class ShellCommandThread(FuncThread):
         # (Error: libc.musl-x86_64.so.1: cannot open shared object file)
         import psutil
 
+        if getattr(self, 'stopped', False):
+            return
+
         if not self.process:
             LOG.warning("No process found for command '%s'" % self.cmd)
             return
@@ -174,6 +177,7 @@ class ShellCommandThread(FuncThread):
         except Exception:
             if not quiet:
                 LOG.warning('Unable to kill process with pid %s' % parent_pid)
+        self.stopped = True
 
 
 class JsonObject(object):
@@ -201,8 +205,8 @@ class JsonObject(object):
         return result
 
     @classmethod
-    def from_json_list(cls, l):
-        return [cls.from_json(j) for j in l]
+    def from_json_list(cls, json_list):
+        return [cls.from_json(j) for j in json_list]
 
     @classmethod
     def as_dict(cls, obj):
@@ -288,15 +292,25 @@ class CaptureOutput(object):
         return threading.currentThread().ident
 
     def stdout(self):
-        return self._stdout.getvalue() if hasattr(self._stdout, 'getvalue') else self._stdout
+        return self._stream_value(self._stdout)
 
     def stderr(self):
-        return self._stderr.getvalue() if hasattr(self._stderr, 'getvalue') else self._stderr
+        return self._stream_value(self._stderr)
+
+    def _stream_value(self, stream):
+        return stream.getvalue() if hasattr(stream, 'getvalue') else stream
 
 
 # ----------------
 # UTILITY METHODS
 # ----------------
+
+def start_thread(method, *args, **kwargs):
+    thread = FuncThread(method, *args, **kwargs)
+    thread.start()
+    TMP_THREADS.append(thread)
+    return thread
+
 
 def synchronized(lock=None):
     """
@@ -392,7 +406,7 @@ def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=['t
         return True
     url = '%s://%s:%s%s' % (protocol, host, port, http_path)
     try:
-        response = safe_requests.get(url)
+        response = safe_requests.get(url, verify=False)
         return not expect_success or response.status_code < 400
     except Exception:
         return False
@@ -408,12 +422,21 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
     return retry(check, sleep=sleep_time, retries=retries)
 
 
-def get_free_tcp_port():
-    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp.bind(('', 0))
-    addr, port = tcp.getsockname()
-    tcp.close()
-    return port
+def get_free_tcp_port(blacklist=None):
+    blacklist = blacklist or []
+    for i in range(10):
+        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp.bind(('', 0))
+        addr, port = tcp.getsockname()
+        tcp.close()
+        if port not in blacklist:
+            return port
+    raise Exception('Unable to determine free TCP port with blacklist %s' % blacklist)
+
+
+def sleep_forever():
+    while True:
+        time.sleep(1)
 
 
 def get_service_protocol():
@@ -426,6 +449,12 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
     if isinstance(time, six.integer_types + (float, )):
         time = datetime.fromtimestamp(time)
     return time.strftime(format)
+
+
+def timestamp_millis(time=None):
+    microsecond_time = timestamp(time=time, format=TIMESTAMP_FORMAT_MICROS)
+    # truncating micorseconds to milliseconds. while leaving the Z
+    return microsecond_time[:-4] + microsecond_time[-1]
 
 
 def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
@@ -447,7 +476,7 @@ def dump_thread_info():
     print(run("ps aux | grep 'node\\|java\\|python'"))
 
 
-def merge_recursive(source, destination):
+def merge_recursive(source, destination, none_values=[None]):
     for key, value in source.items():
         if isinstance(value, dict):
             # get node or create one
@@ -457,7 +486,8 @@ def merge_recursive(source, destination):
             if not isinstance(destination, dict):
                 LOG.warning('Destination for merging %s=%s is not dict: %s' %
                     (key, value, destination))
-            destination[key] = value
+            if destination.get(key) in none_values:
+                destination[key] = value
     return destination
 
 
@@ -502,15 +532,18 @@ def obj_to_xml(obj):
     return str(obj)
 
 
-def now_utc():
-    return mktime(datetime.utcnow())
+def now_utc(millis=False):
+    return mktime(datetime.utcnow(), millis=millis)
 
 
-def now():
-    return mktime(datetime.now())
+def now(millis=False):
+    return mktime(datetime.now(), millis=millis)
 
 
-def mktime(timestamp):
+def mktime(timestamp, millis=False):
+    if millis:
+        epoch = datetime.utcfromtimestamp(0)
+        return (timestamp - epoch).total_seconds()
     return calendar.timegm(timestamp.timetuple())
 
 
@@ -618,7 +651,6 @@ def download(url, path, verify_ssl=True):
             return
         LOG.debug('Done downloading %s, response code %s, total bytes %d' % (url, r.status_code, total))
     finally:
-        LOG.debug('Cleaning up file handles for download of %s' % url)
         r.close()
         s.close()
 
@@ -637,6 +669,10 @@ def parse_chunked_data(data):
         chunks.append(data[:length])
         data = data[length:].strip()
     return ''.join(chunks)
+
+
+def first_char_to_lower(s):
+    return '%s%s' % (s[0].lower(), s[1:])
 
 
 def is_number(s):
@@ -682,6 +718,10 @@ def short_uid():
     return str(uuid.uuid4())[0:8]
 
 
+def long_uid():
+    return str(uuid.uuid4())
+
+
 def json_safe(item):
     """ return a copy of the given object (e.g., dict) that is safe for JSON dumping """
     try:
@@ -703,6 +743,10 @@ def fix_json_keys(item):
         for k, v in item.items():
             item_copy[to_str(k)] = fix_json_keys(v)
     return item_copy
+
+
+def canonical_json(obj):
+    return json.dumps(obj, sort_keys=True)
 
 
 def save_file(file, content, append=False):
@@ -742,8 +786,12 @@ def cleanup(files=True, env=ENV_DEV, quiet=True):
 
 
 def cleanup_threads_and_processes(quiet=True):
-    for t in TMP_THREADS:
-        t.stop(quiet=quiet)
+    for thread in TMP_THREADS:
+        if thread:
+            try:
+                thread.stop(quiet=quiet)
+            except Exception as e:
+                print(e)
     for p in TMP_PROCESSES:
         try:
             p.terminate()
@@ -754,9 +802,9 @@ def cleanup_threads_and_processes(quiet=True):
     clear_list(TMP_PROCESSES)
 
 
-def clear_list(l):
-    while len(l):
-        del l[0]
+def clear_list(list_obj):
+    while len(list_obj):
+        del list_obj[0]
 
 
 def cleanup_tmp_files():
@@ -886,6 +934,19 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     if target_file and not overwrite and os.path.exists(target_file):
         key_file_name = '%s.key' % target_file
         cert_file_name = '%s.crt' % target_file
+        try:
+            # extract key and cert from target_file and store into separate files
+            content = load_file(target_file)
+            key_start = '-----BEGIN PRIVATE KEY-----'
+            key_end = '-----END PRIVATE KEY-----'
+            cert_start = '-----BEGIN CERTIFICATE-----'
+            cert_end = '-----END CERTIFICATE-----'
+            key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
+            cert_content = content[content.index(cert_start): content.index(cert_end) + len(cert_end)]
+            save_file(key_file_name, key_content)
+            save_file(cert_file_name, cert_content)
+        except Exception as e:
+            LOG.info('Unable to store key/cert files for custom SSL certificate: %s' % e)
         if all_exist(key_file_name, cert_file_name):
             return target_file, cert_file_name, key_file_name
     if random and target_file:
@@ -1080,7 +1141,7 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN,
 
 
 def truncate(data, max_length=100):
-    return (data[:max_length] + '...') if len(data) > max_length else data
+    return ('%s...' % data[:max_length]) if len(data or '') > max_length else data
 
 
 def parallelize(func, list, size=None):

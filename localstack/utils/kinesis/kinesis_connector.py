@@ -5,7 +5,7 @@ import re
 import logging
 import tempfile
 import threading
-import subprocess32 as subprocess
+import subprocess
 from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
@@ -349,12 +349,11 @@ def generate_processor_script(events_file, log_file=None):
     else:
         log_file = 'None'
     content = """#!/usr/bin/env python
-import os, sys, glob, json, socket, time, logging, tempfile
+import os, sys, glob, json, socket, time, logging, subprocess, tempfile
 logging.basicConfig(level=logging.INFO)
 for path in glob.glob('%s/lib/python*/site-packages'):
     sys.path.insert(0, path)
 sys.path.insert(0, '%s')
-import subprocess32 as subprocess
 from localstack.config import DEFAULT_ENCODING
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.common import timestamp

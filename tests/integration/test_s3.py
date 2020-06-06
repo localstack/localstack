@@ -1,12 +1,16 @@
+import datetime
 import io
 import os
 import ssl
 import gzip
 import json
+import time
 import uuid
 import unittest
 import requests
 from io import BytesIO
+
+from pytz import timezone
 from six.moves.urllib.request import Request, urlopen
 from localstack import config
 from localstack.utils.aws import aws_stack
@@ -16,11 +20,15 @@ from localstack.utils.common import (
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
+TEST_BUCKET_WITH_VERSIONING = 'test-bucket-versioning-1'
+
+TEST_BUCKET_NAME_2 = 'test-bucket-2'
+TEST_KEY_2 = 'test-key-2'
+TEST_GET_OBJECT_RANGE = 17
 
 
 class PutRequest(Request):
     """ Class to handle putting with urllib """
-
     def __init__(self, *args, **kwargs):
         return Request.__init__(self, *args, **kwargs)
 
@@ -29,7 +37,6 @@ class PutRequest(Request):
 
 
 class S3ListenerTest(unittest.TestCase):
-
     def setUp(self):
         self.s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
@@ -106,15 +113,6 @@ class S3ListenerTest(unittest.TestCase):
                                              VersioningConfiguration={'Status': 'Disabled'})
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path, key_by_host])
-
-    def generate_large_file(self, size):
-        # https://stackoverflow.com/questions/8816059/create-file-of-particular-size-in-python
-        filename = 'large_file_%s' % uuid.uuid4()
-        f = open(filename, 'wb')
-        f.seek(size - 1)
-        f.write(b'\0')
-        f.close()
-        return open(filename, 'r')
 
     def test_s3_upload_fileobj_with_large_file_notification(self):
         queue_url, queue_attributes = self._create_test_queue()
@@ -260,6 +258,65 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_s3_object_expiry(self):
+        # handle s3 object expiry
+        # https://github.com/localstack/localstack/issues/1685
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put object
+        object_key = 'key-with-metadata'
+        metadata = {'test_meta_1': 'foo', '__meta_2': 'bar'}
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Metadata=metadata, Body='foo',
+                                  Expires=datetime.datetime.now(timezone('GMT')) - datetime.timedelta(hours=1))
+        # try to fetch an object which is already expired
+        self.assertRaises(Exception, self.s3_client.get_object, Bucket=bucket_name, Key=object_key.lower())
+
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Metadata=metadata, Body='foo',
+                                  Expires=datetime.datetime.now(timezone('GMT')) + datetime.timedelta(hours=1))
+
+        # try to fetch has not been expired yet.
+        resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+
+        self.assertIn('Expires', resp)
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_predesigned_url_expired(self):
+
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put object and CORS configuration
+        object_key = 'key-by-hostname'
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+
+        # get object and assert headers
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=2
+        )
+        # retrieving it before expiry
+        resp = requests.get(url, verify=False)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(to_str(resp.content), 'something')
+
+        # waiting for the url to expire
+        time.sleep(3)
+        resp = requests.get(url, verify=False)
+        self.assertEqual(resp.status_code, 400)
+
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=120
+        )
+
+        resp = requests.get(url, verify=False)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(to_str(resp.content), 'something')
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
     def test_range_header_body_length(self):
         # Test for https://github.com/localstack/localstack/issues/1952
 
@@ -305,6 +362,30 @@ class S3ListenerTest(unittest.TestCase):
         response = requests.get(url, headers={'Range': 'bytes=0-18'}, verify=False)
         self.assertEqual(response.headers['content-type'], content_type)
         self.assertEqual(to_str(response.content), 'something something')
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_get_get_object_headers(self):
+        object_key = 'sample.bin'
+        bucket_name = 'test-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        chunk_size = 1024
+
+        with io.BytesIO() as data:
+            data.write(os.urandom(chunk_size * 2))
+            data.seek(0)
+            self.s3_client.upload_fileobj(data, bucket_name, object_key)
+
+        range_header = 'bytes=0-%s' % (chunk_size - 1)
+        resp = self.s3_client.get_object(Bucket=bucket_name, Key=object_key, Range=range_header)
+        self.assertEqual(resp.get('AcceptRanges'), 'bytes')
+        self.assertIn('x-amz-request-id', resp['ResponseMetadata']['HTTPHeaders'])
+        self.assertIn('x-amz-id-2', resp['ResponseMetadata']['HTTPHeaders'])
+        self.assertIn('content-language', resp['ResponseMetadata']['HTTPHeaders'])
+        self.assertIn('cache-control', resp['ResponseMetadata']['HTTPHeaders'])
+        self.assertIn('content-encoding', resp['ResponseMetadata']['HTTPHeaders'])
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
@@ -373,6 +454,27 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_s3_post_object_on_presigned_post(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        body = 'something body'
+        # get presigned URL
+        object_key = 'test-presigned-post-key'
+        presigned_request = self.s3_client.generate_presigned_post(
+            Bucket=bucket_name,
+            Key=object_key
+        )
+        # put object
+        files = {'file': body}
+        response = requests.post(presigned_request['url'], data=presigned_request['fields'], files=files, verify=False)
+        self.assertIn(response.status_code, [200, 204])
+        # get object and compare results
+        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        download_object = downloaded_object['Body'].read()
+        self.assertEqual(to_str(body), to_str(download_object))
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
     def test_s3_delete_response_content_length_zero(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
@@ -397,7 +499,7 @@ class S3ListenerTest(unittest.TestCase):
     def test_delete_object_tagging(self):
         bucket_name = 'test-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name, ACL='public-read')
-        object_key = 'test-key'
+        object_key = 'test-key-tagging'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         # get object and assert response
         url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, object_key)
@@ -414,7 +516,7 @@ class S3ListenerTest(unittest.TestCase):
     def test_delete_non_existing_keys(self):
         bucket_name = 'test-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
-        object_key = 'test-key'
+        object_key = 'test-key-nonexistent'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         response = self.s3_client.delete_objects(Bucket=bucket_name,
             Delete={'Objects': [{'Key': object_key}, {'Key': 'dummy1'}, {'Key': 'dummy2'}]})
@@ -656,9 +758,185 @@ class S3ListenerTest(unittest.TestCase):
         # cleanup
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
+    def test_s3_event_notification_with_sqs(self):
+        key_by_path = 'aws/bucket=2020/test1.txt'
+
+        queue_url, queue_attributes = self._create_test_queue()
+        self._create_test_notification_bucket(queue_attributes)
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+
+        body = 'Lorem ipsum dolor sit amet, ... ' * 30
+
+        # put an object
+        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body=body)
+
+        self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
+
+        rs = self.sqs_client.receive_message(QueueUrl=queue_url)
+        record = [json.loads(to_str(m['Body'])) for m in rs['Messages']][0]['Records'][0]
+
+        download_file = new_tmp_file()
+        self.s3_client.download_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                     Key=key_by_path, Filename=download_file)
+
+        self.assertEqual(record['s3']['object']['size'], os.path.getsize(download_file))
+
+        # clean up
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+                                             VersioningConfiguration={'Status': 'Disabled'})
+
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+
+    def test_s3_delete_object_with_version_id(self):
+        test_1st_key = 'aws/s3/testkey1.txt'
+        test_2nd_key = 'aws/s3/testkey2.txt'
+
+        body = 'Lorem ipsum dolor sit amet, ... ' * 30
+
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_VERSIONING)
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+
+        # put 2 objects
+        rs = self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_VERSIONING, Key=test_1st_key, Body=body)
+        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_VERSIONING, Key=test_2nd_key, Body=body)
+
+        version_id = rs['VersionId']
+
+        # delete 1st object with version
+        rs = self.s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_VERSIONING,
+                                           Delete={'Objects': [{'Key': test_1st_key, 'VersionId': version_id}]})
+
+        deleted = rs['Deleted'][0]
+        self.assertEqual(deleted['Key'], test_1st_key)
+        self.assertEqual(deleted['VersionId'], version_id)
+
+        rs = self.s3_client.list_object_versions(Bucket=TEST_BUCKET_WITH_VERSIONING)
+        object_versions = [object['VersionId'] for object in rs['Versions']]
+
+        self.assertNotIn(version_id, object_versions)
+
+        # clean up
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,
+                                             VersioningConfiguration={'Status': 'Disabled'})
+        self._delete_bucket(TEST_BUCKET_WITH_VERSIONING, [test_1st_key, test_2nd_key])
+
+    def test_etag_on_get_object_call(self):
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_2)
+
+        body = 'Lorem ipsum dolor sit amet, ... ' * 30
+        rs = self.s3_client.put_object(Bucket=TEST_BUCKET_NAME_2, Key=TEST_KEY_2, Body=body)
+        etag = rs['ETag']
+
+        rs = self.s3_client.get_object(
+            Bucket=TEST_BUCKET_NAME_2,
+            Key=TEST_KEY_2
+        )
+        self.assertIn('ETag', rs)
+        self.assertEqual(etag, rs['ETag'])
+        self.assertEqual(rs['ContentLength'], len(body))
+
+        rs = self.s3_client.get_object(
+            Bucket=TEST_BUCKET_NAME_2,
+            Key=TEST_KEY_2,
+            Range='bytes=0-{}'.format(TEST_GET_OBJECT_RANGE - 1)
+        )
+        self.assertIn('ETag', rs)
+        self.assertEqual(etag, rs['ETag'])
+        self.assertEqual(rs['ContentLength'], TEST_GET_OBJECT_RANGE)
+
+        # clean up
+        self._delete_bucket(TEST_BUCKET_NAME_2, [TEST_KEY_2])
+
+    def test_get_object_versioning(self):
+        bucket_name = 'bucket-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        rs = self.s3_client.list_object_versions(
+            Bucket=bucket_name,
+            EncodingType='url'
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['Name'], bucket_name)
+
+        # clean up
+        self._delete_bucket(bucket_name, [])
+
+    def test_bucket_versioning(self):
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_VERSIONING)
+        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+
+        result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
+        self.assertEqual(result['Status'], 'Enabled')
+
+    def test_upload_big_file(self):
+        bucket_name = 'bucket-big-file-%s' % short_uid()
+        key1 = 'test_key1'
+        key2 = 'test_key1'
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        body1 = '\x01' * 10000000
+        rs = self.s3_client.put_object(Bucket=bucket_name, Key=key1, Body=body1)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        body2 = 'a' * 10000000
+        rs = self.s3_client.put_object(Bucket=bucket_name, Key=key2, Body=body2)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = self.s3_client.head_object(Bucket=bucket_name, Key=key1)
+        self.assertEqual(rs['ContentLength'], len(body1))
+
+        rs = self.s3_client.head_object(Bucket=bucket_name, Key=key2)
+        self.assertEqual(rs['ContentLength'], len(body2))
+
+        # clean up
+        self._delete_bucket(bucket_name, [key1, key2])
+
+    def test_s3_put_more_than_1000_items(self):
+
+        self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_2)
+        for i in range(0, 1010, 1):
+            body = 'test-' + str(i)
+            key = 'test-key-' + str(i)
+            self.s3_client.put_object(Bucket=TEST_BUCKET_NAME_2, Key=key, Body=body)
+
+        # trying to get the last item of 1010 items added.
+        resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key='test-key-1009')
+        self.assertEqual(to_str(resp['Body'].read()), 'test-1009')
+
+        # trying to get the first item of 1010 items added.
+        resp = self.s3_client.get_object(Bucket=TEST_BUCKET_NAME_2, Key='test-key-0')
+        self.assertEqual(to_str(resp['Body'].read()), 'test-0')
+
+        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, MaxKeys=1010)
+        self.assertEqual(len(resp['Contents']), 1010)
+
+        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2)
+        self.assertEqual(len(resp['Contents']), 1000)
+        next_marker = resp['NextMarker']
+
+        # Second list
+        resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, Marker=next_marker)
+        self.assertEqual(len(resp['Contents']), 10)
+
     # ---------------
     # HELPER METHODS
     # ---------------
+
+    @staticmethod
+    def generate_large_file(size):
+        # https://stackoverflow.com/questions/8816059/create-file-of-particular-size-in-python
+        filename = 'large_file_%s' % uuid.uuid4()
+        f = open(filename, 'wb')
+        f.seek(size - 1)
+        f.write(b'\0')
+        f.close()
+        return open(filename, 'r')
 
     def _create_test_queue(self):
         queue_url = self.sqs_client.create_queue(QueueName=TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION)['QueueUrl']
@@ -681,7 +959,8 @@ class S3ListenerTest(unittest.TestCase):
 
     def _get_test_queue_message_count(self, queue_url):
         queue_attributes = self.sqs_client.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages'])
+            QueueUrl=queue_url, AttributeNames=['ApproximateNumberOfMessages']
+        )
         return queue_attributes['Attributes']['ApproximateNumberOfMessages']
 
     def _delete_bucket(self, bucket_name, keys=[]):
@@ -694,7 +973,7 @@ class S3ListenerTest(unittest.TestCase):
     def _perform_multipart_upload(self, bucket, key, data=None, zip=False, acl=None):
         kwargs = {'ACL': acl} if acl else {}
         multipart_upload_dict = self.s3_client.create_multipart_upload(Bucket=bucket, Key=key, **kwargs)
-        uploadId = multipart_upload_dict['UploadId']
+        upload_id = multipart_upload_dict['UploadId']
 
         # Write contents to memory rather than a file.
         data = data or (5 * short_uid())
@@ -706,12 +985,13 @@ class S3ListenerTest(unittest.TestCase):
                 filestream.write(data)
 
         response = self.s3_client.upload_part(Bucket=bucket, Key=key,
-            Body=upload_file_object, PartNumber=1, UploadId=uploadId)
+            Body=upload_file_object, PartNumber=1, UploadId=upload_id)
 
         multipart_upload_parts = [{'ETag': response['ETag'], 'PartNumber': 1}]
 
-        return self.s3_client.complete_multipart_upload(Bucket=bucket,
-            Key=key, MultipartUpload={'Parts': multipart_upload_parts}, UploadId=uploadId)
+        return self.s3_client.complete_multipart_upload(
+            Bucket=bucket, Key=key, MultipartUpload={'Parts': multipart_upload_parts}, UploadId=upload_id
+        )
 
     def _perform_presigned_url_upload(self, bucket, key):
         url = self.s3_client.generate_presigned_url(

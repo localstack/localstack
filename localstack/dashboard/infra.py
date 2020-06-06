@@ -478,16 +478,16 @@ def get_graph(name_filter='.*', env=None):
             uid = short_uid()
             node_ids[q.id] = uid
             result['nodes'].append({'id': uid, 'arn': q.id, 'name': q.name(), 'type': 'sqs'})
-        for l in lambdas:
+        for lda in lambdas:
             uid = short_uid()
-            node_ids[l.id] = uid
-            result['nodes'].append({'id': uid, 'arn': l.id, 'name': l.name(), 'type': 'lambda'})
-            for s in l.event_sources:
+            node_ids[lda.id] = uid
+            result['nodes'].append({'id': uid, 'arn': lda.id, 'name': lda.name(), 'type': 'lambda'})
+            for s in lda.event_sources:
                 lookup_id = s.id
                 if isinstance(s, DynamoDBStream):
                     lookup_id = s.table.id
                 result['edges'].append({'source': node_ids.get(lookup_id), 'target': uid})
-            for t in l.targets:
+            for t in lda.targets:
                 lookup_id = t.id
                 result['edges'].append({'source': uid, 'target': node_ids.get(lookup_id)})
         for b in buckets:

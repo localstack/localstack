@@ -10,7 +10,7 @@ import six
 from boto3 import Session
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
-    DEFAULT_LAMBDA_CONTAINER_REGISTRY)
+    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE)
 
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get('LAMBDA_JAVA_OPTS', '').strip()
@@ -104,6 +104,11 @@ DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 # whether to start the web API
 START_WEB = os.environ.get('START_WEB', '').strip() not in FALSE_STRINGS
 
+# port number for the edge service, the main entry point for all API invocations
+EDGE_PORT = int(os.environ.get('EDGE_PORT') or 0) or DEFAULT_PORT_EDGE
+# fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
+EDGE_PORT_HTTP = int(os.environ.get('EDGE_PORT_HTTP') or 0)
+
 # port of Web UI
 PORT_WEB_UI = int(os.environ.get('PORT_WEB_UI', '').strip() or DEFAULT_PORT_WEB_UI)
 PORT_WEB_UI_SSL = PORT_WEB_UI + 1
@@ -114,6 +119,18 @@ DOCKER_BRIDGE_IP = os.environ.get('DOCKER_BRIDGE_IP', '').strip()
 # CORS settings
 EXTRA_CORS_ALLOWED_HEADERS = os.environ.get('EXTRA_CORS_ALLOWED_HEADERS', '').strip()
 EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').strip()
+
+# whether to disable publishing events to the API
+DISABLE_EVENTS = os.environ.get('DISABLE_EVENTS') in TRUE_STRINGS
+
+# Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
+SKIP_INFRA_DOWNLOADS = os.environ.get('SKIP_INFRA_DOWNLOADS', '').strip()
+
+# Stepfunctions lambda endpoint override
+STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get('STEPFUNCTIONS_LAMBDA_ENDPOINT', '').strip()
+
+# path prefix for windows volume mounting
+WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get('WINDOWS_DOCKER_MOUNT_PREFIX', '/host_mnt')
 
 
 def has_docker():
@@ -154,7 +171,9 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'LAMBDA_REMOVE_CONTAINERS',
                    'USE_SSL', 'DEBUG', 'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI',
                    'START_WEB', 'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
-                   'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID']
+                   'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS', 'EDGE_PORT',
+                   'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS', 'STEPFUNCTIONS_LAMBDA_ENDPOINT',
+                   'WINDOWS_DOCKER_MOUNT_PREFIX']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -199,9 +218,10 @@ try:
         if LOCALSTACK_HOSTNAME == HOSTNAME:
             DOCKER_HOST_FROM_CONTAINER = 'host.docker.internal'
     # update LOCALSTACK_HOSTNAME if host.docker.internal is available
-    if is_in_docker and LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
+    if is_in_docker:
         DOCKER_HOST_FROM_CONTAINER = socket.gethostbyname('host.docker.internal')
-        LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
+        if LOCALSTACK_HOSTNAME == DOCKER_BRIDGE_IP:
+            LOCALSTACK_HOSTNAME = DOCKER_HOST_FROM_CONTAINER
 except socket.error:
     pass
 

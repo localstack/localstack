@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.10.7'
+VERSION = '0.11.2'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -10,27 +10,18 @@ REGION_LOCAL = 'local'
 # dev environment
 ENV_DEV = 'dev'
 
-# backend service ports, for services that are behind a proxy (counting down from 4566)
-DEFAULT_PORT_APIGATEWAY_BACKEND = 4566
-DEFAULT_PORT_KINESIS_BACKEND = 4565
-DEFAULT_PORT_DYNAMODB_BACKEND = 4564
-DEFAULT_PORT_S3_BACKEND = 4563
-DEFAULT_PORT_SNS_BACKEND = 4562
-DEFAULT_PORT_SQS_BACKEND = 4561
-DEFAULT_PORT_ELASTICSEARCH_BACKEND = 4560
-DEFAULT_PORT_CLOUDFORMATION_BACKEND = 4559
-DEFAULT_PORT_STEPFUNCTIONS_BACKEND = 4558
-DEFAULT_PORT_IAM_BACKEND = 4557
-DEFAULT_PORT_EC2_BACKEND = 4556
-DEFAULT_PORT_KMS_BACKEND = 4555
-DEFAULT_PORT_EVENTS_BACKEND = 4554
+# HTTP headers used to forward proxy request URLs
+HEADER_LOCALSTACK_EDGE_URL = 'x-localstack-edge'
+HEADER_LOCALSTACK_TARGET = 'x-localstack-target'
 
+# backend service ports, for services that are behind a proxy (counting down from 4566)
+DEFAULT_PORT_EDGE = 4566
 DEFAULT_PORT_WEB_UI = 8080
 
 LOCALHOST = 'localhost'
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = '0.2.0'
+LOCALSTACK_MAVEN_VERSION = '0.2.1'
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
@@ -57,6 +48,7 @@ PATH_USER_REQUEST = '_user_request_'
 
 # name of LocalStack Docker image
 DOCKER_IMAGE_NAME = 'localstack/localstack'
+DOCKER_IMAGE_NAME_LIGHT = 'localstack/localstack-light'
 
 # backdoor API path used to retrieve or update config variables
 CONFIG_UPDATE_PATH = '/?_config_'
@@ -68,6 +60,7 @@ ENV_INTERNAL_TEST_RUN = 'LOCALSTACK_INTERNAL_TEST_RUN'
 APPLICATION_AMZ_JSON_1_0 = 'application/x-amz-json-1.0'
 APPLICATION_AMZ_JSON_1_1 = 'application/x-amz-json-1.1'
 APPLICATION_JSON = 'application/json'
+APPLICATION_XML = 'application/xml'
 APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
 
 # strings to indicate truthy/falsy values
@@ -78,13 +71,18 @@ FALSE_STRINGS = ('0', 'false', 'False')
 LAMBDA_TEST_ROLE = 'arn:aws:iam::%s:role/lambda-test-role' % TEST_AWS_ACCOUNT_ID
 
 # installation constants
-ELASTICSEARCH_JAR_URL = 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.zip'
+ELASTICSEARCH_URLS = {
+    '7.4.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.4.0-linux-x86_64.tar.gz',
+    '7.1.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.1.0-linux-x86_64.tar.gz',
+    '6.7.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.zip'
+}
+ELASTICSEARCH_DEFAULT_VERSION = '7.1.0'
 # See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
 ELASTICSEARCH_PLUGIN_LIST = ['analysis-icu', 'ingest-attachment', 'analysis-kuromoji',
  'mapper-murmur3', 'mapper-size', 'analysis-phonetic', 'analysis-smartcn', 'analysis-stempel', 'analysis-ukrainian']
 # Default ES modules to exclude (save apprx 66MB in the final image)
 ELASTICSEARCH_DELETE_MODULES = ['ingest-geoip']
-ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.15.2.jar'
+ELASTICMQ_JAR_URL = 'https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.15.7.jar'
 STS_JAR_URL = 'https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-sts/1.11.14/aws-java-sdk-sts-1.11.14.jar'
 STEPFUNCTIONS_ZIP_URL = 'https://s3.amazonaws.com/stepfunctionslocal/StepFunctionsLocal.zip'
 KMS_URL_PATTERN = 'https://s3-eu-west-2.amazonaws.com/local-kms/localstack/v3/local-kms.<arch>.bin'
