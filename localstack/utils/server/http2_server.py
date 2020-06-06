@@ -2,7 +2,6 @@ import types
 import asyncio
 import logging
 from quart import make_response, request, Quart
-from quart.logging import default_handler
 from localstack import config
 from localstack.utils.common import start_thread
 
@@ -38,7 +37,6 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
         return response
 
     cert_file_name, key_file_name = ssl_creds or (None, None)
-
 
     def run_sync(*args, loop=None):
         kwargs = {}
