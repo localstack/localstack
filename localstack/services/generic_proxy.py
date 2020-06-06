@@ -508,7 +508,7 @@ def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=T
         request_handler.proxy.port = port
         response = modify_and_forward(method=method, path=path, data_bytes=data, headers=headers,
             forward_base_url=forward_url, listeners=[listener], request_handler=None,
-            client_address='TODO', server_address='TODO')
+            client_address=request.remote_addr, server_address=urlparse(request.url).netloc)
 
         return response
 
