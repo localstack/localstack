@@ -496,8 +496,9 @@ def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listen
 
 def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=True, use_ssl=None):
     def handler(request, data):
+        parsed_url = urlparse(request.url)
+        path_with_params = '/%s' % str(request.url).partition('://')[2].partition('/')[2]
         method = request.method
-        path = request.path
         headers = request.headers
 
         class T:
@@ -506,9 +507,9 @@ def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=T
         request_handler = T()
         request_handler.proxy = T()
         request_handler.proxy.port = port
-        response = modify_and_forward(method=method, path=path, data_bytes=data, headers=headers,
+        response = modify_and_forward(method=method, path=path_with_params, data_bytes=data, headers=headers,
             forward_base_url=forward_url, listeners=[listener], request_handler=None,
-            client_address=request.remote_addr, server_address=urlparse(request.url).netloc)
+            client_address=request.remote_addr, server_address=parsed_url.netloc)
 
         return response
 
