@@ -1,35 +1,22 @@
 import types
 import asyncio
+import logging
 from quart import make_response, request, Quart
+from quart.logging import default_handler
+from localstack import config
 from localstack.utils.common import start_thread
-from localstack.services.generic_proxy import GenericProxy, modify_and_forward
 
 
-class T:
-    pass
+def setup_quart_logging():
+    # set up loggers to avoid duplicate log lines in quart
+    for name in ['quart.app', 'quart.serving']:
+        log = logging.getLogger(name)
+        log.setLevel(logging.INFO if config.DEBUG else logging.WARNING)
+        for hdl in list(log.handlers):
+            log.removeHandler(hdl)
 
 
-def run_proxy_server(port, listener=None, forward_url=None, asynchronous=True):
-    def handler(request, data):
-        if not listener:
-            return
-        method = request.method
-        path = request.path
-        headers = request.headers
-
-        request_handler = T()
-        request_handler.proxy = T()
-        request_handler.proxy.port = port
-        response = modify_and_forward(method=method, path=path, data_bytes=data, headers=headers,
-            forward_base_url=forward_url, listeners=[listener], request_handler=None,
-            client_address='TODO', server_address='TODO')
-
-        return response
-
-    return run_server(port, handler=handler, asynchronous=asynchronous)
-
-
-def run_server(port, handler=None, asynchronous=True):
+def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
     app = Quart(__name__)
 
@@ -50,22 +37,29 @@ def run_server(port, handler=None, asynchronous=True):
             response = await make_response('{}')
         return response
 
-    _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+    cert_file_name, key_file_name = ssl_creds or (None, None)
+
 
     def run_sync(*args, loop=None):
-        return app.run(host='0.0.0.0', port=port, certfile=cert_file_name, keyfile=key_file_name, loop=loop)
+        kwargs = {}
+        if cert_file_name:
+            kwargs['certfile'] = cert_file_name
+        if key_file_name:
+            kwargs['keyfile'] = key_file_name
+        setup_quart_logging()
+        return app.run(host='0.0.0.0', port=port, loop=loop, use_reloader=False, **kwargs)
 
     def run_in_thread():
         def _run(*args):
             loop = asyncio.new_event_loop()
 
             def fix_add_signal_handler(self, *args, **kwargs):
+                # fix for error "RuntimeError: set_wakeup_fd only works in main thread" in quart/app.py
                 try:
                     add_signal_handler_orig(*args, **kwargs)
                 except Exception:
                     raise NotImplementedError()
 
-            # fix for error "RuntimeError: set_wakeup_fd only works in main thread" in quart/app.py
             add_signal_handler_orig = loop.add_signal_handler
             loop.add_signal_handler = types.MethodType(fix_add_signal_handler, loop)
             asyncio.set_event_loop(loop)

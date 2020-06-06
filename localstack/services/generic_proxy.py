@@ -19,6 +19,7 @@ from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack import config
 from localstack.config import USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
+from localstack.utils.server import http2_server
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS
 from localstack.utils.aws.aws_responses import LambdaResponse
 
@@ -460,7 +461,7 @@ class GenericProxy(FuncThread):
 
     @classmethod
     def create_ssl_cert(cls, serial_number=None):
-        cert_pem_file = os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
+        cert_pem_file = get_cert_pem_file_path()
         return generate_ssl_cert(cert_pem_file, serial_number=serial_number)
 
     @classmethod
@@ -471,10 +472,14 @@ class GenericProxy(FuncThread):
         return None
 
 
+def get_cert_pem_file_path():
+    return os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
+
+
 def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
     if USE_HTTP2_SERVER:
         return start_proxy_server_http2(port=port, forward_url=forward_url,
-            ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
+            use_ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
     proxy_thread = GenericProxy(port=port, forward_url=forward_url,
         ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
     proxy_thread.start()
@@ -483,11 +488,37 @@ def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=Non
 
 
 def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
-    proxy_thread = GenericProxy(port=port, forward_url=forward_url,
-        ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
-    proxy_thread.start()
-    TMP_THREADS.append(proxy_thread)
+    proxy_thread = run_proxy_server_http2(
+        port=port, use_ssl=use_ssl, listener=update_listener, forward_url=forward_url, asynchronous=True)
     return proxy_thread
+
+
+def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=True, use_ssl=None):
+    def handler(request, data):
+        if not listener:
+            return
+        method = request.method
+        path = request.path
+        headers = request.headers
+
+        class T:
+            pass
+
+        request_handler = T()
+        request_handler.proxy = T()
+        request_handler.proxy.port = port
+        response = modify_and_forward(method=method, path=path, data_bytes=data, headers=headers,
+            forward_base_url=forward_url, listeners=[listener], request_handler=None,
+            client_address='TODO', server_address='TODO')
+
+        return response
+
+    ssl_creds = (None, None)
+    if use_ssl:
+        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+        ssl_creds = (cert_file_name, key_file_name)
+
+    return http2_server.run_server(port, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds)
 
 
 def serve_flask_app(app, port, quiet=True, host=None, cors=True):
