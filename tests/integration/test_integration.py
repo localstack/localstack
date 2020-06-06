@@ -449,16 +449,28 @@ class IntegrationTest(unittest.TestCase):
                 self.assertNotIn('old_image', event)
                 self.assertEqual(inserts[i]['new_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
 
-            self.assertEqual(modifies[0]['old_image'], {'id': 'testId6', 'data': 'foobar123'})
-            self.assertEqual(modifies[0]['new_image'], {'id': 'testId6', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[1]['old_image'], {'id': 'testId7', 'data': 'foobar123'})
-            self.assertEqual(modifies[1]['new_image'], {'id': 'testId7', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[2]['old_image'], {'id': 'testId6', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[2]['new_image'], {'id': 'testId6', 'data': 'foobar123_updated2'})
-            self.assertEqual(modifies[3]['old_image'], {'id': 'testId7', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[3]['new_image'], {'id': 'testId7', 'data': 'foobar123_updated2'})
-            self.assertEqual(modifies[4]['old_image'], {'id': 'testId8', 'data': 'foobar123'})
-            self.assertEqual(modifies[4]['new_image'], {'id': 'testId8', 'data': 'foobar123_updated2'})
+            def assert_updates(updates, modifies):
+                def found(update):
+                    for modif in modifies:
+                        if modif['old_image']['id'] == update['id']:
+                            self.assertEqual(modif['old_image'], {'id': update['id'], 'data': update['old']})
+                            self.assertEqual(modif['new_image'], {'id': update['id'], 'data': update['new']})
+                            return True
+                for update in updates:
+                    self.assertTrue(found(update))
+
+            updates1 = [
+                {'id': 'testId6', 'old': 'foobar123', 'new': 'foobar123_updated1'},
+                {'id': 'testId7', 'old': 'foobar123', 'new': 'foobar123_updated1'}
+            ]
+            updates2 = [
+                {'id': 'testId6', 'old': 'foobar123_updated1', 'new': 'foobar123_updated2'},
+                {'id': 'testId7', 'old': 'foobar123_updated1', 'new': 'foobar123_updated2'},
+                {'id': 'testId8', 'old': 'foobar123', 'new': 'foobar123_updated2'}
+            ]
+
+            assert_updates(updates1, modifies[:2])
+            assert_updates(updates2, modifies[2:])
 
             for i, event in enumerate(removes):
                 self.assertEqual(event['old_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
