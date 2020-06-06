@@ -289,21 +289,6 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
     return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
 
 
-def process_dynamodb_records(records):
-    # feed records into listening lambdas
-    try:
-        for record in records:
-            sources = get_event_sources(source_arn=record['eventSourceARN'])
-            event = {
-                'Records': [record]
-            }
-            for src in sources:
-                run_lambda(event=event, context={}, func_arn=src['FunctionArn'],
-                    asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS)
-    except Exception as e:
-        LOG.warning('Unable to run Lambda function on DynamoDB records: %s %s' % (e, traceback.format_exc()))
-
-
 def process_kinesis_records(records, stream_name):
     def chunks(lst, n):
         # Yield successive n-sized chunks from lst.
@@ -327,7 +312,7 @@ def process_kinesis_records(records, stream_name):
                         for rec in chunk
                     ]
                 }
-                run_lambda(event=event, context={}, func_arn=arn, asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS)
+                run_lambda(event=event, context={}, func_arn=arn, asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 

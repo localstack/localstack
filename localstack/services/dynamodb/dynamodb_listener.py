@@ -484,6 +484,17 @@ def create_dynamodb_stream(data, latest_stream_label):
         )
 
 
+def forward_to_lambda(records):
+    for record in records:
+        sources = lambda_api.get_event_sources(source_arn=record['eventSourceARN'])
+        event = {
+            'Records': [record]
+        }
+        for src in sources:
+            lambda_api.run_lambda(event=event, context={}, func_arn=src['FunctionArn'],
+                asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS)
+
+
 def forward_to_ddb_stream(records):
     dynamodbstreams_api.forward_events(records)
 
