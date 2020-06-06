@@ -488,15 +488,13 @@ def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=Non
 
 
 def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
-    proxy_thread = run_proxy_server_http2(
-        port=port, use_ssl=use_ssl, listener=update_listener, forward_url=forward_url, asynchronous=True)
+    proxy_thread = run_proxy_server_http2(port=port, use_ssl=use_ssl,
+        listener=update_listener, forward_url=forward_url, asynchronous=True)
     return proxy_thread
 
 
 def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=True, use_ssl=None):
     def handler(request, data):
-        if not listener:
-            return
         method = request.method
         path = request.path
         headers = request.headers

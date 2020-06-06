@@ -24,16 +24,14 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
     @app.route('/', methods=methods, defaults={'path': ''})
     @app.route('/<path:path>', methods=methods)
     async def index(path=None):
-        response = None
+        response = await make_response('{}')
         if handler:
             data = await request.get_data()
             result = handler(request, data)
-            response = await make_response(result.content)
-            response.headers.update(dict(result.headers))
-            response.status_code = result.status_code
-
-        if response is None:
-            response = await make_response('{}')
+            if result:
+                response = await make_response(result.content)
+                response.headers.update(dict(result.headers))
+                response.status_code = result.status_code
         return response
 
     cert_file_name, key_file_name = ssl_creds or (None, None)
