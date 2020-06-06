@@ -302,16 +302,20 @@ class IntegrationTest(unittest.TestCase):
         retry(check_events, retries=9, sleep=3)
 
         # check cloudwatch notifications
-        num_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM)
-        # TODO: It seems that CloudWatch is currently reporting an incorrect number of
-        #   invocations, namely the sum over *all* lambdas, not the single one we're asking for.
-        #   Also, we need to bear in mind that Kinesis may perform batch updates, i.e., a single
-        #   Lambda invocation may happen with a set of Kinesis records, hence we cannot simply
-        #   add num_events_ddb to num_events_lambda above!
-        # self.assertEqual(num_invocations, 2 + num_events_lambda)
-        self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
-        num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
-        self.assertEqual(num_error_invocations, 1)
+        def check_cw_invocations():
+            num_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM)
+            # TODO: It seems that CloudWatch is currently reporting an incorrect number of
+            #   invocations, namely the sum over *all* lambdas, not the single one we're asking for.
+            #   Also, we need to bear in mind that Kinesis may perform batch updates, i.e., a single
+            #   Lambda invocation may happen with a set of Kinesis records, hence we cannot simply
+            #   add num_events_ddb to num_events_lambda above!
+            # self.assertEqual(num_invocations, 2 + num_events_lambda)
+            self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
+            num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
+            self.assertEqual(num_error_invocations, 1)
+
+        # Lambda invocations are running asynchronously, hence sleep some time here to wait for results
+        retry(check_cw_invocations, retries=5, sleep=2)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_STREAM)
