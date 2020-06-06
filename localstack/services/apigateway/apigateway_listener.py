@@ -152,16 +152,40 @@ def authorize_invocation(api_id, headers):
         run_authorizer(api_id, headers, authorizer)
 
 
-def is_api_key_valid(is_api_key_required, headers):
+def validate_api_key(api_key, stage):
+
+    key = None
+    usage_plan_id = None
+
+    client = aws_stack.connect_to_service('apigateway')
+    usage_plans = client.get_usage_plans()
+    for item in usage_plans.get('items', []):
+        api_stages = item.get('apiStages', [])
+        for api_stage in api_stages:
+            if api_stage.get('stage') == stage:
+                usage_plan_id = item.get('id')
+    if not usage_plan_id:
+        return False
+
+    usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
+    for item in usage_plan_keys.get('items', []):
+        key = item.get('value')
+
+    if key != api_key:
+        return False
+
+    return True
+
+
+def is_api_key_valid(is_api_key_required, headers, stage):
     if not is_api_key_required:
         return True
 
-    if not headers.get('X-API-Key'):
+    api_key = headers.get('X-API-Key')
+    if not api_key:
         return False
 
-    # TODO: Currently, we're only checking the presence of the API key in the header.
-    #  In the future we need to verify the actual key value against the REST API configuration as well.
-    return True
+    return validate_api_key(api_key, stage)
 
 
 def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None):
@@ -178,7 +202,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         return make_error_response('Unable to find path %s' % path, 404)
 
     if not is_api_key_valid(path_map.get(relative_path, {}).
-                            get('resourceMethods', {}).get(method, {}).get('apiKeyRequired'), headers):
+                            get('resourceMethods', {}).get(method, {}).get('apiKeyRequired'), headers, stage):
         return make_error_response('Acess Denied Exception.', 403)
 
     integrations = resource.get('resourceMethods', {})
