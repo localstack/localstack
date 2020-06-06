@@ -157,7 +157,6 @@ class LambdaExecutor(object):
             pass
         log_output = to_str(log_output).strip()
         return_code = process.returncode
-        print('!!!run_lambda_executor', return_code, cmd, result)
         # Note: The user's code may have been logging to stderr, in which case the logs
         # will be part of the "result" variable here. Hence, make sure that we extract
         # only the *last* line of "result" and consider anything above that as log output.

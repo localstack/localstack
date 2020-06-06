@@ -445,10 +445,14 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(len(modifies), num_modify)
             self.assertEqual(len(removes), num_delete)
 
+            # assert that all inserts were received
             for i, event in enumerate(inserts):
                 self.assertNotIn('old_image', event)
-                self.assertEqual(inserts[i]['new_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
+                item_id = 'testId%d' % i
+                matching = [i for i in inserts if i['new_image']['id'] == item_id][0]
+                self.assertEqual(matching['new_image'], {'id': item_id, 'data': 'foobar123'})
 
+            # assert that all updates were received
             def assert_updates(updates, modifies):
                 def found(update):
                     for modif in modifies:

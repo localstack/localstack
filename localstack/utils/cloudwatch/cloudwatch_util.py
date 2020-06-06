@@ -44,13 +44,11 @@ def publish_lambda_duration(time_before, kwargs):
 
 def publish_lambda_error(time_before, kwargs):
     publish_lambda_metric('Invocations', 1, kwargs)
-    print('!!!!!publish_lambda_metric error', kwargs)
     publish_lambda_metric('Errors', 1, kwargs)
 
 
 def publish_lambda_result(time_before, result, kwargs):
     if isinstance(result, Response) and result.status_code >= 400:
-        print('!!! publish_lambda_result', result.status_code, time_before, kwargs)
         return publish_lambda_error(time_before, kwargs)
     publish_lambda_metric('Invocations', 1, kwargs)
 
