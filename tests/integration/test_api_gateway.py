@@ -722,8 +722,22 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         result = table.get_item(Key={'id': 'id1'})
         self.assertEqual(result['Item']['data'], 'foobar123')
 
+    def test_api_key_required_for_methods(self):
+        response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
+                                                              'Item': {'id': '$.Id', 'data': '$.data'}})}
+
+        api_id = self.create_api_gateway_and_deploy(response_templates, True)
+        url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
+
+        response = requests.put(
+            url,
+            json.dumps({'id': 'id1', 'data': 'foobar123'}),
+        )
+
+        self.assertEqual(response.status_code, 403)
+
     @staticmethod
-    def create_api_gateway_and_deploy(response_template):
+    def create_api_gateway_and_deploy(response_template, is_api_key_required=False):
         apigw_client = aws_stack.connect_to_service('apigateway')
         response = apigw_client.create_rest_api(name='my_api', description='this is my api')
         api_id = response['id']
@@ -733,7 +747,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         ]['id']
 
         apigw_client.put_method(
-            restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE'
+            restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE',
+            apiKeyRequired=is_api_key_required
         )
 
         apigw_client.put_method_response(

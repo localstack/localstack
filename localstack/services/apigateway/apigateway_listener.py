@@ -152,6 +152,18 @@ def authorize_invocation(api_id, headers):
         run_authorizer(api_id, headers, authorizer)
 
 
+def is_api_key_valid(is_api_key_required, headers):
+    if not is_api_key_required:
+        return True
+
+    if not headers.get('X-API-Key'):
+        return False
+
+    # TODO: Currently, we're only checking the presence of the API key in the header.
+    #  In the future we need to verify the actual key value against the REST API configuration as well.
+    return True
+
+
 def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -164,6 +176,10 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
     except Exception:
         return make_error_response('Unable to find path %s' % path, 404)
+
+    if not is_api_key_valid(path_map.get(relative_path, {}).
+                            get('resourceMethods', {}).get(method, {}).get('apiKeyRequired'), headers):
+        return make_error_response('Acess Denied Exception.', 403)
 
     integrations = resource.get('resourceMethods', {})
     integration = integrations.get(method, {})
