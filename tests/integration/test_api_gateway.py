@@ -695,7 +695,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
 
-        api_id = self.create_api_gateway_and_deploy({}, False)
+        api_id = self.create_api_gateway_and_deploy({})
         url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
         response = requests.put(
             url,
@@ -708,7 +708,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
                                          'Item': {'id': '$.Id', 'data': '$.data'}})}
 
-        api_id = self.create_api_gateway_and_deploy(response_templates, False)
+        api_id = self.create_api_gateway_and_deploy(response_templates)
         url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
 
         response = requests.put(
@@ -737,7 +737,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
 
     @staticmethod
-    def create_api_gateway_and_deploy(response_template, is_api_key_required):
+    def create_api_gateway_and_deploy(response_template, is_api_key_required=False):
         apigw_client = aws_stack.connect_to_service('apigateway')
         response = apigw_client.create_rest_api(name='my_api', description='this is my api')
         api_id = response['id']

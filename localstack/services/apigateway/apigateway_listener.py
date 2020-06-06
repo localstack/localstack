@@ -156,8 +156,11 @@ def is_api_key_valid(is_api_key_required, headers):
     if not is_api_key_required:
         return True
 
-    if not headers.get('API_KEY', None):
+    if not headers.get('X-API-Key'):
         return False
+
+    # TODO: Currently, we're only checking the presence of the API key in the header.
+    #  In the future we need to verify the actual key value against the REST API configuration as well.
     return True
 
 
