@@ -1,6 +1,7 @@
 import types
 import asyncio
 import logging
+import h11
 from contextvars import copy_context
 from quart import make_response, request, Quart
 from localstack import config
@@ -22,17 +23,30 @@ async def run_sync(func, *args):
         None, copy_context().run, func, *args)
 
 
+def apply_patches():
+
+    def InformationalResponse_init(self, *args, **kwargs):
+        if kwargs.get('status_code') == 100 and not kwargs.get('reason'):
+            # add missing "100 Continue" keyword which makes boto3 HTTP clients fail/hang
+            kwargs['reason'] = 'Continue'
+        InformationalResponse_init_orig(self, *args, **kwargs)
+
+    InformationalResponse_init_orig = h11.InformationalResponse.__init__
+    h11.InformationalResponse.__init__ = InformationalResponse_init
+
+
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
     app = Quart(__name__)
 
-    methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD']
+    methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
 
     @app.route('/', methods=methods, defaults={'path': ''})
     @app.route('/<path:path>', methods=methods)
     async def index(path=None):
         response = await make_response('{}')
         if handler:
+            data = ''
             data = await request.get_data()
             result = await run_sync(handler, request, data)
             if result is not None:
@@ -74,3 +88,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
         return run_in_thread()
 
     return run_app_sync()
+
+
+# apply patches on startup
+apply_patches()
