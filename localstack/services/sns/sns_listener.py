@@ -12,12 +12,12 @@ from six.moves.urllib import parse as urlparse
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
 from localstack.utils.common import timestamp_millis, short_uid, to_str
+from localstack.utils.persistence import PersistingProxyListener
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -32,7 +32,10 @@ SUBSCRIPTION_STATUS = {}
 SNS_TAGS = {}
 
 
-class ProxyListenerSNS(ProxyListener):
+class ProxyListenerSNS(PersistingProxyListener):
+    def api_name(self):
+        return 'sns'
+
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
             return 200
@@ -178,6 +181,11 @@ class ProxyListenerSNS(ProxyListener):
             data, colon_delimiter='%3A', existing=TEST_AWS_ACCOUNT_ID, replace=MOTO_ACCOUNT_ID)
 
     def return_response(self, method, path, data, headers, response):
+        # persist requests to disk
+        super(ProxyListenerSNS, self).return_response(
+            method, path, data, headers, response
+        )
+
         if method == 'POST' and path == '/':
             # convert account IDs in ARNs
             data = aws_stack.fix_account_id_in_arns(data, colon_delimiter='%3A')
