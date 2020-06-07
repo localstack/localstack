@@ -15,7 +15,6 @@ class TestEdgeAPI(unittest.TestCase):
     def test_invoke_apis_via_edge(self):
         edge_port = config.EDGE_PORT_HTTP or config.EDGE_PORT
         edge_url = '%s://localhost:%s' % (get_service_protocol(), edge_port)
-        print('Using edge URL: %s' % edge_url)
 
         if is_api_enabled('s3'):
             self._invoke_s3_via_edge(edge_url)

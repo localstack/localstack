@@ -407,7 +407,7 @@ class DuplexSocket(ssl.SSLSocket):
 
     def accept(self):
         newsock, addr = socket.socket.accept(self)
-        if DuplexSocket.is_ssl_socket(newsock):
+        if DuplexSocket.is_ssl_socket(newsock) is not False:
             newsock = self.context.wrap_socket(newsock,
                 do_handshake_on_connect=self.do_handshake_on_connect,
                 suppress_ragged_eofs=self.suppress_ragged_eofs,
@@ -435,7 +435,6 @@ ssl.SSLContext.sslsocket_class = DuplexSocket
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
     if DuplexSocket.is_ssl_socket(conn) is False:
-        print('!!_accept_connection2 switching from HTTPS to HTTP')
         sslcontext = None
     result = await _accept_connection2_orig(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs)
     return result
@@ -521,7 +520,6 @@ def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listen
 
 def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=True, use_ssl=None):
     def handler(request, data):
-        # print('PROXY REQUEST', request.method, request.url)
         parsed_url = urlparse(request.url)
         path_with_params = '/%s' % str(request.url).partition('://')[2].partition('/')[2]
         method = request.method

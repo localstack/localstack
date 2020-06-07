@@ -45,7 +45,7 @@ APPLY_DDB_ALPINE_FIX = False
 OVERWRITE_DDB_FILES_IN_DOCKER = False
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 def get_elasticsearch_install_version(version=None):
@@ -70,7 +70,6 @@ def install_elasticsearch(version=None):
     if not os.path.exists(install_dir):
         log_install_msg('Elasticsearch (%s)' % version)
         es_url = ELASTICSEARCH_URLS.get(version)
-        print('Downloading Elasticsearch version %s from %s ...' % (version, es_url))
         if not es_url:
             raise Exception('Unable to find download URL for Elasticsearch version "%s"' % version)
         install_dir_parent = os.path.dirname(install_dir)
@@ -78,7 +77,6 @@ def install_elasticsearch(version=None):
         # download and extract archive
         tmp_archive = os.path.join(config.TMP_FOLDER, 'localstack.%s' % os.path.basename(es_url))
         download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
-        print('Done downloading Elasticsearch version %s.' % version)
         elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, 'elasticsearch*'))
         if not elasticsearch_dir:
             raise Exception('Unable to find Elasticsearch folder in %s' % install_dir_parent)
@@ -97,7 +95,7 @@ def install_elasticsearch(version=None):
             plugin_binary = os.path.join(install_dir, 'bin', 'elasticsearch-plugin')
             plugin_dir = os.path.join(install_dir, 'plugins', plugin)
             if not os.path.exists(plugin_dir):
-                print('install elasticsearch-plugin %s' % (plugin))
+                LOG.info('Installing Elasticsearch plugin %s' % (plugin))
                 run('%s install -b %s' % (plugin_binary, plugin))
 
     # delete some plugins to free up space
@@ -251,7 +249,7 @@ def install_all_components():
 
 def log_install_msg(component, verbatim=False):
     component = component if verbatim else 'local %s server' % component
-    LOGGER.info('Downloading and installing %s. This may take some time.' % component)
+    LOG.info('Downloading and installing %s. This may take some time.' % component)
 
 
 def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
@@ -273,7 +271,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract()
     except Exception as e:
         # try deleting and re-downloading the zip file
-        LOGGER.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
+        LOG.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
         rm_rf(tmp_archive)
         download_and_extract()
 
