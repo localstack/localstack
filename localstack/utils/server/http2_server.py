@@ -1,4 +1,4 @@
-import types
+# import types
 import asyncio
 import logging
 import traceback
@@ -6,8 +6,10 @@ import concurrent.futures
 import h11
 from contextvars import copy_context
 from quart import make_response, request, Quart
+from hypercorn.config import Config
+from hypercorn.asyncio import serve
 from localstack import config
-from localstack.utils.common import start_thread
+from localstack.utils.common import TMP_THREADS, FuncThread
 
 LOG = logging.getLogger(__name__)
 
@@ -81,34 +83,55 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                 response.status_code = result.status_code
         return response
 
-    cert_file_name, key_file_name = ssl_creds or (None, None)
-
-    def run_app_sync(*args, loop=None):
+    def run_app_sync(*args, loop=None, shutdown_event=None):
         kwargs = {}
+        config = Config()
+        cert_file_name, key_file_name = ssl_creds or (None, None)
         if cert_file_name:
             kwargs['certfile'] = cert_file_name
+            config.certfile = cert_file_name
         if key_file_name:
             kwargs['keyfile'] = key_file_name
+            config.keyfile = key_file_name
         setup_quart_logging()
-        return app.run(host='0.0.0.0', port=port, loop=loop, use_reloader=False, **kwargs)
+        config.bind = ['0.0.0.0:%s' % port]
+        loop = loop or ensure_event_loop()
+        run_kwargs = {}
+        if shutdown_event:
+            run_kwargs['shutdown_trigger'] = shutdown_event.wait
+        return loop.run_until_complete(serve(app, config, **run_kwargs))
+        # return app.run(host='0.0.0.0', port=port, loop=loop, use_reloader=False, **kwargs)
+
+    class ProxyThread(FuncThread):
+        def __init__(self):
+            FuncThread.__init__(self, self.run_proxy, None)
+
+        def run_proxy(self, *args):
+            # loop = asyncio.new_event_loop()
+            #
+            # def fix_add_signal_handler(self, *args, **kwargs):
+            #     # fix for error "RuntimeError: set_wakeup_fd only works in main thread" in quart/app.py
+            #     try:
+            #         add_signal_handler_orig(*args, **kwargs)
+            #     except Exception:
+            #         raise NotImplementedError()
+            #
+            # add_signal_handler_orig = loop.add_signal_handler
+            # loop.add_signal_handler = types.MethodType(fix_add_signal_handler, loop)
+
+            # asyncio.set_event_loop(loop)
+            loop = ensure_event_loop()
+            self.shutdown_event = asyncio.Event()
+            run_app_sync(loop=loop, shutdown_event=self.shutdown_event)
+
+        def stop(self):
+            self.shutdown_event.set()
 
     def run_in_thread():
-        def _run(*args):
-            loop = asyncio.new_event_loop()
-
-            def fix_add_signal_handler(self, *args, **kwargs):
-                # fix for error "RuntimeError: set_wakeup_fd only works in main thread" in quart/app.py
-                try:
-                    add_signal_handler_orig(*args, **kwargs)
-                except Exception:
-                    raise NotImplementedError()
-
-            add_signal_handler_orig = loop.add_signal_handler
-            loop.add_signal_handler = types.MethodType(fix_add_signal_handler, loop)
-            asyncio.set_event_loop(loop)
-            run_app_sync(loop=loop)
-
-        return start_thread(_run)
+        thread = ProxyThread()
+        thread.start()
+        TMP_THREADS.append(thread)
+        return thread
 
     if asynchronous:
         return run_in_thread()
