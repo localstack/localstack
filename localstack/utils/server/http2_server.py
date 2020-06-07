@@ -63,7 +63,11 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                 return response
             if result is not None:
                 response = await make_response(result.content or '')
+                multi_value_headers = getattr(result, 'multi_value_headers', {})
                 response.headers.update(dict(result.headers))
+                for key, values in multi_value_headers.items():
+                    for value in values:
+                        response.headers.add_header(key, value)
                 response.status_code = result.status_code
         return response
 

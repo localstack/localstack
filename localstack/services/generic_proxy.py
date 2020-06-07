@@ -440,8 +440,9 @@ async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *
 
 
 # patch asyncio server to accept SSL and non-SSL traffic over same port
-_accept_connection2_orig = BaseSelectorEventLoop._accept_connection2
-BaseSelectorEventLoop._accept_connection2 = _accept_connection2
+if hasattr(BaseSelectorEventLoop, '_accept_connection2'):
+    _accept_connection2_orig = BaseSelectorEventLoop._accept_connection2
+    BaseSelectorEventLoop._accept_connection2 = _accept_connection2
 
 
 class GenericProxy(FuncThread):
