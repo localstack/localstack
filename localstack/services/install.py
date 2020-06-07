@@ -70,6 +70,7 @@ def install_elasticsearch(version=None):
     if not os.path.exists(install_dir):
         log_install_msg('Elasticsearch (%s)' % version)
         es_url = ELASTICSEARCH_URLS.get(version)
+        print('Downloading Elasticsearch version %s from %s ...' % (version, es_url))
         if not es_url:
             raise Exception('Unable to find download URL for Elasticsearch version "%s"' % version)
         install_dir_parent = os.path.dirname(install_dir)
@@ -77,6 +78,7 @@ def install_elasticsearch(version=None):
         # download and extract archive
         tmp_archive = os.path.join(config.TMP_FOLDER, 'localstack.%s' % os.path.basename(es_url))
         download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
+        print('Done downloading Elasticsearch version %s.' % version)
         elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, 'elasticsearch*'))
         if not elasticsearch_dir:
             raise Exception('Unable to find Elasticsearch folder in %s' % install_dir_parent)

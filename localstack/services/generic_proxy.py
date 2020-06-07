@@ -434,6 +434,7 @@ ssl.SSLContext.sslsocket_class = DuplexSocket
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
     if DuplexSocket.is_ssl_socket(conn) is False:
+        print('!!_accept_connection2 switching from HTTPS to HTTP')
         sslcontext = None
     result = await _accept_connection2_orig(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs)
     return result
