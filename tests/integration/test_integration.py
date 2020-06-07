@@ -514,10 +514,12 @@ class IntegrationTest(unittest.TestCase):
         data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = 'kinesis:%s' % TEST_CHAIN_STREAM2_NAME
         kinesis.put_record(Data=to_bytes(json.dumps(data)), PartitionKey='testId', StreamName=TEST_CHAIN_STREAM1_NAME)
 
+        def check_results():
+            all_objects = testutil.list_all_s3_objects()
+            testutil.assert_objects(test_data, all_objects)
+
         # check results
-        time.sleep(5)
-        all_objects = testutil.list_all_s3_objects()
-        testutil.assert_objects(test_data, all_objects)
+        retry(check_results, retries=5, sleep=3)
 
         # clean up
         kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
