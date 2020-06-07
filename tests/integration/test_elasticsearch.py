@@ -132,7 +132,7 @@ class ElasticsearchTest(unittest.TestCase):
         # wait for completion status
         def check_cluster_ready(*args):
             status = es_client.describe_elasticsearch_domain(DomainName=name)
-            print('!!!!!status', status)
+            print('!!!!!status', status['DomainStatus']['Created'])
             assert status['DomainStatus']['Created']
 
-        retry(check_cluster_ready, sleep=10, retries=6)
+        retry(check_cluster_ready, sleep=10, retries=12)

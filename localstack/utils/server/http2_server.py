@@ -124,7 +124,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
             self.shutdown_event = asyncio.Event()
             run_app_sync(loop=loop, shutdown_event=self.shutdown_event)
 
-        def stop(self):
+        def stop(self, quiet=None):
             self.shutdown_event.set()
 
     def run_in_thread():
