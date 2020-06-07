@@ -382,6 +382,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
             # some listeners (e.g., sqs_listener.py) require additional details like the original
             # request port, hence we pass in a reference to this request handler as well.
             kwargs['request_handler'] = request_handler
+
         updated_response = update_listener.return_response(**kwargs)
         if isinstance(updated_response, Response):
             response = updated_response

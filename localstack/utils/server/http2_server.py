@@ -1,11 +1,17 @@
 import types
 import asyncio
 import logging
+import traceback
+import concurrent.futures
 import h11
 from contextvars import copy_context
 from quart import make_response, request, Quart
 from localstack import config
 from localstack.utils.common import start_thread
+
+LOG = logging.getLogger(__name__)
+
+THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
 
 def setup_quart_logging():
@@ -20,7 +26,7 @@ def setup_quart_logging():
 async def run_sync(func, *args):
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(
-        None, copy_context().run, func, *args)
+        THREAD_POOL, copy_context().run, func, *args)
 
 
 def apply_patches():
@@ -46,9 +52,15 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
     async def index(path=None):
         response = await make_response('{}')
         if handler:
-            data = ''
-            data = await request.get_data()
-            result = await run_sync(handler, request, data)
+            do_load_data = True
+            data = await request.get_data() if do_load_data else ''
+            try:
+                result = await run_sync(handler, request, data)
+            except Exception as e:
+                LOG.warning('Error in proxy handler for request %s %s: %s %s' %
+                    (request.method, request.url, e, traceback.format_exc()))
+                response.status_code = 500
+                return response
             if result is not None:
                 response = await make_response(result.content or '')
                 response.headers.update(dict(result.headers))
