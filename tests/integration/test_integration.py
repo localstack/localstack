@@ -487,7 +487,7 @@ class IntegrationTest(unittest.TestCase):
                 self.assertEqual(matching['old_image'], {'id': item_id, 'data': 'foobar123'})
 
         # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=9, sleep=3)
+        retry(check_events, retries=9, sleep=4)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
