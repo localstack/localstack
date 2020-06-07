@@ -18,6 +18,11 @@ def is_env_true(env_var_name):
     return os.environ.get(env_var_name, '').lower().strip() in TRUE_STRINGS
 
 
+def is_env_not_false(env_var_name):
+    """ Whether the given environment variable is empty or has a truthy value. """
+    return os.environ.get(env_var_name, '').lower().strip() not in FALSE_STRINGS
+
+
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get('LAMBDA_JAVA_OPTS', '').strip()
 
@@ -35,9 +40,9 @@ DEFAULT_REGION = os.environ['DEFAULT_REGION']
 # Whether or not to handle lambda event sources as synchronous invocations
 SYNCHRONOUS_API_GATEWAY_EVENTS = is_env_true('SYNCHRONOUS_API_GATEWAY_EVENTS')
 SYNCHRONOUS_SNS_EVENTS = is_env_true('SYNCHRONOUS_SNS_EVENTS')
-SYNCHRONOUS_KINESIS_EVENTS = is_env_true('SYNCHRONOUS_KINESIS_EVENTS')
-SYNCHRONOUS_DYNAMODB_EVENTS = is_env_true('SYNCHRONOUS_DYNAMODB_EVENTS')
 SYNCHRONOUS_SQS_EVENTS = is_env_true('SYNCHRONOUS_SQS_EVENTS')
+SYNCHRONOUS_KINESIS_EVENTS = is_env_not_false('SYNCHRONOUS_KINESIS_EVENTS')
+SYNCHRONOUS_DYNAMODB_EVENTS = is_env_not_false('SYNCHRONOUS_DYNAMODB_EVENTS')
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
