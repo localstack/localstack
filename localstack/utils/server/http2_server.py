@@ -41,8 +41,18 @@ def apply_patches():
     h11.InformationalResponse.__init__ = InformationalResponse_init
 
 
+def ensure_event_loop():
+    try:
+        return asyncio.get_event_loop()
+    except Exception:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        return loop
+
+
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
+    ensure_event_loop()
     app = Quart(__name__)
 
     methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
