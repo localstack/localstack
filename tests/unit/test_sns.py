@@ -1,5 +1,6 @@
 import json
 import uuid
+import base64
 import unittest
 import dateutil.parser
 import re
@@ -176,7 +177,8 @@ class SNSTests(unittest.TestCase):
             'MessageAttributes.entry.1.Value.StringValue': ['value1'],
             'MessageAttributes.entry.2.Name': ['attr2'],
             'MessageAttributes.entry.2.Value.DataType': ['Binary'],
-            'MessageAttributes.entry.2.Value.BinaryValue': ['value2'.encode('utf-8')],
+            # SNS gets binary data as base64 encoded string, but it should pass raw bytes further to SQS
+            'MessageAttributes.entry.2.Value.BinaryValue': [base64.b64encode('value2'.encode('utf-8'))],
             'MessageAttributes.entry.3.Name': ['attr3'],
             'MessageAttributes.entry.3.Value.DataType': ['Number'],
             'MessageAttributes.entry.3.Value.StringValue': ['3'],
