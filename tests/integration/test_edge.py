@@ -7,8 +7,7 @@ from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, get_service_protocol, to_str, get_free_tcp_port
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.server.http2_server import run_proxy_server
+from localstack.services.generic_proxy import ProxyListener, run_proxy_server_http2
 
 
 class TestEdgeAPI(unittest.TestCase):
@@ -104,7 +103,7 @@ class TestEdgeAPI(unittest.TestCase):
         url = 'https://localhost:%s/foo/bar' % port
 
         listener = MyListener()
-        run_proxy_server(port, listener=listener, asynchronous=True)
+        run_proxy_server_http2(port, listener=listener, asynchronous=True, use_ssl=True)
         time.sleep(1)
         response = requests.post(url, verify=False)
         self.assertEqual({'method': 'POST', 'path': '/foo/bar', 'data': ''}, json.loads(to_str(response.content)))

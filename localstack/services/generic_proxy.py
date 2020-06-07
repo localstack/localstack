@@ -9,10 +9,11 @@ import logging
 import traceback
 import requests
 from ssl import SSLError
-from flask_cors import CORS
-from requests.structures import CaseInsensitiveDict
-from requests.models import Response, Request
+from asyncio.selector_events import BaseSelectorEventLoop
 from six import iteritems
+from flask_cors import CORS
+from requests.models import Response, Request
+from requests.structures import CaseInsensitiveDict
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
@@ -406,21 +407,41 @@ class DuplexSocket(ssl.SSLSocket):
 
     def accept(self):
         newsock, addr = socket.socket.accept(self)
-        peek_bytes = 5
-        first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
-        if len(first_bytes or '') == peek_bytes:
-            first_byte = first_bytes[0]
-            if first_byte < 32 or first_byte >= 127:
-                newsock = self.context.wrap_socket(newsock,
-                            do_handshake_on_connect=self.do_handshake_on_connect,
-                            suppress_ragged_eofs=self.suppress_ragged_eofs,
-                            server_side=True)
+        if DuplexSocket.is_ssl_socket(newsock):
+            newsock = self.context.wrap_socket(newsock,
+                do_handshake_on_connect=self.do_handshake_on_connect,
+                suppress_ragged_eofs=self.suppress_ragged_eofs,
+                server_side=True)
 
         return newsock, addr
+
+    @staticmethod
+    def is_ssl_socket(newsock):
+        try:
+            peek_bytes = 5
+            first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
+            if len(first_bytes or '') != peek_bytes:
+                return False
+            first_byte = first_bytes[0]
+            return first_byte < 32 or first_byte >= 127
+        except Exception:
+            return
 
 
 # set globally defined SSL socket implementation class
 ssl.SSLContext.sslsocket_class = DuplexSocket
+
+
+async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
+    if DuplexSocket.is_ssl_socket(conn) is False:
+        sslcontext = None
+    result = await _accept_connection2_orig(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs)
+    return result
+
+
+# patch asyncio server to accept SSL and non-SSL traffic over same port
+_accept_connection2_orig = BaseSelectorEventLoop._accept_connection2
+BaseSelectorEventLoop._accept_connection2 = _accept_connection2
 
 
 class GenericProxy(FuncThread):
