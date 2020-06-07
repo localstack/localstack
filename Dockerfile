@@ -79,6 +79,6 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN DEBUG=1 TEST_PATH='tests/integration/test_elasticsearch.py tests/integration/test_edge.py' LAMBDA_EXECUTOR=local make test
+RUN LAMBDA_EXECUTOR=local make test
 # clean up temporary files created during test execution
 RUN rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache

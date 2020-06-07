@@ -64,8 +64,8 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
     async def index(path=None):
         response = await make_response('{}')
         if handler:
-            do_load_data = True
-            data = await request.get_data() if do_load_data else ''
+            # print('!!ROUTE', request.method, request.url)
+            data = await request.get_data()
             try:
                 result = await run_sync(handler, request, data)
             except Exception as e:

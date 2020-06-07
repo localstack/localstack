@@ -417,11 +417,12 @@ class DuplexSocket(ssl.SSLSocket):
 
     @staticmethod
     def is_ssl_socket(newsock):
+        """ Returns True/False if the socket uses SSL or not, or None if the status cannot be determined """
         try:
             peek_bytes = 5
             first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
             if len(first_bytes or '') != peek_bytes:
-                return False
+                return
             first_byte = first_bytes[0]
             return first_byte < 32 or first_byte >= 127
         except Exception:
@@ -520,6 +521,7 @@ def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listen
 
 def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=True, use_ssl=None):
     def handler(request, data):
+        # print('PROXY REQUEST', request.method, request.url)
         parsed_url = urlparse(request.url)
         path_with_params = '/%s' % str(request.url).partition('://')[2].partition('/')[2]
         method = request.method

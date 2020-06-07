@@ -61,12 +61,13 @@ class TestEdgeAPI(unittest.TestCase):
         bucket_name = 'edge-%s' % short_uid()
         object_name = 'testobject'
         bucket_url = '%s/%s' % (edge_url, bucket_name)
-        result = requests.put(bucket_url)
+        result = requests.put(bucket_url, verify=False)
         self.assertEqual(result.status_code, 200)
         result = client.head_bucket(Bucket=bucket_name)
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         headers = {'Content-Type': 'application/x-www-form-urlencoded'}
-        result = requests.post(bucket_url, data='key=%s&file=file_content_123' % object_name, headers=headers)
+        result = requests.post(bucket_url, data='key=%s&file=file_content_123' % object_name,
+            headers=headers, verify=False)
         self.assertEqual(result.status_code, 204)
         result = io.BytesIO()
         client.download_fileobj(bucket_name, object_name, result)
@@ -82,7 +83,7 @@ class TestEdgeAPI(unittest.TestCase):
         presigned_post = client.generate_presigned_post(bucket_name, object_name)
 
         files = {'file': object_data}
-        r = requests.post(presigned_post['url'], data=presigned_post['fields'], files=files)
+        r = requests.post(presigned_post['url'], data=presigned_post['fields'], files=files, verify=False)
         self.assertEqual(r.status_code, 204)
 
         result = io.BytesIO()
