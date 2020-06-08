@@ -40,7 +40,7 @@ def send_event_to_firehose(event, arn):
     firehose_client = aws_stack.connect_to_service('firehose')
     firehose_client.put_record(
         DeliveryStreamName=delivery_stream_name,
-        Record={'Data': to_bytes(event['Detail']))})
+        Record={'Data': to_bytes(event['Detail'])})
 
 
 def process_events(event, targets):
