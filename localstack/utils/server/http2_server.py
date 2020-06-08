@@ -13,7 +13,7 @@ from localstack.utils.common import TMP_THREADS, FuncThread
 
 LOG = logging.getLogger(__name__)
 
-THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=30)
 
 
 def setup_quart_logging():
