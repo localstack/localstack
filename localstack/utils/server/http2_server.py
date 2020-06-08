@@ -6,6 +6,7 @@ import concurrent.futures
 import h11
 from contextvars import copy_context
 from quart import make_response, request, Quart
+from quart.app import _cancel_all_tasks
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
 from localstack import config
@@ -98,7 +99,15 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
         run_kwargs = {}
         if shutdown_event:
             run_kwargs['shutdown_trigger'] = shutdown_event.wait
-        return loop.run_until_complete(serve(app, config, **run_kwargs))
+        try:
+            return loop.run_until_complete(serve(app, config, **run_kwargs))
+        finally:
+            try:
+                _cancel_all_tasks(loop)
+                loop.run_until_complete(loop.shutdown_asyncgens())
+            finally:
+                asyncio.set_event_loop(None)
+                loop.close()
         # return app.run(host='0.0.0.0', port=port, loop=loop, use_reloader=False, **kwargs)
 
     class ProxyThread(FuncThread):
