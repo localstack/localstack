@@ -52,8 +52,8 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
     cmd = (('%s/bin/elasticsearch ' +
         '-E http.port=%s -E http.publish_port=%s -E http.compression=false ' +
-        '-E path.data=%s') %
-        (base_dir, backend_port, backend_port, es_data_dir))
+        '-E path.data=%s -E path.repo=%s') %
+        (base_dir, backend_port, backend_port, es_data_dir, '/tmp/localstack/es_backup'))
     if os.path.exists(os.path.join(es_mods_dir, 'x-pack-ml')):
         cmd += ' -E xpack.ml.enabled=false'
     env_vars = {
