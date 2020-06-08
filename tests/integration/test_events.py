@@ -406,7 +406,7 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(len(bucket_contents), 1)
         key = bucket_contents[0]['Key']
         s3_object = s3_client.get_object(Bucket=s3_bucket, Key=key)
-        self.assertEqual(json.loads(s3_object['Body'].read()), TEST_EVENT_PATTERN['Detail'])
+        self.assertEqual((s3_object['Body'].read()).decode(), str(TEST_EVENT_PATTERN['Detail']))
 
         # clean up
         firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
