@@ -342,3 +342,89 @@ class EventsTest(unittest.TestCase):
 
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sfn_client.delete_state_machine(stateMachineArn=state_machine_arn)
+
+    def test_put_events_with_target_firehose(self):
+        s3_bucket = 's3-{}'.format(short_uid())
+        s3_prefix = 'testeventdata'
+        stream_name = 'firehose-{}'.format(short_uid())
+        rule_name = 'rule-{}'.format(short_uid())
+        target_id = 'target-{}'.format(short_uid())
+
+        # create firehose target bucket
+        s3_client = aws_stack.connect_to_service('s3')
+        s3_client.create_bucket(Bucket=s3_bucket)
+
+        # create firehose delivery stream to s3
+        firehose_client = aws_stack.connect_to_service('firehose')
+        stream = firehose_client.create_delivery_stream(
+            DeliveryStreamName=stream_name,
+            S3DestinationConfiguration={
+                'RoleARN': aws_stack.iam_resource_arn('firehose'),
+                'BucketARN': aws_stack.s3_bucket_arn(s3_bucket),
+                'Prefix': s3_prefix
+            }
+        )
+        stream_arn = stream['DeliveryStreamARN']
+
+        self.events_client.create_event_bus(
+            Name=TEST_EVENT_BUS_NAME
+        )
+
+        self.events_client.put_rule(
+            Name=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN)
+        )
+
+        rs = self.events_client.put_targets(
+            Rule=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': stream_arn
+                }
+            ]
+        )
+
+        self.assertIn('FailedEntryCount', rs)
+        self.assertIn('FailedEntries', rs)
+        self.assertEqual(rs['FailedEntryCount'], 0)
+        self.assertEqual(rs['FailedEntries'], [])
+
+        self.events_client.put_events(
+            Entries=[{
+                'EventBusName': TEST_EVENT_BUS_NAME,
+                'Source': TEST_EVENT_PATTERN['Source'],
+                'DetailType': TEST_EVENT_PATTERN['DetailType'],
+                'Detail': TEST_EVENT_PATTERN['Detail']
+            }]
+        )
+
+        # run tests
+        bucket_contents = s3_client.list_objects(Bucket=s3_bucket)['Contents']
+        self.assertEqual(len(bucket_contents), 1)
+        key = bucket_contents[0]['Key']
+        s3_object = s3_client.get_object(Bucket=s3_bucket, Key=key)
+        self.assertEqual((s3_object['Body'].read()).decode(), str(TEST_EVENT_PATTERN['Detail']))
+
+        # clean up
+        firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
+        # empty and delete bucket
+        s3_client.delete_object(Bucket=s3_bucket, Key=key)
+        s3_client.delete_bucket(Bucket=s3_bucket)
+
+        self.events_client.remove_targets(
+            Rule=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Ids=[target_id],
+            Force=True
+        )
+        self.events_client.delete_rule(
+            Name=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Force=True
+        )
+        self.events_client.delete_event_bus(
+            Name=TEST_EVENT_BUS_NAME
+        )

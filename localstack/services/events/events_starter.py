@@ -7,7 +7,7 @@ from localstack import config
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, to_bytes
 from localstack.services.infra import start_moto_server
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.awslambda.lambda_api import run_lambda
@@ -35,6 +35,14 @@ def send_event_to_lambda(event, arn):
     run_lambda(event=json.loads(event['Detail']), context={}, func_arn=arn, asynchronous=True)
 
 
+def send_event_to_firehose(event, arn):
+    delivery_stream_name = aws_stack.firehose_name(arn)
+    firehose_client = aws_stack.connect_to_service('firehose')
+    firehose_client.put_record(
+        DeliveryStreamName=delivery_stream_name,
+        Record={'Data': to_bytes(event['Detail'])})
+
+
 def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
@@ -45,6 +53,9 @@ def process_events(event, targets):
 
         elif service == 'lambda':
             send_event_to_lambda(event, arn)
+
+        elif service == 'firehose':
+            send_event_to_firehose(event, arn)
 
         else:
             LOG.warning('Unsupported Events target service type "%s"' % service)
