@@ -16,6 +16,8 @@ LOG = logging.getLogger(__name__)
 
 THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=30)
 
+HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
+
 
 def setup_quart_logging():
     # set up loggers to avoid duplicate log lines in quart
@@ -57,10 +59,8 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
     ensure_event_loop()
     app = Quart(__name__)
 
-    methods = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
-
-    @app.route('/', methods=methods, defaults={'path': ''})
-    @app.route('/<path:path>', methods=methods)
+    @app.route('/', methods=HTTP_METHODS, defaults={'path': ''})
+    @app.route('/<path:path>', methods=HTTP_METHODS)
     async def index(path=None):
         response = await make_response('{}')
         if handler:
@@ -107,26 +107,12 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
             finally:
                 asyncio.set_event_loop(None)
                 loop.close()
-        # return app.run(host='0.0.0.0', port=port, loop=loop, use_reloader=False, **kwargs)
 
     class ProxyThread(FuncThread):
         def __init__(self):
             FuncThread.__init__(self, self.run_proxy, None)
 
         def run_proxy(self, *args):
-            # loop = asyncio.new_event_loop()
-            #
-            # def fix_add_signal_handler(self, *args, **kwargs):
-            #     # fix for error "RuntimeError: set_wakeup_fd only works in main thread" in quart/app.py
-            #     try:
-            #         add_signal_handler_orig(*args, **kwargs)
-            #     except Exception:
-            #         raise NotImplementedError()
-            #
-            # add_signal_handler_orig = loop.add_signal_handler
-            # loop.add_signal_handler = types.MethodType(fix_add_signal_handler, loop)
-
-            # asyncio.set_event_loop(loop)
             loop = ensure_event_loop()
             self.shutdown_event = asyncio.Event()
             run_app_sync(loop=loop, shutdown_event=self.shutdown_event)
