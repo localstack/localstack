@@ -28,8 +28,7 @@ def setup_quart_logging():
 
 async def run_sync(func, *args):
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(
-        THREAD_POOL, copy_context().run, func, *args)
+    return await loop.run_in_executor(THREAD_POOL, copy_context().run, func, *args)
 
 
 def apply_patches():

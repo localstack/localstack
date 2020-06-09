@@ -418,15 +418,21 @@ class DuplexSocket(ssl.SSLSocket):
     @staticmethod
     def is_ssl_socket(newsock):
         """ Returns True/False if the socket uses SSL or not, or None if the status cannot be determined """
-        try:
+        def peek_ssl_header():
             peek_bytes = 5
             first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
             if len(first_bytes or '') != peek_bytes:
                 return
             first_byte = first_bytes[0]
             return first_byte < 32 or first_byte >= 127
+
+        try:
+            return peek_ssl_header()
         except Exception:
-            return
+            # Fix for "[Errno 11] Resource temporarily unavailable" - This can
+            # happen if we're using a non-blocking socket in a blocking thread
+            newsock.setblocking(1)
+            return peek_ssl_header()
 
 
 # set globally defined SSL socket implementation class
@@ -434,7 +440,8 @@ ssl.SSLContext.sslsocket_class = DuplexSocket
 
 
 async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
-    if DuplexSocket.is_ssl_socket(conn) is False:
+    is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
+    if is_ssl_socket is False:
         sslcontext = None
     result = await _accept_connection2_orig(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs)
     return result
