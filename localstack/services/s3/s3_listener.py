@@ -652,7 +652,7 @@ def strip_chunk_signatures(data):
     data_new = ''
     if data is not None:
         data_new = re.sub(b'(^|\r\n)[0-9a-fA-F]+;chunk-signature=[0-9a-f]{64}(\r\n)(\r\n$)?', b'',
-        data, flags=re.MULTILINE | re.DOTALL)
+            to_bytes(data), flags=re.MULTILINE | re.DOTALL)
 
     return data_new
 

@@ -201,7 +201,7 @@ def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=N
 
 
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None,
-        config=None, *args, **kwargs):
+        config=None, verify=False, *args, **kwargs):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
@@ -214,7 +214,6 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         # Cache clients, as this is a relatively expensive operation
         my_session = get_boto3_session()
         method = my_session.client if client else my_session.resource
-        verify = True
         if not endpoint_url:
             if is_local_env(env):
                 endpoint_url = get_local_service_url(service_name)

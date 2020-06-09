@@ -79,6 +79,9 @@ if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
 
+# whether to enable verbose debug logging
+DEBUG = os.environ.get('DEBUG', '').lower() in TRUE_STRINGS
+
 # whether to use SSL encryption for the services
 USE_SSL = os.environ.get('USE_SSL', '').strip() in TRUE_STRINGS
 
@@ -312,7 +315,7 @@ def external_service_url(service_key, host=None):
 populate_configs()
 
 # set log level
-if os.environ.get('DEBUG', '').lower() in TRUE_STRINGS:
+if DEBUG:
     logging.getLogger('').setLevel(logging.DEBUG)
     logging.getLogger('localstack').setLevel(logging.DEBUG)
 

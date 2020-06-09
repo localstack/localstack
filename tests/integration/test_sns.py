@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 import base64
 import unittest
 from botocore.exceptions import ClientError
@@ -388,7 +389,8 @@ class SNSTest(unittest.TestCase):
         wait_for_port_open(local_port)
         http_endpoint = '%s://localhost:%s' % (get_service_protocol(), local_port)
 
-        subscription = self.sns_client.subscribe(TopicArn=self.topic_arn, Protocol='http', Endpoint=http_endpoint)
+        subscription = self.sns_client.subscribe(TopicArn=self.topic_arn,
+            Protocol='http', Endpoint=http_endpoint)
         self.sns_client.set_subscription_attributes(
             SubscriptionArn=subscription['SubscriptionArn'],
             AttributeName='RedrivePolicy',
@@ -396,6 +398,8 @@ class SNSTest(unittest.TestCase):
         )
 
         proxy.stop()
+        # for some reason, it takes a long time to stop the proxy thread -> TODO investigate
+        time.sleep(5)
 
         self.sns_client.publish(TopicArn=self.topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
 
@@ -406,7 +410,7 @@ class SNSTest(unittest.TestCase):
                 json.loads(json.loads(result['Messages'][0]['Body'])['Message'][0])['message'],
                 'test_redrive_policy'
             )
-        retry(receive_dlq, retries=10, sleep=2)
+        retry(receive_dlq, retries=7, sleep=2.5)
 
     def test_redrive_policy_lambda_subscription(self):
         self.unsubscribe_all_from_sns()

@@ -9,24 +9,31 @@ import logging
 import traceback
 import requests
 from ssl import SSLError
-from flask_cors import CORS
-from requests.structures import CaseInsensitiveDict
-from requests.models import Response, Request
+from asyncio.selector_events import BaseSelectorEventLoop
 from six import iteritems
+from flask_cors import CORS
+from requests.models import Response, Request
+from requests.structures import CaseInsensitiveDict
 from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from localstack.config import TMP_FOLDER, USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
+from localstack import config
+from localstack.config import USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
-from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe
+from localstack.utils.server import http2_server
+from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS
 from localstack.utils.aws.aws_responses import LambdaResponse
 
-QUIET = False
+# set up logger
+LOG = logging.getLogger(__name__)
 
 # path for test certificate
-SERVER_CERT_PEM_FILE = '%s/server.test.pem' % (TMP_FOLDER)
+SERVER_CERT_PEM_FILE = 'server.test.pem'
 
+# whether to use a proxy server with HTTP/2 support
+USE_HTTP2_SERVER = True
 
+# CORS constants
 CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
     'x-amz-target', 'x-amz-acl', 'x-amz-version-id', 'x-localstack-target', 'x-amz-tagging']
@@ -38,9 +45,6 @@ CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATC
 CORS_EXPOSE_HEADERS = ('x-amz-version-id', )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
-
-# set up logger
-LOG = logging.getLogger(__name__)
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -287,7 +291,8 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
         listeners=None, request_handler=None, client_address=None, server_address=None):
-    listeners = [lis for lis in (listeners or []) if lis]
+    listeners = GenericProxyHandler.DEFAULT_LISTENERS + (listeners or [])
+    listeners = [lis for lis in listeners if lis]
     data = data_bytes
 
     def is_full_url(url):
@@ -378,6 +383,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
             # some listeners (e.g., sqs_listener.py) require additional details like the original
             # request port, hence we pass in a reference to this request handler as well.
             kwargs['request_handler'] = request_handler
+
         updated_response = update_listener.return_response(**kwargs)
         if isinstance(updated_response, Response):
             response = updated_response
@@ -401,21 +407,50 @@ class DuplexSocket(ssl.SSLSocket):
 
     def accept(self):
         newsock, addr = socket.socket.accept(self)
-        peek_bytes = 5
-        first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
-        if len(first_bytes or '') == peek_bytes:
-            first_byte = first_bytes[0]
-            if first_byte < 32 or first_byte >= 127:
-                newsock = self.context.wrap_socket(newsock,
-                            do_handshake_on_connect=self.do_handshake_on_connect,
-                            suppress_ragged_eofs=self.suppress_ragged_eofs,
-                            server_side=True)
+        if DuplexSocket.is_ssl_socket(newsock) is not False:
+            newsock = self.context.wrap_socket(newsock,
+                do_handshake_on_connect=self.do_handshake_on_connect,
+                suppress_ragged_eofs=self.suppress_ragged_eofs,
+                server_side=True)
 
         return newsock, addr
+
+    @staticmethod
+    def is_ssl_socket(newsock):
+        """ Returns True/False if the socket uses SSL or not, or None if the status cannot be determined """
+        def peek_ssl_header():
+            peek_bytes = 5
+            first_bytes = newsock.recv(peek_bytes, socket.MSG_PEEK)
+            if len(first_bytes or '') != peek_bytes:
+                return
+            first_byte = first_bytes[0]
+            return first_byte < 32 or first_byte >= 127
+
+        try:
+            return peek_ssl_header()
+        except Exception:
+            # Fix for "[Errno 11] Resource temporarily unavailable" - This can
+            # happen if we're using a non-blocking socket in a blocking thread
+            newsock.setblocking(1)
+            return peek_ssl_header()
 
 
 # set globally defined SSL socket implementation class
 ssl.SSLContext.sslsocket_class = DuplexSocket
+
+
+async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs):
+    is_ssl_socket = DuplexSocket.is_ssl_socket(conn)
+    if is_ssl_socket is False:
+        sslcontext = None
+    result = await _accept_connection2_orig(self, protocol_factory, conn, extra, sslcontext, *args, **kwargs)
+    return result
+
+
+# patch asyncio server to accept SSL and non-SSL traffic over same port
+if hasattr(BaseSelectorEventLoop, '_accept_connection2'):
+    _accept_connection2_orig = BaseSelectorEventLoop._accept_connection2
+    BaseSelectorEventLoop._accept_connection2 = _accept_connection2
 
 
 class GenericProxy(FuncThread):
@@ -458,7 +493,8 @@ class GenericProxy(FuncThread):
 
     @classmethod
     def create_ssl_cert(cls, serial_number=None):
-        return generate_ssl_cert(SERVER_CERT_PEM_FILE, serial_number=serial_number)
+        cert_pem_file = get_cert_pem_file_path()
+        return generate_ssl_cert(cert_pem_file, serial_number=serial_number)
 
     @classmethod
     def get_flask_ssl_context(cls, serial_number=None):
@@ -466,6 +502,54 @@ class GenericProxy(FuncThread):
             _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
             return (cert_file_name, key_file_name)
         return None
+
+
+def get_cert_pem_file_path():
+    return os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
+
+
+def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
+    if USE_HTTP2_SERVER:
+        return start_proxy_server_http2(port=port, forward_url=forward_url,
+            use_ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
+    proxy_thread = GenericProxy(port=port, forward_url=forward_url,
+        ssl=use_ssl, update_listener=update_listener, quiet=quiet, params=params)
+    proxy_thread.start()
+    TMP_THREADS.append(proxy_thread)
+    return proxy_thread
+
+
+def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
+    proxy_thread = run_proxy_server_http2(port=port, use_ssl=use_ssl,
+        listener=update_listener, forward_url=forward_url, asynchronous=True)
+    return proxy_thread
+
+
+def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=True, use_ssl=None):
+    def handler(request, data):
+        parsed_url = urlparse(request.url)
+        path_with_params = '/%s' % str(request.url).partition('://')[2].partition('/')[2]
+        method = request.method
+        headers = request.headers
+
+        class T:
+            pass
+
+        request_handler = T()
+        request_handler.proxy = T()
+        request_handler.proxy.port = port
+        response = modify_and_forward(method=method, path=path_with_params, data_bytes=data, headers=headers,
+            forward_base_url=forward_url, listeners=[listener], request_handler=None,
+            client_address=request.remote_addr, server_address=parsed_url.netloc)
+
+        return response
+
+    ssl_creds = (None, None)
+    if use_ssl:
+        _, cert_file_name, key_file_name = GenericProxy.create_ssl_cert(serial_number=port)
+        ssl_creds = (cert_file_name, key_file_name)
+
+    return http2_server.run_server(port, handler=handler, asynchronous=asynchronous, ssl_creds=ssl_creds)
 
 
 def serve_flask_app(app, port, quiet=True, host=None, cors=True):
