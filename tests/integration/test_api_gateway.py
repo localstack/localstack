@@ -722,8 +722,49 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         result = table.get_item(Key={'id': 'id1'})
         self.assertEqual(result['Item']['data'], 'foobar123')
 
+    def test_api_key_required_for_methods(self):
+        response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
+                                                              'Item': {'id': '$.Id', 'data': '$.data'}})}
+
+        api_id = self.create_api_gateway_and_deploy(response_templates, True)
+        url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
+
+        payload = {
+            'name': 'TEST-PLAN-2',
+            'description': 'Description',
+            'quota': {'limit': 10, 'period': 'DAY', 'offset': 0},
+            'throttle': {'rateLimit': 2, 'burstLimit': 1},
+            'apiStages': [{'apiId': api_id, 'stage': 'staging'}],
+            'tags': {'tag_key': 'tag_value'},
+        }
+
+        client = aws_stack.connect_to_service('apigateway')
+        usage_plan_id = client.create_usage_plan(**payload)['id']
+
+        key_name = 'testApiKey'
+        key_type = 'API_KEY'
+        api_key = client.create_api_key(name=key_name)
+
+        payload = {'usagePlanId': usage_plan_id, 'keyId': api_key['id'], 'keyType': key_type}
+        client.create_usage_plan_key(**payload)
+
+        response = requests.put(
+            url,
+            json.dumps({'id': 'id1', 'data': 'foobar123'}),
+        )
+        # when the api key is not passed as part of the header
+        self.assertEqual(response.status_code, 403)
+
+        response = requests.put(
+            url,
+            json.dumps({'id': 'id1', 'data': 'foobar123'}),
+            headers={'X-API-Key': api_key['value']}
+        )
+        # when the api key is passed as part of the header
+        self.assertEqual(response.status_code, 200)
+
     @staticmethod
-    def create_api_gateway_and_deploy(response_template):
+    def create_api_gateway_and_deploy(response_template, is_api_key_required=False):
         apigw_client = aws_stack.connect_to_service('apigateway')
         response = apigw_client.create_rest_api(name='my_api', description='this is my api')
         api_id = response['id']
@@ -733,7 +774,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         ]['id']
 
         apigw_client.put_method(
-            restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE'
+            restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE',
+            apiKeyRequired=is_api_key_required
         )
 
         apigw_client.put_method_response(

@@ -112,20 +112,6 @@ class S3ListenerTest (unittest.TestCase):
         self.assertIn(b'uploads/20170826T181315.679087009Z/upload/pixel.txt', expanded3,
             'Should see the interpolated filename')
 
-    def test_bucket_availability(self):
-        bucket_name = 'test_bucket_lifecycle'
-        returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
-        self.assertRegexpMatches(returned_empty_lifecycle._content, r'The bucket does not exist')
-
-        response = s3_listener.get_replication(bucket_name)
-        self.assertRegexpMatches(response._content, r'The bucket does not exist')
-
-        response = s3_listener.get_encryption(bucket_name)
-        self.assertRegexpMatches(response._content, r'The bucket does not exist')
-
-        response = s3_listener.get_object_lock(bucket_name)
-        self.assertRegexpMatches(response._content, r'The bucket does not exist')
-
     def test_get_bucket_name(self):
         bucket_name = 'test-bucket'
         s3_key = '/some-folder/some-key.txt'

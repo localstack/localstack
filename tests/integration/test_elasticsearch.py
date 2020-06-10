@@ -134,4 +134,4 @@ class ElasticsearchTest(unittest.TestCase):
             status = es_client.describe_elasticsearch_domain(DomainName=name)
             assert status['DomainStatus']['Created']
 
-        retry(check_cluster_ready, sleep=10, retries=6)
+        retry(check_cluster_ready, sleep=10, retries=12)

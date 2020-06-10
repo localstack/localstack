@@ -38,11 +38,12 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_RUBY,
     LAMBDA_RUNTIME_RUBY25,
     LAMBDA_RUNTIME_PROVIDED)
+from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid,
-    timestamp_millis, parse_chunked_data, now_utc, safe_requests, FuncThread,
-    isoformat_milliseconds)
+    timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
+from localstack.utils.http_utils import parse_chunked_data
 from localstack.utils.aws.aws_models import LambdaFunction
 
 APP_NAME = 'lambda_api'
@@ -246,12 +247,14 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
         event = {
             'path': path,
             'headers': dict(headers),
+            'multiValueHeaders': multi_value_dict_for_list(headers),
             'pathParameters': dict(path_params),
             'body': payload,
             'isBase64Encoded': False,
             'resource': resource_path,
             'httpMethod': method,
             'queryStringParameters': query_string_params,
+            'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params),
             'requestContext': request_context,
             'stageVariables': {}  # TODO
         }

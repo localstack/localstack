@@ -14,6 +14,7 @@ from pytz import timezone
 from six.moves.urllib.request import Request, urlopen
 from localstack import config
 from localstack.utils.aws import aws_stack
+from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     short_uid, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
 
@@ -316,6 +317,20 @@ class S3ListenerTest(unittest.TestCase):
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
+
+    def test_bucket_availability(self):
+        bucket_name = 'test_bucket_lifecycle'
+        returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
+        self.assertRegexpMatches(returned_empty_lifecycle._content, r'The bucket does not exist')
+
+        response = s3_listener.get_replication(bucket_name)
+        self.assertRegexpMatches(response._content, r'The bucket does not exist')
+
+        response = s3_listener.get_encryption(bucket_name)
+        self.assertRegexpMatches(response._content, r'The bucket does not exist')
+
+        response = s3_listener.get_object_lock(bucket_name)
+        self.assertRegexpMatches(response._content, r'The bucket does not exist')
 
     def test_range_header_body_length(self):
         # Test for https://github.com/localstack/localstack/issues/1952
