@@ -50,10 +50,11 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
         es_data_dir = '%s/elasticsearch' % config.DATA_DIR
     # Elasticsearch 5.x cannot be bound to 0.0.0.0 in some Docker environments,
     # hence we use the default bind address 127.0.0.0 and put a proxy in front of it
+    backup_dir = os.path.join(config.TMP_FOLDER, 'es_backup')
     cmd = (('%s/bin/elasticsearch ' +
         '-E http.port=%s -E http.publish_port=%s -E http.compression=false ' +
-        '-E path.data=%s') %
-        (base_dir, backend_port, backend_port, es_data_dir))
+        '-E path.data=%s -E path.repo=%s') %
+        (base_dir, backend_port, backend_port, es_data_dir, backup_dir))
     if os.path.exists(os.path.join(es_mods_dir, 'x-pack-ml')):
         cmd += ' -E xpack.ml.enabled=false'
     env_vars = {
