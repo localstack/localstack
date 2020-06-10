@@ -22,6 +22,7 @@ from localstack.config import USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EX
 from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
 from localstack.utils.server import http2_server
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS
+from localstack.utils.http_utils import uses_chunked_encoding, create_chunked_data
 from localstack.utils.aws.aws_responses import LambdaResponse
 
 # set up logger
@@ -31,7 +32,7 @@ LOG = logging.getLogger(__name__)
 SERVER_CERT_PEM_FILE = 'server.test.pem'
 
 # whether to use a proxy server with HTTP/2 support
-USE_HTTP2_SERVER = True
+USE_HTTP2_SERVER = config.USE_HTTP2_SERVER
 
 # CORS constants
 CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-md5', 'cache-control',
@@ -218,6 +219,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             # copy headers and return response
             self.send_response(response.status_code)
 
+            # set content for chunked encoding
+            is_chunked = uses_chunked_encoding(response)
+            if is_chunked:
+                response._content = create_chunked_data(response._content)
+
+            # send headers
             content_length_sent = False
             for header_key, header_value in iteritems(response.headers):
                 # filter out certain headers that we don't want to transmit
@@ -225,14 +232,12 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                     self.send_header(header_key, header_value)
                     content_length_sent = content_length_sent or header_key.lower() == 'content-length'
 
-            if not content_length_sent:
+            # fix content-type header if needed
+            if not content_length_sent and not is_chunked:
                 self.send_header('Content-Length', '%s' % len(response.content) if response.content else 0)
 
             if isinstance(response, LambdaResponse):
                 self.send_multi_value_headers(response.multi_value_headers)
-
-            # allow pre-flight CORS headers by default
-            self._send_cors_headers(response)
 
             self.end_headers()
             if response.content and len(response.content):
@@ -263,20 +268,6 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 LOG.warning('Unable to flush write file: %s' % e)
 
-    def _send_cors_headers(self, response=None):
-        # Note: Use "response is not None" here instead of "not response"!
-        headers = response is not None and response.headers or {}
-        if 'Access-Control-Allow-Origin' not in headers:
-            self.send_header('Access-Control-Allow-Origin', '*')
-        if 'Access-Control-Allow-Methods' not in headers:
-            self.send_header('Access-Control-Allow-Methods', ','.join(CORS_ALLOWED_METHODS))
-        if 'Access-Control-Allow-Headers' not in headers:
-            requested_headers = self.headers.get('Access-Control-Request-Headers', '')
-            requested_headers = re.split(r'[,\s]+', requested_headers) + CORS_ALLOWED_HEADERS
-            self.send_header('Access-Control-Allow-Headers', ','.join([h for h in requested_headers if h]))
-        if 'Access-Control-Expose-Headers' not in headers:
-            self.send_header('Access-Control-Expose-Headers', ','.join(CORS_EXPOSE_HEADERS))
-
     def _listeners(self):
         return self.DEFAULT_LISTENERS + [self.proxy.update_listener]
 
@@ -287,6 +278,21 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
         for key, values in multi_value_headers.items():
             for value in values:
                 self.send_header(key, value)
+
+
+def append_cors_headers(response=None):
+    # Note: Use "response is not None" here instead of "not response"!
+    headers = response is not None and response.headers or {}
+    if 'Access-Control-Allow-Origin' not in headers:
+        headers['Access-Control-Allow-Origin'] = '*'
+    if 'Access-Control-Allow-Methods' not in headers:
+        headers['Access-Control-Allow-Methods'] = ','.join(CORS_ALLOWED_METHODS)
+    if 'Access-Control-Allow-Headers' not in headers:
+        requested_headers = headers.get('Access-Control-Request-Headers', '')
+        requested_headers = re.split(r'[,\s]+', requested_headers) + CORS_ALLOWED_HEADERS
+        headers['Access-Control-Allow-Headers'] = ','.join([h for h in requested_headers if h])
+    if 'Access-Control-Expose-Headers' not in headers:
+        headers['Access-Control-Expose-Headers'] = ','.join(CORS_EXPOSE_HEADERS)
 
 
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
@@ -387,6 +393,9 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
         updated_response = update_listener.return_response(**kwargs)
         if isinstance(updated_response, Response):
             response = updated_response
+
+    # allow pre-flight CORS headers by default
+    append_cors_headers(response)
 
     return response
 
