@@ -3,13 +3,13 @@ import yaml
 import datetime
 import unittest
 from requests.models import Response
+from localstack import config
+from localstack.services import infra
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import PortMappings
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-from localstack.utils.common import (
-    download, parallelize, TMP_FILES, load_file, parse_chunked_data, json_safe, now_utc)
-from localstack.services import infra
-from localstack import config
+from localstack.utils.common import download, parallelize, TMP_FILES, load_file, json_safe, now_utc
+from localstack.utils.http_utils import parse_chunked_data, create_chunked_data
 
 
 class TestMisc(unittest.TestCase):
@@ -24,7 +24,14 @@ class TestMisc(unittest.TestCase):
         # See: https://en.wikipedia.org/wiki/Chunked_transfer_encoding
         chunked = '4\r\nWiki\r\n5\r\npedia\r\nE\r\n in\r\n\r\nchunks.\r\n0\r\n\r\n'
         expected = 'Wikipedia in\r\n\r\nchunks.'
+
+        # test parsing
         parsed = parse_chunked_data(chunked)
+        self.assertEqual(parsed.strip(), expected.strip())
+
+        # test roundtrip
+        chunked_computed = create_chunked_data(expected)
+        parsed = parse_chunked_data(chunked_computed)
         self.assertEqual(parsed.strip(), expected.strip())
 
     def test_convert_yaml_date_strings(self):

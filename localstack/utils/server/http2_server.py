@@ -1,4 +1,5 @@
-# import types
+import os
+import ssl
 import asyncio
 import logging
 import traceback
@@ -10,7 +11,8 @@ from quart.app import _cancel_all_tasks
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
 from localstack import config
-from localstack.utils.common import TMP_THREADS, FuncThread
+from localstack.utils.common import TMP_THREADS, FuncThread, load_file
+from localstack.utils.http_utils import uses_chunked_encoding
 
 LOG = logging.getLogger(__name__)
 
@@ -73,13 +75,23 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                 response.status_code = 500
                 return response
             if result is not None:
-                response = await make_response(result.content or '')
-                multi_value_headers = getattr(result, 'multi_value_headers', {})
+                is_chunked = uses_chunked_encoding(result)
+                result_content = result.content or ''
+                response = await make_response(result_content)
+                response.status_code = result.status_code
+                if is_chunked:
+                    response.headers.pop('Content-Length', None)
+                result.headers.pop('Server', None)
+                result.headers.pop('Date', None)
                 response.headers.update(dict(result.headers))
+                # set multi-value headers
+                multi_value_headers = getattr(result, 'multi_value_headers', {})
                 for key, values in multi_value_headers.items():
                     for value in values:
                         response.headers.add_header(key, value)
-                response.status_code = result.status_code
+                # set default headers, if required
+                if 'Content-Length' not in response.headers and not is_chunked:
+                    response.headers['Content-Length'] = str(len(result_content) if result_content else 0)
         return response
 
     def run_app_sync(*args, loop=None, shutdown_event=None):
@@ -99,7 +111,16 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
         if shutdown_event:
             run_kwargs['shutdown_trigger'] = shutdown_event.wait
         try:
-            return loop.run_until_complete(serve(app, config, **run_kwargs))
+            try:
+                return loop.run_until_complete(serve(app, config, **run_kwargs))
+            except ssl.SSLError:
+                c_exists = os.path.exists(cert_file_name)
+                k_exists = os.path.exists(key_file_name)
+                c_size = len(load_file(cert_file_name)) if c_exists else 0
+                k_size = len(load_file(key_file_name)) if k_exists else 0
+                LOG.warning('Unable to create SSL context. Cert files exist: %s %s (%sB), %s %s (%sB)' %
+                    (cert_file_name, c_exists, c_size, key_file_name, k_exists, k_size))
+                raise
         finally:
             try:
                 _cancel_all_tasks(loop)

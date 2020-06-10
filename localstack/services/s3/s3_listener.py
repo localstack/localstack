@@ -19,13 +19,14 @@ from requests.models import Response, Request
 from localstack import config, constants
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils.aws import aws_stack
+from localstack.services.s3 import multipart_content
 from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol
 )
 from localstack.utils.analytics import event_publisher
-from localstack.utils.aws.aws_responses import requests_response
+from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.persistence import PersistingProxyListener
-from localstack.services.s3 import multipart_content
+from localstack.utils.aws.aws_responses import requests_response
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
@@ -357,7 +358,8 @@ def add_reponse_metadata_headers(response):
     if response.headers.get('cache-control') is None:
         response.headers['cache-control'] = 'no-cache'
     if response.headers.get('content-encoding') is None:
-        response.headers['content-encoding'] = 'identity'
+        if not uses_chunked_encoding(response):
+            response.headers['content-encoding'] = 'identity'
 
 
 def append_last_modified_headers(response, content=None):
@@ -395,7 +397,7 @@ def append_list_objects_marker(method, path, data, response):
             query_map = urlparse.parse_qs(parsed.query)
             insert = '<Marker>%s</Marker>' % query_map.get('marker')[0]
             response._content = content.replace('</ListBucketResult>', '%s</ListBucketResult>' % insert)
-            response.headers['Content-Length'] = str(len(response._content))
+            response.headers.pop('Content-Length', None)
 
 
 def append_metadata_headers(method, query_map, headers):
@@ -480,6 +482,16 @@ def fix_creation_date(method, path, response):
     if method != 'GET' or path != '/':
         return
     response._content = re.sub(r'([0-9])</CreationDate>', r'\1Z</CreationDate>', to_str(response._content))
+
+
+def convert_to_chunked_encoding(method, path, response):
+    if method != 'GET' or path != '/':
+        return
+    if response.headers.get('Transfer-Encoding', '').lower() == 'chunked':
+        return
+    response.headers['Transfer-Encoding'] = 'chunked'
+    response.headers.pop('Content-Encoding', None)
+    response.headers.pop('Content-Length', None)
 
 
 def fix_etag_for_multipart(data, headers, response):
@@ -952,7 +964,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # https://github.com/scality/S3/issues/237
         if headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD:
             modified_data = strip_chunk_signatures(modified_data or data)
-            headers['content-length'] = headers.get('x-amz-decoded-content-length')
+            headers['Content-Length'] = headers.get('x-amz-decoded-content-length')
 
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
@@ -1126,7 +1138,7 @@ class ProxyListenerS3(PersistingProxyListener):
                     error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
                     response.status_code = 200
                     response._content = error_object['Body'].read()
-                    response.headers['content-length'] = len(response._content)
+                    response.headers['Content-Length'] = str(len(response._content))
             except ClientError:
                 # Pass on the 404 as usual
                 pass
@@ -1209,7 +1221,10 @@ class ProxyListenerS3(PersistingProxyListener):
                 reset_content_length = True
 
             if reset_content_length:
-                response.headers['content-length'] = len(response._content)
+                response.headers['Content-Length'] = str(len(response._content))
+
+            # convert to chunked encoding, for compatibility with certain SDKs (e.g., AWS PHP SDK)
+            convert_to_chunked_encoding(method, path, response)
 
 
 # instantiate listener

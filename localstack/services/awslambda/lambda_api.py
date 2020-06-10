@@ -41,9 +41,9 @@ from localstack.services.awslambda.lambda_executors import (
 from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid,
-    timestamp_millis, parse_chunked_data, now_utc, safe_requests, FuncThread,
-    isoformat_milliseconds)
+    timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
+from localstack.utils.http_utils import parse_chunked_data
 from localstack.utils.aws.aws_models import LambdaFunction
 from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
