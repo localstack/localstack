@@ -1,4 +1,5 @@
 import ast
+import base64
 import json
 import uuid
 import logging
@@ -16,7 +17,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
-from localstack.utils.common import timestamp_millis, short_uid, to_str
+from localstack.utils.common import timestamp_millis, short_uid, to_str, to_bytes
 from localstack.utils.persistence import PersistingProxyListener
 
 # set up logger
@@ -532,7 +533,7 @@ def create_sqs_message_attributes(subscriber, attributes):
             'DataType': value['Type']
         }
         if value['Type'] == 'Binary':
-            attribute['BinaryValue'] = value['Value']
+            attribute['BinaryValue'] = base64.decodebytes(to_bytes(value['Value']))
         else:
             attribute['StringValue'] = str(value['Value'])
 
