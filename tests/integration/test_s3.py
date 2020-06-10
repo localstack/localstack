@@ -490,6 +490,31 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_s3_presigned_post_expires(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # presign a post with a short expiry time
+        object_key = 'test-presigned-post-key'
+        presigned_request = self.s3_client.generate_presigned_post(
+            Bucket=bucket_name,
+            Key=object_key,
+            ExpiresIn=2
+        )
+
+        # sleep so it expires
+        time.sleep(3)
+
+        # attempt to use the presigned request
+        files = {'file': 'file content'}
+        response = requests.post(presigned_request['url'], data=presigned_request['fields'], files=files, verify=False)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue('ExpiredToken' in response.text)
+
+        # clean up
+        self._delete_bucket(bucket_name)
+
     def test_s3_delete_response_content_length_zero(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)

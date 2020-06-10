@@ -81,6 +81,10 @@ ALLOWED_HEADER_OVERRIDES = {
     'response-content-encoding': 'Content-Encoding',
 }
 
+# From botocore's auth.py:
+# https://github.com/boto/botocore/blob/30206ab9e9081c80fa68e8b2cb56296b09be6337/botocore/auth.py#L47
+POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+
 
 def event_type_matches(events, action, api_method):
     """ check whether any of the event types in `events` matches the
@@ -1000,6 +1004,18 @@ class ProxyListenerS3(PersistingProxyListener):
         if method == 'GET' and 'Expires' in query_map:
             if is_url_already_expired(query_map.get('Expires')[0]):
                 return token_expired_error(path, headers.get('x-amz-request-id'), 400)
+
+        # If multipart POST with policy in the params, return error if the policy has expired
+        if method == 'POST':
+            policy_key, policy_value = multipart_content.find_multipart_key_value(data, headers, 'policy')
+            if policy_key and policy_value:
+                policy = json.loads(base64.b64decode(policy_value).decode('utf-8'))
+                expiration_string = policy.get('expiration', None)  # Example: 2020-06-05T13:37:12Z
+                if expiration_string:
+                    expiration_datetime = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT)
+                    expiration_timestamp = expiration_datetime.timestamp()
+                    if is_url_already_expired(expiration_timestamp):
+                        return token_expired_error(path, headers.get('x-amz-request-id'), 400)
 
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
