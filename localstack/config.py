@@ -12,6 +12,17 @@ from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE)
 
+
+def is_env_true(env_var_name):
+    """ Whether the given environment variable has a truthy value. """
+    return os.environ.get(env_var_name, '').lower().strip() in TRUE_STRINGS
+
+
+def is_env_not_false(env_var_name):
+    """ Whether the given environment variable is empty or has a truthy value. """
+    return os.environ.get(env_var_name, '').lower().strip() not in FALSE_STRINGS
+
+
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get('LAMBDA_JAVA_OPTS', '').strip()
 
@@ -25,6 +36,13 @@ KINESIS_LATENCY = os.environ.get('KINESIS_LATENCY', '').strip() or '500'
 if 'DEFAULT_REGION' not in os.environ:
     os.environ['DEFAULT_REGION'] = 'us-east-1'
 DEFAULT_REGION = os.environ['DEFAULT_REGION']
+
+# Whether or not to handle lambda event sources as synchronous invocations
+SYNCHRONOUS_SNS_EVENTS = is_env_true('SYNCHRONOUS_SNS_EVENTS')
+SYNCHRONOUS_SQS_EVENTS = is_env_true('SYNCHRONOUS_SQS_EVENTS')
+SYNCHRONOUS_API_GATEWAY_EVENTS = is_env_not_false('SYNCHRONOUS_API_GATEWAY_EVENTS')
+SYNCHRONOUS_KINESIS_EVENTS = is_env_not_false('SYNCHRONOUS_KINESIS_EVENTS')
+SYNCHRONOUS_DYNAMODB_EVENTS = is_env_not_false('SYNCHRONOUS_DYNAMODB_EVENTS')
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
@@ -45,7 +63,7 @@ SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
 
 # whether to remotely copy the lambda or locally mount a volume
-LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').lower().strip() in TRUE_STRINGS
+LAMBDA_REMOTE_DOCKER = is_env_true('LAMBDA_REMOTE_DOCKER')
 
 # network that the docker lambda container will be joining
 LAMBDA_DOCKER_NETWORK = os.environ.get('LAMBDA_DOCKER_NETWORK', '').strip()
@@ -83,7 +101,7 @@ HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
 DEBUG = os.environ.get('DEBUG', '').lower() in TRUE_STRINGS
 
 # whether to use SSL encryption for the services
-USE_SSL = os.environ.get('USE_SSL', '').strip() in TRUE_STRINGS
+USE_SSL = is_env_true('USE_SSL')
 
 # default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
 DEFAULT_ENCODING = 'utf-8'
@@ -117,7 +135,7 @@ EXTRA_CORS_ALLOWED_HEADERS = os.environ.get('EXTRA_CORS_ALLOWED_HEADERS', '').st
 EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').strip()
 
 # whether to disable publishing events to the API
-DISABLE_EVENTS = os.environ.get('DISABLE_EVENTS') in TRUE_STRINGS
+DISABLE_EVENTS = is_env_true('DISABLE_EVENTS')
 
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get('SKIP_INFRA_DOWNLOADS', '').strip()
@@ -172,7 +190,9 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'START_WEB', 'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
                    'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS', 'EDGE_PORT',
                    'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS', 'STEPFUNCTIONS_LAMBDA_ENDPOINT',
-                   'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER']
+                   'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
+                   'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
+                   'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -317,7 +337,7 @@ def external_service_url(service_key, host=None):
 # initialize config values
 populate_configs()
 
-# set log level
+# set log levels
 if DEBUG:
     logging.getLogger('').setLevel(logging.DEBUG)
     logging.getLogger('localstack').setLevel(logging.DEBUG)
@@ -326,4 +346,4 @@ if DEBUG:
 BUNDLE_API_PROCESSES = True
 
 # whether to use a CPU/memory profiler when running the integration tests
-USE_PROFILER = os.environ.get('USE_PROFILER', '').lower() in TRUE_STRINGS
+USE_PROFILER = is_env_true('USE_PROFILER')

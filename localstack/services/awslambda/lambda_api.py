@@ -45,7 +45,6 @@ from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, en
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.utils.cloudwatch.cloudwatch_util import cloudwatched
 
 APP_NAME = 'lambda_api'
 PATH_ROOT = '/2015-03-31'
@@ -259,7 +258,8 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
             'requestContext': request_context,
             'stageVariables': {}  # TODO
         }
-        return run_lambda(event=event, context={}, func_arn=func_arn)
+        return run_lambda(event=event, context={}, func_arn=func_arn,
+            asynchronous=not config.SYNCHRONOUS_API_GATEWAY_EVENTS)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
@@ -288,7 +288,7 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
             }
         }]
     }
-    return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=True)
+    return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
 
 
 def process_kinesis_records(records, stream_name):
@@ -314,9 +314,7 @@ def process_kinesis_records(records, stream_name):
                         for rec in chunk
                     ]
                 }
-
-                run_lambda(event=event, context={}, func_arn=arn)
-
+                run_lambda(event=event, context={}, func_arn=arn, asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
@@ -481,7 +479,6 @@ def do_update_alias(arn, alias, version, description=None):
     return new_alias
 
 
-@cloudwatched('lambda')
 def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False, callback=None):
     if suppress_output:
         stdout_ = sys.stdout

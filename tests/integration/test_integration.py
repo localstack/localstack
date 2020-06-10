@@ -260,7 +260,7 @@ class IntegrationTest(unittest.TestCase):
 
         # put 1 item to stream that will trigger an error in the Lambda
         kinesis.put_record(Data='{"%s": 1}' % lambda_integration.MSG_BODY_RAISE_ERROR_FLAG,
-            PartitionKey='testIderror', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
+            PartitionKey='testIdError', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
 
         # create SNS topic, connect it to the Lambda, publish test messages
         num_events_sns = 3
@@ -302,16 +302,20 @@ class IntegrationTest(unittest.TestCase):
         retry(check_events, retries=9, sleep=3)
 
         # check cloudwatch notifications
-        num_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM)
-        # TODO: It seems that CloudWatch is currently reporting an incorrect number of
-        #   invocations, namely the sum over *all* lambdas, not the single one we're asking for.
-        #   Also, we need to bear in mind that Kinesis may perform batch updates, i.e., a single
-        #   Lambda invocation may happen with a set of Kinesis records, hence we cannot simply
-        #   add num_events_ddb to num_events_lambda above!
-        # self.assertEqual(num_invocations, 2 + num_events_lambda)
-        self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
-        num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
-        self.assertEqual(num_error_invocations, 1)
+        def check_cw_invocations():
+            num_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM)
+            # TODO: It seems that CloudWatch is currently reporting an incorrect number of
+            #   invocations, namely the sum over *all* lambdas, not the single one we're asking for.
+            #   Also, we need to bear in mind that Kinesis may perform batch updates, i.e., a single
+            #   Lambda invocation may happen with a set of Kinesis records, hence we cannot simply
+            #   add num_events_ddb to num_events_lambda above!
+            # self.assertEqual(num_invocations, 2 + num_events_lambda)
+            self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
+            num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
+            self.assertEqual(num_error_invocations, 1)
+
+        # Lambda invocations are running asynchronously, hence sleep some time here to wait for results
+        retry(check_cw_invocations, retries=5, sleep=2)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_STREAM)
@@ -441,27 +445,49 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(len(modifies), num_modify)
             self.assertEqual(len(removes), num_delete)
 
+            # assert that all inserts were received
+
             for i, event in enumerate(inserts):
                 self.assertNotIn('old_image', event)
-                self.assertEqual(inserts[i]['new_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
+                item_id = 'testId%d' % i
+                matching = [i for i in inserts if i['new_image']['id'] == item_id][0]
+                self.assertEqual(matching['new_image'], {'id': item_id, 'data': 'foobar123'})
 
-            self.assertEqual(modifies[0]['old_image'], {'id': 'testId6', 'data': 'foobar123'})
-            self.assertEqual(modifies[0]['new_image'], {'id': 'testId6', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[1]['old_image'], {'id': 'testId7', 'data': 'foobar123'})
-            self.assertEqual(modifies[1]['new_image'], {'id': 'testId7', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[2]['old_image'], {'id': 'testId6', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[2]['new_image'], {'id': 'testId6', 'data': 'foobar123_updated2'})
-            self.assertEqual(modifies[3]['old_image'], {'id': 'testId7', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[3]['new_image'], {'id': 'testId7', 'data': 'foobar123_updated2'})
-            self.assertEqual(modifies[4]['old_image'], {'id': 'testId8', 'data': 'foobar123'})
-            self.assertEqual(modifies[4]['new_image'], {'id': 'testId8', 'data': 'foobar123_updated2'})
+            # assert that all updates were received
+
+            def assert_updates(expected_updates, modifies):
+                def found(update):
+                    for modif in modifies:
+                        if modif['old_image']['id'] == update['id']:
+                            self.assertEqual(modif['old_image'], {'id': update['id'], 'data': update['old']})
+                            self.assertEqual(modif['new_image'], {'id': update['id'], 'data': update['new']})
+                            return True
+                for update in expected_updates:
+                    self.assertTrue(found(update))
+
+            updates1 = [
+                {'id': 'testId6', 'old': 'foobar123', 'new': 'foobar123_updated1'},
+                {'id': 'testId7', 'old': 'foobar123', 'new': 'foobar123_updated1'}
+            ]
+            updates2 = [
+                {'id': 'testId6', 'old': 'foobar123_updated1', 'new': 'foobar123_updated2'},
+                {'id': 'testId7', 'old': 'foobar123_updated1', 'new': 'foobar123_updated2'},
+                {'id': 'testId8', 'old': 'foobar123', 'new': 'foobar123_updated2'}
+            ]
+
+            assert_updates(updates1, modifies[:2])
+            assert_updates(updates2, modifies[2:])
+
+            # assert that all removes were received
 
             for i, event in enumerate(removes):
-                self.assertEqual(event['old_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
                 self.assertNotIn('new_image', event)
+                item_id = 'testId%d' % i
+                matching = [i for i in removes if i['old_image']['id'] == item_id][0]
+                self.assertEqual(matching['old_image'], {'id': item_id, 'data': 'foobar123'})
 
         # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=9, sleep=3)
+        retry(check_events, retries=9, sleep=4)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
@@ -488,10 +514,12 @@ class IntegrationTest(unittest.TestCase):
         data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = 'kinesis:%s' % TEST_CHAIN_STREAM2_NAME
         kinesis.put_record(Data=to_bytes(json.dumps(data)), PartitionKey='testId', StreamName=TEST_CHAIN_STREAM1_NAME)
 
+        def check_results():
+            all_objects = testutil.list_all_s3_objects()
+            testutil.assert_objects(test_data, all_objects)
+
         # check results
-        time.sleep(5)
-        all_objects = testutil.list_all_s3_objects()
-        testutil.assert_objects(test_data, all_objects)
+        retry(check_results, retries=5, sleep=3)
 
         # clean up
         kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)

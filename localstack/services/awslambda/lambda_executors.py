@@ -18,7 +18,7 @@ from localstack.utils.common import (
     to_str, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
-from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
+from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -98,31 +98,36 @@ class LambdaExecutor(object):
     def execute(self, func_arn, func_details, event, context=None, version=None,
             asynchronous=False, callback=None):
         def do_execute(*args):
-            # set the invocation time in milliseconds
-            invocation_time = int(time.time() * 1000)
-            # start the execution
-            raised_error = None
-            result = None
-            dlq_sent = None
-            try:
-                result = self._execute(func_arn, func_details, event, context, version)
-            except Exception as e:
-                raised_error = e
-                if asynchronous:
-                    if get_from_event(event, 'eventSource') == EVENT_SOURCE_SQS:
-                        sqs_queue_arn = get_from_event(event, 'eventSourceARN')
-                        if sqs_queue_arn:
-                            # event source is SQS, send event back to dead letter queue
-                            dlq_sent = sqs_error_to_dead_letter_queue(sqs_queue_arn, event, e)
-                    else:
-                        # event source is not SQS, send back to lambda dead letter queue
-                        lambda_error_to_dead_letter_queue(func_details, event, e)
-                raise e
-            finally:
-                self.function_invoke_times[func_arn] = invocation_time
-                callback and callback(result, func_arn, event, error=raised_error, dlq_sent=dlq_sent)
-            # return final result
-            return result
+
+            @cloudwatched('lambda')
+            def _run(func_arn=None):
+                # set the invocation time in milliseconds
+                invocation_time = int(time.time() * 1000)
+                # start the execution
+                raised_error = None
+                result = None
+                dlq_sent = None
+                try:
+                    result = self._execute(func_arn, func_details, event, context, version)
+                except Exception as e:
+                    raised_error = e
+                    if asynchronous:
+                        if get_from_event(event, 'eventSource') == EVENT_SOURCE_SQS:
+                            sqs_queue_arn = get_from_event(event, 'eventSourceARN')
+                            if sqs_queue_arn:
+                                # event source is SQS, send event back to dead letter queue
+                                dlq_sent = sqs_error_to_dead_letter_queue(sqs_queue_arn, event, e)
+                        else:
+                            # event source is not SQS, send back to lambda dead letter queue
+                            lambda_error_to_dead_letter_queue(func_details, event, e)
+                    raise e
+                finally:
+                    self.function_invoke_times[func_arn] = invocation_time
+                    callback and callback(result, func_arn, event, error=raised_error, dlq_sent=dlq_sent)
+                # return final result
+                return result
+
+            return _run(func_arn=func_arn)
 
         # Inform users about asynchronous mode of the lambda execution.
         if asynchronous:

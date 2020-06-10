@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import json
-import unittest
 import uuid
-
+import unittest
 from localstack import config
-
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36
 from localstack.services.events.events_listener import EVENTS_TMP_DIR
 from localstack.services.generic_proxy import ProxyListener
