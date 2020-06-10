@@ -200,6 +200,26 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_4)
 
+    def test_multiple_update_expressions(self):
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        table = self.dynamodb.Table(TEST_DDB_TABLE_NAME)
+
+        item_id = short_uid()
+        table.put_item(Item={PARTITION_KEY: item_id, 'data': 'foobar123 ✓'})
+        response = dynamodb.update_item(TableName=TEST_DDB_TABLE_NAME,
+            Key={PARTITION_KEY: {'S': item_id}},
+            UpdateExpression='SET attr1 = :v1, attr2 = :v2',
+            ExpressionAttributeValues={
+                ':v1': {'S': 'value1'},
+                ':v2': {'S': 'value2'}
+            })
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        item = table.get_item(Key={PARTITION_KEY: item_id})['Item']
+        self.assertEqual(item['attr1'], 'value1')
+        self.assertEqual(item['attr2'], 'value2')
+
     def test_return_values_in_put_item(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         table = self.dynamodb.Table(TEST_DDB_TABLE_NAME)
