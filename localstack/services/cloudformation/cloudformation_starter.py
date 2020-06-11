@@ -174,6 +174,14 @@ def update_physical_resource_id(resource):
             LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
 
+def update_resource_name(resource, resource_json):
+    """ Some resources require minor fixes in their CF resource definition
+        before we can pass them on to deployment. """
+    props = resource_json['Properties'] = resource_json.get('Properties') or {}
+    if isinstance(resource, sfn_models.StateMachine) and not props.get('StateMachineName'):
+        props['StateMachineName'] = resource.name
+
+
 def apply_patches():
     """ Apply patches to make LocalStack seamlessly interact with the moto backend.
         TODO: Eventually, these patches should be contributed to the upstream repo! """
@@ -353,13 +361,6 @@ def apply_patches():
         update_physical_resource_id(resource)
 
         return resource
-
-    def update_resource_name(resource, resource_json):
-        """ Some resources require minor fixes in their CF resource definition
-            before we can pass them on to deployment. """
-        props = resource_json['Properties'] = resource_json.get('Properties') or {}
-        if isinstance(resource, sfn_models.StateMachine) and not props.get('StateMachineName'):
-            props['StateMachineName'] = resource.name
 
     def update_resource_id(resource, new_id, props, region_name, stack_name, resource_map):
         """ Update and fix the ID(s) of the given resource. """
