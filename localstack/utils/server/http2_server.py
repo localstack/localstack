@@ -1,5 +1,4 @@
 import os
-import ssl
 import asyncio
 import logging
 import traceback
@@ -113,13 +112,14 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
         try:
             try:
                 return loop.run_until_complete(serve(app, config, **run_kwargs))
-            except ssl.SSLError:
-                c_exists = os.path.exists(cert_file_name)
-                k_exists = os.path.exists(key_file_name)
-                c_size = len(load_file(cert_file_name)) if c_exists else 0
-                k_size = len(load_file(key_file_name)) if k_exists else 0
-                LOG.warning('Unable to create SSL context. Cert files exist: %s %s (%sB), %s %s (%sB)' %
-                    (cert_file_name, c_exists, c_size, key_file_name, k_exists, k_size))
+            except Exception as e:
+                if 'SSLError' in str(e):
+                    c_exists = os.path.exists(cert_file_name)
+                    k_exists = os.path.exists(key_file_name)
+                    c_size = len(load_file(cert_file_name)) if c_exists else 0
+                    k_size = len(load_file(key_file_name)) if k_exists else 0
+                    LOG.warning('Unable to create SSL context. Cert files exist: %s %s (%sB), %s %s (%sB)' %
+                        (cert_file_name, c_exists, c_size, key_file_name, k_exists, k_size))
                 raise
         finally:
             try:
