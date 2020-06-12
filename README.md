@@ -16,9 +16,9 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 # Announcements
 
 * **2019-10-09**: **LocalStack Pro is out!** We're incredibly excited to announce the launch of LocalStack Pro - the enterprise version of LocalStack with additional APIs and advanced features. Check out the free trial at https://localstack.cloud
-* **2018-01-10**: **Help wanted!** Please [fill out this survey](https://lambdastudy.typeform.com/to/kDUvvy?source=localstack-github) to support a research study on the usage of Serverless and Function-as-a-Service (FaaS) services, conducted at Chalmers University of Technology. The survey only takes 5-10 minutes of your time. Many thanks for your participation!!
+* **2018-01-10**: **Help wanted!** Please [fill out this survey](https://lambdastudy.typeform.com/to/kDUvvy?source=localstack-github) to support a research study on the usage of Serverless and Function-as-a-Service (FaaS) services, conducted at the Chalmers University of Technology. The survey only takes 5-10 minutes of your time. Many thanks for your participation!!
   * The result from this study can be found [here](https://research.chalmers.se/en/publication/508147)
-* **2017-08-27**: **We need your support!** LocalStack is growing fast, we now have thousands of developers using the platform on a regular basis. Last month we have recorded a staggering 100k test runs, with 25k+ DynamoDB tables, 20k+ SQS queues, 15k+ Kinesis streams, 13k+ S3 buckets, and 10k+ Lambda functions created locally - for 0$ costs (more details to be published soon). Bug and feature requests are pouring in, and we now need some support from _you_ to keep the open source version actively maintained. Please check out [Open Collective](https://opencollective.com/localstack) and become a [backer](https://github.com/localstack/localstack#backers) or [supporter](https://github.com/localstack/localstack#backers) of the project today! Thanks everybody for contributing. ♥
+* **2017-08-27**: **We need your support!** LocalStack is growing fast, we now have thousands of developers using the platform regularly. Last month we have recorded a staggering 100k test runs, with 25k+ DynamoDB tables, 20k+ SQS queues, 15k+ Kinesis streams, 13k+ S3 buckets, and 10k+ Lambda functions created locally - for 0$ costs (more details to be published soon). Bug and feature requests are pouring in, and we now need some support from _you_ to keep the open-source version actively maintained. Please check out [Open Collective](https://opencollective.com/localstack) and become a [backer](https://github.com/localstack/localstack#backers) or [supporter](https://github.com/localstack/localstack#backers) of the project today! Thanks, everybody for contributing. ♥
 * **2017-07-20**: Please note: Starting with version `0.7.0`, the Docker image will be pushed
 and kept up to date under the **new name** `localstack/localstack`. (This means that you may
 have to update your CI configurations.) Please refer to the updated
@@ -32,7 +32,7 @@ LocalStack spins up the following core Cloud APIs on your local machine.
 
 **Note:** Starting with version `0.11.0`, all APIs are exposed via a single _edge service_, which is
 accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`, see further below).
-The API-specific endpoints below are still left for backwards-compatibility, but may get removed in a
+The API-specific endpoints below are still left for backward-compatibility but may get removed in a
 future release - please reconfigure your client SDKs to start using the single edge endpoint URL!
 
 * **API Gateway** ~at http://localhost:4567~
