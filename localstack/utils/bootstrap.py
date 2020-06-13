@@ -208,6 +208,7 @@ def setup_logging():
     # disable some logs and warnings
     warnings.filterwarnings('ignore')
     logging.captureWarnings(True)
+    logging.getLogger('asyncio').setLevel(logging.INFO)
     logging.getLogger('boto3').setLevel(logging.INFO)
     logging.getLogger('s3transfer').setLevel(logging.INFO)
     logging.getLogger('docker').setLevel(logging.WARNING)

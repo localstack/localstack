@@ -204,7 +204,7 @@ def apply_patches():
         for k in keys:
             key_name = k['key_name']
             version_id = k['version_id']
-            success = self.backend.delete_key(
+            success = self.backend.delete_object(
                 bucket_name, undo_clean_key_name(key_name), version_id)
 
             if success:

@@ -1,27 +1,26 @@
-import random
 import re
-import logging
 import json
-import time
-from pytz import timezone
 import uuid
 import base64
 import codecs
+import random
+import logging
+import datetime
 import xmltodict
 import collections
-import botocore.config
-import six
-import datetime
 import dateutil.parser
-from six.moves.urllib import parse as urlparse
+import six
+import botocore.config
+from pytz import timezone
 from botocore.client import ClientError
 from requests.models import Response, Request
+from six.moves.urllib import parse as urlparse
 from localstack import config, constants
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
 from localstack.utils.common import (
-    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol
+    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc
 )
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import uses_chunked_encoding
@@ -351,7 +350,7 @@ def get_object_expiry(path):
 
 
 def is_url_already_expired(expiry_timestamp):
-    if int(expiry_timestamp) < int(time.time()):
+    if int(expiry_timestamp) < int(now_utc()):
         return True
     return False
 
