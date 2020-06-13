@@ -113,6 +113,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
             try:
                 return loop.run_until_complete(serve(app, config, **run_kwargs))
             except Exception as e:
+                LOG.info('Error running server event loop on port %s: %s %s' % (port, e, traceback.format_exc()))
                 if 'SSLError' in str(e):
                     c_exists = os.path.exists(cert_file_name)
                     k_exists = os.path.exists(key_file_name)
