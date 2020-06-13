@@ -71,7 +71,7 @@ def apply_patches():
         if not query.get('uploadId'):
             return
         bucket = self.backend.get_bucket(bucket_name)
-        key = bucket and self.backend.get_key(bucket_name, key_name)
+        key = bucket and self.backend.get_object(bucket_name, key_name)
         if not key:
             return
         acl = acl or TMP_STATE.pop(acl_key, None) or bucket.acl
@@ -142,8 +142,9 @@ def apply_patches():
         if query.get('tagging'):
             self._set_action('KEY', 'DELETE', query)
             self._authenticate_and_authorize_s3_action()
-            key = self.backend.get_key(bucket_name, key_name)
+            key = self.backend.get_object(bucket_name, key_name)
             key.tags = {}
+            self.backend.tagger.delete_all_tags_for_resource(key.arn)
             return 204, {}, ''
         result = s3_key_response_delete_orig(bucket_name, query, key_name, *args, **kwargs)
         return result
