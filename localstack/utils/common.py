@@ -773,6 +773,9 @@ def cleanup_threads_and_processes(quiet=True):
     for thread in TMP_THREADS:
         if thread:
             try:
+                if hasattr(thread, 'shutdown'):
+                    thread.shutdown()
+                    continue
                 thread.stop(quiet=quiet)
             except Exception as e:
                 print(e)
@@ -781,6 +784,16 @@ def cleanup_threads_and_processes(quiet=True):
             p.terminate()
         except Exception as e:
             print(e)
+    # clean up async tasks
+    try:
+        import asyncio
+        for task in asyncio.all_tasks():
+            try:
+                task.cancel()
+            except Exception:
+                pass
+    except Exception:
+        pass
     # clear lists
     clear_list(TMP_THREADS)
     clear_list(TMP_PROCESSES)
