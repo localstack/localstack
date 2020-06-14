@@ -105,7 +105,8 @@ def get_api_from_headers(headers, path=None):
     elif '.execute-api.' in host:
         result = 'apigateway', config.PORT_APIGATEWAY
     elif target.startswith('DynamoDBStreams') or host.startswith('streams.dynamodb.'):
-        result = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
+        # Note: DDB streams requests use ../dynamodb/.. auth header, hence we also need to update result_before
+        result = result_before = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
     elif ls_target == 'web' or path == '/graph':
         result = 'web', config.PORT_WEB_UI
 
