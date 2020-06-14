@@ -2,9 +2,7 @@ import os
 import asyncio
 import logging
 import traceback
-import concurrent.futures
 import h11
-from contextvars import copy_context
 from quart import make_response, request, Quart
 from quart.app import _cancel_all_tasks
 from hypercorn.config import Config
@@ -12,10 +10,9 @@ from hypercorn.asyncio import serve
 from localstack import config
 from localstack.utils.common import TMP_THREADS, FuncThread, load_file
 from localstack.utils.http_utils import uses_chunked_encoding
+from localstack.utils.async_utils import run_sync, ensure_event_loop
 
 LOG = logging.getLogger(__name__)
-
-THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=30)
 
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
 
@@ -29,11 +26,6 @@ def setup_quart_logging():
             log.removeHandler(hdl)
 
 
-async def run_sync(func, *args):
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(THREAD_POOL, copy_context().run, func, *args)
-
-
 def apply_patches():
 
     def InformationalResponse_init(self, *args, **kwargs):
@@ -44,15 +36,6 @@ def apply_patches():
 
     InformationalResponse_init_orig = h11.InformationalResponse.__init__
     h11.InformationalResponse.__init__ = InformationalResponse_init
-
-
-def ensure_event_loop():
-    try:
-        return asyncio.get_event_loop()
-    except Exception:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        return loop
 
 
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
