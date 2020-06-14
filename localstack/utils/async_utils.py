@@ -2,6 +2,7 @@ import time
 import asyncio
 import concurrent.futures
 from contextvars import copy_context
+from localstack.utils import common
 from localstack.utils.common import FuncThread, TMP_THREADS
 
 # thread pool executor for running sync functions in async context
@@ -65,3 +66,18 @@ def get_named_event_loop(name):
     AsyncThread.run_async(async_func_gen)
     time.sleep(1)
     return EVENT_LOOPS[name]
+
+
+async def receive_from_queue(queue):
+    def get():
+        # run in a retry loop (instead of blocking forever) to allow for graceful shutdown
+        while True:
+            try:
+                if common.INFRA_STOPPED:
+                    return
+                return queue.get(timeout=1)
+            except Exception:
+                pass
+
+    msg = await run_sync(get)
+    return msg
