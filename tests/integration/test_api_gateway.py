@@ -292,11 +292,16 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
         self.assertTrue(re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', source_ip))
 
-        self.assertEqual(request_context['path'], '/lambda/foo1')
+        self.assertEqual(request_context['path'], '/' + self.TEST_STAGE_NAME + '/lambda/foo1')
+        self.assertEqual(request_context.get('stageVariables'), None)
         self.assertEqual(request_context['accountId'], TEST_AWS_ACCOUNT_ID)
         self.assertEqual(request_context['resourceId'], resource.get('id'))
         self.assertEqual(request_context['stage'], self.TEST_STAGE_NAME)
         self.assertEqual(request_context['identity']['userAgent'], 'python-requests/testing')
+        self.assertEqual(request_context['httpMethod'], 'POST')
+        self.assertEqual(request_context['protocol'], 'HTTP/1.1')
+        self.assertIn('requestTimeEpoch', request_context)
+        self.assertIn('requestTime', request_context)
 
         result = requests.delete(url, data=json.dumps(data))
         self.assertEqual(result.status_code, 204)

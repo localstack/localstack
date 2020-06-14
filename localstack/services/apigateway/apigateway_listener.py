@@ -1,7 +1,9 @@
 import re
 import json
+import time
 import logging
 import requests
+import datetime
 from flask import Response as FlaskResponse
 from six.moves.urllib_parse import urljoin
 from requests.models import Response
@@ -194,7 +196,6 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
 
     # run gateway authorizers for this request
     authorize_invocation(api_id, headers)
-
     path_map = helpers.get_rest_api_paths(rest_api_id=api_id)
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
@@ -261,7 +262,9 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = {
-                'path': relative_path,
+                # adding stage to the request context path.
+                # https://github.com/localstack/localstack/issues/2210
+                'path': '/' + stage + relative_path,
                 'accountId': account_id,
                 'resourceId': resource.get('id'),
                 'stage': stage,
@@ -269,7 +272,11 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                     'accountId': account_id,
                     'sourceIp': source_ip,
                     'userAgent': headers['User-Agent'],
-                }
+                },
+                'httpMethod': method,
+                'protocol': 'HTTP/1.1',
+                'requestTime': datetime.datetime.utcnow(),
+                'requestTimeEpoch': time.time() * 1000,
             }
 
             try:
@@ -277,9 +284,11 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             except Exception:
                 path_params = {}
 
-            result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
-                headers, path_params=path_params, query_string_params=query_string_params,
-                method=method, resource_path=path, request_context=request_context)
+            result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, stage, api_id,
+                                                              headers, path_params=path_params,
+                                                              query_string_params=query_string_params,
+                                                              method=method, resource_path=path,
+                                                              request_context=request_context)
             if isinstance(result, FlaskResponse):
                 return flask_to_requests_response(result)
             if isinstance(result, Response):

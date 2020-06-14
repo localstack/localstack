@@ -239,16 +239,32 @@ def use_docker():
     return DO_USE_DOCKER
 
 
-def process_apigateway_invocation(func_arn, path, payload, headers={},
-        resource_path=None, method=None, path_params={},
-        query_string_params={}, request_context={}):
+def get_stage_variables(api_id, stage):
+    api_gateway_client = aws_stack.connect_to_service('apigateway')
+    response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
+    return response.get('variables', None)
+
+
+def fix_proxy_path_params(path_params):
+    proxy_path_param_value = path_params.get('proxy+')
+    if not proxy_path_param_value:
+        return
+    del path_params['proxy+']
+    path_params['proxy'] = proxy_path_param_value
+
+
+def process_apigateway_invocation(func_arn, path, payload, stage, api_id, headers={},
+                                  resource_path=None, method=None, path_params={},
+                                  query_string_params=None, request_context={}):
     try:
         resource_path = resource_path or path
+        path_params = dict(path_params)
+        fix_proxy_path_params(path_params)
         event = {
             'path': path,
             'headers': dict(headers),
             'multiValueHeaders': multi_value_dict_for_list(headers),
-            'pathParameters': dict(path_params),
+            'pathParameters': path_params,
             'body': payload,
             'isBase64Encoded': False,
             'resource': resource_path,
@@ -256,7 +272,7 @@ def process_apigateway_invocation(func_arn, path, payload, headers={},
             'queryStringParameters': query_string_params,
             'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params),
             'requestContext': request_context,
-            'stageVariables': {}  # TODO
+            'stageVariables': get_stage_variables(api_id, stage),
         }
         return run_lambda(event=event, context={}, func_arn=func_arn,
             asynchronous=not config.SYNCHRONOUS_API_GATEWAY_EVENTS)
