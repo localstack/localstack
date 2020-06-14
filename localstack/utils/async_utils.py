@@ -6,6 +6,7 @@ from localstack.utils.common import FuncThread, TMP_THREADS
 
 # thread pool executor for running sync functions in async context
 THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=30)
+TMP_THREADS.append(THREAD_POOL)
 
 # reference to named event loop instances
 EVENT_LOOPS = {}
