@@ -258,7 +258,8 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
                                   query_string_params=None, request_context={}):
     try:
         resource_path = resource_path or path
-        fix_proxy_path_params(dict(path_params))
+        path_params = dict(path_params)
+        fix_proxy_path_params(path_params)
         event = {
             'path': path,
             'headers': dict(headers),
