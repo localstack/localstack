@@ -994,6 +994,70 @@ class S3ListenerTest(unittest.TestCase):
 
         self._delete_bucket(bucket_name, keys)
 
+    def test_cors_with_single_origin_error(self):
+        client = self.s3_client
+
+        BUCKET_CORS_CONFIG = {
+            'CORSRules': [{
+                'AllowedOrigins': ['https://localhost:4200'],
+                'AllowedMethods': ['GET', 'PUT'],
+                'MaxAgeSeconds': 3000,
+                'AllowedHeaders': ['*'],
+            }]
+        }
+
+        client.create_bucket(Bucket='my-s3-bucket')
+        client.put_bucket_cors(Bucket='my-s3-bucket', CORSConfiguration=BUCKET_CORS_CONFIG)
+
+        # create signed url
+        url = client.generate_presigned_url(
+            ClientMethod='put_object',
+            Params={
+                'Bucket': 'my-s3-bucket',
+                'Key': '424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf',
+                'ContentType': 'application/pdf',
+                'ACL': 'bucket-owner-full-control'
+            },
+            ExpiresIn=3600
+        )
+
+        result = requests.put(url, data='something', verify=False,
+                              headers={'Origin': 'https://localhost:4200'})
+
+        self.assertEqual(result.status_code, 200)
+
+        BUCKET_CORS_CONFIG = {
+            'CORSRules': [{
+                'AllowedOrigins': ['https://localhost:4200', 'https://localhost:4201'],
+                'AllowedMethods': ['GET', 'PUT'],
+                'MaxAgeSeconds': 3000,
+                'AllowedHeaders': ['*'],
+            }]
+        }
+
+        client.put_bucket_cors(Bucket='my-s3-bucket', CORSConfiguration=BUCKET_CORS_CONFIG)
+
+        # create signed url
+        url = client.generate_presigned_url(
+            ClientMethod='put_object',
+            Params={
+                'Bucket': 'my-s3-bucket',
+                'Key': '424f6bae-c48f-42d8-9e25-52046aecc64d/document.pdf',
+                'ContentType': 'application/pdf',
+                'ACL': 'bucket-owner-full-control'
+            },
+            ExpiresIn=3600
+        )
+
+        result = requests.put(url, data='something', verify=False,
+                              headers={'Origin': 'https://localhost:4200'})
+        self.assertEqual(result.status_code, 200)
+
+        result = requests.put(url, data='something', verify=False,
+                              headers={'Origin': 'https://localhost:4201'})
+
+        self.assertEqual(result.status_code, 200)
+
     # ---------------
     # HELPER METHODS
     # ---------------
