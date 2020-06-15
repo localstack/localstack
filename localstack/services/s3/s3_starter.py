@@ -1,11 +1,11 @@
 import types
 import logging
 import traceback
-from moto.s3 import models as s3_models, responses as s3_responses
+from moto.s3 import models as s3_models
+from moto.s3 import responses as s3_responses
 from moto.s3.responses import (
-    minidom, MalformedXML, undo_clean_key_name, S3_MULTIPART_INITIATE_RESPONSE, S3_MULTIPART_COMPLETE_RESPONSE
+    minidom, MalformedXML, undo_clean_key_name
 )
-from moto.s3.utils import metadata_from_headers
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
@@ -71,7 +71,7 @@ def apply_patches():
         if not query.get('uploadId'):
             return
         bucket = self.backend.get_bucket(bucket_name)
-        key = bucket and self.backend.get_key(bucket_name, key_name)
+        key = bucket and self.backend.get_object(bucket_name, key_name)
         if not key:
             return
         acl = acl or TMP_STATE.pop(acl_key, None) or bucket.acl
@@ -116,6 +116,16 @@ def apply_patches():
     delete_bucket_orig = s3_models.s3_backend.delete_bucket
     s3_models.s3_backend.delete_bucket = types.MethodType(delete_bucket, s3_models.s3_backend)
 
+    # patch _key_response_post(..)
+    def s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
+        result = s3_key_response_post_orig(request, body, bucket_name, query, key_name, *args, **kwargs)
+        s3_update_acls(self, request, query, bucket_name, key_name)
+        return result
+
+    s3_key_response_post_orig = s3_responses.S3ResponseInstance._key_response_post
+    s3_responses.S3ResponseInstance._key_response_post = types.MethodType(
+        s3_key_response_post, s3_responses.S3ResponseInstance)
+
     # patch _key_response_put(..)
     def s3_key_response_put(self, request, body, bucket_name, query, key_name, headers, *args, **kwargs):
         result = s3_key_response_put_orig(request, body, bucket_name, query, key_name, headers, *args, **kwargs)
@@ -132,8 +142,9 @@ def apply_patches():
         if query.get('tagging'):
             self._set_action('KEY', 'DELETE', query)
             self._authenticate_and_authorize_s3_action()
-            key = self.backend.get_key(bucket_name, key_name)
+            key = self.backend.get_object(bucket_name, key_name)
             key.tags = {}
+            self.backend.tagger.delete_all_tags_for_resource(key.arn)
             return 204, {}, ''
         result = s3_key_response_delete_orig(bucket_name, query, key_name, *args, **kwargs)
         return result
@@ -193,7 +204,7 @@ def apply_patches():
         for k in keys:
             key_name = k['key_name']
             version_id = k['version_id']
-            success = self.backend.delete_key(
+            success = self.backend.delete_object(
                 bucket_name, undo_clean_key_name(key_name), version_id)
 
             if success:
@@ -226,69 +237,3 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance._handle_range_header = types.MethodType(
         s3_response_handle_range_header, s3_responses.S3ResponseInstance)
-
-    # Patch _key_response_post to handle storage_class
-    # https://github.com/localstack/localstack/issues/2481
-    def s3_key_response_post(self, request, body, bucket_name, query, key_name):
-        self._set_action('KEY', 'POST', query)
-        self._authenticate_and_authorize_s3_action()
-
-        if body == b'' and 'uploads' in query:
-            metadata = metadata_from_headers(request.headers)
-            multipart = s3_models.FakeMultipart(key_name, metadata)
-            multipart.storage = request.headers.get('x-amz-storage-class', 'STANDARD')
-
-            bucket = self.backend.get_bucket(bucket_name)
-            bucket.multiparts[multipart.id] = multipart
-
-            template = self.response_template(S3_MULTIPART_INITIATE_RESPONSE)
-            response = template.render(
-                bucket_name=bucket_name, key_name=key_name, upload_id=multipart.id
-            )
-            return 200, {}, response
-
-        if query.get('uploadId'):
-            body = self._complete_multipart_body(body)
-            multipart_id = query['uploadId'][0]
-
-            bucket = self.backend.get_bucket(bucket_name)
-            multipart = bucket.multiparts[multipart_id]
-            value, etag = multipart.complete(body)
-            if value is None:
-                return 400, {}, ''
-
-            del bucket.multiparts[multipart_id]
-
-            key = self.backend.set_key(
-                bucket_name, multipart.key_name, value, storage=multipart.storage, etag=etag, multipart=multipart
-            )
-            key.set_metadata(multipart.metadata)
-
-            template = self.response_template(S3_MULTIPART_COMPLETE_RESPONSE)
-            return template.render(
-                bucket_name=bucket_name, key_name=key.name, etag=key.etag
-            )
-
-        elif 'restore' in query:
-            es = minidom.parseString(body).getElementsByTagName('Days')
-            days = es[0].childNodes[0].wholeText
-            key = self.backend.get_key(bucket_name, key_name)
-            r = 202
-            if key.expiry_date is not None:
-                r = 200
-            key.restore(int(days))
-            return r, {}, ''
-
-        else:
-            raise NotImplementedError(
-                'Method POST had only been implemented for multipart uploads and restore operations, so far'
-            )
-
-    # patch _key_response_post(..)
-    def s3_response_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs):
-        response = s3_key_response_post(self, request, body, bucket_name, query, key_name, *args, **kwargs)
-        s3_update_acls(self, request, query, bucket_name, key_name)
-        return response
-
-    s3_responses.S3ResponseInstance._key_response_post = types.MethodType(
-        s3_response_key_response_post, s3_responses.S3ResponseInstance)
