@@ -936,7 +936,6 @@ class S3ListenerTest(unittest.TestCase):
         self._delete_bucket(bucket_name, [key1, key2])
 
     def test_s3_put_more_than_1000_items(self):
-
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_2)
         for i in range(0, 1010, 1):
             body = 'test-' + str(i)
@@ -961,6 +960,39 @@ class S3ListenerTest(unittest.TestCase):
         # Second list
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, Marker=next_marker)
         self.assertEqual(len(resp['Contents']), 10)
+
+    def test_s3_multipart_upload_file(self):
+        def upload(size_in_mb, bucket):
+            file_name = '{}.tmp'.format(short_uid())
+            path = '{}'.format(file_name)
+            with open(path, 'wb') as f:
+                f.seek(int(size_in_mb * 1e6))
+                f.write(b'\0')
+                f.flush()
+                self.s3_client.upload_file(
+                    path,
+                    bucket,
+                    f'{file_name}',
+                    ExtraArgs={'StorageClass': 'DEEP_ARCHIVE'}
+                )
+
+            os.remove(path)
+
+        bucket_name = 'bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        upload(1, bucket_name)
+        upload(9, bucket_name)
+        upload(15, bucket_name)
+
+        s3_resource = aws_stack.connect_to_resource('s3')
+        objects = s3_resource.Bucket(bucket_name).objects.all()
+        keys = []
+        for obj in objects:
+            keys.append(obj.key)
+            self.assertEqual(obj.storage_class, 'DEEP_ARCHIVE')
+
+        self._delete_bucket(bucket_name, keys)
 
     # ---------------
     # HELPER METHODS
