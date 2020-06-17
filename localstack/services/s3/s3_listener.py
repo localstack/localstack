@@ -292,6 +292,12 @@ def delete_cors(bucket_name):
     return response
 
 
+def convert_origins_into_list(allowed_origins):
+    if isinstance(allowed_origins, list):
+        return allowed_origins
+    return [allowed_origins]
+
+
 def append_cors_headers(bucket_name, request_method, request_headers, response):
     bucket_name = normalize_bucket_name(bucket_name)
 
@@ -308,6 +314,9 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
         allowed_methods = rule.get('AllowedMethod', [])
         if request_method in allowed_methods:
             allowed_origins = rule.get('AllowedOrigin', [])
+            # when only one origin is being set in cors then the allowed_origins is being
+            # reflected as a string here,so making it a list and then proceeding.
+            allowed_origins = convert_origins_into_list(allowed_origins)
             for allowed in allowed_origins:
                 if origin in allowed or re.match(allowed.replace('*', '.*'), origin):
                     response.headers['Access-Control-Allow-Origin'] = origin
