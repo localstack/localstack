@@ -1,7 +1,7 @@
 FROM localstack/java-maven-node-python
 
 MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
-LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com), Gianluca Bortoli (giallogiallo93@gmail.com)"
+LABEL authors="LocalStack Contributors"
 
 # install basic tools
 RUN pip install awscli awscli-local requests --upgrade
@@ -16,7 +16,6 @@ ADD localstack/services/install.py localstack/services/
 ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
 ADD localstack/utils/aws/ localstack/utils/aws/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
-ADD localstack/ext/ localstack/ext/
 
 # install dependencies
 RUN make install
@@ -36,8 +35,8 @@ RUN make install-web
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
-# expose service & web dashboard ports
-EXPOSE 4567-4597 8080
+# expose service & web dashboard ports (including edge)
+EXPOSE 4566-4597 8080
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
@@ -48,26 +47,31 @@ ENV MAVEN_CONFIG=/opt/code/localstack \
     PYTHONUNBUFFERED=1
 
 # clean up and prepare for squashing the image
-RUN apk del --purge git
+RUN apk del --purge git; apk del --purge mvn || true
 RUN pip uninstall -y awscli boto3 botocore localstack_client idna s3transfer
-RUN rm -rf /tmp/* /root/.cache /opt/yarn-v1.15.2; mkdir -p /tmp/localstack
+RUN rm -rf /usr/share/maven .venv/lib/python3.*/site-packages/cfnlint
+RUN rm -rf /tmp/* /root/.cache /opt/yarn-* /root/.npm/*cache; mkdir -p /tmp/localstack
 RUN ln -s /opt/code/localstack/.venv/bin/aws /usr/bin/aws
-ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.7/site-packages
+ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages
 
 # add rest of the code
 ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
 
+# add trusted CA certificates to the cert store
+RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
+
 # fix some permissions and create local user
-RUN mkdir -p /.npm && \
-    mkdir -p localstack/infra/elasticsearch/data && \
-    mkdir -p localstack/infra/elasticsearch/logs && \
+RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
+    mkdir -p /.npm && \
+    mkdir -p $ES_BASE_DIR/data && \
+    mkdir -p $ES_BASE_DIR/logs && \
     chmod 777 . && \
     chmod 755 /root && \
     chmod -R 777 /.npm && \
-    chmod -R 777 localstack/infra/elasticsearch/config && \
-    chmod -R 777 localstack/infra/elasticsearch/data && \
-    chmod -R 777 localstack/infra/elasticsearch/logs && \
+    chmod -R 777 $ES_BASE_DIR/config && \
+    chmod -R 777 $ES_BASE_DIR/data && \
+    chmod -R 777 $ES_BASE_DIR/logs && \
     chmod -R 777 /tmp/localstack && \
     adduser -D localstack && \
     chown -R localstack:localstack . /tmp/localstack && \
@@ -76,3 +80,5 @@ RUN mkdir -p /.npm && \
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
+# clean up temporary files created during test execution
+RUN rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache

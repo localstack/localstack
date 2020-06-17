@@ -1,7 +1,9 @@
 import re
 import json
+import time
 import logging
 import requests
+import datetime
 from flask import Response as FlaskResponse
 from six.moves.urllib_parse import urljoin
 from requests.models import Response
@@ -15,10 +17,10 @@ from localstack.services.kinesis import kinesis_listener
 from localstack.services.awslambda import lambda_api
 from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response
+from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
 from localstack.services.apigateway.helpers import (get_resource_for_path,
     handle_authorizers, extract_query_string_params,
-    extract_path_params, make_error, get_cors_response)
+    extract_path_params, make_error_response, get_cors_response)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -32,17 +34,23 @@ PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.
 GATEWAY_RESPONSES = {}
 
 
+class AuthorizationError(Exception):
+    pass
+
+
 class ProxyListenerApiGateway(ProxyListener):
-
     def forward_request(self, method, path, data, headers):
-        data = data and json.loads(to_str(data))
-
         if re.match(PATH_REGEX_USER_REQUEST, path):
             search_match = re.search(PATH_REGEX_USER_REQUEST, path)
             api_id = search_match.group(1)
             stage = search_match.group(2)
             relative_path_w_query_params = '/%s' % search_match.group(3)
-            return invoke_rest_api(api_id, stage, method, relative_path_w_query_params, data, headers, path=path)
+            try:
+                return invoke_rest_api(api_id, stage, method, relative_path_w_query_params, data, headers, path=path)
+            except AuthorizationError as e:
+                return make_error_response('Not authorized to invoke REST API %s: %s' % (api_id, e), 403)
+
+        data = data and json.loads(to_str(data))
 
         if re.match(PATH_REGEX_AUTHORIZERS, path):
             return handle_authorizers(method, path, data, headers)
@@ -134,15 +142,69 @@ def put_gateway_response(api_id, response_type, data):
     return data
 
 
+def run_authorizer(api_id, headers, authorizer):
+    # TODO implement authorizers
+    pass
+
+
+def authorize_invocation(api_id, headers):
+    client = aws_stack.connect_to_service('apigateway')
+    authorizers = client.get_authorizers(restApiId=api_id, limit=100).get('items', [])
+    for authorizer in authorizers:
+        run_authorizer(api_id, headers, authorizer)
+
+
+def validate_api_key(api_key, stage):
+
+    key = None
+    usage_plan_id = None
+
+    client = aws_stack.connect_to_service('apigateway')
+    usage_plans = client.get_usage_plans()
+    for item in usage_plans.get('items', []):
+        api_stages = item.get('apiStages', [])
+        for api_stage in api_stages:
+            if api_stage.get('stage') == stage:
+                usage_plan_id = item.get('id')
+    if not usage_plan_id:
+        return False
+
+    usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
+    for item in usage_plan_keys.get('items', []):
+        key = item.get('value')
+
+    if key != api_key:
+        return False
+
+    return True
+
+
+def is_api_key_valid(is_api_key_required, headers, stage):
+    if not is_api_key_required:
+        return True
+
+    api_key = headers.get('X-API-Key')
+    if not api_key:
+        return False
+
+    return validate_api_key(api_key, stage)
+
+
 def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
 
+    # run gateway authorizers for this request
+    authorize_invocation(api_id, headers)
     path_map = helpers.get_rest_api_paths(rest_api_id=api_id)
     try:
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
     except Exception:
-        return make_error('Unable to find path %s' % path, 404)
+        return make_error_response('Unable to find path %s' % path, 404)
+
+    if not is_api_key_valid(path_map.get(relative_path, {}).
+                            get('resourceMethods', {}).get(method, {}).get('apiKeyRequired'), headers, stage):
+        return make_error_response('Acess Denied Exception.', 403)
 
     integrations = resource.get('resourceMethods', {})
     integration = integrations.get(method, {})
@@ -153,7 +215,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         if method == 'OPTIONS' and 'Origin' in headers:
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
-        return make_error('Unable to find integration for path %s' % path, 404)
+        return make_error_response('Unable to find integration for path %s' % path, 404)
 
     uri = integration.get('uri')
     if integration['type'] == 'AWS':
@@ -181,18 +243,18 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 new_request = aws_stack.render_velocity_template(template, data) + '&QueueName=%s' % queue
                 headers = aws_stack.mock_aws_request_headers(service='sqs', region_name=region_name)
 
-                url = urljoin(TEST_SQS_URL, '%s/%s' % (account_id, queue))
+                url = urljoin(TEST_SQS_URL, 'queue/%s' % queue)
                 result = common.make_http_request(url, method='POST', headers=headers, data=new_request)
                 return result
 
         msg = 'API Gateway AWS integration action URI "%s", method "%s" not yet implemented' % (uri, method)
         LOGGER.warning(msg)
-        return make_error(msg, 404)
+        return make_error_response(msg, 404)
 
     elif integration['type'] == 'AWS_PROXY':
         if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
             func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
-            data_str = json.dumps(data) if isinstance(data, (dict, list)) else data
+            data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
             account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
 
             source_ip = headers['X-Forwarded-For'].split(',')[-2]
@@ -200,7 +262,9 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = {
-                'path': relative_path,
+                # adding stage to the request context path.
+                # https://github.com/localstack/localstack/issues/2210
+                'path': '/' + stage + relative_path,
                 'accountId': account_id,
                 'resourceId': resource.get('id'),
                 'stage': stage,
@@ -208,7 +272,11 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                     'accountId': account_id,
                     'sourceIp': source_ip,
                     'userAgent': headers['User-Agent'],
-                }
+                },
+                'httpMethod': method,
+                'protocol': 'HTTP/1.1',
+                'requestTime': datetime.datetime.utcnow(),
+                'requestTimeEpoch': time.time() * 1000,
             }
 
             try:
@@ -216,34 +284,71 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             except Exception:
                 path_params = {}
 
-            result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
-                headers, path_params=path_params, query_string_params=query_string_params,
-                method=method, resource_path=path, request_context=request_context)
-
+            result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, stage, api_id,
+                                                              headers, path_params=path_params,
+                                                              query_string_params=query_string_params,
+                                                              method=method, resource_path=path,
+                                                              request_context=request_context)
             if isinstance(result, FlaskResponse):
                 return flask_to_requests_response(result)
             if isinstance(result, Response):
                 return result
 
-            response = Response()
-            parsed_result = result if isinstance(result, dict) else json.loads(result)
+            response = LambdaResponse()
+            parsed_result = result if isinstance(result, dict) else json.loads(str(result))
             parsed_result = common.json_safe(parsed_result)
             parsed_result = {} if parsed_result is None else parsed_result
             response.status_code = int(parsed_result.get('statusCode', 200))
-            response.headers.update(parsed_result.get('headers', {}))
+            parsed_headers = parsed_result.get('headers', {})
+            if parsed_headers is not None:
+                response.headers.update(parsed_headers)
             try:
                 if isinstance(parsed_result['body'], dict):
-                    response._content = json.dumps(parsed_result['body'])
+                    response.content = json.dumps(parsed_result['body'])
                 else:
-                    response._content = to_bytes(parsed_result['body'])
+                    response.content = to_bytes(parsed_result['body'])
             except Exception:
                 response._content = '{}'
-            response.headers['Content-Length'] = len(response._content)
+            if response.content:
+                response.headers['Content-Length'] = str(len(response.content))
+            response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
             return response
+
+        elif uri.startswith('arn:aws:apigateway:') and ':dynamodb:action' in uri:
+            # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
+            table_name = uri.split(':dynamodb:action')[1].split('&Table=')[1]
+            action = uri.split(':dynamodb:action')[1].split('&Table=')[0]
+
+            if 'PutItem' in action and method == 'PUT':
+                response_template = path_map.get(relative_path, {}).get('resourceMethods', {})\
+                    .get(method, {}).get('methodIntegration', {}).\
+                    get('integrationResponses', {}).get('200', {}).get('responseTemplates', {})\
+                    .get('application/json', None)
+
+                if response_template is None:
+                    msg = 'Invalid response template defined in integration response.'
+                    return make_error_response(msg, 404)
+
+                response_template = json.loads(response_template)
+                if response_template['TableName'] != table_name:
+                    msg = 'Invalid table name specified in integration response template.'
+                    return make_error_response(msg, 404)
+
+                dynamo_client = aws_stack.connect_to_resource('dynamodb')
+                table = dynamo_client.Table(table_name)
+
+                event_data = {}
+                data_dict = json.loads(data)
+                for key, _ in response_template['Item'].items():
+                    event_data[key] = data_dict[key]
+
+                table.put_item(Item=event_data)
+                response = requests_response(event_data, headers=aws_stack.mock_aws_request_headers())
+                return response
         else:
             msg = 'API Gateway action uri "%s" not yet implemented' % uri
             LOGGER.warning(msg)
-            return make_error(msg, 404)
+            return make_error_response(msg, 404)
 
     elif integration['type'] == 'HTTP':
         function = getattr(requests, method.lower())
@@ -256,9 +361,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         msg = ('API Gateway integration type "%s" for method "%s" not yet implemented' %
                (integration['type'], method))
         LOGGER.warning(msg)
-        return make_error(msg, 404)
-
-    return 200
+        return make_error_response(msg, 404)
 
 
 # instantiate listener

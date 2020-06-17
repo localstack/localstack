@@ -9,13 +9,13 @@ from datetime import datetime, timedelta
 from nose.tools import assert_raises
 from localstack.utils import testutil
 from localstack.utils.common import (
-    load_file, short_uid, clone, to_bytes, to_str, run_safe, retry)
-# from localstack.utils.common import profiled
+    load_file, save_file, short_uid, clone, to_bytes, to_str, run_safe, retry, new_tmp_file)
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
+from localstack.utils.testutil import get_lambda_log_events
 from .lambdas import lambda_integration
-from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
+from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_LIBS, LambdaTestBase
 
 TEST_STREAM_NAME = lambda_integration.KINESIS_STREAM_NAME
 TEST_LAMBDA_SOURCE_STREAM_NAME = 'test_source_stream'
@@ -38,11 +38,35 @@ PARTITION_KEY = 'id'
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
+TEST_HANDLER = """
+def handler(event, *args):
+    return {}
+"""
+
 
 class IntegrationTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Note: create scheduled Lambda here - assertions will be run in test_scheduled_lambda() below..
+
+        # create test Lambda
+        cls.scheduled_lambda_name = 'scheduled-%s' % short_uid()
+        handler_file = new_tmp_file()
+        save_file(handler_file, TEST_HANDLER)
+        resp = testutil.create_lambda_function(handler_file=handler_file, func_name=cls.scheduled_lambda_name)
+        func_arn = resp['CreateFunctionResponse']['FunctionArn']
+
+        # create scheduled Lambda function
+        rule_name = 'rule-%s' % short_uid()
+        events = aws_stack.connect_to_service('events')
+        events.put_rule(Name=rule_name, ScheduleExpression='rate(1 minutes)')
+        events.put_targets(Rule=rule_name, Targets=[{'Id': 'target-%s' % short_uid(), 'Arn': func_arn}])
+
+    @classmethod
+    def tearDownClass(cls):
+        testutil.delete_lambda_function(cls.scheduled_lambda_name)
 
     def test_firehose_s3(self):
-
         s3_resource = aws_stack.connect_to_resource('s3')
         firehose = aws_stack.connect_to_service('firehose')
 
@@ -75,6 +99,10 @@ class IntegrationTest(unittest.TestCase):
         # check records in target bucket
         all_objects = testutil.list_all_s3_objects()
         testutil.assert_objects(json.loads(to_str(test_data)), all_objects)
+        # check file layout in target bucket
+        all_objects = testutil.map_all_s3_objects(buckets=[TEST_BUCKET_NAME])
+        for key in all_objects.keys():
+            self.assertRegexpMatches(key, r'.*/\d{4}/\d{2}/\d{2}/\d{2}/.*\-\d{4}\-\d{2}\-\d{2}\-\d{2}.*')
 
     def test_firehose_kinesis_to_s3(self):
         kinesis = aws_stack.connect_to_service('kinesis')
@@ -232,7 +260,7 @@ class IntegrationTest(unittest.TestCase):
 
         # put 1 item to stream that will trigger an error in the Lambda
         kinesis.put_record(Data='{"%s": 1}' % lambda_integration.MSG_BODY_RAISE_ERROR_FLAG,
-            PartitionKey='testIderror', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
+            PartitionKey='testIdError', StreamName=TEST_LAMBDA_SOURCE_STREAM_NAME)
 
         # create SNS topic, connect it to the Lambda, publish test messages
         num_events_sns = 3
@@ -240,7 +268,7 @@ class IntegrationTest(unittest.TestCase):
         sns.subscribe(TopicArn=response['TopicArn'], Protocol='lambda',
             Endpoint=aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_STREAM))
         for i in range(0, num_events_sns):
-            sns.publish(TopicArn=response['TopicArn'], Message='test message %s' % i)
+            sns.publish(TopicArn=response['TopicArn'], Subject='test_subject', Message='test message %s' % i)
 
         # get latest records
         latest = aws_stack.kinesis_get_latest_records(TEST_LAMBDA_SOURCE_STREAM_NAME,
@@ -274,20 +302,26 @@ class IntegrationTest(unittest.TestCase):
         retry(check_events, retries=9, sleep=3)
 
         # check cloudwatch notifications
-        num_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM)
-        # TODO: It seems that CloudWatch is currently reporting an incorrect number of
-        #   invocations, namely the sum over *all* lambdas, not the single one we're asking for.
-        #   Also, we need to bear in mind that Kinesis may perform batch updates, i.e., a single
-        #   Lambda invocation may happen with a set of Kinesis records, hence we cannot simply
-        #   add num_events_ddb to num_events_lambda above!
-        # self.assertEqual(num_invocations, 2 + num_events_lambda)
-        self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
-        num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
-        self.assertEqual(num_error_invocations, 1)
+        def check_cw_invocations():
+            num_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM)
+            # TODO: It seems that CloudWatch is currently reporting an incorrect number of
+            #   invocations, namely the sum over *all* lambdas, not the single one we're asking for.
+            #   Also, we need to bear in mind that Kinesis may perform batch updates, i.e., a single
+            #   Lambda invocation may happen with a set of Kinesis records, hence we cannot simply
+            #   add num_events_ddb to num_events_lambda above!
+            # self.assertEqual(num_invocations, 2 + num_events_lambda)
+            self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
+            num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
+            self.assertEqual(num_error_invocations, 1)
+
+        # Lambda invocations are running asynchronously, hence sleep some time here to wait for results
+        retry(check_cw_invocations, retries=5, sleep=2)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_STREAM)
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_QUEUE)
+        sqs.delete_queue(QueueUrl=sqs_queue_info['QueueUrl'])
 
     def test_lambda_streams_batch_and_transactions(self):
         ddb_lease_table_suffix = '-kclapp2'
@@ -327,10 +361,9 @@ class IntegrationTest(unittest.TestCase):
         self.assertTrue(ddb_event_source_arn)
 
         # deploy test lambda connected to DynamoDB Stream
-        zip_file = testutil.create_lambda_archive(load_file(TEST_LAMBDA_PYTHON), get_content=True,
-            libs=TEST_LAMBDA_LIBS, runtime=LAMBDA_RUNTIME_PYTHON27)
-        testutil.create_lambda_function(func_name=TEST_LAMBDA_NAME_DDB,
-            zip_file=zip_file, event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27, delete=True)
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON, libs=TEST_LAMBDA_LIBS, func_name=TEST_LAMBDA_NAME_DDB,
+            event_source_arn=ddb_event_source_arn, runtime=LAMBDA_RUNTIME_PYTHON27, delete=True)
 
         # submit a batch with writes
         dynamodb.batch_write_item(RequestItems={table_name: [
@@ -412,27 +445,49 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(len(modifies), num_modify)
             self.assertEqual(len(removes), num_delete)
 
+            # assert that all inserts were received
+
             for i, event in enumerate(inserts):
                 self.assertNotIn('old_image', event)
-                self.assertEqual(inserts[i]['new_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
+                item_id = 'testId%d' % i
+                matching = [i for i in inserts if i['new_image']['id'] == item_id][0]
+                self.assertEqual(matching['new_image'], {'id': item_id, 'data': 'foobar123'})
 
-            self.assertEqual(modifies[0]['old_image'], {'id': 'testId6', 'data': 'foobar123'})
-            self.assertEqual(modifies[0]['new_image'], {'id': 'testId6', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[1]['old_image'], {'id': 'testId7', 'data': 'foobar123'})
-            self.assertEqual(modifies[1]['new_image'], {'id': 'testId7', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[2]['old_image'], {'id': 'testId6', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[2]['new_image'], {'id': 'testId6', 'data': 'foobar123_updated2'})
-            self.assertEqual(modifies[3]['old_image'], {'id': 'testId7', 'data': 'foobar123_updated1'})
-            self.assertEqual(modifies[3]['new_image'], {'id': 'testId7', 'data': 'foobar123_updated2'})
-            self.assertEqual(modifies[4]['old_image'], {'id': 'testId8', 'data': 'foobar123'})
-            self.assertEqual(modifies[4]['new_image'], {'id': 'testId8', 'data': 'foobar123_updated2'})
+            # assert that all updates were received
+
+            def assert_updates(expected_updates, modifies):
+                def found(update):
+                    for modif in modifies:
+                        if modif['old_image']['id'] == update['id']:
+                            self.assertEqual(modif['old_image'], {'id': update['id'], 'data': update['old']})
+                            self.assertEqual(modif['new_image'], {'id': update['id'], 'data': update['new']})
+                            return True
+                for update in expected_updates:
+                    self.assertTrue(found(update))
+
+            updates1 = [
+                {'id': 'testId6', 'old': 'foobar123', 'new': 'foobar123_updated1'},
+                {'id': 'testId7', 'old': 'foobar123', 'new': 'foobar123_updated1'}
+            ]
+            updates2 = [
+                {'id': 'testId6', 'old': 'foobar123_updated1', 'new': 'foobar123_updated2'},
+                {'id': 'testId7', 'old': 'foobar123_updated1', 'new': 'foobar123_updated2'},
+                {'id': 'testId8', 'old': 'foobar123', 'new': 'foobar123_updated2'}
+            ]
+
+            assert_updates(updates1, modifies[:2])
+            assert_updates(updates2, modifies[2:])
+
+            # assert that all removes were received
 
             for i, event in enumerate(removes):
-                self.assertEqual(event['old_image'], {'id': 'testId%d' % i, 'data': 'foobar123'})
                 self.assertNotIn('new_image', event)
+                item_id = 'testId%d' % i
+                matching = [i for i in removes if i['old_image']['id'] == item_id][0]
+                self.assertEqual(matching['old_image'], {'id': item_id, 'data': 'foobar123'})
 
         # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=9, sleep=3)
+        retry(check_events, retries=9, sleep=4)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_DDB)
@@ -459,14 +514,101 @@ class IntegrationTest(unittest.TestCase):
         data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = 'kinesis:%s' % TEST_CHAIN_STREAM2_NAME
         kinesis.put_record(Data=to_bytes(json.dumps(data)), PartitionKey='testId', StreamName=TEST_CHAIN_STREAM1_NAME)
 
+        def check_results():
+            all_objects = testutil.list_all_s3_objects()
+            testutil.assert_objects(test_data, all_objects)
+
         # check results
-        time.sleep(5)
-        all_objects = testutil.list_all_s3_objects()
-        testutil.assert_objects(test_data, all_objects)
+        retry(check_results, retries=5, sleep=3)
 
         # clean up
         kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM1_NAME)
         kinesis.delete_stream(StreamName=TEST_CHAIN_STREAM2_NAME)
+
+    def test_sqs_batch_lambda_forward(self):
+        sqs = aws_stack.connect_to_service('sqs')
+        lambda_api = aws_stack.connect_to_service('lambda')
+
+        lambda_name_queue_batch = 'lambda_queue_batch-%s' % short_uid()
+
+        # deploy test lambda connected to SQS queue
+        sqs_queue_info = testutil.create_sqs_queue(lambda_name_queue_batch)
+        queue_url = sqs_queue_info['QueueUrl']
+        resp = testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=lambda_name_queue_batch,
+            event_source_arn=sqs_queue_info['QueueArn'],
+            runtime=LAMBDA_RUNTIME_PYTHON27,
+            libs=TEST_LAMBDA_LIBS
+        )
+
+        event_source_id = resp['CreateEventSourceMappingResponse']['UUID']
+        lambda_api.update_event_source_mapping(
+            UUID=event_source_id,
+            BatchSize=5
+        )
+
+        messages_to_send = [
+            {
+                'Id': 'message{:02d}'.format(i),
+                'MessageBody': 'msgBody{:02d}'.format(i),
+                'MessageAttributes': {
+                    'CustomAttribute': {
+                        'DataType': 'String',
+                        'StringValue': 'CustomAttributeValue{:02d}'.format(i)
+                    }
+                }
+            }
+            for i in range(1, 12)
+        ]
+
+        # send 11 messages (which should get split into 3 batches)
+        sqs.send_message_batch(QueueUrl=queue_url, Entries=messages_to_send[:10])
+        sqs.send_message(
+            QueueUrl=queue_url,
+            MessageBody=messages_to_send[10]['MessageBody'],
+            MessageAttributes=messages_to_send[10]['MessageAttributes']
+        )
+
+        def wait_for_done():
+            attributes = sqs.get_queue_attributes(
+                QueueUrl=queue_url,
+                AttributeNames=[
+                    'ApproximateNumberOfMessages',
+                    'ApproximateNumberOfMessagesDelayed',
+                    'ApproximateNumberOfMessagesNotVisible'
+                ],
+            )['Attributes']
+            msg_count = int(attributes.get('ApproximateNumberOfMessages'))
+            self.assertEqual(msg_count, 0, 'expecting queue to be empty')
+
+            delayed_count = int(attributes.get('ApproximateNumberOfMessagesDelayed'))
+            if delayed_count != 0:
+                LOGGER.warning('SQS delayed message count (actual/expected): %s/%s' % (delayed_count, 0))
+
+            not_visible_count = int(attributes.get('ApproximateNumberOfMessagesNotVisible'))
+            if not_visible_count != 0:
+                LOGGER.warning('SQS messages not visible (actual/expected): %s/%s' % (not_visible_count, 0))
+
+            self.assertEqual(delayed_count, 0, 'no messages waiting for retry')
+            self.assertEqual(delayed_count + not_visible_count, 0, 'no in flight messages')
+
+        # wait for the queue to drain (max 60s)
+        retry(wait_for_done, retries=12, sleep=5.0)
+
+        events = get_lambda_log_events(lambda_name_queue_batch, 10)
+        self.assertEqual(len(events), 3, 'expected 3 lambda invocations')
+
+        testutil.delete_lambda_function(lambda_name_queue_batch)
+        sqs.delete_queue(QueueUrl=queue_url)
+
+    def test_scheduled_lambda(self):
+        def check_invocation(*args):
+            log_events = LambdaTestBase.get_lambda_logs(self.scheduled_lambda_name)
+            self.assertGreater(len(log_events), 0)
+
+        # wait for up to 1 min for invocations to get triggered
+        retry(check_invocation, retries=14, sleep=5)
 
 
 # ---------------
@@ -479,19 +621,26 @@ def get_event_source_arn(stream_name):
     return kinesis.describe_stream(StreamName=stream_name)['StreamDescription']['StreamARN']
 
 
-def get_lambda_invocations_count(lambda_name, metric=None):
-    return get_lambda_metrics(lambda_name, metric)['Datapoints'][-1]['Sum']
+def get_lambda_invocations_count(lambda_name, metric=None, period=60, start_time=None, end_time=None):
+    metric = get_lambda_metrics(lambda_name, metric, period, start_time, end_time)
+    if not metric['Datapoints']:
+        return 0
+    return metric['Datapoints'][-1]['Sum']
 
 
-def get_lambda_metrics(func_name, metric=None):
+def get_lambda_metrics(func_name, metric=None, period=60, start_time=None, end_time=None):
     metric = metric or 'Invocations'
     cloudwatch = aws_stack.connect_to_service('cloudwatch')
+    if end_time is None:
+        end_time = datetime.now()
+    if start_time is None:
+        start_time = end_time - timedelta(seconds=period)
     return cloudwatch.get_metric_statistics(
         Namespace='AWS/Lambda',
         MetricName=metric,
         Dimensions=[{'Name': 'FunctionName', 'Value': func_name}],
-        Period=60,
-        StartTime=datetime.now() - timedelta(minutes=1),
-        EndTime=datetime.now(),
+        Period=period,
+        StartTime=start_time,
+        EndTime=end_time,
         Statistics=['Sum']
     )

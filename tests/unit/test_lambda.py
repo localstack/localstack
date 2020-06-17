@@ -1,8 +1,17 @@
+import os
 import re
 import json
 import unittest
+import mock
+import time
+import datetime
+from localstack.utils.common import save_file, new_tmp_dir, mkdir
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
+from localstack.constants import LAMBDA_TEST_ROLE
+
+
+TEST_EVENT_SOURCE_ARN = 'arn:aws:sqs:eu-west-1:000000000000:testq'
 
 
 class TestLambdaAPI(unittest.TestCase):
@@ -87,9 +96,131 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
             self.assertEqual(0, len(lambda_api.event_source_mappings))
 
+    def test_invoke_RETURNS_415_WHEN_not_json_input(self):
+        with self.app.test_request_context() as context:
+            context.request._cached_data = '~notjsonrequest~'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual('415 UNSUPPORTED MEDIA TYPE', response.status)
+
+    def _request_response(self, context):
+        context.request._cached_data = '{}'
+        context.request.args = {'Qualifier': '$LATEST'}
+        context.request.environ['HTTP_X_AMZ_INVOCATION_TYPE'] = 'RequestResponse'
+        self._create_function(self.FUNCTION_NAME)
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_plain_text_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '~notjsonresponse~'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual('~notjsonresponse~', response[0])
+            self.assertEqual(200, response[1])
+            self.assertEqual({'Content-Type': 'text/plain'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_empty_plain_text_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = ''
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual('', response[0])
+            self.assertEqual(200, response[1])
+            self.assertEqual({'Content-Type': 'text/plain'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_empty_map_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '{}'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'{}\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEquals({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_populated_map_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '{"bool":true,"int":1}'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'{"bool":true,"int":1}\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEquals({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_empty_list_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '[]'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'[]\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEquals({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_populated_list_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '[true,1,"thing"]'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'[true,1,"thing"]\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEquals({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_string_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '"thing"'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'"thing"\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEqual({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_integer_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '1234'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'1234\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEqual({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_float_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = '1.3'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'1.3\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEqual({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_boolean_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = 'true'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'true\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEqual({'Content-Type': 'application/json'}, response[2])
+
+    @mock.patch('localstack.services.awslambda.lambda_api.run_lambda')
+    def test_invoke_null_json_response(self, mock_run_lambda):
+        with self.app.test_request_context() as context:
+            self._request_response(context)
+            mock_run_lambda.return_value = 'null'
+            response = lambda_api.invoke_function(self.FUNCTION_NAME)
+            self.assertEqual(b'null\n', response[0].response[0])
+            self.assertEqual(200, response[1])
+            self.assertEqual({'Content-Type': 'application/json'}, response[2])
+
     def test_create_event_source_mapping(self):
         self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
-            data=json.dumps({'FunctionName': 'test-lambda-function', 'EventSourceArn': 'fake-arn'}))
+            data=json.dumps({'FunctionName': 'test-lambda-function', 'EventSourceArn': TEST_EVENT_SOURCE_ARN}))
 
         listResponse = self.client.get('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT))
         listResult = json.loads(listResponse.get_data())
@@ -102,7 +233,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_create_disabled_event_source_mapping(self):
         createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
                             data=json.dumps({'FunctionName': 'test-lambda-function',
-                                             'EventSourceArn': 'fake-arn',
+                                             'EventSourceArn': TEST_EVENT_SOURCE_ARN,
                                              'Enabled': 'false'}))
         createResult = json.loads(createResponse.get_data())
 
@@ -117,7 +248,7 @@ class TestLambdaAPI(unittest.TestCase):
     def test_update_event_source_mapping(self):
         createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
                             data=json.dumps({'FunctionName': 'test-lambda-function',
-                                             'EventSourceArn': 'fake-arn',
+                                             'EventSourceArn': TEST_EVENT_SOURCE_ARN,
                                              'Enabled': 'true'}))
         createResult = json.loads(createResponse.get_data())
 
@@ -153,9 +284,13 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Description'] = ''
             expected_result['MemorySize'] = self.MEMORY_SIZE
             expected_result['Role'] = self.ROLE
+            expected_result['KMSKeyArn'] = None
+            expected_result['VpcConfig'] = None
             expected_result['LastModified'] = self.LAST_MODIFIED
             expected_result['TracingConfig'] = self.TRACING_CONFIG
             expected_result['Version'] = '1'
+            expected_result['State'] = 'Active'
+            expected_result['LastUpdateStatus'] = 'Successful'
             expected_result2 = dict(expected_result)
             expected_result2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
             expected_result2['Version'] = '2'
@@ -191,9 +326,13 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['Description'] = ''
             latest_version['MemorySize'] = self.MEMORY_SIZE
             latest_version['Role'] = self.ROLE
+            latest_version['KMSKeyArn'] = None
+            latest_version['VpcConfig'] = None
             latest_version['LastModified'] = self.LAST_MODIFIED
             latest_version['TracingConfig'] = self.TRACING_CONFIG
             latest_version['Version'] = '$LATEST'
+            latest_version['State'] = 'Active'
+            latest_version['LastUpdateStatus'] = 'Successful'
             version1 = dict(latest_version)
             version1['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':1'
             version1['Version'] = '1'
@@ -449,11 +588,66 @@ class TestLambdaAPI(unittest.TestCase):
         result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
                                       ',suspend=y,address=_debug_port_')
         self.assertTrue(re.match(expected, result))
+        self.assertTrue(lambda_executors.Util.debug_java_port is not False)
+
+    def test_java_options_with_unset_debug_port_in_middle(self):
+        expected = '.*transport=dt_socket,server=y,address=[0-9]+,suspend=y'
+        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
+                                      ',address=_debug_port_,suspend=y')
+        self.assertTrue(re.match(expected, result))
+        self.assertTrue(lambda_executors.Util.debug_java_port is not False)
+
+    def test_java_options_with_configured_debug_port(self):
+        expected = '.*transport=dt_socket,server=y,suspend=y,address=1234'
+        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
+                                      ',suspend=y,address=1234')
+        self.assertTrue(re.match(expected, result))
+        self.assertEqual('1234', lambda_executors.Util.debug_java_port)
+
+    def test_java_options_with_configured_debug_port_in_middle(self):
+        expected = '.*transport=dt_socket,server=y,address=1234,suspend=y'
+        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
+                                      ',address=1234,suspend=y')
+        self.assertTrue(re.match(expected, result))
+        self.assertEqual('1234', lambda_executors.Util.debug_java_port)
 
     def prepare_java_opts(self, java_opts):
         lambda_executors.config.LAMBDA_JAVA_OPTS = java_opts
         result = lambda_executors.Util.get_java_opts()
         return result
+
+    def test_get_java_lib_folder_classpath(self):
+        jar_file = os.path.join(new_tmp_dir(), 'foo.jar')
+        save_file(jar_file, '')
+        self.assertEquals('.:foo.jar', lambda_executors.Util.get_java_classpath(jar_file))
+
+    def test_get_java_lib_folder_classpath_no_directories(self):
+        base_dir = new_tmp_dir()
+        jar_file = os.path.join(base_dir, 'foo.jar')
+        save_file(jar_file, '')
+        lib_file = os.path.join(base_dir, 'lib', 'lib.jar')
+        mkdir(os.path.dirname(lib_file))
+        save_file(lib_file, '')
+        self.assertEquals('.:lib/lib.jar:foo.jar', lambda_executors.Util.get_java_classpath(jar_file))
+
+    def test_get_java_lib_folder_classpath_archive_is_None(self):
+        self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
+
+    @mock.patch('localstack.services.awslambda.lambda_executors.store_cloudwatch_logs')
+    def test_executor_store_logs_can_handle_milliseconds(self, mock_store_cloudwatch_logs):
+        mock_details = mock.Mock()
+        t_sec = time.time()  # plain old epoch secs
+        t_ms = time.time() * 1000  # epoch ms as a long-int like AWS
+
+        # pass t_ms millisecs to _store_logs
+        lambda_executors._store_logs(mock_details, 'mock log output', t_ms)
+
+        # expect the computed log-stream-name to having a prefix matching the date derived from t_sec
+        today = datetime.datetime.utcfromtimestamp(t_sec).strftime('%Y/%m/%d')
+        log_stream_name = mock_store_cloudwatch_logs.call_args_list[0].args[1]
+        parts = log_stream_name.split('/')
+        date_part = '/'.join(parts[:3])
+        self.assertEqual(date_part, today)
 
     def _create_function(self, function_name, tags={}):
         arn = lambda_api.func_arn(function_name)
@@ -469,3 +663,62 @@ class TestLambdaAPI(unittest.TestCase):
         lambda_api.arn_to_lambda[arn].last_modified = self.LAST_MODIFIED
         lambda_api.arn_to_lambda[arn].role = self.ROLE
         lambda_api.arn_to_lambda[arn].memory_size = self.MEMORY_SIZE
+
+
+class TestLambdaEventInvokeConfig(unittest.TestCase):
+    CODE_SIZE = 50
+    CODE_SHA_256 = '/u60ZpAA9bzZPVwb8d4390i5oqP1YAObUwV03CZvsWA='
+    MEMORY_SIZE = 128
+    ROLE = LAMBDA_TEST_ROLE
+    LAST_MODIFIED = '2019-05-25T17:00:48.260+0000'
+    REVISION_ID = 'e54dbcf8-e3ef-44ab-9af7-8dbef510608a'
+    HANDLER = 'index.handler'
+    RUNTIME = 'node.js4.3'
+    TIMEOUT = 60
+    FUNCTION_NAME = 'test1'
+    RETRY_ATTEMPTS = 5
+    EVENT_AGE = 360
+    DL_QUEUE = 'arn:aws:sqs:us-east-1:000000000000:dlQueue'
+    LAMBDA_OBJ = LambdaFunction(lambda_api.func_arn('test1'))
+
+    def _create_function(self, function_name, tags={}):
+        self.LAMBDA_OBJ.versions = {
+            '$LATEST': {'CodeSize': self.CODE_SIZE, 'CodeSha256': self.CODE_SHA_256, 'RevisionId': self.REVISION_ID}
+        }
+        self.LAMBDA_OBJ.handler = self.HANDLER
+        self.LAMBDA_OBJ.runtime = self.RUNTIME
+        self.LAMBDA_OBJ.timeout = self.TIMEOUT
+        self.LAMBDA_OBJ.tags = tags
+        self.LAMBDA_OBJ.envvars = {}
+        self.LAMBDA_OBJ.last_modified = self.LAST_MODIFIED
+        self.LAMBDA_OBJ.role = self.ROLE
+        self.LAMBDA_OBJ.memory_size = self.MEMORY_SIZE
+
+    def test_put_function_event_invoke_config(self):
+        # creating a lambda function
+        self._create_function(self.FUNCTION_NAME)
+
+        # calling put_function_event_invoke_config
+        payload = {
+            'DestinationConfig': {
+                'OnFailure': {
+                    'Destination': self.DL_QUEUE
+                }
+            },
+            'MaximumEventAgeInSeconds': self.EVENT_AGE,
+            'MaximumRetryAttempts': self.RETRY_ATTEMPTS
+        }
+        response = self.LAMBDA_OBJ.put_function_event_invoke_config(
+            payload
+        )
+        # checking if response is not None
+        self.assertIsNotNone(response)
+
+        # calling get_function_event_invoke_config
+        response = self.LAMBDA_OBJ.get_function_event_invoke_config()
+
+        # verifying set values
+        self.assertEqual(response['FunctionArn'], self.LAMBDA_OBJ.id)
+        self.assertEqual(response['MaximumRetryAttempts'], self.RETRY_ATTEMPTS)
+        self.assertEqual(response['MaximumEventAgeInSeconds'], self.EVENT_AGE)
+        self.assertEqual(response['DestinationConfig']['OnFailure']['Destination'], self.DL_QUEUE)

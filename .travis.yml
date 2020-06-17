@@ -33,28 +33,26 @@ install:
   - # install under python 3
   - PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
   - make init
-  - make prepare-java-tests-if-changed
-  - nohup docker pull lambci/lambda:nodejs8.10 > /dev/null &
-  - nohup docker pull lambci/lambda:ruby2.5 > /dev/null &
-  - nohup docker pull lambci/lambda:python3.6 > /dev/null &
-  - nohup docker pull lambci/lambda:dotnetcore2.0 > /dev/null &
+  - nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
+  - nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
+  - nohup docker pull lambci/lambda:20191117-python3.6 > /dev/null &
+  - nohup docker pull lambci/lambda:20191117-dotnetcore2.0 > /dev/null &
+  - nohup docker pull lambci/lambda:dotnetcore3.1 > /dev/null &
+  - nohup docker pull lambci/lambda:20191117-provided > /dev/null &
   - nohup docker pull lambci/lambda:java8 > /dev/null &
 
 script:
   - set -e # fail fast
   # run tests using Python 3 (limit the set of tests to reduce test duration)
   - DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-  # run tests using Python 2
-  #   Note: we're not using multiple versions in the top-level "python" configuration,
-  #   but instead reinstall using 2.x here, as that allows us to re-use some cached libs etc.
-  - "make reinstall-p2 > /dev/null"
-  - make init
+  # start pulling Docker base image in the background
+  - nohup docker pull localstack/java-maven-node-python > /dev/null &
   - LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
   # build Docker image
   - make docker-build
-  # run Java tests
-  # TODO: re-enable java tests when fixed!
-  # - make test-java-if-changed; true
+  # extract .coverage details from created image
+  - make docker-cp-coverage
+  - sed -i 's:/opt/code/localstack:/home/travis/build/localstack/localstack:g' .coverage
   # push Docker image (if on master branch)
   - make docker-push-master
 

@@ -1,9 +1,13 @@
+import time
+import logging
 from datetime import datetime
 from flask import Response
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import now_utc
+from localstack.utils.common import now_utc, to_str
 from localstack.utils.analytics import event_publisher
+
+LOG = logging.getLogger(__name__)
 
 
 # ---------------
@@ -49,10 +53,53 @@ def publish_lambda_result(time_before, result, kwargs):
     publish_lambda_metric('Invocations', 1, kwargs)
 
 
+def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_time=None):
+    if not aws_stack.is_service_enabled('logs'):
+        return
+    start_time = start_time or int(time.time() * 1000)
+    logs_client = aws_stack.connect_to_service('logs')
+    log_output = to_str(log_output)
+
+    # make sure that the log group exists
+    log_groups = logs_client.describe_log_groups()['logGroups']
+    log_groups = [lg['logGroupName'] for lg in log_groups]
+    if log_group_name not in log_groups:
+        try:
+            logs_client.create_log_group(logGroupName=log_group_name)
+        except Exception as e:
+            if 'ResourceAlreadyExistsException' in str(e):
+                # this can happen in certain cases, possibly due to a race condition
+                pass
+            else:
+                raise e
+
+    # create a new log stream for this lambda invocation
+    logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=log_stream_name)
+
+    # store new log events under the log stream
+    finish_time = int(time.time() * 1000)
+    log_lines = log_output.split('\n')
+    time_diff_per_line = float(finish_time - start_time) / float(len(log_lines))
+    log_events = []
+    for i, line in enumerate(log_lines):
+        if not line:
+            continue
+        # simple heuristic: assume log lines were emitted in regular intervals
+        log_time = start_time + float(i) * time_diff_per_line
+        event = {'timestamp': int(log_time), 'message': line}
+        log_events.append(event)
+    if not log_events:
+        return
+    logs_client.put_log_events(
+        logGroupName=log_group_name,
+        logStreamName=log_stream_name,
+        logEvents=log_events
+    )
+
+
 # ---------------
 # Helper methods
 # ---------------
-
 
 def _func_name(kwargs):
     func_name = kwargs.get('func_name')
@@ -71,12 +118,16 @@ def publish_result(ns, time_before, result, kwargs):
     if ns == 'lambda':
         publish_lambda_result(time_before, result, kwargs)
         publish_event(time_before, 'success', kwargs)
+    else:
+        LOG.info('Unexpected CloudWatch namespace: %s' % ns)
 
 
 def publish_error(ns, time_before, e, kwargs):
     if ns == 'lambda':
         publish_lambda_error(time_before, kwargs)
         publish_event(time_before, 'error', kwargs)
+    else:
+        LOG.info('Unexpected CloudWatch namespace: %s' % ns)
 
 
 def cloudwatched(ns):

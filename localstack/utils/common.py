@@ -1,6 +1,8 @@
 import io
 import os
 import re
+import pwd
+import grp
 import sys
 import json
 import uuid
@@ -11,6 +13,7 @@ import socket
 import hashlib
 import decimal
 import logging
+import tarfile
 import zipfile
 import binascii
 import calendar
@@ -21,9 +24,10 @@ import six
 import shutil
 import requests
 import dns.resolver
+import functools
 from io import BytesIO
 from contextlib import closing
-from datetime import datetime
+from datetime import datetime, date
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
@@ -48,7 +52,7 @@ mutex_clean = threading.Semaphore(1)
 
 # misc. constants
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
-TIMESTAMP_FORMAT_MILLIS = '%Y-%m-%dT%H:%M:%S.%fZ'
+TIMESTAMP_FORMAT_MICROS = '%Y-%m-%dT%H:%M:%S.%fZ'
 CODEC_HANDLER_UNDERSCORE = 'underscore'
 
 # chunk size for file downloads
@@ -60,6 +64,12 @@ LOG = logging.getLogger(__name__)
 # flag to indicate whether we've received and processed the stop signal
 INFRA_STOPPED = False
 
+# generic cache object
+CACHE = {}
+
+# lock for creating certificate files
+SSL_CERT_LOCK = threading.RLock()
+
 
 class CustomEncoder(json.JSONEncoder):
     """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
@@ -70,7 +80,7 @@ class CustomEncoder(json.JSONEncoder):
                 return float(o)
             else:
                 return int(o)
-        if isinstance(o, datetime):
+        if isinstance(o, (datetime, date)):
             return str(o)
         if isinstance(o, six.binary_type):
             return to_str(o)
@@ -150,6 +160,9 @@ class ShellCommandThread(FuncThread):
         # (Error: libc.musl-x86_64.so.1: cannot open shared object file)
         import psutil
 
+        if getattr(self, 'stopped', False):
+            return
+
         if not self.process:
             LOG.warning("No process found for command '%s'" % self.cmd)
             return
@@ -164,6 +177,7 @@ class ShellCommandThread(FuncThread):
         except Exception:
             if not quiet:
                 LOG.warning('Unable to kill process with pid %s' % parent_pid)
+        self.stopped = True
 
 
 class JsonObject(object):
@@ -191,8 +205,8 @@ class JsonObject(object):
         return result
 
     @classmethod
-    def from_json_list(cls, l):
-        return [cls.from_json(j) for j in l]
+    def from_json_list(cls, json_list):
+        return [cls.from_json(j) for j in json_list]
 
     @classmethod
     def as_dict(cls, obj):
@@ -278,15 +292,38 @@ class CaptureOutput(object):
         return threading.currentThread().ident
 
     def stdout(self):
-        return self._stdout.getvalue() if hasattr(self._stdout, 'getvalue') else self._stdout
+        return self._stream_value(self._stdout)
 
     def stderr(self):
-        return self._stderr.getvalue() if hasattr(self._stderr, 'getvalue') else self._stderr
+        return self._stream_value(self._stderr)
+
+    def _stream_value(self, stream):
+        return stream.getvalue() if hasattr(stream, 'getvalue') else stream
 
 
 # ----------------
 # UTILITY METHODS
 # ----------------
+
+def start_thread(method, *args, **kwargs):
+    thread = FuncThread(method, *args, **kwargs)
+    thread.start()
+    TMP_THREADS.append(thread)
+    return thread
+
+
+def synchronized(lock=None):
+    """
+    Synchronization decorator as described in
+    http://blog.dscpl.com.au/2014/01/the-missing-synchronized-decorator.html.
+    """
+    def _decorator(wrapped):
+        @functools.wraps(wrapped)
+        def _wrapper(*args, **kwargs):
+            with lock:
+                return wrapped(*args, **kwargs)
+        return _wrapper
+    return _decorator
 
 
 def is_string(s, include_unicode=True, exclude_binary=False):
@@ -369,7 +406,7 @@ def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=['t
         return True
     url = '%s://%s:%s%s' % (protocol, host, port, http_path)
     try:
-        response = safe_requests.get(url)
+        response = safe_requests.get(url, verify=False)
         return not expect_success or response.status_code < 400
     except Exception:
         return False
@@ -385,12 +422,21 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
     return retry(check, sleep=sleep_time, retries=retries)
 
 
-def get_free_tcp_port():
-    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp.bind(('', 0))
-    addr, port = tcp.getsockname()
-    tcp.close()
-    return port
+def get_free_tcp_port(blacklist=None):
+    blacklist = blacklist or []
+    for i in range(10):
+        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp.bind(('', 0))
+        addr, port = tcp.getsockname()
+        tcp.close()
+        if port not in blacklist:
+            return port
+    raise Exception('Unable to determine free TCP port with blacklist %s' % blacklist)
+
+
+def sleep_forever():
+    while True:
+        time.sleep(1)
 
 
 def get_service_protocol():
@@ -403,6 +449,12 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
     if isinstance(time, six.integer_types + (float, )):
         time = datetime.fromtimestamp(time)
     return time.strftime(format)
+
+
+def timestamp_millis(time=None):
+    microsecond_time = timestamp(time=time, format=TIMESTAMP_FORMAT_MICROS)
+    # truncating micorseconds to milliseconds. while leaving the Z
+    return microsecond_time[:-4] + microsecond_time[-1]
 
 
 def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
@@ -424,7 +476,7 @@ def dump_thread_info():
     print(run("ps aux | grep 'node\\|java\\|python'"))
 
 
-def merge_recursive(source, destination):
+def merge_recursive(source, destination, none_values=[None]):
     for key, value in source.items():
         if isinstance(value, dict):
             # get node or create one
@@ -434,7 +486,8 @@ def merge_recursive(source, destination):
             if not isinstance(destination, dict):
                 LOG.warning('Destination for merging %s=%s is not dict: %s' %
                     (key, value, destination))
-            destination[key] = value
+            if destination.get(key) in none_values:
+                destination[key] = value
     return destination
 
 
@@ -479,15 +532,18 @@ def obj_to_xml(obj):
     return str(obj)
 
 
-def now_utc():
-    return mktime(datetime.utcnow())
+def now_utc(millis=False):
+    return mktime(datetime.utcnow(), millis=millis)
 
 
-def now():
-    return mktime(datetime.now())
+def now(millis=False):
+    return mktime(datetime.now(), millis=millis)
 
 
-def mktime(timestamp):
+def mktime(timestamp, millis=False):
+    if millis:
+        epoch = datetime.utcfromtimestamp(0)
+        return (timestamp - epoch).total_seconds()
     return calendar.timegm(timestamp.timetuple())
 
 
@@ -512,10 +568,21 @@ def ensure_readable(file_path, default_perms=None):
         os.chmod(file_path, default_perms)
 
 
-def chmod_r(path, mode):
-    """Recursive chmod"""
-    os.chmod(path, mode)
+def chown_r(path, user):
+    """ Recursive chown """
+    uid = pwd.getpwnam(user).pw_uid
+    gid = grp.getgrnam(user).gr_gid
+    os.chown(path, uid, gid)
+    for root, dirs, files in os.walk(path):
+        for dirname in dirs:
+            os.chown(os.path.join(root, dirname), uid, gid)
+        for filename in files:
+            os.chown(os.path.join(root, filename), uid, gid)
 
+
+def chmod_r(path, mode):
+    """ Recursive chmod """
+    os.chmod(path, mode)
     for root, dirnames, filenames in os.walk(path):
         for dirname in dirnames:
             os.chmod(os.path.join(root, dirname), mode)
@@ -529,6 +596,12 @@ def rm_rf(path):
     """
     if not path or not os.path.exists(path):
         return
+    # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
+    if is_alpine():
+        try:
+            return run('rm -rf "%s"' % path)
+        except Exception:
+            pass
     # Make sure all files are writeable and dirs executable to remove
     chmod_r(path, 0o777)
     # check if the file is either a normal file, or, e.g., a fifo
@@ -553,6 +626,10 @@ def download(url, path, verify_ssl=True):
     # enable parallel file downloads during installation!
     s = requests.Session()
     r = s.get(url, stream=True, verify=verify_ssl)
+    # check status code before attempting to read body
+    if r.status_code >= 400:
+        raise Exception('Failed to download %s, response code %s' % (url, r.status_code))
+
     total = 0
     try:
         if not os.path.exists(os.path.dirname(path)):
@@ -568,26 +645,18 @@ def download(url, path, verify_ssl=True):
                     LOG.debug('Empty chunk %s (total %s) from %s' % (chunk, total, url))
             f.flush()
             os.fsync(f)
+        if os.path.getsize(path) == 0:
+            LOG.warning('Zero bytes downloaded from %s, retrying' % url)
+            download(url, path, verify_ssl)
+            return
+        LOG.debug('Done downloading %s, response code %s, total bytes %d' % (url, r.status_code, total))
     finally:
-        LOG.debug('Done downloading %s, response code %s' % (url, r.status_code))
         r.close()
         s.close()
 
 
-def parse_chunked_data(data):
-    """ Parse the body of an HTTP message transmitted with chunked transfer encoding. """
-    data = (data or '').strip()
-    chunks = []
-    while data:
-        length = re.match(r'^([0-9a-zA-Z]+)\r\n.*', data)
-        if not length:
-            break
-        length = length.group(1).lower()
-        length = int(length, 16)
-        data = data.partition('\r\n')[2]
-        chunks.append(data[:length])
-        data = data[length:].strip()
-    return ''.join(chunks)
+def first_char_to_lower(s):
+    return '%s%s' % (s[0].lower(), s[1:])
 
 
 def is_number(s):
@@ -608,16 +677,33 @@ def is_linux():
 
 def is_alpine():
     try:
-        if not os.path.exists('cat /etc/issue'):
-            return False
-        out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
-        return 'Alpine' in out
+        if '_is_alpine_' not in CACHE:
+            CACHE['_is_alpine_'] = False
+            if not os.path.exists('/etc/issue'):
+                return False
+            out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
+            CACHE['_is_alpine_'] = 'Alpine' in out
     except subprocess.CalledProcessError:
         return False
+    return CACHE['_is_alpine_']
+
+
+def get_arch():
+    if is_mac_os():
+        return 'osx'
+    if is_alpine():
+        return 'alpine'
+    if is_linux():
+        return 'linux'
+    raise Exception('Unable to determine system architecture')
 
 
 def short_uid():
     return str(uuid.uuid4())[0:8]
+
+
+def long_uid():
+    return str(uuid.uuid4())
 
 
 def json_safe(item):
@@ -641,6 +727,10 @@ def fix_json_keys(item):
         for k, v in item.items():
             item_copy[to_str(k)] = fix_json_keys(v)
     return item_copy
+
+
+def canonical_json(obj):
+    return json.dumps(obj, sort_keys=True)
 
 
 def save_file(file, content, append=False):
@@ -680,21 +770,38 @@ def cleanup(files=True, env=ENV_DEV, quiet=True):
 
 
 def cleanup_threads_and_processes(quiet=True):
-    for t in TMP_THREADS:
-        t.stop(quiet=quiet)
+    for thread in TMP_THREADS:
+        if thread:
+            try:
+                if hasattr(thread, 'shutdown'):
+                    thread.shutdown()
+                    continue
+                thread.stop(quiet=quiet)
+            except Exception as e:
+                print(e)
     for p in TMP_PROCESSES:
         try:
             p.terminate()
         except Exception as e:
             print(e)
+    # clean up async tasks
+    try:
+        import asyncio
+        for task in asyncio.all_tasks():
+            try:
+                task.cancel()
+            except Exception:
+                pass
+    except Exception:
+        pass
     # clear lists
     clear_list(TMP_THREADS)
     clear_list(TMP_PROCESSES)
 
 
-def clear_list(l):
-    while len(l):
-        del l[0]
+def clear_list(list_obj):
+    while len(list_obj):
+        del list_obj[0]
 
 
 def cleanup_tmp_files():
@@ -734,7 +841,11 @@ def is_zip_file(content):
     return zipfile.is_zipfile(stream)
 
 
-def unzip(path, target_dir):
+def unzip(path, target_dir, overwrite=True):
+    if is_alpine():
+        # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
+        flags = '-o' if overwrite else ''
+        return run('cd %s; unzip %s %s' % (target_dir, flags, path))
     try:
         zip_ref = zipfile.ZipFile(path, 'r')
     except Exception as e:
@@ -742,9 +853,11 @@ def unzip(path, target_dir):
         raise e
     # Make sure to preserve file permissions in the zip file
     # https://www.burgundywall.com/post/preserving-file-perms-with-python-zipfile-module
-    for file_entry in zip_ref.infolist():
-        _unzip_file_entry(zip_ref, file_entry, target_dir)
-    zip_ref.close()
+    try:
+        for file_entry in zip_ref.infolist():
+            _unzip_file_entry(zip_ref, file_entry, target_dir)
+    finally:
+        zip_ref.close()
 
 
 def _unzip_file_entry(zip_ref, file_entry, target_dir):
@@ -755,6 +868,28 @@ def _unzip_file_entry(zip_ref, file_entry, target_dir):
     out_path = os.path.join(target_dir, file_entry.filename)
     perm = file_entry.external_attr >> 16
     os.chmod(out_path, perm or 0o777)
+
+
+def untar(path, target_dir):
+    mode = 'r:gz' if path.endswith('gz') else 'r'
+    with tarfile.open(path, mode) as tar:
+        tar.extractall(path=target_dir)
+
+
+def zip_contains_jar_entries(content, jar_path_prefix=None, match_single_jar=True):
+    try:
+        with tempfile.NamedTemporaryFile() as tf:
+            tf.write(content)
+            tf.flush()
+            with zipfile.ZipFile(tf.name, 'r') as zf:
+                jar_entries = [e for e in zf.infolist() if e.filename.lower().endswith('.jar')]
+                if match_single_jar and len(jar_entries) == 1 and len(zf.infolist()) == 1:
+                    return True
+                matching_prefix = [e for e in jar_entries if
+                    not jar_path_prefix or e.filename.lower().startswith(jar_path_prefix)]
+                return len(matching_prefix) > 0
+    except Exception:
+        return False
 
 
 def is_jar_archive(content):
@@ -784,15 +919,33 @@ def cleanup_resources():
     cleanup_threads_and_processes()
 
 
+@synchronized(lock=SSL_CERT_LOCK)
 def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_content=False, serial_number=None):
     # Note: Do NOT import "OpenSSL" at the root scope
     # (Our test Lambdas are importing this file but don't have the module installed)
     from OpenSSL import crypto
 
+    def all_exist(*files):
+        return all([os.path.exists(f) for f in files])
+
     if target_file and not overwrite and os.path.exists(target_file):
         key_file_name = '%s.key' % target_file
         cert_file_name = '%s.crt' % target_file
-        return target_file, cert_file_name, key_file_name
+        try:
+            # extract key and cert from target_file and store into separate files
+            content = load_file(target_file)
+            key_start = '-----BEGIN PRIVATE KEY-----'
+            key_end = '-----END PRIVATE KEY-----'
+            cert_start = '-----BEGIN CERTIFICATE-----'
+            cert_end = '-----END CERTIFICATE-----'
+            key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
+            cert_content = content[content.index(cert_start): content.index(cert_end) + len(cert_end)]
+            save_file(key_file_name, key_content)
+            save_file(cert_file_name, cert_content)
+        except Exception as e:
+            LOG.info('Unable to store key/cert files for custom SSL certificate: %s' % e)
+        if all_exist(key_file_name, cert_file_name):
+            return target_file, cert_file_name, key_file_name
     if random and target_file:
         if '.' in target_file:
             target_file = target_file.replace('.', '.%s.' % short_uid(), 1)
@@ -801,7 +954,7 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
 
     # create a key pair
     k = crypto.PKey()
-    k.generate_key(crypto.TYPE_RSA, 1024)
+    k.generate_key(crypto.TYPE_RSA, 2048)
 
     # create a self-signed cert
     cert = crypto.X509()
@@ -812,13 +965,23 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     subj.O = 'LocalStack Org'  # noqa
     subj.OU = 'Testing'
     subj.CN = 'localhost'
+    # Note: new requirements for recent OSX versions: https://support.apple.com/en-us/HT210176
+    # More details: https://www.iol.unh.edu/blog/2019/10/10/macos-catalina-and-chrome-trust
     serial_number = serial_number or 1001
+    cert.set_version(2)
     cert.set_serial_number(serial_number)
     cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(10 * 365 * 24 * 60 * 60)
+    cert.gmtime_adj_notAfter(2 * 365 * 24 * 60 * 60)
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(k)
-    cert.sign(k, 'sha1')
+    alt_names = b'DNS:localhost,DNS:test.localhost.atlassian.io,IP:127.0.0.1'
+    cert.add_extensions([
+        crypto.X509Extension(b'subjectAltName', False, alt_names),
+        crypto.X509Extension(b'basicConstraints', True, b'CA:false'),
+        crypto.X509Extension(b'keyUsage', True, b'nonRepudiation,digitalSignature,keyEncipherment'),
+        crypto.X509Extension(b'extendedKeyUsage', True, b'serverAuth')
+    ])
+    cert.sign(k, 'SHA256')
 
     cert_file = StringIO()
     key_file = StringIO()
@@ -832,10 +995,21 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
         cert_file_name = '%s.crt' % target_file
         # check existence to avoid permission denied issues:
         # https://github.com/localstack/localstack/issues/1607
-        if not os.path.exists(target_file):
-            save_file(target_file, file_content)
-            save_file(key_file_name, key_file_content)
-            save_file(cert_file_name, cert_file_content)
+        if not all_exist(target_file, key_file_name, cert_file_name):
+            for i in range(2):
+                try:
+                    save_file(target_file, file_content)
+                    save_file(key_file_name, key_file_content)
+                    save_file(cert_file_name, cert_file_content)
+                    break
+                except Exception as e:
+                    if i > 0:
+                        raise
+                    LOG.info('Unable to store certificate file under %s, using tmp file instead: %s' % (target_file, e))
+                    # Fix for https://github.com/localstack/localstack/issues/1743
+                    target_file = '%s.pem' % new_tmp_file()
+                    key_file_name = '%s.key' % target_file
+                    cert_file_name = '%s.crt' % target_file
             TMP_FILES.append(target_file)
             TMP_FILES.append(key_file_name)
             TMP_FILES.append(cert_file_name)
@@ -886,6 +1060,10 @@ def run(cmd, cache_duration_secs=0, **kwargs):
 
 def clone(item):
     return json.loads(json.dumps(item))
+
+
+def clone_safe(item):
+    return clone(json_safe(item))
 
 
 def remove_non_ascii(text):
@@ -960,7 +1138,7 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN,
 
 
 def truncate(data, max_length=100):
-    return (data[:max_length] + '...') if len(data) > max_length else data
+    return ('%s...' % data[:max_length]) if len(data or '') > max_length else data
 
 
 def parallelize(func, list, size=None):

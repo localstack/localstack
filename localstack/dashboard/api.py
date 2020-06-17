@@ -4,7 +4,7 @@ from flask import Flask, render_template, jsonify, send_from_directory, request
 from flask_swagger import swagger
 from localstack import config
 from localstack.utils import common
-from localstack.services import generic_proxy
+from localstack.services import generic_proxy, plugins
 from localstack.services import infra as services_infra
 from localstack.constants import VERSION, LOCALSTACK_WEB_PROCESS
 from localstack.dashboard import infra
@@ -100,7 +100,17 @@ def get_lambda_code(functionName):
 
 
 @app.route('/health')
-def health():
+def get_health():
+    # TODO: this should be moved into a separate service, once the dashboard UI is removed
+    reload = request.args.get('reload') is not None
+    result = plugins.get_services_health(reload=reload)
+    return jsonify(result)
+
+
+@app.route('/health', methods=['PUT'])
+def put_health():
+    data = get_payload()
+    plugins.set_services_health(data)
     result = {'status': 'OK'}
     return jsonify(result)
 
@@ -134,7 +144,6 @@ def serve(port):
     canonicalize_api_names()
 
     backend_url = 'http://localhost:%s' % port
-    config.USE_SSL = True
-    services_infra.start_proxy(config.PORT_WEB_UI_SSL, backend_url)
+    services_infra.start_proxy(config.PORT_WEB_UI_SSL, backend_url, use_ssl=True)
 
     generic_proxy.serve_flask_app(app=app, port=port, quiet=True)
