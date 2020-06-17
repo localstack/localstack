@@ -247,7 +247,7 @@ def get_resource_for_path(path, path_map):
             if match[0] == path:
                 return match
             pattern_matched = []
-            if test_path_pattern(path, match[0]):
+            if path_matches_pattern(path, match[0]):
                 pattern_matched.append(match)
             if len(pattern_matched) == 1:
                 return pattern_matched[0]
@@ -255,7 +255,7 @@ def get_resource_for_path(path, path_map):
     return matches[0]
 
 
-def test_path_pattern(path, api_path):
+def path_matches_pattern(path, api_path):
     api_paths = api_path.split('/')
     paths = path.split('/')
     reg_check = re.compile(r'\{(.*)\}')
