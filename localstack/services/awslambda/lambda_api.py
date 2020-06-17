@@ -192,7 +192,7 @@ def add_event_source(function_name, source_arn, enabled, batch_size=None):
         'StateTransitionReason': 'User action',
         'LastModified': float(time.mktime(datetime.utcnow().timetuple())),
         'BatchSize': batch_size,
-        'State': 'Enabled' if enabled is True or enabled is None else 'Disabled',
+        'State': 'Enabled' if enabled in [True, None] else 'Disabled',
         'FunctionArn': func_arn(function_name),
         'EventSourceArn': source_arn,
         'LastProcessingResult': 'OK',

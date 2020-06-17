@@ -74,6 +74,8 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                 # set default headers, if required
                 if 'Content-Length' not in response.headers and not is_chunked:
                     response.headers['Content-Length'] = str(len(result_content) if result_content else 0)
+                if 'Connection' not in response.headers:
+                    response.headers['Connection'] = 'close'
         return response
 
     def run_app_sync(*args, loop=None, shutdown_event=None):
@@ -97,7 +99,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                 return loop.run_until_complete(serve(app, config, **run_kwargs))
             except Exception as e:
                 LOG.info('Error running server event loop on port %s: %s %s' % (port, e, traceback.format_exc()))
-                if 'SSLError' in str(e):
+                if 'SSL' in str(e):
                     c_exists = os.path.exists(cert_file_name)
                     k_exists = os.path.exists(key_file_name)
                     c_size = len(load_file(cert_file_name)) if c_exists else 0
