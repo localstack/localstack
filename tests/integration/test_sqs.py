@@ -429,7 +429,9 @@ class SQSTest(unittest.TestCase):
 
         self.assertIn('messageAttributes', sqs_msg)
         self.assertIn('City', sqs_msg['messageAttributes'])
-        self.assertEqual(sqs_msg['messageAttributes']['City'], TEST_MESSAGE_ATTRIBUTES['City'])
+        attr_lower = TEST_MESSAGE_ATTRIBUTES['City']
+        attr_lower = {'dataType': attr_lower['DataType'], 'stringValue': attr_lower['StringValue']}
+        self.assertEqual(sqs_msg['messageAttributes']['City'], attr_lower)
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
