@@ -318,6 +318,58 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         sqs_client.delete_queue(QueueUrl=queue_url_2)
         lambda_client.delete_function(FunctionName=function_name)
 
+    def test_disabled_event_source_mapping_with_dynamodb(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        ddb_table = 'ddb_table-{}'.format(short_uid())
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key='id')['TableDescription']['TableArn']
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        rs = lambda_client.create_event_source_mapping(
+            FunctionName=function_name,
+            EventSourceArn=table_arn
+        )
+        uuid = rs['UUID']
+
+        dynamodb = aws_stack.connect_to_resource('dynamodb')
+        table = dynamodb.Table(ddb_table)
+
+        items = [
+            {'id': short_uid(), 'data': 'data1'},
+            {'id': short_uid(), 'data': 'data2'}
+        ]
+
+        table.put_item(Item=items[0])
+        events = get_lambda_log_events(function_name)
+
+        # lambda was invoked 1 time
+        self.assertEqual(len(events[0]['Records']), 1)
+
+        # disable event source mapping
+        lambda_client.update_event_source_mapping(
+            UUID=uuid,
+            Enabled=False
+        )
+
+        table.put_item(Item=items[1])
+        events = get_lambda_log_events(function_name)
+
+        # lambda no longer invoked, still have 1 event
+        self.assertEqual(len(events[0]['Records']), 1)
+
+        # clean up
+        dynamodb_client = aws_stack.connect_to_service('dynamodb')
+        dynamodb_client.delete_table(TableName=ddb_table)
+
+        lambda_client.delete_function(FunctionName=function_name)
+
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
