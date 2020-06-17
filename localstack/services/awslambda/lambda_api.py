@@ -323,7 +323,8 @@ def process_kinesis_records(records, stream_name):
                 event = {
                     'Records': [
                         {
-                            'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
+                            'eventID': 'shardId-0000000{0}{1}'.format(float(time.time()) * 1000,
+                                                                      rec['sequenceNumber'][:8]),
                             'eventSourceARN': stream_arn,
                             'kinesis': rec
                         }
