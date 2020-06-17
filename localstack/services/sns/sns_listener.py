@@ -275,7 +275,9 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                     subscriber['sqs_queue_url'] = queue_url
 
                 sqs_client.send_message(
-                    QueueUrl=queue_url, MessageBody=req_data['Message'][0], MessageAttributes=sqs_msg_attrs)
+                    QueueUrl=queue_url,
+                    MessageBody=create_sns_message_body(subscriber, req_data),
+                    MessageAttributes=sqs_msg_attrs)
             except Exception as exc:
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
                 if 'NonExistentQueue' in str(exc):

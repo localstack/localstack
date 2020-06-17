@@ -5,7 +5,7 @@ from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
 from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
-from requests.models import Request, Response
+from requests.models import Request
 from localstack import config
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
