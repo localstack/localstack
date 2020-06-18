@@ -255,8 +255,11 @@ def fix_proxy_path_params(path_params):
 
 def message_attributes_to_lower(message_attrs):
     """ Convert message attribute details (first characters) to lower case (e.g., stringValue, dataType). """
+    message_attrs = message_attrs or {}
     for _, attr in message_attrs.items():
-        for key, value in attr.items():
+        if not isinstance(attr, dict):
+            continue
+        for key, value in dict(attr).items():
             attr[first_char_to_lower(key)] = attr.pop(key)
     return message_attrs
 
@@ -361,8 +364,7 @@ def start_lambda_sqs_listener():
 
         records = []
         for msg in messages:
-            message_attrs = msg.get('MessageAttributes', {})
-            message_attrs = message_attributes_to_lower(message_attrs)
+            message_attrs = message_attributes_to_lower(msg.get('MessageAttributes'))
             records.append({
                 'body': msg['Body'],
                 'receiptHandle': msg['ReceiptHandle'],
