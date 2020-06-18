@@ -65,9 +65,6 @@ class ApiGatewayPathsTest(unittest.TestCase):
         result = apigateway_listener.get_resource_for_path('/foo/bar/baz', path_args)
         self.assertEqual(result, None)
 
-        path_args = {'/foo/{param1}/baz': {}, '/{param1}/bar/baz': {}}
-        self.assertRaises(Exception, apigateway_listener.get_resource_for_path('/foo/bar/baz', path_args))
-
 
 class TestVelocityUtil(unittest.TestCase):
 

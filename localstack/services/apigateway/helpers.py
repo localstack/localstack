@@ -246,11 +246,8 @@ def get_resource_for_path(path, path_map):
         for match in matches:
             if match[0] == path:
                 return match
-            pattern_matched = []
             if path_matches_pattern(path, match[0]):
-                pattern_matched.append(match)
-            if len(pattern_matched) == 1:
-                return pattern_matched[0]
+                return match
         raise Exception('Ambiguous API path %s - matches found: %s' % (path, matches))
     return matches[0]
 
