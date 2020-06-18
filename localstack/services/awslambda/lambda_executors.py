@@ -225,6 +225,8 @@ class LambdaExecutorContainers(LambdaExecutor):
         environment['HOSTNAME'] = docker_host
         environment['LOCALSTACK_HOSTNAME'] = docker_host
         environment['_HANDLER'] = handler
+        if os.environ.get('HTTP_PROXY'):
+            environment['HTTP_PROXY'] = os.environ['HTTP_PROXY']
         if func_details.timeout:
             environment['AWS_LAMBDA_FUNCTION_TIMEOUT'] = str(func_details.timeout)
         if context:

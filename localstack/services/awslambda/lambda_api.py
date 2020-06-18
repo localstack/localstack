@@ -40,7 +40,8 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_PROVIDED)
 from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-                                     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid, get_shard_id,
+                                     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid,
+                                     first_char_to_lower, get_shard_id,
                                      timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
@@ -192,7 +193,7 @@ def add_event_source(function_name, source_arn, enabled, batch_size=None):
         'StateTransitionReason': 'User action',
         'LastModified': float(time.mktime(datetime.utcnow().timetuple())),
         'BatchSize': batch_size,
-        'State': 'Enabled' if enabled is True or enabled is None else 'Disabled',
+        'State': 'Enabled' if enabled in [True, None] else 'Disabled',
         'FunctionArn': func_arn(function_name),
         'EventSourceArn': source_arn,
         'LastProcessingResult': 'OK',
@@ -251,6 +252,17 @@ def fix_proxy_path_params(path_params):
         return
     del path_params['proxy+']
     path_params['proxy'] = proxy_path_param_value
+
+
+def message_attributes_to_lower(message_attrs):
+    """ Convert message attribute details (first characters) to lower case (e.g., stringValue, dataType). """
+    message_attrs = message_attrs or {}
+    for _, attr in message_attrs.items():
+        if not isinstance(attr, dict):
+            continue
+        for key, value in dict(attr).items():
+            attr[first_char_to_lower(key)] = attr.pop(key)
+    return message_attrs
 
 
 def process_apigateway_invocation(func_arn, path, payload, stage, api_id, headers={},
@@ -353,6 +365,7 @@ def start_lambda_sqs_listener():
 
         records = []
         for msg in messages:
+            message_attrs = message_attributes_to_lower(msg.get('MessageAttributes'))
             records.append({
                 'body': msg['Body'],
                 'receiptHandle': msg['ReceiptHandle'],
@@ -362,7 +375,7 @@ def start_lambda_sqs_listener():
                 'awsRegion': region,
                 'messageId': msg['MessageId'],
                 'attributes': msg.get('Attributes', {}),
-                'messageAttributes': msg.get('MessageAttributes', {}),
+                'messageAttributes': message_attrs,
                 'md5OfMessageAttributes': msg.get('MD5OfMessageAttributes'),
                 'sqs': True,
             })
