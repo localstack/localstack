@@ -1160,5 +1160,10 @@ def isoformat_milliseconds(t):
         return t.isoformat()[:-3]
 
 
+def get_shard_id(sequence_number):
+    shard_id = 'shardId-0000000{0}{1}'.format(float(time.time()) * 1000, sequence_number)
+    return shard_id
+
+
 # Code that requires util functions from above
 CACHE_FILE_PATTERN = CACHE_FILE_PATTERN.replace('_random_dir_', short_uid())
