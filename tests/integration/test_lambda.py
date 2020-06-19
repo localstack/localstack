@@ -385,6 +385,32 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         lambda_client.delete_function(FunctionName=function_name)
 
+    def test_deletion_event_source_mapping_with_dynamodb(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        ddb_table = 'ddb_table-{}'.format(short_uid())
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        table_arn = aws_stack.create_dynamodb_table(ddb_table, partition_key='id')['TableDescription']['TableArn']
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        lambda_client.create_event_source_mapping(
+            FunctionName=function_name,
+            EventSourceArn=table_arn
+        )
+
+        dynamodb_client = aws_stack.connect_to_service('dynamodb')
+        dynamodb_client.delete_table(TableName=ddb_table)
+
+        result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
+        self.assertEqual(len(result['EventSourceMappings']), 0)
+        # clean up
+        lambda_client.delete_function(FunctionName=function_name)
+
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod

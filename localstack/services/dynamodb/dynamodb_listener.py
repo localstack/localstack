@@ -277,12 +277,13 @@ class ProxyListenerDynamoDB(ProxyListener):
             return
 
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
+            table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn')
             event_publisher.fire_event(
                 event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
                 payload={'n': event_publisher.get_hash(data['TableName'])}
             )
-
-            TABLE_TAGS.pop(json.loads(response._content).get('TableDescription', {}).get('TableArn', None), None)
+            self.delete_all_event_source_mappings(table_arn)
+            TABLE_TAGS.pop(table_arn, None)
 
             return
 
@@ -400,6 +401,13 @@ class ProxyListenerDynamoDB(ProxyListener):
                 new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                 records.append(new_record)
         return records
+
+    def delete_all_event_source_mappings(self, table_arn):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
+        for event in result['EventSourceMappings']:
+            event_source_mapping_id = event['UUID']
+            lambda_client.delete_event_source_mapping(UUID=event_source_mapping_id)
 
     @staticmethod
     def _thread_local(name, default=None):
