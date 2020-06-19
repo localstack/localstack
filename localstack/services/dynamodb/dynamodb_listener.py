@@ -277,7 +277,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             return
 
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
-            table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn', None)
+            table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn')
             event_publisher.fire_event(
                 event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
                 payload={'n': event_publisher.get_hash(data['TableName'])}
