@@ -221,6 +221,22 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         retry(receive_dlq, retries=8, sleep=2)
 
+        # update DLQ config
+        lambda_client.update_function_configuration(FunctionName=lambda_name, DeadLetterConfig={})
+        # invoke Lambda again, assert that status code is 200 and error details contained in the payload
+        result = lambda_client.invoke(FunctionName=lambda_name, Payload=json.dumps(payload))
+        payload = json.loads(to_str(result['Payload'].read()))
+        self.assertEqual(200, result['StatusCode'])
+        self.assertEqual('Unhandled', result['FunctionError'])
+        self.assertEqual('$LATEST', result['ExecutedVersion'])
+        self.assertIn('Test exception', payload['errorMessage'])
+        self.assertEqual('Exception', payload['errorType'])
+        self.assertEqual(list, type(payload['stackTrace']))
+
+        # clean up
+        sqs_client.delete_queue(QueueUrl=queue_url)
+        lambda_client.delete_function(FunctionName=lambda_name)
+
     def test_add_lambda_permission(self):
         iam_client = aws_stack.connect_to_service('iam')
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -313,7 +329,6 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         # clean up
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
         dynamodb_client.delete_table(TableName=ddb_table)
-
         sqs_client.delete_queue(QueueUrl=queue_url_1)
         sqs_client.delete_queue(QueueUrl=queue_url_2)
         lambda_client.delete_function(FunctionName=function_name)

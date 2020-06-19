@@ -40,7 +40,7 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_PROVIDED)
 from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 from localstack.utils.common import (
-    to_str, load_file, save_file, TMP_FILES, ensure_readable, short_uid,
+    to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, json_safe,
     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, first_char_to_lower,
     timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
@@ -69,6 +69,8 @@ LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
 
 INVALID_PARAMETER_VALUE_EXCEPTION = 'InvalidParameterValueException'
+
+VERSION_LATEST = '$LATEST'
 
 BATCH_SIZE_RANGES = {
     'kinesis': (100, 10000),
@@ -181,7 +183,7 @@ def check_batch_size_range(source_arn, batch_size=None):
 
 def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     arn = func_arn(lambda_name)
-    arn_to_lambda[arn].versions.get('$LATEST')['Function'] = lambda_handler
+    arn_to_lambda[arn].versions.get(VERSION_LATEST)['Function'] = lambda_handler
     arn_to_lambda[arn].cwd = lambda_cwd
 
 
@@ -483,9 +485,9 @@ def publish_new_function_version(arn):
     versions = func_details.versions
     last_version = func_details.max_version()
     versions[str(last_version + 1)] = {
-        'CodeSize': versions.get('$LATEST').get('CodeSize'),
-        'CodeSha256': versions.get('$LATEST').get('CodeSha256'),
-        'Function': versions.get('$LATEST').get('Function'),
+        'CodeSize': versions.get(VERSION_LATEST).get('CodeSize'),
+        'CodeSha256': versions.get(VERSION_LATEST).get('CodeSha256'),
+        'Function': versions.get(VERSION_LATEST).get('Function'),
         'RevisionId': str(uuid.uuid4())
     }
     return get_function_version(arn, str(last_version + 1))
@@ -525,7 +527,14 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
             version=version, asynchronous=asynchronous, callback=callback)
     except Exception as e:
-        return error_response('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        response = {
+            'errorType': str(exc_type.__name__),
+            'errorMessage': str(e),
+            'stackTrace': traceback.format_tb(exc_traceback)
+        }
+        LOG.info('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
+        return Response(json.dumps(response), status=500)
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -681,8 +690,9 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
 
     # Save the zip file to a temporary file that the lambda executors can reference
     code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
-    lambda_details.get_version('$LATEST')['CodeSize'] = len(zip_file_content)
-    lambda_details.get_version('$LATEST')['CodeSha256'] = code_sha_256.decode('utf-8')
+    latest_version = lambda_details.get_version(VERSION_LATEST)
+    latest_version['CodeSize'] = len(zip_file_content)
+    latest_version['CodeSha256'] = code_sha_256.decode('utf-8')
     tmp_dir = '%s/zipfile.%s' % (config.TMP_FOLDER, short_uid())
     mkdir(tmp_dir)
     tmp_file = '%s/%s' % (tmp_dir, LAMBDA_ZIP_FILE_NAME)
@@ -804,7 +814,7 @@ def do_list_functions():
 
 
 def format_func_details(func_details, version=None, always_add_version=False):
-    version = version or '$LATEST'
+    version = version or VERSION_LATEST
     func_version = func_details.get_version(version)
     result = {
         'CodeSha256': func_version.get('CodeSha256'),
@@ -833,7 +843,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
         result['Environment'] = {
             'Variables': func_details.envvars
         }
-    if (always_add_version or version != '$LATEST') and len(result['FunctionArn'].split(':')) <= 7:
+    if (always_add_version or version != VERSION_LATEST) and len(result['FunctionArn'].split(':')) <= 7:
         result['FunctionArn'] += ':%s' % version
     return result
 
@@ -927,7 +937,7 @@ def create_function():
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
         arn_to_lambda[arn] = func_details = LambdaFunction(arn)
-        func_details.versions = {'$LATEST': {'RevisionId': str(uuid.uuid4())}}
+        func_details.versions = {VERSION_LATEST: {'RevisionId': str(uuid.uuid4())}}
         func_details.vpc_config = data.get('VpcConfig', {})
         func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
         func_details.description = data.get('Description', '')
@@ -1203,15 +1213,17 @@ def invoke_function(function):
     invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
 
     def _create_response(result, status_code=200, headers={}):
-        """ Create the final response for the given invocation result """
-        if isinstance(result, Response):
-            return result
+        """ Create the final response for the given invocation result. """
         details = {
             'StatusCode': status_code,
             'Payload': result,
             'Headers': headers
         }
-        if isinstance(result, dict):
+        if isinstance(result, Response):
+            details['Payload'] = to_str(result.data)
+            if result.status_code >= 400:
+                details['FunctionError'] = 'Unhandled'
+        elif isinstance(result, dict):
             for key in ('StatusCode', 'Payload', 'FunctionError'):
                 if result.get(key):
                     details[key] = result[key]
@@ -1227,9 +1239,12 @@ def invoke_function(function):
         # Set error headers
         if details.get('FunctionError'):
             details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
+        details['Headers']['X-Amz-Log-Result'] = base64.b64encode(to_bytes(''))  # TODO add logs!
+        details['Headers']['X-Amz-Executed-Version'] = str(qualifier or VERSION_LATEST)
         # Construct response object
         response_obj = details['Payload']
         if was_json or isinstance(response_obj, JSON_START_TYPES):
+            response_obj = json_safe(response_obj)
             response_obj = jsonify(response_obj)
             details['Headers']['Content-Type'] = 'application/json'
         else:
