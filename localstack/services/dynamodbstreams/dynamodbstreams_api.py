@@ -1,11 +1,8 @@
 import json
-import uuid
-import hashlib
-import six
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, to_bytes
+from localstack.utils.common import to_str, now_utc
 from localstack.utils.analytics import event_publisher
 
 APP_NAME = 'ddb_streams_api'
@@ -138,15 +135,12 @@ def stream_name_from_stream_arn(stream_arn):
     return get_kinesis_stream_name(table_name)
 
 
-def random_id(stream_arn, kinesis_shard_id):
-    namespace = uuid.UUID(bytes=hashlib.sha1(to_bytes(stream_arn)).digest()[:16])
-    if six.PY2:
-        kinesis_shard_id = to_bytes(kinesis_shard_id, 'utf-8')
-    return uuid.uuid5(namespace, kinesis_shard_id).hex
-
-
 def shard_id(stream_arn, kinesis_shard_id):
-    return '-'.join([kinesis_shard_id, random_id(stream_arn, kinesis_shard_id)])
+    timestamp = str(now_utc())
+    timestamp = '%s00000000' % timestamp[:-5]
+    timestamp = '%s%s' % ('0' * (20 - len(timestamp)), timestamp)
+    suffix = kinesis_shard_id.replace('shardId-', '')[:32]
+    return 'shardId-%s-%s' % (timestamp, suffix)
 
 
 def kinesis_shard_id(dynamodbstream_shard_id):

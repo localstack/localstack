@@ -102,6 +102,8 @@ def get_api_from_headers(headers, path=None):
         result = 's3', config.PORT_S3
     elif result[0] == 'states' in auth_header or host.startswith('states.'):
         result = 'stepfunctions', config.PORT_STEPFUNCTIONS
+    elif result[0] == 'monitoring':
+        result = 'cloudwatch', config.PORT_CLOUDWATCH
     elif '.execute-api.' in host:
         result = 'apigateway', config.PORT_APIGATEWAY
     elif target.startswith('DynamoDBStreams') or host.startswith('streams.dynamodb.'):

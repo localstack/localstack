@@ -52,12 +52,15 @@ class SQSTest(unittest.TestCase):
         cls.client = aws_stack.connect_to_service('sqs')
 
     def test_list_queue_tags(self):
-        # Since this API call is not implemented in ElasticMQ, we're
-        # mocking it and letting it return an empty response
         queue_info = self.client.create_queue(QueueName=TEST_QUEUE_NAME)
         queue_url = queue_info['QueueUrl']
-        result = self.client.list_queue_tags(QueueUrl=queue_url)
 
+        # list queues with name prefix
+        result = self.client.list_queues(QueueNamePrefix=TEST_QUEUE_NAME[0:-2])
+        self.assertIn('QueueUrls', result)
+        self.assertEqual(1, len(result.get('QueueUrls')))
+
+        result = self.client.list_queue_tags(QueueUrl=queue_url)
         # Apparently, if there are no tags, then `Tags` should NOT appear in the response.
         self.assertNotIn('Tags', result)
 
