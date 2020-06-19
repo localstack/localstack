@@ -246,8 +246,23 @@ def get_resource_for_path(path, path_map):
         for match in matches:
             if match[0] == path:
                 return match
+            if path_matches_pattern(path, match[0]):
+                return match
         raise Exception('Ambiguous API path %s - matches found: %s' % (path, matches))
     return matches[0]
+
+
+def path_matches_pattern(path, api_path):
+    api_paths = api_path.split('/')
+    paths = path.split('/')
+    reg_check = re.compile(r'\{(.*)\}')
+    results = []
+    if len(api_paths) != len(paths):
+        return False
+    for indx, part in enumerate(api_paths):
+        if reg_check.match(part) is None and part:
+            results.append(part == paths[indx])
+    return len(results) > 0 and all(results)
 
 
 def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region_name=None):

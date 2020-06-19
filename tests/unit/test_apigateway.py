@@ -41,6 +41,30 @@ class ApiGatewayPathsTest(unittest.TestCase):
         result = apigateway_listener.get_resource_for_path('/foo/bar', {'/{param1}/bar1': {}, '/foo/bar2': {}})
         self.assertEqual(result, None)
 
+        path_args = {'/{param1}/{param2}/foo/{param3}': {}, '/{param}/bar': {}}
+        path, details = apigateway_listener.get_resource_for_path('/foo/bar', path_args)
+        self.assertEqual(path, '/{param}/bar')
+
+        path_args = {'/{param1}/{param2}': {}, '/{param}/bar': {}}
+        path, details = apigateway_listener.get_resource_for_path('/foo/bar', path_args)
+        self.assertEqual(path, '/{param}/bar')
+
+        path_args = {'/{param1}/{param2}': {}, '/{param1}/bar': {}}
+        path, details = apigateway_listener.get_resource_for_path('/foo/baz', path_args)
+        self.assertEqual(path, '/{param1}/{param2}')
+
+        path_args = {'/{param1}/{param2}/baz': {}, '/{param1}/bar/{param2}': {}}
+        path, details = apigateway_listener.get_resource_for_path('/foo/bar/baz', path_args)
+        self.assertEqual(path, '/{param1}/{param2}/baz')
+
+        path_args = {'/{param1}/{param2}/baz': {}, '/{param1}/{param2}/{param2}': {}}
+        path, details = apigateway_listener.get_resource_for_path('/foo/bar/baz', path_args)
+        self.assertEqual(path, '/{param1}/{param2}/baz')
+
+        path_args = {'/foo123/{param1}/baz': {}}
+        result = apigateway_listener.get_resource_for_path('/foo/bar/baz', path_args)
+        self.assertEqual(result, None)
+
 
 class TestVelocityUtil(unittest.TestCase):
 
