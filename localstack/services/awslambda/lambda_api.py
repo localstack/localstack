@@ -39,10 +39,10 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_RUBY25,
     LAMBDA_RUNTIME_PROVIDED)
 from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
-from localstack.utils.common import (to_str, load_file, save_file, TMP_FILES, ensure_readable,
-                                     mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, short_uid,
-                                     first_char_to_lower, get_shard_id,
-                                     timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds)
+from localstack.utils.common import (
+    to_str, load_file, save_file, TMP_FILES, ensure_readable, short_uid,
+    mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, first_char_to_lower,
+    timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
 from localstack.utils.aws.aws_models import LambdaFunction
@@ -335,7 +335,7 @@ def process_kinesis_records(records, stream_name):
                 event = {
                     'Records': [
                         {
-                            'eventID': get_shard_id(rec['sequenceNumber'][:8]),
+                            'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
                             'eventSourceARN': stream_arn,
                             'kinesis': rec
                         }

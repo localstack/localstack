@@ -453,7 +453,7 @@ def timestamp(time=None, format=TIMESTAMP_FORMAT):
 
 def timestamp_millis(time=None):
     microsecond_time = timestamp(time=time, format=TIMESTAMP_FORMAT_MICROS)
-    # truncating micorseconds to milliseconds. while leaving the Z
+    # truncating microseconds to milliseconds, while leaving the "Z" indicator
     return microsecond_time[:-4] + microsecond_time[-1]
 
 
@@ -1158,11 +1158,6 @@ def isoformat_milliseconds(t):
         return t.isoformat(timespec='milliseconds')
     except TypeError:
         return t.isoformat()[:-3]
-
-
-def get_shard_id(sequence_number):
-    shard_id = 'shardId-0000000{0}{1}'.format(float(time.time()) * 1000, sequence_number)
-    return shard_id
 
 
 # Code that requires util functions from above

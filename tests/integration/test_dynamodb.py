@@ -183,7 +183,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
 
         delete_table(table_name)
 
-    def test_region_replacement(self):
+    def test_stream_spec_and_region_replacement(self):
         aws_stack.create_dynamodb_table(
             TEST_DDB_TABLE_NAME_4,
             partition_key=PARTITION_KEY,
@@ -192,10 +192,17 @@ class DynamoDBIntegrationTest (unittest.TestCase):
 
         table = self.dynamodb.Table(TEST_DDB_TABLE_NAME_4)
 
+        # assert ARN formats
         expected_arn_prefix = 'arn:aws:dynamodb:' + aws_stack.get_local_region()
-
         self.assertTrue(table.table_arn.startswith(expected_arn_prefix))
         self.assertTrue(table.latest_stream_arn.startswith(expected_arn_prefix))
+
+        # assert shard ID formats
+        ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
+        result = ddbstreams.describe_stream(StreamArn=table.latest_stream_arn)['StreamDescription']
+        self.assertIn('Shards', result)
+        for shard in result['Shards']:
+            self.assertRegex(shard['ShardId'], r'^shardId\-[0-9]{20}\-[a-zA-Z0-9]{1,36}$')
 
         # clean up
         delete_table(TEST_DDB_TABLE_NAME_4)
