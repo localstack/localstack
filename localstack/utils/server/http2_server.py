@@ -105,7 +105,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                     c_size = len(load_file(cert_file_name)) if c_exists else 0
                     k_size = len(load_file(key_file_name)) if k_exists else 0
                     LOG.warning('Unable to create SSL context. Cert files exist: %s %s (%sB), %s %s (%sB)' %
-                        (cert_file_name, c_exists, c_size, key_file_name, k_exists, k_size))
+                                (cert_file_name, c_exists, c_size, key_file_name, k_exists, k_size))
                 raise
         finally:
             try:

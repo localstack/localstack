@@ -276,7 +276,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 'httpMethod': method,
                 'protocol': 'HTTP/1.1',
                 'requestTime': datetime.datetime.utcnow(),
-                'requestTimeEpoch': time.time() * 1000,
+                'requestTimeEpoch': int(time.time() * 1000),
             }
 
             try:
