@@ -493,7 +493,8 @@ def fix_metadata_key_underscores(request_headers={}, response=None):
 def fix_creation_date(method, path, response):
     if method != 'GET' or path != '/':
         return
-    response._content = re.sub(r'(\.[0-9]+)</CreationDate>', r'\1Z</CreationDate>', to_str(response._content))
+    response._content = re.sub(r'(\.[0-9]+)(\+00:00)?</CreationDate>',
+        r'\1Z</CreationDate>', to_str(response._content))
 
 
 def convert_to_chunked_encoding(method, path, response):
