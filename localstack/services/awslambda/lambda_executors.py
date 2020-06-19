@@ -14,7 +14,7 @@ except ImportError:
     from pipes import quote as cmd_quote  # for Python 2.7
 from localstack import config
 from localstack.utils.common import (
-    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file,
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
@@ -44,8 +44,6 @@ LAMBDA_RUNTIME_GOLANG = 'go1.x'
 LAMBDA_RUNTIME_RUBY = 'ruby'
 LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
 LAMBDA_RUNTIME_PROVIDED = 'provided'
-
-LAMBDA_EVENT_FILE = 'event_file.json'
 
 LAMBDA_SERVER_UNIQUE_PORTS = 500
 LAMBDA_SERVER_PORT_OFFSET = 5000
@@ -236,6 +234,7 @@ class LambdaExecutorContainers(LambdaExecutor):
 
         # custom command to execute in the container
         command = ''
+        events_file = ''
 
         # if running a Java Lambda, set up classpath arguments
         if is_java_lambda(runtime):
@@ -247,10 +246,11 @@ class LambdaExecutorContainers(LambdaExecutor):
                 cp_r(LAMBDA_EXECUTOR_JAR, target_file)
             # TODO cleanup once we have custom Java Docker image
             taskdir = '/var/task'
-            save_file(os.path.join(lambda_cwd, LAMBDA_EVENT_FILE), event_body)
+            events_file = '_lambda.events.%s.json' % short_uid()
+            save_file(os.path.join(lambda_cwd, events_file), event_body)
             classpath = Util.get_java_classpath(target_file)
             command = ("bash -c 'cd %s; java %s -cp \"%s\" \"%s\" \"%s\" \"%s\"'" %
-                (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
+                (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, events_file))
 
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
@@ -262,6 +262,9 @@ class LambdaExecutorContainers(LambdaExecutor):
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.info('Running lambda cmd: %s' % cmd)
         result = self.run_lambda_executor(cmd, stdin, env_vars=environment, func_details=func_details)
+
+        # clean up events file
+        events_file and os.path.exists(events_file) and rm_rf(events_file)
 
         return result
 
@@ -305,13 +308,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         # determine files to be copied into the container
         copy_command = ''
         docker_cmd = self._docker_cmd()
-        event_file = os.path.join(lambda_cwd, LAMBDA_EVENT_FILE)
         if not has_been_invoked_before and config.LAMBDA_REMOTE_DOCKER:
             # if this is the first invocation: copy the entire folder into the container
             copy_command = '%s cp "%s/." "%s:/var/task";' % (docker_cmd, lambda_cwd, container_info.name)
-        elif os.path.exists(event_file):
-            # otherwise, copy only the event file if it exists
-            copy_command = '%s cp "%s" "%s:/var/task";' % (docker_cmd, event_file, container_info.name)
 
         cmd = (
             '%s'
