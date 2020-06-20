@@ -4,7 +4,7 @@ import logging
 import traceback
 import requests
 from localstack import config
-from localstack.utils.common import get_service_protocol
+from localstack.utils.common import get_service_protocol, clone
 from localstack.utils.bootstrap import canonicalize_api_names
 
 # set up logger
@@ -70,7 +70,9 @@ def register_plugin(plugin):
 def get_services_health(reload=False):
     if reload:
         reload_services_health()
-    return dict(STATUSES)
+    result = clone(dict(STATUSES))
+    result.get('services', {}).pop('edge', None)
+    return result
 
 
 def set_services_health(data):

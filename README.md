@@ -73,6 +73,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Glacier** / **S3 Select**
 * **IoT**
 * **Lambda Layers**
+* **MediaStore**
 * **QLDB**
 * **RDS**
 * **Transfer**
@@ -419,8 +420,9 @@ with the `--user` flag: `pip install --user localstack`
 
 * If you are deploying within OpenShift, please be aware: the pod must run as `root`, and the user must have capabilities added to the running pod, in order to allow Elasticsearch to be run as the non-root `localstack` user.
 
-* The environment variable `no_proxy` is rewritten by LocalStack.
-(Internal requests will go straight via localhost, bypassing any proxy configuration).
+* If you are experiencing slow performance with Lambdas in Mac OS, you could either (1) try [mounting local code directly into the Lambda container](https://github.com/localstack/localstack#using-local-code-with-lambda), or (2) disable mounting the temporary directory into the LocalStack container in docker-compose. (See also https://github.com/localstack/localstack/issues/2515)
+
+* The environment variable `no_proxy` is rewritten by LocalStack. (Internal requests will go straight via localhost, bypassing any proxy configuration).
 
 * For troubleshooting LocalStack start issues, you can check debug logs by running `DEBUG=1 localstack start`
 

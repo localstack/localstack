@@ -715,13 +715,13 @@ def bucket_exists(bucket_name):
 
 def check_content_md5(data, headers):
     actual = md5(strip_chunk_signatures(data))
-    expected = headers['Content-MD5']
     try:
-        expected = to_str(codecs.encode(base64.b64decode(expected), 'hex'))
+        expected = to_str(codecs.encode(base64.b64decode(headers['Content-MD5']), 'hex'))
     except Exception:
-        expected = '__invalid__'
+        return error_response('The Content-MD5 you specified is not valid.', 'InvalidDigest', status_code=400)
     if actual != expected:
-        return error_response('The Content-MD5 you specified was invalid', 'InvalidDigest', status_code=400)
+        return error_response('The Content-MD5 you specified did not match what we received.',
+            'BadDigest', status_code=400)
 
 
 def error_response(message, code, status_code=400):
