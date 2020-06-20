@@ -627,10 +627,7 @@ class SNSTest(unittest.TestCase):
 
         r = requests.post(
             url='{}/?{}'.format(base_url, path),
-            headers={
-                'Authorization': 'AWS4-HMAC-SHA256 Credential=test-id/20200609/us-east-1/sns/aws4_request, '
-                                 'SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=fer'
-            }
+            headers=aws_stack.mock_aws_request_headers('sns')
         )
         self.assertEqual(r.status_code, 200)
 
