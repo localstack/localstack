@@ -2,7 +2,7 @@ import os
 import json
 import time
 import unittest
-from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry, short_uid, to_str
 from localstack.utils.cloudformation import template_deployer
@@ -183,7 +183,7 @@ Resources:
             - !If [ FeatureBranch, !Ref "gitBranch", !Ref "AWS::NoValue" ]
             - 'MessageFooHandler'
             - !FindInMap [ AccountInfo, !Ref "AWS::AccountId", ENV ]
-""" % MOTO_ACCOUNT_ID
+""" % TEST_AWS_ACCOUNT_ID
 
 TEST_TEMPLATE_10 = """
 AWSTemplateFormatVersion: 2010-09-09
@@ -375,7 +375,7 @@ Resources:
           }
         - {}
   ScheduledRule:
-    Type: 'AWS::Events::Rule'
+    Type: AWS::Events::Rule
     Properties:
       ScheduleExpression: "cron(0/1 * * * ? *)"
       State: ENABLED
@@ -407,6 +407,30 @@ Resources:
       Type: String
       Value: !If [ IsProd, example.com, !Join [ '-', [ !Ref EnvironmentType, example.com ] ] ]
 """
+
+TEST_TEMPLATE_19 = """
+Conditions:
+  IsPRD:
+    Fn::Equals:
+    - !Ref AWS::AccountId
+    - xxxxxxxxxxxxxx
+  IsDEV:
+    Fn::Equals:
+    - !Ref AWS::AccountId
+    - "%s"
+
+Resources:
+  TestBucketDev:
+    Type: AWS::S3::Bucket
+    Condition: IsDEV
+    Properties:
+      BucketName: cf-dev-{id}
+  TestBucketProd:
+    Type: AWS::S3::Bucket
+    Condition: IsPRD
+    Properties:
+      BucketName: cf-prd-{id}
+""" % TEST_AWS_ACCOUNT_ID
 
 
 def bucket_exists(name):
@@ -993,23 +1017,38 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(rs['Roles']), 0)
 
     def test_cfn_handle_iam_role_resource_no_role_name(self):
+        cfn = aws_stack.connect_to_service('cloudformation')
+        iam = aws_stack.connect_to_service('iam')
+
         stack_name = 'stack-%s' % short_uid()
         role_path_prefix = '/role-prefix-%s/' % short_uid()
 
         _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_14 % role_path_prefix)
 
-        cfn = aws_stack.connect_to_service('cloudformation')
-        iam = aws_stack.connect_to_service('iam')
-
         rs = iam.list_roles(PathPrefix=role_path_prefix)
-
         self.assertEqual(len(rs['Roles']), 1)
 
         cfn.delete_stack(StackName=stack_name)
 
         rs = iam.list_roles(PathPrefix=role_path_prefix)
-
         self.assertEqual(len(rs['Roles']), 0)
+
+    def test_cfn_conditional_deployment(self):
+        s3 = aws_stack.connect_to_service('s3')
+
+        bucket_id = short_uid()
+        template = TEST_TEMPLATE_19.format(id=bucket_id)
+        stack_name = 'stack-%s' % short_uid()
+        _deploy_stack(stack_name=stack_name, template_body=template)
+
+        buckets = s3.list_buckets()['Buckets']
+        dev_bucket = 'cf-dev-%s' % bucket_id
+        prd_bucket = 'cf-prd-%s' % bucket_id
+        dev_bucket = [b for b in buckets if b['Name'] == dev_bucket]
+        prd_bucket = [b for b in buckets if b['Name'] == prd_bucket]
+
+        self.assertFalse(prd_bucket)
+        self.assertTrue(dev_bucket)
 
     def test_cfn_handle_sqs_resource(self):
         stack_name = 'stack-%s' % short_uid()

@@ -189,6 +189,9 @@ def apply_patches():
     # add model mappings to moto
     parsing.MODEL_MAP.update(MODEL_MAP)
 
+    # fix account ID
+    parsing.ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
+
     # Patch clean_json in moto
     def clean_json(resource_json, resources_map):
         result = clean_json_orig(resource_json, resources_map)
@@ -276,6 +279,9 @@ def apply_patches():
                 resource = parse_and_create_resource_orig(
                     logical_id, resource_json_arns_fixed, resources_map, region_name
                 )
+                if not resource:
+                    # this can happen if the resource has an associated Condition which evaluates to false
+                    return resource
                 resource.logical_id = logical_id
             except Exception as e:
                 moto_create_error = e
