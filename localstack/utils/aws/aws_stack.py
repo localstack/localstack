@@ -567,8 +567,9 @@ def mock_aws_request_headers(service='dynamodb', region_name=None):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == 'kinesis':
         ctype = APPLICATION_AMZ_JSON_1_1
-    elif service == 'sqs':
+    elif service in ['sns', 'sqs']:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
+
     access_key = get_boto3_credentials().access_key
     region_name = region_name or get_region()
     headers = {

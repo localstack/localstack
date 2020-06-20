@@ -48,9 +48,15 @@ class ProxyListenerSNS(PersistingProxyListener):
         except Exception as e:
             return make_error(message=str(e), code=400)
 
-        if method == 'POST' and path == '/':
+        if method == 'POST':
             # parse payload and extract fields
             req_data = urlparse.parse_qs(to_str(data), keep_blank_values=True)
+
+            # parse data from query path
+            if not req_data:
+                parsed_path = urlparse.urlparse(path)
+                req_data = urlparse.parse_qs(parsed_path.query, keep_blank_values=True)
+
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn') or req_data.get('ResourceArn')
 

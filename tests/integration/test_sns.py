@@ -2,9 +2,12 @@
 
 import json
 import os
+import requests
 import time
 import unittest
 from botocore.exceptions import ClientError
+from localstack import config
+
 from localstack.config import external_service_url
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -494,9 +497,9 @@ class SNSTest(unittest.TestCase):
 
     def test_create_topic_test_arn(self):
         response = self.sns_client.create_topic(Name=TEST_TOPIC_NAME)
-        topicArnParams = response['TopicArn'].split(':')
-        self.assertEqual(topicArnParams[4], TEST_AWS_ACCOUNT_ID)
-        self.assertEqual(topicArnParams[5], TEST_TOPIC_NAME)
+        topic_arn_params = response['TopicArn'].split(':')
+        self.assertEqual(topic_arn_params[4], TEST_AWS_ACCOUNT_ID)
+        self.assertEqual(topic_arn_params[5], TEST_TOPIC_NAME)
 
     def test_publish_message_by_target_arn(self):
         self.unsubscribe_all_from_sns()
@@ -606,6 +609,39 @@ class SNSTest(unittest.TestCase):
 
         # clean up
         self.sns_client.delete_topic(TopicArn=topic_arn)
+
+    def test_publish_by_path_parameters(self):
+        topic_name = 'topic-{}'.format(short_uid())
+        queue_name = 'queue-{}'.format(short_uid())
+
+        message = 'test message {}'.format(short_uid())
+        topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
+
+        base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SNS)
+        path = 'Action=Publish&Version=2010-03-31&TopicArn={}&Message={}'.format(topic_arn, message)
+
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_arn)
+
+        r = requests.post(
+            url='{}/?{}'.format(base_url, path),
+            headers=aws_stack.mock_aws_request_headers('sns')
+        )
+        self.assertEqual(r.status_code, 200)
+
+        def get_notification(q_url):
+            resp = self.sqs_client.receive_message(QueueUrl=q_url)
+            return json.loads(resp['Messages'][0]['Body'])
+
+        notification = retry(get_notification, retries=3, sleep=2, q_url=queue_url)
+        self.assertEqual(notification['TopicArn'], topic_arn)
+        self.assertEqual(notification['Message'], message)
+
+        # clean up
+        self.sns_client.delete_topic(TopicArn=topic_arn)
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
 
     def _create_queue(self):
         queue_name = 'queue-%s' % short_uid()
