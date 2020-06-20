@@ -5,13 +5,16 @@ from localstack import config
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port
-from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run
+from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run, start_moto_server
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq
 
 LOG = logging.getLogger(__name__)
 
 # backend port (configured at startup)
 PORT_SQS_BACKEND = None
+
+# backend implementation - either "moto" or "elasticmq"
+BACKEND_IMPL = 'moto'
 
 # max heap size allocated for the Java process
 MAX_HEAP_SIZE = '256m'
@@ -33,7 +36,22 @@ def check_sqs(expect_shutdown=False, print_error=False):
         assert out.get('ResponseMetadata', {}).get('HTTPStatusCode') == 200
 
 
-def start_sqs(port=None, asynchronous=False, update_listener=None):
+def start_sqs(*args, **kwargs):
+    if BACKEND_IMPL == 'moto':
+        return start_sqs_moto(*args, **kwargs)
+    return start_sqs_elasticmq(*args, **kwargs)
+
+
+def start_sqs_moto(port=None, asynchronous=False, update_listener=None):
+    global PORT_SQS_BACKEND
+
+    port = port or config.PORT_SQS
+    PORT_SQS_BACKEND = get_free_tcp_port()
+    return start_moto_server('sqs', port, backend_port=PORT_SQS_BACKEND, name='SQS',
+        asynchronous=asynchronous, update_listener=update_listener)
+
+
+def start_sqs_elasticmq(port=None, asynchronous=False, update_listener=None):
     global PORT_SQS_BACKEND
 
     port = port or config.PORT_SQS
