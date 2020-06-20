@@ -6,7 +6,7 @@ from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.parse import urlencode
 from requests.models import Request
-from localstack import config
+from localstack import config, constants
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
 from localstack.services.sns import sns_listener
@@ -281,6 +281,10 @@ class ProxyListenerSQS(PersistingProxyListener):
             external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
             content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
                                  r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port),
+                                 content_str)
+            # encode account ID in queue URL
+            content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://([^/]+)/queue/([^<]*)\s*</QueueUrl>',
+                                 r'<QueueUrl>\1://\2/%s/\3</QueueUrl>' % constants.TEST_AWS_ACCOUNT_ID,
                                  content_str)
             # fix queue ARN
             content_str = re.sub(r'<([a-zA-Z0-9]+)>\s*arn:aws:sqs:elasticmq:([^<]+)</([a-zA-Z0-9]+)>',

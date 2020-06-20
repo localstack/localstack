@@ -4,7 +4,7 @@ import sys
 import json
 import logging
 from requests.models import Response
-from localstack import config
+from localstack import config, constants
 from localstack.constants import HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER
 from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate
 from localstack.utils.common import safe_requests as requests
@@ -133,7 +133,7 @@ def get_port_from_custom_rules(method, path, data, headers):
         return config.PORT_S3
 
     # heuristic for SQS queue URLs
-    if re.match(r'^/queue/[a-zA-Z0-9_-]+$', path):
+    if re.match(r'^/(queue|%s)/[a-zA-Z0-9_-]+$' % constants.TEST_AWS_ACCOUNT_ID, path):
         return config.PORT_SQS
 
     data_bytes = to_bytes(data or '')
