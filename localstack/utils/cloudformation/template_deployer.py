@@ -6,11 +6,12 @@ import logging
 import traceback
 import moto.cloudformation.utils
 from six import iteritems
-from localstack.services.s3 import s3_listener
-from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
+from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.services.s3 import s3_listener
 from localstack.utils.testutil import create_zip_file
+from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -47,7 +48,10 @@ def params_select_attributes(*attrs):
 
 
 def get_bucket_location_config(**kwargs):
-    return {'LocationConstraint': aws_stack.get_region()}
+    region = aws_stack.get_region()
+    if region == AWS_REGION_US_EAST_1:
+        return None
+    return {'LocationConstraint': region}
 
 
 def lambda_get_params():
