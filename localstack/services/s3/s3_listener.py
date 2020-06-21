@@ -1078,7 +1078,6 @@ class ProxyListenerS3(PersistingProxyListener):
     def return_response(self, method, path, data, headers, response, request_handler=None):
         path = to_str(path)
         method = to_str(method)
-
         # persist this API call to disk
         super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
@@ -1110,6 +1109,8 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
+        if method == 'GET' and response.status_code == 416:
+            return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
 
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = headers['host'].startswith(bucket_name)
