@@ -403,11 +403,12 @@ class ProxyListenerDynamoDB(ProxyListener):
         return records
 
     def delete_all_event_source_mappings(self, table_arn):
-        lambda_client = aws_stack.connect_to_service('lambda')
-        result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
-        for event in result['EventSourceMappings']:
-            event_source_mapping_id = event['UUID']
-            lambda_client.delete_event_source_mapping(UUID=event_source_mapping_id)
+        if table_arn:
+            lambda_client = aws_stack.connect_to_service('lambda')
+            result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
+            for event in result['EventSourceMappings']:
+                event_source_mapping_id = event['UUID']
+                lambda_client.delete_event_source_mapping(UUID=event_source_mapping_id)
 
     @staticmethod
     def _thread_local(name, default=None):
