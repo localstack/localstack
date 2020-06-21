@@ -326,6 +326,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             return requests_response(content_str, headers=response.headers, status_code=response.status_code)
 
     @classmethod
+    # TODO still needed? (can probably be removed)
     def get_message_attributes_md5(cls, req_data):
         req_data = clone(req_data)
         orig_types = {}
@@ -345,8 +346,10 @@ class ProxyListenerSQS(PersistingProxyListener):
                     if full_type_name not in TRANSPORT_TYPE_ENCODINGS:
                         TRANSPORT_TYPE_ENCODINGS[full_type_name] = TRANSPORT_TYPE_ENCODINGS[short_type_name]
 
+        # moto parse_message_attributes(..) expects params to be passed as dict of lists
+        req_data_lists = dict([(k, [v]) for k, v in req_data.items()])
         moto_message = Message('dummy_msg_id', 'dummy_body')
-        moto_message.message_attributes = parse_message_attributes(req_data)
+        moto_message.message_attributes = parse_message_attributes(req_data_lists)
         for key, data_type in orig_types.items():
             moto_message.message_attributes[key]['data_type'] = data_type
         message_attr_hash = moto_message.attribute_md5
