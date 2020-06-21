@@ -1,6 +1,8 @@
 import os
 import logging
 import traceback
+from moto.sqs import responses as sqs_responses
+from moto.sqs.models import Queue
 from localstack import config
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack
@@ -42,11 +44,32 @@ def start_sqs(*args, **kwargs):
     return start_sqs_elasticmq(*args, **kwargs)
 
 
+def patch_moto():
+    # patch add_message to disable event source mappings in moto
+
+    def add_message(self, *args, **kwargs):
+        mappings = self.lambda_event_source_mappings
+        try:
+            # temporarily set mappings to empty dict, to prevent moto from consuming messages from the queue
+            self.lambda_event_source_mappings = {}
+            return add_message_orig(self, *args, **kwargs)
+        finally:
+            self.lambda_event_source_mappings = mappings
+
+    add_message_orig = Queue.add_message
+    Queue.add_message = add_message
+
+    # escape message responses to allow for special characters like "<"
+    sqs_responses.RECEIVE_MESSAGE_RESPONSE = sqs_responses.RECEIVE_MESSAGE_RESPONSE.replace(
+        '<StringValue>{{ value.string_value }}</StringValue>',
+        '<StringValue><![CDATA[{{ value.string_value }}]]></StringValue>')
+
+
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):
     global PORT_SQS_BACKEND
-
     port = port or config.PORT_SQS
     PORT_SQS_BACKEND = get_free_tcp_port()
+    patch_moto()
     return start_moto_server('sqs', port, backend_port=PORT_SQS_BACKEND, name='SQS',
         asynchronous=asynchronous, update_listener=update_listener)
 
