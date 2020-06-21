@@ -237,8 +237,9 @@ class SQSTest(unittest.TestCase):
         payload = {}
         # String Attributes must not contain non-printable characters
         # See: https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
-        attrs = {'attr1':
-        {'StringValue': 'invalid characters, %s, %s, %s' % (chr(8), chr(11), chr(12)), 'DataType': 'String'}}
+        attrs = {'attr1': {
+            'StringValue': 'invalid characters, %s, %s, %s' % (chr(8), chr(11), chr(12)), 'DataType': 'String'
+        }}
         with self.assertRaises(Exception):
             self.client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(payload),
                                      MessageAttributes=attrs)
@@ -587,7 +588,7 @@ class SQSTest(unittest.TestCase):
             client.send_message_batch(QueueUrl=queue_url, Entries=[])
         except ClientError as e:
             self.assertEqual(e.response['Error']['Code'], 'EmptyBatchRequest')
-            self.assertEqual(e.response['ResponseMetadata']['HTTPStatusCode'], 404)
+            self.assertIn(e.response['ResponseMetadata']['HTTPStatusCode'], [400, 404])
 
         entries = [{
             'Id': 'message{:02d}'.format(0),

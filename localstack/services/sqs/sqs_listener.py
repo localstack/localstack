@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import xmltodict
@@ -14,9 +15,16 @@ from localstack.utils.common import to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.awslambda import lambda_api
-from localstack.utils.aws.aws_responses import requests_response, make_error
+from localstack.utils.aws.aws_responses import requests_response, make_requests_error
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
+
+# backend implementation provider - either "moto" or "elasticmq"
+BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
+
+# Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
+# https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+MSG_CONTENT_REGEX = '^[\u0009\u000A\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$'
 
 # list of valid attribute names, and names not supported by the backend (elasticmq)
 VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
@@ -41,11 +49,14 @@ QUEUE_ATTRIBUTES = {}
 def parse_request_data(method, path, data):
     """ Extract request data either from query string (for GET) or request body (for POST). """
     if method == 'POST':
-        return urlparse.parse_qs(to_str(data))
+        result = urlparse.parse_qs(to_str(data))
     elif method == 'GET':
         parsed_path = urlparse.urlparse(path)
-        return urlparse.parse_qs(parsed_path.query)
-    return {}
+        result = urlparse.parse_qs(parsed_path.query)
+    else:
+        return {}
+    result = dict([(k, v[0]) for k, v in result.items()])
+    return result
 
 
 # Format attributes as a list. Example input:
@@ -60,8 +71,8 @@ def _format_attributes(req_data):
         key2 = 'Attribute.%s.Value' % i
         if key1 not in req_data:
             break
-        key_name = req_data[key1][0]
-        key_value = (req_data.get(key2) or [''])[0]
+        key_name = req_data[key1]
+        key_value = req_data.get(key2) or ''
         result[key_name] = key_value
     return result
 
@@ -72,7 +83,7 @@ def _format_attributes_names(req_data):
         key = 'AttributeName.%s' % i
         if key not in req_data:
             break
-        result.add(req_data[key][0])
+        result.add(req_data[key])
     return result
 
 
@@ -110,7 +121,7 @@ def _set_queue_attributes(queue_url, req_data):
 
 
 def _fire_event(req_data, response):
-    action = req_data.get('Action', [None])[0]
+    action = req_data.get('Action')
     event_type = None
     queue_url = None
     if action == 'CreateQueue':
@@ -120,7 +131,7 @@ def _fire_event(req_data, response):
             queue_url = response_data['CreateQueueResponse']['CreateQueueResult']['QueueUrl']
     elif action == 'DeleteQueue':
         event_type = event_publisher.EVENT_SQS_DELETE_QUEUE
-        queue_url = req_data.get('QueueUrl', [None])[0]
+        queue_url = req_data.get('QueueUrl')
 
     if event_type and queue_url:
         event_publisher.fire_event(event_type, payload={'u': event_publisher.get_hash(queue_url)})
@@ -129,7 +140,7 @@ def _fire_event(req_data, response):
 def _queue_url(path, req_data, headers):
     queue_url = req_data.get('QueueUrl')
     if queue_url:
-        return queue_url[0]
+        return queue_url
     url = config.TEST_SQS_URL
     if headers.get('Host'):
         url = 'http%s://%s' % ('s' if config.USE_SSL else '', headers['Host'])
@@ -214,9 +225,16 @@ class ProxyListenerSQS(PersistingProxyListener):
 
         req_data = parse_request_data(method, path, data)
         if req_data:
-            action = req_data.get('Action', [None])[0]
+            action = req_data.get('Action')
 
-            if action == 'SetQueueAttributes':
+            if action in ('SendMessage', 'SendMessageBatch') and BACKEND_IMPL == 'moto':
+                # check message contents
+                for key, value in req_data.items():
+                    if not re.match(MSG_CONTENT_REGEX, str(value)):
+                        return make_requests_error(code=400, code_string='InvalidMessageContents',
+                            message='Message contains invalid characters')
+
+            elif action == 'SetQueueAttributes':
                 queue_url = _queue_url(path, req_data, headers)
                 forward_attrs = _set_queue_attributes(queue_url, req_data)
                 if len(req_data) != len(forward_attrs):
@@ -259,8 +277,8 @@ class ProxyListenerSQS(PersistingProxyListener):
             return
 
         region_name = aws_stack.get_region()
-        req_data = urlparse.parse_qs(to_str(data))
-        action = req_data.get('Action', [None])[0]
+        req_data = parse_request_data(method, path, data)
+        action = req_data.get('Action')
         content_str = content_str_original = to_str(response.content)
 
         if response.status_code >= 400:
@@ -297,7 +315,7 @@ class ProxyListenerSQS(PersistingProxyListener):
         elif action == 'SendMessageBatch':
             if validate_empty_message_batch(data, req_data):
                 msg = 'There should be at least one SendMessageBatchRequestEntry in the request.'
-                return make_error(code=404, code_string='EmptyBatchRequest', message=msg)
+                return make_requests_error(code=404, code_string='EmptyBatchRequest', message=msg)
 
         # instruct listeners to fetch new SQS message
         if action in ('SendMessage', 'SendMessageBatch'):
@@ -309,6 +327,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             return requests_response(content_str, headers=response.headers, status_code=response.status_code)
 
     @classmethod
+    # TODO still needed? (can probably be removed)
     def get_message_attributes_md5(cls, req_data):
         req_data = clone(req_data)
         orig_types = {}
@@ -317,19 +336,21 @@ class ProxyListenerSQS(PersistingProxyListener):
             # not supported: Keep track of the original data type, and temporarily change
             # it to the short form (e.g., 'Number'), before changing it back again.
             if key.endswith('DataType'):
-                parts = entry[0].split('.')
+                parts = entry.split('.')
                 if len(parts) > 2:
                     short_type_name = parts[0]
-                    full_type_name = req_data[key][0]
+                    full_type_name = entry
                     attr_num = key.split('.')[1]
-                    attr_name = req_data['MessageAttribute.%s.Name' % attr_num][0]
+                    attr_name = req_data['MessageAttribute.%s.Name' % attr_num]
                     orig_types[attr_name] = full_type_name
                     req_data[key] = [short_type_name]
                     if full_type_name not in TRANSPORT_TYPE_ENCODINGS:
                         TRANSPORT_TYPE_ENCODINGS[full_type_name] = TRANSPORT_TYPE_ENCODINGS[short_type_name]
 
+        # moto parse_message_attributes(..) expects params to be passed as dict of lists
+        req_data_lists = dict([(k, [v]) for k, v in req_data.items()])
         moto_message = Message('dummy_msg_id', 'dummy_body')
-        moto_message.message_attributes = parse_message_attributes(req_data)
+        moto_message.message_attributes = parse_message_attributes(req_data_lists)
         for key, data_type in orig_types.items():
             moto_message.message_attributes[key]['data_type'] = data_type
         message_attr_hash = moto_message.attribute_md5

@@ -304,8 +304,11 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                     unsubscribe_url,
                     subject=req_data.get('Subject', [None])[0]
                 )
-                if isinstance(response, FlaskResponse):
+                if isinstance(response, Response):
                     response.raise_for_status()
+                elif isinstance(response, FlaskResponse):
+                    if response.status_code >= 400:
+                        raise Exception('Error response (code %s): %s' % (response.status_code, response.data))
             except Exception as exc:
                 LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))

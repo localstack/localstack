@@ -8,6 +8,7 @@ import logging
 import traceback
 import boto3
 import subprocess
+from moto import core as moto_core
 from requests.models import Response
 from localstack import constants, config
 from localstack.constants import (
@@ -35,6 +36,9 @@ DEFAULT_BACKEND_HOST = '127.0.0.1'
 
 # set up logger
 LOG = logging.getLogger(__name__)
+
+# fix moto account ID - note: keep this at the top level here
+moto_core.ACCOUNT_ID = constants.TEST_AWS_ACCOUNT_ID
 
 
 # -----------------------

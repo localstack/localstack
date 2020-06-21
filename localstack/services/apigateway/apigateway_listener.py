@@ -7,7 +7,7 @@ import datetime
 from flask import Response as FlaskResponse
 from six.moves.urllib_parse import urljoin
 from requests.models import Response
-from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST
+from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
@@ -243,7 +243,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 new_request = aws_stack.render_velocity_template(template, data) + '&QueueName=%s' % queue
                 headers = aws_stack.mock_aws_request_headers(service='sqs', region_name=region_name)
 
-                url = urljoin(TEST_SQS_URL, 'queue/%s' % queue)
+                url = urljoin(TEST_SQS_URL, '%s/%s' % (TEST_AWS_ACCOUNT_ID, queue))
                 result = common.make_http_request(url, method='POST', headers=headers, data=new_request)
                 return result
 

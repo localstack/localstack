@@ -48,7 +48,15 @@ def response_regex_replace(response, search, replace):
     response.headers['Content-Length'] = str(len(response._content))
 
 
-def make_error(message, code=400, code_string='InvalidParameter'):
+def make_requests_error(*args, **kwargs):
+    return flask_to_requests_response(make_flask_error(*args, **kwargs))
+
+
+def make_error(*args, **kwargs):
+    return make_flask_error(*args, **kwargs)
+
+
+def make_flask_error(message, code=400, code_string='InvalidParameter'):
     response = Response()
     response._content = """<ErrorResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/"><Error>
         <Type>Sender</Type>
