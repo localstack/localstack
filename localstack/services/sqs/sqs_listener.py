@@ -14,12 +14,16 @@ from localstack.utils.common import to_str, clone
 from localstack.utils.analytics import event_publisher
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.awslambda import lambda_api
-from localstack.utils.aws.aws_responses import requests_response, make_error
+from localstack.utils.aws.aws_responses import requests_response, make_requests_error
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
 # backend implementation - either "moto" or "elasticmq"
 BACKEND_IMPL = 'moto'
+
+# Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
+# https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
+MSG_CONTENT_REGEX = '^[\u0009\u000A\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$'
 
 # list of valid attribute names, and names not supported by the backend (elasticmq)
 VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
@@ -223,15 +227,11 @@ class ProxyListenerSQS(PersistingProxyListener):
             action = req_data.get('Action')
 
             if action in ('SendMessage', 'SendMessageBatch') and BACKEND_IMPL == 'moto':
-                # check message content
-                msg_body = to_str(req_data.get('MessageBody') or '')
-                # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
-                # Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
-                regex = '^[\u0009\u000A\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]+$'
-                print('!!!!REGEX', type(regex), type(msg_body), re.match(regex, msg_body))
-                if not re.match(regex, msg_body):
-                    return make_error(code=400, code_string='InvalidMessageContents',
-                        message='Message contains invalid characters')
+                # check message contents
+                for key, value in req_data.items():
+                    if not re.match(MSG_CONTENT_REGEX, str(value)):
+                        return make_requests_error(code=400, code_string='InvalidMessageContents',
+                            message='Message contains invalid characters')
 
             elif action == 'SetQueueAttributes':
                 queue_url = _queue_url(path, req_data, headers)
@@ -314,7 +314,7 @@ class ProxyListenerSQS(PersistingProxyListener):
         elif action == 'SendMessageBatch':
             if validate_empty_message_batch(data, req_data):
                 msg = 'There should be at least one SendMessageBatchRequestEntry in the request.'
-                return make_error(code=404, code_string='EmptyBatchRequest', message=msg)
+                return make_requests_error(code=404, code_string='EmptyBatchRequest', message=msg)
 
         # instruct listeners to fetch new SQS message
         if action in ('SendMessage', 'SendMessageBatch'):
