@@ -10,7 +10,7 @@ import six
 from boto3 import Session
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
-    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE)
+    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1)
 
 
 def is_env_true(env_var_name):
@@ -34,7 +34,7 @@ KINESIS_LATENCY = os.environ.get('KINESIS_LATENCY', '').strip() or '500'
 
 # default AWS region
 if 'DEFAULT_REGION' not in os.environ:
-    os.environ['DEFAULT_REGION'] = 'us-east-1'
+    os.environ['DEFAULT_REGION'] = AWS_REGION_US_EAST_1
 DEFAULT_REGION = os.environ['DEFAULT_REGION']
 
 # Whether or not to handle lambda event sources as synchronous invocations

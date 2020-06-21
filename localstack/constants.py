@@ -18,6 +18,7 @@ HEADER_LOCALSTACK_TARGET = 'x-localstack-target'
 DEFAULT_PORT_EDGE = 4566
 DEFAULT_PORT_WEB_UI = 8080
 
+# host name for localhost
 LOCALHOST = 'localhost'
 
 # version of the Maven dependency with Java utility code
@@ -100,6 +101,9 @@ LOCALSTACK_INFRA_PROCESS = 'LOCALSTACK_INFRA_PROCESS'
 
 # Hardcoded AWS account ID used by moto
 MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
+
+# default AWS region us-east-1
+AWS_REGION_US_EAST_1 = 'us-east-1'
 
 # Default lambda registry
 DEFAULT_LAMBDA_CONTAINER_REGISTRY = 'lambci/lambda'
