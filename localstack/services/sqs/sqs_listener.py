@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import xmltodict
@@ -18,8 +19,8 @@ from localstack.utils.aws.aws_responses import requests_response, make_requests_
 
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
 
-# backend implementation - either "moto" or "elasticmq"
-BACKEND_IMPL = 'moto'
+# backend implementation provider - either "moto" or "elasticmq"
+BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
 
 # Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html

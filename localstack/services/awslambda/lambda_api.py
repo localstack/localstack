@@ -438,11 +438,11 @@ def process_sqs_message(queue_name, region_name=None):
         queue_arn = aws_stack.sqs_queue_arn(queue_name, region_name=region_name)
         sources = get_event_sources(source_arn=queue_arn)
         arns = [s.get('FunctionArn') for s in sources]
-        LOG.debug('Found %s source mappings for event from SQS queue %s: %s' % (len(arns), queue_arn, arns))
         source = (sources or [None])[0]
         if not source:
             return False
 
+        LOG.debug('Found %s source mappings for event from SQS queue %s: %s' % (len(arns), queue_arn, arns))
         start_lambda_sqs_listener()
         return True
     except Exception as e:
