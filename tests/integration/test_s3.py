@@ -13,6 +13,7 @@ from io import BytesIO
 from pytz import timezone
 from six.moves.urllib.request import Request, urlopen
 from localstack import config
+from botocore.exceptions import ClientError
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
@@ -164,6 +165,18 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
         self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+
+    def test_invalid_range_error(self):
+        bucket_name = 'myBucket'
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key='steve', Body=b'is awesome')
+
+        try:
+            self.s3_client.get_object(Bucket=bucket_name, Key='steve', Range='bytes=1024-4096')
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'InvalidRange')
 
     def test_s3_multipart_upload_acls(self):
         bucket_name = 'test-bucket-%s' % short_uid()
