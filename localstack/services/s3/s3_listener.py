@@ -891,6 +891,10 @@ def remove_bucket_notification(bucket):
     S3_NOTIFICATIONS.pop(bucket, None)
 
 
+def not_none_or(value, alternative):
+    return value if value is not None else alternative
+
+
 class ProxyListenerS3(PersistingProxyListener):
     def api_name(self):
         return 's3'
@@ -967,22 +971,26 @@ class ProxyListenerS3(PersistingProxyListener):
             return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
-        to_find = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
-        if data and data.startswith(to_bytes('<')) and to_find in data:
-            modified_data = data.replace(to_find, to_bytes(''))
+        to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
+        to_find2 = to_bytes('<CreateBucketConfiguration')
+        if data and data.startswith(to_bytes('<')) and to_find1 in data and to_find2 in data:
+            # Note: with the latest version, <CreateBucketConfiguration> must either
+            # contain a valid <LocationConstraint>, or not be present at all in the body.
+            modified_data = b''
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98
         # TODO we should evaluate whether to replace moto s3 with scality/S3:
         # https://github.com/scality/S3/issues/237
-        if headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD:
-            modified_data = strip_chunk_signatures(modified_data or data)
+        is_streaming_payload = headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD
+        if is_streaming_payload:
+            modified_data = strip_chunk_signatures(not_none_or(modified_data, data))
             headers['Content-Length'] = headers.get('x-amz-decoded-content-length')
 
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
         if method == 'POST':
-            original_data = modified_data or data
+            original_data = not_none_or(modified_data, data)
             expanded_data = multipart_content.expand_multipart_filename(original_data, headers)
             if expanded_data is not original_data:
                 modified_data = expanded_data
@@ -1059,7 +1067,10 @@ class ProxyListenerS3(PersistingProxyListener):
                 return set_object_lock(bucket, data)
 
         if modified_data is not None or headers_changed:
-            return Request(data=modified_data or data, headers=headers, method=method)
+            data_to_return = not_none_or(modified_data, data)
+            if modified_data is not None:
+                headers['Content-Length'] = str(len(data_to_return or ''))
+            return Request(data=data_to_return, headers=headers, method=method)
         return True
 
     def get_forward_url(self, method, path, data, headers):
