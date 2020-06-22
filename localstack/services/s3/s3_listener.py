@@ -1257,9 +1257,8 @@ class ProxyListenerS3(PersistingProxyListener):
             if method == 'DELETE':
                 reset_content_length = True
 
-            len_header = int(response.headers.get('Content-Length') or 0)
-            if reset_content_length or (len_header and len_header != len(response.content or '')):
-                response.headers['Content-Length'] = str(len(response.content))
+            if reset_content_length:
+                response.headers['Content-Length'] = str(len(response._content))
 
             # convert to chunked encoding, for compatibility with certain SDKs (e.g., AWS PHP SDK)
             convert_to_chunked_encoding(method, path, response)

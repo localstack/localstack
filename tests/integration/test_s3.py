@@ -1,4 +1,3 @@
-import datetime
 import io
 import os
 import ssl
@@ -7,9 +6,9 @@ import json
 import time
 import uuid
 import unittest
+import datetime
 import requests
 from io import BytesIO
-
 from pytz import timezone
 from six.moves.urllib.request import Request, urlopen
 from localstack import config
