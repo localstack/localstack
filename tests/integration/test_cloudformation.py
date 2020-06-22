@@ -400,12 +400,10 @@ Conditions:
     !Equals [ !Ref EnvironmentType, prod ]
 
 Resources:
-  MyBaseDomainName:
-    Type: AWS::SSM::Parameter
+  MyBucket:
+    Type: AWS::S3::Bucket
     Properties:
-      Name: 'base-domain-name'
-      Type: String
-      Value: !If [ IsProd, example.com, !Join [ '-', [ !Ref EnvironmentType, example.com ] ] ]
+      BucketName: '%s'
 """
 
 TEST_TEMPLATE_19 = """
@@ -754,6 +752,7 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation = aws_stack.connect_to_service('cloudformation')
         stack_name = 'stack-%s' % short_uid()
         change_set_name = 'change-set-%s' % short_uid()
+        bucket_name = 'bucket-%s' % short_uid()
 
         try:
             cloudformation.describe_stacks(
@@ -767,7 +766,7 @@ class CloudFormationTest(unittest.TestCase):
         rs = cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
-            TemplateBody=TEST_CHANGE_SET_BODY,
+            TemplateBody=TEST_CHANGE_SET_BODY % bucket_name,
             Parameters=[
                 {
                     'ParameterKey': 'EnvironmentType',
@@ -783,7 +782,7 @@ class CloudFormationTest(unittest.TestCase):
 
         rs = cloudformation.describe_change_set(
             StackName=stack_name,
-            ChangeSetName=change_set_name
+            ChangeSetName=change_set_id
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetName'], change_set_name)
@@ -807,6 +806,8 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(stack['StackName'], stack_name)
         self.assertEqual(parameters[0]['ParameterKey'], 'EnvironmentType')
         self.assertEqual(parameters[0]['ParameterValue'], 'stage')
+
+        self.assertTrue(bucket_exists(bucket_name))
 
         # clean up
         cloudformation.delete_change_set(

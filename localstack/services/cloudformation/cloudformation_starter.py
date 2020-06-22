@@ -38,6 +38,8 @@ from localstack.services.cloudformation import service_models
 
 LOG = logging.getLogger(__name__)
 
+MOTO_CFN_ACCOUNT_ID = '123456789'
+
 # Maps (stack_name,resource_logical_id) -> Bool to indicate which resources are currently being updated
 CURRENTLY_UPDATING_RESOURCES = {}
 
@@ -875,6 +877,22 @@ def apply_patches():
         return change_set_id, _
 
     CloudFormationBackend.create_change_set = cloudformation_backend_create_change_set
+
+    # patch cloudformation backend change_set methods
+    # #2240 S3 bucket not created since 0.10.8
+    cloudformation_backend_describe_change_set_orig = CloudFormationBackend.describe_change_set
+    cloudformation_backend_execute_change_set_orig = CloudFormationBackend.execute_change_set
+
+    def cloudformation_backend_describe_change_set(self, change_set_name, stack_name=None):
+        change_set_name = change_set_name.replace(TEST_AWS_ACCOUNT_ID, MOTO_CFN_ACCOUNT_ID)
+        return cloudformation_backend_describe_change_set_orig(self, change_set_name, stack_name)
+
+    def cloudformation_backend_execute_change_set(self, change_set_name, stack_name=None):
+        change_set_name = change_set_name.replace(TEST_AWS_ACCOUNT_ID, MOTO_CFN_ACCOUNT_ID)
+        return cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
+
+    CloudFormationBackend.describe_change_set = cloudformation_backend_describe_change_set
+    CloudFormationBackend.execute_change_set = cloudformation_backend_execute_change_set
 
 
 def inject_stats_endpoint():
