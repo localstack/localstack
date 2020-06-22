@@ -1,9 +1,8 @@
 import json
 import random
-from datetime import datetime
 from requests.models import Response
 from localstack import config
-from localstack.utils.common import to_str, json_safe, clone
+from localstack.utils.common import to_str, json_safe, clone, timestamp_millis
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -32,7 +31,7 @@ class ProxyListenerKinesis(ProxyListener):
             consumer = clone(data)
             consumer['ConsumerStatus'] = 'ACTIVE'
             consumer['ConsumerARN'] = '%s/consumer/%s' % (data['StreamARN'], data['ConsumerName'])
-            consumer['ConsumerCreationTimestamp'] = datetime.now()
+            consumer['ConsumerCreationTimestamp'] = timestamp_millis()
             consumer = json_safe(consumer)
             STREAM_CONSUMERS.append(consumer)
             return {'Consumer': consumer}
@@ -85,7 +84,9 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == ACTION_PUT_RECORD:
             response_body = json.loads(to_str(response.content))
             event_record = {
+                'approximateArrivalTimestamp': timestamp_millis(),
                 'data': data['Data'],
+                'encryptionType': 'NONE',
                 'partitionKey': data['PartitionKey'],
                 'sequenceNumber': response_body.get('SequenceNumber')
             }
@@ -101,7 +102,9 @@ class ProxyListenerKinesis(ProxyListener):
                 for index in range(0, len(records)):
                     record = records[index]
                     event_record = {
+                        'approximateArrivalTimestamp': timestamp_millis(),
                         'data': record['Data'],
+                        'encryptionType': 'NONE',
                         'partitionKey': record['PartitionKey'],
                         'sequenceNumber': response_records[index].get('SequenceNumber')
                     }
