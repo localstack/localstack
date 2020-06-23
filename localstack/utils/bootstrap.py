@@ -184,6 +184,11 @@ def get_docker_container_names():
         return []
 
 
+def get_main_container_ip():
+    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % MAIN_CONTAINER_NAME
+    return run(cmd).strip()
+
+
 def setup_logging():
     # determine and set log level
     log_level = logging.DEBUG if is_debug() else logging.INFO

@@ -198,8 +198,16 @@ def format_list_dl_source_queues_response(queues):
 # extract the external port used by the client to make the request
 def get_external_port(headers, request_handler):
     host = headers.get('Host', '')
+
+    if not host:
+        forwarded = headers.get('X-Forwarded-For', '').split(',')
+        host = forwarded[-2] if len(forwarded) > 2 else forwarded[-1]
+
     if ':' in host:
         return int(host.split(':')[1])
+
+    if not request_handler or not request_handler.proxy:
+        return config.PORT_SQS
 
     # If we cannot find the Host header, then fall back to the port of the proxy.
     # (note that this could be incorrect, e.g., if running in Docker with a host port that
