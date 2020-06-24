@@ -1,7 +1,9 @@
 import json
 import uuid
 
-from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE
+from urllib.parse import quote
+
+from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE
 from moto.iam.models import (
     iam_backend as moto_iam_backend, aws_managed_policies, AWSManagedPolicy, IAMNotFoundException, Policy, User
 )
@@ -208,6 +210,16 @@ def apply_patches():
     Policy.__init__ = policy__init__
 
     IamResponse.simulate_principal_policy = iam_response_simulate_principal_policy
+
+    def iam_response_list_roles(self):
+        roles = moto_iam_backend.get_roles()
+        for role in roles:
+            role.assume_role_policy_document = quote(json.dumps(role.assume_role_policy_document or {}))
+
+        template = self.response_template(LIST_ROLES_TEMPLATE)
+        return template.render(roles=roles)
+
+    IamResponse.list_roles = iam_response_list_roles
 
 
 def start_iam(port=None, asynchronous=False, update_listener=None):
