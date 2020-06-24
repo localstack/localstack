@@ -1269,3 +1269,23 @@ class CloudFormationTest(unittest.TestCase):
             Bucket=bucket_name
         )
         self.assertNotIn('QueueConfigurations', rs)
+
+    def test_delete_stack(self):
+        domain_name = 'es-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        cloudformation.create_stack(
+            StackName='myteststack',
+            TemplateBody=TEST_TEMPLATE_3,
+            Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
+        )
+
+        cloudformation.create_stack(
+            StackName='myteststack2',
+            TemplateBody=TEST_TEMPLATE_3,
+            Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
+        )
+
+        cloudformation.delete_stack(StackName='myteststack2')
+        cloudformation.delete_stack(StackName='myteststack')
