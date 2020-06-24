@@ -406,6 +406,31 @@ Resources:
       BucketName: '%s'
 """
 
+TEST_DEPLOY_BODY_1 = """
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  # IAM role for running the step function
+  ExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: %s
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: !Sub states.${AWS::Region}.amazonaws.com
+          Action: "sts:AssumeRole"
+      Policies:
+      - PolicyName: StatesExecutionPolicy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action: "lambda:InvokeFunction"
+            Resource: "*"
+"""
+
 TEST_TEMPLATE_19 = """
 Conditions:
   IsPRD:
@@ -817,6 +842,85 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.delete_stack(
             StackName=stack_name
         )
+
+    def test_deploy_stack_with_iam_role(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        stack_name = 'stack-%s' % short_uid()
+        change_set_name = 'change-set-%s' % short_uid()
+        role_name = 'role-%s' % short_uid()
+
+        try:
+            cloudformation.describe_stacks(
+                StackName=stack_name
+            )
+            self.fail('This call should not be successful as the stack does not exist')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'ValidationError')
+
+        rs = cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=TEST_DEPLOY_BODY_1 % role_name
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        change_set_id = rs['Id']
+
+        rs = cloudformation.describe_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_id
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['ChangeSetName'], change_set_name)
+        self.assertEqual(rs['ChangeSetId'], change_set_id)
+        self.assertEqual(rs['Status'], 'CREATE_COMPLETE')
+
+        rs = cloudformation.execute_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = cloudformation.describe_stacks(
+            StackName=stack_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        stack = rs['Stacks'][0]
+        self.assertEqual(stack['StackName'], stack_name)
+
+        iam_client = aws_stack.connect_to_service('iam')
+        rs = iam_client.list_roles(
+            PathPrefix=role_name
+        )
+
+        self.assertEqual(len(rs['Roles']), 1)
+        self.assertEqual(rs['Roles'][0]['RoleName'], role_name)
+
+        rs = iam_client.list_role_policies(
+            RoleName=role_name
+        )
+
+        iam_client.delete_role_policy(
+            RoleName=role_name,
+            PolicyName=rs['PolicyNames'][0]
+        )
+
+        # clean up
+        cloudformation.delete_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        cloudformation.delete_stack(
+            StackName=stack_name
+        )
+
+        rs = iam_client.list_roles(
+            PathPrefix=role_name
+        )
+        self.assertEqual(len(rs['Roles']), 0)
 
     def test_cfn_handle_s3_bucket_resources(self):
         stack_name = 'stack-%s' % short_uid()
