@@ -694,7 +694,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         handler = func_details.handler
         opts = config.LAMBDA_JAVA_OPTS if config.LAMBDA_JAVA_OPTS else ''
         event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
-        save_file(event_file, json.dumps(event))
+        save_file(event_file, json.dumps(json_safe(event)))
         TMP_FILES.append(event_file)
         class_name = handler.split('::')[0]
         classpath = '%s:%s:%s' % (main_file, Util.get_java_classpath(main_file), LAMBDA_EXECUTOR_JAR)
