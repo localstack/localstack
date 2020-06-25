@@ -11,13 +11,14 @@ from localstack import config, constants
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
 from localstack.services.sns import sns_listener
-from localstack.utils.common import to_str, clone
+from localstack.utils.common import to_str, clone, path_from_url
 from localstack.utils.analytics import event_publisher
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.awslambda import lambda_api
 from localstack.utils.aws.aws_responses import requests_response, make_requests_error
 
-XMLNS_SQS = 'http://queue.amazonaws.com/doc/2012-11-05/'
+API_VERSION = '2012-11-05'
+XMLNS_SQS = 'http://queue.amazonaws.com/doc/%s/' % API_VERSION
 
 # backend implementation provider - either "moto" or "elasticmq"
 BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
@@ -222,6 +223,11 @@ def validate_empty_message_batch(data, req_data):
     return False
 
 
+def is_sqs_queue_url(url):
+    path = path_from_url(url).partition('?')[0]
+    return re.match(r'^/(queue|%s)/[a-zA-Z0-9_-]+$' % constants.TEST_AWS_ACCOUNT_ID, path)
+
+
 class ProxyListenerSQS(PersistingProxyListener):
 
     def api_name(self):
@@ -232,6 +238,13 @@ class ProxyListenerSQS(PersistingProxyListener):
             return 200
 
         req_data = parse_request_data(method, path, data)
+
+        if is_sqs_queue_url(path) and method == 'GET':
+            if not headers.get('Authorization'):
+                headers['Authorization'] = aws_stack.mock_aws_request_headers(service='sqs')['Authorization']
+            method = 'POST'
+            req_data = {'Action': 'GetQueueUrl', 'Version': API_VERSION, 'QueueName': path.split('/')[-1]}
+
         if req_data:
             action = req_data.get('Action')
 

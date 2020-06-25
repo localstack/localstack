@@ -2,11 +2,12 @@ import os
 import json
 import time
 import unittest
+import requests
 from botocore.exceptions import ClientError
 from localstack.utils import testutil
 from localstack.utils.testutil import get_lambda_log_events, get_lambda_log_group_name
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, retry
+from localstack.utils.common import short_uid, retry, to_str
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
 
@@ -63,6 +64,11 @@ class SQSTest(unittest.TestCase):
         result = self.client.list_queue_tags(QueueUrl=queue_url)
         # Apparently, if there are no tags, then `Tags` should NOT appear in the response.
         self.assertNotIn('Tags', result)
+
+        # try to request details from queue URL directly via GET request
+        response = requests.get(queue_url)
+        content = to_str(response.content)
+        self.assertIn(queue_url, content)
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
