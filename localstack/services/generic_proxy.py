@@ -21,7 +21,7 @@ from localstack import config
 from localstack.config import USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
 from localstack.utils.server import http2_server
-from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS
+from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS, path_from_url
 from localstack.utils.http_utils import uses_chunked_encoding, create_chunked_data
 from localstack.utils.aws.aws_responses import LambdaResponse
 
@@ -537,7 +537,7 @@ def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listen
 def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=True, use_ssl=None):
     def handler(request, data):
         parsed_url = urlparse(request.url)
-        path_with_params = '/%s' % str(request.url).partition('://')[2].partition('/')[2]
+        path_with_params = path_from_url(request.url)
         method = request.method
         headers = request.headers
 

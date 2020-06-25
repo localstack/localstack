@@ -367,6 +367,10 @@ def get_docker_container_names():
     return bootstrap.get_docker_container_names()
 
 
+def path_from_url(url):
+    return '/%s' % str(url).partition('://')[2].partition('/')[2] if '://' in url else url
+
+
 def is_port_open(port_or_url, http_path=None, expect_success=True, protocols=['tcp']):
     port = port_or_url
     host = 'localhost'
