@@ -1201,10 +1201,14 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     elif resource_type == 'SNS::Topic':
         subscriptions = resource_props.get('Subscription', [])
         for subscription in subscriptions:
+            if not subscription:
+                continue
+
             endpoint = resolve_refs_recursively(stack_name, subscription['Endpoint'], resources)
             topic_arn = retrieve_topic_arn(params['Name'])
             aws_stack.connect_to_service('sns').subscribe(
-                TopicArn=topic_arn, Protocol=subscription['Protocol'], Endpoint=endpoint)
+                TopicArn=topic_arn, Protocol=subscription['Protocol'], Endpoint=endpoint
+            )
     elif resource_type == 'S3::Bucket':
         tags = resource_props.get('Tags')
         if tags:
