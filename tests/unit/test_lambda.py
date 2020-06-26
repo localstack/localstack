@@ -54,13 +54,13 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_get_event_source_mapping(self):
         with self.app.test_request_context():
-            lambda_api.event_source_mappings.append({'UUID': self.TEST_UUID})
+            lambda_api.EVENT_SOURCE_MAPPINGS.append({'UUID': self.TEST_UUID})
             result = lambda_api.get_event_source_mapping(self.TEST_UUID)
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
 
     def test_get_event_sources(self):
         with self.app.test_request_context():
-            lambda_api.event_source_mappings.append(
+            lambda_api.EVENT_SOURCE_MAPPINGS.append(
                 {
                     'UUID': self.TEST_UUID,
                     'EventSourceArn': 'the_arn'
@@ -77,7 +77,7 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_get_event_sources_with_paths(self):
         with self.app.test_request_context():
-            lambda_api.event_source_mappings.append(
+            lambda_api.EVENT_SOURCE_MAPPINGS.append(
                 {
                     'UUID': self.TEST_UUID,
                     'EventSourceArn': 'the_arn/path/subpath'
@@ -91,10 +91,10 @@ class TestLambdaAPI(unittest.TestCase):
 
     def test_delete_event_source_mapping(self):
         with self.app.test_request_context():
-            lambda_api.event_source_mappings.append({'UUID': self.TEST_UUID})
+            lambda_api.EVENT_SOURCE_MAPPINGS.append({'UUID': self.TEST_UUID})
             result = lambda_api.delete_event_source_mapping(self.TEST_UUID)
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
-            self.assertEqual(0, len(lambda_api.event_source_mappings))
+            self.assertEqual(0, len(lambda_api.EVENT_SOURCE_MAPPINGS))
 
     def test_invoke_RETURNS_415_WHEN_not_json_input(self):
         with self.app.test_request_context() as context:
@@ -651,18 +651,18 @@ class TestLambdaAPI(unittest.TestCase):
 
     def _create_function(self, function_name, tags={}):
         arn = lambda_api.func_arn(function_name)
-        lambda_api.arn_to_lambda[arn] = LambdaFunction(arn)
-        lambda_api.arn_to_lambda[arn].versions = {
+        lambda_api.ARN_TO_LAMBDA[arn] = LambdaFunction(arn)
+        lambda_api.ARN_TO_LAMBDA[arn].versions = {
             '$LATEST': {'CodeSize': self.CODE_SIZE, 'CodeSha256': self.CODE_SHA_256, 'RevisionId': self.REVISION_ID}
         }
-        lambda_api.arn_to_lambda[arn].handler = self.HANDLER
-        lambda_api.arn_to_lambda[arn].runtime = self.RUNTIME
-        lambda_api.arn_to_lambda[arn].timeout = self.TIMEOUT
-        lambda_api.arn_to_lambda[arn].tags = tags
-        lambda_api.arn_to_lambda[arn].envvars = {}
-        lambda_api.arn_to_lambda[arn].last_modified = self.LAST_MODIFIED
-        lambda_api.arn_to_lambda[arn].role = self.ROLE
-        lambda_api.arn_to_lambda[arn].memory_size = self.MEMORY_SIZE
+        lambda_api.ARN_TO_LAMBDA[arn].handler = self.HANDLER
+        lambda_api.ARN_TO_LAMBDA[arn].runtime = self.RUNTIME
+        lambda_api.ARN_TO_LAMBDA[arn].timeout = self.TIMEOUT
+        lambda_api.ARN_TO_LAMBDA[arn].tags = tags
+        lambda_api.ARN_TO_LAMBDA[arn].envvars = {}
+        lambda_api.ARN_TO_LAMBDA[arn].last_modified = self.LAST_MODIFIED
+        lambda_api.ARN_TO_LAMBDA[arn].role = self.ROLE
+        lambda_api.ARN_TO_LAMBDA[arn].memory_size = self.MEMORY_SIZE
 
     def _assert_contained(self, child, parent):
         self.assertTrue(set(child.items()).issubset(set(parent.items())))
