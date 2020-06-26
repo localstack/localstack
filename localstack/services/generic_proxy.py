@@ -351,10 +351,10 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
             # get status code from response, or use Bad Gateway status code
             code = listener_result if isinstance(listener_result, int) else 503
             response = Response()
-            response._content = ''
-            # TODO add CORS headers here?
-            response.headers['Content-Length'] = '0'
             response.status_code = code
+            response._content = ''
+            response.headers['Content-Length'] = '0'
+            append_cors_headers(response)
             return response
 
     # perform the actual invocation of the backend service
