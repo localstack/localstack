@@ -253,7 +253,7 @@ curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhos
 
 ### Service health checks
 
-The service health check endpoint `http://localhost:8080/health` provides basic information about the status of each service (e.g., `{"s3":"running","es":"starting"}`). By default, the endpoint returns cached values that are determined during startup - the status values can be refreshed by adding the `reload` query parameter: `http://localhost:8080/health?reload`.
+The service `/health` check endpoint on the edge port (`http://localhost:4566/health` by default) provides basic information about the status of each service (e.g., `{"s3":"running","es":"starting"}`). By default, the endpoint returns cached values that are determined during startup - the status values can be refreshed by adding the `reload` query parameter: `http://localhost:4566/health?reload`.
 
 ### Initializing a fresh instance
 

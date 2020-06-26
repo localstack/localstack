@@ -107,14 +107,6 @@ def get_health():
     return jsonify(result)
 
 
-@app.route('/health', methods=['PUT'])
-def put_health():
-    data = get_payload()
-    plugins.set_services_health(data)
-    result = {'status': 'OK'}
-    return jsonify(result)
-
-
 @app.route('/')
 def hello():
     return render_template('index.html')

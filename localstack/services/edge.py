@@ -5,8 +5,9 @@ import json
 import logging
 from requests.models import Response
 from localstack import config
+from localstack.services import plugins
 from localstack.constants import HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER
-from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate
+from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
@@ -23,6 +24,9 @@ class ProxyListenerEdge(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
             return 200
+
+        if path.split('?')[0] == '/health':
+            return serve_health_endpoint(method, path, data)
 
         # kill the process if we receive this header
         headers.get(HEADER_KILL_SIGNAL) and os._exit(0)
@@ -119,11 +123,19 @@ def get_api_from_headers(headers, path=None):
 def is_s3_form_data(data_bytes):
     if(to_bytes('key=') in data_bytes):
         return True
-
     if(to_bytes('Content-Disposition: form-data') in data_bytes and to_bytes('name="key"') in data_bytes):
         return True
-
     return False
+
+
+def serve_health_endpoint(method, path, data):
+    if method == 'GET':
+        reload = 'reload' in path
+        return plugins.get_services_health(reload=reload)
+    if method == 'PUT':
+        data = json.loads(to_str(data))
+        plugins.set_services_health(data)
+        return {'status': 'OK'}
 
 
 def get_port_from_custom_rules(method, path, data, headers):
