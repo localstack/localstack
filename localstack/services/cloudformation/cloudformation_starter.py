@@ -600,20 +600,15 @@ def apply_patches():
 
     # Patch create_from_cloudformation_json(..)
     # #2568 Cloudformation create-stack for SNS with yaml causes TypeError
+
+    SNS_Topic_create_from_cloudformation_json_orig = sns_models.Topic.create_from_cloudformation_json
+
     def SNS_Topic_create_from_cloudformation_json(resource_name, cloudformation_json, region_name):
-        sns_backend = sns_models.sns_backends[region_name]
         properties = cloudformation_json['Properties']
+        if properties.get('Subscription'):
+            properties['Subscription'] = [subscription for subscription in properties['Subscription'] if subscription]
 
-        topic = sns_backend.create_topic(properties.get('TopicName'))
-        for subscription in properties.get('Subscription', []):
-            if not subscription:
-                continue
-
-            sns_backend.subscribe(
-                topic.arn, subscription['Endpoint'], subscription['Protocol']
-            )
-
-        return topic
+        return SNS_Topic_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
 
     sns_models.Topic.create_from_cloudformation_json = SNS_Topic_create_from_cloudformation_json
 
@@ -911,7 +906,7 @@ def apply_patches():
         change_set_name = change_set_name.replace(TEST_AWS_ACCOUNT_ID, MOTO_CFN_ACCOUNT_ID)
         resp = cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
 
-        stack = self.change_sets.get(change_set_name, None)
+        stack = self.change_sets.get(change_set_name)
         if not stack:
             for cs in self.change_sets:
                 if self.change_sets[cs].change_set_name == change_set_name:

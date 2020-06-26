@@ -1198,6 +1198,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
             apigateway.put_method_response(restApiId=api_id, resourceId=res_id,
                 httpMethod=resource_props['HttpMethod'], statusCode=response['StatusCode'],
                 responseParameters=response.get('ResponseParameters', {}))
+
     elif resource_type == 'SNS::Topic':
         subscriptions = resource_props.get('Subscription', [])
         for subscription in subscriptions:

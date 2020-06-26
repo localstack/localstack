@@ -1042,6 +1042,7 @@ class CloudFormationTest(unittest.TestCase):
         sns_client = aws_stack.connect_to_service('sns')
         rs = sns_client.list_topics()
 
+        # Topic resource created
         topics = [tp for tp in rs['Topics'] if tp['TopicArn'] == topic_arn]
         self.assertEqual(len(topics), 1)
 
@@ -1053,6 +1054,8 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.delete_stack(
             StackName=stack_name
         )
+
+        # Topic resource removed
         rs = sns_client.list_topics()
         topics = [tp for tp in rs['Topics'] if tp['TopicArn'] == topic_arn]
         self.assertEqual(len(topics), 0)
