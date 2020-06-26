@@ -257,6 +257,20 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         # Attribute values should be returned
         self.assertFalse(response.get('Attributes'))
 
+    def test_empty_and_binary_values(self):
+        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        table = self.dynamodb.Table(TEST_DDB_TABLE_NAME)
+
+        # items which are being used to put in the table
+        item1 = {PARTITION_KEY: 'id1', 'data': ''}
+        item2 = {PARTITION_KEY: 'id2', 'data': b'foobar'}
+
+        response = table.put_item(Item=item1)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        response = table.put_item(Item=item2)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service('dynamodb')
