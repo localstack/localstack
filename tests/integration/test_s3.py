@@ -700,15 +700,16 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         # put object with invalid content MD5
-        for hash in ['__invalid__', '000']:
-            raised = False
-            try:
+        hashes = {
+            '__invalid__': 'InvalidDigest',
+            '000': 'InvalidDigest',
+            'MTIz': 'BadDigest'  # "123" base64 encoded
+        }
+        for hash, error in hashes.items():
+            with self.assertRaises(Exception) as ctx:
                 self.s3_client.put_object(Bucket=bucket_name, Key='test-key',
                     Body='something', ContentMD5=hash)
-            except Exception:
-                raised = True
-            if not raised:
-                raise Exception('Invalid MD5 hash "%s" should have raised an error' % hash)
+            self.assertIn(error, str(ctx.exception))
 
         # Cleanup
         self.s3_client.delete_bucket(Bucket=bucket_name)
