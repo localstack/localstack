@@ -598,6 +598,20 @@ def apply_patches():
     SNS_Topic_get_cfn_attribute_orig = sns_models.Topic.get_cfn_attribute
     sns_models.Topic.get_cfn_attribute = SNS_Topic_get_cfn_attribute
 
+    # Patch create_from_cloudformation_json(..)
+    # #2568 Cloudformation create-stack for SNS with yaml causes TypeError
+
+    SNS_Topic_create_from_cloudformation_json_orig = sns_models.Topic.create_from_cloudformation_json
+
+    def SNS_Topic_create_from_cloudformation_json(resource_name, cloudformation_json, region_name):
+        properties = cloudformation_json['Properties']
+        if properties.get('Subscription'):
+            properties['Subscription'] = [subscription for subscription in properties['Subscription'] if subscription]
+
+        return SNS_Topic_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+
+    sns_models.Topic.create_from_cloudformation_json = SNS_Topic_create_from_cloudformation_json
+
     # Patch ES get_cfn_attribute(..) method
     def ES_get_cfn_attribute(self, attribute_name):
         if attribute_name in ['Arn', 'DomainArn']:
@@ -879,7 +893,8 @@ def apply_patches():
     CloudFormationBackend.create_change_set = cloudformation_backend_create_change_set
 
     # patch cloudformation backend change_set methods
-    # #2240 S3 bucket not created since 0.10.8
+    # #2240 - S3 bucket not created since 0.10.8
+    # #2568 - Cloudformation create-stack for SNS with yaml causes TypeError
     cloudformation_backend_describe_change_set_orig = CloudFormationBackend.describe_change_set
     cloudformation_backend_execute_change_set_orig = CloudFormationBackend.execute_change_set
 
@@ -889,7 +904,19 @@ def apply_patches():
 
     def cloudformation_backend_execute_change_set(self, change_set_name, stack_name=None):
         change_set_name = change_set_name.replace(TEST_AWS_ACCOUNT_ID, MOTO_CFN_ACCOUNT_ID)
-        return cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
+        resp = cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
+
+        stack = self.change_sets.get(change_set_name)
+        if not stack:
+            for cs in self.change_sets:
+                if self.change_sets[cs].change_set_name == change_set_name:
+                    stack = self.change_sets[cs]
+
+        stack.output_map = stack._create_output_map()
+        for export in stack.exports:
+            self.exports[export.name] = export
+
+        return resp
 
     CloudFormationBackend.describe_change_set = cloudformation_backend_describe_change_set
     CloudFormationBackend.execute_change_set = cloudformation_backend_execute_change_set

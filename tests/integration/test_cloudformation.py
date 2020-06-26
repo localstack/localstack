@@ -431,6 +431,78 @@ Resources:
             Resource: "*"
 """
 
+TEST_DEPLOY_BODY_2 = """
+AWSTemplateFormatVersion: '2010-09-09'
+Description:
+  SNS Topics for stuff
+
+Parameters:
+  CompanyName:
+    Type: String
+    Description: 'Customer/Company name, commonly known-by name'
+    AllowedPattern: '[A-Za-z0-9-]{5,}'
+    ConstraintDescription: 'String must be 5 or more characters, letters, numbers and -'
+
+  MyEmail1:
+    Type: String
+    Description: Email address for stuff
+    Default: ""
+
+  MyEmail2:
+    Type: String
+    Description: Email address for stuff
+    Default: ""
+
+Conditions:
+  HasMyEmail1: !Not [!Equals [!Ref MyEmail1, '']]
+  HasMyEmail2: !Not [!Equals [!Ref MyEmail2, '']]
+
+  SetupMy: !Or
+                - Condition: HasMyEmail1
+                - Condition: HasMyEmail2
+
+Resources:
+  MyTopic:
+    Condition: SetupMy
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub "${CompanyName} AWS MyTopic"
+      Subscription:
+        - !If
+          - HasMyEmail1
+          -
+            Endpoint: !Ref MyEmail1
+            Protocol: email
+          - !Ref AWS::NoValue
+        - !If
+          - HasMyEmail2
+          -
+            Endpoint: !Ref MyEmail2
+            Protocol: email
+          - !Ref AWS::NoValue
+
+Outputs:
+  StackName:
+    Description: 'Stack name'
+    Value: !Sub '${AWS::StackName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-StackName'
+
+  MyTopic:
+    Condition: SetupMy
+    Description: 'My arn'
+    Value: !Ref MyTopic
+    Export:
+      Name: !Sub '${AWS::StackName}-MyTopicArn'
+
+  MyTopicName:
+    Condition: SetupMy
+    Description: 'My Name'
+    Value: !GetAtt MyTopic.TopicName
+    Export:
+      Name: !Sub '${AWS::StackName}-MyTopicName'
+"""
+
 TEST_TEMPLATE_19 = """
 Conditions:
   IsPRD:
@@ -921,6 +993,72 @@ class CloudFormationTest(unittest.TestCase):
             PathPrefix=role_name
         )
         self.assertEqual(len(rs['Roles']), 0)
+
+    def test_deploy_stack_with_sns_topic(self):
+        stack_name = 'stack-%s' % short_uid()
+        change_set_name = 'change-set-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        rs = cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=TEST_DEPLOY_BODY_2,
+            Parameters=[
+                {
+                    'ParameterKey': 'CompanyName',
+                    'ParameterValue': 'MyCompany'
+                },
+                {
+                    'ParameterKey': 'MyEmail1',
+                    'ParameterValue': 'my@email.com'
+                }
+            ]
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = cloudformation.execute_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = cloudformation.describe_stacks(
+            StackName=stack_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        stack = rs['Stacks'][0]
+        self.assertEqual(stack['StackName'], stack_name)
+        outputs = stack['Outputs']
+        self.assertEqual(len(outputs), 3)
+
+        topic_arn = None
+        for op in outputs:
+            if op['OutputKey'] == 'MyTopic':
+                topic_arn = op['OutputValue']
+
+        sns_client = aws_stack.connect_to_service('sns')
+        rs = sns_client.list_topics()
+
+        # Topic resource created
+        topics = [tp for tp in rs['Topics'] if tp['TopicArn'] == topic_arn]
+        self.assertEqual(len(topics), 1)
+
+        # clean up
+        cloudformation.delete_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        cloudformation.delete_stack(
+            StackName=stack_name
+        )
+
+        # Topic resource removed
+        rs = sns_client.list_topics()
+        topics = [tp for tp in rs['Topics'] if tp['TopicArn'] == topic_arn]
+        self.assertEqual(len(topics), 0)
 
     def test_cfn_handle_s3_bucket_resources(self):
         stack_name = 'stack-%s' % short_uid()
