@@ -386,6 +386,7 @@ def start_infra_in_docker():
     # construct default port mappings
     if service_ports.get('edge') == 0:
         service_ports.pop('edge')
+    service_ports.pop('dashboard', None)
     for port in service_ports.values():
         port_mappings.add(port)
 
