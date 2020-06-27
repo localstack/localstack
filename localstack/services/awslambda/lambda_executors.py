@@ -13,6 +13,7 @@ try:
 except ImportError:
     from pipes import quote as cmd_quote  # for Python 2.7
 from localstack import config
+from localstack.utils import bootstrap
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
@@ -59,6 +60,9 @@ MAX_CONTAINER_IDLE_TIME_MS = 600 * 1000
 
 EVENT_SOURCE_SQS = 'aws:sqs'
 
+# IP address of main Docker container (lazily initialized)
+DOCKER_MAIN_CONTAINER_IP = None
+
 
 def get_from_event(event, key):
     try:
@@ -85,6 +89,19 @@ def _store_logs(func_details, log_output, invocation_time=None, container_id=Non
     time_str = time.strftime('%Y/%m/%d', time.gmtime(invocation_time_secs))
     log_stream_name = '%s/[LATEST]%s' % (time_str, container_id)
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
+
+
+def get_docker_host_from_container():
+    global DOCKER_MAIN_CONTAINER_IP
+    if DOCKER_MAIN_CONTAINER_IP is None:
+        try:
+            DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
+        except Exception as e:
+            LOG.info('Unable to get IP address of main Docker container "%s": %s' %
+                (bootstrap.MAIN_CONTAINER_NAME, e))
+            DOCKER_MAIN_CONTAINER_IP = False
+    # return main container IP, or fall back to Docker host (bridge IP, or host DNS address)
+    return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
 
 
 class LambdaExecutor(object):
@@ -218,7 +235,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         event_body = json.dumps(json_safe(event))
         stdin = self.prepare_event(environment, event_body)
 
-        docker_host = config.DOCKER_HOST_FROM_CONTAINER
+        docker_host = get_docker_host_from_container()
 
         environment['HOSTNAME'] = docker_host
         environment['LOCALSTACK_HOSTNAME'] = docker_host
