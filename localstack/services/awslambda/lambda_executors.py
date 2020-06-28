@@ -15,7 +15,7 @@ except ImportError:
 from localstack import config
 from localstack.utils import bootstrap
 from localstack.utils.common import (
-    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf,
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
@@ -94,12 +94,13 @@ def _store_logs(func_details, log_output, invocation_time=None, container_id=Non
 def get_docker_host_from_container():
     global DOCKER_MAIN_CONTAINER_IP
     if DOCKER_MAIN_CONTAINER_IP is None:
+        DOCKER_MAIN_CONTAINER_IP = False
         try:
-            DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
+            if in_docker():
+                DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
         except Exception as e:
             LOG.info('Unable to get IP address of main Docker container "%s": %s' %
                 (bootstrap.MAIN_CONTAINER_NAME, e))
-            DOCKER_MAIN_CONTAINER_IP = False
     # return main container IP, or fall back to Docker host (bridge IP, or host DNS address)
     return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
 
