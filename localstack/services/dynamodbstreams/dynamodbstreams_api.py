@@ -91,7 +91,7 @@ def post_request():
     elif action == '%s.GetShardIterator' % ACTION_HEADER_PREFIX:
         # forward request to Kinesis API
         stream_name = stream_name_from_stream_arn(data['StreamArn'])
-        stream_shard_id = default_kinesis_shard_id()
+        stream_shard_id = kinesis_shard_id(data['ShardId'])
         result = kinesis.get_shard_iterator(StreamName=stream_name,
                                             ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
     elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
@@ -144,12 +144,9 @@ def shard_id(stream_arn, kinesis_shard_id):
 
 
 def kinesis_shard_id(dynamodbstream_shard_id):
-    return dynamodbstream_shard_id.rsplit('-', 1)[0]
+    shard_params = dynamodbstream_shard_id.rsplit('-')
+    return '{0}-{1}'.format(shard_params[0], shard_params[-1])
 
 
 def serve(port, quiet=True):
     generic_proxy.serve_flask_app(app=app, port=port, quiet=quiet)
-
-
-def default_kinesis_shard_id():
-    return 'shardId-000000000000'
