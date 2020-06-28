@@ -619,7 +619,9 @@ class TestLambdaAPI(unittest.TestCase):
     def test_get_java_lib_folder_classpath(self):
         jar_file = os.path.join(new_tmp_dir(), 'foo.jar')
         save_file(jar_file, '')
-        self.assertEquals('.:foo.jar', lambda_executors.Util.get_java_classpath(jar_file))
+        classpath = lambda_executors.Util.get_java_classpath(jar_file)
+        self.assertIn('.:foo.jar', classpath)
+        self.assertIn('*.jar', classpath)
 
     def test_get_java_lib_folder_classpath_no_directories(self):
         base_dir = new_tmp_dir()
@@ -628,7 +630,10 @@ class TestLambdaAPI(unittest.TestCase):
         lib_file = os.path.join(base_dir, 'lib', 'lib.jar')
         mkdir(os.path.dirname(lib_file))
         save_file(lib_file, '')
-        self.assertEquals('.:lib/lib.jar:foo.jar', lambda_executors.Util.get_java_classpath(jar_file))
+        classpath = lambda_executors.Util.get_java_classpath(jar_file)
+        self.assertIn(':foo.jar', classpath)
+        self.assertIn('lib/lib.jar:', classpath)
+        self.assertIn(':*.jar', classpath)
 
     def test_get_java_lib_folder_classpath_archive_is_None(self):
         self.assertRaises(TypeError, lambda_executors.Util.get_java_classpath, None)
