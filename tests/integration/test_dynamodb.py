@@ -271,6 +271,41 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         response = table.put_item(Item=item2)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
+    def test_global_tables(self):
+        aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+
+        # create global table
+        regions = [{'RegionName': 'us-east-1'}, {'RegionName': 'us-west-1'}, {'RegionName': 'eu-central-1'}]
+        response = dynamodb.create_global_table(GlobalTableName=TEST_DDB_TABLE_NAME,
+            ReplicationGroup=regions)['GlobalTableDescription']
+        self.assertIn('ReplicationGroup', response)
+        self.assertEqual(len(regions), len(response['ReplicationGroup']))
+
+        # describe global table
+        response = dynamodb.describe_global_table(GlobalTableName=TEST_DDB_TABLE_NAME)['GlobalTableDescription']
+        self.assertIn('ReplicationGroup', response)
+        self.assertEqual(len(regions), len(response['ReplicationGroup']))
+
+        # update global table
+        updates = [
+            {'Create': {'RegionName': 'us-east-2'}},
+            {'Create': {'RegionName': 'us-west-2'}},
+            {'Delete': {'RegionName': 'us-west-1'}}
+        ]
+        response = dynamodb.update_global_table(GlobalTableName=TEST_DDB_TABLE_NAME,
+            ReplicaUpdates=updates)['GlobalTableDescription']
+        self.assertIn('ReplicationGroup', response)
+        self.assertEqual(len(regions) + 1, len(response['ReplicationGroup']))
+
+        # assert exceptions for invalid requests
+        with self.assertRaises(Exception) as ctx:
+            dynamodb.create_global_table(GlobalTableName=TEST_DDB_TABLE_NAME, ReplicationGroup=regions)
+        self.assertIn('GlobalTableAlreadyExistsException', str(ctx.exception))
+        with self.assertRaises(Exception) as ctx:
+            dynamodb.describe_global_table(GlobalTableName='invalid-table-name')
+        self.assertIn('GlobalTableNotFoundException', str(ctx.exception))
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service('dynamodb')
