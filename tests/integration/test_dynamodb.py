@@ -271,6 +271,33 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         response = table.put_item(Item=item2)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
+    def test_dynamodb_stream_shard_iterator(self):
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
+
+        table_name = 'table_with_stream'
+        table = dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'id', 'AttributeType': 'S'}],
+            StreamSpecification={
+                'StreamEnabled': True,
+                'StreamViewType': 'NEW_IMAGE',
+            },
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+        )
+
+        stream_arn = table['TableDescription']['LatestStreamArn']
+        result = ddbstreams.describe_stream(StreamArn=stream_arn)
+
+        response = ddbstreams.get_shard_iterator(StreamArn=stream_arn,
+                                                 ShardId=result['StreamDescription']['Shards'][0]['ShardId'],
+                                                 ShardIteratorType='LATEST'
+                                                 )
+        self.assertIn('ShardIterator', response)
+
     def test_global_tables(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
         dynamodb = aws_stack.connect_to_service('dynamodb')
