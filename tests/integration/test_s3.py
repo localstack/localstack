@@ -703,6 +703,7 @@ class S3ListenerTest(unittest.TestCase):
         hashes = {
             '__invalid__': 'InvalidDigest',
             '000': 'InvalidDigest',
+            'not base64 encoded checksum': 'InvalidDigest',  # InvalidDigest
             'MTIz': 'BadDigest'  # "123" base64 encoded
         }
         for hash, error in hashes.items():

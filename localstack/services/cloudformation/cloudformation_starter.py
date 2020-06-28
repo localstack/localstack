@@ -650,7 +650,13 @@ def apply_patches():
         func_name = props.get('FunctionName') or ''
         if ':lambda:' in func_name:
             props['FunctionName'] = aws_stack.lambda_function_name(func_name)
-        return Mapping_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+        try:
+            return Mapping_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+        except Exception:
+            LOG.info('Unable to add Lambda event mapping for source ARN "%s" in moto backend (ignoring)' %
+                props.get('EventSourceArn'))
+            # return an empty dummy instance, to avoid downstream None value issues
+            return service_models.BaseModel()
 
     Mapping_create_from_cloudformation_json_orig = lambda_models.EventSourceMapping.create_from_cloudformation_json
     lambda_models.EventSourceMapping.create_from_cloudformation_json = Mapping_create_from_cloudformation_json

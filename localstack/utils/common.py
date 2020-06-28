@@ -351,6 +351,10 @@ def md5(string):
     return m.hexdigest()
 
 
+def select_attributes(object, attributes):
+    return dict([(k, v) for k, v in object.items() if k in attributes])
+
+
 def in_docker():
     return config.in_docker()
 

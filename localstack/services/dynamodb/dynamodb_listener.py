@@ -7,11 +7,14 @@ from binascii import crc32
 from requests.models import Request, Response
 from localstack import config
 from localstack.utils.aws import aws_stack, aws_responses
-from localstack.utils.common import to_bytes, to_str, clone
+from localstack.utils.common import to_bytes, to_str, clone, select_attributes
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.dynamodbstreams import dynamodbstreams_api
+
+# set up logger
+LOGGER = logging.getLogger(__name__)
 
 # cache table definitions - used for testing
 TABLE_DEFINITIONS = {}
@@ -22,8 +25,8 @@ TABLE_TAGS = {}
 # action header prefix
 ACTION_PREFIX = 'DynamoDB_20120810'
 
-# set up logger
-LOGGER = logging.getLogger(__name__)
+# maps global table names to configurations
+GLOBAL_TABLES = {}
 
 # list of actions subject to throughput limitations
 THROTTLED_ACTIONS = [
@@ -66,6 +69,18 @@ class ProxyListenerDynamoDB(ProxyListener):
             table_names = ddb_client.list_tables()['TableNames']
             if to_str(data['TableName']) in table_names:
                 return 200
+
+        if action == '%s.CreateGlobalTable' % ACTION_PREFIX:
+            return create_global_table(data)
+
+        elif action == '%s.DescribeGlobalTable' % ACTION_PREFIX:
+            return describe_global_table(data)
+
+        elif action == '%s.ListGlobalTables' % ACTION_PREFIX:
+            return list_global_tables(data)
+
+        elif action == '%s.UpdateGlobalTable' % ACTION_PREFIX:
+            return update_global_table(data)
 
         elif action in ('%s.PutItem' % ACTION_PREFIX, '%s.UpdateItem' % ACTION_PREFIX, '%s.DeleteItem' % ACTION_PREFIX):
             # find an existing item and store it in a thread-local, so we can access it in return_response,
@@ -321,6 +336,10 @@ class ProxyListenerDynamoDB(ProxyListener):
             forward_to_lambda(records)
             forward_to_ddb_stream(records)
 
+    # -------------
+    # UTIL METHODS
+    # -------------
+
     def prepare_batch_write_item_records(self, record, data):
         records = []
         i = 0
@@ -418,6 +437,59 @@ class ProxyListenerDynamoDB(ProxyListener):
             return default
 
 
+def create_global_table(data):
+    table_name = data['GlobalTableName']
+    if table_name in GLOBAL_TABLES:
+        return get_error_message('Global Table with this name already exists', 'GlobalTableAlreadyExistsException')
+    GLOBAL_TABLES[table_name] = data
+    for group in data.get('ReplicationGroup', []):
+        group['ReplicaStatus'] = 'ACTIVE'
+        group['ReplicaStatusDescription'] = 'Replica active'
+    result = {'GlobalTableDescription': data}
+    return result
+
+
+def describe_global_table(data):
+    table_name = data['GlobalTableName']
+    details = GLOBAL_TABLES.get(table_name)
+    if not details:
+        return get_error_message('Global Table with this name does not exist', 'GlobalTableNotFoundException')
+    result = {'GlobalTableDescription': details}
+    return result
+
+
+def list_global_tables(data):
+    result = [select_attributes(tab, ['GlobalTableName', 'ReplicationGroup']) for tab in GLOBAL_TABLES.values()]
+    result = {'GlobalTables': result}
+    return result
+
+
+def update_global_table(data):
+    table_name = data['GlobalTableName']
+    details = GLOBAL_TABLES.get(table_name)
+    if not details:
+        return get_error_message('Global Table with this name does not exist', 'GlobalTableNotFoundException')
+    for update in data.get('ReplicaUpdates', []):
+        repl_group = details['ReplicationGroup']
+        # delete existing
+        delete = update.get('Delete')
+        if delete:
+            details['ReplicationGroup'] = [g for g in repl_group if g['RegionName'] != delete['RegionName']]
+        # create new
+        create = update.get('Create')
+        if create:
+            exists = [g for g in repl_group if g['RegionName'] == create['RegionName']]
+            if exists:
+                continue
+            new_group = {
+                'RegionName': create['RegionName'], 'ReplicaStatus': 'ACTIVE',
+                'ReplicaStatusDescription': 'Replica active'
+            }
+            details['ReplicationGroup'].append(new_group)
+    result = {'GlobalTableDescription': details}
+    return result
+
+
 def find_existing_item(put_item, table_name=None):
     table_name = table_name or put_item['TableName']
     ddb_client = aws_stack.connect_to_service('dynamodb')
@@ -452,11 +524,15 @@ def find_existing_item(put_item, table_name=None):
     return existing_item.get('Item')
 
 
-def get_table_not_found_error():
-    response = error_response(message='Cannot do operations on a non-existent table',
-                              error_type='ResourceNotFoundException')
+def get_error_message(message, error_type):
+    response = error_response(message=message, error_type=error_type)
     fix_headers_for_updated_response(response)
     return response
+
+
+def get_table_not_found_error():
+    return get_error_message(message='Cannot do operations on a non-existent table',
+                             error_type='ResourceNotFoundException')
 
 
 def fix_headers_for_updated_response(response):
