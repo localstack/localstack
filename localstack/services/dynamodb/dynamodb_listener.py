@@ -68,7 +68,8 @@ class ProxyListenerDynamoDB(ProxyListener):
             # Check if table exists, to avoid error log output from DynamoDBLocal
             table_names = ddb_client.list_tables()['TableNames']
             if to_str(data['TableName']) in table_names:
-                return 200
+                return error_response(message='Table already created',
+                                      error_type='ResourceNotFoundException', code=400)
 
         if action == '%s.CreateGlobalTable' % ACTION_PREFIX:
             return create_global_table(data)
@@ -285,7 +286,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
                 payload={'n': event_publisher.get_hash(data['TableName'])})
 
-            if data.get('Tags'):
+            if data.get('Tags') and response.status_code == 200:
                 table_arn = json.loads(response._content)['TableDescription']['TableArn']
                 TABLE_TAGS[table_arn] = {tag['Key']: tag['Value'] for tag in data['Tags']}
 
