@@ -251,11 +251,11 @@ def unsubscribe_sqs_queue(queue_url):
                 subscriptions.remove(subscriber)
 
 
-def publish_message(topic_arn, req_data, subscription_arn=None):
+def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
     message = req_data['Message'][0]
     sqs_client = aws_stack.connect_to_service('sqs')
 
-    LOG.debug('Publishing message to TopicArn: %s | Message:  %s' % (topic_arn, message))
+    LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
 
     subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
     for subscriber in list(subscriptions):
@@ -263,7 +263,8 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
             continue
         filter_policy = json.loads(subscriber.get('FilterPolicy') or '{}')
         message_attributes = get_message_attributes(req_data)
-        if not check_filter_policy(filter_policy, message_attributes):
+        if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
+            LOG.info('SNS filter policy %s does not match attributes %s' % (filter_policy, message_attributes))
             continue
 
         if subscriber['Protocol'] == 'sqs':
@@ -336,6 +337,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 )
                 response.raise_for_status()
             except Exception as exc:
+                LOG.info('Received error on sending SNS message, putting to DLQ (if configured): %s' % exc)
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
         else:
             LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
@@ -395,7 +397,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
                         'To confirm the subscription, visit the SubscribeURL included in this message.'],
             'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
         }
-        publish_message(topic_arn, confirmation, subscription_arn)
+        publish_message(topic_arn, confirmation, subscription_arn, skip_checks=True)
 
 
 def do_unsubscribe(subscription_arn):
