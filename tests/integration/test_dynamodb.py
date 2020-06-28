@@ -333,6 +333,40 @@ class DynamoDBIntegrationTest (unittest.TestCase):
             dynamodb.describe_global_table(GlobalTableName='invalid-table-name')
         self.assertIn('GlobalTableNotFoundException', str(ctx.exception))
 
+    def test_create_duplicate_table(self):
+        table_name = 'duplicateTable'
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{
+                'AttributeName': 'id', 'KeyType': 'HASH'
+            }],
+            AttributeDefinitions=[{
+                'AttributeName': 'id', 'AttributeType': 'S'
+            }],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+            Tags=TEST_DDB_TAGS
+        )
+
+        with self.assertRaises(Exception) as ctx:
+            dynamodb.create_table(
+                TableName=table_name,
+                KeySchema=[{
+                    'AttributeName': 'id', 'KeyType': 'HASH'
+                }],
+                AttributeDefinitions=[{
+                    'AttributeName': 'id', 'AttributeType': 'S'
+                }],
+                ProvisionedThroughput={
+                    'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+                },
+                Tags=TEST_DDB_TAGS
+            )
+        self.assertIn('ResourceNotFoundException', str(ctx.exception))
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service('dynamodb')
