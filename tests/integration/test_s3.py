@@ -500,6 +500,39 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_s3_presigned_post_success_action_status_201_response(self):
+        bucket_name = 'test-presigned-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        body = 'something body'
+        # get presigned URL
+        object_key = 'key-${filename}'
+        presigned_request = self.s3_client.generate_presigned_post(
+            Bucket=bucket_name,
+            Key=object_key,
+            Fields={'success_action_status': 201},
+            ExpiresIn=60
+        )
+        files = {'file': ('my-file', body)}
+        response = requests.post(presigned_request['url'], data=presigned_request['fields'], files=files, verify=False)
+        # test
+        expected_response_content = """
+                <PostResponse>
+                    <Location>{location}</Location>
+                    <Bucket>{bucket}</Bucket>
+                    <Key>{key}</Key>
+                    <ETag>{etag}</ETag>
+                </PostResponse>
+                """.format(
+            location='http://localhost/key-my-file',
+            bucket=bucket_name,
+            key='key-my-file',
+            etag='d41d8cd98f00b204e9800998ecf8427f'
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.text, expected_response_content)
+        # clean up
+        self._delete_bucket(bucket_name, ['key-my-file'])
+
     def test_s3_presigned_post_expires(self):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
