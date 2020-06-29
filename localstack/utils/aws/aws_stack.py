@@ -822,7 +822,8 @@ def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     if delete:
         run_safe(lambda: stream.destroy(), print_error=False)
     stream.create()
-    stream.wait_for()
+    # Disable this wait_for to reduce create_table operation time
+    # stream.wait_for()
     return stream
 
 
