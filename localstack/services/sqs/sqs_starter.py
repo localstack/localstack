@@ -1,4 +1,5 @@
 import os
+import cgi
 import logging
 import traceback
 from moto.sqs import responses as sqs_responses
@@ -57,10 +58,25 @@ def patch_moto():
     add_message_orig = Queue.add_message
     Queue.add_message = add_message
 
+    # pass additional globals (e.g., cgi module) to template render method
+
+    def response_template(self, template_str):
+        template = response_template_orig(self, template_str)
+
+        def render(*args, **kwargs):
+            return render_orig(*args, cgi=cgi, **kwargs)
+
+        render_orig = template.render
+        template.render = render
+        return template
+
+    response_template_orig = sqs_responses.SQSResponse.response_template
+    sqs_responses.SQSResponse.response_template = response_template
+
     # escape message responses to allow for special characters like "<"
     sqs_responses.RECEIVE_MESSAGE_RESPONSE = sqs_responses.RECEIVE_MESSAGE_RESPONSE.replace(
         '<StringValue>{{ value.string_value }}</StringValue>',
-        '<StringValue><![CDATA[{{ value.string_value }}]]></StringValue>')
+        '<StringValue>{{ cgi.escape(value.string_value) }}</StringValue>')
 
 
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):

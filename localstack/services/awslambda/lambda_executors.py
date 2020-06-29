@@ -98,6 +98,7 @@ def get_docker_host_from_container():
         try:
             if in_docker():
                 DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
+                LOG.info('Determined main container target IP: %s' % DOCKER_MAIN_CONTAINER_IP)
         except Exception as e:
             LOG.info('Unable to get IP address of main Docker container "%s": %s' %
                 (bootstrap.MAIN_CONTAINER_NAME, e))

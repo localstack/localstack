@@ -38,7 +38,7 @@ TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 TEST_MESSAGE_ATTRIBUTES = {
     'City': {
         'DataType': 'String',
-        'StringValue': 'Any City'
+        'StringValue': 'Any City - with special characters: <?`'
     },
     'Population': {
         'DataType': 'Number',

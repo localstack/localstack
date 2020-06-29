@@ -149,6 +149,10 @@ def get_port_from_custom_rules(method, path, data, headers):
     if is_sqs_queue_url(path):
         return config.PORT_SQS
 
+    # DynamoDB shell URLs
+    if path.startswith('/shell') or path.startswith('/dynamodb/shell'):
+        return config.PORT_DYNAMODB
+
     data_bytes = to_bytes(data or '')
 
     if path == '/' and to_bytes('QueueName=') in data_bytes:
