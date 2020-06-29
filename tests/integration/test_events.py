@@ -34,6 +34,7 @@ class EventsTest(unittest.TestCase):
         self.iam_client = aws_stack.connect_to_service('iam')
         self.sns_client = aws_stack.connect_to_service('sns')
         self.sfn_client = aws_stack.connect_to_service('stepfunctions')
+        self.sqs_client = aws_stack.connect_to_service('sqs')
 
     def test_put_rule(self):
         rule_name = 'rule-{}'.format(short_uid())
@@ -251,12 +252,14 @@ class EventsTest(unittest.TestCase):
         wait_for_port_open(local_port)
 
         topic_name = 'topic-{}'.format(short_uid())
+        queue_name = 'queue-{}'.format(short_uid())
         rule_name = 'rule-{}'.format(short_uid())
         endpoint = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, local_port)
         sm_role_arn = aws_stack.role_arn('sfn_role')
         sm_name = 'state-machine-{}'.format(short_uid())
         topic_target_id = 'target-{}'.format(short_uid())
         sm_target_id = 'target-{}'.format(short_uid())
+        queue_target_id = 'target-{}'.format(short_uid())
 
         events = []
         state_machine_definition = """
@@ -281,6 +284,9 @@ class EventsTest(unittest.TestCase):
         topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
         self.sns_client.subscribe(TopicArn=topic_arn, Protocol='http', Endpoint=endpoint)
 
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
         event = {
             'env': 'testing'
         }
@@ -302,11 +308,16 @@ class EventsTest(unittest.TestCase):
                     'Id': sm_target_id,
                     'Arn': state_machine_arn,
                     'Input': json.dumps(event)
+                },
+                {
+                    'Id': queue_target_id,
+                    'Arn': queue_arn,
+                    'Input': json.dumps(event)
                 }
             ]
         )
 
-        def received():
+        def received(q_url):
             # state machine got executed
             executions = self.sfn_client.list_executions(stateMachineArn=state_machine_arn)['executions']
             self.assertGreaterEqual(len(executions), 1)
@@ -320,11 +331,16 @@ class EventsTest(unittest.TestCase):
             execution_arn = executions[0]['executionArn']
             execution_input = self.sfn_client.describe_execution(executionArn=execution_arn)['input']
 
-            return execution_input, notifications[0]
+            # get message from queue
+            msgs = self.sqs_client.receive_message(QueueUrl=q_url).get('Messages', [])
+            self.assertGreaterEqual(len(msgs), 1)
 
-        execution_input, notification = retry(received, retries=5, sleep=15)
+            return execution_input, notifications[0], msgs[0]
+
+        execution_input, notification, msg_received = retry(received, retries=5, sleep=15, q_url=queue_url)
         self.assertEqual(json.loads(notification), event)
         self.assertEqual(json.loads(execution_input), event)
+        self.assertEqual(json.loads(msg_received['Body']), event)
 
         proxy.stop()
 
@@ -340,6 +356,8 @@ class EventsTest(unittest.TestCase):
 
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sfn_client.delete_state_machine(stateMachineArn=state_machine_arn)
+
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
 
     def test_put_events_with_target_firehose(self):
         s3_bucket = 's3-{}'.format(short_uid())

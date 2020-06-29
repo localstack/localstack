@@ -69,6 +69,11 @@ def get_scheduled_rule_func(data):
                 sns_client = aws_stack.connect_to_service('sns')
                 sns_client.publish(TopicArn=arn, Message=json.dumps(event))
 
+            elif ':sqs:' in arn:
+                sqs_client = aws_stack.connect_to_service('sqs')
+                queue_url = aws_stack.get_sqs_queue_url(arn)
+                sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
+
             elif ':states' in arn:
                 stepfunctions_client = aws_stack.connect_to_service('stepfunctions')
                 stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
