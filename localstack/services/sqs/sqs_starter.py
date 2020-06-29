@@ -1,5 +1,6 @@
 import os
 import cgi
+import types
 import logging
 import traceback
 from moto.sqs import responses as sqs_responses
@@ -58,16 +59,21 @@ def patch_moto():
     add_message_orig = Queue.add_message
     Queue.add_message = add_message
 
-    # pass additional globals (e.g., cgi module) to template render method
+    # pass additional globals (e.g., escaping methods) to template render method
 
-    def response_template(self, template_str):
-        template = response_template_orig(self, template_str)
+    def response_template(self, template_str, *args, **kwargs):
+        template = response_template_orig(self, template_str, *args, **kwargs)
 
-        def render(*args, **kwargs):
-            return render_orig(*args, cgi=cgi, **kwargs)
+        def _escape(val):
+            return val and cgi.escape(val)
 
-        render_orig = template.render
-        template.render = render
+        def render(self, *args, **kwargs):
+            return render_orig(*args, _escape=_escape, **kwargs)
+
+        if not hasattr(template, '__patched'):
+            render_orig = template.render
+            template.render = types.MethodType(render, template)
+            template.__patched = True
         return template
 
     response_template_orig = sqs_responses.SQSResponse.response_template
@@ -76,7 +82,7 @@ def patch_moto():
     # escape message responses to allow for special characters like "<"
     sqs_responses.RECEIVE_MESSAGE_RESPONSE = sqs_responses.RECEIVE_MESSAGE_RESPONSE.replace(
         '<StringValue>{{ value.string_value }}</StringValue>',
-        '<StringValue>{{ cgi.escape(value.string_value) }}</StringValue>')
+        '<StringValue>{{ _escape(value.string_value) }}</StringValue>')
 
 
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):
