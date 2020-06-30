@@ -1,5 +1,4 @@
 import os
-import cgi
 import types
 import logging
 import traceback
@@ -8,7 +7,8 @@ from moto.sqs.models import Queue
 from localstack import config
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port
+from localstack.utils.common import (
+    wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port, to_str, escape_html)
 from localstack.services.sqs import sqs_listener
 from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run, start_moto_server
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq
@@ -65,7 +65,10 @@ def patch_moto():
         template = response_template_orig(self, template_str, *args, **kwargs)
 
         def _escape(val):
-            return val and cgi.escape(val)
+            try:
+                return val and escape_html(to_str(val))
+            except Exception:
+                return val
 
         def render(self, *args, **kwargs):
             return render_orig(*args, _escape=_escape, **kwargs)
@@ -82,8 +85,7 @@ def patch_moto():
     # escape message responses to allow for special characters like "<"
     sqs_responses.RECEIVE_MESSAGE_RESPONSE = sqs_responses.RECEIVE_MESSAGE_RESPONSE.replace(
         '<StringValue>{{ value.string_value }}</StringValue>',
-        # '<StringValue>{{ _escape(value.string_value) }}</StringValue>',
-        '<StringValue><![CDATA[{{ value.string_value }}]]></StringValue>')
+        '<StringValue>{{ _escape(value.string_value) }}</StringValue>')
 
 
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):
