@@ -3,7 +3,6 @@ import json
 import time
 import unittest
 
-from localstack.config import DEFAULT_REGION
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry, short_uid, to_str
@@ -1211,7 +1210,7 @@ class CloudFormationTest(unittest.TestCase):
         }
         self.assertIn('Arn', outputs)
         self.assertEqual(outputs['Arn'], 'arn:aws:dynamodb:{}:{}:table/{}'.format(
-            DEFAULT_REGION, TEST_AWS_ACCOUNT_ID, ddb_table_name))
+            aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, ddb_table_name))
 
         ddb_client = aws_stack.connect_to_service('dynamodb')
         rs = ddb_client.list_tables()

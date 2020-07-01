@@ -16,7 +16,7 @@ def sqs_error_to_dead_letter_queue(queue_arn, event, error):
     try:
         policy = json.loads(attrs.get('RedrivePolicy') or '{}')
     except JSONDecodeError:
-        LOG.warning('Parsing RedrivePolicy failed, Queue: {}'.format(queue_arn))
+        LOG.warning('Parsing RedrivePolicy {} failed, Queue: {}'.format(attrs.get('RedrivePolicy'), queue_arn))
         return
 
     target_arn = policy.get('deadLetterTargetArn')
