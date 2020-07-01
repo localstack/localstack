@@ -412,6 +412,12 @@ RESOURCE_TO_FUNCTION = {
                     'WriteCapacityUnits': 5
                 }
             }
+        },
+        'delete': {
+            'function': 'delete_table',
+            'parameters': {
+                'TableName': 'PhysicalResourceId'
+            }
         }
     },
     'Events::Rule': {

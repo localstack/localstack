@@ -2,8 +2,12 @@
 
 import unittest
 import json
+
+from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.utils.aws.aws_models import KinesisStream
+from localstack.utils.aws.aws_stack import get_environment
 from localstack.utils.common import json_safe, short_uid
 
 PARTITION_KEY = 'id'
@@ -272,6 +276,13 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_dynamodb_stream_shard_iterator(self):
+        def wait_for_stream_created(table_name):
+            stream_name = get_kinesis_stream_name(table_name)
+            stream = KinesisStream(id=stream_name, num_shards=1)
+            kinesis = aws_stack.connect_to_service('kinesis', env=get_environment(None))
+            stream.connect(kinesis)
+            stream.wait_for()
+
         dynamodb = aws_stack.connect_to_service('dynamodb')
         ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
 
@@ -288,6 +299,8 @@ class DynamoDBIntegrationTest (unittest.TestCase):
                 'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
             },
         )
+
+        wait_for_stream_created(table_name)
 
         stream_arn = table['TableDescription']['LatestStreamArn']
         result = ddbstreams.describe_stream(StreamArn=stream_arn)
