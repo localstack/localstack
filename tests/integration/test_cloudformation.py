@@ -1162,7 +1162,7 @@ class CloudFormationTest(unittest.TestCase):
         topics = [tp for tp in rs['Topics'] if tp['TopicArn'] == topic_arn]
         self.assertEqual(len(topics), 0)
 
-    def test_deploy_stack_with_dynamodb_resource(self):
+    def test_deploy_stack_with_dynamodb_table(self):
         stack_name = 'stack-%s' % short_uid()
         change_set_name = 'change-set-%s' % short_uid()
         env = 'Staging'
@@ -1211,6 +1211,9 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn('Arn', outputs)
         self.assertEqual(outputs['Arn'], 'arn:aws:dynamodb:{}:{}:table/{}'.format(
             aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, ddb_table_name))
+
+        self.assertIn('Name', outputs)
+        self.assertEqual(outputs['Name'], ddb_table_name)
 
         ddb_client = aws_stack.connect_to_service('dynamodb')
         rs = ddb_client.list_tables()
