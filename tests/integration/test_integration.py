@@ -150,6 +150,10 @@ class IntegrationTest(unittest.TestCase):
     # TODO fix duplication with test_lambda_streams_batch_and_transactions(..)!
     # @profiled()
     def test_kinesis_lambda_sns_ddb_sqs_streams(self):
+        def create_kinesis_stream(name, delete=False):
+            stream = aws_stack.create_kinesis_stream(name, delete=delete)
+            stream.wait_for()
+
         ddb_lease_table_suffix = '-kclapp'
         table_name = TEST_TABLE_NAME + 'klsdss' + ddb_lease_table_suffix
         stream_name = TEST_STREAM_NAME
@@ -163,8 +167,9 @@ class IntegrationTest(unittest.TestCase):
         LOGGER.info('Creating test streams...')
         run_safe(lambda: dynamodb_service.delete_table(
             TableName=stream_name + ddb_lease_table_suffix), print_error=False)
-        aws_stack.create_kinesis_stream(stream_name, delete=True)
-        aws_stack.create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
+
+        create_kinesis_stream(stream_name, delete=True)
+        create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
 
         events = []
 
