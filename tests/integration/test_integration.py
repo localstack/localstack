@@ -281,7 +281,7 @@ class IntegrationTest(unittest.TestCase):
             sqs.send_message(QueueUrl=sqs_queue_info['QueueUrl'], MessageBody=str(i))
 
         LOGGER.info('Waiting some time before finishing test.')
-        time.sleep(2)
+        time.sleep(5)
 
         num_events_lambda = num_events_ddb + num_events_sns + num_events_sqs
         num_events = num_events_lambda + num_events_kinesis
