@@ -172,6 +172,9 @@ def update_physical_resource_id(resource):
         elif isinstance(resource, service_models.ElasticsearchDomain):
             resource.physical_resource_id = resource.params.get('DomainName')
 
+        elif isinstance(resource, dynamodb_models.Table):
+            resource.physical_resource_id = resource.name
+
         elif isinstance(resource, dynamodb2_models.Table):
             resource.physical_resource_id = resource.name
 
