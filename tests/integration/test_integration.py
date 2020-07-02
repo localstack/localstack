@@ -304,7 +304,7 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(len(modifies), num_put_existing_items + num_updates_ddb)
 
         # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=9, sleep=3)
+        retry(check_events, retries=15, sleep=2)
 
         # check cloudwatch notifications
         def check_cw_invocations():
@@ -316,7 +316,7 @@ class IntegrationTest(unittest.TestCase):
             #   add num_events_ddb to num_events_lambda above!
             # self.assertEqual(num_invocations, 2 + num_events_lambda)
             self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
-            num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
+            num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors', 15)
             self.assertEqual(num_error_invocations, 1)
 
         # Lambda invocations are running asynchronously, hence sleep some time here to wait for results
