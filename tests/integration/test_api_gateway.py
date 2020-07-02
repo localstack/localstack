@@ -89,7 +89,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
 
     def test_api_gateway_kinesis_integration(self):
         # create target Kinesis stream
-        aws_stack.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
+        stream = aws_stack.create_kinesis_stream(self.TEST_STREAM_KINESIS_API_GW)
+        stream.wait_for()
 
         # create API Gateway and connect it to the target stream
         result = self.connect_api_gateway_to_kinesis('test_gateway1', self.TEST_STREAM_KINESIS_API_GW)
