@@ -11,7 +11,7 @@ from localstack import config, constants
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
 from localstack.services.sns import sns_listener
-from localstack.utils.common import to_str, clone, path_from_url
+from localstack.utils.common import to_str, clone, path_from_url, get_service_protocol
 from localstack.utils.analytics import event_publisher
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.awslambda import lambda_api
@@ -144,7 +144,7 @@ def _queue_url(path, req_data, headers):
         return queue_url
     url = config.TEST_SQS_URL
     if headers.get('Host'):
-        url = 'http%s://%s' % ('s' if config.USE_SSL else '', headers['Host'])
+        url = '%s://%s' % (get_service_protocol(), headers['Host'])
     queue_url = '%s%s' % (url, path.partition('?')[0])
     return queue_url
 
