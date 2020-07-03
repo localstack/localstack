@@ -643,42 +643,36 @@ class SNSTest(unittest.TestCase):
         self.sns_client.delete_topic(TopicArn=topic_arn)
         self.sqs_client.delete_queue(QueueUrl=queue_url)
 
-    def test_sent_message_with_multiple_subscriptions(self):
+    def test_multiple_subscriptions_http_endpoint(self):
         self.unsubscribe_all_from_sns()
 
         # create HTTP endpoint and connect it to SNS topic
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 records.append((json.loads(to_str(data)), headers))
-                return 200
+                return 429
 
+        number_of_subscriptions = 4
         records = []
-        local_port = get_free_tcp_port()
-        proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
-        wait_for_port_open(local_port)
-        http_endpoint = '%s://localhost:%s' % (get_service_protocol(), local_port)
+        proxies = []
 
-        number_of_topics = 4
-
-        for idx in range(number_of_topics):
-            topic_name = 'topic-{}'.format(short_uid())
-            topic_arn = self.sns_client.create_topic(Name=topic_name)['TopicArn']
-            self.sns_client.subscribe(TopicArn=topic_arn,
+        for _ in range(number_of_subscriptions):
+            local_port = get_free_tcp_port()
+            proxies.append(start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener()))
+            wait_for_port_open(local_port)
+            http_endpoint = '%s://localhost:%s' % (get_service_protocol(), local_port)
+            self.sns_client.subscribe(TopicArn=self.topic_arn,
                                       Protocol='http', Endpoint=http_endpoint)
 
         # fetch subscription information
         subscription_list = self.sns_client.list_subscriptions()
         self.assertEqual(subscription_list['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(len(subscription_list['Subscriptions']), number_of_topics)
+        self.assertEqual(len(subscription_list['Subscriptions']), number_of_subscriptions)
 
-        # publish message on subscription list
-        for subscription in subscription_list['Subscriptions']:
-            resp = self.sns_client.publish(TopicArn=subscription['TopicArn'],
-                                           Message='test_message')
-            self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
-            self.assertEqual(resp['ResponseMetadata']['RetryAttempts'], 0)
+        self.assertEqual(number_of_subscriptions, len(records))
 
-        proxy.stop()
+        for proxy in proxies:
+            proxy.stop()
 
     def _create_queue(self):
         queue_name = 'queue-%s' % short_uid()
