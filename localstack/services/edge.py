@@ -7,7 +7,7 @@ from requests.models import Response
 from localstack import config
 from localstack.services import plugins
 from localstack.constants import HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER
-from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str
+from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str, get_service_protocol
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
@@ -58,10 +58,8 @@ class ProxyListenerEdge(ProxyListener):
             response._content = '{"status": "running"}'
             return response
 
-        use_ssl = config.USE_SSL
-
         connect_host = '%s:%s' % (config.HOSTNAME, port)
-        url = 'http%s://%s%s' % ('s' if use_ssl else '', connect_host, path)
+        url = '%s://%s%s' % (get_service_protocol(), connect_host, path)
         headers['Host'] = host
         function = getattr(requests, method.lower())
         if isinstance(data, dict):

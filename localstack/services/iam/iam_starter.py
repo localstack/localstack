@@ -1,6 +1,7 @@
 import json
 import uuid
 
+from copy import deepcopy
 from urllib.parse import quote
 
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE
@@ -213,11 +214,14 @@ def apply_patches():
 
     def iam_response_list_roles(self):
         roles = moto_iam_backend.get_roles()
+        items = []
         for role in roles:
-            role.assume_role_policy_document = quote(json.dumps(role.assume_role_policy_document or {}))
+            item = deepcopy(role)
+            item.assume_role_policy_document = quote(json.dumps(item.assume_role_policy_document or {}))
+            items.append(item)
 
         template = self.response_template(LIST_ROLES_TEMPLATE)
-        return template.render(roles=roles)
+        return template.render(roles=items)
 
     IamResponse.list_roles = iam_response_list_roles
 

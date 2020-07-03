@@ -257,7 +257,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
-        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s_%s' % (TEST_LAMBDA_NAME_PY, sid)]
         self.assertEqual(len(matching), 1)
         self.assertIn(':policy/', matching[0]['Arn'])
 
@@ -804,6 +804,42 @@ class TestPythonRuntimes(LambdaTestBase):
 
         # clean up
         sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+
+    def create_multiple_lambda_permissions(self):
+        iam_client = aws_stack.connect_to_service('iam')
+        lambda_client = aws_stack.connect_to_service('lambda')
+        role_name = 'role-{}'.format(short_uid())
+        assume_policy_document = {
+            'Version': '2012-10-17',
+            'Statement': [
+                {
+                    'Action': 'sts:AssumeRole',
+                    'Principal': {'Service': 'lambda.amazonaws.com'}
+                }
+            ]
+        }
+
+        iam_client.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument=json.dumps(assume_policy_document)
+        )
+
+        Util.create_function('testLambda', TEST_LAMBDA_NAME_PY,
+                             runtime=LAMBDA_RUNTIME_PYTHON37, libs=TEST_LAMBDA_LIBS)
+
+        action = 'lambda:InvokeFunction'
+        sid = 'logs'
+        resp = lambda_client.add_permission(FunctionName='testLambda', Action=action,
+                                            StatementId=sid, Principal='logs.amazonaws.com')
+        self.assertIn('Statement', resp)
+
+        sid = 'kinesis'
+        resp = lambda_client.add_permission(FunctionName='testLambda', Action=action,
+                                            StatementId=sid, Principal='kinesis.amazonaws.com')
+
+        self.assertIn('Statement', resp)
+        # delete lambda
+        testutil.delete_lambda_function(TEST_LAMBDA_PYTHON)
 
 
 class TestNodeJSRuntimes(LambdaTestBase):
