@@ -1158,6 +1158,14 @@ def truncate(data, max_length=100):
     return ('%s...' % data[:max_length]) if len(data or '') > max_length else data
 
 
+def escape_html(string, quote=False):
+    if six.PY2:
+        import cgi
+        return cgi.escape(string, quote=quote)
+    import html
+    return html.escape(string, quote=quote)
+
+
 def parallelize(func, list, size=None):
     if not size:
         size = len(list)

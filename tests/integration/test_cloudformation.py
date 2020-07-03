@@ -2,6 +2,7 @@ import os
 import json
 import time
 import unittest
+
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry, short_uid, to_str
@@ -503,6 +504,106 @@ Outputs:
       Name: !Sub '${AWS::StackName}-MyTopicName'
 """
 
+TEST_DEPLOY_BODY_3 = """
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DynamoDB resource stack creation using Amplify CLI
+Parameters:
+  partitionKeyName:
+    Type: String
+    Default: startTime
+  partitionKeyType:
+    Type: String
+    Default: String
+  env:
+    Type: String
+    Default: Staging
+  sortKeyName:
+    Type: String
+    Default: name
+  sortKeyType:
+    Type: String
+    Default: String
+  tableName:
+    Type: String
+    Default: ddb1
+Conditions:
+  ShouldNotCreateEnvResources:
+    Fn::Equals:
+    - Ref: env
+    - NONE
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - Ref: tableName
+          - Fn::Join:
+              - ''
+              - - Ref: tableName
+                - "-"
+                - Ref: env
+      AttributeDefinitions:
+      - AttributeName: name
+        AttributeType: S
+      - AttributeName: startTime
+        AttributeType: S
+      - AttributeName: externalUserID
+        AttributeType: S
+      KeySchema:
+      - AttributeName: name
+        KeyType: HASH
+      - AttributeName: startTime
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      GlobalSecondaryIndexes:
+      - IndexName: byUser
+        KeySchema:
+        - AttributeName: externalUserID
+          KeyType: HASH
+        - AttributeName: startTime
+          KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+Outputs:
+  Name:
+    Value:
+      Ref: DynamoDBTable
+  Arn:
+    Value:
+      Fn::GetAtt:
+      - DynamoDBTable
+      - Arn
+  StreamArn:
+    Value:
+      Fn::GetAtt:
+      - DynamoDBTable
+      - StreamArn
+  PartitionKeyName:
+    Value:
+      Ref: partitionKeyName
+  PartitionKeyType:
+    Value:
+      Ref: partitionKeyType
+  SortKeyName:
+    Value:
+      Ref: sortKeyName
+  SortKeyType:
+    Value:
+      Ref: sortKeyType
+  Region:
+    Value:
+      Ref: AWS::Region
+"""
+
 TEST_TEMPLATE_19 = """
 Conditions:
   IsPRD:
@@ -916,10 +1017,11 @@ class CloudFormationTest(unittest.TestCase):
         )
 
     def test_deploy_stack_with_iam_role(self):
-        cloudformation = aws_stack.connect_to_service('cloudformation')
         stack_name = 'stack-%s' % short_uid()
         change_set_name = 'change-set-%s' % short_uid()
         role_name = 'role-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
 
         try:
             cloudformation.describe_stacks(
@@ -1059,6 +1161,74 @@ class CloudFormationTest(unittest.TestCase):
         rs = sns_client.list_topics()
         topics = [tp for tp in rs['Topics'] if tp['TopicArn'] == topic_arn]
         self.assertEqual(len(topics), 0)
+
+    def test_deploy_stack_with_dynamodb_table(self):
+        stack_name = 'stack-%s' % short_uid()
+        change_set_name = 'change-set-%s' % short_uid()
+        env = 'Staging'
+        ddb_table_name_prefix = 'ddb-table-%s' % short_uid()
+        ddb_table_name = '{}-{}'.format(ddb_table_name_prefix, env)
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        rs = cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=TEST_DEPLOY_BODY_3,
+            Parameters=[
+                {
+                    'ParameterKey': 'tableName',
+                    'ParameterValue': ddb_table_name_prefix
+                },
+                {
+                    'ParameterKey': 'env',
+                    'ParameterValue': env
+                }
+            ]
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        change_set_id = rs['Id']
+
+        rs = cloudformation.execute_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = cloudformation.describe_stacks(
+            StackName=stack_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        stacks = [stack for stack in rs['Stacks'] if stack['StackName'] == stack_name]
+        self.assertEqual(len(stacks), 1)
+        self.assertEqual(stacks[0]['ChangeSetId'], change_set_id)
+
+        outputs = {
+            output['OutputKey']: output['OutputValue']
+            for output in stacks[0]['Outputs']
+        }
+        self.assertIn('Arn', outputs)
+        self.assertEqual(outputs['Arn'], 'arn:aws:dynamodb:{}:{}:table/{}'.format(
+            aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, ddb_table_name))
+
+        self.assertIn('Name', outputs)
+        self.assertEqual(outputs['Name'], ddb_table_name)
+
+        ddb_client = aws_stack.connect_to_service('dynamodb')
+        rs = ddb_client.list_tables()
+        self.assertIn(ddb_table_name, rs['TableNames'])
+
+        # clean up
+        cloudformation.delete_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        cloudformation.delete_stack(
+            StackName=stack_name
+        )
+        rs = ddb_client.list_tables()
+        self.assertNotIn(ddb_table_name, rs['TableNames'])
 
     def test_cfn_handle_s3_bucket_resources(self):
         stack_name = 'stack-%s' % short_uid()

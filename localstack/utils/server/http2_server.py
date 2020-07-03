@@ -42,6 +42,7 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
     ensure_event_loop()
     app = Quart(__name__)
+    app.config['MAX_CONTENT_LENGTH'] = 256 * 1024 * 1024  # 256 MB request payload limit
 
     @app.route('/', methods=HTTP_METHODS, defaults={'path': ''})
     @app.route('/<path:path>', methods=HTTP_METHODS)

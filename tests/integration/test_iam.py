@@ -257,3 +257,42 @@ class TestIAMIntegrations(unittest.TestCase):
         self.assertEqual(actions['s3:PutObject']['EvalDecision'], 'explicitDeny')
         self.assertIn('s3:GetObjectVersion', actions)
         self.assertEqual(actions['s3:GetObjectVersion']['EvalDecision'], 'allowed')
+
+    def test_create_role_with_assume_role_policy(self):
+        role_name_1 = 'role-{}'.format(short_uid())
+        role_name_2 = 'role-{}'.format(short_uid())
+
+        assume_role_policy_doc = json.dumps({
+            'Version': '2012-10-17',
+            'Statement': [
+                {
+                    'Action': 'sts:AssumeRole',
+                    'Effect': 'Allow',
+                    'Principal': {'AWS': ['arn:aws:iam::123412341234:root']}
+                }
+            ]
+        })
+
+        self.iam_client.create_role(
+            Path='/',
+            RoleName=role_name_1,
+            AssumeRolePolicyDocument=assume_role_policy_doc
+        )
+
+        roles = self.iam_client.list_roles()['Roles']
+        for role in roles:
+            if role['RoleName'] == role_name_1:
+                self.assertEqual(role['AssumeRolePolicyDocument'], assume_role_policy_doc)
+
+        self.iam_client.create_role(
+            Path='/',
+            RoleName=role_name_2,
+            AssumeRolePolicyDocument=assume_role_policy_doc,
+            Description='string'
+        )
+
+        roles = self.iam_client.list_roles()['Roles']
+        for role in roles:
+            if role['RoleName'] in [role_name_1, role_name_2]:
+                self.assertEqual(role['AssumeRolePolicyDocument'], assume_role_policy_doc)
+                self.iam_client.delete_role(RoleName=role['RoleName'])

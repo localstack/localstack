@@ -1,6 +1,8 @@
 import json
 import uuid
 import logging
+
+from json import JSONDecodeError
 from localstack.utils.aws import aws_stack
 
 LOG = logging.getLogger(__name__)
@@ -11,7 +13,12 @@ def sqs_error_to_dead_letter_queue(queue_arn, event, error):
     queue_url = aws_stack.get_sqs_queue_url(queue_arn)
     attrs = client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['RedrivePolicy'])
     attrs = attrs.get('Attributes', {})
-    policy = json.loads(attrs.get('RedrivePolicy') or '{}')
+    try:
+        policy = json.loads(attrs.get('RedrivePolicy') or '{}')
+    except JSONDecodeError:
+        LOG.warning('Parsing RedrivePolicy {} failed, Queue: {}'.format(attrs.get('RedrivePolicy'), queue_arn))
+        return
+
     target_arn = policy.get('deadLetterTargetArn')
     if not target_arn:
         return

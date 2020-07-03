@@ -15,7 +15,7 @@ from localstack.constants import LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid, to_str,
-    chmod_r, rm_rf, ShellCommandThread, FuncThread)
+    chmod_r, rm_rf, ShellCommandThread, FuncThread, get_service_protocol)
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
@@ -326,8 +326,8 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     if aws_stack.is_local_env(env):
         kwargs['kinesisEndpoint'] = '%s:%s' % (HOSTNAME, config.PORT_KINESIS)
         kwargs['dynamodbEndpoint'] = '%s:%s' % (HOSTNAME, config.PORT_DYNAMODB)
-        kwargs['kinesisProtocol'] = 'http%s' % ('s' if USE_SSL else '')
-        kwargs['dynamodbProtocol'] = 'http%s' % ('s' if USE_SSL else '')
+        kwargs['kinesisProtocol'] = get_service_protocol()
+        kwargs['dynamodbProtocol'] = get_service_protocol()
         kwargs['disableCertChecking'] = 'true'
     kwargs.update(configs)
     # create config file

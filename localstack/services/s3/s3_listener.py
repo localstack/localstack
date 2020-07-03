@@ -1113,12 +1113,12 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
                 LOGGER.debug('S3 POST {} to {}'.format(response.status_code, response.headers['Location']))
 
+            expanded_data = multipart_content.expand_multipart_filename(data, headers)
             key, status_code = multipart_content.find_multipart_key_value(
-                data, headers, 'success_action_status'
+                expanded_data, headers, 'success_action_status'
             )
 
-            if response.status_code == 200 and status_code == '201' and key:
-                response.status_code = 201
+            if response.status_code == 201 and key:
                 response._content = self.get_201_response(key, bucket_name)
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'

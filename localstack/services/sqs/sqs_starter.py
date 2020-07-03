@@ -1,4 +1,5 @@
 import os
+import types
 import logging
 import traceback
 from moto.sqs import responses as sqs_responses
@@ -6,7 +7,8 @@ from moto.sqs.models import Queue
 from localstack import config
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port
+from localstack.utils.common import (
+    wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port, to_str, escape_html)
 from localstack.services.sqs import sqs_listener
 from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run, start_moto_server
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq
@@ -57,10 +59,33 @@ def patch_moto():
     add_message_orig = Queue.add_message
     Queue.add_message = add_message
 
+    # pass additional globals (e.g., escaping methods) to template render method
+
+    def response_template(self, template_str, *args, **kwargs):
+        template = response_template_orig(self, template_str, *args, **kwargs)
+
+        def _escape(val):
+            try:
+                return val and escape_html(to_str(val))
+            except Exception:
+                return val
+
+        def render(self, *args, **kwargs):
+            return render_orig(*args, _escape=_escape, **kwargs)
+
+        if not hasattr(template, '__patched'):
+            render_orig = template.render
+            template.render = types.MethodType(render, template)
+            template.__patched = True
+        return template
+
+    response_template_orig = sqs_responses.SQSResponse.response_template
+    sqs_responses.SQSResponse.response_template = response_template
+
     # escape message responses to allow for special characters like "<"
     sqs_responses.RECEIVE_MESSAGE_RESPONSE = sqs_responses.RECEIVE_MESSAGE_RESPONSE.replace(
         '<StringValue>{{ value.string_value }}</StringValue>',
-        '<StringValue><![CDATA[{{ value.string_value }}]]></StringValue>')
+        '<StringValue>{{ _escape(value.string_value) }}</StringValue>')
 
 
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):

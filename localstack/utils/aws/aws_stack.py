@@ -822,7 +822,7 @@ def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     if delete:
         run_safe(lambda: stream.destroy(), print_error=False)
     stream.create()
-    stream.wait_for()
+    # Note: Returning the stream without awaiting its creation (via wait_for()) to avoid API call timeouts/retries.
     return stream
 
 

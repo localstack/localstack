@@ -150,6 +150,10 @@ class IntegrationTest(unittest.TestCase):
     # TODO fix duplication with test_lambda_streams_batch_and_transactions(..)!
     # @profiled()
     def test_kinesis_lambda_sns_ddb_sqs_streams(self):
+        def create_kinesis_stream(name, delete=False):
+            stream = aws_stack.create_kinesis_stream(name, delete=delete)
+            stream.wait_for()
+
         ddb_lease_table_suffix = '-kclapp'
         table_name = TEST_TABLE_NAME + 'klsdss' + ddb_lease_table_suffix
         stream_name = TEST_STREAM_NAME
@@ -163,8 +167,9 @@ class IntegrationTest(unittest.TestCase):
         LOGGER.info('Creating test streams...')
         run_safe(lambda: dynamodb_service.delete_table(
             TableName=stream_name + ddb_lease_table_suffix), print_error=False)
-        aws_stack.create_kinesis_stream(stream_name, delete=True)
-        aws_stack.create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
+
+        create_kinesis_stream(stream_name, delete=True)
+        create_kinesis_stream(TEST_LAMBDA_SOURCE_STREAM_NAME)
 
         events = []
 
@@ -299,7 +304,7 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(len(modifies), num_put_existing_items + num_updates_ddb)
 
         # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=9, sleep=3)
+        retry(check_events, retries=15, sleep=2)
 
         # check cloudwatch notifications
         def check_cw_invocations():
@@ -311,7 +316,7 @@ class IntegrationTest(unittest.TestCase):
             #   add num_events_ddb to num_events_lambda above!
             # self.assertEqual(num_invocations, 2 + num_events_lambda)
             self.assertGreater(num_invocations, num_events_sns + num_events_sqs)
-            num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors')
+            num_error_invocations = get_lambda_invocations_count(TEST_LAMBDA_NAME_STREAM, 'Errors', 15)
             self.assertEqual(num_error_invocations, 1)
 
         # Lambda invocations are running asynchronously, hence sleep some time here to wait for results

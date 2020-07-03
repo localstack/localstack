@@ -93,7 +93,7 @@ def post_request():
         stream_name = stream_name_from_stream_arn(data['StreamArn'])
         stream_shard_id = kinesis_shard_id(data['ShardId'])
         result = kinesis.get_shard_iterator(StreamName=stream_name,
-            ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
+                                            ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
     elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
         kinesis_records = kinesis.get_records(**data)
         result = {'Records': [], 'NextShardIterator': kinesis_records.get('NextShardIterator')}
@@ -144,7 +144,8 @@ def shard_id(stream_arn, kinesis_shard_id):
 
 
 def kinesis_shard_id(dynamodbstream_shard_id):
-    return dynamodbstream_shard_id.rsplit('-', 1)[0]
+    shard_params = dynamodbstream_shard_id.rsplit('-')
+    return '{0}-{1}'.format(shard_params[0], shard_params[-1])
 
 
 def serve(port, quiet=True):
