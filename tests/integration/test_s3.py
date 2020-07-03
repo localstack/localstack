@@ -752,7 +752,7 @@ class S3ListenerTest(unittest.TestCase):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
-        data = '000000000000000000000000000000'
+        data = '1234567890 ' * 100
 
         # Write contents to memory rather than a file.
         upload_file_object = BytesIO()
@@ -769,7 +769,7 @@ class S3ListenerTest(unittest.TestCase):
         with gzip.GzipFile(fileobj=download_file_object, mode='rb') as filestream:
             downloaded_data = filestream.read().decode('utf-8')
 
-        self.assertEqual(downloaded_data, data, '{} != {}'.format(downloaded_data, data))
+        self.assertEqual(downloaded_data, data)
 
     def test_set_external_hostname(self):
         bucket_name = 'test-bucket-%s' % short_uid()

@@ -65,7 +65,7 @@ class ProxyListenerEdge(ProxyListener):
         if isinstance(data, dict):
             data = json.dumps(data)
 
-        response = function(url, data=data, headers=headers, verify=False)
+        response = function(url, data=data, headers=headers, verify=False, stream=True)
         return response
 
 
