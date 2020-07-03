@@ -1,3 +1,4 @@
+import datetime
 import json
 import uuid
 import logging
@@ -28,11 +29,11 @@ def send_event_to_sqs(event, arn):
     queue_url = aws_stack.get_sqs_queue_url(arn)
     sqs_client = aws_stack.connect_to_service('sqs')
 
-    sqs_client.send_message(QueueUrl=queue_url, MessageBody=event['Detail'])
+    sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
 
 
 def send_event_to_lambda(event, arn):
-    run_lambda(event=json.loads(event['Detail']), context={}, func_arn=arn, asynchronous=True)
+    run_lambda(event=json.dumps(event), context={}, func_arn=arn, asynchronous=True)
 
 
 def send_event_to_firehose(event, arn):
@@ -40,7 +41,7 @@ def send_event_to_firehose(event, arn):
     firehose_client = aws_stack.connect_to_service('firehose')
     firehose_client.put_record(
         DeliveryStreamName=delivery_stream_name,
-        Record={'Data': to_bytes(event['Detail'])})
+        Record={'Data': to_bytes(json.dumps(event))})
 
 
 def process_events(event, targets):
@@ -118,8 +119,8 @@ def apply_patches():
         _create_and_register_temp_dir()
         _dump_events_to_files(events)
 
-        for event in events:
-            event = event['event']
+        for event_envelope in events:
+            event = event_envelope['event']
             event_bus = event.get('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
             rules = EVENT_RULES.get(event_bus, [])
@@ -128,8 +129,19 @@ def apply_patches():
             for rule in rules:
                 targets.extend(self.events_backend.list_targets_by_rule(rule)['Targets'])
 
+            formatted_event = {
+                'version': '0',
+                'id': event_envelope['uuid'],
+                'detail-type': event['DetailType'],
+                'source': event['Source'],
+                'account': TEST_AWS_ACCOUNT_ID,
+                'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'region': self.region,
+                'resources': event.get('Resources', []),
+                'detail': event['Detail'],
+            }
             # process event
-            process_events(event, targets)
+            process_events(formatted_event, targets)
 
         content = {
             'Entries': list(map(lambda event: {'EventId': event['uuid']}, events))
