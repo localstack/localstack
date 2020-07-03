@@ -91,7 +91,7 @@ def _store_logs(func_details, log_output, invocation_time=None, container_id=Non
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
 
-def get_docker_host_from_container():
+def get_main_endpoint_from_container():
     global DOCKER_MAIN_CONTAINER_IP
     if DOCKER_MAIN_CONTAINER_IP is None:
         DOCKER_MAIN_CONTAINER_IP = False
@@ -237,10 +237,9 @@ class LambdaExecutorContainers(LambdaExecutor):
         event_body = json.dumps(json_safe(event))
         stdin = self.prepare_event(environment, event_body)
 
-        docker_host = get_docker_host_from_container()
+        main_endpoint = get_main_endpoint_from_container()
 
-        environment['HOSTNAME'] = docker_host
-        environment['LOCALSTACK_HOSTNAME'] = docker_host
+        environment['LOCALSTACK_HOSTNAME'] = main_endpoint
         environment['_HANDLER'] = handler
         if os.environ.get('HTTP_PROXY'):
             environment['HTTP_PROXY'] = os.environ['HTTP_PROXY']

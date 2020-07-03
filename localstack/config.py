@@ -310,7 +310,7 @@ def populate_configs(service_ports=None):
         port_var_name = 'PORT_%s' % key_upper
         port_number = service_port(key)
         globs[port_var_name] = port_number
-        url = 'http%s://%s:%s' % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, port_number)
+        url = '%s://%s:%s' % (get_protocol(), LOCALSTACK_HOSTNAME, port_number)
         # define TEST_*_URL variables with mock service endpoints
         url_key = 'TEST_%s_URL' % key_upper
         globs[url_key] = url
@@ -329,9 +329,13 @@ def service_port(service_key):
     return SERVICE_PORTS.get(service_key, 0)
 
 
+def get_protocol():
+    return 'https' if USE_SSL else 'http'
+
+
 def external_service_url(service_key, host=None):
     host = host or HOSTNAME_EXTERNAL
-    return 'http%s://%s:%s' % ('s' if USE_SSL else '', host, service_port(service_key))
+    return '%s://%s:%s' % (get_protocol(), host, service_port(service_key))
 
 
 # initialize config values
