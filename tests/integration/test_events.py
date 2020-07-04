@@ -36,6 +36,17 @@ class EventsTest(unittest.TestCase):
         self.sfn_client = aws_stack.connect_to_service('stepfunctions')
         self.sqs_client = aws_stack.connect_to_service('sqs')
 
+    def assertIsValidEvent(self, event):
+        self.assertIn('version', event)
+        self.assertIn('id', event)
+        self.assertIn('detail-type', event)
+        self.assertIn('source', event)
+        self.assertIn('account', event)
+        self.assertIn('time', event)
+        self.assertIn('region', event)
+        self.assertIn('resources', event)
+        self.assertIn('detail', event)
+
     def test_put_rule(self):
         rule_name = 'rule-{}'.format(short_uid())
 
@@ -61,6 +72,8 @@ class EventsTest(unittest.TestCase):
 
         for detail in event_details_to_publish:
             self.events_client.put_events(Entries=[{
+                'Source': 'unittest',
+                'Resources': [],
                 'DetailType': event_type,
                 'Detail': detail
             }])
@@ -151,7 +164,10 @@ class EventsTest(unittest.TestCase):
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         self.assertEqual(len(messages), 1)
-        self.assertEqual(messages[0]['Body'], TEST_EVENT_PATTERN['Detail'])
+
+        actual_event = json.loads(messages[0]['Body'])
+        self.assertIsValidEvent(actual_event)
+        self.assertEqual(actual_event['detail'], TEST_EVENT_PATTERN['Detail'])
 
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url)
@@ -220,7 +236,9 @@ class EventsTest(unittest.TestCase):
         # Get lambda's log events
         events = get_lambda_log_events(function_name)
         self.assertEqual(len(events), 1)
-        self.assertDictEqual(events[0], json.loads(TEST_EVENT_PATTERN['Detail']))
+        actual_event = json.loads(events[0])
+        self.assertIsValidEvent(actual_event)
+        self.assertDictEqual(json.loads(actual_event['detail']), json.loads(TEST_EVENT_PATTERN['Detail']))
 
         # clean up
         testutil.delete_lambda_function(function_name)
@@ -422,7 +440,9 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(len(bucket_contents), 1)
         key = bucket_contents[0]['Key']
         s3_object = s3_client.get_object(Bucket=s3_bucket, Key=key)
-        self.assertEqual((s3_object['Body'].read()).decode(), str(TEST_EVENT_PATTERN['Detail']))
+        actual_event = json.loads(s3_object['Body'].read().decode())
+        self.assertIsValidEvent(actual_event)
+        self.assertEqual(actual_event['detail'], TEST_EVENT_PATTERN['Detail'])
 
         # clean up
         firehose_client.delete_delivery_stream(DeliveryStreamName=stream_name)
