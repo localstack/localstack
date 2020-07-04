@@ -378,7 +378,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
                 },
                 Tags=TEST_DDB_TAGS
             )
-        self.assertIn('ResourceNotFoundException', str(ctx.exception))
+        self.assertIn('ResourceInUseException', str(ctx.exception))
 
 
 def delete_table(name):

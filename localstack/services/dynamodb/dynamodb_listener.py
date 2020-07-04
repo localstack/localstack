@@ -69,7 +69,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             table_names = ddb_client.list_tables()['TableNames']
             if to_str(data['TableName']) in table_names:
                 return error_response(message='Table already created',
-                                      error_type='ResourceNotFoundException', code=400)
+                                      error_type='ResourceInUseException', code=400)
 
         if action == '%s.CreateGlobalTable' % ACTION_PREFIX:
             return create_global_table(data)
