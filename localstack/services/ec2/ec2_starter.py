@@ -1,6 +1,7 @@
 from moto.ec2 import models as ec2_models
 from moto.ec2.exceptions import InvalidPermissionNotFoundError
 from moto.ec2.responses.reserved_instances import ReservedInstances
+from moto.ec2.responses import vpc_peering_connections
 from localstack import config
 from localstack.services.infra import start_moto_server
 
@@ -47,6 +48,23 @@ def patch_ec2():
     ReservedInstances.describe_reserved_instances_offerings = describe_reserved_instances_offerings
     ReservedInstances.purchase_reserved_instances_offering = purchase_reserved_instances_offering
     ReservedInstances.describe_reserved_instances = describe_reserved_instances
+
+    # Patch: region is null in describe_vpc_peering_connections function response
+    # https://github.com/localstack/localstack/issues/2147¯¯
+    vpc_conns = vpc_peering_connections.DESCRIBE_VPC_PEERING_CONNECTIONS_RESPONSE
+    if '<region>' not in vpc_conns:
+        # Add region for requesterVpcInfo
+        vpc_conns_patched = vpc_conns.replace(
+            '</requesterVpcInfo>',
+            ' <region>{{ vpc_pcx.vpc.ec2_backend.region_name }}</region>\n</requesterVpcInfo>'
+        )
+        # Add region for accepterVpcInfo
+        vpc_conns_patched = vpc_conns_patched.replace(
+            '</accepterVpcInfo>',
+            ' <region>{{ vpc_pcx.peer_vpc.ec2_backend.region_name }}</region>\n</accepterVpcInfo>'
+        )
+
+        vpc_peering_connections.DESCRIBE_VPC_PEERING_CONNECTIONS_RESPONSE = vpc_conns_patched
 
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):
