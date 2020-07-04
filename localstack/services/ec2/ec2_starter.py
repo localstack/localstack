@@ -1,8 +1,7 @@
 from moto.ec2 import models as ec2_models
 from moto.ec2.exceptions import InvalidPermissionNotFoundError
 from moto.ec2.responses.reserved_instances import ReservedInstances
-from moto.ec2.responses.vpc_peering_connections import VPCPeeringConnections
-from moto.core import ACCOUNT_ID
+from moto.ec2.responses import vpc_peering_connections
 from localstack import config
 from localstack.services.infra import start_moto_server
 
@@ -46,16 +45,26 @@ def patch_ec2():
         template = self.response_template(DESCRIBE_RESERVED_INSTANCES_RESPONSE)
         return template.render({})
 
-    def describe_vpc_peering_connections(self):
-        vpc_pcxs = self.ec2_backend.get_all_vpc_peering_connections()
-        template = self.response_template(DESCRIBE_VPC_PEERING_CONNECTIONS_RESPONSE)
-        return template.render(vpc_pcxs=vpc_pcxs)
-
     ReservedInstances.describe_reserved_instances_offerings = describe_reserved_instances_offerings
     ReservedInstances.purchase_reserved_instances_offering = purchase_reserved_instances_offering
     ReservedInstances.describe_reserved_instances = describe_reserved_instances
 
-    VPCPeeringConnections.describe_vpc_peering_connections = describe_vpc_peering_connections
+    # Patch: region is null in describe_vpc_peering_connections function response
+    # https://github.com/localstack/localstack/issues/2147¯¯
+    vpc_conns = vpc_peering_connections.DESCRIBE_VPC_PEERING_CONNECTIONS_RESPONSE
+    if '<region>' not in vpc_conns:
+        # Add region for requesterVpcInfo
+        vpc_conns_patched = vpc_conns.replace(
+            '</requesterVpcInfo>',
+            ' <region>{{ vpc_pcx.vpc.ec2_backend.region_name }}</region>\n</requesterVpcInfo>'
+        )
+        # Add region for accepterVpcInfo
+        vpc_conns_patched = vpc_conns_patched.replace(
+            '</accepterVpcInfo>',
+            ' <region>{{ vpc_pcx.peer_vpc.ec2_backend.region_name }}</region>\n</accepterVpcInfo>'
+        )
+
+        vpc_peering_connections.DESCRIBE_VPC_PEERING_CONNECTIONS_RESPONSE = vpc_conns_patched
 
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):
@@ -135,37 +144,3 @@ DESCRIBE_RESERVED_INSTANCES_RESPONSE = """
       </item>
    </reservedInstancesSet>
 </DescribeReservedInstancesResponse>"""
-
-DESCRIBE_VPC_PEERING_CONNECTIONS_RESPONSE = """
-<DescribeVpcPeeringConnectionsResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
-<requestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</requestId>
- <vpcPeeringConnectionSet>
- {% for vpc_pcx in vpc_pcxs %}
- <item>
-  <vpcPeeringConnectionId>{{ vpc_pcx.id }}</vpcPeeringConnectionId>
-    <requesterVpcInfo>
-     <ownerId>777788889999</ownerId>
-     <vpcId>{{ vpc_pcx.vpc.id }}</vpcId>
-     <cidrBlock>{{ vpc_pcx.vpc.cidr_block }}</cidrBlock>
-     <region>{{ vpc_pcx.vpc.ec2_backend.region_name }}</region>
-    </requesterVpcInfo>
-    <accepterVpcInfo>
-     <ownerId>""" + ACCOUNT_ID + """</ownerId>
-     <vpcId>{{ vpc_pcx.peer_vpc.id }}</vpcId>
-     <cidrBlock>{{ vpc_pcx.peer_vpc.cidr_block }}</cidrBlock>
-     <peeringOptions>
-        <allowEgressFromLocalClassicLinkToRemoteVpc>false</allowEgressFromLocalClassicLinkToRemoteVpc>
-        <allowEgressFromLocalVpcToRemoteClassicLink>true</allowEgressFromLocalVpcToRemoteClassicLink>
-        <allowDnsResolutionFromRemoteVpc>false</allowDnsResolutionFromRemoteVpc>
-     </peeringOptions>
-     <region>{{ vpc_pcx.peer_vpc.ec2_backend.region_name }}</region>
-    </accepterVpcInfo>
-     <status>
-      <code>{{ vpc_pcx._status.code }}</code>
-      <message>{{ vpc_pcx._status.message }}</message>
-     </status>
-     <tagSet/>
- </item>
- {% endfor %}
- </vpcPeeringConnectionSet>
-</DescribeVpcPeeringConnectionsResponse>"""
