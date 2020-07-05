@@ -1,8 +1,44 @@
 import re
-from requests.models import Request
-from localstack.utils.common import to_str
+import json
+from requests.models import Request, Response
+from localstack.utils.common import to_str, now
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.services.generic_proxy import ProxyListener
+
+subscription_filters = []
+
+
+def handle_put_subscription_filter(data):
+    data = json.loads(data)
+    filter_name = data.get('filterName')
+    log_group_name = data.get('logGroupName')
+    filter_pattern = data.get('filterPattern')
+    destination_arn = data.get('destinationArn')
+    role_arn = data.get('roleArn')
+    creation_time = now()
+
+    subscription_filters.append({
+        'filterName': filter_name,
+        'logGroupName': log_group_name,
+        'filterPattern': filter_pattern,
+        'destinationArn': destination_arn,
+        'roleArn': role_arn,
+        'distribution': 'ByLogStream',
+        'creationTime': creation_time,
+    }
+    )
+    response = Response()
+    response.status_code = 200
+    response._content = ''
+    return response
+
+
+def handle_describe_subscription_filters(response_content):
+    data = json.loads(response_content)
+    existing_filters = data.get('subscriptionFilters')
+    existing_filters.append(subscription_filters)
+    data['subscriptionFilters'] = existing_filters
+    return data
 
 
 class ProxyListenerCloudWatchLogs(ProxyListener):
@@ -13,6 +49,10 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
                 headers['content-length'] = str(len(data))
                 return Request(data=data, headers=headers, method=method)
 
+        if method == 'POST' and path == '/' and ('logGroupName' in to_str(data or '')) and \
+                ('filterName' in to_str(data or '')):
+            return handle_put_subscription_filter(to_str(data))
+
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -22,6 +62,10 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
         if 'nextToken' in to_str(response.content or ''):
             self._fix_next_token_response(response)
             response.headers['content-length'] = str(len(response._content))
+
+        if method == 'POST' and 'subscriptionFilters' in to_str(response.content or ''):
+            response._content = json.dumps(handle_describe_subscription_filters(to_str(response.content)))
+            response.headers['content-length'] = str(len(response.content))
 
     @staticmethod
     def _fix_next_token_request(data):
