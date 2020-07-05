@@ -451,8 +451,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         )
 
         resp2 = log_client.describe_subscription_filters(logGroupName=log_group_name)
+        self.assertEqual(len(resp2['subscriptionFilters']), 1)
 
-        print(resp2)
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod

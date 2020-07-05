@@ -33,10 +33,19 @@ def handle_put_subscription_filter(data):
     return response
 
 
-def handle_describe_subscription_filters(response_content):
+def get_subscription_filters_by_log_group_name(log_group_name):
+    filters = []
+    for filter in subscription_filters:
+        if filter.get('logGroupName') == log_group_name:
+            filters.append(filter)
+    return filters
+
+
+def handle_describe_subscription_filters(response_content, log_group_name):
     data = json.loads(response_content)
     existing_filters = data.get('subscriptionFilters')
-    existing_filters.append(subscription_filters)
+    subscription_filters = get_subscription_filters_by_log_group_name(log_group_name)
+    existing_filters.extend(subscription_filters)
     data['subscriptionFilters'] = existing_filters
     return data
 
@@ -64,7 +73,9 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
             response.headers['content-length'] = str(len(response._content))
 
         if method == 'POST' and 'subscriptionFilters' in to_str(response.content or ''):
-            response._content = json.dumps(handle_describe_subscription_filters(to_str(response.content)))
+            data = json.loads(data)
+            response._content = json.dumps(handle_describe_subscription_filters(to_str(response.content),
+                                                                                data.get('logGroupName')))
             response.headers['content-length'] = str(len(response.content))
 
     @staticmethod
