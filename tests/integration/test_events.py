@@ -236,7 +236,7 @@ class EventsTest(unittest.TestCase):
         # Get lambda's log events
         events = get_lambda_log_events(function_name)
         self.assertEqual(len(events), 1)
-        actual_event = json.loads(events[0])
+        actual_event = events[0]
         self.assertIsValidEvent(actual_event)
         self.assertDictEqual(json.loads(actual_event['detail']), json.loads(TEST_EVENT_PATTERN['Detail']))
 

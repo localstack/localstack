@@ -33,7 +33,7 @@ def send_event_to_sqs(event, arn):
 
 
 def send_event_to_lambda(event, arn):
-    run_lambda(event=json.dumps(event), context={}, func_arn=arn, asynchronous=True)
+    run_lambda(event=event, context={}, func_arn=arn, asynchronous=True)
 
 
 def send_event_to_firehose(event, arn):
