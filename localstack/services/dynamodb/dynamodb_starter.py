@@ -10,7 +10,7 @@ from localstack.services.install import ROOT_PATH
 LOGGER = logging.getLogger(__name__)
 
 # max heap size allocated for the Java process
-MAX_HEAP_SIZE = '256m'
+MAX_HEAP_SIZE = config.DYNAMODB_HEAP_SIZE
 
 # backend service port (updated on startup)
 PORT_DYNAMODB_BACKEND = None
