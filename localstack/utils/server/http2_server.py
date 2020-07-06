@@ -6,7 +6,8 @@ import h11
 from quart import make_response, request, Quart
 from quart.app import _cancel_all_tasks
 from hypercorn.config import Config
-from hypercorn.asyncio import serve
+from hypercorn.events import Closed
+from hypercorn.asyncio import serve, tcp_server
 from localstack import config
 from localstack.utils.common import TMP_THREADS, FuncThread, load_file
 from localstack.utils.http_utils import uses_chunked_encoding
@@ -36,6 +37,17 @@ def apply_patches():
 
     InformationalResponse_init_orig = h11.InformationalResponse.__init__
     h11.InformationalResponse.__init__ = InformationalResponse_init
+
+    # skip error logging for ssl.SSLError in hypercorn tcp_server.py
+
+    async def _read_data(self) -> None:
+        try:
+            return await _read_data_orig(self)
+        except Exception:
+            await self.protocol.handle(Closed())
+
+    _read_data_orig = tcp_server.TCPServer._read_data
+    tcp_server.TCPServer._read_data = _read_data
 
 
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):

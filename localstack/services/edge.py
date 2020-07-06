@@ -162,6 +162,7 @@ def get_port_from_custom_rules(method, path, data, headers):
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
         return config.PORT_S3
 
+    # detect S3 URLs
     if stripped and '/' not in stripped:
         if method == 'PUT':
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
@@ -169,6 +170,10 @@ def get_port_from_custom_rules(method, path, data, headers):
         if method == 'POST' and is_s3_form_data(data_bytes):
             # assume that this is an S3 POST request with form parameters or multipart form in the body
             return config.PORT_S3
+
+    # detect S3 requests sent from aws-cli using --no-sign-request option
+    if 'aws-cli/' in headers.get('User-Agent', ''):
+        return config.PORT_S3
 
 
 def get_service_port_for_account(service, headers):

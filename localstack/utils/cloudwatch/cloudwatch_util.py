@@ -111,7 +111,7 @@ def _func_name(kwargs):
 def publish_event(time_before, result, kwargs):
     event_publisher.fire_event(
         event_publisher.EVENT_LAMBDA_INVOKE_FUNC,
-        payload={'f': _func_name(kwargs), 'd': now_utc() - time_before, 'r': result[0]})
+        payload={'f': event_publisher.get_hash(_func_name(kwargs)), 'd': now_utc() - time_before, 'r': result[0]})
 
 
 def publish_result(ns, time_before, result, kwargs):
