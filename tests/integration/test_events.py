@@ -37,15 +37,9 @@ class EventsTest(unittest.TestCase):
         self.sqs_client = aws_stack.connect_to_service('sqs')
 
     def assertIsValidEvent(self, event):
-        self.assertIn('version', event)
-        self.assertIn('id', event)
-        self.assertIn('detail-type', event)
-        self.assertIn('source', event)
-        self.assertIn('account', event)
-        self.assertIn('time', event)
-        self.assertIn('region', event)
-        self.assertIn('resources', event)
-        self.assertIn('detail', event)
+        expected_fields = ('version', 'id', 'detail-type', 'source', 'account', 'time', 'region', 'resources', 'detail')
+        for field in expected_fields:
+            self.assertIn(field, event)
 
     def test_put_rule(self):
         rule_name = 'rule-{}'.format(short_uid())
