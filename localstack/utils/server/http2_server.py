@@ -1,5 +1,4 @@
 import os
-import ssl
 import asyncio
 import logging
 import traceback
@@ -7,6 +6,7 @@ import h11
 from quart import make_response, request, Quart
 from quart.app import _cancel_all_tasks
 from hypercorn.config import Config
+from hypercorn.events import Closed
 from hypercorn.asyncio import serve, tcp_server
 from localstack import config
 from localstack.utils.common import TMP_THREADS, FuncThread, load_file
