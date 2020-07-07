@@ -12,11 +12,12 @@ from moto import core as moto_core
 from requests.models import Response
 from localstack import constants, config
 from localstack.constants import (
-    ENV_DEV, LOCALSTACK_VENV_FOLDER, ENV_INTERNAL_TEST_RUN, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
+    ENV_DEV, LOCALSTACK_VENV_FOLDER, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux, start_thread,
     ShellCommandThread, get_service_protocol, in_docker, is_port_open, sleep_forever)
 from localstack.utils.server import multiserver
+from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.bootstrap import (
     setup_logging, is_debug, canonicalize_api_names, load_plugins, in_ci)
 from localstack.utils.analytics import event_publisher
@@ -365,7 +366,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     os.environ['AWS_REGION'] = config.DEFAULT_REGION
     os.environ['ENV'] = ENV_DEV
     # register signal handlers
-    if not os.environ.get(ENV_INTERNAL_TEST_RUN):
+    if not is_local_test_mode():
         register_signal_handlers()
     # make sure AWS credentials are configured, otherwise boto3 bails on us
     check_aws_credentials()

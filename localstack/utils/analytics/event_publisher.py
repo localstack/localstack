@@ -3,7 +3,7 @@ import json
 import time
 from six.moves import queue
 from localstack import config
-from localstack.constants import ENV_INTERNAL_TEST_RUN, API_ENDPOINT
+from localstack.constants import API_ENDPOINT
 from localstack.utils.common import (JsonObject, to_str,
     timestamp, short_uid, save_file, FuncThread, load_file)
 from localstack.utils.common import safe_requests as requests
@@ -162,9 +162,9 @@ def get_hash(name):
 
 
 def fire_event(event_type, payload=None):
-    global SENDER_THREAD
     if config.DISABLE_EVENTS:
         return
+    global SENDER_THREAD
     if not SENDER_THREAD:
         SENDER_THREAD = FuncThread(poll_and_send_messages, {})
         SENDER_THREAD.start()
@@ -172,12 +172,13 @@ def fire_event(event_type, payload=None):
     if not api_key:
         # only store events if API key has been specified
         return
+    from localstack.utils.testutil import is_local_test_mode  # leave here to avoid circular dependency
     if payload is None:
         payload = {}
     if isinstance(payload, dict):
         if is_travis():
             payload['travis'] = True
-        if os.environ.get(ENV_INTERNAL_TEST_RUN):
+        if is_local_test_mode():
             payload['int'] = True
 
     event = AnalyticsEvent(event_type=event_type, payload=payload, api_key=api_key)

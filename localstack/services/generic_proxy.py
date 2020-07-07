@@ -19,9 +19,10 @@ from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack import config
 from localstack.config import USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
-from localstack.constants import ENV_INTERNAL_TEST_RUN, APPLICATION_JSON
+from localstack.constants import APPLICATION_JSON
 from localstack.utils.server import http2_server
 from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS, path_from_url
+from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.http_utils import uses_chunked_encoding, create_chunked_data
 from localstack.utils.aws.aws_responses import LambdaResponse
 
@@ -253,7 +254,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
                 LOG.warn('Connection prematurely closed by client (broken pipe).')
             elif not self.proxy.quiet or not conn_error:
                 LOG.error(error_msg)
-                if os.environ.get(ENV_INTERNAL_TEST_RUN):
+                if is_local_test_mode():
                     # During a test run, we also want to print error messages, because
                     # log messages are delayed until the entire test run is over, and
                     # hence we are missing messages if the test hangs for some reason.
