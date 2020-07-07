@@ -411,48 +411,6 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         # clean up
         lambda_client.delete_function(FunctionName=function_name)
 
-    def test_put_subscribe_policy(self):
-        iam_client = aws_stack.connect_to_service('iam')
-        lambda_client = aws_stack.connect_to_service('lambda')
-        log_client = aws_stack.connect_to_service('logs')
-
-        role_name = 'role-{}'.format(short_uid())
-        assume_policy_document = {'Version': '2012-10-17',
-                                  'Statement': [
-                                      {
-                                          'Action': 'sts:AssumeRole',
-                                          'Principal': {
-                                              'Service': 'lambda.amazonaws.com'
-                                          },
-                                          'Effect': 'Allow',
-                                          'Sid': '',
-                                      }
-                                  ]
-                                  }
-
-        iam_client.create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(assume_policy_document)
-        )
-
-        testutil.create_lambda_function(
-            handler_file=TEST_LAMBDA_PYTHON3, libs=TEST_LAMBDA_LIBS,
-            func_name=TEST_LAMBDA_NAME_PY3, runtime=LAMBDA_RUNTIME_PYTHON36)
-
-        lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
-
-        log_group_name = '/aws/lambda/{}'.format(TEST_LAMBDA_NAME_PY3)
-        log_client.put_subscription_filter(
-            logGroupName=log_group_name,
-            filterName='test',
-            filterPattern='',
-            destinationArn=lambda_api.func_arn('testLambda'),
-        )
-
-        resp2 = log_client.describe_subscription_filters(logGroupName=log_group_name)
-        self.assertEqual(len(resp2['subscriptionFilters']), 1)
-
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
