@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
-import os
-import json
 import unittest
 from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.utils.aws import aws_stack
 from localstack.utils import testutil
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, retry
 from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36, func_arn
-
-THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
-TEST_LAMBDA_PYTHON3 = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_python3.py')
-TEST_LAMBDA_NAME_PY3 = 'test_lambda_py3'
-TEST_LAMBDA_LIBS = [
-    'localstack', 'localstack_client', 'requests', 'psutil', 'urllib3', 'chardet', 'certifi', 'idna', 'pip', 'dns'
-]
+from tests.integration.test_lambda import TEST_LAMBDA_PYTHON3, TEST_LAMBDA_NAME_PY3, TEST_LAMBDA_LIBS
 
 
 class CloudWatchLogsTest(unittest.TestCase):
@@ -94,28 +86,8 @@ class CloudWatchLogsTest(unittest.TestCase):
         )
 
     def test_put_subscribe_policy(self):
-        iam_client = aws_stack.connect_to_service('iam')
         lambda_client = aws_stack.connect_to_service('lambda')
         log_client = aws_stack.connect_to_service('logs')
-
-        role_name = 'role-{}'.format(short_uid())
-        assume_policy_document = {'Version': '2012-10-17',
-                                  'Statement': [
-                                      {
-                                          'Action': 'sts:AssumeRole',
-                                          'Principal': {
-                                              'Service': 'lambda.amazonaws.com'
-                                          },
-                                          'Effect': 'Allow',
-                                          'Sid': '',
-                                      }
-                                  ]
-                                  }
-
-        iam_client.create_role(
-            RoleName=role_name,
-            AssumeRolePolicyDocument=json.dumps(assume_policy_document)
-        )
 
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON3, libs=TEST_LAMBDA_LIBS,
@@ -125,12 +97,30 @@ class CloudWatchLogsTest(unittest.TestCase):
             FunctionName=TEST_LAMBDA_NAME_PY3, Payload=b'{}')
 
         log_group_name = '/aws/lambda/{}'.format(TEST_LAMBDA_NAME_PY3)
+
         log_client.put_subscription_filter(
             logGroupName=log_group_name,
             filterName='test',
             filterPattern='',
             destinationArn=func_arn(TEST_LAMBDA_NAME_PY3),
         )
+        stream = 'ls-%s' % short_uid()
+        log_client.create_log_stream(logGroupName=log_group_name, logStreamName=stream)
+
+        log_client.put_log_events(
+            logGroupName=log_group_name,
+            logStreamName=stream,
+            logEvents=[
+                {'timestamp': 0, 'message': 'test'},
+                {'timestamp': 0, 'message': 'test 2'},
+            ],
+        )
 
         resp2 = log_client.describe_subscription_filters(logGroupName=log_group_name)
         self.assertEqual(len(resp2['subscriptionFilters']), 1)
+
+        def check_invocation():
+            events = testutil.get_lambda_log_events(TEST_LAMBDA_NAME_PY3)
+            self.assertEqual(len(events), 2)
+
+        retry(check_invocation, retries=6, sleep=3.0)

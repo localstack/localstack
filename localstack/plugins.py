@@ -181,7 +181,6 @@ def do_register_localstack_plugins():
             listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS))
 
     except Exception as e:
-        print('exception', e)
         if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
             print('Unable to register plugins: %s' % e)
             sys.stdout.flush()
