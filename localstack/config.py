@@ -49,6 +49,7 @@ KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', ''
 
 # randomly inject faults to DynamoDB
 DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', '').strip() or 0.0)
+
 # JAVA EE heap size for dynamodb
 DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
 
@@ -332,9 +333,13 @@ def service_port(service_key):
     return SERVICE_PORTS.get(service_key, 0)
 
 
+def get_protocol():
+    return 'https' if USE_SSL else 'http'
+
+
 def external_service_url(service_key, host=None):
     host = host or HOSTNAME_EXTERNAL
-    return 'http%s://%s:%s' % ('s' if USE_SSL else '', host, service_port(service_key))
+    return '%s://%s:%s' % (get_protocol(), host, service_port(service_key))
 
 
 # initialize config values
