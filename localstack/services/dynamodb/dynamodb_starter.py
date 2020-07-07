@@ -9,9 +9,6 @@ from localstack.services.install import ROOT_PATH
 
 LOGGER = logging.getLogger(__name__)
 
-# max heap size allocated for the Java process
-MAX_HEAP_SIZE = '256m'
-
 # backend service port (updated on startup)
 PORT_DYNAMODB_BACKEND = None
 
@@ -44,7 +41,7 @@ def start_dynamodb(port=None, asynchronous=False, update_listener=None):
         ddb_data_dir_param = '-dbPath %s' % ddb_data_dir
     cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +
         '-Xmx%s -jar DynamoDBLocal.jar -sharedDb -port %s %s') % (
-        ROOT_PATH, MAX_HEAP_SIZE, PORT_DYNAMODB_BACKEND, ddb_data_dir_param)
+        ROOT_PATH, config.DYNAMODB_HEAP_SIZE, PORT_DYNAMODB_BACKEND, ddb_data_dir_param)
     print('Starting mock DynamoDB service in %s ports %s (recommended) and %s (deprecated)...' % (
         get_service_protocol(), config.EDGE_PORT, port))
     start_proxy_for_service('dynamodb', port, backend_port=PORT_DYNAMODB_BACKEND, update_listener=update_listener)

@@ -50,6 +50,9 @@ KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', ''
 # randomly inject faults to DynamoDB
 DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', '').strip() or 0.0)
 
+# JAVA EE heap size for dynamodb
+DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
+
 # expose services on a specific host internally
 HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 
@@ -192,7 +195,8 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS', 'STEPFUNCTIONS_LAMBDA_ENDPOINT',
                    'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
-                   'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS']
+                   'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
+                   'DYNAMODB_HEAP_SIZE']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')

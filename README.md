@@ -190,10 +190,10 @@ You can pass the following environment variables to LocalStack:
   inject `ProvisionedThroughputExceededException` errors into Kinesis API responses.
 * `KINESIS_SHARD_LIMIT`: Integer value (default: `100`) or `Infinity` (to disable), causing the Kinesis API to start throwing exceptions to mimick the [default shard limit](https://docs.aws.amazon.com/streams/latest/dev/service-sizes-and-limits.html).
 * `KINESIS_LATENCY`: Integer value (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call.
-* `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
-  inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
-* `STEPFUNCTIONS_LAMBDA_ENDPOINT`: URL to use as the lambda service endpoint in step functions.
-  By default this is the localstack lambda endpoint.
+* `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
+* `DYNAMODB_HEAP_SIZE`: Sets the JAVA EE maximum memory size for dynamodb values are (integer)m for MB, (integer)G for GB default(256m), full table scans require more memory
+* `STEPFUNCTIONS_LAMBDA_ENDPOINT`: URL to use as the lambda service endpoint in step functions. By default this is the localstack lambda endpoint.
+
 * `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Possible values are:
     - `local`: run Lambda functions in a temporary directory on the local machine
     - `docker`: run each function invocation in a separate Docker container
@@ -574,7 +574,7 @@ By downloading and using this software you agree to the
 
 We build on a number of third-party software tools, including the following:
 
-Third-Party software      | 	License
+Third-Party software      |   License
 --------------------------|-----------------------
 **Python/pip modules:**   |
 airspeed                  | BSD License
