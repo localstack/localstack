@@ -271,13 +271,13 @@ class SQSTest(unittest.TestCase):
         lambda_client = aws_stack.connect_to_service('lambda')
 
         # create SQS queue with DLQ redrive policy
-        queue_name1 = 'test-%s' % short_uid()
-        queue_name2 = 'test-%s' % short_uid()
+        queue_name1 = 'dlq-%s' % short_uid()
+        queue_name2 = 'test-dlq-%s' % short_uid()
         queue_url1 = self.client.create_queue(QueueName=queue_name1)['QueueUrl']
         queue_arn1 = aws_stack.sqs_queue_arn(queue_name1)
         policy = {'deadLetterTargetArn': queue_arn1, 'maxReceiveCount': 1}
         queue_url2 = self.client.create_queue(QueueName=queue_name2,
-                                              Attributes={'RedrivePolicy': json.dumps(policy)})['QueueUrl']
+            Attributes={'RedrivePolicy': json.dumps(policy)})['QueueUrl']
         queue_arn2 = aws_stack.sqs_queue_arn(queue_name2)
 
         # create Lambda and add source mapping
@@ -292,16 +292,31 @@ class SQSTest(unittest.TestCase):
         }
         self.client.send_message(QueueUrl=queue_url2, MessageBody=json.dumps(payload))
 
-        # assert that message has been received on the DLQ
-        def receive_dlq():
-            result = self.client.receive_message(QueueUrl=queue_url1, MessageAttributeNames=['All'])
-            self.assertGreater(len(result['Messages']), 0)
-            msg_attrs = result['Messages'][0]['MessageAttributes']
-            self.assertIn('RequestID', msg_attrs)
-            self.assertIn('ErrorCode', msg_attrs)
-            self.assertIn('ErrorMessage', msg_attrs)
+        retry(lambda: self.receive_dlq(queue_url1), retries=8, sleep=2)
 
-        retry(receive_dlq, retries=8, sleep=2)
+    def test_dead_letter_queue_max_receive_count(self):
+
+        # create SQS queue with DLQ redrive policy using "maxReceiveCount"
+        queue_name1 = 'dlq-%s' % short_uid()
+        queue_name2 = 'test-dlq-%s' % short_uid()
+        queue_url1 = self.client.create_queue(QueueName=queue_name1)['QueueUrl']
+        queue_arn1 = aws_stack.sqs_queue_arn(queue_name1)
+        policy = {'deadLetterTargetArn': queue_arn1, 'maxReceiveCount': '1'}
+        queue_url2 = self.client.create_queue(QueueName=queue_name2,
+            Attributes={'VisibilityTimeout': '1', 'RedrivePolicy': json.dumps(policy)})['QueueUrl']
+
+        # add message to SQS, then retrieve the message
+        payload = {}
+        self.client.send_message(QueueUrl=queue_url2, MessageBody=json.dumps(payload))
+        rs = self.client.receive_message(QueueUrl=queue_url2)
+        self.assertEqual(len(rs.get('Messages', [])), 1)
+        # wait some time, then try to receive the message again - should be empty
+        time.sleep(1.01)
+        rs = self.client.receive_message(QueueUrl=queue_url2)
+        self.assertEqual(len(rs.get('Messages', [])), 0)
+
+        # assert that message has been put on the DLQ
+        retry(lambda: self.receive_dlq(queue_url1, False), retries=8, sleep=2)
 
     def test_set_queue_attribute_at_creation(self):
         queue_name = 'queue-%s' % short_uid()
@@ -611,3 +626,20 @@ class SQSTest(unittest.TestCase):
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         # clean up
         client.delete_queue(QueueUrl=queue_url)
+
+    # ---------------
+    # HELPER METHODS
+    # ---------------
+
+    def receive_dlq(self, queue_url, assert_error_details=True):
+        """ Assert that a message has been received on the given DLQ """
+        result = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+        self.assertGreater(len(result['Messages']), 0)
+        msg = result['Messages'][0]
+        msg_attrs = msg.get('MessageAttributes') or msg.get('Attributes')
+        if assert_error_details:
+            self.assertIn('RequestID', msg_attrs)
+            self.assertIn('ErrorCode', msg_attrs)
+            self.assertIn('ErrorMessage', msg_attrs)
+        else:
+            self.assertEqual('2', msg_attrs.get('ApproximateReceiveCount'))
