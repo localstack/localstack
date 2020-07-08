@@ -10,7 +10,7 @@ import importlib
 from six import iteritems
 from localstack.utils.aws import aws_stack
 from localstack.constants import (
-    LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
+    LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, ENV_INTERNAL_TEST_RUN)
 from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
 from localstack.services.awslambda.lambda_api import (
     get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
@@ -18,6 +18,11 @@ from localstack.services.awslambda.lambda_api import (
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
 DEFAULT_GET_LOG_EVENTS_DELAY = 3
 LAMBDA_TIMEOUT_SEC = 6
+
+
+def is_local_test_mode():
+    """ Whether we are running in the context of our local integration tests. """
+    return bool(os.environ.get(ENV_INTERNAL_TEST_RUN))
 
 
 def copy_dir(source, target):
