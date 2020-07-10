@@ -10,7 +10,8 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry, to_str
 from .lambdas import lambda_integration
 from .test_lambda import use_docker, load_file, TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, \
-    LAMBDA_RUNTIME_DOTNETCORE31, TEST_LAMBDA_LIBS, TEST_LAMBDA_DOTNETCORE31
+    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, TEST_LAMBDA_LIBS, \
+    TEST_LAMBDA_DOTNETCORE2, TEST_LAMBDA_DOTNETCORE31
 
 TEST_QUEUE_NAME = 'TestQueue'
 
@@ -628,24 +629,21 @@ class SQSTest(unittest.TestCase):
         # clean up
         client.delete_queue(QueueUrl=queue_url)
 
-    def test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(self):
+    def _run_test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(self, zip_file, handler, runtime):
         if not use_docker():
             return
 
         func_name = 'lambda_func-{}'.format(short_uid())
-        queue_name = 'queue-{}'.format(short_uid())
-        zip_file = load_file(TEST_LAMBDA_DOTNETCORE31, mode='rb')
-        handler = 'dotnetcore31::dotnetcore31.Function::FunctionHandler'
-        delay_time = 2
-
+        queue_name = 'queue-%s' % short_uid()
         queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        delay_time = 4
 
         testutil.create_lambda_function(
             func_name=func_name,
             zip_file=zip_file,
             handler=handler,
-            runtime=LAMBDA_RUNTIME_DOTNETCORE31)
+            runtime=runtime)
 
         lambda_client = aws_stack.connect_to_service('lambda')
         lambda_client.create_event_source_mapping(
@@ -653,33 +651,40 @@ class SQSTest(unittest.TestCase):
             FunctionName=func_name
         )
 
-        resp = self.client.send_message(
+        self.client.send_message(
             QueueUrl=queue_url,
             MessageBody='hello world.',
             DelaySeconds=delay_time
         )
-        message_id = resp['MessageId']
 
         time.sleep(delay_time * 2)
 
-        # After delay time, lambda invoked by sqs
-        events = get_lambda_log_events(func_name, delay_time * 1.5)
-        # Lambda just invoked 1 time
-        self.assertEqual(len(events), 1)
-
-        message = events[0]['Records'][0]
-        self.assertEqual(message['eventSourceARN'], queue_arn)
-        self.assertEqual(message['messageId'], message_id)
-
-        def get_message(q_url):
-            resp = self.client.receive_message(QueueUrl=q_url)
+        def receive_message(q_url):
+            resp = self.client.receive_message(QueueUrl=q_url, MessageAttributeNames=['All'])
             self.assertEqual(200, resp['ResponseMetadata']['HTTPStatusCode'])
+            self.assertEqual(None, resp.get('Messages', None))
 
-        retry(get_message, retries=3, sleep=10, q_url=queue_url)
+        retry(receive_message, retries=10, sleep=2, q_url=queue_url)
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
-        lambda_client.delete_function(FunctionName=func_name)
+        testutil.delete_lambda_function(func_name)
+
+    def test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnetcore2(self):
+        zip_file = load_file(TEST_LAMBDA_DOTNETCORE2, mode='rb')
+        handler = 'dotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler'
+
+        self._run_test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(
+            zip_file, handler, LAMBDA_RUNTIME_DOTNETCORE2
+        )
+
+    def test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnetcore31(self):
+        zip_file = load_file(TEST_LAMBDA_DOTNETCORE31, mode='rb')
+        handler = 'dotnetcore31::dotnetcore31.Function::FunctionHandler'
+
+        self._run_test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(
+            zip_file, handler, LAMBDA_RUNTIME_DOTNETCORE31
+        )
 
     # ---------------
     # HELPER METHODS
