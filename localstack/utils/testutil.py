@@ -332,13 +332,18 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
         time.sleep(delay_time)
 
         logs = aws_stack.connect_to_service('logs')
-        rs = logs.filter_log_events(
-            logGroupName=get_lambda_log_group_name(function_name)
-        )
+        log_group_name = get_lambda_log_group_name(function_name)
+        rs = logs.filter_log_events(logGroupName=log_group_name)
 
         return rs['events']
 
-    events = get_log_events(function_name, delay_time)
+    try:
+        events = get_log_events(function_name, delay_time)
+    except Exception as e:
+        if 'ResourceNotFoundException' in str(e):
+            return []
+        raise
+
     rs = []
     for event in events:
         raw_message = event['message']
