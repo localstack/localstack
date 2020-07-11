@@ -1,6 +1,7 @@
 IMAGE_NAME ?= localstack/localstack
 IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_NAME_LIGHT ?= localstack/localstack-light
+IMAGE_NAME_FULL ?= localstack/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
@@ -74,11 +75,15 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 		which $(PIP_CMD) || (wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py); \
 		docker info | grep Username || docker login -u $$DOCKER_USERNAME -p $$DOCKER_PASSWORD; \
 		IMAGE_TAG=latest make docker-squash && make docker-build-light && \
+			docker tag $(IMAGE_NAME):latest $(IMAGE_NAME_FULL):latest && \
+			docker tag $(IMAGE_NAME_LIGHT):latest $(IMAGE_NAME):latest && \
 		((! (git diff HEAD~1 localstack/constants.py | grep '^+VERSION =') && \
 			echo "Only pushing tag 'latest' as version has not changed.") || \
 			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG) && \
-				docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG))) && \
-		docker push $(IMAGE_NAME):latest && docker push $(IMAGE_NAME_LIGHT):latest \
+				docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):$(IMAGE_TAG) && \
+				docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG) && \
+				 docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG))) && \
+		docker push $(IMAGE_NAME):latest && docker push $(IMAGE_NAME_FULL):latest && docker push $(IMAGE_NAME_LIGHT):latest \
 	)
 
 docker-run:        ## Run Docker image locally
