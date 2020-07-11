@@ -118,7 +118,7 @@ def main():
         'function': cmd_infra
     }
     config.CLI_COMMANDS['web'] = {
-        'description': 'Commands to manage the Web dashboard',
+        'description': 'Commands to manage the Web dashboard (deprecated)',
         'function': cmd_web
     }
     config.CLI_COMMANDS['ssh'] = {

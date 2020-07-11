@@ -339,8 +339,8 @@ def get_docker_image_to_start():
     image_name = os.environ.get('IMAGE_NAME')
     if not image_name:
         image_name = constants.DOCKER_IMAGE_NAME
-        if os.environ.get('USE_LIGHT_IMAGE') in constants.TRUE_STRINGS:
-            image_name = constants.DOCKER_IMAGE_NAME_LIGHT
+        if os.environ.get('USE_LIGHT_IMAGE') in constants.FALSE_STRINGS:
+            image_name = constants.DOCKER_IMAGE_NAME_FULL
     return image_name
 
 
