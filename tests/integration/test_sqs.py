@@ -9,7 +9,9 @@ from localstack.utils.testutil import get_lambda_log_events, get_lambda_log_grou
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry, to_str
 from .lambdas import lambda_integration
-from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
+from .test_lambda import use_docker, load_file, TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, \
+    LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, TEST_LAMBDA_LIBS, \
+    TEST_LAMBDA_DOTNETCORE2, TEST_LAMBDA_DOTNETCORE31
 
 TEST_QUEUE_NAME = 'TestQueue'
 
@@ -626,6 +628,63 @@ class SQSTest(unittest.TestCase):
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         # clean up
         client.delete_queue(QueueUrl=queue_url)
+
+    def _run_test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(self, zip_file, handler, runtime):
+        if not use_docker():
+            return
+
+        func_name = 'lambda_func-{}'.format(short_uid())
+        queue_name = 'queue-%s' % short_uid()
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        delay_time = 4
+
+        testutil.create_lambda_function(
+            func_name=func_name,
+            zip_file=zip_file,
+            handler=handler,
+            runtime=runtime)
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=queue_arn,
+            FunctionName=func_name
+        )
+
+        self.client.send_message(
+            QueueUrl=queue_url,
+            MessageBody='hello world.',
+            DelaySeconds=delay_time
+        )
+
+        time.sleep(delay_time * 2)
+
+        def receive_message(q_url):
+            resp = self.client.receive_message(QueueUrl=q_url, MessageAttributeNames=['All'])
+            self.assertEqual(200, resp['ResponseMetadata']['HTTPStatusCode'])
+            self.assertEqual(None, resp.get('Messages', None))
+
+        retry(receive_message, retries=10, sleep=2, q_url=queue_url)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+        testutil.delete_lambda_function(func_name)
+
+    def test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnetcore2(self):
+        zip_file = load_file(TEST_LAMBDA_DOTNETCORE2, mode='rb')
+        handler = 'dotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler'
+
+        self._run_test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(
+            zip_file, handler, LAMBDA_RUNTIME_DOTNETCORE2
+        )
+
+    def test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnetcore31(self):
+        zip_file = load_file(TEST_LAMBDA_DOTNETCORE31, mode='rb')
+        handler = 'dotnetcore31::dotnetcore31.Function::FunctionHandler'
+
+        self._run_test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(
+            zip_file, handler, LAMBDA_RUNTIME_DOTNETCORE31
+        )
 
     # ---------------
     # HELPER METHODS
