@@ -5,7 +5,7 @@ import unittest
 import requests
 from botocore.exceptions import ClientError
 from localstack.utils import testutil
-from localstack.utils.testutil import get_lambda_log_events, get_lambda_log_group_name
+from localstack.utils.testutil import get_lambda_log_events
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry, to_str
 from .lambdas import lambda_integration
@@ -198,6 +198,13 @@ class SQSTest(unittest.TestCase):
 
         # it should preserve .fifo in the queue name
         self.assertIn(fifo_queue, queue_url)
+
+        # try sending a message with message group ID and deduplication ID
+        response = self.client.send_message(QueueUrl=queue_url, MessageBody='test msg 123',
+            MessageDeduplicationId='dedup-1', MessageGroupId='group-1')
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertIn('MessageId', response)
+        self.assertIn('MD5OfMessageBody', response)
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
@@ -558,17 +565,11 @@ class SQSTest(unittest.TestCase):
         )
         message_id = rs['MessageId']
 
-        logs = aws_stack.connect_to_service('logs')
-
         time.sleep(delay_time / 2)
 
         # There is no log group for this lambda (lambda not invoked yet)
-        rs = logs.describe_log_groups()
-        self.assertEqual(
-            len([lg['logGroupName']
-                 for lg in rs['logGroups'] if lg['logGroupName'] == get_lambda_log_group_name(function_name)]),
-            0
-        )
+        log_events = get_lambda_log_events(function_name)
+        self.assertEqual(len(log_events), 0)
 
         # After delay time, lambda invoked by sqs
         events = get_lambda_log_events(function_name, delay_time * 1.5)
@@ -633,11 +634,11 @@ class SQSTest(unittest.TestCase):
         if not use_docker():
             return
 
-        func_name = 'lambda_func-{}'.format(short_uid())
+        func_name = 'dotnet-sqs-{}'.format(short_uid())
         queue_name = 'queue-%s' % short_uid()
         queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
-        delay_time = 4
+        delay_time = 1
 
         testutil.create_lambda_function(
             func_name=func_name,
@@ -657,14 +658,17 @@ class SQSTest(unittest.TestCase):
             DelaySeconds=delay_time
         )
 
-        time.sleep(delay_time * 2)
+        # assert that the Lambda has been invoked
+        def get_logs():
+            logs = get_lambda_log_events(func_name)
+            self.assertGreater(len(logs), 0)
 
-        def receive_message(q_url):
-            resp = self.client.receive_message(QueueUrl=q_url, MessageAttributeNames=['All'])
-            self.assertEqual(200, resp['ResponseMetadata']['HTTPStatusCode'])
-            self.assertEqual(None, resp.get('Messages', None))
+        retry(get_logs, retries=5, sleep=3)
 
-        retry(receive_message, retries=10, sleep=2, q_url=queue_url)
+        # assert that the message has been deleted from the queue
+        resp = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+        self.assertEqual(200, resp['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(None, resp.get('Messages', None))
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)

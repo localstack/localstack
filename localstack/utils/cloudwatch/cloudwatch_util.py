@@ -78,6 +78,9 @@ def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_tim
 
     # store new log events under the log stream
     finish_time = int(time.time() * 1000)
+    # fix for log lines that were merged into a singe line, e.g., "log line 1 ... \x1b[32mEND RequestId ..."
+    log_output = log_output.replace('\\x1b', '\n\\x1b')
+    log_output = log_output.replace('\x1b', '\n\x1b')
     log_lines = log_output.split('\n')
     time_diff_per_line = float(finish_time - start_time) / float(len(log_lines))
     log_events = []
