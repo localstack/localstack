@@ -199,6 +199,13 @@ class SQSTest(unittest.TestCase):
         # it should preserve .fifo in the queue name
         self.assertIn(fifo_queue, queue_url)
 
+        # try sending a message with message group ID and deduplication ID
+        response = self.client.send_message(QueueUrl=queue_url, MessageBody='test msg 123',
+            MessageDeduplicationId='dedup-1', MessageGroupId='group-1')
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertIn('MessageId', response)
+        self.assertIn('MD5OfMessageBody', response)
+
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
