@@ -380,6 +380,35 @@ class DynamoDBIntegrationTest (unittest.TestCase):
             )
         self.assertIn('ResourceInUseException', str(ctx.exception))
 
+        # clean up
+        delete_table(table_name)
+
+    def test_delete_table(self):
+        table_name = 'test-ddb-table-%s' % short_uid()
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{
+                'AttributeName': 'id', 'KeyType': 'HASH'
+            }],
+            AttributeDefinitions=[{
+                'AttributeName': 'id', 'AttributeType': 'S'
+            }],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 1, 'WriteCapacityUnits': 1
+            },
+        )
+
+        table_list = dynamodb.list_tables()
+        self.assertEqual(1, len(table_list['TableNames']))
+        self.assertEqual(table_name, table_list['TableNames'][0])
+
+        dynamodb.delete_table(TableName=table_name)
+
+        table_list = dynamodb.list_tables()
+        self.assertEqual(0, len(table_list['TableNames']))
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service('dynamodb')

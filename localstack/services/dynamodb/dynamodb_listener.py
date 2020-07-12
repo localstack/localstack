@@ -9,6 +9,7 @@ from localstack import config
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import to_bytes, to_str, clone, select_attributes
 from localstack.utils.analytics import event_publisher
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.dynamodbstreams import dynamodbstreams_api
@@ -424,6 +425,10 @@ class ProxyListenerDynamoDB(ProxyListener):
 
     def delete_all_event_source_mappings(self, table_arn):
         if table_arn:
+            # fix start dynamodb service without lambda
+            if not is_api_enabled('lambda'):
+                return
+
             lambda_client = aws_stack.connect_to_service('lambda')
             result = lambda_client.list_event_source_mappings(EventSourceArn=table_arn)
             for event in result['EventSourceMappings']:
