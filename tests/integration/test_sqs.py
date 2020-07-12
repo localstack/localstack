@@ -691,10 +691,9 @@ class SQSTest(unittest.TestCase):
         )
 
     def _run_test_fifo_queue_send_multiple_messages(self):
-        fifo_queue = 'my-queue.fifo'
+        fifo_queue = 'queue-{}.fifo'.format(short_uid())
 
         message_group = 'group-%s' % short_uid()
-        message_dedup = 'dedup-%s' % short_uid()
         results = []
         number_of_messages = 5
 
@@ -705,8 +704,10 @@ class SQSTest(unittest.TestCase):
 
         # try sending multiple message with message group ID and deduplication ID
         for i in range(number_of_messages):
-            rs = self.client.send_message(QueueUrl=queue_url, MessageBody='message-{}'.format(i),
-                                          MessageDeduplicationId=message_dedup, MessageGroupId=message_group)
+            rs = self.client.send_message(
+                QueueUrl=queue_url, MessageBody='message-{}'.format(i),
+                MessageDeduplicationId='deduplication-{}'.format(i), MessageGroupId=message_group
+            )
             results.append(rs)
 
         return queue_url, number_of_messages, results
@@ -740,6 +741,9 @@ class SQSTest(unittest.TestCase):
 
             # delete message to receive next message in queue
             self.client.delete_message(QueueUrl=queue_url, ReceiptHandle=resp['Messages'][0]['ReceiptHandle'])
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
 
     # ---------------
     # HELPER METHODS
