@@ -82,7 +82,7 @@ docker-push-master:## Push Docker image to registry IF we are currently on the m
 			(docker tag $(IMAGE_NAME):latest $(IMAGE_NAME):$(IMAGE_TAG) && \
 				docker tag $(IMAGE_NAME_FULL):latest $(IMAGE_NAME_FULL):$(IMAGE_TAG) && \
 				docker push $(IMAGE_NAME):$(IMAGE_TAG) && docker push $(IMAGE_NAME_LIGHT):$(IMAGE_TAG) && \
-				 docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG))) && \
+				docker push $(IMAGE_NAME_FULL):$(IMAGE_TAG))) && \
 		docker push $(IMAGE_NAME):latest && docker push $(IMAGE_NAME_FULL):latest && docker push $(IMAGE_NAME_LIGHT):latest \
 	)
 

@@ -851,11 +851,9 @@ class TestNodeJSRuntimes(LambdaTestBase):
         if not use_docker():
             return
 
-        zip_file = testutil.create_zip_file(
-            TEST_LAMBDA_NODEJS, get_content=True)
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
-            zip_file=zip_file,
+            handler_file=TEST_LAMBDA_NODEJS,
             handler='lambda_integration.handler',
             runtime=LAMBDA_RUNTIME_NODEJS810
         )
@@ -883,11 +881,9 @@ class TestCustomRuntimes(LambdaTestBase):
         if not use_docker():
             return
 
-        zip_file = testutil.create_zip_file(
-            TEST_LAMBDA_CUSTOM_RUNTIME, get_content=True)
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_CUSTOM_RUNTIME,
-            zip_file=zip_file,
+            handler_file=TEST_LAMBDA_CUSTOM_RUNTIME,
             handler='function.handler',
             runtime=LAMBDA_RUNTIME_PROVIDED
         )
@@ -962,11 +958,9 @@ class TestRubyRuntimes(LambdaTestBase):
         if not use_docker():
             return
 
-        zip_file = testutil.create_zip_file(
-            TEST_LAMBDA_RUBY, get_content=True)
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_RUBY,
-            zip_file=zip_file,
+            handler_file=TEST_LAMBDA_RUBY,
             handler='lambda_integration.handler',
             runtime=LAMBDA_RUNTIME_RUBY25
         )
