@@ -690,6 +690,61 @@ class SQSTest(unittest.TestCase):
             zip_file, handler, LAMBDA_RUNTIME_DOTNETCORE31
         )
 
+    def _run_test_fifo_queue_send_multiple_messages(self):
+        fifo_queue = 'queue-{}.fifo'.format(short_uid())
+
+        message_group = 'group-%s' % short_uid()
+        results = []
+        number_of_messages = 5
+
+        queue_url = self.client.create_queue(QueueName=fifo_queue, Attributes={'FifoQueue': 'true'})['QueueUrl']
+
+        # it should preserve .fifo in the queue name
+        self.assertIn(fifo_queue, queue_url)
+
+        # try sending multiple message with message group ID and deduplication ID
+        for i in range(number_of_messages):
+            rs = self.client.send_message(
+                QueueUrl=queue_url, MessageBody='message-{}'.format(i),
+                MessageDeduplicationId='deduplication-{}'.format(i), MessageGroupId=message_group
+            )
+            results.append(rs)
+
+        return queue_url, number_of_messages, results
+
+    def test_fifo_queue_send_multiple_messages_single_receive(self):
+        queue_url, number_of_messages, results = self._run_test_fifo_queue_send_multiple_messages()
+
+        # receive multiple message in the same time
+        messages = self.client.receive_message(
+            QueueUrl=queue_url, MessageAttributeNames=['All'], MaxNumberOfMessages=number_of_messages
+        )
+
+        # asset the received messages data
+        self.assertEqual(number_of_messages, len(messages['Messages']))
+        for i in range(number_of_messages):
+            self.assertEqual('message-{}'.format(i), messages['Messages'][i]['Body'])
+            self.assertEqual(results[i]['MD5OfMessageBody'], messages['Messages'][i]['MD5OfBody'])
+            self.assertEqual(results[i]['MessageId'], messages['Messages'][i]['MessageId'])
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
+    def test_fifo_queue_send_multiple_messages_multiple_receives(self):
+        queue_url, number_of_messages, results = self._run_test_fifo_queue_send_multiple_messages()
+
+        for i in range(number_of_messages):
+            resp = self.client.receive_message(QueueUrl=queue_url)
+            self.assertEqual('message-{}'.format(i), resp['Messages'][0]['Body'])
+            self.assertEqual(results[i]['MD5OfMessageBody'], resp['Messages'][0]['MD5OfBody'])
+            self.assertEqual(results[i]['MessageId'], resp['Messages'][0]['MessageId'])
+
+            # delete message to receive next message in queue
+            self.client.delete_message(QueueUrl=queue_url, ReceiptHandle=resp['Messages'][0]['ReceiptHandle'])
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     # ---------------
     # HELPER METHODS
     # ---------------
