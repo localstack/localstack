@@ -85,20 +85,22 @@ class TestMessageTransformation(unittest.TestCase):
         self.assertEqual([], result['Records'])
 
     def test_special_chars(self):
-        template = 'test#${foo.bar}'
+        template1 = 'test#${foo.bar}'
+        template2 = 'test#$foo.bar'
         context = {
             'foo': {'bar': 'baz'}
         }
-        result = render_velocity_template(template, {}, variables=context)
+        result = render_velocity_template(template1, {}, variables=context)
+        self.assertEqual('test#baz', result)
+        result = render_velocity_template(template2, {}, variables=context)
         self.assertEqual('test#baz', result)
 
     def test_string_methods(self):
         context = {
             'foo': {'bar': 'BAZ baz'}
         }
-        template = "${foo.bar.strip().lower().replace(' ','-')}"
-        result = render_velocity_template(template, {}, variables=context)
-        self.assertEqual('baz-baz', result)
-        template = "${foo.bar.trim().toLowerCase().replace(' ','-')}"
-        result = render_velocity_template(template, {}, variables=context)
-        self.assertEqual('baz-baz', result)
+        template1 = "${foo.bar.strip().lower().replace(' ','-')}"
+        template2 = "${foo.bar.trim().toLowerCase().replace(' ','-')}"
+        for template in [template1, template2]:
+            result = render_velocity_template(template, {}, variables=context)
+            self.assertEqual('baz-baz', result)
