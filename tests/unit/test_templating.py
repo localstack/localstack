@@ -91,3 +91,14 @@ class TestMessageTransformation(unittest.TestCase):
         }
         result = render_velocity_template(template, {}, variables=context)
         self.assertEqual('test#baz', result)
+
+    def test_string_methods(self):
+        context = {
+            'foo': {'bar': 'BAZ baz'}
+        }
+        template = "${foo.bar.strip().lower().replace(' ','-')}"
+        result = render_velocity_template(template, {}, variables=context)
+        self.assertEqual('baz-baz', result)
+        template = "${foo.bar.trim().toLowerCase().replace(' ','-')}"
+        result = render_velocity_template(template, {}, variables=context)
+        self.assertEqual('baz-baz', result)

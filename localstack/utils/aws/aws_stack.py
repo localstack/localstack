@@ -12,7 +12,8 @@ from localstack.constants import (
     REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.common import (
-    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
+    is_port_open, get_service_protocol, recurse_object)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -278,11 +279,44 @@ class VelocityUtil:
 def render_velocity_template(template, context, variables={}, as_json=False):
     import airspeed
 
-    # run a few fixes to properly prepare the template
-    empty_placeholder = ' __pLaCe-HoLdEr__ '
+    # Apply a few fixes below, to properly prepare the template...
+
+    # fix "#set" commands
     template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
+
+    # convert "test $foo.bar" into "test ${foo.bar}"
+    def replace(match):
+        return '%s${%s}' % (match.group(1), match.group(3))
+    template = re.sub(r'^(\s*(?!(#[a-zA-Z]+)).*)\$([a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)+)', replace, template)
+
+    # enable syntax like "test#${foo.bar}"
+    empty_placeholder = ' __pLaCe-HoLdEr__ '
     template = re.sub(r'([^\s]+)#\${(.*)', r'\1#%s${\2' % empty_placeholder, template, re.MULTILINE)
 
+    # s
+
+    class ExtendedString(str):
+        def trim(self, *args, **kwargs):
+            return ExtendedString(self.strip(*args, **kwargs))
+
+        def toLowerCase(self, *args, **kwargs):
+            return ExtendedString(self.lower(*args, **kwargs))
+
+        def toUpperCase(self, *args, **kwargs):
+            return ExtendedString(self.upper(*args, **kwargs))
+
+    def apply(obj, **kwargs):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                if isinstance(v, str):
+                    obj[k] = ExtendedString(v)
+        return obj
+
+    # loop through the variables and enable certain additional util functions (e.g., string utils)
+    variables = variables or {}
+    recurse_object(variables, apply)
+
+    # prepare and render template
     t = airspeed.Template(template)
     var_map = {
         'input': VelocityInput(context),
@@ -291,7 +325,7 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     var_map.update(variables or {})
     replaced = t.merge(var_map)
 
-    # revert fixes
+    # revert temporary changes from the fixes above
     replaced = replaced.replace(empty_placeholder, '')
 
     if as_json:
