@@ -21,7 +21,7 @@ def get_command():
            '--sqs-endpoint %s --aws-region %s --aws-account %s --step-functions-endpoint %s') % (
         install.INSTALL_DIR_STEPFUNCTIONS, MAX_HEAP_SIZE, dynamodb_endpoint,
         sns_endpoint, sqs_endpoint, aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, sfn_endpoint)
-    if not config.STEPFUNCTIONS_EXCLUDE_LAMBDA_ENDPOINT:
+    if config.STEPFUNCTIONS_LAMBDA_ENDPOINT.lower() != 'default':
         lambda_endpoint = config.STEPFUNCTIONS_LAMBDA_ENDPOINT or aws_stack.get_local_service_url('lambda')
         cmd += (' --lambda-endpoint %s') % (lambda_endpoint)
     return cmd
