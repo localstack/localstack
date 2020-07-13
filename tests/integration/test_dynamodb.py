@@ -387,6 +387,8 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         table_name = 'test-ddb-table-%s' % short_uid()
         dynamodb = aws_stack.connect_to_service('dynamodb')
 
+        tables_before = len(dynamodb.list_tables()['TableNames'])
+
         dynamodb.create_table(
             TableName=table_name,
             KeySchema=[{
@@ -401,13 +403,13 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         )
 
         table_list = dynamodb.list_tables()
-        self.assertEqual(1, len(table_list['TableNames']))
+        self.assertEqual(tables_before + 1, len(table_list['TableNames']))
         self.assertEqual(table_name, table_list['TableNames'][0])
 
         dynamodb.delete_table(TableName=table_name)
 
         table_list = dynamodb.list_tables()
-        self.assertEqual(0, len(table_list['TableNames']))
+        self.assertEqual(tables_before, len(table_list['TableNames']))
 
 
 def delete_table(name):
