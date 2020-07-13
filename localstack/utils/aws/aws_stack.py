@@ -3,14 +3,13 @@ import re
 import json
 import time
 import boto3
-import base64
 import logging
 import six
-from six.moves.urllib.parse import quote_plus, unquote_plus
 from localstack import config
 from localstack.constants import (
     REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
+from localstack.utils.aws import templating
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
 from localstack.utils.aws.aws_models import KinesisStream
@@ -224,79 +223,9 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     return BOTO_CLIENTS_CACHE[cache_key]
 
 
-class VelocityInput:
-    """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
-
-    def __init__(self, value):
-        self.value = value
-
-    def path(self, path):
-        from jsonpath_rw import parse
-        value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-        jsonpath_expr = parse(path)
-        result = [match.value for match in jsonpath_expr.find(value)]
-        result = result[0] if len(result) == 1 else result
-        return result
-
-    def json(self, path):
-        return json.dumps(self.path(path))
-
-    def __repr__(self):
-        return '$input'
-
-
-class VelocityUtil:
-    """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
-
-    def base64Encode(self, s):
-        if not isinstance(s, str):
-            s = json.dumps(s)
-        encoded_str = s.encode(config.DEFAULT_ENCODING)
-        encoded_b64_str = base64.b64encode(encoded_str)
-        return encoded_b64_str.decode(config.DEFAULT_ENCODING)
-
-    def base64Decode(self, s):
-        if not isinstance(s, str):
-            s = json.dumps(s)
-        return base64.b64decode(s)
-
-    def toJson(self, obj):
-        return obj and json.dumps(obj)
-
-    def urlEncode(self, s):
-        return quote_plus(s)
-
-    def urlDecode(self, s):
-        return unquote_plus(s)
-
-    def escapeJavaScript(self, s):
-        return str(s).replace("'", r"\'")
-
-
-def render_velocity_template(template, context, variables={}, as_json=False):
-    import airspeed
-
-    # run a few fixes to properly prepare the template
-    empty_placeholder = ' __pLaCe-HoLdEr__ '
-    template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
-    template = re.sub(r'([^\s]+)#\${(.*)', r'\1#%s${\2' % empty_placeholder, template, re.MULTILINE)
-
-    t = airspeed.Template(template)
-    var_map = {
-        'input': VelocityInput(context),
-        'util': VelocityUtil()
-    }
-    var_map.update(variables or {})
-    replaced = t.merge(var_map)
-
-    # revert fixes
-    replaced = replaced.replace(empty_placeholder, '')
-
-    if as_json:
-        replaced = json.loads(replaced)
-    return replaced
+# TODO remove from here in the future
+def render_velocity_template(*args, **kwargs):
+    return templating.render_velocity_template(*args, **kwargs)
 
 
 def check_valid_region(headers):

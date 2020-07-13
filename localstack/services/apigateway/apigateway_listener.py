@@ -240,7 +240,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 account_id, queue = uri.split('/')[-2:]
                 region_name = uri.split(':')[3]
 
-                new_request = aws_stack.render_velocity_template(template, data) + '&QueueName=%s' % queue
+                new_request = '%s&QueueName=%s' % (aws_stack.render_velocity_template(template, data), queue)
                 headers = aws_stack.mock_aws_request_headers(service='sqs', region_name=region_name)
 
                 url = urljoin(TEST_SQS_URL, '%s/%s' % (TEST_AWS_ACCOUNT_ID, queue))
