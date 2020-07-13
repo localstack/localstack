@@ -279,7 +279,9 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     import airspeed
 
     # run a few fixes to properly prepare the template
+    empty_placeholder = ' __pLaCe-HoLdEr__ '
     template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
+    template = re.sub(r'([^\s]+)#\${(.*)', r'\1#%s${\2' % empty_placeholder, template, re.MULTILINE)
 
     t = airspeed.Template(template)
     var_map = {
@@ -288,6 +290,10 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     }
     var_map.update(variables or {})
     replaced = t.merge(var_map)
+
+    # revert fixes
+    replaced = replaced.replace(empty_placeholder, '')
+
     if as_json:
         replaced = json.loads(replaced)
     return replaced

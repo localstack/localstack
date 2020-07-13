@@ -130,7 +130,7 @@ def create_zip_file(file_path, get_content=False):
 
 
 def create_lambda_function(func_name, zip_file=None, event_source_arn=None, handler_file=None,
-        handler=LAMBDA_DEFAULT_HANDLER, starting_position=None, runtime=None, envvars={},
+        handler=None, starting_position=None, runtime=None, envvars={},
         tags={}, libs=[], delete=False, layers=None, **kwargs):
     """Utility method to create a new function via the Lambda API"""
 
@@ -140,8 +140,13 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:
-        zip_file = create_lambda_archive(load_file(handler_file), libs=libs,
-            get_content=True, runtime=runtime or LAMBDA_DEFAULT_RUNTIME)
+        if libs or not handler:
+            zip_file = create_lambda_archive(load_file(handler_file), libs=libs,
+                get_content=True, runtime=runtime or LAMBDA_DEFAULT_RUNTIME)
+        else:
+            zip_file = create_zip_file(handler_file, get_content=True)
+
+    handler = handler or LAMBDA_DEFAULT_HANDLER
 
     if delete:
         try:
