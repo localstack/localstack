@@ -193,6 +193,7 @@ You can pass the following environment variables to LocalStack:
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
 * `DYNAMODB_HEAP_SIZE`: Sets the JAVA EE maximum memory size for dynamodb values are (integer)m for MB, (integer)G for GB default(256m), full table scans require more memory
 * `STEPFUNCTIONS_LAMBDA_ENDPOINT`: URL to use as the lambda service endpoint in step functions. By default this is the localstack lambda endpoint.
+* `STEPFUNCTIONS_EXCLUDE_LAMBDA_ENDPOINT`: Exclude lambda service endpoint from step functions params.
 
 * `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Possible values are:
     - `local`: run Lambda functions in a temporary directory on the local machine
