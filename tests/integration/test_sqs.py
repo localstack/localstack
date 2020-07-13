@@ -745,6 +745,30 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_tag_untag_queue(self):
+        queue_name = 'queue-{}'.format(short_uid())
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        response = self.client.tag_queue(QueueUrl=queue_url, Tags={'tag1': 'value1', 'tag2': 'value2'})
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+        response = self.client.list_queue_tags(QueueUrl=queue_url)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertIn('tag1', response['Tags'])
+        self.assertIn('tag2', response['Tags'])
+
+        response = self.client.untag_queue(QueueUrl=queue_url, TagKeys=['tag2'])
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+        response = self.client.list_queue_tags(QueueUrl=queue_url)
+        self.assertIn('tag1', response['Tags'])
+        self.assertNotIn('tag2', response['Tags'])
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+        # clean up
+        self.client.untag_queue(QueueUrl=queue_url, TagKeys=['tag1'])
+        self.client.delete_queue(QueueUrl=queue_url)
+
     # ---------------
     # HELPER METHODS
     # ---------------
