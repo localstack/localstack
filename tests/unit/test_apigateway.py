@@ -1,5 +1,5 @@
 import unittest
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import templating
 from localstack.services.apigateway import apigateway_listener
 
 
@@ -69,7 +69,7 @@ class ApiGatewayPathsTest(unittest.TestCase):
 class TestVelocityUtil(unittest.TestCase):
 
     def test_render_template_values(self):
-        util = aws_stack.VelocityUtil()
+        util = templating.VelocityUtil()
 
         encoded = util.urlEncode('x=a+b')
         self.assertEqual(encoded, 'x%3Da%2Bb')

@@ -65,14 +65,9 @@ def render_velocity_template(template, context, variables={}, as_json=False):
     # fix "#set" commands
     template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
 
-    # convert "test $foo.bar" into "test ${foo.bar}"
-    def replace(match):
-        return '%s${%s}' % (match.group(1), match.group(3))
-    template = re.sub(r'^(\s*(?!(#[a-zA-Z]+)).*)\$([a-zA-Z0-9_]+(\.[a-zA-Z0-9_]+)+)', replace, template)
-
     # enable syntax like "test#${foo.bar}"
     empty_placeholder = ' __pLaCe-HoLdEr__ '
-    template = re.sub(r'([^\s]+)#\${(.*)', r'\1#%s${\2' % empty_placeholder, template, re.MULTILINE)
+    template = re.sub(r'([^\s]+)#\$({)?(.*)', r'\1#%s$\2\3' % empty_placeholder, template, re.MULTILINE)
 
     # add extensions for common string functions below
 

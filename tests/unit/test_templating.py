@@ -104,3 +104,8 @@ class TestMessageTransformation(unittest.TestCase):
         for template in [template1, template2]:
             result = render_velocity_template(template, {}, variables=context)
             self.assertEqual('baz-baz', result)
+
+    def test_render_urlencoded_string_data(self):
+        template = "MessageBody=$util.base64Encode($input.json('$'))"
+        result = render_velocity_template(template, b'{"spam": "eggs"}')
+        self.assertEqual('MessageBody=eyJzcGFtIjogImVnZ3MifQ==', result)
