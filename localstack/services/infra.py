@@ -28,6 +28,7 @@ from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
 from localstack.services.dynamodbstreams import dynamodbstreams_api
+from localstack.utils.analytics.profiler import log_duration
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -370,35 +371,50 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     # prepare APIs
     apis = canonicalize_api_names(apis)
-    # set environment
-    os.environ['AWS_REGION'] = config.DEFAULT_REGION
-    os.environ['ENV'] = ENV_DEV
-    # register signal handlers
-    if not is_local_test_mode():
-        register_signal_handlers()
-    # make sure AWS credentials are configured, otherwise boto3 bails on us
-    check_aws_credentials()
-    # install libs if not present
-    install.install_components(apis)
-    # Some services take a bit to come up
-    sleep_time = 5
-    # start services
-    thread = None
 
-    # loop through plugins and start each service
-    for name, plugin in SERVICE_PLUGINS.items():
-        if plugin.is_enabled(api_names=apis):
-            record_service_health(name, 'starting')
-            t1 = plugin.start(asynchronous=True)
-            thread = thread or t1
+    @log_duration()
+    def prepare_environment():
+        # set environment
+        os.environ['AWS_REGION'] = config.DEFAULT_REGION
+        os.environ['ENV'] = ENV_DEV
+        # register signal handlers
+        if not is_local_test_mode():
+            register_signal_handlers()
+        # make sure AWS credentials are configured, otherwise boto3 bails on us
+        check_aws_credentials()
 
-    time.sleep(sleep_time)
-    # ensure that all infra components are up and running
-    check_infra(apis=apis)
-    # restore persisted data
-    persistence.restore_persisted_data(apis=apis)
+    @log_duration()
+    def prepare_installation():
+        # install libs if not present
+        install.install_components(apis)
+
+    @log_duration()
+    def start_api_services():
+        # Some services take a bit to come up
+        sleep_time = 5
+        # start services
+        thread = None
+
+        # loop through plugins and start each service
+        for name, plugin in SERVICE_PLUGINS.items():
+            if plugin.is_enabled(api_names=apis):
+                record_service_health(name, 'starting')
+                t1 = plugin.start(asynchronous=True)
+                thread = thread or t1
+
+        time.sleep(sleep_time)
+        # ensure that all infra components are up and running
+        check_infra(apis=apis)
+        # restore persisted data
+        persistence.restore_persisted_data(apis=apis)
+        return thread
+
+    prepare_environment()
+    prepare_installation()
+    thread = start_api_services()
     print('Ready.')
     sys.stdout.flush()
+
     if not asynchronous and thread:
         # this is a bit of an ugly hack, but we need to make sure that we
         # stay in the execution context of the main thread, otherwise our
