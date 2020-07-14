@@ -260,7 +260,7 @@ def apply_patches():
                 props['StartingPosition'] = 'LATEST'
 
             if res_type == 'AWS::ApiGateway::RestApi':
-                props['Name'] = res_name
+                props['Name'] = props.get('Name') or res_name
 
             # generate default names for certain resource types
             default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
