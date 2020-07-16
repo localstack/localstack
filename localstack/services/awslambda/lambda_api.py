@@ -18,7 +18,6 @@ from six.moves.urllib.parse import urlparse
 from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
-from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.lambda_executors import (
@@ -1546,6 +1545,8 @@ def get_function_event_invoke_config(function):
 
 
 def serve(port, quiet=True):
+    from localstack.services import generic_proxy  # moved here to fix circular import errors
+
     # initialize the Lambda executor
     LAMBDA_EXECUTOR.startup()
 

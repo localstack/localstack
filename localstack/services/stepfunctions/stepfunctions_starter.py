@@ -12,16 +12,18 @@ MAX_HEAP_SIZE = '256m'
 
 
 def get_command():
-    lambda_endpoint = config.STEPFUNCTIONS_LAMBDA_ENDPOINT or aws_stack.get_local_service_url('lambda')
     dynamodb_endpoint = aws_stack.get_local_service_url('dynamodb')
     sns_endpoint = aws_stack.get_local_service_url('sns')
     sqs_endpoint = aws_stack.get_local_service_url('sqs')
     sfn_endpoint = aws_stack.get_local_service_url('stepfunctions')
     cmd = ('cd %s; java -Dcom.amazonaws.sdk.disableCertChecking -Xmx%s -jar StepFunctionsLocal.jar '
-           '--lambda-endpoint %s --dynamodb-endpoint %s --sns-endpoint %s '
+           '--dynamodb-endpoint %s --sns-endpoint %s '
            '--sqs-endpoint %s --aws-region %s --aws-account %s --step-functions-endpoint %s') % (
-        install.INSTALL_DIR_STEPFUNCTIONS, MAX_HEAP_SIZE, lambda_endpoint, dynamodb_endpoint,
+        install.INSTALL_DIR_STEPFUNCTIONS, MAX_HEAP_SIZE, dynamodb_endpoint,
         sns_endpoint, sqs_endpoint, aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, sfn_endpoint)
+    if config.STEPFUNCTIONS_LAMBDA_ENDPOINT.lower() != 'default':
+        lambda_endpoint = config.STEPFUNCTIONS_LAMBDA_ENDPOINT or aws_stack.get_local_service_url('lambda')
+        cmd += (' --lambda-endpoint %s') % (lambda_endpoint)
     return cmd
 
 

@@ -250,14 +250,18 @@ def apply_patches():
         resource_tuple = parsing.parse_resource(logical_id, resource_json, resources_map)
         if not resource_tuple:
             return None
-        _, resource_json, _ = resource_tuple
+        _, resource_json, resource_name = resource_tuple
 
-        def add_default_props(resource_props):
+        def add_default_props(resource_props, res_name=None):
             """ apply some fixes which otherwise cause deployments to fail """
             res_type = resource_props['Type']
             props = resource_props.get('Properties', {})
             if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
                 props['StartingPosition'] = 'LATEST'
+
+            if res_type == 'AWS::ApiGateway::RestApi':
+                props['Name'] = props.get('Name') or res_name
+
             # generate default names for certain resource types
             default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
             for entry in default_attrs:
@@ -265,7 +269,7 @@ def apply_patches():
                     props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
 
         # add some fixes and default props which otherwise cause deployments to fail
-        add_default_props(resource_json)
+        add_default_props(resource_json, resource_name)
         for resource in resources_map._resource_json_map.values():
             add_default_props(resource)
 
@@ -709,7 +713,7 @@ def apply_patches():
     @classmethod
     def RestAPI_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
-        name = props['Name']
+        name = props.get('Name') or short_uid()
         region_name = props.get('Region') or aws_stack.get_region()
         description = props.get('Description') or ''
         id = props.get('Id') or short_uid()
