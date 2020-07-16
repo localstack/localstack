@@ -101,7 +101,7 @@ if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_
 HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
 
 # whether to enable verbose debug logging
-DEBUG = os.environ.get('DEBUG', '').lower() in TRUE_STRINGS
+DEBUG = is_env_true('DEBUG')
 
 # whether to use SSL encryption for the services
 USE_SSL = is_env_true('USE_SSL')
