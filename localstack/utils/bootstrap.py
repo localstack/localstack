@@ -374,7 +374,6 @@ def start_infra_in_docker():
     # prepare APIs
     canonicalize_api_names()
 
-    services = os.environ.get('SERVICES', '')
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
     user_flags = config.DOCKER_FLAGS
