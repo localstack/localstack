@@ -36,6 +36,9 @@ SIGNAL_HANDLERS_SETUP = False
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
+# maps ports to proxy listener details
+PROXY_LISTENERS = {}
+
 # set up logger
 LOG = logging.getLogger(__name__)
 
@@ -242,6 +245,8 @@ def do_run(cmd, asynchronous, print_output=None, env_vars={}):
 
 
 def start_proxy_for_service(service_name, port, backend_port, update_listener, quiet=False, params={}):
+    PROXY_LISTENERS[service_name] = (service_name, backend_port, update_listener)
+    return
     # check if we have a custom backend configured
     custom_backend_url = os.environ.get('%s_BACKEND' % service_name.upper())
     backend_url = custom_backend_url or ('http://%s:%s' % (DEFAULT_BACKEND_HOST, backend_port))
@@ -258,11 +263,13 @@ def start_proxy(port, backend_url, update_listener=None, quiet=False, params={},
 def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
     if not name:
         name = key
-    print('Starting mock %s service on %s ports %s (recommended) and %s (deprecated)...' % (
-        name, get_service_protocol(), config.EDGE_PORT, port))
+    print('Starting mock %s service on %s port %s ...' % (name, get_service_protocol(), config.EDGE_PORT))
     if not backend_port and (config.USE_SSL or update_listener):
+        # TODO remove?
         backend_port = get_free_tcp_port()
+    backend_port = multiserver.get_multi_server_port()
     if backend_port:
+        # print('!!!start_proxy_for_service', key, backend_port, port)
         start_proxy_for_service(key, port, backend_port, update_listener)
     if config.BUNDLE_API_PROCESSES:
         return multiserver.start_api_server(key, backend_port or port)
@@ -278,8 +285,8 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
 
 
 def start_local_api(name, port, method, asynchronous=False):
-    print('Starting mock %s service on %s ports %s (recommended) and %s (deprecated)...' % (
-        name, get_service_protocol(), config.EDGE_PORT, port))
+    print('Starting mock %s service on %s port %s ...' % (
+        name, get_service_protocol(), config.EDGE_PORT))
     if asynchronous:
         thread = start_thread(method, port, quiet=True)
         return thread

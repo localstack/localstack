@@ -534,6 +534,7 @@ def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=Non
 
 
 def start_proxy_server_http2(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
+    print('!!!start_proxy_server http2', port, forward_url, use_ssl, update_listener)
     proxy_thread = run_proxy_server_http2(port=port, use_ssl=use_ssl,
         listener=update_listener, forward_url=forward_url, asynchronous=True)
     return proxy_thread

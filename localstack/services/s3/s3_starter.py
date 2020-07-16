@@ -10,7 +10,8 @@ from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import wait_for_port_open, get_free_tcp_port
+from localstack.utils.server import multiserver
+from localstack.utils.common import wait_for_port_open
 from localstack.services.infra import start_moto_server
 from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
@@ -26,11 +27,12 @@ TMP_STATE = {}
 def check_s3(expect_shutdown=False, print_error=False):
     out = None
     try:
-        # wait for port to be opened
+        # # wait for port to be opened
         wait_for_port_open(s3_listener.PORT_S3_BACKEND)
         # check S3
         out = aws_stack.connect_to_service(service_name='s3').list_buckets()
     except Exception as e:
+        print(e, type(e), traceback.format_exc())
         if print_error:
             LOG.error('S3 health check failed: %s %s' % (e, traceback.format_exc()))
     if expect_shutdown:
@@ -41,7 +43,8 @@ def check_s3(expect_shutdown=False, print_error=False):
 
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_S3
-    backend_port = s3_listener.PORT_S3_BACKEND = backend_port or get_free_tcp_port()
+    # backend_port = s3_listener.PORT_S3_BACKEND = backend_port or get_free_tcp_port()
+    backend_port = s3_listener.PORT_S3_BACKEND = backend_port or multiserver.get_moto_server_port()
 
     apply_patches()
 

@@ -21,6 +21,9 @@ API_SERVERS = {}
 # network port for multiserver instance (lazily initialized on startup)
 MULTI_SERVER_PORT = None
 
+# network port for moto server instance (lazily initialized on startup)
+MOTO_SERVER_PORT = None
+
 # API paths
 API_PATH_SERVERS = '/servers'
 
@@ -41,6 +44,10 @@ def patch_moto_server():
 
 def start_api_server_locally(request):
 
+    if '__started__' in API_SERVERS:
+        return
+    API_SERVERS['__started__'] = True
+
     api = request.get('api')
     port = request.get('port')
     if api in API_SERVERS:
@@ -48,7 +55,9 @@ def start_api_server_locally(request):
     result = API_SERVERS[api] = {}
 
     def thread_func(params):
-        return moto_server.main([api, '-p', str(port), '-H', constants.BIND_HOST])
+        print('!!!!START', port)
+        return moto_server.main(['-p', str(port), '-H', constants.BIND_HOST])
+        # return moto_server.main([api, '-p', str(port), '-H', constants.BIND_HOST])
 
     thread = FuncThread(thread_func)
     thread.start()
@@ -88,7 +97,8 @@ def start_server(port, asynchronous=False):
 
 
 def start_api_server(api, port, server_port=None):
-    server_port = server_port or get_multi_server_port()
+    print('start_api_server', api, port, server_port, get_moto_server_port())
+    server_port = server_port or get_moto_server_port()
     thread = start_server_process(server_port)
     url = 'http://localhost:%s%s' % (server_port, API_PATH_SERVERS)
     payload = {
@@ -128,6 +138,12 @@ def get_multi_server_port():
     global MULTI_SERVER_PORT
     MULTI_SERVER_PORT = MULTI_SERVER_PORT or get_free_tcp_port()
     return MULTI_SERVER_PORT
+
+
+def get_moto_server_port():
+    global MOTO_SERVER_PORT
+    MOTO_SERVER_PORT = MOTO_SERVER_PORT or get_free_tcp_port()
+    return MOTO_SERVER_PORT
 
 
 def main():
