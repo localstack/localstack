@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime
 from localstack.utils import common
+from localstack.utils.bootstrap import extract_port_flags, PortMappings
 
 
 class TestCommon(unittest.TestCase):
@@ -43,3 +44,20 @@ class TestCommon(unittest.TestCase):
     def test_mktime(self):
         env = common.mktime(datetime(2010, 3, 20, 7, 24, 00, 0), True)
         self.assertEqual(env, 1269069840.0)
+
+
+class TestCommandLine(unittest.TestCase):
+
+    def test_extract_port_flags(self):
+        port_mappings = PortMappings()
+        flags = extract_port_flags('foo -p 1234:1234 bar', port_mappings=port_mappings)
+        self.assertEqual('foo  bar', flags)
+        mapping_str = port_mappings.to_str()
+        self.assertEqual('-p 1234:1234', mapping_str)
+
+        port_mappings = PortMappings()
+        flags = extract_port_flags('foo -p 1234:1234 bar -p 80-90:81-91 baz', port_mappings=port_mappings)
+        self.assertEqual('foo  bar  baz', flags)
+        mapping_str = port_mappings.to_str()
+        self.assertIn('-p 1234:1234', mapping_str)
+        self.assertIn('-p 80-90:81-91', mapping_str)

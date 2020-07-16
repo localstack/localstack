@@ -344,6 +344,21 @@ def get_docker_image_to_start():
     return image_name
 
 
+def extract_port_flags(user_flags, port_mappings):
+    regex = r'-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-([0-9]+))?'
+    matches = re.match('.*%s' % regex, user_flags)
+    start = end = 0
+    if matches:
+        for match in re.findall(regex, user_flags):
+            start = int(match[0])
+            end = int(match[2] or match[0])
+            start_target = int(match[3] or start)
+            end_target = int(match[5] or end)
+            port_mappings.add([start, end], [start_target, end_target])
+        user_flags = re.sub(regex, r'', user_flags)
+    return user_flags
+
+
 def start_infra_in_docker():
 
     container_name = MAIN_CONTAINER_NAME
@@ -359,7 +374,6 @@ def start_infra_in_docker():
     # prepare APIs
     canonicalize_api_names()
 
-    services = os.environ.get('SERVICES', '')
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
     user_flags = config.DOCKER_FLAGS
@@ -375,13 +389,8 @@ def start_infra_in_docker():
     port_mappings = PortMappings()
 
     # get port ranges defined via DOCKER_FLAGS (if any)
-    regex = r'.*-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-[0-9]+)?.*'
-    match = re.match(regex, user_flags)
-    start = end = 0
-    if match:
-        start = int(match.group(1))
-        end = int(match.group(3) or match.group(1))
-        port_mappings.add([start, end])
+    user_flags = extract_port_flags(user_flags, port_mappings)
+    plugin_run_params = extract_port_flags(plugin_run_params, port_mappings)
 
     # construct default port mappings
     if service_ports.get('edge') == 0:
@@ -389,11 +398,6 @@ def start_infra_in_docker():
     service_ports.pop('dashboard', None)
     for port in service_ports.values():
         port_mappings.add(port)
-
-    if services:
-        port_mappings = PortMappings()
-        for port in set(service_ports.values()):
-            port_mappings.add(port)
 
     env_str = ''
     for env_var in config.CONFIG_ENV_VARS:
