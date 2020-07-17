@@ -142,6 +142,12 @@ def replay_command(command):
     data = prepare_replay_data(command)
     endpoint = aws_stack.get_local_service_url(api)
     full_url = (endpoint[:-1] if endpoint.endswith('/') else endpoint) + command['p']
+    try:
+        # fix an error when calling requests with invalid payload encoding
+        data and hasattr(data, 'encode') and data.encode('latin-1')
+    except UnicodeEncodeError:
+        if hasattr(data, 'encode'):
+            data = data.encode('utf-8')
     response = function(full_url, data=data, headers=command['h'], verify=False)
     return response
 
