@@ -751,15 +751,15 @@ class SQSTest(unittest.TestCase):
 
         second_receives = number_of_messages - first_receives
 
-        # receive multiple message second time
-        messages = self.client.receive_message(
-            QueueUrl=queue_url, MessageAttributeNames=['All'], MaxNumberOfMessages=second_receives
-        )
-        # asset the received messages data second time
+        # try to get one by one message in the second time
         for i in range(second_receives):
-            self.assertEqual('message-{}'.format(first_receives + i), messages['Messages'][i]['Body'])
-            self.assertEqual(results[first_receives + i]['MD5OfMessageBody'], messages['Messages'][i]['MD5OfBody'])
-            self.assertEqual(results[first_receives + i]['MessageId'], messages['Messages'][i]['MessageId'])
+            message = self.client.receive_message(QueueUrl=queue_url)
+            self.assertEqual('message-{}'.format(first_receives + i), message['Messages'][0]['Body'])
+            self.assertEqual(results[first_receives + i]['MD5OfMessageBody'], message['Messages'][0]['MD5OfBody'])
+            self.assertEqual(results[first_receives + i]['MessageId'], message['Messages'][0]['MessageId'])
+
+            # delete message to receive next message in queue
+            self.client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['Messages'][0]['ReceiptHandle'])
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
