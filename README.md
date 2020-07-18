@@ -183,7 +183,6 @@ You can pass the following environment variables to LocalStack:
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
 * `<SERVICE>_PORT`: Port number to bind a specific service to (defaults to service ports above).
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
-* `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`).
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
 * `KINESIS_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly
@@ -192,8 +191,7 @@ You can pass the following environment variables to LocalStack:
 * `KINESIS_LATENCY`: Integer value (default: `500`) or `0` (to disable), causing the Kinesis API to delay returning a response in order to mimick latency from a live AWS call.
 * `DYNAMODB_ERROR_PROBABILITY`: Decimal value between 0.0 (default) and 1.0 to randomly inject `ProvisionedThroughputExceededException` errors into DynamoDB API responses.
 * `DYNAMODB_HEAP_SIZE`: Sets the JAVA EE maximum memory size for dynamodb values are (integer)m for MB, (integer)G for GB default(256m), full table scans require more memory
-* `STEPFUNCTIONS_LAMBDA_ENDPOINT`: URL to use as the lambda service endpoint in step functions. By default this is the localstack lambda endpoint. Use `default` to select the original aws lambda endpoint.
-
+* `STEPFUNCTIONS_LAMBDA_ENDPOINT`: URL to use as the Lambda service endpoint in Step Functions. By default this is the LocalStack Lambda endpoint. Use `default` to select the original AWS Lambda endpoint.
 * `LAMBDA_EXECUTOR`: Method to use for executing Lambda functions. Possible values are:
     - `local`: run Lambda functions in a temporary directory on the local machine
     - `docker`: run each function invocation in a separate Docker container
@@ -231,14 +229,15 @@ You can pass the following environment variables to LocalStack:
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
 * `LAMBDA_JAVA_OPTS`: Allow passing custom JVM options (e.g., `-Xmx512M`) to Java Lambdas executed in Docker. Use `_debug_port_` placeholder to configure the debug port (e.g., `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_`).
 
+The following environment configurations are *deprecated*:
+* `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
 
 Additionally, the following *read-only* environment variables are available:
 
 * `LOCALSTACK_HOSTNAME`: Name of the host where LocalStack services are available.
-  This is needed in order to access the services from within your Lambda functions
-  (e.g., to store an item to DynamoDB or S3 from Lambda).
-  The variable `LOCALSTACK_HOSTNAME` is available for both, local Lambda execution
-  (`LAMBDA_EXECUTOR=local`) and execution inside separate Docker containers (`LAMBDA_EXECUTOR=docker`).
+  Use this hostname as endpoint (e.g., `http://${LOCALSTACK_HOSTNAME}:4566`) in order
+  to **access the services from within your Lambda functions**
+  (e.g., to store an item to DynamoDB or S3 from a Lambda).
 
 ### Dynamically updating configuration at runtime
 
@@ -261,7 +260,7 @@ When a container is started for the first time, it will execute files with exten
 
 ## Using custom SSL certificates
 
-To use your own SSL certificate (for `USE_SSL=1`) instead of the randomly generated certificate, you can place a file `server.test.pem` into the LocalStack temporary directory (`$TMPDIR/localstack`, or `/tmp/localstack` by default). The file `server.test.pem` must contain the key file, as well as the certificate file content:
+To use your own SSL certificate instead of the randomly generated certificate, you can place a file `server.test.pem` into the LocalStack temporary directory (`$TMPDIR/localstack`, or `/tmp/localstack` by default). The file `server.test.pem` must contain the key file, as well as the certificate file content:
 
 ```
 -----BEGIN PRIVATE KEY-----
@@ -272,17 +271,17 @@ To use your own SSL certificate (for `USE_SSL=1`) instead of the randomly genera
 -----END CERTIFICATE-----
 ```
 
-### Using USE_SSL and own persistent certificate with docker-compose
+### Using custom SSL certificates with docker-compose
 
-Typically with docker-compose you can add into docker-compose.yml this volume to the localstack services :
+Typically with docker-compose you can add into docker-compose.yml this volume to the LocalStack services :
 
 ```
-volumes:
-      - "${PWD}/ls_tmp:/tmp/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+  volumes:
+    - "${PWD}/ls_tmp:/tmp/localstack"
+    - "/var/run/docker.sock:/var/run/docker.sock"
 ```
 
-local directory **ls_tmp** must contains the three files (server.test.pem, server.test.pem.crt, server.test.pem.key)
+The local directory `/ls_tmp` must contains the three files (server.test.pem, server.test.pem.crt, server.test.pem.key)
 
 ## Accessing the infrastructure via CLI or code
 
