@@ -300,6 +300,8 @@ class PortMappings(object):
             return
         if int(port) <= 0:
             raise Exception('Unable to add mapping for invalid port: %s' % port)
+        if self.contains(port):
+            return
         for from_range, to_range in self.mappings.items():
             if not self.in_expanded_range(port, from_range):
                 continue
@@ -317,6 +319,11 @@ class PortMappings(object):
             return '-p %s-%s:%s-%s' % (k[0], k[1], v[0], v[1])
 
         return ' '.join([entry(k, v) for k, v in self.mappings.items()])
+
+    def contains(self, port):
+        for from_range, to_range in self.mappings.items():
+            if self.in_range(port, from_range):
+                return True
 
     def in_range(self, port, range):
         return port >= range[0] and port <= range[1]

@@ -61,3 +61,14 @@ class TestCommandLine(unittest.TestCase):
         mapping_str = port_mappings.to_str()
         self.assertIn('-p 1234:1234', mapping_str)
         self.assertIn('-p 80-90:81-91', mapping_str)
+
+    def test_overlapping_port_ranges(self):
+        port_mappings = PortMappings()
+        port_mappings.add(4590)
+        port_mappings.add(4591)
+        port_mappings.add(4593)
+        port_mappings.add(4592)
+        port_mappings.add(4593)
+        result = port_mappings.to_str()
+        # assert that ranges are non-overlapping, i.e., no duplicate ports
+        self.assertEqual('-p 4590-4592:4590-4592 -p 4593:4593', result)
