@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import threading
 import traceback
 import h11
 from quart import make_response, request, Quart
@@ -16,6 +17,10 @@ from localstack.utils.async_utils import run_sync, ensure_event_loop
 LOG = logging.getLogger(__name__)
 
 HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH']
+
+# cache of SSL contexts (indexed by cert file names)
+SSL_CONTEXTS = {}
+SSL_LOCK = threading.RLock()
 
 
 def setup_quart_logging():
@@ -48,6 +53,17 @@ def apply_patches():
 
     _read_data_orig = tcp_server.TCPServer._read_data
     tcp_server.TCPServer._read_data = _read_data
+
+    # avoid SSL context initialization errors when running multiple server threads in parallel
+    def create_ssl_context(self, *args, **kwargs):
+        with SSL_LOCK:
+            key = '%s%s' % (self.certfile, self.keyfile)
+            if key not in SSL_CONTEXTS:
+                SSL_CONTEXTS[key] = create_ssl_context_orig(self, *args, **kwargs)
+            return SSL_CONTEXTS[key]
+
+    create_ssl_context_orig = Config.create_ssl_context
+    Config.create_ssl_context = create_ssl_context
 
 
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
