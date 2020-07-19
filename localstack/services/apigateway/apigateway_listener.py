@@ -7,9 +7,9 @@ import datetime
 from flask import Response as FlaskResponse
 from six.moves.urllib_parse import urljoin
 from requests.models import Response
-from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
-from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
 from localstack.utils import common
+from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
+from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, to_bytes
 from localstack.utils.analytics import event_publisher

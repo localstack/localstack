@@ -55,6 +55,7 @@ def apply_patches():
     tcp_server.TCPServer._read_data = _read_data
 
     # avoid SSL context initialization errors when running multiple server threads in parallel
+
     def create_ssl_context(self, *args, **kwargs):
         with SSL_LOCK:
             key = '%s%s' % (self.certfile, self.keyfile)

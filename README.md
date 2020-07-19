@@ -299,7 +299,7 @@ Use the below command to install `aws CLI`, if not installed already.
 ```
 pip install awscli
 ```
-### Setting up local region and credentials to run localstack
+### Setting up local region and credentials to run LocalStack
 
 aws requires the region and the credentials to be set in order to run the aws commands. Create the default configuration & the credentials. Below key will ask for the Access key id, secret Access Key, region & output format.
 
@@ -328,6 +328,16 @@ inside your Lambda function. See [Configurations](#Configurations) section for m
 * Python: https://github.com/localstack/localstack-python-client
   * alternatively, you can also use `boto3` and use the `endpoint_url` parameter when creating a connection
 * (more coming soon...)
+
+### Invoking API Gateway
+
+While API Gateway endpoints on AWS use a custom DNS name to identify the API ID (e.g., `https://nmafetnwf6.execute-api.us-east-1.amazonaws.com/prod/my/path`), LocalStack uses the special URL path indicator `.../_user_request_/...` to indicate the execution of a REST API method.
+
+The URL pattern for API Gateway executions is `http://localhost:4566/restapis/<apiId>/<stage>/_user_request_/<methodPath>`. The example URL above would map to the following `localhost` URL:
+
+```
+$ curl http://localhost:4566/restapis/nmafetnwf6/prod/_user_request_/my/path
+```
 
 ## Integration with nosetests
 
