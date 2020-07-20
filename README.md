@@ -135,6 +135,8 @@ localstack start
 
 **Note**: From 2020-07-11 onwards, the default image `localstack/localstack` in Docker Hub refers to the "light version", which has some large dependency files like Elasticsearch removed (and lazily downloads them, if required). (Note that the `localstack/localstack-light` image alias may get removed in the future). In case you need the full set of dependencies, the `localstack/localstack-full` image can be used instead. Please also refer to the `USE_LIGHT_IMAGE` configuration below.
 
+(**Note**: Although it is strongly recommended to use Docker, the infrastructure can also be spun up directly on the host machine using the `--host` startup flag. Note that this will require [additional dependencies](#Developing), and is not supported on some operating systems, including Windows.)
+
 ### Using `docker-compose`
 
 You can also use the `docker-compose.yml` file from the repository and use this command (currently requires `docker-compose` version 2.1+):
@@ -147,22 +149,6 @@ docker-compose up
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
 
 To facilitate interoperability, configuration variables can be prefixed with `LOCALSTACK_` in docker. For instance, setting `LOCALSTACK_SERVICES=s3` is equivalent to `SERVICES=s3`.
-
-## Starting locally (non-Docker mode)
-
-Alternatively, the infrastructure can be spun up on the local host machine (without using Docker) using the following command:
-
-```
-localstack start --host
-```
-
-(Note that this will require [additional dependencies](#Developing), and currently is not supported on some operating systems, including Windows.)
-
-LocalStack will attempt to automatically fetch the missing dependencies when you first start it up in "host" mode; alternatively, you can use the `full` profile to install all dependencies at `pip` installation time:
-
-```
-pip install "localstack[full]"
-```
 
 ## Configurations
 
@@ -223,7 +209,7 @@ You can pass the following environment variables to LocalStack:
 * `DOCKER_FLAGS`: Allows to pass custom flags (e.g., volume mounts) to "docker run" when running LocalStack in Docker.
 * `DOCKER_CMD`: Shell command used to run Docker containers, e.g., set to `"sudo docker"` to run as sudo (default: `docker`).
 * `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
-* `START_WEB`: Flag to control whether the Web API should be started in Docker (values: `0`/`1`; default: `1`).
+* `START_WEB`: Flag to control whether the Web UI should be started in Docker (values: `0`/`1`; default: `1`).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
@@ -504,7 +490,7 @@ coverage report
 coverage html
 ```
 
-## Web Dashboard
+## Web Dashboard (deprecated)
 
 The projects also comes with a simple Web dashboard that allows to view the deployed AWS
 components and the relationship between them.
@@ -512,6 +498,10 @@ components and the relationship between them.
 ```
 localstack web
 ```
+
+Please note that the Web UI requires using the extended version of the Docker image (`localstack/localstack-full`).
+
+**Note:** The Web dashboard is not actively maintained anymore and may get removed in an upcoming release.
 
 ## Other UI Clients
 
