@@ -437,13 +437,15 @@ class TestPythonRuntimes(LambdaTestBase):
     def test_invocation_type_request_response(self):
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_PY,
-            Payload=b'{}', InvocationType='RequestResponse'
+            Payload=b'{}', InvocationType='RequestResponse',
+            ClientContext='foo'
         )
         result_data = result['Payload'].read()
         result_data = json.loads(to_str(result_data))
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertIsInstance(result_data, dict)
+        self.assertEqual(result_data['context']['client_context'], 'foo')
 
     def test_invocation_type_event(self):
         result = self.lambda_client.invoke(

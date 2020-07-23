@@ -249,6 +249,8 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
+            if context.client_context:
+                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(context.client_context)
 
         # custom command to execute in the container
         command = ''
