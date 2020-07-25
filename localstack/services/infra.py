@@ -107,6 +107,11 @@ def start_route53(port=None, asynchronous=False):
     return start_moto_server('route53', port, name='Route53', asynchronous=asynchronous)
 
 
+def start_acm(port=None, asynchronous=False):
+    port = port or config.PORT_ACM
+    return start_moto_server('acm', port, name='ACM', asynchronous=asynchronous)
+
+
 def start_ses(port=None, asynchronous=False):
     port = port or config.PORT_SES
     return start_moto_server('ses', port, name='SES', asynchronous=asynchronous)

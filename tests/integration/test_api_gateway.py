@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import base64
 import re
 import json
+import base64
 import unittest
 import xmltodict
 from botocore.exceptions import ClientError

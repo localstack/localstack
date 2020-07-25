@@ -43,7 +43,7 @@ def do_register_localstack_plugins():
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.infra import (
             start_sns, start_route53, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
-            start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams
+            start_redshift, start_firehose, start_cloudwatch, start_dynamodbstreams, start_acm
         )
         from localstack.services.events import events_listener, events_starter
         from localstack.services.plugins import Plugin, register_plugin
@@ -59,6 +59,10 @@ def do_register_localstack_plugins():
             'edge',
             start=edge.start_edge,
             active=True))
+
+        register_plugin(Plugin(
+            'acm',
+            start=start_acm))
 
         register_plugin(Plugin(
             'apigateway',
