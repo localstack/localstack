@@ -220,6 +220,14 @@ def apply_patches():
             item.assume_role_policy_document = quote(json.dumps(item.assume_role_policy_document or {}))
             items.append(item)
 
+        prefix = self._get_param('PathPrefix')
+        if prefix:
+            filtered_roles = []
+            for role in roles:
+                if role.path.startswith(prefix):
+                    filtered_roles.append(role)
+            items = filtered_roles
+
         template = self.response_template(LIST_ROLES_TEMPLATE)
         return template.render(roles=items)
 
