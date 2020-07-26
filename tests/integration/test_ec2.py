@@ -165,3 +165,25 @@ class TestEc2Integrations(unittest.TestCase):
 
         ec2_client1.delete_vpc(VpcId=peer_vpc1['Vpc']['VpcId'])
         ec2_client2.delete_vpc(VpcId=peer_vpc2['Vpc']['VpcId'])
+
+    def test_describe_vpn_gateways_filter(self):
+        ec2 = self.ec2_client
+
+        gw = ec2.create_vpn_gateway(Type='ipsec.1')
+        self.assertEqual(200, gw['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual('ipsec.1', gw['VpnGateway']['Type'])
+        self.assertIsNotNone(gw['VpnGateway']['VpnGatewayId'])
+
+        response = ec2.describe_vpn_gateways(
+            Filters=[
+                {
+                    'Name': 'attachment.vpc-id',
+                    'Values': ['vpc-1234']
+                },
+            ],
+            VpnGatewayIds=[gw['VpnGateway']['VpnGatewayId']]
+        )
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(gw['VpnGateway']['VpnGatewayId'], response['VpnGateways'][0]['VpnGatewayId'])
+
+        ec2.delete_vpn_gateway(VpnGatewayId=gw['VpnGateway']['VpnGatewayId'])
