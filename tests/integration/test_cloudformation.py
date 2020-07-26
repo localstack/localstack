@@ -628,6 +628,33 @@ Resources:
       BucketName: cf-prd-{id}
 """ % TEST_AWS_ACCOUNT_ID
 
+TEST_TEMPLATE_20 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  S3Setup:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: test-bucket
+"""
+
+TEST_TEMPLATE_21 = """
+Resources:
+  S3Setup:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: test-bucket
+  SQSQueueDLQ:
+    Type: 'AWS::SQS::Queue'
+  SQSQueue:
+    Type: 'AWS::SQS::Queue'
+    DependsOn: SQSQueueDLQ
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt: [SQSQueueDLQ, Arn]
+        maxReceiveCount: 5
+"""
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -728,6 +755,10 @@ def _await_stack_status(stack_name, expected_status, retries=3, sleep=2):
 
 def _await_stack_completion(stack_name, retries=3, sleep=2):
     return _await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
+
+
+def _await_stack_update_completion(stack_name, retries=3, sleep=2):
+    return _await_stack_status(stack_name, 'UPDATE_COMPLETE', retries=retries, sleep=sleep)
 
 
 class CloudFormationTest(unittest.TestCase):
@@ -1597,3 +1628,22 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation.delete_stack(StackName='myteststack2')
         cloudformation.delete_stack(StackName='myteststack')
+
+    def test_update_stack_with_sqs_dlq(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        stack_name = 'stack-%s' % short_uid()
+
+        cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_20)
+        _await_stack_completion(stack_name)
+
+        update_res = cloudformation.update_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_21)
+        _await_stack_update_completion(stack_name)
+
+        # wait until background loop job finishes, maybe there is better way to do this?
+        time.sleep(2)
+
+        stack_id = update_res['StackId']
+        describe_response = cloudformation.describe_stack_events(StackName=stack_id)
+        self.assertEqual(describe_response['StackEvents'][0]['ResourceStatus'], 'UPDATE_COMPLETE')
+
+        cloudformation.delete_stack(StackName=stack_name)
