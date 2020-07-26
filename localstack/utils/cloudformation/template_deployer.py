@@ -789,9 +789,11 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         elif resource_type == 'SQS::Queue':
             sqs_client = aws_stack.connect_to_service('sqs')
             queues = sqs_client.list_queues()
+            url_path_pattern = resource_props.get('QueueName', r'%s-%s-\w+' % (stack_name, resource_id))
+            url_regex = re.compile(r'.*/%s$' % url_path_pattern)
             result = list(filter(lambda item:
                 # TODO possibly find a better way to compare resource_id with queue URLs
-                item.endswith('/%s' % resource_id), queues.get('QueueUrls', [])))
+                url_regex.match(item), queues.get('QueueUrls', [])))
             if not result:
                 return None
             result = sqs_client.get_queue_attributes(QueueUrl=result[0], AttributeNames=['All'])['Attributes']
