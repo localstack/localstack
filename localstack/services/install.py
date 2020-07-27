@@ -44,6 +44,9 @@ MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
 
+# SQS backend implementation provider - either "moto" or "elasticmq"
+SQS_BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
+
 # As of 2019-10-09, the DDB fix (see below) doesn't seem to be required anymore
 APPLY_DDB_ALPINE_FIX = False
 # TODO: 2019-10-09: Temporarily overwriting DDB, as we're hitting a SIGSEGV JVM crash with the latest version
@@ -123,6 +126,9 @@ def install_elasticsearch(version=None):
 
 
 def install_elasticmq():
+    if SQS_BACKEND_IMPL != 'elasticmq':
+        return
+    # TODO remove this function if we stop using ElasticMQ entirely
     if not os.path.exists(INSTALL_PATH_ELASTICMQ_JAR):
         log_install_msg('ElasticMQ')
         mkdir(INSTALL_DIR_ELASTICMQ)
