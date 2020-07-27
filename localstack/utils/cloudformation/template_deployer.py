@@ -801,6 +801,15 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             topics = aws_stack.connect_to_service('sns').list_topics()
             result = list(filter(lambda item: item['TopicArn'] == resource_id, topics.get('Topics', [])))
             return result[0] if result else None
+        elif resource_type == 'SNS::Subscription':
+            topic_arn = resource_props.get('TopicArn')
+            topic_arn = resolve_refs_recursively(stack_name, topic_arn, resources)
+            subs = aws_stack.connect_to_service('sns').list_subscriptions_by_topic(TopicArn=topic_arn)
+            result = [sub for sub in subs['Subscriptions'] if
+                resource_props.get('Protocol') == sub['Protocol'] and
+                resource_props.get('Endpoint') == sub['Endpoint']]
+            # TODO: use get_subscription_attributes to compare FilterPolicy
+            return result[0] if result else None
         elif resource_type == 'S3::Bucket':
             bucket_name = resource_props.get('BucketName') or resource_id
             bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
