@@ -1066,9 +1066,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(stack['StackName'], stack_name)
 
         iam_client = aws_stack.connect_to_service('iam')
-        rs = iam_client.list_roles(
-            PathPrefix=role_name
-        )
+        rs = iam_client.list_roles()
 
         self.assertEqual(len(rs['Roles']), 1)
         self.assertEqual(rs['Roles'][0]['RoleName'], role_name)
