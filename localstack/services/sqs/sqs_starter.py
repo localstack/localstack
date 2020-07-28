@@ -9,9 +9,8 @@ from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port, to_str, escape_html)
-from localstack.services.sqs import sqs_listener
 from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run, start_moto_server
-from localstack.services.install import INSTALL_DIR_ELASTICMQ, install_elasticmq
+from localstack.services.install import INSTALL_DIR_ELASTICMQ, SQS_BACKEND_IMPL, install_elasticmq
 
 LOG = logging.getLogger(__name__)
 
@@ -39,7 +38,7 @@ def check_sqs(expect_shutdown=False, print_error=False):
 
 
 def start_sqs(*args, **kwargs):
-    if sqs_listener.BACKEND_IMPL == 'moto':
+    if SQS_BACKEND_IMPL == 'moto':
         return start_sqs_moto(*args, **kwargs)
     return start_sqs_elasticmq(*args, **kwargs)
 

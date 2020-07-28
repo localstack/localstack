@@ -6,7 +6,8 @@ import logging
 from requests.models import Response
 from localstack import config
 from localstack.services import plugins
-from localstack.constants import HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER
+from localstack.constants import (
+    HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER, PATH_USER_REQUEST)
 from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str, get_service_protocol
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
@@ -150,6 +151,10 @@ def get_port_from_custom_rules(method, path, data, headers):
     # DynamoDB shell URLs
     if path.startswith('/shell') or path.startswith('/dynamodb/shell'):
         return config.PORT_DYNAMODB
+
+    # API Gateway invocation URLs
+    if ('/%s/' % PATH_USER_REQUEST) in path:
+        return config.PORT_APIGATEWAY
 
     data_bytes = to_bytes(data or '')
 

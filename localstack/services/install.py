@@ -31,13 +31,21 @@ INSTALL_DIR_STEPFUNCTIONS = '%s/stepfunctions' % INSTALL_DIR_INFRA
 INSTALL_DIR_KMS = '%s/kms' % INSTALL_DIR_INFRA
 INSTALL_DIR_ELASTICMQ = '%s/elasticmq' % INSTALL_DIR_INFRA
 INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_INFRA
+INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, 'DynamoDBLocal.jar')
+INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, 'aws-java-sdk-sts.jar')
+INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, 'StepFunctionsLocal.jar')
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, 'local-kms.<arch>.bin')
+INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, 'elasticmq-server.jar')
+INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, 'kinesalite', 'cli.js')
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
+
+# SQS backend implementation provider - either "moto" or "elasticmq"
+SQS_BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
 
 # As of 2019-10-09, the DDB fix (see below) doesn't seem to be required anymore
 APPLY_DDB_ALPINE_FIX = False
@@ -67,7 +75,8 @@ def get_elasticsearch_install_dir(version=None):
 def install_elasticsearch(version=None):
     version = get_elasticsearch_install_version(version)
     install_dir = get_elasticsearch_install_dir(version)
-    if not os.path.exists(install_dir):
+    installed_executable = os.path.join(install_dir, 'bin', 'elasticsearch')
+    if not os.path.exists(installed_executable):
         log_install_msg('Elasticsearch (%s)' % version)
         es_url = ELASTICSEARCH_URLS.get(version)
         if not es_url:
@@ -117,7 +126,10 @@ def install_elasticsearch(version=None):
 
 
 def install_elasticmq():
-    if not os.path.exists(INSTALL_DIR_ELASTICMQ):
+    if SQS_BACKEND_IMPL != 'elasticmq':
+        return
+    # TODO remove this function if we stop using ElasticMQ entirely
+    if not os.path.exists(INSTALL_PATH_ELASTICMQ_JAR):
         log_install_msg('ElasticMQ')
         mkdir(INSTALL_DIR_ELASTICMQ)
         # download archive
@@ -128,8 +140,7 @@ def install_elasticmq():
 
 
 def install_kinesalite():
-    target_dir = '%s/kinesalite' % INSTALL_DIR_NPM
-    if not os.path.exists(target_dir):
+    if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
         log_install_msg('Kinesis')
         run('cd "%s" && npm install' % ROOT_PATH)
 
@@ -145,7 +156,7 @@ def install_local_kms():
 
 
 def install_stepfunctions_local():
-    if not os.path.exists(INSTALL_DIR_STEPFUNCTIONS):
+    if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         log_install_msg('Step Functions')
         tmp_archive = os.path.join(tempfile.gettempdir(), 'stepfunctions.zip')
         download_and_extract_with_retry(
@@ -155,7 +166,7 @@ def install_stepfunctions_local():
 def install_dynamodb_local():
     if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
         rm_rf(INSTALL_DIR_DDB)
-    if not os.path.exists(INSTALL_DIR_DDB):
+    if not os.path.exists(INSTALL_PATH_DDB_JAR):
         log_install_msg('DynamoDB')
         # download and extract archive
         tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
@@ -194,7 +205,7 @@ def install_dynamodb_local():
 
 def install_amazon_kinesis_client_libs():
     # install KCL/STS JAR files
-    if not os.path.exists(INSTALL_DIR_KCL):
+    if not os.path.exists(INSTALL_PATH_KCL_JAR):
         mkdir(INSTALL_DIR_KCL)
         tmp_archive = os.path.join(tempfile.gettempdir(), 'aws-java-sdk-sts.jar')
         if not os.path.exists(tmp_archive):
