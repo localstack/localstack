@@ -202,9 +202,9 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
     except Exception:
         return make_error_response('Unable to find path %s' % path, 404)
 
-    if not is_api_key_valid(path_map.get(relative_path, {}).
-                            get('resourceMethods', {}).get(method, {}).get('apiKeyRequired'), headers, stage):
-        return make_error_response('Acess Denied Exception.', 403)
+    api_key_required = resource.get('resourceMethods', {}).get(method, {}).get('apiKeyRequired')
+    if not is_api_key_valid(api_key_required, headers, stage):
+        return make_error_response('Access denied - invalid API key', 403)
 
     integrations = resource.get('resourceMethods', {})
     integration = integrations.get(method, {})
