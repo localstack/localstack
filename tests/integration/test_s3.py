@@ -296,7 +296,7 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
-    def test_s3_predesigned_url_expired(self):
+    def test_s3_presigned_url_expired(self):
 
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
@@ -1069,8 +1069,7 @@ class S3ListenerTest(unittest.TestCase):
         )
 
         result = requests.put(url, data='something', verify=False,
-                              headers={'Origin': 'https://localhost:4200'})
-
+                              headers={'Origin': 'https://localhost:4200', 'Content-Type': 'application/pdf'})
         self.assertEqual(result.status_code, 200)
 
         BUCKET_CORS_CONFIG = {
@@ -1097,12 +1096,11 @@ class S3ListenerTest(unittest.TestCase):
         )
 
         result = requests.put(url, data='something', verify=False,
-                              headers={'Origin': 'https://localhost:4200'})
+                              headers={'Origin': 'https://localhost:4200', 'Content-Type': 'application/pdf'})
         self.assertEqual(result.status_code, 200)
 
         result = requests.put(url, data='something', verify=False,
-                              headers={'Origin': 'https://localhost:4201'})
-
+                              headers={'Origin': 'https://localhost:4201', 'Content-Type': 'application/pdf'})
         self.assertEqual(result.status_code, 200)
 
     # ---------------
