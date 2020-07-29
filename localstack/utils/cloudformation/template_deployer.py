@@ -1211,7 +1211,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
             api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
             res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
             apigateway.put_method_response(restApiId=api_id, resourceId=res_id,
-                httpMethod=resource_props['HttpMethod'], statusCode=response['StatusCode'],
+                httpMethod=resource_props['HttpMethod'], statusCode=str(response['StatusCode']),
                 responseParameters=response.get('ResponseParameters', {}))
 
     elif resource_type == 'SNS::Topic':
