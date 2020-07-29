@@ -166,24 +166,35 @@ class TestEc2Integrations(unittest.TestCase):
         ec2_client1.delete_vpc(VpcId=peer_vpc1['Vpc']['VpcId'])
         ec2_client2.delete_vpc(VpcId=peer_vpc2['Vpc']['VpcId'])
 
-    def test_describe_vpn_gateways_filter(self):
+    def test_describe_vpn_gateways_filter_by_vpc(self):
         ec2 = self.ec2_client
 
-        gw = ec2.create_vpn_gateway(Type='ipsec.1')
-        self.assertEqual(200, gw['ResponseMetadata']['HTTPStatusCode'])
-        self.assertEqual('ipsec.1', gw['VpnGateway']['Type'])
-        self.assertIsNotNone(gw['VpnGateway']['VpnGatewayId'])
+        vpc = ec2.create_vpc(CidrBlock='10.0.0.0/16')
+        vpc_id = vpc['Vpc']['VpcId']
 
-        response = ec2.describe_vpn_gateways(
+        gateway = ec2.create_vpn_gateway(AvailabilityZone='us-east-1a', Type='ipsec.1')
+        self.assertEqual(200, gateway['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual('ipsec.1', gateway['VpnGateway']['Type'])
+        self.assertIsNotNone(gateway['VpnGateway']['VpnGatewayId'])
+
+        gateway_id = gateway['VpnGateway']['VpnGatewayId']
+
+        ec2.attach_vpn_gateway(VpcId=vpc_id, VpnGatewayId=gateway_id)
+
+        gateways = ec2.describe_vpn_gateways(
             Filters=[
                 {
                     'Name': 'attachment.vpc-id',
-                    'Values': ['vpc-1234']
+                    'Values': [vpc_id]
                 },
             ],
-            VpnGatewayIds=[gw['VpnGateway']['VpnGatewayId']]
         )
-        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
-        self.assertEqual(gw['VpnGateway']['VpnGatewayId'], response['VpnGateways'][0]['VpnGatewayId'])
+        self.assertEqual(200, gateways['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(1, len(gateways['VpnGateways']))
+        self.assertEqual(gateway_id, gateways['VpnGateways'][0]['VpnGatewayId'])
+        self.assertEqual('attached', gateways['VpnGateways'][0]['VpcAttachments'][0]['State'])
+        self.assertEqual(vpc_id, gateways['VpnGateways'][0]['VpcAttachments'][0]['VpcId'])
 
-        ec2.delete_vpn_gateway(VpnGatewayId=gw['VpnGateway']['VpnGatewayId'])
+        # clean up
+        ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
+        ec2.delete_vpc(VpcId=vpc_id)
