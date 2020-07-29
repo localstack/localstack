@@ -190,6 +190,11 @@ def is_api_key_valid(is_api_key_required, headers, stage):
     return validate_api_key(api_key, stage)
 
 
+def update_content_length(response):
+    if response and response.content:
+        response.headers['Content-Length'] = str(len(response.content))
+
+
 def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -309,8 +314,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                     response.content = to_bytes(parsed_result['body'])
             except Exception:
                 response._content = '{}'
-            if response.content:
-                response.headers['Content-Length'] = str(len(response.content))
+            update_content_length(response)
             response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
             return response
 
@@ -350,11 +354,27 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             LOGGER.warning(msg)
             return make_error_response(msg, 404)
 
-    elif integration['type'] == 'HTTP':
+    elif integration['type'] in ['HTTP_PROXY', 'HTTP']:
         function = getattr(requests, method.lower())
+
+        if integration['type'] == 'HTTP':
+            # apply custom request template
+            template = integration.get('requestTemplates', {}).get(APPLICATION_JSON)
+            if template:
+                data = aws_stack.render_velocity_template(template, data)
+
         if isinstance(data, dict):
             data = json.dumps(data)
+
         result = function(integration['uri'], data=data, headers=headers)
+
+        if integration['type'] == 'HTTP':
+            # apply custom response template
+            template = integration.get('responseTemplates', {}).get(APPLICATION_JSON)
+            if template and result.content:
+                result._content = aws_stack.render_velocity_template(template, result.content)
+                update_content_length(result)
+
         return result
 
     else:

@@ -13,8 +13,7 @@ from localstack import config
 from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, json_safe, clone, short_uid
-from localstack.utils.common import safe_requests as requests
+from localstack.utils.common import to_str, json_safe, clone, short_uid, get_free_tcp_port, safe_requests as requests
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_PYTHON27, add_event_source)
@@ -181,27 +180,20 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(len(messages), 1)
         self.assertEqual(json.loads(base64.b64decode(messages[0]['Body'])), test_data)
 
-    def test_api_gateway_http_integration(self):
-        test_port = 12123
+    def test_api_gateway_http_integrations(self):
+        self.run_api_gateway_http_integration('custom')
+        self.run_api_gateway_http_integration('proxy')
+
+    def run_api_gateway_http_integration(self, int_type):
+        test_port = get_free_tcp_port()
         backend_url = 'http://localhost:%s%s' % (test_port, self.API_PATH_HTTP_BACKEND)
 
-        # create target HTTP backend
-        class TestListener(ProxyListener):
-            def forward_request(self, **kwargs):
-                response = Response()
-                response.status_code = 200
-                result = {
-                    'data': kwargs.get('data') or '{}',
-                    'headers': dict(kwargs.get('headers'))
-                }
-                response._content = json.dumps(json_safe(result))
-                return response
+        # start test HTTP backend
+        proxy = self.start_http_backend(test_port)
 
-        proxy = GenericProxy(test_port, update_listener=TestListener())
-        proxy.start()
-
-        # create API Gateway and connect it to the HTTP backend
+        # create API Gateway and connect it to the HTTP_PROXY/HTTP backend
         result = self.connect_api_gateway_to_http(
+            int_type,
             'test_gateway2',
             backend_url,
             path=self.API_PATH_HTTP_BACKEND
@@ -220,16 +212,20 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertTrue(re.match(result.headers['Access-Control-Allow-Origin'].replace('*', '.*'), origin))
         self.assertIn('POST', result.headers['Access-Control-Allow-Methods'])
 
+        custom_result = json.dumps({'foo': 'bar'})
+
         # make test GET request to gateway
         result = requests.get(url)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(to_str(result.content))['data'], '{}')
+        expected = custom_result if int_type == 'custom' else '{}'
+        self.assertEqual(json.loads(to_str(result.content))['data'], expected)
 
         # make test POST request to gateway
         data = json.dumps({'data': 123})
         result = requests.post(url, data=data)
         self.assertEqual(result.status_code, 200)
-        self.assertEqual(json.loads(to_str(result.content))['data'], data)
+        expected = custom_result if int_type == 'custom' else data
+        self.assertEqual(json.loads(to_str(result.content))['data'], expected)
 
         # make test POST request with non-JSON content type
         data = 'test=123'
@@ -238,7 +234,8 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(result.status_code, 200)
         content = json.loads(to_str(result.content))
         headers = CaseInsensitiveDict(content['headers'])
-        self.assertEqual(content['data'], data)
+        expected = custom_result if int_type == 'custom' else data
+        self.assertEqual(content['data'], expected)
         self.assertEqual(headers['content-type'], ctype)
 
         # clean up
@@ -533,7 +530,7 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
             stage_name=self.TEST_STAGE_NAME
         )
 
-    def connect_api_gateway_to_http(self, gateway_name, target_url, methods=[], path=None):
+    def connect_api_gateway_to_http(self, int_type, gateway_name, target_url, methods=[], path=None):
         if not methods:
             methods = ['GET', 'POST']
         if not path:
@@ -541,12 +538,17 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         resources = {}
         resource_path = path.replace('/', '')
         resources[resource_path] = []
+        req_templates = {
+            'application/json': json.dumps({'foo': 'bar'})
+        } if int_type == 'custom' else {}
         for method in methods:
             resources[resource_path].append({
                 'httpMethod': method,
                 'integrations': [{
-                    'type': 'HTTP',
-                    'uri': target_url
+                    'type': 'HTTP' if int_type == 'custom' else 'HTTP_PROXY',
+                    'uri': target_url,
+                    'requestTemplates': req_templates,
+                    'responseTemplates': {}
                 }]
             })
         return aws_stack.create_api_gateway(
@@ -770,14 +772,32 @@ class TestAPIGatewayIntegrations(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
     @staticmethod
+    def start_http_backend(test_port):
+
+        # test listener for target HTTP backend
+        class TestListener(ProxyListener):
+            def forward_request(self, **kwargs):
+                response = Response()
+                response.status_code = 200
+                result = {
+                    'data': kwargs.get('data') or '{}',
+                    'headers': dict(kwargs.get('headers'))
+                }
+                response._content = json.dumps(json_safe(result))
+                return response
+
+        proxy = GenericProxy(test_port, update_listener=TestListener())
+        proxy.start()
+        return proxy
+
+    @staticmethod
     def create_api_gateway_and_deploy(response_template, is_api_key_required=False):
         apigw_client = aws_stack.connect_to_service('apigateway')
         response = apigw_client.create_rest_api(name='my_api', description='this is my api')
         api_id = response['id']
         resources = apigw_client.get_resources(restApiId=api_id)
-        root_id = [resource for resource in resources['items'] if resource['path'] == '/'][
-            0
-        ]['id']
+        root_resources = [resource for resource in resources['items'] if resource['path'] == '/']
+        root_id = root_resources[0]['id']
 
         apigw_client.put_method(
             restApiId=api_id, resourceId=root_id, httpMethod='PUT', authorizationType='NONE',
