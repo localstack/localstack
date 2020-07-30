@@ -92,8 +92,15 @@ def post_request():
         # forward request to Kinesis API
         stream_name = stream_name_from_stream_arn(data['StreamArn'])
         stream_shard_id = kinesis_shard_id(data['ShardId'])
-        result = kinesis.get_shard_iterator(StreamName=stream_name,
-                                            ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
+
+        if data.get('SequenceNumber'):
+            result = kinesis.get_shard_iterator(StreamName=stream_name,
+                                                ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'],
+                                                StartingSequenceNumber=data.get('SequenceNumber'))
+        else:
+            result = kinesis.get_shard_iterator(StreamName=stream_name,
+                                                ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
+
     elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
         kinesis_records = kinesis.get_records(**data)
         result = {'Records': [], 'NextShardIterator': kinesis_records.get('NextShardIterator')}
