@@ -93,13 +93,9 @@ def post_request():
         stream_name = stream_name_from_stream_arn(data['StreamArn'])
         stream_shard_id = kinesis_shard_id(data['ShardId'])
 
-        if data.get('SequenceNumber'):
-            result = kinesis.get_shard_iterator(StreamName=stream_name,
-                                                ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'],
-                                                StartingSequenceNumber=data.get('SequenceNumber'))
-        else:
-            result = kinesis.get_shard_iterator(StreamName=stream_name,
-                                                ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
+        kwargs = {'StartingSequenceNumber': data['SequenceNumber']} if data.get('SequenceNumber') else {}
+        result = kinesis.get_shard_iterator(StreamName=stream_name, ShardId=stream_shard_id,
+                                            ShardIteratorType=data['ShardIteratorType'], **kwargs)
 
     elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
         kinesis_records = kinesis.get_records(**data)
