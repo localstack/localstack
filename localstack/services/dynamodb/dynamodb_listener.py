@@ -224,12 +224,15 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         if action == '%s.UpdateItem' % ACTION_PREFIX:
             if response.status_code == 200:
+                existing_item = self._thread_local('existing_item')
+                record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
+
                 updated_item = find_existing_item(data)
                 if not updated_item:
                     return
-                record['eventName'] = 'MODIFY'
                 record['dynamodb']['Keys'] = data['Key']
-                record['dynamodb']['OldImage'] = self._thread_local('existing_item')
+                if existing_item:
+                    record['dynamodb']['OldImage'] = existing_item
                 record['dynamodb']['NewImage'] = updated_item
                 record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
