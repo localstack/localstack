@@ -310,6 +310,12 @@ class DynamoDBIntegrationTest (unittest.TestCase):
                                                  ShardIteratorType='LATEST'
                                                  )
         self.assertIn('ShardIterator', response)
+        response = ddbstreams.get_shard_iterator(StreamArn=stream_arn,
+                                                 ShardId=result['StreamDescription']['Shards'][0]['ShardId'],
+                                                 ShardIteratorType='AT_SEQUENCE_NUMBER',
+                                                 SequenceNumber=result['StreamDescription']['Shards'][0].
+                                                 get('SequenceNumberRange').get('StartingSequenceNumber'))
+        self.assertIn('ShardIterator', response)
 
     def test_global_tables(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)
