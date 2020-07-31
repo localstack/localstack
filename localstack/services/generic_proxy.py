@@ -283,7 +283,7 @@ class GenericProxyHandler(BaseHTTPRequestHandler):
 
 def append_cors_headers(response=None):
     # Note: Use "response is not None" here instead of "not response"!
-    headers = response is not None and response.headers or {}
+    headers = {} if response is None else response.headers
     if 'Access-Control-Allow-Origin' not in headers:
         headers['Access-Control-Allow-Origin'] = '*'
     if 'Access-Control-Allow-Methods' not in headers:
