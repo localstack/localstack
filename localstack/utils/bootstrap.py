@@ -580,19 +580,18 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
 
 
 def is_mac_os():
-    try:
-        out = to_str(subprocess.check_output('uname -a', shell=True))
-        return 'Darwin' in out
-    except subprocess.CalledProcessError:
-        return False
+    return 'Darwin' in get_uname()
 
 
 def is_linux():
+    return 'Linux' in get_uname()
+
+
+def get_uname():
     try:
-        out = to_str(subprocess.check_output('uname -a', shell=True))
-        return 'Linux' in out
-    except subprocess.CalledProcessError:
-        return False
+        return to_str(subprocess.check_output('uname -a', shell=True))
+    except Exception:
+        return ''
 
 
 def mkdir(folder):
