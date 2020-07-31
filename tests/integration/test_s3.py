@@ -9,6 +9,10 @@ import unittest
 import datetime
 import requests
 from io import BytesIO
+
+from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON36
+
+from localstack.utils import testutil
 from pytz import timezone
 from six.moves.urllib.request import Request, urlopen
 from localstack import config
@@ -26,6 +30,9 @@ TEST_BUCKET_WITH_VERSIONING = 'test-bucket-versioning-1'
 TEST_BUCKET_NAME_2 = 'test-bucket-2'
 TEST_KEY_2 = 'test-key-2'
 TEST_GET_OBJECT_RANGE = 17
+
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_triggered_by_s3.py')
 
 
 class PutRequest(Request):
@@ -1102,6 +1109,58 @@ class S3ListenerTest(unittest.TestCase):
         result = requests.put(url, data='something', verify=False,
                               headers={'Origin': 'https://localhost:4201', 'Content-Type': 'application/pdf'})
         self.assertEqual(result.status_code, 200)
+
+    def test_s3_put_object_notification_with_lambda(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        function_name = 'func-%s' % short_uid()
+        table_name = 'table-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        aws_stack.create_dynamodb_table(
+            table_name=table_name,
+            partition_key='uuid'
+        )
+
+        self.s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                'LambdaFunctionConfigurations': [
+                    {
+                        'LambdaFunctionArn': aws_stack.lambda_function_arn(function_name),
+                        'Events': ['s3:ObjectCreated:*']
+                    }
+                ]
+            }
+        )
+
+        # put an object
+        obj = self.s3_client.put_object(Bucket=bucket_name, Key=table_name, Body='something..')
+        etag = obj['ETag']
+        time.sleep(2)
+
+        table = aws_stack.connect_to_resource('dynamodb').Table(table_name)
+        rs = table.scan()
+
+        self.assertEqual(len(rs['Items']), 1)
+        record = rs['Items'][0]
+        self.assertEqual(record['data']['s3']['bucket']['name'], bucket_name)
+        self.assertEqual(record['data']['s3']['object']['eTag'], etag)
+
+        # clean up
+        self._delete_bucket(bucket_name, [table_name])
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.delete_function(FunctionName=function_name)
+
+        dynamodb_client = aws_stack.connect_to_service('dynamodb')
+        dynamodb_client.delete_table(TableName=table_name)
 
     # ---------------
     # HELPER METHODS
