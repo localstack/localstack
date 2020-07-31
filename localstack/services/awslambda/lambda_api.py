@@ -139,10 +139,11 @@ class ClientError(Exception):
 
 
 class LambdaContext(object):
-    def __init__(self, func_details, qualifier=None):
+    def __init__(self, func_details, qualifier=None, client_context=None):
         self.function_name = func_details.name()
         self.function_version = func_details.get_qualifier_version(qualifier)
-
+        if client_context:
+            self.client_context = client_context
         self.invoked_function_arn = func_details.arn()
         if qualifier:
             self.invoked_function_arn += ':' + qualifier
@@ -522,10 +523,12 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         func_details = ARN_TO_LAMBDA.get(func_arn)
         if not func_details:
             return not_found_error(msg='The resource specified in the request does not exist.')
-        if not context:
-            context = LambdaContext(func_details, version)
+
+        context = LambdaContext(func_details, version, context)
+
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
-            version=version, asynchronous=asynchronous, callback=callback)
+                                         version=version, asynchronous=asynchronous, callback=callback)
+
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         response = {
@@ -1196,7 +1199,6 @@ def invoke_function(function):
         arn = m.group(1)
     else:
         qualifier = request.args.get('Qualifier')
-
     data = request.get_data()
     if data:
         data = to_str(data)
@@ -1267,7 +1269,8 @@ def invoke_function(function):
         return not_found
 
     if invocation_type == 'RequestResponse':
-        result = run_lambda(asynchronous=False, func_arn=arn, event=data, context={}, version=qualifier)
+        result = run_lambda(asynchronous=False, func_arn=arn, event=data,
+                            context=request.headers.get('X-Amz-Client-Context'), version=qualifier)
         return _create_response(result)
     elif invocation_type == 'Event':
         run_lambda(asynchronous=True, func_arn=arn, event=data, context={}, version=qualifier)
