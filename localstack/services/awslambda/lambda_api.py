@@ -524,10 +524,11 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         if not func_details:
             return not_found_error(msg='The resource specified in the request does not exist.')
 
-        lambda_context = LambdaContext(func_details, version, context)
+        context = LambdaContext(func_details, version, context)
 
-        result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=lambda_context,
+        result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
                                          version=version, asynchronous=asynchronous, callback=callback)
+
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
         response = {

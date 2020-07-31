@@ -4,6 +4,7 @@ import json
 import shutil
 import time
 import unittest
+import base64
 import six
 from botocore.exceptions import ClientError
 from io import BytesIO
@@ -437,15 +438,13 @@ class TestPythonRuntimes(LambdaTestBase):
     def test_invocation_type_request_response(self):
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_PY,
-            Payload=b'{}', InvocationType='RequestResponse',
-            ClientContext='foo'
+            Payload=b'{}', InvocationType='RequestResponse'
         )
         result_data = result['Payload'].read()
         result_data = json.loads(to_str(result_data))
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertIsInstance(result_data, dict)
-        self.assertEqual(result_data['context']['client_context'], 'foo')
 
     def test_invocation_type_event(self):
         result = self.lambda_client.invoke(
@@ -860,11 +859,13 @@ class TestNodeJSRuntimes(LambdaTestBase):
             runtime=LAMBDA_RUNTIME_NODEJS810
         )
         result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}')
-        result_data = result['Payload'].read()
+            FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}',
+            ClientContext=to_str(base64.b64encode(b'{"key":"foo"}')))
 
+        result_data = result['Payload'].read()
         self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(to_str(result_data).strip(), '{}')
+        self.assertEqual(json.loads(result_data)['context']['clientContext'],
+                         to_str(base64.b64encode(b'{"key":"foo"}')))
 
         # assert that logs are present
         expected = ['.*Node.js Lambda handler executing.']
