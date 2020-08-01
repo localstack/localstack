@@ -417,6 +417,56 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         table_list = dynamodb.list_tables()
         self.assertEqual(tables_before, len(table_list['TableNames']))
 
+    def test_dynamodb_stream_records_with_update_time(self):
+        table_name = 'test-ddb-table-%s' % short_uid()
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
+
+        aws_stack.create_dynamodb_table(
+            table_name,
+            partition_key=PARTITION_KEY,
+            stream_view_type='NEW_AND_OLD_IMAGES'
+        )
+        table = self.dynamodb.Table(table_name)
+
+        response = ddbstreams.describe_stream(StreamArn=table.latest_stream_arn)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(1, len(response['StreamDescription']['Shards']))
+        shard_id = response['StreamDescription']['Shards'][0]['ShardId']
+
+        response = ddbstreams.get_shard_iterator(
+            StreamArn=table.latest_stream_arn,
+            ShardId=shard_id,
+            ShardIteratorType='LATEST'
+        )
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+        self.assertIn('ShardIterator', response)
+        iterator_id = response['ShardIterator']
+
+        item_id = short_uid()
+        for _ in range(2):
+            dynamodb.update_item(
+                TableName=table_name,
+                Key={PARTITION_KEY: {'S': item_id}},
+                UpdateExpression='SET attr1 = :v1, attr2 = :v2',
+                ExpressionAttributeValues={
+                    ':v1': {'S': 'value1'},
+                    ':v2': {'S': 'value2'}
+                },
+                ReturnValues='ALL_NEW',
+                ReturnConsumedCapacity='INDEXES',
+            )
+
+        records = ddbstreams.get_records(ShardIterator=iterator_id)
+        self.assertEqual(200, records['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(2, len(records['Records']))
+        self.assertEqual('INSERT', records['Records'][0]['eventName'])
+        self.assertNotIn('OldImage', records['Records'][0]['dynamodb'])
+        self.assertEqual('MODIFY', records['Records'][1]['eventName'])
+        self.assertIn('OldImage', records['Records'][1]['dynamodb'])
+
+        dynamodb.delete_table(TableName=table_name)
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service('dynamodb')
