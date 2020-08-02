@@ -286,7 +286,7 @@ def start_local_api(name, port, method, asynchronous=False):
         method(port)
 
 
-def stop_infra():
+def stop_infra(debug=False):
     if common.INFRA_STOPPED:
         return
     common.INFRA_STOPPED = True
@@ -294,8 +294,11 @@ def stop_infra():
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
 
     generic_proxy.QUIET = True
+    debug and print('[shutdown] Cleaning up files ...')
     common.cleanup(files=True, quiet=True)
-    common.cleanup_resources()
+    debug and print('[shutdown] Cleaning up resources ...')
+    common.cleanup_resources(debug=debug)
+    debug and print('[shutdown] Cleaning up Lambda resources ...')
     lambda_api.cleanup()
     time.sleep(2)
     # TODO: optimize this (takes too long currently)
