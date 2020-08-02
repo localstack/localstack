@@ -28,7 +28,7 @@ UNSUPPORTED_ATTRIBUTE_NAMES = [
     # elasticmq store 'FifoQueue', 'ContentBasedDeduplication' as queue's properties
     # currently can't get them as queue attributes
     'FifoQueue', 'ContentBasedDeduplication',
-    'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy', 'RedrivePolicy',
+    'DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod', 'Policy',
     'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds'
 ]
 
