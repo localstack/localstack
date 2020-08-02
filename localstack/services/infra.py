@@ -15,7 +15,7 @@ from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux, start_thread,
-    ShellCommandThread, get_service_protocol, in_docker, is_port_open, sleep_forever)
+    ShellCommandThread, get_service_protocol, in_docker, is_port_open, sleep_forever, print_debug)
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.bootstrap import (
@@ -286,7 +286,7 @@ def start_local_api(name, port, method, asynchronous=False):
         method(port)
 
 
-def stop_infra():
+def stop_infra(debug=False):
     if common.INFRA_STOPPED:
         return
     common.INFRA_STOPPED = True
@@ -294,8 +294,11 @@ def stop_infra():
     event_publisher.fire_event(event_publisher.EVENT_STOP_INFRA)
 
     generic_proxy.QUIET = True
+    print_debug('[shutdown] Cleaning up files ...', debug)
     common.cleanup(files=True, quiet=True)
-    common.cleanup_resources()
+    print_debug('[shutdown] Cleaning up resources ...', debug)
+    common.cleanup_resources(debug=debug)
+    print_debug('[shutdown] Cleaning up Lambda resources ...', debug)
     lambda_api.cleanup()
     time.sleep(2)
     # TODO: optimize this (takes too long currently)

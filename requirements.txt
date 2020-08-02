@@ -14,7 +14,7 @@ amazon_kclpy-ext==1.5.1
 aws-sam-translator>=1.15.1
 awscli>=1.14.18
 boto>=2.49.0
-boto3>=1.9.71                  #basic-lib
+boto3>=1.14.33                 #basic-lib
 botocore>=1.12.13
 cachetools>=3.1.1,<4.0.0
 coverage==4.5.4
