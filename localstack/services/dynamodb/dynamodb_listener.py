@@ -3,6 +3,7 @@ import json
 import random
 import logging
 import threading
+import time
 from binascii import crc32
 from requests.models import Request, Response
 from localstack import config
@@ -210,10 +211,12 @@ class ProxyListenerDynamoDB(ProxyListener):
         if not action:
             return
 
+        # upgrade event version to 1.1
         record = {
             'eventID': '1',
-            'eventVersion': '1.0',
+            'eventVersion': '1.1',
             'dynamodb': {
+                'ApproximateCreationDateTime': time.time(),
                 'StreamViewType': 'NEW_AND_OLD_IMAGES',
                 'SizeBytes': -1
             },

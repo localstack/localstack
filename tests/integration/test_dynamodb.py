@@ -2,6 +2,7 @@
 
 import unittest
 import json
+from datetime import datetime
 
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
@@ -417,7 +418,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         table_list = dynamodb.list_tables()
         self.assertEqual(tables_before, len(table_list['TableNames']))
 
-    def test_dynamodb_stream_records_with_update_time(self):
+    def test_dynamodb_stream_records_with_update_item(self):
         table_name = 'test-ddb-table-%s' % short_uid()
         dynamodb = aws_stack.connect_to_service('dynamodb')
         ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
@@ -460,8 +461,12 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         records = ddbstreams.get_records(ShardIterator=iterator_id)
         self.assertEqual(200, records['ResponseMetadata']['HTTPStatusCode'])
         self.assertEqual(2, len(records['Records']))
+        self.assertTrue(isinstance(records['Records'][0]['dynamodb']['ApproximateCreationDateTime'], datetime))
+        self.assertEqual('1.1', records['Records'][0]['eventVersion'])
         self.assertEqual('INSERT', records['Records'][0]['eventName'])
         self.assertNotIn('OldImage', records['Records'][0]['dynamodb'])
+        self.assertTrue(isinstance(records['Records'][1]['dynamodb']['ApproximateCreationDateTime'], datetime))
+        self.assertEqual('1.1', records['Records'][1]['eventVersion'])
         self.assertEqual('MODIFY', records['Records'][1]['eventName'])
         self.assertIn('OldImage', records['Records'][1]['dynamodb'])
 
