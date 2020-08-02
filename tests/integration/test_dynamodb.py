@@ -469,7 +469,6 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         self.assertEqual('1.1', records['Records'][1]['eventVersion'])
         self.assertEqual('MODIFY', records['Records'][1]['eventName'])
         self.assertIn('OldImage', records['Records'][1]['dynamodb'])
-        self.assertTrue(isinstance(records['Records'][1]['dynamodb']['ApproximateCreationDateTime'], datetime))
 
         dynamodb.delete_table(TableName=table_name)
 
