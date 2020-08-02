@@ -91,7 +91,7 @@ def _get_attributes_forward_request(method, path, headers, req_data, forward_att
 
 def _set_queue_attributes(queue_url, req_data):
     # TODO remove this function if we stop using ElasticMQ entirely
-    if SQS_BACKEND_IMPL != 'moto':
+    if SQS_BACKEND_IMPL != 'elasticmq':
         return
     attrs = _format_attributes(req_data)
     # select only the attributes in UNSUPPORTED_ATTRIBUTE_NAMES
@@ -116,7 +116,7 @@ def _set_queue_attributes(queue_url, req_data):
 
 def _add_queue_attributes(path, req_data, content_str, headers):
     # TODO remove this function if we stop using ElasticMQ entirely
-    if SQS_BACKEND_IMPL != 'moto':
+    if SQS_BACKEND_IMPL != 'elasticmq':
         return content_str
     flags = re.MULTILINE | re.DOTALL
     queue_url = _queue_url(path, req_data, headers)
