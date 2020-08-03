@@ -252,7 +252,8 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
 
             if hasattr(context, 'client_context'):
-                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = base64.b64encode(context.client_context)
+                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(base64.b64encode(
+                    bytes(context.client_context, encoding='utf8'))))
 
         # custom command to execute in the container
         command = ''

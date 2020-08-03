@@ -4,7 +4,6 @@ import json
 import shutil
 import time
 import unittest
-import base64
 import six
 from botocore.exceptions import ClientError
 from io import BytesIO
@@ -860,12 +859,11 @@ class TestNodeJSRuntimes(LambdaTestBase):
         )
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}',
-            ClientContext=to_str(base64.b64encode(b'{"key":"foo"}')))
+            ClientContext='{"key":"foo"}')
 
         result_data = result['Payload'].read()
         self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(json.loads(result_data)['context']['clientContext'],
-                         to_str(base64.b64encode(b'{"key":"foo"}')))
+        self.assertEqual(json.loads(result_data)['context']['clientContext'], 'eyJrZXkiOiJmb28ifQ==')
 
         # assert that logs are present
         expected = ['.*Node.js Lambda handler executing.']
