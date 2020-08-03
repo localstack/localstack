@@ -777,19 +777,24 @@ def cleanup(files=True, env=ENV_DEV, quiet=True):
         cleanup_tmp_files()
 
 
-def cleanup_threads_and_processes(quiet=True):
+def cleanup_threads_and_processes(quiet=True, debug=False):
     for thread in TMP_THREADS:
         if thread:
             try:
+                print_debug('[shutdown] Cleaning up thread: %s' % thread, debug)
                 if hasattr(thread, 'shutdown'):
                     thread.shutdown()
+                    continue
+                if hasattr(thread, 'kill'):
+                    thread.kill()
                     continue
                 thread.stop(quiet=quiet)
             except Exception as e:
                 print(e)
-    for p in TMP_PROCESSES:
+    for proc in TMP_PROCESSES:
         try:
-            p.terminate()
+            print_debug('[shutdown] Cleaning up process: %s' % proc, debug)
+            proc.terminate()
         except Exception as e:
             print(e)
     # clean up async tasks
@@ -797,11 +802,13 @@ def cleanup_threads_and_processes(quiet=True):
         import asyncio
         for task in asyncio.all_tasks():
             try:
+                print_debug('[shutdown] Canceling asyncio task: %s' % task, debug)
                 task.cancel()
-            except Exception:
-                pass
+            except Exception as e:
+                print(e)
     except Exception:
         pass
+    print_debug('[shutdown] Done cleaning up threads / processes / tasks', debug)
     # clear lists
     clear_list(TMP_THREADS)
     clear_list(TMP_PROCESSES)
@@ -922,9 +929,14 @@ def is_root():
     return out == 'root'
 
 
-def cleanup_resources():
+def cleanup_resources(debug=False):
     cleanup_tmp_files()
-    cleanup_threads_and_processes()
+    cleanup_threads_and_processes(debug=debug)
+
+
+def print_debug(msg, debug=False):
+    if debug:
+        print(msg)
 
 
 @synchronized(lock=SSL_CERT_LOCK)
