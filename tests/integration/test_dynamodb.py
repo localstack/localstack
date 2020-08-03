@@ -418,6 +418,61 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         table_list = dynamodb.list_tables()
         self.assertEqual(tables_before, len(table_list['TableNames']))
 
+    def test_transaction_write_items(self):
+        table_name = 'test-ddb-table-%s' % short_uid()
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+
+        dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{
+                'AttributeName': 'id', 'KeyType': 'HASH'
+            }],
+            AttributeDefinitions=[{
+                'AttributeName': 'id', 'AttributeType': 'S'
+            }],
+            ProvisionedThroughput={
+                'ReadCapacityUnits': 5, 'WriteCapacityUnits': 5
+            },
+            Tags=TEST_DDB_TAGS
+        )
+
+        response = dynamodb.transact_write_items(
+            TransactItems=[
+                {
+                    'ConditionCheck': {
+                        'TableName': table_name,
+                        'ConditionExpression': 'attribute_not_exists(id)',
+                        'Key': {'id': {'S': 'test1'}}
+                    }
+                },
+                {
+                    'Put': {
+                        'TableName': table_name,
+                        'Item': {'id': {'S': 'test2'}}
+                    }
+                },
+                {
+                    'Update': {
+                        'TableName': table_name,
+                        'Key': {'id': {'S': 'test3'}},
+                        'UpdateExpression': 'SET attr1 = :v1, attr2 = :v2',
+                        'ExpressionAttributeValues': {':v1': {'S': 'value1'}, ':v2': {'S': 'value2'}}
+                    }
+                },
+                {
+                    'Delete': {
+                        'TableName': table_name,
+                        'Key': {'id': {'S': 'test4'}}
+                    }
+                }
+            ]
+        )
+
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+        # clean up
+        dynamodb.delete_table(TableName=table_name)
+
     def test_dynamodb_stream_records_with_update_item(self):
         table_name = 'test-ddb-table-%s' % short_uid()
         dynamodb = aws_stack.connect_to_service('dynamodb')

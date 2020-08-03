@@ -383,7 +383,10 @@ class ProxyListenerDynamoDB(ProxyListener):
 
     def prepare_transact_write_item_records(self, record, data):
         records = []
-        for i, request in enumerate(data['TransactItems']):
+        # Fix issue #2745: existing_items only contain the Put/Update/Delete records,
+        # so we will increase the index based on these events
+        i = 0
+        for request in data['TransactItems']:
             put_request = request.get('Put')
             if put_request:
                 existing_item = self._thread_local('existing_items')[i]
@@ -399,6 +402,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     new_record['dynamodb']['OldImage'] = existing_item
                 new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                 records.append(new_record)
+                i += 1
             update_request = request.get('Update')
             if update_request:
                 table_name = update_request['TableName']
@@ -415,6 +419,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                 new_record['dynamodb']['NewImage'] = updated_item
                 new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                 records.append(new_record)
+                i += 1
             delete_request = request.get('Delete')
             if delete_request:
                 table_name = delete_request['TableName']
@@ -427,6 +432,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                 new_record['dynamodb']['OldImage'] = self._thread_local('existing_items')[i]
                 new_record['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
                 records.append(new_record)
+                i += 1
         return records
 
     def delete_all_event_source_mappings(self, table_arn):
