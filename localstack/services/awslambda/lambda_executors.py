@@ -7,6 +7,7 @@ import logging
 import threading
 import subprocess
 import six
+import base64
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
@@ -251,7 +252,7 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
 
             if hasattr(context, 'client_context'):
-                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(context.client_context)
+                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = base64.b64encode(context.client_context)
 
         # custom command to execute in the container
         command = ''
