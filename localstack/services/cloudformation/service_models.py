@@ -1,8 +1,9 @@
+from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.utils.aws import aws_stack
 
 
-class BaseModel(object):
+class BaseModel(CloudFormationModel):
     def __init__(self, **params):
         self.params = params
 

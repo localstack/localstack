@@ -1,8 +1,7 @@
 import types
 import logging
 import traceback
-from moto.s3 import models as s3_models
-from moto.s3 import responses as s3_responses
+from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
 from moto.s3.responses import (
     minidom, MalformedXML, undo_clean_key_name
 )
@@ -111,7 +110,10 @@ def apply_patches():
     # patch S3Bucket.get_bucket(..)
     def delete_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-        return delete_bucket_orig(bucket_name, *args, **kwargs)
+        try:
+            return delete_bucket_orig(bucket_name, *args, **kwargs)
+        except s3_exceptions.MissingBucket:
+            pass
 
     delete_bucket_orig = s3_models.s3_backend.delete_bucket
     s3_models.s3_backend.delete_bucket = types.MethodType(delete_bucket, s3_models.s3_backend)
@@ -152,7 +154,8 @@ def apply_patches():
     s3_key_response_delete_orig = s3_responses.S3ResponseInstance._key_response_delete
     s3_responses.S3ResponseInstance._key_response_delete = types.MethodType(
         s3_key_response_delete, s3_responses.S3ResponseInstance)
-    s3_responses.ACTION_MAP['KEY']['DELETE']['tagging'] = 'DeleteObjectTagging'
+    action_map = s3_responses.ACTION_MAP
+    action_map['KEY']['DELETE']['tagging'] = action_map['KEY']['DELETE'].get('tagging') or 'DeleteObjectTagging'
 
     # patch max-keys
     def s3_truncate_result(self, result_keys, max_keys):

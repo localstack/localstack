@@ -5,9 +5,9 @@ import unittest
 import requests
 from botocore.exceptions import ClientError
 from localstack.utils import testutil
-from localstack.utils.testutil import get_lambda_log_events
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry, to_str
+from localstack.utils.testutil import get_lambda_log_events
 from .lambdas import lambda_integration
 from .test_lambda import use_docker, load_file, TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, \
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, TEST_LAMBDA_LIBS, \
@@ -74,6 +74,8 @@ class SQSTest(unittest.TestCase):
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
+        result = self.client.list_queues(QueueNamePrefix=TEST_QUEUE_NAME)
+        self.assertEqual(0, len(result.get('QueueUrls', [])))
 
     def test_publish_get_delete_message(self):
         queue_name = 'queue-%s' % short_uid()
