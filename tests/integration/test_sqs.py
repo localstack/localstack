@@ -74,6 +74,8 @@ class SQSTest(unittest.TestCase):
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
+        result = self.client.list_queues(QueueNamePrefix=TEST_QUEUE_NAME)
+        self.assertEqual(0, len(result.get('QueueUrls', [])))
 
     def test_publish_get_delete_message(self):
         queue_name = 'queue-%s' % short_uid()

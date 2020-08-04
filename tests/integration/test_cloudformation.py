@@ -747,15 +747,15 @@ class CloudFormationTest(unittest.TestCase):
         _await_stack_completion(stack_name)
 
         # assert that resources have been created
-        assert bucket_exists('cf-test-bucket-1')
+        self.assertTrue(bucket_exists('cf-test-bucket-1'))
         queue_url = queue_exists('cf-test-queue-1')
-        assert queue_url
+        self.assertTrue(queue_url)
         topic_arn = topic_exists('%s-test-topic-1-1' % stack_name)
-        assert topic_arn
-        assert stream_exists('cf-test-stream-1')
+        self.assertTrue(topic_arn)
+        self.assertTrue(stream_exists('cf-test-stream-1'))
         resource = describe_stack_resource(stack_name, 'SQSQueueNoNameProperty')
-        assert queue_exists(resource['PhysicalResourceId'])
-        assert ssm_param_exists('cf-test-param-1')
+        self.assertTrue(queue_exists(resource['PhysicalResourceId']))
+        self.assertTrue(ssm_param_exists('cf-test-param-1'))
 
         # assert that tags have been created
         tags = s3.get_bucket_tagging(Bucket='cf-test-bucket-1')['TagSet']
@@ -804,9 +804,9 @@ class CloudFormationTest(unittest.TestCase):
         cf_client.delete_stack(StackName=stack_name)
 
         # assert that resources have been deleted
-        assert not bucket_exists('cf-test-bucket-1')
-        assert not queue_exists('cf-test-queue-1')
-        assert not topic_exists('%s-test-topic-1-1' % stack_name)
+        self.assertFalse(bucket_exists('cf-test-bucket-1'))
+        self.assertFalse(queue_exists('cf-test-queue-1'))
+        self.assertFalse(topic_exists('%s-test-topic-1-1' % stack_name))
         retry(lambda: self.assertFalse(stream_exists('cf-test-stream-1')))
 
     def test_list_stack_events(self):
