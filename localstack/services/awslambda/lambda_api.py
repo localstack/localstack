@@ -962,7 +962,7 @@ def create_function():
         func_details.code.pop('ZipFile', None)
         # prepare result
         result.update(format_func_details(func_details))
-        if data.get('Publish', False):
+        if data.get('Publish'):
             result['Version'] = publish_new_function_version(arn)['Version']
         return jsonify(result or {})
     except Exception as e:

@@ -694,6 +694,7 @@ def apply_patches():
         iam_models.Role.update_from_cloudformation_json = Role_update_from_cloudformation_json
 
     # patch ApiGateway Deployment
+    @staticmethod
     def depl_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
         LOG.info('TODO: apigateway.Deployment.delete_from_cloudformation_json %s' % properties)
@@ -702,6 +703,7 @@ def apply_patches():
         apigw_models.Deployment.delete_from_cloudformation_json = depl_delete_from_cloudformation_json
 
     # patch Lambda Version
+    @staticmethod
     def vers_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
         LOG.info('TODO: apigateway.Deployment.delete_from_cloudformation_json %s' % properties)

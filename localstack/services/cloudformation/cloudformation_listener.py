@@ -254,6 +254,7 @@ class ProxyListenerCloudFormation(ProxyListener):
             aws_stack.fix_account_id_in_arns(response)
             fix_hardcoded_creation_date(response)
             fix_region_in_arns(response)
+        print('!!RESPONSE', method, path, action, response.content)
 
     @staticmethod
     def _list_stack_names():
