@@ -190,6 +190,31 @@ def update_resource_name(resource, resource_json):
         props['StateMachineName'] = resource.name
 
 
+def add_default_resource_props(resource_props, stack_name, resource_name=None):
+    """ Apply some fixes to resource props which otherwise cause deployments to fail """
+
+    res_type = resource_props['Type']
+    props = resource_props.get('Properties', {})
+
+    if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
+        props['StartingPosition'] = 'LATEST'
+
+    if res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
+        props['TopicName'] = 'topic-%s' % short_uid()
+
+    if res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
+        props['QueueName'] = 'queue-%s' % short_uid()
+
+    if res_type == 'AWS::ApiGateway::RestApi':
+        props['Name'] = props.get('Name') or resource_name
+
+    # generate default names for certain resource types
+    default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
+    for entry in default_attrs:
+        if res_type == entry[0] and not props.get(entry[1]):
+            props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
+
+
 def apply_patches():
     """ Apply patches to make LocalStack seamlessly interact with the moto backend.
         TODO: Eventually, these patches should be contributed to the upstream repo! """
@@ -254,33 +279,10 @@ def apply_patches():
             return None
         _, resource_json, resource_name = resource_tuple
 
-        def add_default_props(resource_props, res_name=None):
-            """ apply some fixes which otherwise cause deployments to fail """
-            res_type = resource_props['Type']
-            props = resource_props.get('Properties', {})
-
-            if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
-                props['StartingPosition'] = 'LATEST'
-
-            if res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
-                props['TopicName'] = 'topic-%s' % short_uid()
-
-            if res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
-                props['QueueName'] = 'queue-%s' % short_uid()
-
-            if res_type == 'AWS::ApiGateway::RestApi':
-                props['Name'] = props.get('Name') or res_name
-
-            # generate default names for certain resource types
-            default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
-            for entry in default_attrs:
-                if res_type == entry[0] and not props.get(entry[1]):
-                    props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
-
         # add some fixes and default props which otherwise cause deployments to fail
-        add_default_props(resource_json, resource_name)
+        add_default_resource_props(resource_json, stack_name, resource_name=resource_name)
         for resource in resources_map._resource_json_map.values():
-            add_default_props(resource)
+            add_default_resource_props(resource, stack_name)
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
