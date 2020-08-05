@@ -457,7 +457,7 @@ class SQSTest(unittest.TestCase):
             MessageAttributes=TEST_MESSAGE_ATTRIBUTES
         )
 
-        events = get_lambda_log_events(function_name)
+        events = retry(get_lambda_log_events, sleep_before=3, function_name=function_name)
         self.assertEqual(len(events), 1)
 
         sqs_msg = events[0]['Records'][0]
@@ -678,7 +678,7 @@ class SQSTest(unittest.TestCase):
 
     def test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnetcore2(self):
         zip_file = load_file(TEST_LAMBDA_DOTNETCORE2, mode='rb')
-        handler = 'dotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler'
+        handler = 'DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler'
 
         self._run_test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(
             zip_file, handler, LAMBDA_RUNTIME_DOTNETCORE2
