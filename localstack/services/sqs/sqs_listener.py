@@ -311,7 +311,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             content_str = _add_queue_attributes(path, req_data, content_str, headers)
 
         # patch the response and return the correct endpoint URLs / ARNs
-        if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes'):
+        if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes', 'ListDeadLetterSourceQueues'):
             if config.USE_SSL and '<QueueUrl>http://' in content_str:
                 # return https://... if we're supposed to use SSL
                 content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
