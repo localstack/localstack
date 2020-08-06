@@ -253,8 +253,8 @@ class ProxyListenerSQS(PersistingProxyListener):
 
             elif action == 'SetQueueAttributes':
                 # TODO remove this function if we stop using ElasticMQ entirely
+                queue_url = _queue_url(path, req_data, headers)
                 if SQS_BACKEND_IMPL == 'elasticmq':
-                    queue_url = _queue_url(path, req_data, headers)
                     forward_attrs = _set_queue_attributes(queue_url, req_data)
                     if len(req_data) != len(forward_attrs):
                         # make sure we only forward the supported attributes to the backend
@@ -267,8 +267,8 @@ class ProxyListenerSQS(PersistingProxyListener):
 
             elif action == 'ListDeadLetterSourceQueues':
                 # TODO remove this function if we stop using ElasticMQ entirely
+                queue_url = _queue_url(path, req_data, headers)
                 if SQS_BACKEND_IMPL == 'elasticmq':
-                    queue_url = _queue_url(path, req_data, headers)
                     headers = {'content-type': 'application/xhtml+xml'}
                     content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
                     return requests_response(content_str, headers=headers)
@@ -329,8 +329,8 @@ class ProxyListenerSQS(PersistingProxyListener):
                                  r'<\1>arn:aws:sqs:%s:\2</\3>' % region_name, content_str)
 
             if action == 'CreateQueue':
+                queue_url = re.match(r'.*<QueueUrl>(.*)</QueueUrl>', content_str, re.DOTALL).group(1)
                 if SQS_BACKEND_IMPL == 'elasticmq':
-                    queue_url = re.match(r'.*<QueueUrl>(.*)</QueueUrl>', content_str, re.DOTALL).group(1)
                     _set_queue_attributes(queue_url, req_data)
 
         elif action == 'SendMessageBatch':
