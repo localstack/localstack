@@ -329,8 +329,9 @@ class ProxyListenerSQS(PersistingProxyListener):
                                  r'<\1>arn:aws:sqs:%s:\2</\3>' % region_name, content_str)
 
             if action == 'CreateQueue':
-                queue_url = re.match(r'.*<QueueUrl>(.*)</QueueUrl>', content_str, re.DOTALL).group(1)
-                _set_queue_attributes(queue_url, req_data)
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    queue_url = re.match(r'.*<QueueUrl>(.*)</QueueUrl>', content_str, re.DOTALL).group(1)
+                    _set_queue_attributes(queue_url, req_data)
 
         elif action == 'SendMessageBatch':
             if validate_empty_message_batch(data, req_data):
