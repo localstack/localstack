@@ -1692,7 +1692,6 @@ class CloudFormationTest(unittest.TestCase):
         response = cloudformation.create_stack(
             StackName=stack_name,
             TemplateBody=TEST_TEMPLATE_20 % role_arn,
-
         )
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
