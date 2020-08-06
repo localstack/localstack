@@ -250,7 +250,6 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
-
             if hasattr(context, 'client_context'):
                 environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(base64.b64encode(
                     bytes(context.client_context, encoding='utf8'))))
