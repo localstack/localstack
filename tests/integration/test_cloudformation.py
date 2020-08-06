@@ -662,16 +662,9 @@ Resources:
     Properties:
       Runtime: nodejs10.x
       Handler: index.handler
-      Role: arn:aws:iam::000000000000:role/lambda-ex
+      Role: %s
       Code:
-        ZipFile: |
-          var aws = require('aws-sdk')
-          var response = require('cfn-response')
-          exports.handler = function(event, context) {
-              var responseStatus = "FAILED"
-              var responseData = {}
-              response.send(event, context, responseStatus, responseData)
-          }
+        ZipFile: 'file.zip'
 """
 
 
@@ -1690,9 +1683,15 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(role_name, response['Role']['RoleName'])
 
+        response = iam.get_role(
+            RoleName=role_name
+        )
+        self.assertEqual(role_name, response['Role']['RoleName'])
+
+        role_arn = response['Role']['Arn']
         response = cloudformation.create_stack(
             StackName=stack_name,
-            TemplateBody=TEST_TEMPLATE_20,
+            TemplateBody=TEST_TEMPLATE_20 % role_arn,
 
         )
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
