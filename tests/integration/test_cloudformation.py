@@ -653,6 +653,20 @@ Resources:
       BucketName: cf-prd-{id}
 """ % TEST_AWS_ACCOUNT_ID
 
+TEST_TEMPLATE_20 = """
+AWSTemplateFormatVersion: 2010-09-09
+Description: Test template
+Resources:
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs10.x
+      Handler: index.handler
+      Role: %s
+      Code:
+        ZipFile: 'file.zip'
+"""
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -1654,6 +1668,36 @@ class CloudFormationTest(unittest.TestCase):
             Bucket=bucket_name
         )
         self.assertNotIn('QueueConfigurations', rs)
+
+    def test_cfn_lambda_function_with_iam_role(self):
+        stack_name = 'stack-%s' % short_uid()
+        role_name = 'lambda-ex'
+
+        iam = aws_stack.connect_to_service('iam')
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        response = iam.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument='{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {'
+                                     '"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]} '
+        )
+        self.assertEqual(role_name, response['Role']['RoleName'])
+
+        response = iam.get_role(
+            RoleName=role_name
+        )
+        self.assertEqual(role_name, response['Role']['RoleName'])
+
+        role_arn = response['Role']['Arn']
+        response = cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=TEST_TEMPLATE_20 % role_arn,
+        )
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+        iam.delete_role(RoleName=role_name)
 
     def test_delete_stack(self):
         domain_name = 'es-%s' % short_uid()
