@@ -252,11 +252,13 @@ class ProxyListenerSQS(PersistingProxyListener):
                             message='Message contains invalid characters')
 
             elif action == 'SetQueueAttributes':
-                queue_url = _queue_url(path, req_data, headers)
-                forward_attrs = _set_queue_attributes(queue_url, req_data)
-                if len(req_data) != len(forward_attrs):
-                    # make sure we only forward the supported attributes to the backend
-                    return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
+                # TODO remove this function if we stop using ElasticMQ entirely
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    queue_url = _queue_url(path, req_data, headers)
+                    forward_attrs = _set_queue_attributes(queue_url, req_data)
+                    if len(req_data) != len(forward_attrs):
+                        # make sure we only forward the supported attributes to the backend
+                        return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
 
             elif action == 'DeleteQueue':
                 queue_url = _queue_url(path, req_data, headers)
@@ -264,11 +266,12 @@ class ProxyListenerSQS(PersistingProxyListener):
                 sns_listener.unsubscribe_sqs_queue(queue_url)
 
             elif action == 'ListDeadLetterSourceQueues':
-                queue_url = _queue_url(path, req_data, headers)
-                headers = {'content-type': 'application/xhtml+xml'}
-                content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
-
-                return requests_response(content_str, headers=headers)
+                # TODO remove this function if we stop using ElasticMQ entirely
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    queue_url = _queue_url(path, req_data, headers)
+                    headers = {'content-type': 'application/xhtml+xml'}
+                    content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
+                    return requests_response(content_str, headers=headers)
 
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
