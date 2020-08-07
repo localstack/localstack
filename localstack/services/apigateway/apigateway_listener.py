@@ -253,7 +253,8 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
             account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
             source_ip = headers['X-Forwarded-For'].split(',')[-2]
-            integration_method = integration.get('httpMethod') or method
+            integration_method = integration.get('httpMethod')
+            integration_method = method if integration_method in [None, 'ANY'] else integration_method
 
             try:
                 path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
@@ -398,7 +399,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         function = getattr(requests, method.lower())
 
         # apply custom request template
-        data = apply_template(template, 'request', data)
+        data = apply_template(integration, 'request', data)
 
         if isinstance(data, dict):
             data = json.dumps(data)
@@ -406,7 +407,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         result = function(integration['uri'], data=data, headers=headers)
 
         # apply custom response template
-        data = apply_template(template, 'response', data)
+        data = apply_template(integration, 'response', data)
 
         return result
 
