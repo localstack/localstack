@@ -304,7 +304,6 @@ class S3ListenerTest(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_presigned_url_expired(self):
-
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
@@ -1161,6 +1160,33 @@ class S3ListenerTest(unittest.TestCase):
 
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
         dynamodb_client.delete_table(TableName=table_name)
+
+    def test_s3_get_deep_archive_object(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        object_key = 'key-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put DEEP_ARCHIVE object
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='body data',
+            StorageClass='DEEP_ARCHIVE'
+        )
+
+        try:
+            self.s3_client.get_object(
+                Bucket=bucket_name,
+                Key=object_key
+            )
+            self.fail('This call should not be successful as the object stored as DEEP_ARCHIVE')
+
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'InvalidObjectState')
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
 
     # ---------------
     # HELPER METHODS
