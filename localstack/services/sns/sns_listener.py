@@ -32,6 +32,9 @@ SUBSCRIPTION_STATUS = {}
 # mappings for SNS tags
 SNS_TAGS = {}
 
+# cache of platform endpoint messages (used primarily for testing)
+PLATFORM_ENDPOINT_MESSAGES = {}
+
 
 class ProxyListenerSNS(PersistingProxyListener):
     def api_name(self):
@@ -253,9 +256,13 @@ def unsubscribe_sqs_queue(queue_url):
 
 def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
     message = req_data['Message'][0]
-    sqs_client = aws_stack.connect_to_service('sqs')
 
     LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
+
+    if topic_arn and ':endpoint/' in topic_arn:
+        # cache messages published to platform endpoints
+        cache = PLATFORM_ENDPOINT_MESSAGES[topic_arn] = PLATFORM_ENDPOINT_MESSAGES.get(topic_arn) or []
+        cache.append(req_data)
 
     subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
     for subscriber in list(subscriptions):
@@ -280,6 +287,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
                     queue_url = aws_stack.get_sqs_queue_url(queue_name)
                     subscriber['sqs_queue_url'] = queue_url
 
+                sqs_client = aws_stack.connect_to_service('sqs')
                 sqs_client.send_message(
                     QueueUrl=queue_url,
                     MessageBody=create_sns_message_body(subscriber, req_data),
@@ -339,6 +347,15 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
             except Exception as exc:
                 LOG.info('Received error on sending SNS message, putting to DLQ (if configured): %s' % exc)
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+
+        elif subscriber['Protocol'] == 'application':
+            try:
+                sns_client = aws_stack.connect_to_service('sns')
+                sns_client.publish(TargetArn=subscriber['Endpoint'], Message=message)
+            except Exception as exc:
+                LOG.warning('Unable to forward SNS message to SNS platform app: %s %s' % (exc, traceback.format_exc()))
+                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+
         else:
             LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 

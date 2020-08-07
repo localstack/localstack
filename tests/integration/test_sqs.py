@@ -5,9 +5,9 @@ import unittest
 import requests
 from botocore.exceptions import ClientError
 from localstack.utils import testutil
-from localstack.utils.testutil import get_lambda_log_events
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry, to_str
+from localstack.utils.testutil import get_lambda_log_events
 from .lambdas import lambda_integration
 from .test_lambda import use_docker, load_file, TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, \
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, TEST_LAMBDA_LIBS, \
@@ -74,6 +74,8 @@ class SQSTest(unittest.TestCase):
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
+        result = self.client.list_queues(QueueNamePrefix=TEST_QUEUE_NAME)
+        self.assertEqual(0, len(result.get('QueueUrls', [])))
 
     def test_publish_get_delete_message(self):
         queue_name = 'queue-%s' % short_uid()
@@ -455,7 +457,7 @@ class SQSTest(unittest.TestCase):
             MessageAttributes=TEST_MESSAGE_ATTRIBUTES
         )
 
-        events = get_lambda_log_events(function_name)
+        events = retry(get_lambda_log_events, sleep_before=3, function_name=function_name)
         self.assertEqual(len(events), 1)
 
         sqs_msg = events[0]['Records'][0]
@@ -676,7 +678,7 @@ class SQSTest(unittest.TestCase):
 
     def test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnetcore2(self):
         zip_file = load_file(TEST_LAMBDA_DOTNETCORE2, mode='rb')
-        handler = 'dotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler'
+        handler = 'DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler'
 
         self._run_test_lambda_invoked_by_sqs_message_with_delay_seconds_dotnet(
             zip_file, handler, LAMBDA_RUNTIME_DOTNETCORE2

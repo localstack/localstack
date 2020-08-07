@@ -6,7 +6,7 @@ from localstack import config
 from localstack.utils.common import recurse_object
 
 
-class VelocityInput:
+class VelocityInput(object):
     """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
 
@@ -24,11 +24,14 @@ class VelocityInput:
     def json(self, path):
         return json.dumps(self.path(path))
 
+    def __getattr__(self, name):
+        return self.value.get(name)
+
     def __repr__(self):
         return '$input'
 
 
-class VelocityUtil:
+class VelocityUtil(object):
     """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
 

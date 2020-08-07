@@ -1086,9 +1086,22 @@ def deploy_resource(resource_id, resources, stack_name):
 
 
 def delete_resource(resource_id, resources, stack_name):
-    for res_id, res in resources.items():
-        if res['ResourceType'] == 'AWS::S3::Bucket':
-            s3_listener.remove_bucket_notification(res['PhysicalResourceId'])
+    res = resources[resource_id]
+    if res['ResourceType'] == 'AWS::S3::Bucket':
+        s3_listener.remove_bucket_notification(res['PhysicalResourceId'])
+
+    if res['ResourceType'] == 'AWS::IAM::Role':
+        role_name = res['PhysicalResourceId']
+
+        iam_client = aws_stack.connect_to_service('iam')
+        rs = iam_client.list_role_policies(
+            RoleName=role_name
+        )
+        for policy in rs['PolicyNames']:
+            iam_client.delete_role_policy(
+                RoleName=role_name,
+                PolicyName=policy
+            )
 
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
@@ -1246,7 +1259,6 @@ def delete_stack(stack_name, stack_resources):
 # --------
 # Util methods for analyzing resource dependencies
 # --------
-
 def is_deployable_resource(resource):
     resource_type = get_resource_type(resource)
     entry = RESOURCE_TO_FUNCTION.get(resource_type)

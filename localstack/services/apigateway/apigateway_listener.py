@@ -195,6 +195,29 @@ def update_content_length(response):
         response.headers['Content-Length'] = str(len(response.content))
 
 
+def apply_template(integration, req_res_type, data, path_params={}, query_params={}, headers={}):
+    if integration['type'] in ['HTTP', 'AWS']:
+        # apply custom request template
+        template = integration.get('%sTemplates' % req_res_type, {}).get(APPLICATION_JSON)
+        if template:
+            context = {}
+            context['body'] = data
+
+            def _params(name=None):
+                # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
+                #    api-gateway-mapping-template-reference.html#input-variable-reference
+                # Returns "request parameter from the path, query string, or header value (searched in that order)"
+                combined = {}
+                combined.update(path_params or {})
+                combined.update(query_params or {})
+                combined.update(headers or {})
+                return combined if not name else combined.get(name)
+
+            context['params'] = _params
+            data = aws_stack.render_velocity_template(template, context)
+    return data
+
+
 def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
@@ -222,8 +245,86 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             return get_cors_response(headers)
         return make_error_response('Unable to find integration for path %s' % path, 404)
 
-    uri = integration.get('uri')
-    if integration['type'] == 'AWS':
+    uri = integration.get('uri') or ''
+
+    if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
+        if integration['type'] in ['AWS', 'AWS_PROXY']:
+            func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
+            data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
+            account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
+            source_ip = headers['X-Forwarded-For'].split(',')[-2]
+            integration_method = integration.get('httpMethod')
+            integration_method = method if integration_method in [None, 'ANY'] else integration_method
+
+            try:
+                path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
+            except Exception:
+                path_params = {}
+
+            # apply custom request template
+            data_str = apply_template(integration, 'request', data_str, path_params=path_params,
+                query_params=query_string_params, headers=headers)
+
+            # Sample request context:
+            # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
+            request_context = {
+                # adding stage to the request context path.
+                # https://github.com/localstack/localstack/issues/2210
+                'path': '/' + stage + relative_path,
+                'accountId': account_id,
+                'resourceId': resource.get('id'),
+                'stage': stage,
+                'identity': {
+                    'accountId': account_id,
+                    'sourceIp': source_ip,
+                    'userAgent': headers['User-Agent'],
+                },
+                'httpMethod': integration_method,
+                'protocol': 'HTTP/1.1',
+                'requestTime': datetime.datetime.utcnow(),
+                'requestTimeEpoch': int(time.time() * 1000),
+            }
+
+            result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, stage, api_id,
+                                                              headers, path_params=path_params,
+                                                              query_string_params=query_string_params,
+                                                              method=integration_method, resource_path=path,
+                                                              request_context=request_context)
+
+            if isinstance(result, FlaskResponse):
+                response = flask_to_requests_response(result)
+            elif isinstance(result, Response):
+                response = result
+            else:
+                response = LambdaResponse()
+                parsed_result = result if isinstance(result, dict) else json.loads(str(result))
+                parsed_result = common.json_safe(parsed_result)
+                parsed_result = {} if parsed_result is None else parsed_result
+                response.status_code = int(parsed_result.get('statusCode', 200))
+                parsed_headers = parsed_result.get('headers', {})
+                if parsed_headers is not None:
+                    response.headers.update(parsed_headers)
+                try:
+                    if isinstance(parsed_result['body'], dict):
+                        response._content = json.dumps(parsed_result['body'])
+                    else:
+                        response._content = to_bytes(parsed_result['body'])
+                except Exception:
+                    response._content = '{}'
+                update_content_length(response)
+                response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
+
+            # apply custom response template
+            response._content = apply_template(integration, 'response', response._content)
+            response.headers['Content-Length'] = str(len(response.content or ''))
+
+            return response
+
+        msg = 'API Gateway AWS integration action URI "%s", method "%s" not yet implemented' % (uri, method)
+        LOGGER.warning(msg)
+        return make_error_response(msg, 404)
+
+    elif integration['type'] == 'AWS':
         if 'kinesis:action/' in uri:
             if uri.endswith('kinesis:action/PutRecords'):
                 target = kinesis_listener.ACTION_PUT_RECORDS
@@ -237,6 +338,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             headers['X-Amz-Target'] = target
             result = common.make_http_request(url=TEST_KINESIS_URL,
                 method='POST', data=new_request, headers=headers)
+            # TODO apply response template..?
             return result
 
         if method == 'POST':
@@ -257,68 +359,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         return make_error_response(msg, 404)
 
     elif integration['type'] == 'AWS_PROXY':
-        if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
-            func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
-            data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
-            account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
-
-            source_ip = headers['X-Forwarded-For'].split(',')[-2]
-
-            # Sample request context:
-            # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
-            request_context = {
-                # adding stage to the request context path.
-                # https://github.com/localstack/localstack/issues/2210
-                'path': '/' + stage + relative_path,
-                'accountId': account_id,
-                'resourceId': resource.get('id'),
-                'stage': stage,
-                'identity': {
-                    'accountId': account_id,
-                    'sourceIp': source_ip,
-                    'userAgent': headers['User-Agent'],
-                },
-                'httpMethod': method,
-                'protocol': 'HTTP/1.1',
-                'requestTime': datetime.datetime.utcnow(),
-                'requestTimeEpoch': int(time.time() * 1000),
-            }
-
-            try:
-                path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
-            except Exception:
-                path_params = {}
-
-            result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, stage, api_id,
-                                                              headers, path_params=path_params,
-                                                              query_string_params=query_string_params,
-                                                              method=method, resource_path=path,
-                                                              request_context=request_context)
-            if isinstance(result, FlaskResponse):
-                return flask_to_requests_response(result)
-            if isinstance(result, Response):
-                return result
-
-            response = LambdaResponse()
-            parsed_result = result if isinstance(result, dict) else json.loads(str(result))
-            parsed_result = common.json_safe(parsed_result)
-            parsed_result = {} if parsed_result is None else parsed_result
-            response.status_code = int(parsed_result.get('statusCode', 200))
-            parsed_headers = parsed_result.get('headers', {})
-            if parsed_headers is not None:
-                response.headers.update(parsed_headers)
-            try:
-                if isinstance(parsed_result['body'], dict):
-                    response.content = json.dumps(parsed_result['body'])
-                else:
-                    response.content = to_bytes(parsed_result['body'])
-            except Exception:
-                response._content = '{}'
-            update_content_length(response)
-            response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
-            return response
-
-        elif uri.startswith('arn:aws:apigateway:') and ':dynamodb:action' in uri:
+        if uri.startswith('arn:aws:apigateway:') and ':dynamodb:action' in uri:
             # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
             table_name = uri.split(':dynamodb:action')[1].split('&Table=')[1]
             action = uri.split(':dynamodb:action')[1].split('&Table=')[0]
@@ -357,31 +398,23 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
     elif integration['type'] in ['HTTP_PROXY', 'HTTP']:
         function = getattr(requests, method.lower())
 
-        if integration['type'] == 'HTTP':
-            # apply custom request template
-            template = integration.get('requestTemplates', {}).get(APPLICATION_JSON)
-            if template:
-                data = aws_stack.render_velocity_template(template, data)
+        # apply custom request template
+        data = apply_template(integration, 'request', data)
 
         if isinstance(data, dict):
             data = json.dumps(data)
 
         result = function(integration['uri'], data=data, headers=headers)
 
-        if integration['type'] == 'HTTP':
-            # apply custom response template
-            template = integration.get('responseTemplates', {}).get(APPLICATION_JSON)
-            if template and result.content:
-                result._content = aws_stack.render_velocity_template(template, result.content)
-                update_content_length(result)
+        # apply custom response template
+        data = apply_template(integration, 'response', data)
 
         return result
 
-    else:
-        msg = ('API Gateway integration type "%s" for method "%s" not yet implemented' %
-               (integration['type'], method))
-        LOGGER.warning(msg)
-        return make_error_response(msg, 404)
+    msg = ('API Gateway integration type "%s", method "%s", URI "%s" not yet implemented' %
+           (integration['type'], method, integration.get('uri')))
+    LOGGER.warning(msg)
+    return make_error_response(msg, 404)
 
 
 # instantiate listener

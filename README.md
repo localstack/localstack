@@ -68,7 +68,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **CloudFront**
 * **CloudTrail**
 * **Cognito**
-* **ECS/EKS**
+* **ECS/ECR/EKS**
 * **ElastiCache**
 * **EMR**
 * **Glacier** / **S3 Select**

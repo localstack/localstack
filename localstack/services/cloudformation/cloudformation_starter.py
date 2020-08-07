@@ -190,6 +190,31 @@ def update_resource_name(resource, resource_json):
         props['StateMachineName'] = resource.name
 
 
+def add_default_resource_props(resource_props, stack_name, resource_name=None):
+    """ Apply some fixes to resource props which otherwise cause deployments to fail """
+
+    res_type = resource_props['Type']
+    props = resource_props.get('Properties', {})
+
+    if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
+        props['StartingPosition'] = 'LATEST'
+
+    if res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
+        props['TopicName'] = 'topic-%s' % short_uid()
+
+    if res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
+        props['QueueName'] = 'queue-%s' % short_uid()
+
+    if res_type == 'AWS::ApiGateway::RestApi':
+        props['Name'] = props.get('Name') or resource_name
+
+    # generate default names for certain resource types
+    default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
+    for entry in default_attrs:
+        if res_type == entry[0] and not props.get(entry[1]):
+            props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
+
+
 def apply_patches():
     """ Apply patches to make LocalStack seamlessly interact with the moto backend.
         TODO: Eventually, these patches should be contributed to the upstream repo! """
@@ -218,6 +243,8 @@ def apply_patches():
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
     def parse_and_create_resource(logical_id, resource_json, resources_map, region_name, force_create=False):
         try:
+            if hasattr(resources_map, '_deleted'):
+                return
             return _parse_and_create_resource(
                 logical_id, resource_json, resources_map, region_name, force_create=force_create
             )
@@ -252,26 +279,10 @@ def apply_patches():
             return None
         _, resource_json, resource_name = resource_tuple
 
-        def add_default_props(resource_props, res_name=None):
-            """ apply some fixes which otherwise cause deployments to fail """
-            res_type = resource_props['Type']
-            props = resource_props.get('Properties', {})
-            if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
-                props['StartingPosition'] = 'LATEST'
-
-            if res_type == 'AWS::ApiGateway::RestApi':
-                props['Name'] = props.get('Name') or res_name
-
-            # generate default names for certain resource types
-            default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
-            for entry in default_attrs:
-                if res_type == entry[0] and not props.get(entry[1]):
-                    props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
-
         # add some fixes and default props which otherwise cause deployments to fail
-        add_default_props(resource_json, resource_name)
+        add_default_resource_props(resource_json, stack_name, resource_name=resource_name)
         for resource in resources_map._resource_json_map.values():
-            add_default_props(resource)
+            add_default_resource_props(resource, stack_name)
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
@@ -428,10 +439,27 @@ def apply_patches():
         else:
             LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
 
+    def parse_and_delete_resource(*args, **kwargs):
+        try:
+            return parse_and_delete_resource_orig(*args, **kwargs)
+        except AttributeError:
+            # looks like a "delete" method is not yet implemented for a resource type -> ignore
+            pass
+
     parse_and_create_resource_orig = parsing.parse_and_create_resource
     parsing.parse_and_create_resource = parse_and_create_resource
     parse_and_update_resource_orig = parsing.parse_and_update_resource
     parsing.parse_and_update_resource = parse_and_update_resource
+    parse_and_delete_resource_orig = parsing.parse_and_delete_resource
+    parsing.parse_and_delete_resource = parse_and_delete_resource
+
+    def resource_map_delete(self, *args, **kwargs):
+        self._deleted = True
+        result = resource_map_delete_orig(self, *args, **kwargs)
+        return result
+
+    resource_map_delete_orig = parsing.ResourceMap.delete
+    parsing.ResourceMap.delete = resource_map_delete
 
     # patch CloudFormation parse_output(..) method to fix a bug in moto
     def parse_output(output_logical_id, output_json, resources_map):
@@ -694,6 +722,7 @@ def apply_patches():
         iam_models.Role.update_from_cloudformation_json = Role_update_from_cloudformation_json
 
     # patch ApiGateway Deployment
+    @staticmethod
     def depl_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
         LOG.info('TODO: apigateway.Deployment.delete_from_cloudformation_json %s' % properties)
@@ -702,6 +731,7 @@ def apply_patches():
         apigw_models.Deployment.delete_from_cloudformation_json = depl_delete_from_cloudformation_json
 
     # patch Lambda Version
+    @staticmethod
     def vers_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
         LOG.info('TODO: apigateway.Deployment.delete_from_cloudformation_json %s' % properties)

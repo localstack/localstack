@@ -91,7 +91,7 @@ def _get_attributes_forward_request(method, path, headers, req_data, forward_att
 
 def _set_queue_attributes(queue_url, req_data):
     # TODO remove this function if we stop using ElasticMQ entirely
-    if SQS_BACKEND_IMPL != 'moto':
+    if SQS_BACKEND_IMPL != 'elasticmq':
         return
     attrs = _format_attributes(req_data)
     # select only the attributes in UNSUPPORTED_ATTRIBUTE_NAMES
@@ -116,7 +116,7 @@ def _set_queue_attributes(queue_url, req_data):
 
 def _add_queue_attributes(path, req_data, content_str, headers):
     # TODO remove this function if we stop using ElasticMQ entirely
-    if SQS_BACKEND_IMPL != 'moto':
+    if SQS_BACKEND_IMPL != 'elasticmq':
         return content_str
     flags = re.MULTILINE | re.DOTALL
     queue_url = _queue_url(path, req_data, headers)
@@ -252,11 +252,13 @@ class ProxyListenerSQS(PersistingProxyListener):
                             message='Message contains invalid characters')
 
             elif action == 'SetQueueAttributes':
+                # TODO remove this function if we stop using ElasticMQ entirely
                 queue_url = _queue_url(path, req_data, headers)
-                forward_attrs = _set_queue_attributes(queue_url, req_data)
-                if len(req_data) != len(forward_attrs):
-                    # make sure we only forward the supported attributes to the backend
-                    return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    forward_attrs = _set_queue_attributes(queue_url, req_data)
+                    if len(req_data) != len(forward_attrs):
+                        # make sure we only forward the supported attributes to the backend
+                        return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
 
             elif action == 'DeleteQueue':
                 queue_url = _queue_url(path, req_data, headers)
@@ -264,11 +266,12 @@ class ProxyListenerSQS(PersistingProxyListener):
                 sns_listener.unsubscribe_sqs_queue(queue_url)
 
             elif action == 'ListDeadLetterSourceQueues':
+                # TODO remove this function if we stop using ElasticMQ entirely
                 queue_url = _queue_url(path, req_data, headers)
-                headers = {'content-type': 'application/xhtml+xml'}
-                content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
-
-                return requests_response(content_str, headers=headers)
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    headers = {'content-type': 'application/xhtml+xml'}
+                    content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
+                    return requests_response(content_str, headers=headers)
 
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
@@ -308,7 +311,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             content_str = _add_queue_attributes(path, req_data, content_str, headers)
 
         # patch the response and return the correct endpoint URLs / ARNs
-        if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes'):
+        if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes', 'ListDeadLetterSourceQueues'):
             if config.USE_SSL and '<QueueUrl>http://' in content_str:
                 # return https://... if we're supposed to use SSL
                 content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
@@ -327,7 +330,8 @@ class ProxyListenerSQS(PersistingProxyListener):
 
             if action == 'CreateQueue':
                 queue_url = re.match(r'.*<QueueUrl>(.*)</QueueUrl>', content_str, re.DOTALL).group(1)
-                _set_queue_attributes(queue_url, req_data)
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    _set_queue_attributes(queue_url, req_data)
 
         elif action == 'SendMessageBatch':
             if validate_empty_message_batch(data, req_data):

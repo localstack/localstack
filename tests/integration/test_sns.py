@@ -7,9 +7,9 @@ import time
 import unittest
 from botocore.exceptions import ClientError
 from localstack import config
-
-from localstack.config import external_service_url
 from localstack.utils import testutil
+from localstack.config import external_service_url
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid
@@ -17,9 +17,7 @@ from localstack.utils.common import (
 from localstack.utils.testutil import get_lambda_log_events
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
-from localstack.services.sns.sns_listener import SUBSCRIPTION_STATUS
-
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.services.sns import sns_listener
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, TEST_LAMBDA_LIBS
 
@@ -227,28 +225,52 @@ class SNSTest(unittest.TestCase):
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
 
-    def test_data_type_sns_message(self):
-        queue_name, queue_arn, queue_url = self._create_queue()
+    def test_subscribe_sqs_queue(self):
+        _, queue_arn, queue_url = self._create_queue()
 
-        filter_policy = {'attr1': [{'numeric': ['>', 0, '<=', 100]}]}
-        self.sns_client.subscribe(
-            TopicArn=self.topic_arn,
-            Protocol='sqs',
-            Endpoint=queue_arn,
-            Attributes={
-                'FilterPolicy': json.dumps(filter_policy)
-            }
-        )
+        # publish message
+        subscription = self._publish_sns_message_with_attrs(queue_arn, 'sqs')
 
-        # publish message that satisfies the filter policy, assert that message is received
-        message = u'This is a test message'
-        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
-                                MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
+        # assert that message is received
         messages = self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages']
         self.assertEqual(json.loads(messages[0]['Body'])['MessageAttributes']['attr1']['Value'], '99.12')
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
+        self.sns_client.unsubscribe(SubscriptionArn=subscription['SubscriptionArn'])
+
+    def test_subscribe_platform_endpoint(self):
+        sns = self.sns_client
+        app_arn = sns.create_platform_application(Name='app1', Platform='p1', Attributes={})['PlatformApplicationArn']
+        platform_arn = sns.create_platform_endpoint(PlatformApplicationArn=app_arn, Token='token_1')['EndpointArn']
+        subscription = self._publish_sns_message_with_attrs(platform_arn, 'application')
+
+        # assert that message has been received
+        def check_message():
+            self.assertGreater(len(sns_listener.PLATFORM_ENDPOINT_MESSAGES[platform_arn]), 0)
+        retry(check_message)
+
+        # clean up
+        sns.unsubscribe(SubscriptionArn=subscription['SubscriptionArn'])
+        sns.delete_endpoint(EndpointArn=platform_arn)
+        sns.delete_platform_application(PlatformApplicationArn=app_arn)
+
+    def _publish_sns_message_with_attrs(self, endpoint_arn, protocol):
+        # create subscription with filter policy
+        filter_policy = {'attr1': [{'numeric': ['>', 0, '<=', 100]}]}
+        subscription = self.sns_client.subscribe(
+            TopicArn=self.topic_arn,
+            Protocol=protocol,
+            Endpoint=endpoint_arn,
+            Attributes={
+                'FilterPolicy': json.dumps(filter_policy)
+            }
+        )
+        # publish message that satisfies the filter policy
+        message = u'This is a test message'
+        self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
+                                MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
+        return subscription
 
     def test_unknown_topic_publish(self):
         fake_arn = 'arn:aws:sns:us-east-1:123456789012:i_dont_exist'
@@ -334,7 +356,7 @@ class SNSTest(unittest.TestCase):
             Endpoint='localstack@yopmail.com'
         )
         subscription_arn = subscription['SubscriptionArn']
-        subscription_obj = SUBSCRIPTION_STATUS[subscription_arn]
+        subscription_obj = sns_listener.SUBSCRIPTION_STATUS[subscription_arn]
         self.assertEqual(subscription_obj['Status'], 'Not Subscribed')
 
         _token = subscription_obj['Token']
