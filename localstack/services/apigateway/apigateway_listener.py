@@ -195,12 +195,26 @@ def update_content_length(response):
         response.headers['Content-Length'] = str(len(response.content))
 
 
-def apply_template(integration, req_res_type, data):
+def apply_template(integration, req_res_type, data, path_params={}, query_params={}, headers={}):
     if integration['type'] in ['HTTP', 'AWS']:
         # apply custom request template
         template = integration.get('%sTemplates' % req_res_type, {}).get(APPLICATION_JSON)
         if template:
-            data = aws_stack.render_velocity_template(template, data)
+            context = {}
+            context['body'] = data
+
+            def _params(name=None):
+                # See https://docs.aws.amazon.com/apigateway/latest/developerguide/
+                #    api-gateway-mapping-template-reference.html#input-variable-reference
+                # Returns "request parameter from the path, query string, or header value (searched in that order)"
+                combined = {}
+                combined.update(path_params or {})
+                combined.update(query_params or {})
+                combined.update(headers or {})
+                return combined if not name else combined.get(name)
+
+            context['params'] = _params
+            data = aws_stack.render_velocity_template(template, context)
     return data
 
 
@@ -239,9 +253,16 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
             account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
             source_ip = headers['X-Forwarded-For'].split(',')[-2]
+            integration_method = integration.get('httpMethod') or method
+
+            try:
+                path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
+            except Exception:
+                path_params = {}
 
             # apply custom request template
-            data_str = apply_template(integration, 'request', data_str)
+            data_str = apply_template(integration, 'request', data_str, path_params=path_params,
+                query_params=query_string_params, headers=headers)
 
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
@@ -257,21 +278,16 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                     'sourceIp': source_ip,
                     'userAgent': headers['User-Agent'],
                 },
-                'httpMethod': method,
+                'httpMethod': integration_method,
                 'protocol': 'HTTP/1.1',
                 'requestTime': datetime.datetime.utcnow(),
                 'requestTimeEpoch': int(time.time() * 1000),
             }
 
-            try:
-                path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
-            except Exception:
-                path_params = {}
-
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, stage, api_id,
                                                               headers, path_params=path_params,
                                                               query_string_params=query_string_params,
-                                                              method=method, resource_path=path,
+                                                              method=integration_method, resource_path=path,
                                                               request_context=request_context)
 
             if isinstance(result, FlaskResponse):
@@ -298,7 +314,8 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 response.multi_value_headers = parsed_result.get('multiValueHeaders') or {}
 
             # apply custom response template
-            response._content = apply_template(integration, 'request', response._content)
+            response._content = apply_template(integration, 'response', response._content)
+            response.headers['Content-Length'] = str(len(response.content or ''))
 
             return response
 
@@ -320,6 +337,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             headers['X-Amz-Target'] = target
             result = common.make_http_request(url=TEST_KINESIS_URL,
                 method='POST', data=new_request, headers=headers)
+            # TODO apply response template..?
             return result
 
         if method == 'POST':
@@ -388,7 +406,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         result = function(integration['uri'], data=data, headers=headers)
 
         # apply custom response template
-        data = apply_template(template, 'request', data)
+        data = apply_template(template, 'response', data)
 
         return result
 

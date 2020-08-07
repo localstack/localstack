@@ -77,6 +77,7 @@ class LambdaResponse(object):
         self.multi_value_headers = CaseInsensitiveDict()
         self.headers = CaseInsensitiveDict()
 
+    @property
     def content(self):
         return self._content
 
