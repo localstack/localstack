@@ -69,12 +69,17 @@ def make_flask_error(message, code=400, code_string='InvalidParameter'):
 
 
 class LambdaResponse(object):
-    # this object has been created to support multi_value_headers in aws responses.
+    """ Helper class to support multi_value_headers in Lambda responses """
+
     def __init__(self):
-        self.content = False
+        self._content = False
         self.status_code = None
         self.multi_value_headers = CaseInsensitiveDict()
         self.headers = CaseInsensitiveDict()
+
+    @property
+    def content(self):
+        return self._content
 
 
 class MessageConversion(object):
