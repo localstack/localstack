@@ -259,7 +259,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
 
     LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
 
-    if ':endpoint/' in topic_arn:
+    if topic_arn and ':endpoint/' in topic_arn:
         # cache messages published to platform endpoints
         cache = PLATFORM_ENDPOINT_MESSAGES[topic_arn] = PLATFORM_ENDPOINT_MESSAGES.get(topic_arn) or []
         cache.append(req_data)
