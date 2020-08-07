@@ -4,8 +4,8 @@ import json
 import shutil
 import time
 import unittest
-import base64
 import six
+import base64
 from botocore.exceptions import ClientError
 from io import BytesIO
 from localstack import config
@@ -16,7 +16,7 @@ from localstack.utils.testutil import get_lambda_log_events, create_lambda_archi
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
-    run_safe, get_free_tcp_port, get_service_protocol, retry
+    run_safe, get_free_tcp_port, get_service_protocol, retry, to_bytes
 )
 from localstack.services.infra import start_proxy
 from localstack.services.awslambda import lambda_api, lambda_executors
@@ -858,14 +858,18 @@ class TestNodeJSRuntimes(LambdaTestBase):
             handler='lambda_integration.handler',
             runtime=LAMBDA_RUNTIME_NODEJS810
         )
+        ctx = {'custom': {'foo': 'bar'},
+               'client': {'snap': ['crackle', 'pop']},
+               'env': {'fizz': 'buzz'}}
+
         result = self.lambda_client.invoke(
             FunctionName=TEST_LAMBDA_NAME_JS, Payload=b'{}',
-            ClientContext=to_str(base64.b64encode(b'{"key":"foo"}')))
+            ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))))
 
         result_data = result['Payload'].read()
         self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(json.loads(result_data)['context']['clientContext'],
-                         to_str(base64.b64encode(b'{"key":"foo"}')))
+        self.assertEqual(json.loads(json.loads(result_data)['context']['clientContext']).
+                         get('custom').get('foo'), 'bar')
 
         # assert that logs are present
         expected = ['.*Node.js Lambda handler executing.']
