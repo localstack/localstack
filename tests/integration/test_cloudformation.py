@@ -604,6 +604,31 @@ Outputs:
       Ref: AWS::Region
 """
 
+TEST_DEPLOY_BODY_4 = """
+AWSTemplateFormatVersion: '2010-09-09'
+
+Resources:
+  # IAM role for running the step function
+  ExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: !Sub states.${AWS::Region}.amazonaws.com
+          Action: "sts:AssumeRole"
+      Policies:
+      - PolicyName: StatesExecutionPolicy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action: "lambda:InvokeFunction"
+            Resource: "*"
+"""
+
 TEST_TEMPLATE_19 = """
 Conditions:
   IsPRD:
@@ -653,6 +678,19 @@ Resources:
         deadLetterTargetArn:
           Fn::GetAtt: [SQSQueueDLQ, Arn]
         maxReceiveCount: 5
+"""
+
+TEST_TEMPLATE_22 = """
+Description: Test template
+Resources:
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: nodejs10.x
+      Handler: index.handler
+      Role: %s
+      Code:
+        ZipFile: 'file.zip'
 """
 
 
@@ -778,15 +816,15 @@ class CloudFormationTest(unittest.TestCase):
         _await_stack_completion(stack_name)
 
         # assert that resources have been created
-        assert bucket_exists('cf-test-bucket-1')
+        self.assertTrue(bucket_exists('cf-test-bucket-1'))
         queue_url = queue_exists('cf-test-queue-1')
-        assert queue_url
+        self.assertTrue(queue_url)
         topic_arn = topic_exists('%s-test-topic-1-1' % stack_name)
-        assert topic_arn
-        assert stream_exists('cf-test-stream-1')
+        self.assertTrue(topic_arn)
+        self.assertTrue(stream_exists('cf-test-stream-1'))
         resource = describe_stack_resource(stack_name, 'SQSQueueNoNameProperty')
-        assert queue_exists(resource['PhysicalResourceId'])
-        assert ssm_param_exists('cf-test-param-1')
+        self.assertTrue(queue_exists(resource['PhysicalResourceId']))
+        self.assertTrue(ssm_param_exists('cf-test-param-1'))
 
         # assert that tags have been created
         tags = s3.get_bucket_tagging(Bucket='cf-test-bucket-1')['TagSet']
@@ -835,9 +873,9 @@ class CloudFormationTest(unittest.TestCase):
         cf_client.delete_stack(StackName=stack_name)
 
         # assert that resources have been deleted
-        assert not bucket_exists('cf-test-bucket-1')
-        assert not queue_exists('cf-test-queue-1')
-        assert not topic_exists('%s-test-topic-1-1' % stack_name)
+        self.assertFalse(bucket_exists('cf-test-bucket-1'))
+        self.assertFalse(queue_exists('cf-test-queue-1'))
+        self.assertFalse(topic_exists('%s-test-topic-1-1' % stack_name))
         retry(lambda: self.assertFalse(stream_exists('cf-test-stream-1')))
 
     def test_list_stack_events(self):
@@ -1097,9 +1135,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(stack['StackName'], stack_name)
 
         iam_client = aws_stack.connect_to_service('iam')
-        rs = iam_client.list_roles(
-            PathPrefix=role_name
-        )
+        rs = iam_client.list_roles()
 
         self.assertEqual(len(rs['Roles']), 1)
         self.assertEqual(rs['Roles'][0]['RoleName'], role_name)
@@ -1260,6 +1296,60 @@ class CloudFormationTest(unittest.TestCase):
         )
         rs = ddb_client.list_tables()
         self.assertNotIn(ddb_table_name, rs['TableNames'])
+
+    def test_deploy_stack_with_iam_nested_policy(self):
+        stack_name = 'stack-%s' % short_uid()
+        change_set_name = 'change-set-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        rs = cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            TemplateBody=TEST_DEPLOY_BODY_4
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        change_set_id = rs['Id']
+
+        rs = cloudformation.describe_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_id
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['ChangeSetId'], change_set_id)
+        self.assertEqual(rs['Status'], 'CREATE_COMPLETE')
+
+        iam_client = aws_stack.connect_to_service('iam')
+        rs = iam_client.list_roles()
+        number_of_roles = len(rs['Roles'])
+
+        rs = cloudformation.execute_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = cloudformation.describe_stacks(
+            StackName=stack_name
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = iam_client.list_roles()
+        # 1 role was created
+        self.assertEqual(number_of_roles + 1, len(rs['Roles']))
+
+        # clean up
+        cloudformation.delete_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name
+        )
+        cloudformation.delete_stack(
+            StackName=stack_name
+        )
+        rs = iam_client.list_roles()
+        # role was removed
+        self.assertEqual(number_of_roles, len(rs['Roles']))
 
     def test_cfn_handle_s3_bucket_resources(self):
         stack_name = 'stack-%s' % short_uid()
@@ -1608,6 +1698,36 @@ class CloudFormationTest(unittest.TestCase):
             Bucket=bucket_name
         )
         self.assertNotIn('QueueConfigurations', rs)
+
+    def test_cfn_lambda_function_with_iam_role(self):
+        stack_name = 'stack-%s' % short_uid()
+        role_name = 'lambda-ex'
+
+        iam = aws_stack.connect_to_service('iam')
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        response = iam.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument='{"Version": "2012-10-17","Statement": [{ "Effect": "Allow", "Principal": {'
+                                     '"Service": "lambda.amazonaws.com"}, "Action": "sts:AssumeRole"}]} '
+        )
+        self.assertEqual(role_name, response['Role']['RoleName'])
+
+        response = iam.get_role(
+            RoleName=role_name
+        )
+        self.assertEqual(role_name, response['Role']['RoleName'])
+
+        role_arn = response['Role']['Arn']
+        response = cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=TEST_TEMPLATE_22 % role_arn,
+        )
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+        iam.delete_role(RoleName=role_name)
 
     def test_delete_stack(self):
         domain_name = 'es-%s' % short_uid()

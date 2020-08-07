@@ -518,9 +518,8 @@ class FuncThread(threading.Thread):
             LOG.warning('Not implemented: FuncThread.stop(..)')
 
 
-def run(cmd, print_error=True, asynchronous=False, stdin=False,
-        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
-        inherit_env=True, tty=False):
+def run(cmd, print_error=True, asynchronous=False, stdin=False, stderr=subprocess.STDOUT,
+        outfile=None, env_vars=None, inherit_cwd=False, inherit_env=True, tty=False):
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
@@ -580,19 +579,18 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
 
 
 def is_mac_os():
-    try:
-        out = to_str(subprocess.check_output('uname -a', shell=True))
-        return 'Darwin' in out
-    except subprocess.CalledProcessError:
-        return False
+    return 'Darwin' in get_uname()
 
 
 def is_linux():
+    return 'Linux' in get_uname()
+
+
+def get_uname():
     try:
-        out = to_str(subprocess.check_output('uname -a', shell=True))
-        return 'Linux' in out
-    except subprocess.CalledProcessError:
-        return False
+        return to_str(subprocess.check_output('uname -a', shell=True))
+    except Exception:
+        return ''
 
 
 def mkdir(folder):

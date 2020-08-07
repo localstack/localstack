@@ -14,12 +14,14 @@ EVENT_LOOPS = {}
 
 
 class AsyncThread(FuncThread):
+
     def __init__(self, async_func_gen=None, loop=None):
         """ Pass a function that receives an event loop instance and a shutdown event,
             and returns an async function. """
         FuncThread.__init__(self, self.run_func, None)
         self.async_func_gen = async_func_gen
         self.loop = loop
+        self.shutdown_event = None
 
     def run_func(self, *args):
         loop = self.loop or ensure_event_loop()
@@ -31,7 +33,9 @@ class AsyncThread(FuncThread):
         loop.run_forever()
 
     def stop(self, quiet=None):
-        self.shutdown_event.set()
+        if self.shutdown_event:
+            self.shutdown_event.set()
+            self.shutdown_event = None
 
     @classmethod
     def run_async(cls, func=None, loop=None):

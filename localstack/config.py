@@ -167,7 +167,7 @@ def is_linux():
         out = subprocess.check_output('uname -a', shell=True)
         out = out.decode('utf-8') if isinstance(out, six.binary_type) else out
         return 'Linux' in out
-    except subprocess.CalledProcessError:
+    except Exception:
         return False
 
 

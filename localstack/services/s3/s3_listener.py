@@ -123,7 +123,7 @@ def prefix_with_slash(s):
     return s if s[0] == '/' else '/%s' % s
 
 
-def get_event_message(event_name, bucket_name, file_name='testfile.txt', version_id=None, file_size=0):
+def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag='', version_id=None, file_size=0):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
     bucket_name = normalize_bucket_name(bucket_name)
     return {
@@ -156,7 +156,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', version
                 'object': {
                     'key': file_name,
                     'size': file_size,
-                    'eTag': 'd41d8cd98f00b204e9800998ecf8427e',
+                    'eTag': etag,
                     'versionId': version_id,
                     'sequencer': '0055AED6DCD90281E5'
                 }
@@ -193,17 +193,20 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
     key = urlparse.unquote(object_path.replace('//', '/'))[1:]
 
     s3_client = aws_stack.connect_to_service('s3')
+    object_data = {}
     try:
-        object_size = s3_client.head_object(Bucket=bucket_name, Key=key).get('ContentLength', 0)
+        object_data = s3_client.head_object(Bucket=bucket_name, Key=key)
+
     except botocore.exceptions.ClientError:
-        object_size = 0
+        pass
 
     # build event message
     message = get_event_message(
         event_name=event_name,
         bucket_name=bucket_name,
         file_name=key,
-        file_size=object_size,
+        etag=object_data.get('ETag', ''),
+        file_size=object_data.get('ContentLength', 0),
         version_id=version_id
     )
     message = json.dumps(message)

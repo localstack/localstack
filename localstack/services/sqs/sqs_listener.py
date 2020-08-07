@@ -1,4 +1,3 @@
-import os
 import re
 import json
 import xmltodict
@@ -13,6 +12,7 @@ from localstack.utils.aws import aws_stack
 from localstack.services.sns import sns_listener
 from localstack.utils.common import to_str, clone, path_from_url, get_service_protocol
 from localstack.utils.analytics import event_publisher
+from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.awslambda import lambda_api
 from localstack.utils.aws.aws_responses import requests_response, make_requests_error
@@ -20,19 +20,9 @@ from localstack.utils.aws.aws_responses import requests_response, make_requests_
 API_VERSION = '2012-11-05'
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/%s/' % API_VERSION
 
-# backend implementation provider - either "moto" or "elasticmq"
-BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
-
 # Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
 MSG_CONTENT_REGEX = '^[\u0009\u000A\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$'
-
-# list of valid attribute names, and names not supported by the backend (elasticmq)
-VALID_ATTRIBUTE_NAMES = ['DelaySeconds', 'MaximumMessageSize', 'MessageRetentionPeriod',
-                         'ReceiveMessageWaitTimeSeconds', 'RedrivePolicy', 'VisibilityTimeout',
-                         'KmsMasterKeyId', 'KmsDataKeyReusePeriodSeconds',
-                         'CreatedTimestamp', 'LastModifiedTimestamp',
-                         'ApproximateNumberOfMessages', 'ApproximateNumberOfMessagesNotVisible']
 
 UNSUPPORTED_ATTRIBUTE_NAMES = [
     # elasticmq store 'FifoQueue', 'ContentBasedDeduplication' as queue's properties
@@ -100,6 +90,9 @@ def _get_attributes_forward_request(method, path, headers, req_data, forward_att
 
 
 def _set_queue_attributes(queue_url, req_data):
+    # TODO remove this function if we stop using ElasticMQ entirely
+    if SQS_BACKEND_IMPL != 'elasticmq':
+        return
     attrs = _format_attributes(req_data)
     # select only the attributes in UNSUPPORTED_ATTRIBUTE_NAMES
     local_attrs = {}
@@ -119,6 +112,24 @@ def _set_queue_attributes(queue_url, req_data):
     QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
     forward_attrs = dict([(k, v) for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES])
     return forward_attrs
+
+
+def _add_queue_attributes(path, req_data, content_str, headers):
+    # TODO remove this function if we stop using ElasticMQ entirely
+    if SQS_BACKEND_IMPL != 'elasticmq':
+        return content_str
+    flags = re.MULTILINE | re.DOTALL
+    queue_url = _queue_url(path, req_data, headers)
+    requested_attributes = _format_attributes_names(req_data)
+    regex = r'(.*<GetQueueAttributesResult>)(.*)(</GetQueueAttributesResult>.*)'
+    attrs = re.sub(regex, r'\2', content_str, flags=flags)
+    for key, value in QUEUE_ATTRIBUTES.get(queue_url, {}).items():
+        if (not requested_attributes or requested_attributes.intersection({'All', key})) and \
+                not re.match(r'<Name>\s*%s\s*</Name>' % key, attrs, flags=flags):
+            attrs += '<Attribute><Name>%s</Name><Value>%s</Value></Attribute>' % (key, value)
+    content_str = (re.sub(regex, r'\1', content_str, flags=flags) +
+                   attrs + re.sub(regex, r'\3', content_str, flags=flags))
+    return content_str
 
 
 def _fire_event(req_data, response):
@@ -147,21 +158,6 @@ def _queue_url(path, req_data, headers):
         url = '%s://%s' % (get_service_protocol(), headers['Host'])
     queue_url = '%s%s' % (url, path.partition('?')[0])
     return queue_url
-
-
-def _add_queue_attributes(path, req_data, content_str, headers):
-    flags = re.MULTILINE | re.DOTALL
-    queue_url = _queue_url(path, req_data, headers)
-    requested_attributes = _format_attributes_names(req_data)
-    regex = r'(.*<GetQueueAttributesResult>)(.*)(</GetQueueAttributesResult>.*)'
-    attrs = re.sub(regex, r'\2', content_str, flags=flags)
-    for key, value in QUEUE_ATTRIBUTES.get(queue_url, {}).items():
-        if (not requested_attributes or requested_attributes.intersection({'All', key})) and \
-                not re.match(r'<Name>\s*%s\s*</Name>' % key, attrs, flags=flags):
-            attrs += '<Attribute><Name>%s</Name><Value>%s</Value></Attribute>' % (key, value)
-    content_str = (re.sub(regex, r'\1', content_str, flags=flags) +
-                   attrs + re.sub(regex, r'\3', content_str, flags=flags))
-    return content_str
 
 
 def _list_dead_letter_source_queues(queues, queue_url):
@@ -248,7 +244,7 @@ class ProxyListenerSQS(PersistingProxyListener):
         if req_data:
             action = req_data.get('Action')
 
-            if action in ('SendMessage', 'SendMessageBatch') and BACKEND_IMPL == 'moto':
+            if action in ('SendMessage', 'SendMessageBatch') and SQS_BACKEND_IMPL == 'moto':
                 # check message contents
                 for key, value in req_data.items():
                     if not re.match(MSG_CONTENT_REGEX, str(value)):
@@ -256,11 +252,13 @@ class ProxyListenerSQS(PersistingProxyListener):
                             message='Message contains invalid characters')
 
             elif action == 'SetQueueAttributes':
+                # TODO remove this function if we stop using ElasticMQ entirely
                 queue_url = _queue_url(path, req_data, headers)
-                forward_attrs = _set_queue_attributes(queue_url, req_data)
-                if len(req_data) != len(forward_attrs):
-                    # make sure we only forward the supported attributes to the backend
-                    return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    forward_attrs = _set_queue_attributes(queue_url, req_data)
+                    if len(req_data) != len(forward_attrs):
+                        # make sure we only forward the supported attributes to the backend
+                        return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
 
             elif action == 'DeleteQueue':
                 queue_url = _queue_url(path, req_data, headers)
@@ -268,11 +266,12 @@ class ProxyListenerSQS(PersistingProxyListener):
                 sns_listener.unsubscribe_sqs_queue(queue_url)
 
             elif action == 'ListDeadLetterSourceQueues':
+                # TODO remove this function if we stop using ElasticMQ entirely
                 queue_url = _queue_url(path, req_data, headers)
-                headers = {'content-type': 'application/xhtml+xml'}
-                content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
-
-                return requests_response(content_str, headers=headers)
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    headers = {'content-type': 'application/xhtml+xml'}
+                    content_str = _list_dead_letter_source_queues(QUEUE_ATTRIBUTES, queue_url)
+                    return requests_response(content_str, headers=headers)
 
             if 'QueueName' in req_data:
                 encoded_data = urlencode(req_data, doseq=True) if method == 'POST' else ''
@@ -312,7 +311,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             content_str = _add_queue_attributes(path, req_data, content_str, headers)
 
         # patch the response and return the correct endpoint URLs / ARNs
-        if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes'):
+        if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes', 'ListDeadLetterSourceQueues'):
             if config.USE_SSL and '<QueueUrl>http://' in content_str:
                 # return https://... if we're supposed to use SSL
                 content_str = re.sub(r'<QueueUrl>\s*http://', r'<QueueUrl>https://', content_str)
@@ -331,7 +330,8 @@ class ProxyListenerSQS(PersistingProxyListener):
 
             if action == 'CreateQueue':
                 queue_url = re.match(r'.*<QueueUrl>(.*)</QueueUrl>', content_str, re.DOTALL).group(1)
-                _set_queue_attributes(queue_url, req_data)
+                if SQS_BACKEND_IMPL == 'elasticmq':
+                    _set_queue_attributes(queue_url, req_data)
 
         elif action == 'SendMessageBatch':
             if validate_empty_message_batch(data, req_data):

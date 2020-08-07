@@ -10,7 +10,7 @@ from hypercorn.config import Config
 from hypercorn.events import Closed
 from hypercorn.asyncio import serve, tcp_server
 from localstack import config
-from localstack.utils.common import TMP_THREADS, FuncThread, load_file
+from localstack.utils.common import TMP_THREADS, FuncThread, load_file, retry
 from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.async_utils import run_sync, ensure_event_loop
 
@@ -60,7 +60,10 @@ def apply_patches():
         with SSL_LOCK:
             key = '%s%s' % (self.certfile, self.keyfile)
             if key not in SSL_CONTEXTS:
-                SSL_CONTEXTS[key] = create_ssl_context_orig(self, *args, **kwargs)
+                # perform retries to circumvent "ssl.SSLError: [SSL] PEM lib (_ssl.c:4012)"
+                def _do_create():
+                    SSL_CONTEXTS[key] = create_ssl_context_orig(self, *args, **kwargs)
+                retry(_do_create, retries=3, sleep=0.5)
             return SSL_CONTEXTS[key]
 
     create_ssl_context_orig = Config.create_ssl_context

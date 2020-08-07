@@ -60,14 +60,15 @@ def handler(event, context):
         }
 
     if 'Records' not in event:
-        return {
-            'event': event,
-            'context': {
-                'invoked_function_arn': context.invoked_function_arn,
-                'function_version': context.function_version,
-                'function_name': context.function_name
-            }
-        }
+        result_map = {'event': event, 'context': {}}
+        result_map['context']['invoked_function_arn'] = context.invoked_function_arn
+        result_map['context']['function_version'] = context.function_version
+        result_map['context']['function_name'] = context.function_name
+
+        if hasattr(context, 'client_context'):
+            result_map['context']['client_context'] = context.client_context
+
+        return result_map
 
     raw_event_messages = []
     for record in event['Records']:

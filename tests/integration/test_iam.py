@@ -296,3 +296,15 @@ class TestIAMIntegrations(unittest.TestCase):
             if role['RoleName'] in [role_name_1, role_name_2]:
                 self.assertEqual(role['AssumeRolePolicyDocument'], assume_role_policy_doc)
                 self.iam_client.delete_role(RoleName=role['RoleName'])
+
+        self.iam_client.create_role(
+            Path='myPath',
+            RoleName=role_name_2,
+            AssumeRolePolicyDocument=assume_role_policy_doc,
+            Description='string'
+        )
+
+        roles = self.iam_client.list_roles(PathPrefix='my')
+        self.assertEqual(roles['Roles'][0]['Path'], 'myPath')
+        self.assertEqual(roles['Roles'][0]['RoleName'], role_name_2)
+        self.assertEqual(len(roles['Roles']), 1)
