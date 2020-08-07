@@ -2,6 +2,7 @@ import types
 import logging
 import traceback
 from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
+from moto.s3.exceptions import S3ClientError
 from moto.s3.responses import (
     minidom, MalformedXML, undo_clean_key_name
 )
@@ -156,6 +157,32 @@ def apply_patches():
         s3_key_response_delete, s3_responses.S3ResponseInstance)
     action_map = s3_responses.ACTION_MAP
     action_map['KEY']['DELETE']['tagging'] = action_map['KEY']['DELETE'].get('tagging') or 'DeleteObjectTagging'
+
+    # patch _key_response_get(..)
+    # https://github.com/localstack/localstack/issues/2724
+    class InvalidObjectState(S3ClientError):
+        code = 400
+
+        def __init__(self, *args, **kwargs):
+            super(InvalidObjectState, self).__init__(
+                'InvalidObjectState',
+                'The operation is not valid for the object\"s storage class.',
+                *args,
+                **kwargs
+            )
+
+    def s3_key_response_get(self, bucket_name, query, key_name, headers, *args, **kwargs):
+        resp_status, resp_headers, resp_value = s3_key_response_get_orig(
+            bucket_name, query, key_name, headers, *args, **kwargs
+        )
+        if resp_headers.get('x-amz-storage-class') == 'DEEP_ARCHIVE':
+            raise InvalidObjectState()
+
+        return resp_status, resp_headers, resp_value
+
+    s3_key_response_get_orig = s3_responses.S3ResponseInstance._key_response_get
+    s3_responses.S3ResponseInstance._key_response_get = types.MethodType(
+        s3_key_response_get, s3_responses.S3ResponseInstance)
 
     # patch max-keys
     def s3_truncate_result(self, result_keys, max_keys):
