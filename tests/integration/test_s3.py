@@ -1175,15 +1175,13 @@ class S3ListenerTest(unittest.TestCase):
             StorageClass='DEEP_ARCHIVE'
         )
 
-        try:
+        with self.assertRaises(ClientError) as ctx:
             self.s3_client.get_object(
                 Bucket=bucket_name,
                 Key=object_key
             )
-            self.fail('This call should not be successful as the object stored as DEEP_ARCHIVE')
 
-        except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'InvalidObjectState')
+        self.assertIn('InvalidObjectState', str(ctx.exception))
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
