@@ -129,7 +129,6 @@ def load_plugins(scope=None):
         return PLUGINS_LOADED[scope]
 
     t1 = now_utc()
-    setup_logging()
 
     loaded_files = []
     result = []
