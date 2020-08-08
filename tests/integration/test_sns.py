@@ -718,4 +718,7 @@ class SNSTest(unittest.TestCase):
             )
         # Publish a message.
         self.sns_client.publish(Message=message, TopicArn=self.topic_arn)
-        self.assertEqual(len(list_of_contacts), len(sns_listener.SMS_MESSAGES))
+
+        def check_messages():
+            self.assertEqual(len(list_of_contacts), len(sns_listener.SMS_MESSAGES))
+        retry(check_messages, retries=3, sleep=0.5)
