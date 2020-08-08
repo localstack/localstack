@@ -320,6 +320,9 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
 
             return response
 
+        elif integration['type'] == 'MOCK' and method == 'OPTIONS':
+            return get_cors_response(headers)
+
         msg = 'API Gateway AWS integration action URI "%s", method "%s" not yet implemented' % (uri, method)
         LOGGER.warning(msg)
         return make_error_response(msg, 404)
@@ -410,6 +413,9 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         data = apply_template(integration, 'response', data)
 
         return result
+
+    elif integration['type'] == 'MOCK' and method == 'OPTIONS':
+        return get_cors_response(headers)
 
     msg = ('API Gateway integration type "%s", method "%s", URI "%s" not yet implemented' %
            (integration['type'], method, integration.get('uri')))

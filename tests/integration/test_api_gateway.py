@@ -449,6 +449,55 @@ class TestAPIGateway(unittest.TestCase):
         lambda_client.delete_function(FunctionName=lambda_name)
         apigw_client.delete_rest_api(restApiId=api_id)
 
+    def test_mock_method_integration(self):
+        apigw_client = aws_stack.connect_to_service('apigateway')
+
+        # create Lambda function
+        lambda_name = 'apigw-lambda-%s' % short_uid()
+        self.create_lambda_function(lambda_name)
+        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+        target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
+
+        # create REST API
+        api = apigw_client.create_rest_api(name='test-api', description='')
+        api_id = api['id']
+        root_res_id = apigw_client.get_resources(restApiId=api_id)['items'][0]['id']
+        api_resource = apigw_client.create_resource(restApiId=api_id, parentId=root_res_id, pathPart='test')
+
+        result = apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=api_resource['id'],
+            httpMethod='OPTIONS',
+            authorizationType='NONE'
+        )
+
+        rs = apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=api_resource['id'],
+            httpMethod='OPTIONS',
+            integrationHttpMethod='POST',
+            type='MOCK',
+            uri=target_uri
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = apigw_client.get_integration(
+            restApiId=api_id,
+            resourceId=api_resource['id'],
+            httpMethod='OPTIONS'
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['type'], 'MOCK')
+        self.assertEqual(rs['httpMethod'], 'OPTIONS')
+        self.assertEqual(rs['uri'], target_uri)
+
+        # invoke the gateway endpoint
+        url = self.gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path='/test')
+        origin = 'localhost'
+        result = requests.options(url, headers={'origin': origin})
+        self.assertEqual(result.status_code, 200)
+
     def test_api_gateway_handle_domain_name(self):
         domain_name = '%s.example.com' % short_uid()
         apigw_client = aws_stack.connect_to_service('apigateway')
