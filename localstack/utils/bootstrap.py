@@ -191,6 +191,9 @@ def get_main_container_ip():
 
 def setup_logging():
     # determine and set log level
+    if PLUGINS_LOADED.get('_logging_'):
+        return
+    PLUGINS_LOADED['_logging_'] = True
     log_level = logging.DEBUG if is_debug() else logging.INFO
     logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
 
