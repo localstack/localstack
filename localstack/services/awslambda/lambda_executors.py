@@ -117,8 +117,9 @@ class LambdaExecutor(object):
         # setup environment pre-defined variables for docker environment
         result = func_details.envvars.copy()
 
-        # injecting aws credentials into docker environment if not provided 
-        if 'AWS_ACCESS_KEY_ID' not in result.keys() and 'AWS_SECRET_ACCESS_KEY' not in result.keys():
+        # injecting aws credentials into docker environment if not provided
+        if ('AWS_ACCESS_KEY_ID' not in result.keys() and
+                'AWS_SECRET_ACCESS_KEY' not in result.keys()):
             result['AWS_ACCESS_KEY_ID'] = 'foobar'
             result['AWS_SECRET_ACCESS_KEY'] = 'foobar'
 
