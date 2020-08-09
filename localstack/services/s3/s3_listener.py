@@ -799,7 +799,7 @@ def get_key_name(path, headers):
 
 
 def uses_path_addressing(headers):
-    host = headers['host']
+    host = headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1] or headers['host']
     return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL)
 
 
