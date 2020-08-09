@@ -1718,3 +1718,37 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation.delete_stack(StackName='myteststack2')
         cloudformation.delete_stack(StackName='myteststack')
+
+    def test_globalindex_provisioned_throughput_with_dynamodb_table(self):
+        cf_client = aws_stack.connect_to_service('cloudformation')
+        ddb_client = aws_stack.connect_to_service('dynamodb')
+        StackName = 'test_dynamodb'
+
+        response = cf_client.create_stack(
+            StackName=StackName,
+            TemplateBody=TEST_DEPLOY_BODY_3,
+            Parameters=[
+                {
+                    'ParameterKey': 'tableName',
+                    'ParameterValue': 'dynamodb'
+                },
+                {
+                    'ParameterKey': 'env',
+                    'ParameterValue': 'test'
+                }
+            ]
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = ddb_client.describe_table(
+            TableName='dynamodb-test'
+        )
+        globalSecondaryIndex = response['Table']['GlobalSecondaryIndexes']
+        globalSecondaryIndex_provisioned = globalSecondaryIndex[0]['ProvisionedThroughput']
+        test_readCap = globalSecondaryIndex_provisioned['ReadCapacityUnits']
+        test_writeCap = globalSecondaryIndex_provisioned['WriteCapacityUnits']
+
+        def check_messages():
+            isinstance(test_readCap, int)
+            isinstance(test_writeCap, int)
+        retry(check_messages, retries=3, sleep=0.5)
+        cf_client.delete_stack(StackName=StackName)
