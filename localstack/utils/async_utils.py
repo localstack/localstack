@@ -48,7 +48,7 @@ class AsyncThread(FuncThread):
         return thread
 
 
-async def run_sync(func, thread_pool=None, *args):
+async def run_sync(func, *args, thread_pool=None):
     loop = asyncio.get_running_loop()
     thread_pool = thread_pool or THREAD_POOL
     return await loop.run_in_executor(thread_pool, copy_context().run, func, *args)
