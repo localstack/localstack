@@ -760,6 +760,17 @@ def load_file(file_path, default=None, mode=None):
     return result
 
 
+def get_or_create_file(file_path, content=None):
+    if os.path.exists(file_path):
+        return load_file(file_path)
+    content = '{}' if content is None else content
+    try:
+        save_file(file_path, content)
+        return content
+    except Exception:
+        pass
+
+
 def to_str(obj, encoding=DEFAULT_ENCODING, errors='strict'):
     """ If ``obj`` is an instance of ``binary_type``, return
     ``obj.decode(encoding, errors)``, otherwise return ``obj`` """
@@ -770,6 +781,17 @@ def to_bytes(obj, encoding=DEFAULT_ENCODING, errors='strict'):
     """ If ``obj`` is an instance of ``text_type``, return
     ``obj.encode(encoding, errors)``, otherwise return ``obj`` """
     return obj.encode(encoding, errors) if isinstance(obj, six.text_type) else obj
+
+
+def str_insert(string, index, content):
+    """ Insert a substring into an existing string at a certain index. """
+    return '%s%s%s' % (string[:index], content, string[index:])
+
+
+def str_remove(string, index, end_index=None):
+    """ Remove a substring from an existing string at a certain from-to index range. """
+    end_index = end_index or (index + 1)
+    return '%s%s' % (string[:index], string[end_index:])
 
 
 def cleanup(files=True, env=ENV_DEV, quiet=True):

@@ -253,7 +253,9 @@ if is_in_docker and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
     LAMBDA_REMOTE_DOCKER = True
 
 # local config file path in home directory
-CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
+CONFIG_FILE_PATH = os.path.join(TMP_FOLDER, '.localstack')
+if not is_in_docker:
+    CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
 
 # set variables no_proxy, i.e., run internal service calls directly
 no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, '127.0.0.1', '[::1]')))
