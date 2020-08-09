@@ -5,6 +5,7 @@ import time
 import boto3
 import logging
 import six
+import botocore
 from localstack import config
 from localstack.constants import (
     REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
@@ -144,7 +145,10 @@ def get_boto3_credentials():
         return CUSTOM_BOTO3_SESSION.get_credentials()
     if not INITIAL_BOTO3_SESSION:
         INITIAL_BOTO3_SESSION = boto3.session.Session()
-    return INITIAL_BOTO3_SESSION.get_credentials()
+    try:
+        return INITIAL_BOTO3_SESSION.get_credentials()
+    except Exception:
+        return boto3.session.Session().get_credentials()
 
 
 def get_boto3_session():
@@ -217,6 +221,9 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
             if is_local_env(env):
                 endpoint_url = get_local_service_url(service_name)
                 verify = False
+        config = config or botocore.client.Config()
+        # prevent error "Connection pool is full, discarding connection ..."
+        config.max_pool_connections = 150
         BOTO_CLIENTS_CACHE[cache_key] = method(service_name, region_name=region,
             endpoint_url=endpoint_url, verify=verify, config=config)
 
