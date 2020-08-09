@@ -1,9 +1,12 @@
-import time
 import yaml
+import time
+import asyncio
 import datetime
 import unittest
+import concurrent.futures
 from requests.models import Response
 from localstack import config
+from localstack.utils import async_utils
 from localstack.services import infra
 from localstack.utils.aws import aws_stack
 from localstack.utils.bootstrap import PortMappings
@@ -75,6 +78,23 @@ class TestMisc(unittest.TestCase):
     def test_update_config_variable(self):
         infra.update_config_variable('foo', 'bar')
         self.assertEquals(config.foo, 'bar')
+
+    def test_async_parallelization(self):
+        def handler():
+            time.sleep(0.1)
+            results.append(1)
+
+        async def run():
+            await async_utils.run_sync(handler, thread_pool=thread_pool)
+
+        loop = asyncio.get_event_loop()
+        thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=100)
+        results = []
+        num_items = 1000
+        handlers = [run() for i in range(num_items)]
+        loop.run_until_complete(asyncio.gather(*handlers))
+        self.assertEqual(len(results), num_items)
+        thread_pool.shutdown()
 
 
 # This test is not enabled in CI, it is just used for manual
