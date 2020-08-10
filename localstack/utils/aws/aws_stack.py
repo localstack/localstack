@@ -505,6 +505,10 @@ def firehose_name(firehose_arn):
     return firehose_arn.split('/')[-1]
 
 
+def kinesis_stream_name(kinesis_arn):
+    return kinesis_arn.split(':')[-1]
+
+
 def mock_aws_request_headers(service='dynamodb', region_name=None):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == 'kinesis':
