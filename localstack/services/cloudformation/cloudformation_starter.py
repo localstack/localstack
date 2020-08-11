@@ -208,6 +208,22 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
     if res_type == 'AWS::ApiGateway::RestApi':
         props['Name'] = props.get('Name') or resource_name
 
+    if res_type == 'AWS::DynamoDB::Table':
+        if props['ProvisionedThroughput']:
+            throughput = props['ProvisionedThroughput']
+            if isinstance(throughput['ReadCapacityUnits'], str):
+                throughput['ReadCapacityUnits'] = int(throughput['ReadCapacityUnits'])
+            if isinstance(throughput['WriteCapacityUnits'], str):
+                throughput['WriteCapacityUnits'] = int(throughput['WriteCapacityUnits'])
+        if props['GlobalSecondaryIndexes']:
+            for global_secondary_indexe in props['GlobalSecondaryIndexes']:
+                if global_secondary_indexe['ProvisionedThroughput']:
+                    throughput = global_secondary_indexe['ProvisionedThroughput']
+                    if isinstance(throughput['ReadCapacityUnits'], str):
+                        throughput['ReadCapacityUnits'] = int(throughput['ReadCapacityUnits'])
+                    if isinstance(throughput['WriteCapacityUnits'], str):
+                        throughput['WriteCapacityUnits'] = int(throughput['WriteCapacityUnits'])
+
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
     for entry in default_attrs:
