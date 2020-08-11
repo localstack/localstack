@@ -5,8 +5,11 @@ from contextvars import copy_context
 from localstack.utils import common
 from localstack.utils.common import FuncThread, TMP_THREADS
 
-# thread pool executor for running sync functions in async context
-THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=30)
+# Thread pool executor for running sync functions in async context.
+# Note: For certain APIs like DynamoDB, we need 3x threads for each parallel request,
+# as during request processing the API calls out to the DynamoDB API again (recursively).
+# (TODO: This could potentially be improved if we move entirely to asyncio functions.)
+THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=300)
 TMP_THREADS.append(THREAD_POOL)
 
 # reference to named event loop instances
@@ -45,9 +48,10 @@ class AsyncThread(FuncThread):
         return thread
 
 
-async def run_sync(func, *args):
+async def run_sync(func, *args, thread_pool=None):
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(THREAD_POOL, copy_context().run, func, *args)
+    thread_pool = thread_pool or THREAD_POOL
+    return await loop.run_in_executor(thread_pool, copy_context().run, func, *args)
 
 
 def ensure_event_loop():
