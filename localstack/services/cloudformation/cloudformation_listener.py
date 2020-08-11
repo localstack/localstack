@@ -193,7 +193,10 @@ class ProxyListenerCloudFormation(ProxyListener):
                 )
 
             if action == 'DeleteStack':
-                client = aws_stack.connect_to_service('cloudformation')
+                client = aws_stack.connect_to_service(
+                    'cloudformation',
+                    region_name=aws_stack.extract_region_from_auth_header(headers)
+                )
                 stack_resources = client.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
                 template_deployer.delete_stack(stack_name, stack_resources)
 
