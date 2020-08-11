@@ -1723,3 +1723,16 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation.delete_stack(StackName='myteststack2')
         cloudformation.delete_stack(StackName='myteststack')
+
+    def test_delete_stack_across_regions(self):
+        domain_name = 'es-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
+
+        cloudformation.create_stack(
+            StackName='myteststack',
+            TemplateBody=TEST_TEMPLATE_3,
+            Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
+        )
+
+        cloudformation.delete_stack(StackName='myteststack')
