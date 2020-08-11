@@ -667,6 +667,117 @@ Resources:
         ZipFile: 'file.zip'
 """
 
+TEST_DEPLOY_BODY_5 = """
+AWSTemplateFormatVersion: '2010-09-09'
+Description: DynamoDB read write capacity testing
+Parameters:
+  partitionKeyName:
+    Type: String
+    Default: startTime
+  partitionKeyType:
+    Type: String
+    Default: String
+  env:
+    Type: String
+    Default: Staging
+  sortKeyName:
+    Type: String
+    Default: name
+  sortKeyType:
+    Type: String
+    Default: String
+  tableName:
+    Type: String
+    Default: ddb1
+Conditions:
+  ShouldNotCreateEnvResources:
+    Fn::Equals:
+    - Ref: env
+    - NONE
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Fn::If:
+          - ShouldNotCreateEnvResources
+          - Ref: tableName
+          - Fn::Join:
+              - ''
+              - - Ref: tableName
+                - "-"
+                - Ref: env
+      AttributeDefinitions:
+      - AttributeName: name
+        AttributeType: S
+      - AttributeName: startTime
+        AttributeType: S
+      - AttributeName: externalUserID
+        AttributeType: S
+      KeySchema:
+      - AttributeName: name
+        KeyType: HASH
+      - AttributeName: startTime
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: '5'
+        WriteCapacityUnits: '5'
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      GlobalSecondaryIndexes:
+      - IndexName: byUser
+        KeySchema:
+        - AttributeName: externalUserID
+          KeyType: HASH
+        - AttributeName: startTime
+          KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+        ProvisionedThroughput:
+          ReadCapacityUnits: 10
+          WriteCapacityUnits: 10
+      - IndexName: byUser2
+        KeySchema:
+        - AttributeName: externalUserID
+          KeyType: HASH
+        - AttributeName: startTime
+          KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+        ProvisionedThroughput:
+          ReadCapacityUnits: '20'
+          WriteCapacityUnits: '20'
+Outputs:
+  Name:
+    Value:
+      Ref: DynamoDBTable
+  Arn:
+    Value:
+      Fn::GetAtt:
+      - DynamoDBTable
+      - Arn
+  StreamArn:
+    Value:
+      Fn::GetAtt:
+      - DynamoDBTable
+      - StreamArn
+  PartitionKeyName:
+    Value:
+      Ref: partitionKeyName
+  PartitionKeyType:
+    Value:
+      Ref: partitionKeyType
+  SortKeyName:
+    Value:
+      Ref: sortKeyName
+  SortKeyType:
+    Value:
+      Ref: sortKeyType
+  Region:
+    Value:
+      Ref: AWS::Region
+"""
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -1731,7 +1842,7 @@ class CloudFormationTest(unittest.TestCase):
 
         response = cf_client.create_stack(
             StackName=stack_name,
-            TemplateBody=TEST_DEPLOY_BODY_3,
+            TemplateBody=TEST_DEPLOY_BODY_5,
             Parameters=[
                 {
                     'ParameterKey': 'tableName',
@@ -1747,11 +1858,17 @@ class CloudFormationTest(unittest.TestCase):
         response = ddb_client.describe_table(
             TableName='dynamodb-test'
         )
-        global_secondary_index = response['Table']['GlobalSecondaryIndexes']
-        global_secondary_index_provisioned = global_secondary_index[0]['ProvisionedThroughput']
-        test_read_capacity = global_secondary_index_provisioned['ReadCapacityUnits']
-        test_write_capacity = global_secondary_index_provisioned['WriteCapacityUnits']
 
-        isinstance(test_read_capacity, int)
-        isinstance(test_write_capacity, int)
+        if response['Table']['ProvisionedThroughput']:
+            throughput = response['Table']['ProvisionedThroughput']
+            isinstance(throughput['ReadCapacityUnits'], int)
+            isinstance(throughput['WriteCapacityUnits'], int)
+
+        for global_index in response['Table']['GlobalSecondaryIndexes']:
+            index_provisioned = global_index['ProvisionedThroughput']
+            test_read_capacity = index_provisioned['ReadCapacityUnits']
+            test_write_capacity = index_provisioned['WriteCapacityUnits']
+
+            isinstance(test_read_capacity, int)
+            isinstance(test_write_capacity, int)
         cf_client.delete_stack(StackName=stack_name)
