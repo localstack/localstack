@@ -107,3 +107,11 @@ class SecretsManagerTest(unittest.TestCase):
                 SecretId=secret_name,
                 ForceDeleteWithoutRecovery=True
             )
+
+    def test_get_random_exclude_characters_and_symbols(self):
+        random_password = self.secretsmanager_client.get_random_password(
+            PasswordLength=120, ExcludeCharacters='xyzDje@?!.'
+        )
+
+        self.assertEqual(120, len(random_password['RandomPassword']))
+        self.assertTrue(all([c not in 'xyzDje@?!.' for c in random_password['RandomPassword']]))

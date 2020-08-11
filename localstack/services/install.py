@@ -268,6 +268,8 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 
     def download_and_extract():
         if not os.path.exists(tmp_archive):
+            # create temporary placeholder file, to avoid duplicate parallel downloads
+            save_file(tmp_archive, '')
             download(archive_url, tmp_archive)
 
         _, ext = os.path.splitext(tmp_archive)

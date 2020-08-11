@@ -367,6 +367,12 @@ RESOURCE_TO_FUNCTION = {
             'defaults': {
                 'Role': 'test_role'
             }
+        },
+        'delete': {
+            'function': 'delete_function',
+            'parameters': {
+                'FunctionName': 'PhysicalResourceId'
+            }
         }
     },
     'Lambda::Version': {

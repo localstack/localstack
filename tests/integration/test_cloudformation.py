@@ -985,6 +985,11 @@ class CloudFormationTest(unittest.TestCase):
         # delete the stack
         cloudformation.delete_stack(StackName=stack_name)
 
+        rs = lambda_client.list_functions()
+
+        # Back to what we had before
+        self.assertEqual(lambdas_before, len(rs['Functions']))
+
     def test_deploy_stack_change_set(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
         stack_name = 'stack-%s' % short_uid()
