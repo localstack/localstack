@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import unittest
 from localstack.utils.aws import aws_stack
@@ -23,10 +24,14 @@ class TestKinesisServer(unittest.TestCase):
 
         # create consumer and assert 1 consumer
         consumer_name = 'cons1'
-        client.register_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        response = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        self.assertEqual(response['Consumer']['ConsumerName'], consumer_name)
+        # boto3 converts the timestamp to datetime
+        self.assertTrue(isinstance(response['Consumer']['ConsumerCreationTimestamp'], datetime))
         consumers = assert_consumers(1)
         self.assertEqual(consumers[0]['ConsumerName'], consumer_name)
         self.assertIn('/%s' % consumer_name, consumers[0]['ConsumerARN'])
+        self.assertTrue(isinstance(consumers[0]['ConsumerCreationTimestamp'], datetime))
 
         # delete non-existing consumer and assert 1 consumer
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='_invalid_')
