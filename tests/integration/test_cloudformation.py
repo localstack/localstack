@@ -557,8 +557,8 @@ Resources:
       - AttributeName: startTime
         KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+        ReadCapacityUnits: '5'
+        WriteCapacityUnits: '5'
       StreamSpecification:
         StreamViewType: NEW_IMAGE
       GlobalSecondaryIndexes:
@@ -571,8 +571,8 @@ Resources:
         Projection:
           ProjectionType: ALL
         ProvisionedThroughput:
-          ReadCapacityUnits: 5
-          WriteCapacityUnits: 5
+          ReadCapacityUnits: '5'
+          WriteCapacityUnits: '5'
 Outputs:
   Name:
     Value:
@@ -665,117 +665,6 @@ Resources:
       Role: %s
       Code:
         ZipFile: 'file.zip'
-"""
-
-TEST_DEPLOY_BODY_5 = """
-AWSTemplateFormatVersion: '2010-09-09'
-Description: DynamoDB read write capacity testing
-Parameters:
-  partitionKeyName:
-    Type: String
-    Default: startTime
-  partitionKeyType:
-    Type: String
-    Default: String
-  env:
-    Type: String
-    Default: Staging
-  sortKeyName:
-    Type: String
-    Default: name
-  sortKeyType:
-    Type: String
-    Default: String
-  tableName:
-    Type: String
-    Default: ddb1
-Conditions:
-  ShouldNotCreateEnvResources:
-    Fn::Equals:
-    - Ref: env
-    - NONE
-Resources:
-  DynamoDBTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName:
-        Fn::If:
-          - ShouldNotCreateEnvResources
-          - Ref: tableName
-          - Fn::Join:
-              - ''
-              - - Ref: tableName
-                - "-"
-                - Ref: env
-      AttributeDefinitions:
-      - AttributeName: name
-        AttributeType: S
-      - AttributeName: startTime
-        AttributeType: S
-      - AttributeName: externalUserID
-        AttributeType: S
-      KeySchema:
-      - AttributeName: name
-        KeyType: HASH
-      - AttributeName: startTime
-        KeyType: RANGE
-      ProvisionedThroughput:
-        ReadCapacityUnits: '5'
-        WriteCapacityUnits: '5'
-      StreamSpecification:
-        StreamViewType: NEW_IMAGE
-      GlobalSecondaryIndexes:
-      - IndexName: byUser
-        KeySchema:
-        - AttributeName: externalUserID
-          KeyType: HASH
-        - AttributeName: startTime
-          KeyType: RANGE
-        Projection:
-          ProjectionType: ALL
-        ProvisionedThroughput:
-          ReadCapacityUnits: 10
-          WriteCapacityUnits: 10
-      - IndexName: byUser2
-        KeySchema:
-        - AttributeName: externalUserID
-          KeyType: HASH
-        - AttributeName: startTime
-          KeyType: RANGE
-        Projection:
-          ProjectionType: ALL
-        ProvisionedThroughput:
-          ReadCapacityUnits: '20'
-          WriteCapacityUnits: '20'
-Outputs:
-  Name:
-    Value:
-      Ref: DynamoDBTable
-  Arn:
-    Value:
-      Fn::GetAtt:
-      - DynamoDBTable
-      - Arn
-  StreamArn:
-    Value:
-      Fn::GetAtt:
-      - DynamoDBTable
-      - StreamArn
-  PartitionKeyName:
-    Value:
-      Ref: partitionKeyName
-  PartitionKeyType:
-    Value:
-      Ref: partitionKeyType
-  SortKeyName:
-    Value:
-      Ref: sortKeyName
-  SortKeyType:
-    Value:
-      Ref: sortKeyType
-  Region:
-    Value:
-      Ref: AWS::Region
 """
 
 
@@ -1842,7 +1731,7 @@ class CloudFormationTest(unittest.TestCase):
 
         response = cf_client.create_stack(
             StackName=stack_name,
-            TemplateBody=TEST_DEPLOY_BODY_5,
+            TemplateBody=TEST_DEPLOY_BODY_3,
             Parameters=[
                 {
                     'ParameterKey': 'tableName',
