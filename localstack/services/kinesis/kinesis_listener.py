@@ -2,7 +2,7 @@ import json
 import random
 from requests.models import Response
 from localstack import config
-from localstack.utils.common import to_str, json_safe, clone, timestamp_millis
+from localstack.utils.common import to_str, json_safe, clone, timestamp_millis, now_utc
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -31,7 +31,7 @@ class ProxyListenerKinesis(ProxyListener):
             consumer = clone(data)
             consumer['ConsumerStatus'] = 'ACTIVE'
             consumer['ConsumerARN'] = '%s/consumer/%s' % (data['StreamARN'], data['ConsumerName'])
-            consumer['ConsumerCreationTimestamp'] = timestamp_millis()
+            consumer['ConsumerCreationTimestamp'] = float(now_utc())
             consumer = json_safe(consumer)
             STREAM_CONSUMERS.append(consumer)
             return {'Consumer': consumer}
@@ -52,10 +52,11 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == '%s.DescribeStreamConsumer' % ACTION_PREFIX:
             consumer_arn = data.get('ConsumerARN') or data['ConsumerName']
             consumer_name = data.get('ConsumerName') or data['ConsumerARN']
+            creation_timestamp = data.get('ConsumerCreationTimestamp')
             result = {
                 'ConsumerDescription': {
                     'ConsumerARN': consumer_arn,
-                    # 'ConsumerCreationTimestamp': number,
+                    'ConsumerCreationTimestamp': creation_timestamp,
                     'ConsumerName': consumer_name,
                     'ConsumerStatus': 'ACTIVE',
                     'StreamARN': data.get('StreamARN')
