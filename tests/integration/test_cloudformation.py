@@ -1763,14 +1763,14 @@ class CloudFormationTest(unittest.TestCase):
 
         if response['Table']['ProvisionedThroughput']:
             throughput = response['Table']['ProvisionedThroughput']
-            isinstance(throughput['ReadCapacityUnits'], int)
-            isinstance(throughput['WriteCapacityUnits'], int)
+            self.assertTrue(isinstance(throughput['ReadCapacityUnits'], int))
+            self.assertTrue(isinstance(throughput['WriteCapacityUnits'], int))
 
         for global_index in response['Table']['GlobalSecondaryIndexes']:
             index_provisioned = global_index['ProvisionedThroughput']
             test_read_capacity = index_provisioned['ReadCapacityUnits']
             test_write_capacity = index_provisioned['WriteCapacityUnits']
 
-            isinstance(test_read_capacity, int)
-            isinstance(test_write_capacity, int)
+            self.assertTrue(isinstance(test_read_capacity, int))
+            self.assertTrue(isinstance(test_write_capacity, int))
         cf_client.delete_stack(StackName=stack_name)
