@@ -506,7 +506,7 @@ def firehose_name(firehose_arn):
 
 
 def kinesis_stream_name(kinesis_arn):
-    return kinesis_arn.split(':')[-1]
+    return kinesis_arn.split(':stream/')[-1]
 
 
 def mock_aws_request_headers(service='dynamodb', region_name=None):
