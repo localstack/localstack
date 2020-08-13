@@ -1724,6 +1724,19 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.delete_stack(StackName='myteststack2')
         cloudformation.delete_stack(StackName='myteststack')
 
+    def test_delete_stack_across_regions(self):
+        domain_name = 'es-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
+
+        cloudformation.create_stack(
+            StackName='myteststack',
+            TemplateBody=TEST_TEMPLATE_3,
+            Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
+        )
+
+        cloudformation.delete_stack(StackName='myteststack')
+
     def test_globalindex_read_write_provisioned_throughput_dynamodb_table(self):
         cf_client = aws_stack.connect_to_service('cloudformation')
         ddb_client = aws_stack.connect_to_service('dynamodb')
@@ -1761,16 +1774,3 @@ class CloudFormationTest(unittest.TestCase):
             isinstance(test_read_capacity, int)
             isinstance(test_write_capacity, int)
         cf_client.delete_stack(StackName=stack_name)
-
-    def test_delete_stack_across_regions(self):
-        domain_name = 'es-%s' % short_uid()
-
-        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
-
-        cloudformation.create_stack(
-            StackName='myteststack',
-            TemplateBody=TEST_TEMPLATE_3,
-            Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
-        )
-
-        cloudformation.delete_stack(StackName='myteststack')
