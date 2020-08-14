@@ -198,3 +198,23 @@ class TestEc2Integrations(unittest.TestCase):
         # clean up
         ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
         ec2.delete_vpc(VpcId=vpc_id)
+
+    def test_terminate_instances(self):
+        ec2 = self.ec2_client
+        kwargs = {
+            'MinCount': 1,
+            'MaxCount': 1,
+            'ImageId': 'ami-d3adb33f',
+            'KeyName': 'the_key',
+            'InstanceType': 't1.micro',
+            'BlockDeviceMappings': [{'DeviceName': '/dev/sda2', 'Ebs': {'VolumeSize': 50}}],
+        }
+
+        resp1 = ec2.run_instances(**kwargs)
+
+        instances = []
+        for instance in resp1['Instances']:
+            instances.append(instance.get('InstanceId'))
+
+        resp = ec2.terminate_instances(InstanceIds=instances)
+        self.assertEqual(instances[0], resp['TerminatingInstances'][0]['InstanceId'])
