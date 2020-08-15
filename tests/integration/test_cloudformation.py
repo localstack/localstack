@@ -557,8 +557,8 @@ Resources:
       - AttributeName: startTime
         KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+        ReadCapacityUnits: '5'
+        WriteCapacityUnits: '5'
       StreamSpecification:
         StreamViewType: NEW_IMAGE
       GlobalSecondaryIndexes:
@@ -571,8 +571,8 @@ Resources:
         Projection:
           ProjectionType: ALL
         ProvisionedThroughput:
-          ReadCapacityUnits: 5
-          WriteCapacityUnits: 5
+          ReadCapacityUnits: '5'
+          WriteCapacityUnits: '5'
 Outputs:
   Name:
     Value:
@@ -1793,8 +1793,8 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation.delete_stack(StackName='myteststack')
 
-    def test_cft_with_on_deman_dynamodb_resource(self):
-        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
+    def test_cft_with_on_demand_dynamodb_resource(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
 
         response = cloudformation.create_stack(
             StackName='myteststack',
@@ -1804,3 +1804,41 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         cloudformation.delete_stack(StackName='myteststack')
+
+    def test_globalindex_read_write_provisioned_throughput_dynamodb_table(self):
+        cf_client = aws_stack.connect_to_service('cloudformation')
+        ddb_client = aws_stack.connect_to_service('dynamodb')
+        stack_name = 'test_dynamodb'
+
+        response = cf_client.create_stack(
+            StackName=stack_name,
+            TemplateBody=TEST_DEPLOY_BODY_3,
+            Parameters=[
+                {
+                    'ParameterKey': 'tableName',
+                    'ParameterValue': 'dynamodb'
+                },
+                {
+                    'ParameterKey': 'env',
+                    'ParameterValue': 'test'
+                }
+            ]
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = ddb_client.describe_table(
+            TableName='dynamodb-test'
+        )
+
+        if response['Table']['ProvisionedThroughput']:
+            throughput = response['Table']['ProvisionedThroughput']
+            self.assertTrue(isinstance(throughput['ReadCapacityUnits'], int))
+            self.assertTrue(isinstance(throughput['WriteCapacityUnits'], int))
+
+        for global_index in response['Table']['GlobalSecondaryIndexes']:
+            index_provisioned = global_index['ProvisionedThroughput']
+            test_read_capacity = index_provisioned['ReadCapacityUnits']
+            test_write_capacity = index_provisioned['WriteCapacityUnits']
+
+            self.assertTrue(isinstance(test_read_capacity, int))
+            self.assertTrue(isinstance(test_write_capacity, int))
+        cf_client.delete_stack(StackName=stack_name)
