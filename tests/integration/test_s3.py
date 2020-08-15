@@ -1186,6 +1186,16 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_encoding_notification_messages(self):
+        queue_url, queue_attributes = self._create_test_queue()
+        self._create_test_notification_bucket(queue_attributes)
+
+        # put an object where the bucket_name is in the path
+        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key='a@b', Body='something')
+
+        response = self.sqs_client.receive_message(QueueUrl=queue_url)
+        self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], 'a%40b')
+
     # ---------------
     # HELPER METHODS
     # ---------------
