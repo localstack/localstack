@@ -723,6 +723,33 @@ TEST_TEMPLATE_21 = {
     }
 }
 
+TEST_TEMPLATE_22 = """
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM template with a simple API definition
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+  Lambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /
+            Method: get
+            RestApiId:
+              Ref: Api
+      Runtime: python3.7
+      Handler: index.handler
+      InlineCode: |
+        def handler(event, context):
+            return {'body': 'Hello World!', 'statusCode': 200}
+"""
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -1759,6 +1786,38 @@ class CloudFormationTest(unittest.TestCase):
         # clean up
         cloudformation.delete_stack(StackName=stack_name)
         iam.delete_role(RoleName=role_name)
+
+    def test_cfn_handle_serverless_api_resource(self):
+        stack_name = 'stack-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        rs = cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=TEST_TEMPLATE_22,
+        )
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+
+        res = cloudformation.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
+        rest_api_ids = [r['PhysicalResourceId'] for r in res if r['ResourceType'] == 'AWS::ApiGateway::RestApi']
+        lambda_func_names = [r['PhysicalResourceId'] for r in res if r['ResourceType'] == 'AWS::Lambda::Function']
+
+        self.assertEqual(len(rest_api_ids), 1)
+        self.assertEqual(len(lambda_func_names), 1)
+
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        rs = apigw_client.get_resources(
+            restApiId=rest_api_ids[0]
+        )
+        self.assertEqual(len(rs['items']), 1)
+        resource = rs['items'][0]
+
+        uri = resource['resourceMethods']['GET']['methodIntegration']['uri']
+        lambda_arn = aws_stack.lambda_function_arn(lambda_func_names[0])
+        self.assertIn(lambda_arn, uri)
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
 
     def test_delete_stack(self):
         domain_name = 'es-%s' % short_uid()
