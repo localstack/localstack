@@ -4,8 +4,8 @@ MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 
 # install some common libs
-RUN apk add --no-cache autoconf automake build-base ca-certificates curl cyrus-sasl-dev g++ gcc git \
-        groff iputils libffi-dev libtool linux-headers make openssl openssl-dev postgresql-dev \
+RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates curl cyrus-sasl-dev g++ gcc \
+        git groff iputils libffi-dev libtool linux-headers make openssl openssl-dev postgresql-dev \
         py3-pip python3 python3-dev tar xz zip && \
     update-ca-certificates
 
@@ -90,7 +90,8 @@ ADD requirements.txt .
 RUN (pip install --upgrade pip) && \
     (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
     (virtualenv .testvenv && source .testvenv/bin/activate && \
-        pip install -q 'localstack-ext[full]' && pip install -q -r requirements.txt && rm -rf .testvenv) || exit 1
+        pip install Cython && export CPATH=/usr/include/python3.8 && \
+        pip install -q -r requirements.txt && rm -rf .testvenv) || exit 1
 
 # add files required to run "make install-web"
 ADD Makefile .
@@ -105,5 +106,5 @@ RUN (virtualenv .venv && source .venv/bin/activate && pip install cryptography)
 # clean up (layers are later squashed into a single one)
 RUN rm -rf localstack/infra/elasticsearch/jdk/
 RUN rm -rf /root/.npm; \
-  apk del --purge autoconf automake build-base g++ gcc giflib krb5-conf krb5-libs libc-dev \
+  apk del --purge autoconf automake boost-dev build-base g++ gcc giflib krb5-conf krb5-libs libc-dev \
   libffi-dev libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev

@@ -516,6 +516,19 @@ def apply_patches():
     ddb_table_get_cfn_attribute_orig = dynamodb_models.Table.get_cfn_attribute
     dynamodb_models.Table.get_cfn_attribute = DynamoDB_Table_get_cfn_attribute
 
+    # patch missing ":stream/" in Kinesis ARN
+
+    @property
+    def kinesis_arn(self, *args, **kwargs):
+        result = self._arn_orig
+        if ':stream/' not in result:
+            parts = result.split(':')
+            result = ':'.join(parts[:-1] + ['stream/%s' % parts[-1]])
+        return result
+
+    kinesis_models.Stream._arn_orig = kinesis_models.Stream.arn
+    kinesis_models.Stream.arn = kinesis_arn
+
     # Patch generate_stack_id(..) method in moto
     def generate_stack_id(stack_name, region=None, **kwargs):
         region = region or aws_stack.get_region()

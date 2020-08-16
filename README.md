@@ -73,6 +73,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **EMR**
 * **Glacier** / **S3 Select**
 * **IoT**
+* **Kinesis Data Analytics**
 * **Lambda Layers**
 * **MediaStore**
 * **QLDB**

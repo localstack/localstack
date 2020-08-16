@@ -256,6 +256,8 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
     # construct stream info
     env = aws_stack.get_environment(env)
     props_file = os.path.join(tempfile.gettempdir(), 'kclipy.%s.properties' % short_uid())
+    # make sure to convert stream ARN to stream name
+    stream_name = aws_stack.kinesis_stream_name(stream_name)
     app_name = '%s%s' % (stream_name, ddb_lease_table_suffix)
     stream_info = {
         'name': stream_name,
@@ -287,6 +289,8 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
         endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}, region_name=None,
         kcl_log_level=DEFAULT_KCL_LOG_LEVEL, log_subscribers=[]):
     env = aws_stack.get_environment(env)
+    # make sure to convert stream ARN to stream name
+    stream_name = aws_stack.kinesis_stream_name(stream_name)
     # decide which credentials provider to use
     credentialsProvider = None
     if (('AWS_ASSUME_ROLE_ARN' in os.environ or 'AWS_ASSUME_ROLE_ARN' in env_vars) and

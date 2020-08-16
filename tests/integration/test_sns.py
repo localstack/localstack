@@ -701,3 +701,24 @@ class SNSTest(unittest.TestCase):
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
         queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
         return queue_name, queue_arn, queue_url
+
+    def test_publish_sms_endpoint(self):
+        list_of_contacts = [
+            '+10123456789',
+            '+10000000000',
+            '+19876543210'
+        ]
+        message = 'Good news everyone!'
+        # Add SMS Subscribers
+        for number in list_of_contacts:
+            self.sns_client.subscribe(
+                TopicArn=self.topic_arn,
+                Protocol='sms',
+                Endpoint=number
+            )
+        # Publish a message.
+        self.sns_client.publish(Message=message, TopicArn=self.topic_arn)
+
+        def check_messages():
+            self.assertEqual(len(list_of_contacts), len(sns_listener.SMS_MESSAGES))
+        retry(check_messages, retries=3, sleep=0.5)

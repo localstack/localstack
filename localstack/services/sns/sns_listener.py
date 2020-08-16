@@ -35,6 +35,9 @@ SNS_TAGS = {}
 # cache of platform endpoint messages (used primarily for testing)
 PLATFORM_ENDPOINT_MESSAGES = {}
 
+# maps phone numbers to list of sent messages
+SMS_MESSAGES = []
+
 
 class ProxyListenerSNS(PersistingProxyListener):
     def api_name(self):
@@ -273,8 +276,16 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
         if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
             LOG.info('SNS filter policy %s does not match attributes %s' % (filter_policy, message_attributes))
             continue
+        if subscriber['Protocol'] == 'sms':
+            event = {
+                'topic_arn': topic_arn,
+                'endpoint': subscriber['Endpoint'],
+                'message_content': req_data['Message'][0]
+            }
+            SMS_MESSAGES.append(event)
+            LOG.info('Delivering SMS message to %s: %s', subscriber['Endpoint'], req_data['Message'][0])
 
-        if subscriber['Protocol'] == 'sqs':
+        elif subscriber['Protocol'] == 'sqs':
             queue_url = None
             try:
                 endpoint = subscriber['Endpoint']

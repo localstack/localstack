@@ -7,6 +7,7 @@ import logging
 import threading
 import subprocess
 import six
+import base64
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
@@ -111,6 +112,18 @@ class LambdaExecutor(object):
     def __init__(self):
         # keeps track of each function arn and the last time it was invoked
         self.function_invoke_times = {}
+
+    def _prepare_environment(self, func_details):
+        # setup environment pre-defined variables for docker environment
+        result = func_details.envvars.copy()
+
+        # injecting aws credentials into docker environment if not provided
+        if ('AWS_ACCESS_KEY_ID' not in result.keys() and
+                'AWS_SECRET_ACCESS_KEY' not in result.keys()):
+            result['AWS_ACCESS_KEY_ID'] = 'foobar'
+            result['AWS_SECRET_ACCESS_KEY'] = 'foobar'
+
+        return result
 
     def execute(self, func_arn, func_details, event, context=None, version=None,
             asynchronous=False, callback=None):
@@ -224,7 +237,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
         handler = func_details.handler
-        environment = func_details.envvars.copy()
+        environment = self._prepare_environment(func_details)
 
         # configure USE_SSL in environment
         if config.USE_SSL:
@@ -249,9 +262,9 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
-
             if hasattr(context, 'client_context'):
-                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(context.client_context)
+                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(base64.b64decode(
+                    bytes(context.client_context, encoding='utf8'))))
 
         # custom command to execute in the container
         command = ''
@@ -678,7 +691,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
 class LambdaExecutorLocal(LambdaExecutor):
     def _execute(self, func_arn, func_details, event, context=None, version=None):
         lambda_cwd = func_details.cwd
-        environment = func_details.envvars.copy()
+        environment = self._prepare_environment(func_details)
 
         # execute the Lambda function in a forked sub-process, sync result via queue
         queue = Queue()
