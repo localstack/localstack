@@ -1113,14 +1113,6 @@ def delete_resource(resource_id, resources, stack_name):
     return execute_resource_action(resource_id, resources, stack_name, ACTION_DELETE)
 
 
-def update_dynamodb_index_resource(resource):
-    if resource.get('Properties').get('BillingMode') == 'PAY_PER_REQUEST':
-        for index_iterator in range(0, len(resource.get('Properties').get('GlobalSecondaryIndexes'))):
-            if not resource['Properties']['GlobalSecondaryIndexes'][index_iterator].get('ProvisionedThroughput'):
-                resource['Properties']['GlobalSecondaryIndexes'][index_iterator]['ProvisionedThroughput'] = \
-                    {'ReadCapacityUnits': 99, 'WriteCapacityUnits': 99}
-
-
 def execute_resource_action(resource_id, resources, stack_name, action_name):
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
@@ -1128,9 +1120,6 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
     if not func_details or action_name not in func_details:
         LOG.warning('Action "%s" for resource type %s not yet implemented' % (action_name, resource_type))
         return
-
-    if resource.get('Type') == 'AWS::DynamoDB::Table':
-        update_dynamodb_index_resource(resource)
 
     LOG.debug('Running action "%s" for resource type "%s" id "%s"' % (action_name, resource_type, resource_id))
     func_details = func_details[action_name]

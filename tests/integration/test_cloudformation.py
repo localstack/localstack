@@ -1798,7 +1798,7 @@ class CloudFormationTest(unittest.TestCase):
 
         response = cloudformation.create_stack(
             StackName='myteststack',
-            TemplateBody=TEST_TEMPLATE_3)
+            TemplateBody=json.dumps(TEST_TEMPLATE_21))
 
         self.assertIn('StackId', response)
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
