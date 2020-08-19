@@ -512,9 +512,9 @@ def convert_to_chunked_encoding(method, path, response):
 
 def ret304_on_etag(data, headers, response):
     cond = headers.get('If-None-Match') or headers.get('if-none-match')
-    if cond != None and cond == response.headers.get('ETag'):
-       response.status_code = 304
-       response._content = ''
+    if cond is not None and cond == response.headers.get('ETag'):
+        response.status_code = 304
+        response._content = ''
 
 
 def fix_etag_for_multipart(data, headers, response):
