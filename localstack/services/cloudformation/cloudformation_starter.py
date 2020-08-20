@@ -446,13 +446,9 @@ def apply_patches():
                     if not method:
                         child.add_method(method_type, None, None)
 
+                    path_int = res_method_path[key]['x-amazon-apigateway-integration']
                     child.add_integration(
-                        method_type,
-                        res_method_path[key]['x-amazon-apigateway-integration']['type'],
-                        res_method_path[key]['x-amazon-apigateway-integration']['uri'],
-                        None,
-                        res_method_path[key]['x-amazon-apigateway-integration']['httpMethod']
-                    )
+                        method_type, path_int['type'], path_int['uri'], None, path_int['httpMethod'])
 
                 api.resources.pop(child.id)
                 child.id = res['id']
