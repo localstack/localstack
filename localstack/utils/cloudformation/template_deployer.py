@@ -220,6 +220,28 @@ def param_defaults(param_func, defaults):
     return replace
 
 
+def get_ddb_provisioned_throughput(params, **kwargs):
+    args = params.get('ProvisionedThroughput')
+    if args:
+        if isinstance(args['ReadCapacityUnits'], str):
+            args['ReadCapacityUnits'] = int(args['ReadCapacityUnits'])
+        if isinstance(args['WriteCapacityUnits'], str):
+            args['WriteCapacityUnits'] = int(args['WriteCapacityUnits'])
+    return args
+
+
+def get_ddb_global_sec_indexes(params, **kwargs):
+    args = params.get('GlobalSecondaryIndexes')
+    if args:
+        for index in args:
+            provisoned_throughput = index['ProvisionedThroughput']
+            if isinstance(provisoned_throughput['ReadCapacityUnits'], str):
+                provisoned_throughput['ReadCapacityUnits'] = int(provisoned_throughput['ReadCapacityUnits'])
+            if isinstance(provisoned_throughput['WriteCapacityUnits'], str):
+                provisoned_throughput['WriteCapacityUnits'] = int(provisoned_throughput['WriteCapacityUnits'])
+    return args
+
+
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -406,9 +428,9 @@ RESOURCE_TO_FUNCTION = {
                 'TableName': 'TableName',
                 'AttributeDefinitions': 'AttributeDefinitions',
                 'KeySchema': 'KeySchema',
-                'ProvisionedThroughput': 'ProvisionedThroughput',
+                'ProvisionedThroughput': get_ddb_provisioned_throughput,
                 'LocalSecondaryIndexes': 'LocalSecondaryIndexes',
-                'GlobalSecondaryIndexes': 'GlobalSecondaryIndexes',
+                'GlobalSecondaryIndexes': get_ddb_global_sec_indexes,
                 'StreamSpecification': lambda params, **kwargs: (
                     common.merge_dicts(params.get('StreamSpecification'), {'StreamEnabled': True}, default=None))
             },
@@ -470,6 +492,12 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'name': 'Name',
                 'description': 'Description'
+            }
+        },
+        'delete': {
+            'function': 'delete_rest_api',
+            'parameters': {
+                'restApiId': 'PhysicalResourceId',
             }
         }
     },

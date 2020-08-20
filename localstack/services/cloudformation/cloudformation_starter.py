@@ -178,6 +178,9 @@ def update_physical_resource_id(resource):
         elif isinstance(resource, dynamodb2_models.Table):
             resource.physical_resource_id = resource.name
 
+        elif isinstance(resource, apigw_models.RestAPI):
+            resource.physical_resource_id = resource.id
+
         else:
             LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
@@ -391,8 +394,10 @@ def apply_patches():
             LOG.debug('Updating resource id: %s - %s, %s - %s' % (existing_id, new_res_id, resource, resource_json))
             if new_res_id:
                 LOG.info('Updating resource ID from %s to %s (%s)' % (existing_id, new_res_id, region_name))
-                update_resource_id(resource, new_res_id, props,
-                    region_name, stack_name, resources_map._resource_json_map)
+                update_resource_id(
+                    resource, new_res_id, props, region_name, stack_name, resources_map._resource_json_map,
+                    resource_json.get('Properties')
+                )
             else:
                 LOG.warning('Unable to extract id for resource %s: %s' % (logical_id, result))
 
@@ -401,7 +406,7 @@ def apply_patches():
 
         return resource
 
-    def update_resource_id(resource, new_id, props, region_name, stack_name, resource_map):
+    def update_resource_id(resource, new_id, props, region_name, stack_name, resource_map, resource_props={}):
         """ Update and fix the ID(s) of the given resource. """
 
         # NOTE: this is a bit of a hack, which is required because
@@ -417,35 +422,56 @@ def apply_patches():
 
         backend = apigw_models.apigateway_backends[region_name]
         if isinstance(resource, apigw_models.RestAPI):
-            backend.apis.pop(resource.id, None)
-            backend.apis[new_id] = resource
+            api = resource
+            backend.apis.pop(api.id, None)
+            api.id = new_id
+            backend.apis[new_id] = api
             # We also need to fetch the resources to replace the root resource
             # that moto automatically adds to newly created RestAPI objects
             client = aws_stack.connect_to_service('apigateway')
             resources = client.get_resources(restApiId=new_id, limit=500)['items']
             # make sure no resources have been added in addition to the root /
-            assert len(resource.resources) == 1
-            resource.resources = {}
+            assert len(api.resources) == 1
+            api.resources = {}
             for res in resources:
                 res_path_part = res.get('pathPart') or res.get('path')
-                child = resource.add_child(res_path_part, res.get('parentId'))
-                resource.resources.pop(child.id)
+                res_method_path = resource_props.get('Body', {}).get('paths', {}).get(res_path_part)
+                if not res_method_path:
+                    continue
+
+                child = api.add_child(res_path_part, res.get('parentId'))
+                for key in res_method_path:
+                    method_type = key.upper()
+                    method = child.resource_methods.get(method_type)
+                    if not method:
+                        child.add_method(method_type, None, None)
+
+                    path_int = res_method_path[key]['x-amazon-apigateway-integration']
+                    child.add_integration(
+                        method_type, path_int['type'], path_int['uri'], None, path_int['httpMethod'])
+
+                api.resources.pop(child.id)
                 child.id = res['id']
                 child.api_id = new_id
-                resource.resources[child.id] = child
-            resource.id = new_id
+                api.resources[child.id] = child
+
         elif isinstance(resource, apigw_models.Resource):
             api_id = props['RestApiId']
             api_id = template_deployer.resolve_refs_recursively(stack_name, api_id, resource_map)
             backend.apis[api_id].resources.pop(resource.id, None)
             backend.apis[api_id].resources[new_id] = resource
             resource.id = new_id
+
         elif isinstance(resource, apigw_models.Deployment):
             api_id = props['RestApiId']
             api_id = template_deployer.resolve_refs_recursively(stack_name, api_id, resource_map)
+            if not api_id:
+                api_id = resource_props['RestApiId']
+
             backend.apis[api_id].deployments.pop(resource['id'], None)
             backend.apis[api_id].deployments[new_id] = resource
             resource['id'] = new_id
+
         else:
             LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
 
