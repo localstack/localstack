@@ -493,6 +493,12 @@ RESOURCE_TO_FUNCTION = {
                 'name': 'Name',
                 'description': 'Description'
             }
+        },
+        'delete': {
+            'function': 'delete_rest_api',
+            'parameters': {
+                'restApiId': 'PhysicalResourceId',
+            }
         }
     },
     'ApiGateway::Resource': {
@@ -603,6 +609,7 @@ RESOURCE_TO_FUNCTION = {
         }
     }
 }
+
 
 # ----------------
 # UTILITY METHODS
