@@ -435,7 +435,10 @@ def apply_patches():
             api.resources = {}
             for res in resources:
                 res_path_part = res.get('pathPart') or res.get('path')
-                res_method_path = resource_props['Body']['paths'].get(res_path_part)
+                res_method_path = resource_props.get('Body', {}).get('paths', {}).get(res_path_part)
+                if not res_method_path:
+                    continue
+
                 child = api.add_child(res_path_part, res.get('parentId'))
                 for key in res_method_path:
                     method_type = key.upper()
