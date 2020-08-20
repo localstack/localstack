@@ -190,6 +190,13 @@ def update_resource_name(resource, resource_json):
         props['StateMachineName'] = resource.name
 
 
+def update_dynamodb_index_resource(resource):
+    if resource.get('Properties').get('BillingMode') == 'PAY_PER_REQUEST':
+        for glob_index in resource.get('Properties', {}).get('GlobalSecondaryIndexes', []):
+            if not glob_index.get('ProvisionedThroughput'):
+                glob_index['ProvisionedThroughput'] = {'ReadCapacityUnits': 99, 'WriteCapacityUnits': 99}
+
+
 def add_default_resource_props(resource_props, stack_name, resource_name=None):
     """ Apply some fixes to resource props which otherwise cause deployments to fail """
 
@@ -207,6 +214,9 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
 
     if res_type == 'AWS::ApiGateway::RestApi':
         props['Name'] = props.get('Name') or resource_name
+
+    if res_type == 'AWS::DynamoDB::Table':
+        update_dynamodb_index_resource(resource_props)
 
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))

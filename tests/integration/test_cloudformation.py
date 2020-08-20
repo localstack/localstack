@@ -667,6 +667,62 @@ Resources:
         ZipFile: 'file.zip'
 """
 
+TEST_TEMPLATE_21 = {
+    'AWSTemplateFormatVersion': '2010-09-09',
+    'Transform': 'AWS::Serverless-2016-10-31',
+    'Resources': {
+        'DynamoOnDemand': {
+            'Type': 'AWS::DynamoDB::Table',
+            'Properties': {
+                'TableName': 'ondemandtable',
+                'AttributeDefinitions': [
+                    {
+                        'AttributeName': 'foo',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'bar',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'baz',
+                        'AttributeType': 'S'
+                    }
+                ],
+                'KeySchema': [
+                    {
+                        'AttributeName': 'foo',
+                        'KeyType': 'HASH'
+                    },
+                    {
+                        'AttributeName': 'bar',
+                        'KeyType': 'RANGE'
+                    }
+                ],
+                'GlobalSecondaryIndexes': [
+                    {
+                        'IndexName': 'by.baz',
+                        'KeySchema': [
+                            {
+                                'AttributeName': 'foo',
+                                'KeyType': 'HASH'
+                            },
+                            {
+                                'AttributeName': 'baz',
+                                'KeyType': 'RANGE'
+                            }
+                        ],
+                        'Projection': {
+                            'ProjectionType': 'ALL'
+                        },
+                    }
+                ],
+                'BillingMode': 'PAY_PER_REQUEST'
+            }
+        }
+    }
+}
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -1734,5 +1790,17 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=TEST_TEMPLATE_3,
             Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
         )
+
+        cloudformation.delete_stack(StackName='myteststack')
+
+    def test_cft_with_on_deman_dynamodb_resource(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
+
+        response = cloudformation.create_stack(
+            StackName='myteststack',
+            TemplateBody=json.dumps(TEST_TEMPLATE_21))
+
+        self.assertIn('StackId', response)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         cloudformation.delete_stack(StackName='myteststack')
