@@ -510,11 +510,21 @@ def convert_to_chunked_encoding(method, path, response):
     response.headers.pop('Content-Length', None)
 
 
+def unquote(s):
+    if s[0] == '"' and s[-1] == '"':
+        s = s[1:-1]
+    if s[0] == "'" and s[-1] == "'":
+        s = s[1:-1]
+    return s
+
+
 def ret304_on_etag(data, headers, response):
-    cond = headers.get('If-None-Match') or headers.get('if-none-match')
-    if cond is not None and cond == response.headers.get('ETag'):
-        response.status_code = 304
-        response._content = ''
+    etag = response.headers.get('ETag')
+    if etag:
+        match = headers.get('If-None-Match') or headers.get('if-none-match')
+        if match and unquote(match) == unquote(etag):
+            response.status_code = 304
+            response._content = ''
 
 
 def fix_etag_for_multipart(data, headers, response):
