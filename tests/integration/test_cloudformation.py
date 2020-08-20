@@ -557,8 +557,8 @@ Resources:
       - AttributeName: startTime
         KeyType: RANGE
       ProvisionedThroughput:
-        ReadCapacityUnits: '5'
-        WriteCapacityUnits: '5'
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
       StreamSpecification:
         StreamViewType: NEW_IMAGE
       GlobalSecondaryIndexes:
@@ -571,8 +571,8 @@ Resources:
         Projection:
           ProjectionType: ALL
         ProvisionedThroughput:
-          ReadCapacityUnits: '5'
-          WriteCapacityUnits: '5'
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
 Outputs:
   Name:
     Value:
@@ -666,6 +666,62 @@ Resources:
       Code:
         ZipFile: 'file.zip'
 """
+
+TEST_TEMPLATE_21 = {
+    'AWSTemplateFormatVersion': '2010-09-09',
+    'Transform': 'AWS::Serverless-2016-10-31',
+    'Resources': {
+        'DynamoOnDemand': {
+            'Type': 'AWS::DynamoDB::Table',
+            'Properties': {
+                'TableName': 'ondemandtable',
+                'AttributeDefinitions': [
+                    {
+                        'AttributeName': 'foo',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'bar',
+                        'AttributeType': 'S'
+                    },
+                    {
+                        'AttributeName': 'baz',
+                        'AttributeType': 'S'
+                    }
+                ],
+                'KeySchema': [
+                    {
+                        'AttributeName': 'foo',
+                        'KeyType': 'HASH'
+                    },
+                    {
+                        'AttributeName': 'bar',
+                        'KeyType': 'RANGE'
+                    }
+                ],
+                'GlobalSecondaryIndexes': [
+                    {
+                        'IndexName': 'by.baz',
+                        'KeySchema': [
+                            {
+                                'AttributeName': 'foo',
+                                'KeyType': 'HASH'
+                            },
+                            {
+                                'AttributeName': 'baz',
+                                'KeyType': 'RANGE'
+                            }
+                        ],
+                        'Projection': {
+                            'ProjectionType': 'ALL'
+                        },
+                    }
+                ],
+                'BillingMode': 'PAY_PER_REQUEST'
+            }
+        }
+    }
+}
 
 
 def bucket_exists(name):
@@ -1737,40 +1793,14 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation.delete_stack(StackName='myteststack')
 
-    def test_globalindex_read_write_provisioned_throughput_dynamodb_table(self):
-        cf_client = aws_stack.connect_to_service('cloudformation')
-        ddb_client = aws_stack.connect_to_service('dynamodb')
-        stack_name = 'test_dynamodb'
+    def test_cft_with_on_deman_dynamodb_resource(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
 
-        response = cf_client.create_stack(
-            StackName=stack_name,
-            TemplateBody=TEST_DEPLOY_BODY_3,
-            Parameters=[
-                {
-                    'ParameterKey': 'tableName',
-                    'ParameterValue': 'dynamodb'
-                },
-                {
-                    'ParameterKey': 'env',
-                    'ParameterValue': 'test'
-                }
-            ]
-        )
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
-        response = ddb_client.describe_table(
-            TableName='dynamodb-test'
-        )
+        response = cloudformation.create_stack(
+            StackName='myteststack',
+            TemplateBody=json.dumps(TEST_TEMPLATE_21))
 
-        if response['Table']['ProvisionedThroughput']:
-            throughput = response['Table']['ProvisionedThroughput']
-            self.assertTrue(isinstance(throughput['ReadCapacityUnits'], int))
-            self.assertTrue(isinstance(throughput['WriteCapacityUnits'], int))
+        self.assertIn('StackId', response)
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
-        for global_index in response['Table']['GlobalSecondaryIndexes']:
-            index_provisioned = global_index['ProvisionedThroughput']
-            test_read_capacity = index_provisioned['ReadCapacityUnits']
-            test_write_capacity = index_provisioned['WriteCapacityUnits']
-
-            self.assertTrue(isinstance(test_read_capacity, int))
-            self.assertTrue(isinstance(test_write_capacity, int))
-        cf_client.delete_stack(StackName=stack_name)
+        cloudformation.delete_stack(StackName='myteststack')
