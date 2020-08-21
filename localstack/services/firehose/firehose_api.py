@@ -85,8 +85,12 @@ def put_records(stream_name, records):
             bucket = bucket_name(s3_dest['BucketARN'])
             prefix = s3_dest.get('Prefix', '')
             s3 = get_s3_client()
-            for record in records:
+            uuids = []
 
+            for record in records:
+                uuids.append(str(uuid.uuid4()))
+            uuids.sort()
+            for (uuid_suffix, record) in zip(uuids, records):
                 # DirectPut
                 if 'Data' in record:
                     data = base64.b64decode(record['Data'])
@@ -94,7 +98,7 @@ def put_records(stream_name, records):
                 elif 'data' in record:
                     data = base64.b64decode(record['data'])
 
-                obj_path = get_s3_object_path(stream_name, prefix)
+                obj_path = get_s3_object_path(stream_name, prefix, uuid_suffix)
                 try:
                     s3.Object(bucket, obj_path).put(Body=data)
                 except Exception as e:
@@ -102,13 +106,13 @@ def put_records(stream_name, records):
                     raise e
 
 
-def get_s3_object_path(stream_name, prefix):
+def get_s3_object_path(stream_name, prefix, uuid_suffix):
     # See https://aws.amazon.com/kinesis/data-firehose/faqs/#Data_delivery
     # Path prefix pattern: myApp/YYYY/MM/DD/HH/
     # Object name pattern: DeliveryStreamName-DeliveryStreamVersion-YYYY-MM-DD-HH-MM-SS-RandomString
     prefix = '%s%s' % (prefix, '' if prefix.endswith('/') else '/')
     pattern = '{pre}%Y/%m/%d/%H/{name}-%Y-%m-%d-%H-%M-%S-{rand}'
-    path = pattern.format(pre=prefix, name=stream_name, rand=str(uuid.uuid4()))
+    path = pattern.format(pre=prefix, name=stream_name, rand=uuid_suffix)
     path = timestamp(format=path)
     return path
 
