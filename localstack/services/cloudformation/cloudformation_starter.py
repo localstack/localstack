@@ -27,7 +27,7 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
-    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port)
+    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port, Mock)
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names
@@ -725,7 +725,22 @@ def apply_patches():
     @classmethod
     def Lambda_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         resource_name = cloudformation_json.get('Properties', {}).get('FunctionName') or resource_name
-        return Lambda_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+
+        def _from_env(*args, **kwargs):
+            result = Mock()
+            result.api = Mock()
+            result.api.get_adapter = (lambda *args, **kwargs: None)
+            return result
+        # Temporarily set a mock client, to prevent moto from talking to the Docker daemon
+        import docker
+        _from_env_orig = docker.from_env
+        docker.from_env = _from_env
+
+        try:
+            result = Lambda_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+        finally:
+            docker.from_env = _from_env_orig
+        return result
 
     Lambda_create_from_cloudformation_json_orig = lambda_models.LambdaFunction.create_from_cloudformation_json
     lambda_models.LambdaFunction.create_from_cloudformation_json = Lambda_create_from_cloudformation_json
