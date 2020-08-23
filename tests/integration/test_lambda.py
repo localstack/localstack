@@ -434,10 +434,11 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         )
 
         sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({'foo': 'bar'}))
-        events = get_lambda_log_events(function_name)
+        events = retry(get_lambda_log_events, sleep_before=3, function_name=function_name)
 
         # lambda was invoked 1 time
-        self.assertEqual(len(events[1]['Records']), 1)
+        self.assertEqual(len(events[0]['Records']), 1)
+
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url_1)
         lambda_client.delete_function(FunctionName=function_name)

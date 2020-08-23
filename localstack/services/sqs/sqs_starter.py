@@ -43,16 +43,6 @@ def start_sqs(*args, **kwargs):
     return start_sqs_elasticmq(*args, **kwargs)
 
 
-def trigger_event_source_lambda_if_exists(queue_arn, body):
-    lambda_client = aws_stack.connect_to_service('lambda')
-    result = lambda_client.list_event_source_mappings(EventSourceArn=queue_arn)
-    if len(result.get('EventSourceMappings')) > 0:
-        for event_source_mapping in result.get('EventSourceMappings'):
-            function_arn = event_source_mapping.get('FunctionArn')
-            function_name = aws_stack.lambda_function_name(function_arn)
-            lambda_client.invoke(FunctionName=function_name, Payload=body)
-
-
 def patch_moto():
     # patch add_message to disable event source mappings in moto
 
@@ -63,7 +53,6 @@ def patch_moto():
             self.lambda_event_source_mappings = {}
             return add_message_orig(self, *args, **kwargs)
         finally:
-            trigger_event_source_lambda_if_exists(self.queue_arn, args[0]._body)
             self.lambda_event_source_mappings = mappings
 
     add_message_orig = Queue.add_message
