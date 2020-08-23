@@ -234,7 +234,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         self.assertEqual(item['attr2'], 'value2')
         attributes = [{'AttributeName': 'id', 'AttributeType': STRING}]
 
-        userIdIdx = [
+        user_id_idx = [
             {'Create': {
                 'IndexName': 'id-index',
                 'KeySchema': [{
@@ -254,7 +254,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         ]
 
         # for each index
-        table.update(AttributeDefinitions=attributes, GlobalSecondaryIndexUpdates=userIdIdx)
+        table.update(AttributeDefinitions=attributes, GlobalSecondaryIndexUpdates=user_id_idx)
 
         with self.assertRaises(Exception) as ctx:
             table.query(
