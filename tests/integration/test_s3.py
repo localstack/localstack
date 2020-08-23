@@ -1187,7 +1187,9 @@ class S3ListenerTest(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     def test_encoding_notification_messages(self):
-        queue_url, queue_attributes = self._create_test_queue()
+        queue_url = self.sqs_client.create_queue(QueueName='testQueue')['QueueUrl']
+        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+
         self._create_test_notification_bucket(queue_attributes)
 
         # put an object where the bucket_name is in the path
