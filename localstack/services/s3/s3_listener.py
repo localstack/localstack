@@ -519,7 +519,7 @@ def unquote(s):
 def ret304_on_etag(data, headers, response):
     etag = response.headers.get('ETag')
     if etag:
-        match = headers.get('If-None-Match') or headers.get('if-none-match')
+        match = headers.get('If-None-Match')
         if match and unquote(match) == unquote(etag):
             response.status_code = 304
             response._content = ''
