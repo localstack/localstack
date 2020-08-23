@@ -511,10 +511,8 @@ def convert_to_chunked_encoding(method, path, response):
 
 
 def unquote(s):
-    if s[0] == '"' and s[-1] == '"':
-        s = s[1:-1]
-    if s[0] == "'" and s[-1] == "'":
-        s = s[1:-1]
+    if (s[0], s[-1]) in (('"', '"'), ("'", "'")):
+        return s[1:-1]
     return s
 
 
