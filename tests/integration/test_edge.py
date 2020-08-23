@@ -68,6 +68,11 @@ class TestEdgeAPI(unittest.TestCase):
         result = requests.post(bucket_url, data='key=%s&file=file_content_123' % object_name,
             headers=headers, verify=False)
         self.assertEqual(result.status_code, 204)
+
+        bucket_url = '%s/example' % (bucket_url)
+        result = requests.put(bucket_url, data='hello', verify=False)
+        self.assertEqual(result.status_code, 200)
+
         result = io.BytesIO()
         client.download_fileobj(bucket_name, object_name, result)
         self.assertEqual('file_content_123', to_str(result.getvalue()))
