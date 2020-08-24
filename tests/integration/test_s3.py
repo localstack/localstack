@@ -34,6 +34,17 @@ TEST_GET_OBJECT_RANGE = 17
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_triggered_by_s3.py')
 
+BATCH_DELETE_BODY = """
+<Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Object>
+    <Key>%s</Key>
+  </Object>
+  <Object>
+    <Key>%s</Key>
+  </Object>
+</Delete>
+"""
+
 
 class PutRequest(Request):
     """ Class to handle putting with urllib """
@@ -1185,6 +1196,33 @@ class S3ListenerTest(unittest.TestCase):
 
         # clean up
         self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_batch_delete_objects_using_requests(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        object_key_1 = 'key-%s' % short_uid()
+        object_key_2 = 'key-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key_1, Body='This body document')
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key_2, Body='This body document')
+
+        base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_S3)
+        url = '{}/{}?delete='.format(base_url, bucket_name)
+        r = requests.post(
+            url=url,
+            data=BATCH_DELETE_BODY % (object_key_1, object_key_2)
+        )
+
+        self.assertEqual(r.status_code, 200)
+
+        s3_resource = aws_stack.connect_to_resource('s3')
+        bucket = s3_resource.Bucket(bucket_name)
+
+        total_keys = sum(1 for _ in bucket.objects.all())
+        self.assertEqual(total_keys, 0)
+
+        # clean up
+        self._delete_bucket(bucket_name, [])
 
     # ---------------
     # HELPER METHODS
