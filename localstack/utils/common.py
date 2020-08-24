@@ -71,6 +71,11 @@ CACHE = {}
 SSL_CERT_LOCK = threading.RLock()
 
 
+class Mock(object):
+    """ Dummy class that can be used for mocking custom attributes. """
+    pass
+
+
 class CustomEncoder(json.JSONEncoder):
     """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
 
@@ -81,7 +86,7 @@ class CustomEncoder(json.JSONEncoder):
             else:
                 return int(o)
         if isinstance(o, (datetime, date)):
-            return str(o)
+            return timestamp_millis(o)
         if isinstance(o, six.binary_type):
             return to_str(o)
         try:
