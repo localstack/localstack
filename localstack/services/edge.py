@@ -61,6 +61,7 @@ class ProxyListenerEdge(ProxyListener):
 
         connect_host = '%s:%s' % (config.HOSTNAME, port)
         url = '%s://%s%s' % (get_service_protocol(), connect_host, path)
+
         headers['Host'] = host
         function = getattr(requests, method.lower())
         if isinstance(data, dict):
@@ -175,6 +176,10 @@ def get_port_from_custom_rules(method, path, data, headers):
         if method == 'POST' and is_s3_form_data(data_bytes):
             # assume that this is an S3 POST request with form parameters or multipart form in the body
             return config.PORT_S3
+
+    if stripped.count('/') == 1 and method == 'PUT':
+        # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
+        return config.PORT_S3
 
     # detect S3 requests sent from aws-cli using --no-sign-request option
     if 'aws-cli/' in headers.get('User-Agent', ''):
