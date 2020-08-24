@@ -86,7 +86,7 @@ class CustomEncoder(json.JSONEncoder):
             else:
                 return int(o)
         if isinstance(o, (datetime, date)):
-            return str(o)
+            return timestamp_millis(o)
         if isinstance(o, six.binary_type):
             return to_str(o)
         try:
