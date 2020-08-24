@@ -500,6 +500,17 @@ def fix_creation_date(method, path, response):
         r'\1Z</CreationDate>', to_str(response._content))
 
 
+def fix_delimiter(data, headers, response):
+    if response.status_code == 200 and response._content:
+        c, xml_prefix, delimiter = response._content, '<?xml', '<Delimiter><'
+        pattern = '[<]Delimiter[>]None[<]'
+        if isinstance(c, bytes):
+            xml_prefix, delimiter = xml_prefix.encode(), delimiter.encode()
+            pattern = pattern.encode()
+        if c.startswith(xml_prefix):
+            response._content = re.compile(pattern).sub(delimiter, c)
+
+
 def convert_to_chunked_encoding(method, path, response):
     if method != 'GET' or path != '/':
         return
@@ -1199,6 +1210,7 @@ class ProxyListenerS3(PersistingProxyListener):
             fix_creation_date(method, path, response=response)
             fix_etag_for_multipart(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
+            fix_delimiter(data, headers, response)
 
             if method == 'PUT':
                 set_object_expiry(path, headers)
