@@ -521,6 +521,21 @@ def convert_to_chunked_encoding(method, path, response):
     response.headers.pop('Content-Length', None)
 
 
+def unquote(s):
+    if (s[0], s[-1]) in (('"', '"'), ("'", "'")):
+        return s[1:-1]
+    return s
+
+
+def ret304_on_etag(data, headers, response):
+    etag = response.headers.get('ETag')
+    if etag:
+        match = headers.get('If-None-Match')
+        if match and unquote(match) == unquote(etag):
+            response.status_code = 304
+            response._content = ''
+
+
 def fix_etag_for_multipart(data, headers, response):
     # Fix for https://github.com/localstack/localstack/issues/1978
     if headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD:
@@ -1209,6 +1224,7 @@ class ProxyListenerS3(PersistingProxyListener):
             fix_metadata_key_underscores(response=response)
             fix_creation_date(method, path, response=response)
             fix_etag_for_multipart(data, headers, response)
+            ret304_on_etag(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
             fix_delimiter(data, headers, response)
 
