@@ -70,47 +70,51 @@ def apply_patches():
         if self.method in ['GET', 'DELETE']:
             return apigateway_responses_restapis_individual_orig(self, request, full_url, headers)
 
-        body = json.loads(self.body)
-        if not body['paths']:
-            return 400, {}, ''
+        # handle import rest_api via swagger file
+        if self.method == 'PUT':
+            body = json.loads(self.body)
+            if not body['paths']:
+                return 400, {}, ''
 
-        rest_api = self.backend.get_rest_api(function_id)
-        # Remove default root
-        rest_api.resources = {}
-        for path in body['paths']:
-            child_id = create_id()
-            child = Resource(
-                id=child_id,
-                region_name=rest_api.region_name,
-                api_id=rest_api.id,
-                path_part=path,
-                parent_id='',
-            )
-            for m, payload in body['paths'][path].items():
-                m = m.upper()
-                payload = payload['x-amazon-apigateway-integration']
-
-                child.add_method(
-                    m, None, None
+            rest_api = self.backend.get_rest_api(function_id)
+            # Remove default root
+            rest_api.resources = {}
+            for path in body['paths']:
+                child_id = create_id()
+                child = Resource(
+                    id=child_id,
+                    region_name=rest_api.region_name,
+                    api_id=rest_api.id,
+                    path_part=path,
+                    parent_id='',
                 )
-                integration = Integration(
-                    http_method=m,
-                    uri=None,
-                    integration_type=payload['type'],
-                    pass_through_behavior=payload['passthroughBehavior'],
-                    request_templates=payload['requestTemplates']
-                )
-                integration.create_integration_response(
-                    status_code=payload['responses']['default']['statusCode'],
-                    selection_pattern=None,
-                    response_templates=None,
-                    content_handling=None
-                )
-                child.resource_methods[m]['methodIntegration'] = integration
+                for m, payload in body['paths'][path].items():
+                    m = m.upper()
+                    payload = payload['x-amazon-apigateway-integration']
 
-            rest_api.resources[child_id] = child
+                    child.add_method(
+                        m, None, None
+                    )
+                    integration = Integration(
+                        http_method=m,
+                        uri=None,
+                        integration_type=payload['type'],
+                        pass_through_behavior=payload['passthroughBehavior'],
+                        request_templates=payload['requestTemplates']
+                    )
+                    integration.create_integration_response(
+                        status_code=payload['responses']['default']['statusCode'],
+                        selection_pattern=None,
+                        response_templates=None,
+                        content_handling=None
+                    )
+                    child.resource_methods[m]['methodIntegration'] = integration
 
-        return 200, {}, ''
+                rest_api.resources[child_id] = child
+
+            return 200, {}, ''
+
+        return 400, {}, ''
 
     apigateway_responses.restapis_individual = apigateway_responses_restapis_individual
 

@@ -778,11 +778,12 @@ class TestAPIGateway(unittest.TestCase):
         client = aws_stack.connect_to_service('apigateway')
         rest_api_id = client.create_rest_api(name=rest_api_name)['id']
 
-        rs = client.put_rest_api(
-            restApiId=rest_api_id,
-            body=open(TEST_SWAGGER_FILE).read()
-        )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        with open(TEST_SWAGGER_FILE) as f:
+            rs = client.put_rest_api(
+                restApiId=rest_api_id,
+                body=f.read()
+            )
+            self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         rs = client.get_resources(
             restApiId=rest_api_id,
