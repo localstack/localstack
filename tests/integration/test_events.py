@@ -62,7 +62,7 @@ class EventsTest(unittest.TestCase):
 
     def test_events_written_to_disk_are_timestamp_prefixed_for_chronological_ordering(self):
         event_type = str(uuid.uuid4())
-        event_details_to_publish = list(map(lambda n: '"event %s"' % n, range(10)))
+        event_details_to_publish = list(map(lambda n: 'event %s' % n, range(10)))
 
         for detail in event_details_to_publish:
             self.events_client.put_events(Entries=[{
