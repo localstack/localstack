@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import os
 import re
 import json
 import base64
@@ -19,6 +19,10 @@ from localstack.services.awslambda.lambda_api import add_event_source
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
+
+
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, 'files', 'swagger.json')
 
 
 class TestAPIGateway(unittest.TestCase):
@@ -658,7 +662,6 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(result['items'][0]['description'], description)
 
     def test_get_model_by_name(self):
-
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
         rest_api_id = response['id']
@@ -688,7 +691,6 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(e.response['Error']['Message'], 'Invalid Rest API Id specified')
 
     def test_get_model_with_invalid_name(self):
-
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
         rest_api_id = response['id']
@@ -702,7 +704,6 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
-
         api_id = self.create_api_gateway_and_deploy({})
         url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
         response = requests.put(
@@ -771,9 +772,35 @@ class TestAPIGateway(unittest.TestCase):
         # when the api key is passed as part of the header
         self.assertEqual(response.status_code, 200)
 
+    def test_import_rest_api(self):
+        rest_api_name = 'restapi-%s' % short_uid()
+
+        client = aws_stack.connect_to_service('apigateway')
+        rest_api_id = client.create_rest_api(name=rest_api_name)['id']
+
+        with open(TEST_SWAGGER_FILE) as f:
+            rs = client.put_rest_api(
+                restApiId=rest_api_id,
+                body=f.read()
+            )
+            self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = client.get_resources(
+            restApiId=rest_api_id,
+        )
+        self.assertEqual(len(rs['items']), 1)
+
+        resource = rs['items'][0]
+        self.assertEqual(resource['path'], '/test')
+        self.assertIn('GET', resource['resourceMethods'])
+
+        # clean up
+        client.delete_rest_api(
+            restApiId=rest_api_id
+        )
+
     @staticmethod
     def start_http_backend(test_port):
-
         # test listener for target HTTP backend
         class TestListener(ProxyListener):
             def forward_request(self, **kwargs):
