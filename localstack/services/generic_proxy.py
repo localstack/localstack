@@ -294,8 +294,10 @@ def append_cors_headers(response=None):
         headers['Access-Control-Allow-Headers'] = ','.join([h for h in requested_headers if h])
     if 'Access-Control-Expose-Headers' not in headers:
         headers['Access-Control-Expose-Headers'] = ','.join(CORS_EXPOSE_HEADERS)
+        
 
 CUT_TRAILING_SLASH = re.compile(b'(QueueUrl=[^&]+)%2[Ff](&|$)')
+
 
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
         listeners=None, request_handler=None, client_address=None, server_address=None):
