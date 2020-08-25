@@ -69,7 +69,7 @@ class EventsTest(unittest.TestCase):
                 'Source': 'unittest',
                 'Resources': [],
                 'DetailType': event_type,
-                'Detail': detail
+                'Detail': json.dumps(detail)
             }])
 
         sorted_events_written_to_disk = map(
@@ -79,7 +79,8 @@ class EventsTest(unittest.TestCase):
         sorted_events = list(filter(lambda event: event['DetailType'] == event_type,
                                     sorted_events_written_to_disk))
 
-        self.assertListEqual(event_details_to_publish, list(map(lambda event: event['Detail'], sorted_events)))
+        self.assertListEqual(event_details_to_publish,
+                             list(map(lambda event: json.loads(event['Detail']), sorted_events)))
 
     def test_list_tags_for_resource(self):
         rule_name = 'rule-{}'.format(short_uid())
@@ -148,7 +149,7 @@ class EventsTest(unittest.TestCase):
                 'EventBusName': TEST_EVENT_BUS_NAME,
                 'Source': TEST_EVENT_PATTERN['Source'],
                 'DetailType': TEST_EVENT_PATTERN['DetailType'],
-                'Detail': TEST_EVENT_PATTERN['Detail']
+                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'])
             }]
         )
 
@@ -223,7 +224,7 @@ class EventsTest(unittest.TestCase):
                 'EventBusName': TEST_EVENT_BUS_NAME,
                 'Source': TEST_EVENT_PATTERN['Source'],
                 'DetailType': TEST_EVENT_PATTERN['DetailType'],
-                'Detail': TEST_EVENT_PATTERN['Detail']
+                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'])
             }]
         )
 
@@ -425,7 +426,7 @@ class EventsTest(unittest.TestCase):
                 'EventBusName': TEST_EVENT_BUS_NAME,
                 'Source': TEST_EVENT_PATTERN['Source'],
                 'DetailType': TEST_EVENT_PATTERN['DetailType'],
-                'Detail': TEST_EVENT_PATTERN['Detail']
+                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'])
             }]
         )
 
