@@ -14,6 +14,11 @@ source <(
 cat /dev/null > /tmp/localstack_infra.log
 cat /dev/null > /tmp/localstack_infra.err
 
+if [[ -x "$LOCALSTACK_PATCH_SCRIPT" && -f "$LOCALSTACK_PATCH_SCRIPT" ]] ; then
+    echo "Run patch script [$LOCALSTACK_PATCH_SCRIPT]"
+    $LOCALSTACK_PATCH_SCRIPT
+fi
+
 supervisord -c /etc/supervisord.conf &
 
 function run_startup_scripts {
