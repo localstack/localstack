@@ -295,11 +295,19 @@ def append_cors_headers(response=None):
     if 'Access-Control-Expose-Headers' not in headers:
         headers['Access-Control-Expose-Headers'] = ','.join(CORS_EXPOSE_HEADERS)
 
+CUT_TRAILING_SLASH = re.compile(b'(QueueUrl=[^&]+)%2[Ff](&|$)')
 
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
         listeners=None, request_handler=None, client_address=None, server_address=None):
     listeners = GenericProxyHandler.DEFAULT_LISTENERS + (listeners or [])
     listeners = [lis for lis in listeners if lis]
+
+    if data_bytes:
+        data_bytes = CUT_TRAILING_SLASH.sub(b'\\1\\2', data_bytes)
+
+    if path and path != '/' and path[-1] == '/':
+        path = path[0:-1]
+
     data = data_bytes
 
     def is_full_url(url):
