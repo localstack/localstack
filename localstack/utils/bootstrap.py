@@ -13,6 +13,7 @@ import six
 import shutil
 import pip as pip_mod
 from datetime import datetime
+from concurrent.futures._base import Future
 from localstack import constants, config
 
 # set up logger
@@ -510,12 +511,16 @@ class FuncThread(threading.Thread):
         self.quiet = quiet
 
     def run(self):
+        self.result_future = Future()
+        result = None
         try:
-            self.func(self.params)
-        except Exception:
+            result = self.func(self.params)
+        except Exception as e:
             if not self.quiet:
-                LOG.warning('Thread run method %s(%s) failed: %s' %
-                    (self.func, self.params, traceback.format_exc()))
+                LOG.warning('Thread run method %s(%s) failed: %s %s' %
+                    (self.func, self.params, e, traceback.format_exc()))
+        finally:
+            self.result_future.set_result(result)
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:

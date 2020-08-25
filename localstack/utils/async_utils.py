@@ -3,17 +3,45 @@ import asyncio
 import concurrent.futures
 from contextvars import copy_context
 from localstack.utils import common
-from localstack.utils.common import FuncThread, TMP_THREADS
+from localstack.utils.common import FuncThread, TMP_THREADS, start_worker_thread
+
+# reference to named event loop instances
+EVENT_LOOPS = {}
+
+
+class AdaptiveThreadPool(concurrent.futures.ThreadPoolExecutor):
+    """ Thread pool executor that maintains a maximum of 'core_size' reusable threads in
+        the core pool, and creates new thread instances as needed (if the core pool is full). """
+
+    DEFAULT_CORE_POOL_SIZE = 30
+
+    def __init__(self, core_size=None):
+        self.core_size = core_size or self.DEFAULT_CORE_POOL_SIZE
+        super(AdaptiveThreadPool, self).__init__(max_workers=self.core_size)
+
+    def submit(self, fn, *args, **kwargs):
+        # if idle threads are available, don't spin new threads
+        if self.has_idle_threads():
+            return super(AdaptiveThreadPool, self).submit(fn, *args, **kwargs)
+
+        def _run(*tmpargs):
+            return fn(*args, **kwargs)
+        thread = start_worker_thread(_run)
+        return thread.result_future
+
+    def has_idle_threads(self):
+        if hasattr(self, '_idle_semaphore'):
+            return self._idle_semaphore.acquire(timeout=0)
+        num_threads = len(self._threads)
+        return num_threads < self._max_workers
+
 
 # Thread pool executor for running sync functions in async context.
 # Note: For certain APIs like DynamoDB, we need 3x threads for each parallel request,
 # as during request processing the API calls out to the DynamoDB API again (recursively).
 # (TODO: This could potentially be improved if we move entirely to asyncio functions.)
-THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=300)
+THREAD_POOL = AdaptiveThreadPool()
 TMP_THREADS.append(THREAD_POOL)
-
-# reference to named event loop instances
-EVENT_LOOPS = {}
 
 
 class AsyncThread(FuncThread):

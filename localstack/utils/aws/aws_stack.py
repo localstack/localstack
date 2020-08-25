@@ -286,6 +286,13 @@ def get_s3_client():
         verify=False)
 
 
+def inject_test_credentials_into_env(env):
+    env = env or {}
+    if ENV_ACCESS_KEY not in env and ENV_SECRET_KEY not in env:
+        env[ENV_ACCESS_KEY] = 'test'
+        env[ENV_SECRET_KEY] = 'test'
+
+
 def sqs_queue_url_for_arn(queue_arn):
     if '://' in queue_arn:
         return queue_arn
