@@ -509,9 +509,9 @@ class FuncThread(threading.Thread):
         self.params = params
         self.func = func
         self.quiet = quiet
+        self.result_future = Future()
 
     def run(self):
-        self.result_future = Future()
         result = None
         try:
             result = self.func(self.params)

@@ -310,7 +310,8 @@ class CaptureOutput(object):
 # UTILITY METHODS
 # ----------------
 
-def start_thread(method, *args, _shutdown_hook=True, **kwargs):
+def start_thread(method, *args, **kwargs):
+    _shutdown_hook = kwargs.pop('_shutdown_hook', True)
     thread = FuncThread(method, *args, **kwargs)
     thread.start()
     if _shutdown_hook:
