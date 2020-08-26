@@ -18,7 +18,7 @@ from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
-    to_str, run, cp_r, json_safe, get_free_tcp_port)
+    to_str, run, cp_r, json_safe, get_free_tcp_port, is_port_open, retry)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
@@ -645,10 +645,16 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
         if network == 'host':
-            port = str(self.next_port + self.port_offset)
-            env_vars['DOCKER_LAMBDA_API_PORT'] = port
-            env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
-            self.next_port = (self.next_port + 1) % self.max_port
+            def set_docker_lambda_api_runtime_port():
+                port = str(self.next_port + self.port_offset)
+                self.next_port = (self.next_port + 1) % self.max_port
+                if not is_port_open(int(port)):
+                    env_vars['DOCKER_LAMBDA_API_PORT'] = port
+                    env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
+                else:
+                    raise Exception()
+
+            retry(set_docker_lambda_api_runtime_port, sleep=10, retries=10)
 
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
         debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
