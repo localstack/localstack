@@ -242,6 +242,23 @@ def get_ddb_global_sec_indexes(params, **kwargs):
     return args
 
 
+def get_apigw_resource_params(params, **kwargs):
+    result = {
+        'restApiId': params.get('RestApiId'),
+        'pathPart': params.get('PathPart'),
+        'parentId': params.get('ParentId')
+    }
+    if not result.get('parentId'):
+        # get root resource id
+        apigw = aws_stack.connect_to_service('apigateway')
+        resources = apigw.get_resources(restApiId=result['restApiId'])['items']
+        root_resource = ([r for r in resources if r['path'] == '/'] or [None])[0]
+        if not root_resource:
+            raise Exception('Unable to find root resource for REST API %s' % result['restApiId'])
+        result['parentId'] = root_resource['id']
+    return result
+
+
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
     'S3::Bucket': {
@@ -504,11 +521,7 @@ RESOURCE_TO_FUNCTION = {
     'ApiGateway::Resource': {
         'create': {
             'function': 'create_resource',
-            'parameters': {
-                'restApiId': 'RestApiId',
-                'pathPart': 'PathPart',
-                'parentId': 'ParentId'
-            }
+            'parameters': get_apigw_resource_params
         }
     },
     'ApiGateway::Method': {
@@ -782,7 +795,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         elif resource_type == 'ApiGateway::Resource':
             api_id = resource_props['RestApiId'] if resource else resource_id
             api_id = resolve_refs_recursively(stack_name, api_id, resources)
-            parent_id = resolve_refs_recursively(stack_name, resource_props['ParentId'], resources)
+            parent_id = resolve_refs_recursively(stack_name, resource_props.get('ParentId'), resources)
             if not api_id or not parent_id:
                 return None
             api_resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=api_id)['items']
