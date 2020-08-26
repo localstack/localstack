@@ -15,6 +15,7 @@ except ImportError:
     from pipes import quote as cmd_quote  # for Python 2.7
 from localstack import config
 from localstack.utils import bootstrap
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
@@ -118,10 +119,7 @@ class LambdaExecutor(object):
         result = func_details.envvars.copy()
 
         # injecting aws credentials into docker environment if not provided
-        if ('AWS_ACCESS_KEY_ID' not in result.keys() and
-                'AWS_SECRET_ACCESS_KEY' not in result.keys()):
-            result['AWS_ACCESS_KEY_ID'] = 'foobar'
-            result['AWS_SECRET_ACCESS_KEY'] = 'foobar'
+        aws_stack.inject_test_credentials_into_env(result)
 
         return result
 
