@@ -672,6 +672,11 @@ class TestPythonRuntimes(LambdaTestBase):
             lambda_api.DO_USE_DOCKER = original_do_use_docker
 
     def test_lambda_subscribe_sns_topic(self):
+        def check_expected_lambda_log_events_length(expected_length, function_name):
+            events = get_lambda_log_events(function_name)
+            self.assertEqual(len(events), expected_length)
+            return events
+
         function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
 
         testutil.create_lambda_function(handler_file=TEST_LAMBDA_ECHO_FILE,
@@ -694,8 +699,8 @@ class TestPythonRuntimes(LambdaTestBase):
             Message=message
         )
 
-        events = get_lambda_log_events(function_name)
-        self.assertEqual(len(events), 1)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=function_name, expected_length=1)
         notification = events[0]['Records'][0]['Sns']
 
         self.assertIn('Subject', notification)

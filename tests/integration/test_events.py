@@ -183,6 +183,11 @@ class EventsTest(unittest.TestCase):
         )
 
     def test_put_events_with_target_lambda(self):
+        def check_expected_lambda_log_events_length(function_name, expected_length):
+            events = get_lambda_log_events(function_name)
+            self.assertEqual(len(events), expected_length)
+            return events
+
         rule_name = 'rule-{}'.format(short_uid())
         function_name = 'lambda-func-{}'.format(short_uid())
         target_id = 'target-{}'.format(short_uid())
@@ -229,8 +234,8 @@ class EventsTest(unittest.TestCase):
         )
 
         # Get lambda's log events
-        events = get_lambda_log_events(function_name)
-        self.assertEqual(len(events), 1)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=function_name, expected_length=1)
         actual_event = events[0]
         self.assertIsValidEvent(actual_event)
         self.assertDictEqual(json.loads(actual_event['detail']), json.loads(TEST_EVENT_PATTERN['Detail']))

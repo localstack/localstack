@@ -524,6 +524,11 @@ class SNSTest(unittest.TestCase):
         self.assertEqual(topic_arn_params[5], TEST_TOPIC_NAME)
 
     def test_publish_message_by_target_arn(self):
+        def check_expected_lambda_log_events_length(expected_length, function_name):
+            events = get_lambda_log_events(function_name)
+            self.assertEqual(len(events), expected_length)
+            return events
+
         self.unsubscribe_all_from_sns()
 
         topic_name = 'queue-{}'.format(short_uid())
@@ -548,9 +553,9 @@ class SNSTest(unittest.TestCase):
             Subject='test subject'
         )
 
-        events = get_lambda_log_events(func_name)
         # Lambda invoked 1 time
-        self.assertEqual(len(events), 1)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=func_name, expected_length=1)
 
         message = events[0]['Records'][0]
         self.assertEqual(message['EventSubscriptionArn'], subscription_arn)
@@ -561,7 +566,8 @@ class SNSTest(unittest.TestCase):
             Subject='test subject'
         )
 
-        events = get_lambda_log_events(func_name)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=func_name, expected_length=2)
         # Lambda invoked 1 more time
         self.assertEqual(len(events), 2)
 
