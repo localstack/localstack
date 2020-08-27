@@ -21,7 +21,10 @@ functions:
               eventName:
                 - CreateStack
                 - UpdateStack
-
+      - http:
+          path: /test/v1
+          method: get
+          integration: lambda-proxy
 plugins:
   - "serverless-localstack"
 

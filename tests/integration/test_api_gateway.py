@@ -13,7 +13,8 @@ from localstack import config
 from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, json_safe, clone, short_uid, get_free_tcp_port, safe_requests as requests
+from localstack.utils.common import (
+    to_str, json_safe, clone, short_uid, get_free_tcp_port, load_file, safe_requests as requests)
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import add_event_source
 from localstack.services.apigateway.helpers import (
@@ -778,16 +779,12 @@ class TestAPIGateway(unittest.TestCase):
         client = aws_stack.connect_to_service('apigateway')
         rest_api_id = client.create_rest_api(name=rest_api_name)['id']
 
-        with open(TEST_SWAGGER_FILE) as f:
-            rs = client.put_rest_api(
-                restApiId=rest_api_id,
-                body=f.read()
-            )
-            self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        spec_file = load_file(TEST_SWAGGER_FILE)
+        rs = client.put_rest_api(
+            restApiId=rest_api_id, body=spec_file)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        rs = client.get_resources(
-            restApiId=rest_api_id,
-        )
+        rs = client.get_resources(restApiId=rest_api_id)
         self.assertEqual(len(rs['items']), 1)
 
         resource = rs['items'][0]
@@ -795,9 +792,7 @@ class TestAPIGateway(unittest.TestCase):
         self.assertIn('GET', resource['resourceMethods'])
 
         # clean up
-        client.delete_rest_api(
-            restApiId=rest_api_id
-        )
+        client.delete_rest_api(restApiId=rest_api_id)
 
     @staticmethod
     def start_http_backend(test_port):

@@ -3,15 +3,15 @@ import logging
 
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.models import Resource, Integration
-from moto.apigateway.responses import APIGatewayResponse as apigateway_responses
+from moto.apigateway.responses import APIGatewayResponse
 from moto.apigateway.exceptions import (
     MethodNotFoundException, NoIntegrationDefined
 )
 from moto.apigateway.utils import create_id
 
 from localstack import config
+from localstack.utils.common import short_uid, to_str
 from localstack.services.infra import start_moto_server
-from localstack.utils.common import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -103,22 +103,17 @@ def apply_patches():
 
     # Implement import rest_api
     # https://github.com/localstack/localstack/issues/2763
-    def apigateway_responses_restapis_individual(self, request, full_url, headers):
+    def apigateway_response_restapis_individual(self, request, full_url, headers):
+        if request.method in ['GET', 'DELETE']:
+            return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
+
         self.setup_class(request, full_url, headers)
         function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
 
-        if self.method == 'GET':
-            rest_api = self.backend.get_rest_api(function_id)
-            return 200, {}, json.dumps(rest_api.to_dict())
-
-        elif self.method == 'DELETE':
-            rest_api = self.backend.delete_rest_api(function_id)
-            return 200, {}, json.dumps(rest_api.to_dict())
-
         # handle import rest_api via swagger file
-        elif self.method == 'PUT':
-            body = json.loads(self.body)
-            if not body['paths']:
+        if self.method == 'PUT':
+            body = json.loads(to_str(self.body))
+            if not body.get('paths'):
                 return 400, {}, ''
 
             rest_api = self.backend.put_rest_api(function_id, body)
@@ -126,10 +121,11 @@ def apply_patches():
 
         return 400, {}, ''
 
-    apigateway_responses.restapis_individual = apigateway_responses_restapis_individual
-
+    if not hasattr(apigateway_models.APIGatewayBackend, 'put_rest_api'):
+        apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
+        APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
+        apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
     apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
-    apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration

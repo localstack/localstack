@@ -311,10 +311,16 @@ class CaptureOutput(object):
 # ----------------
 
 def start_thread(method, *args, **kwargs):
+    _shutdown_hook = kwargs.pop('_shutdown_hook', True)
     thread = FuncThread(method, *args, **kwargs)
     thread.start()
-    TMP_THREADS.append(thread)
+    if _shutdown_hook:
+        TMP_THREADS.append(thread)
     return thread
+
+
+def start_worker_thread(method, *args, **kwargs):
+    return start_thread(method, *args, _shutdown_hook=False, **kwargs)
 
 
 def synchronized(lock=None):
