@@ -20,7 +20,7 @@ from botocore.exceptions import ClientError
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    short_uid, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
+    short_uid, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, retry)
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
@@ -1171,6 +1171,63 @@ class S3ListenerTest(unittest.TestCase):
 
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
         dynamodb_client.delete_table(TableName=table_name)
+
+    def test_s3_put_object_notification_with_sns_topic(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        topic_name = 'topic-%s' % short_uid()
+        queue_name = 'queue-%s' % short_uid()
+        key_name = 'bucket-key-%s' % short_uid()
+
+        sns_client = aws_stack.connect_to_service('sns')
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        topic_arn = sns_client.create_topic(Name=topic_name)['TopicArn']
+
+        sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=aws_stack.sqs_queue_arn(queue_name))
+
+        self.s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                'TopicConfigurations': [
+                    {
+                        'TopicArn': topic_arn,
+                        'Events': ['s3:ObjectCreated:*']
+                    }
+                ]
+            }
+        )
+
+        # Put an object
+        # This will trigger an event to sns topic, sqs queue will get a message since it's a subscriber of topic
+        self.s3_client.put_object(Bucket=bucket_name, Key=key_name, Body='body content...')
+        time.sleep(2)
+
+        def get_message(q_url):
+            resp = self.sqs_client.receive_message(QueueUrl=q_url)
+            m = resp['Messages'][0]
+            self.sqs_client.delete_message(
+                QueueUrl=q_url,
+                ReceiptHandle=m['ReceiptHandle']
+            )
+            return json.loads(m['Body'])
+
+        message = retry(get_message, retries=3, sleep=2, q_url=queue_url)
+        # We got a notification message in sqs queue (from s3 source)
+        self.assertEqual(message['Type'], 'Notification')
+        self.assertEqual(message['TopicArn'], topic_arn)
+        self.assertEqual(message['Subject'], 'Amazon S3 Notification')
+
+        r = json.loads(message['Message'])['Records'][0]
+        self.assertEqual(r['eventSource'], 'aws:s3')
+        self.assertEqual(r['s3']['bucket']['name'], bucket_name)
+        self.assertEqual(r['s3']['object']['key'], key_name)
+
+        # clean up
+        self._delete_bucket(bucket_name, [key_name])
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+        sns_client.delete_topic(TopicArn=topic_arn)
 
     def test_s3_get_deep_archive_object(self):
         bucket_name = 'bucket-%s' % short_uid()
