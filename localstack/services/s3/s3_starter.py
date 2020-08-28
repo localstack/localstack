@@ -4,8 +4,9 @@ import traceback
 from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
 from moto.s3.exceptions import S3ClientError
 from moto.s3.responses import (
-    minidom, MalformedXML, undo_clean_key_name
+    minidom, MalformedXML, undo_clean_key_name, is_delete_keys
 )
+from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
@@ -211,7 +212,6 @@ def apply_patches():
 
     def s3_bucket_response_delete_keys(self, request, body, bucket_name):
         template = self.response_template(s3_delete_keys_response_template)
-
         elements = minidom.parseString(body).getElementsByTagName('Object')
         if len(elements) == 0:
             raise MalformedXML()
@@ -267,3 +267,21 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance._handle_range_header = types.MethodType(
         s3_response_handle_range_header, s3_responses.S3ResponseInstance)
+
+    # Patch utils_is_delete_keys
+    # https://github.com/localstack/localstack/issues/2866
+    # https://github.com/localstack/localstack/issues/2850
+
+    utils_is_delete_keys_orig = s3bucket_path_utils.is_delete_keys
+
+    def utils_is_delete_keys(request, path, bucket_name):
+        return path == '/' + bucket_name + '?delete=' or utils_is_delete_keys_orig(request, path, bucket_name)
+
+    def s3_response_is_delete_keys(self, request, path, bucket_name):
+        if self.subdomain_based_buckets(request):
+            return is_delete_keys(request, path, bucket_name)
+        else:
+            return utils_is_delete_keys(request, path, bucket_name)
+
+    s3_responses.S3ResponseInstance.is_delete_keys = types.MethodType(
+        s3_response_is_delete_keys, s3_responses.S3ResponseInstance)
