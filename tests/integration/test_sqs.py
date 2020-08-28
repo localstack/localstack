@@ -3,10 +3,15 @@ import json
 import time
 import unittest
 import requests
+
 from botocore.exceptions import ClientError
+from localstack.constants import TEST_AWS_ACCOUNT_ID
+from six.moves.urllib.parse import urlencode
+
+from localstack import config
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, retry, to_str
+from localstack.utils.common import short_uid, retry, to_str, get_service_protocol
 from localstack.utils.testutil import get_lambda_log_events
 from .lambdas import lambda_integration
 from .test_lambda import use_docker, load_file, TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, \
@@ -803,6 +808,30 @@ class SQSTest(unittest.TestCase):
 
         # clean up
         self.client.untag_queue(QueueUrl=queue_url, TagKeys=['tag1'])
+        self.client.delete_queue(QueueUrl=queue_url)
+
+    def test_posting_to_queue_with_trailing_slash(self):
+        queue_name = 'queue-{}'.format(short_uid())
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
+        encoded_url = urlencode({
+            'Action': 'SendMessage',
+            'Version': '2012-11-05',
+            'QueueUrl': '{}/{}/{}/'.format(base_url, TEST_AWS_ACCOUNT_ID, queue_name),
+            'MessageBody': 'test body'
+        })
+        r = requests.post(
+            url=base_url,
+            data=encoded_url
+        )
+        self.assertEqual(r.status_code, 200)
+
+        # We can get the message back
+        resp = self.client.receive_message(QueueUrl=queue_url)
+        self.assertEqual(resp['Messages'][0]['Body'], 'test body')
+
+        # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
     # ---------------

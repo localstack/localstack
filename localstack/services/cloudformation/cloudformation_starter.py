@@ -414,7 +414,7 @@ def apply_patches():
         # When we process a request to create a CF resource that's part of a
         # stack, say, an API Gateway Resource, then we (1) create the object
         # in memory in moto, which generates a random ID for the resource, and
-        # (2) create the actual resource in the backend service using
+        # then (2) create the actual resource in the backend service using
         # template_deployer.deploy_resource(..) (see above).
         # The resource created in (2) now has a different ID than the resource
         # created in (1), which leads to downstream problems. Hence, we need
@@ -436,11 +436,9 @@ def apply_patches():
             for res in resources:
                 res_path_part = res.get('pathPart') or res.get('path')
                 res_method_path = resource_props.get('Body', {}).get('paths', {}).get(res_path_part)
-                if not res_method_path:
-                    continue
-
                 child = api.add_child(res_path_part, res.get('parentId'))
-                for key in res_method_path:
+
+                for key in res_method_path or {}:
                     method_type = key.upper()
                     method = child.resource_methods.get(method_type)
                     if not method:
