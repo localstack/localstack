@@ -128,7 +128,7 @@ class TestAPIGateway(unittest.TestCase):
     def test_api_gateway_sqs_integration_with_event_source(self):
         # create target SQS stream
         queue_name = 'queue-%s' % short_uid()
-        aws_stack.create_sqs_queue(queue_name)
+        queue_url = aws_stack.create_sqs_queue(queue_name)['QueueUrl']
 
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
@@ -160,6 +160,13 @@ class TestAPIGateway(unittest.TestCase):
         body_md5 = result['MD5OfMessageBody']
 
         self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')
+
+        # clean up
+        sqs_client = aws_stack.connect_to_service('sqs')
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.delete_function(FunctionName=self.TEST_LAMBDA_SQS_HANDLER_NAME)
 
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream

@@ -94,7 +94,7 @@ def patch_moto():
             queue_name = queue_url.split('/')[4]
         except TypeError:
             # Fallback to reading from the URL
-            queue_name = self.path.split('/')[4]
+            queue_name = self.path.split('/')[2]
 
         if not queue_name:
             raise QueueDoesNotExist()
