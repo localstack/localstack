@@ -1265,7 +1265,7 @@ class S3ListenerTest(unittest.TestCase):
 
         response = self.sqs_client.receive_message(QueueUrl=queue_url)
         self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], 'a%40b')
-        
+
     def test_s3_batch_delete_objects_using_requests(self):
         bucket_name = 'bucket-%s' % short_uid()
         object_key_1 = 'key-%s' % short_uid()
