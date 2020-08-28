@@ -138,7 +138,7 @@ def apply_patches():
                 'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'region': self.region,
                 'resources': event.get('Resources', []),
-                'detail': event['Detail'],
+                'detail': json.loads(event['Detail']),
             }
             # process event
             process_events(formatted_event, targets)

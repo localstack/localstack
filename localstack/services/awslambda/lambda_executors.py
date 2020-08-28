@@ -15,6 +15,7 @@ except ImportError:
     from pipes import quote as cmd_quote  # for Python 2.7
 from localstack import config
 from localstack.utils import bootstrap
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
     to_str, run, cp_r, json_safe, get_free_tcp_port)
@@ -118,10 +119,7 @@ class LambdaExecutor(object):
         result = func_details.envvars.copy()
 
         # injecting aws credentials into docker environment if not provided
-        if ('AWS_ACCESS_KEY_ID' not in result.keys() and
-                'AWS_SECRET_ACCESS_KEY' not in result.keys()):
-            result['AWS_ACCESS_KEY_ID'] = 'foobar'
-            result['AWS_SECRET_ACCESS_KEY'] = 'foobar'
+        aws_stack.inject_test_credentials_into_env(result)
 
         return result
 
@@ -627,7 +625,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
     def __init__(self):
         super(LambdaExecutorSeparateContainers, self).__init__()
-        self.next_port = 1
         self.max_port = LAMBDA_API_UNIQUE_PORTS
         self.port_offset = LAMBDA_API_PORT_OFFSET
 
@@ -647,10 +644,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
         if network == 'host':
-            port = str(self.next_port + self.port_offset)
+            port = get_free_tcp_port()
             env_vars['DOCKER_LAMBDA_API_PORT'] = port
             env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
-            self.next_port = (self.next_port + 1) % self.max_port
 
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
         debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''

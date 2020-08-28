@@ -71,6 +71,11 @@ CACHE = {}
 SSL_CERT_LOCK = threading.RLock()
 
 
+class Mock(object):
+    """ Dummy class that can be used for mocking custom attributes. """
+    pass
+
+
 class CustomEncoder(json.JSONEncoder):
     """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
 
@@ -81,7 +86,7 @@ class CustomEncoder(json.JSONEncoder):
             else:
                 return int(o)
         if isinstance(o, (datetime, date)):
-            return str(o)
+            return timestamp_millis(o)
         if isinstance(o, six.binary_type):
             return to_str(o)
         try:
@@ -306,10 +311,16 @@ class CaptureOutput(object):
 # ----------------
 
 def start_thread(method, *args, **kwargs):
+    _shutdown_hook = kwargs.pop('_shutdown_hook', True)
     thread = FuncThread(method, *args, **kwargs)
     thread.start()
-    TMP_THREADS.append(thread)
+    if _shutdown_hook:
+        TMP_THREADS.append(thread)
     return thread
+
+
+def start_worker_thread(method, *args, **kwargs):
+    return start_thread(method, *args, _shutdown_hook=False, **kwargs)
 
 
 def synchronized(lock=None):
