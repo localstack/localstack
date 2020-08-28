@@ -155,6 +155,7 @@ USE_HTTP2_SERVER = os.environ.get('USE_HTTP2_SERVER', '').strip() not in FALSE_S
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get('MAIN_CONTAINER_NAME', '').strip() or 'localstack_main'
 
+
 def has_docker():
     try:
         with open(os.devnull, 'w') as devnull:
