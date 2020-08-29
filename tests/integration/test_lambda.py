@@ -12,7 +12,10 @@ from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37
 from localstack.utils import testutil
-from localstack.utils.testutil import get_lambda_log_events, create_lambda_archive
+from localstack.utils.testutil import (
+    get_lambda_log_events, check_expected_lambda_log_events_length,
+    create_lambda_archive
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
@@ -672,11 +675,6 @@ class TestPythonRuntimes(LambdaTestBase):
             lambda_api.DO_USE_DOCKER = original_do_use_docker
 
     def test_lambda_subscribe_sns_topic(self):
-        def check_expected_lambda_log_events_length(expected_length, function_name):
-            events = get_lambda_log_events(function_name)
-            self.assertEqual(len(events), expected_length)
-            return events
-
         function_name = '{}-{}'.format(TEST_LAMBDA_FUNCTION_PREFIX, short_uid())
 
         testutil.create_lambda_function(handler_file=TEST_LAMBDA_ECHO_FILE,

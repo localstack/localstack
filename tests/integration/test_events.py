@@ -13,7 +13,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     load_file, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, get_service_protocol
 )
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -183,11 +183,6 @@ class EventsTest(unittest.TestCase):
         )
 
     def test_put_events_with_target_lambda(self):
-        def check_expected_lambda_log_events_length(function_name, expected_length):
-            events = get_lambda_log_events(function_name)
-            self.assertEqual(len(events), expected_length)
-            return events
-
         rule_name = 'rule-{}'.format(short_uid())
         function_name = 'lambda-func-{}'.format(short_uid())
         target_id = 'target-{}'.format(short_uid())

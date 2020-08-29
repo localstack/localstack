@@ -14,7 +14,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid
 )
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns import sns_listener
@@ -524,11 +524,6 @@ class SNSTest(unittest.TestCase):
         self.assertEqual(topic_arn_params[5], TEST_TOPIC_NAME)
 
     def test_publish_message_by_target_arn(self):
-        def check_expected_lambda_log_events_length(expected_length, function_name):
-            events = get_lambda_log_events(function_name)
-            self.assertEqual(len(events), expected_length)
-            return events
-
         self.unsubscribe_all_from_sns()
 
         topic_name = 'queue-{}'.format(short_uid())

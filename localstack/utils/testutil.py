@@ -332,6 +332,12 @@ def get_lambda_log_group_name(function_name):
     return '/aws/lambda/{}'.format(function_name)
 
 
+def check_expected_lambda_log_events_length(expected_length, function_name):
+    events = get_lambda_log_events(function_name)
+    assert len(events) == expected_length
+    return events
+
+
 def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY):
     def get_log_events(function_name, delay_time):
         time.sleep(delay_time)
