@@ -223,7 +223,7 @@ class ProxyListenerCloudFormation(ProxyListener):
             if action == 'ValidateTemplate':
                 return validate_template(req_data)
 
-            if action in ['CreateStack', 'UpdateStack']:
+            if action in ['CreateStack', 'UpdateStack', 'CreateChangeSet']:
                 do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
                 if do_replace_url:
                     req_data['TemplateURL'] = convert_s3_to_local_url(req_data['TemplateURL'])

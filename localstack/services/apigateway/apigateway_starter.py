@@ -64,7 +64,8 @@ def apply_patches():
 
     def apigateway_models_backend_put_rest_api(self, function_id, body):
         rest_api = self.get_rest_api(function_id)
-        # Remove default root
+        print('!!!apigateway backend put_rest_api', function_id, rest_api, rest_api.region_name, rest_api.id, body)
+        # Remove default root, then add paths from API spec
         rest_api.resources = {}
         for path in body['paths']:
             child_id = create_id()
@@ -84,19 +85,20 @@ def apply_patches():
                 )
                 integration = Integration(
                     http_method=m,
-                    uri=None,
+                    uri=payload.get('uri'),
                     integration_type=payload['type'],
-                    pass_through_behavior=payload['passthroughBehavior'],
-                    request_templates=payload['requestTemplates']
+                    pass_through_behavior=payload.get('passthroughBehavior'),
+                    request_templates=payload.get('requestTemplates') or {}
                 )
                 integration.create_integration_response(
-                    status_code=payload['responses']['default']['statusCode'],
+                    status_code=payload.get('responses', {}).get('default', {}).get('statusCode', 200),
                     selection_pattern=None,
                     response_templates=None,
                     content_handling=None
                 )
                 child.resource_methods[m]['methodIntegration'] = integration
 
+            print('!!!!! ADD CHILD RESOURCE', function_id, child_id, child)
             rest_api.resources[child_id] = child
 
         return rest_api
