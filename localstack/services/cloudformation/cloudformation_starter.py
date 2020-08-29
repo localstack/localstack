@@ -429,14 +429,15 @@ def apply_patches():
 
         backend = apigw_models.apigateway_backends[region_name]
         if isinstance(resource, apigw_models.RestAPI):
-            api = resource
-            backend.apis.pop(api.id, None)
-            api.id = new_id
-            backend.apis[new_id] = api
             # We also need to fetch the resources to replace the root resource
             # that moto automatically adds to newly created RestAPI objects
             client = aws_stack.connect_to_service('apigateway')
             resources = client.get_resources(restApiId=new_id, limit=500)['items']
+            # repoint ID mappings (make sure this stays BELOW calling get_resources() above)
+            api = resource
+            backend.apis.pop(api.id, None)
+            api.id = new_id
+            backend.apis[new_id] = api
             # make sure no resources have been added in addition to the root /
             assert len(api.resources) == 1
             api.resources = {}
@@ -1030,12 +1031,15 @@ def apply_patches():
                     stack = self.change_sets[cs]
 
         def do_execute(*args):
-            cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
-
-            stack.output_map = stack._create_output_map()
-            for export in stack.exports:
-                self.exports[export.name] = export
-            set_stack_status(stack, 'CREATE_COMPLETE')
+            try:
+                cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
+                stack.output_map = stack._create_output_map()
+                for export in stack.exports:
+                    self.exports[export.name] = export
+                set_stack_status(stack, 'CREATE_COMPLETE')
+            except Exception:
+                set_stack_status(stack, 'CREATE_FAILED')
+                raise
 
         # start execution in background thread, to avoid timeouts/retries from the client
         set_stack_status(stack, 'CREATE_IN_PROGRESS')

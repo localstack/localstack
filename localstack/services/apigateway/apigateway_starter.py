@@ -64,7 +64,6 @@ def apply_patches():
 
     def apigateway_models_backend_put_rest_api(self, function_id, body):
         rest_api = self.get_rest_api(function_id)
-        print('!!!apigateway backend put_rest_api', function_id, rest_api, rest_api.region_name, rest_api.id, body)
         # Remove default root, then add paths from API spec
         rest_api.resources = {}
         for path in body['paths']:
@@ -98,7 +97,6 @@ def apply_patches():
                 )
                 child.resource_methods[m]['methodIntegration'] = integration
 
-            print('!!!!! ADD CHILD RESOURCE', function_id, child_id, child)
             rest_api.resources[child_id] = child
 
         return rest_api
@@ -127,7 +125,8 @@ def apply_patches():
         apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
         APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
         apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
-    apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
+    if not hasattr(apigateway_models.APIGatewayBackend, 'delete_method'):
+        apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
