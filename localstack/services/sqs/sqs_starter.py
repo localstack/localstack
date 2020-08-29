@@ -3,12 +3,14 @@ import types
 import logging
 import traceback
 from moto.sqs import responses as sqs_responses
+from moto.sqs.exceptions import QueueDoesNotExist
 from moto.sqs.models import Queue
 from localstack import config
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port, to_str, escape_html)
+    wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port, to_str, escape_html
+)
 from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run, start_moto_server
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, SQS_BACKEND_IMPL, install_elasticmq
 
@@ -45,7 +47,6 @@ def start_sqs(*args, **kwargs):
 
 def patch_moto():
     # patch add_message to disable event source mappings in moto
-
     def add_message(self, *args, **kwargs):
         mappings = self.lambda_event_source_mappings
         try:
@@ -59,7 +60,6 @@ def patch_moto():
     Queue.add_message = add_message
 
     # pass additional globals (e.g., escaping methods) to template render method
-
     def response_template(self, template_str, *args, **kwargs):
         template = response_template_orig(self, template_str, *args, **kwargs)
 
@@ -85,6 +85,23 @@ def patch_moto():
     sqs_responses.RECEIVE_MESSAGE_RESPONSE = sqs_responses.RECEIVE_MESSAGE_RESPONSE.replace(
         '<StringValue>{{ value.string_value }}</StringValue>',
         '<StringValue>{{ _escape(value.string_value) }}</StringValue>')
+
+    # Fix issue with trailing slash
+    # https://github.com/localstack/localstack/issues/2874
+    def sqs_responses_get_queue_name(self):
+        try:
+            queue_url = self.querystring.get('QueueUrl')[0]
+            queue_name = queue_url.split('/')[4]
+        except TypeError:
+            # Fallback to reading from the URL
+            queue_name = self.path.split('/')[2]
+
+        if not queue_name:
+            raise QueueDoesNotExist()
+
+        return queue_name
+
+    sqs_responses.SQSResponse._get_queue_name = sqs_responses_get_queue_name
 
 
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):

@@ -27,7 +27,7 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
-    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port)
+    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port, Mock, start_thread)
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names
@@ -178,6 +178,9 @@ def update_physical_resource_id(resource):
         elif isinstance(resource, dynamodb2_models.Table):
             resource.physical_resource_id = resource.name
 
+        elif isinstance(resource, apigw_models.RestAPI):
+            resource.physical_resource_id = resource.id
+
         else:
             LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
@@ -188,6 +191,13 @@ def update_resource_name(resource, resource_json):
     props = resource_json['Properties'] = resource_json.get('Properties') or {}
     if isinstance(resource, sfn_models.StateMachine) and not props.get('StateMachineName'):
         props['StateMachineName'] = resource.name
+
+
+def update_dynamodb_index_resource(resource):
+    if resource.get('Properties').get('BillingMode') == 'PAY_PER_REQUEST':
+        for glob_index in resource.get('Properties', {}).get('GlobalSecondaryIndexes', []):
+            if not glob_index.get('ProvisionedThroughput'):
+                glob_index['ProvisionedThroughput'] = {'ReadCapacityUnits': 99, 'WriteCapacityUnits': 99}
 
 
 def add_default_resource_props(resource_props, stack_name, resource_name=None):
@@ -208,11 +218,15 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
     if res_type == 'AWS::ApiGateway::RestApi':
         props['Name'] = props.get('Name') or resource_name
 
+    if res_type == 'AWS::DynamoDB::Table':
+        update_dynamodb_index_resource(resource_props)
+
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
     for entry in default_attrs:
         if res_type == entry[0] and not props.get(entry[1]):
-            props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
+            props_str = canonical_json(json_safe(props))
+            props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(props_str))
 
 
 def apply_patches():
@@ -227,7 +241,13 @@ def apply_patches():
 
     # Patch clean_json in moto
     def clean_json(resource_json, resources_map):
-        result = clean_json_orig(resource_json, resources_map)
+        try:
+            result = clean_json_orig(resource_json, resources_map)
+        except RecursionError:
+            if isinstance(resource_json, dict) and 'Ref' in resource_json:
+                LOG.info('Potential circular dependency detected when resolving Ref "%s"' % resource_json['Ref'])
+                return resource_json['Ref']
+            raise
         if isinstance(result, BaseModel):
             if isinstance(resource_json, dict) and 'Ref' in resource_json:
                 entity_id = get_entity_id(result, resource_json)
@@ -381,8 +401,10 @@ def apply_patches():
             LOG.debug('Updating resource id: %s - %s, %s - %s' % (existing_id, new_res_id, resource, resource_json))
             if new_res_id:
                 LOG.info('Updating resource ID from %s to %s (%s)' % (existing_id, new_res_id, region_name))
-                update_resource_id(resource, new_res_id, props,
-                    region_name, stack_name, resources_map._resource_json_map)
+                update_resource_id(
+                    resource, new_res_id, props, region_name, stack_name, resources_map._resource_json_map,
+                    resource_json.get('Properties')
+                )
             else:
                 LOG.warning('Unable to extract id for resource %s: %s' % (logical_id, result))
 
@@ -391,7 +413,7 @@ def apply_patches():
 
         return resource
 
-    def update_resource_id(resource, new_id, props, region_name, stack_name, resource_map):
+    def update_resource_id(resource, new_id, props, region_name, stack_name, resource_map, resource_props={}):
         """ Update and fix the ID(s) of the given resource. """
 
         # NOTE: this is a bit of a hack, which is required because
@@ -399,7 +421,7 @@ def apply_patches():
         # When we process a request to create a CF resource that's part of a
         # stack, say, an API Gateway Resource, then we (1) create the object
         # in memory in moto, which generates a random ID for the resource, and
-        # (2) create the actual resource in the backend service using
+        # then (2) create the actual resource in the backend service using
         # template_deployer.deploy_resource(..) (see above).
         # The resource created in (2) now has a different ID than the resource
         # created in (1), which leads to downstream problems. Hence, we need
@@ -407,35 +429,57 @@ def apply_patches():
 
         backend = apigw_models.apigateway_backends[region_name]
         if isinstance(resource, apigw_models.RestAPI):
-            backend.apis.pop(resource.id, None)
-            backend.apis[new_id] = resource
             # We also need to fetch the resources to replace the root resource
             # that moto automatically adds to newly created RestAPI objects
             client = aws_stack.connect_to_service('apigateway')
             resources = client.get_resources(restApiId=new_id, limit=500)['items']
+            # repoint ID mappings (make sure this stays BELOW calling get_resources() above)
+            api = resource
+            backend.apis.pop(api.id, None)
+            api.id = new_id
+            backend.apis[new_id] = api
             # make sure no resources have been added in addition to the root /
-            assert len(resource.resources) == 1
-            resource.resources = {}
+            assert len(api.resources) == 1
+            api.resources = {}
             for res in resources:
                 res_path_part = res.get('pathPart') or res.get('path')
-                child = resource.add_child(res_path_part, res.get('parentId'))
-                resource.resources.pop(child.id)
+                res_method_path = resource_props.get('Body', {}).get('paths', {}).get(res_path_part)
+                child = api.add_child(res_path_part, res.get('parentId'))
+
+                for key in res_method_path or {}:
+                    method_type = key.upper()
+                    method = child.resource_methods.get(method_type)
+                    if not method:
+                        child.add_method(method_type, None, None)
+
+                    path_int = res_method_path[key]['x-amazon-apigateway-integration']
+                    child.add_integration(
+                        method_type, path_int['type'], path_int.get('uri'),
+                        request_templates=path_int.get('requestTemplates'),
+                        integration_method=path_int.get('httpMethod'))
+
+                api.resources.pop(child.id)
                 child.id = res['id']
                 child.api_id = new_id
-                resource.resources[child.id] = child
-            resource.id = new_id
+                api.resources[child.id] = child
+
         elif isinstance(resource, apigw_models.Resource):
             api_id = props['RestApiId']
             api_id = template_deployer.resolve_refs_recursively(stack_name, api_id, resource_map)
             backend.apis[api_id].resources.pop(resource.id, None)
             backend.apis[api_id].resources[new_id] = resource
             resource.id = new_id
+
         elif isinstance(resource, apigw_models.Deployment):
             api_id = props['RestApiId']
             api_id = template_deployer.resolve_refs_recursively(stack_name, api_id, resource_map)
+            if not api_id:
+                api_id = resource_props['RestApiId']
+
             backend.apis[api_id].deployments.pop(resource['id'], None)
             backend.apis[api_id].deployments[new_id] = resource
             resource['id'] = new_id
+
         else:
             LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
 
@@ -689,7 +733,22 @@ def apply_patches():
     @classmethod
     def Lambda_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         resource_name = cloudformation_json.get('Properties', {}).get('FunctionName') or resource_name
-        return Lambda_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+
+        def _from_env(*args, **kwargs):
+            result = Mock()
+            result.api = Mock()
+            result.api.get_adapter = (lambda *args, **kwargs: None)
+            return result
+        # Temporarily set a mock client, to prevent moto from talking to the Docker daemon
+        import docker
+        _from_env_orig = docker.from_env
+        docker.from_env = _from_env
+
+        try:
+            result = Lambda_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+        finally:
+            docker.from_env = _from_env_orig
+        return result
 
     Lambda_create_from_cloudformation_json_orig = lambda_models.LambdaFunction.create_from_cloudformation_json
     lambda_models.LambdaFunction.create_from_cloudformation_json = Lambda_create_from_cloudformation_json
@@ -860,11 +919,12 @@ def apply_patches():
         if region not in lambda_models.lambda_backends:
             lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
 
+    def set_stack_status(stack, status):
+        stack._add_stack_event(status)
+        stack.status = status
+
     # patch FakeStack.initialize_resources
     def run_dependencies_deployment_loop(stack, action):
-        def set_status(status):
-            stack._add_stack_event(status)
-            stack.status = status
 
         def run_loop(*args):
             # NOTE: We're adding this additional loop, as it seems that in some cases moto
@@ -876,7 +936,7 @@ def apply_patches():
                 LOG.debug('Running CloudFormation stack deployment loop iteration %s' % (i + 1))
                 unresolved = getattr(resource_map, '_unresolved_resources', {})
                 if not unresolved:
-                    set_status('%s_COMPLETE' % action)
+                    set_stack_status(stack, '%s_COMPLETE' % action)
                     return resource_map
                 resource_map._unresolved_resources = {}
                 for resource_id, resource_details in unresolved.items():
@@ -886,7 +946,7 @@ def apply_patches():
                     # looks like no more resources can be resolved -> bail
                     LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
                     break
-            set_status('%s_FAILED' % action)
+            set_stack_status(stack, '%s_FAILED' % action)
             raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
                 'dependency tree (maximum depth %s reached): %s' % (MAX_DEPENDENCY_DEPTH, list(unresolved.keys())))
 
@@ -963,7 +1023,6 @@ def apply_patches():
 
     def cloudformation_backend_execute_change_set(self, change_set_name, stack_name=None):
         change_set_name = change_set_name.replace(TEST_AWS_ACCOUNT_ID, MOTO_CFN_ACCOUNT_ID)
-        resp = cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
 
         stack = self.change_sets.get(change_set_name)
         if not stack:
@@ -971,11 +1030,21 @@ def apply_patches():
                 if self.change_sets[cs].change_set_name == change_set_name:
                     stack = self.change_sets[cs]
 
-        stack.output_map = stack._create_output_map()
-        for export in stack.exports:
-            self.exports[export.name] = export
+        def do_execute(*args):
+            try:
+                cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
+                stack.output_map = stack._create_output_map()
+                for export in stack.exports:
+                    self.exports[export.name] = export
+                set_stack_status(stack, 'CREATE_COMPLETE')
+            except Exception:
+                set_stack_status(stack, 'CREATE_FAILED')
+                raise
 
-        return resp
+        # start execution in background thread, to avoid timeouts/retries from the client
+        set_stack_status(stack, 'CREATE_IN_PROGRESS')
+        start_thread(do_execute)
+        return True
 
     CloudFormationBackend.describe_change_set = cloudformation_backend_describe_change_set
     CloudFormationBackend.execute_change_set = cloudformation_backend_execute_change_set

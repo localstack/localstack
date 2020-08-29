@@ -12,7 +12,10 @@ from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
 from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37
 from localstack.utils import testutil
-from localstack.utils.testutil import get_lambda_log_events, create_lambda_archive
+from localstack.utils.testutil import (
+    get_lambda_log_events, check_expected_lambda_log_events_length,
+    create_lambda_archive
+)
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
@@ -412,6 +415,37 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         # clean up
         lambda_client.delete_function(FunctionName=function_name)
 
+    def test_event_source_mapping_with_sqs(self):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        sqs_client = aws_stack.connect_to_service('sqs')
+
+        function_name = 'lambda_func-{}'.format(short_uid())
+        queue_name_1 = 'queue-{}-1'.format(short_uid())
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        queue_url_1 = sqs_client.create_queue(QueueName=queue_name_1)['QueueUrl']
+        queue_arn_1 = aws_stack.sqs_queue_arn(queue_name_1)
+
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=queue_arn_1,
+            FunctionName=function_name
+        )
+
+        sqs_client.send_message(QueueUrl=queue_url_1, MessageBody=json.dumps({'foo': 'bar'}))
+        events = retry(get_lambda_log_events, sleep_before=3, function_name=function_name)
+
+        # lambda was invoked 1 time
+        self.assertEqual(len(events[0]['Records']), 1)
+
+        # clean up
+        sqs_client.delete_queue(QueueUrl=queue_url_1)
+        lambda_client.delete_function(FunctionName=function_name)
+
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
@@ -663,8 +697,8 @@ class TestPythonRuntimes(LambdaTestBase):
             Message=message
         )
 
-        events = get_lambda_log_events(function_name)
-        self.assertEqual(len(events), 1)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=function_name, expected_length=1)
         notification = events[0]['Records'][0]['Sns']
 
         self.assertIn('Subject', notification)

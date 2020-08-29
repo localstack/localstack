@@ -13,7 +13,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     load_file, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, get_service_protocol
 )
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -69,7 +69,7 @@ class EventsTest(unittest.TestCase):
                 'Source': 'unittest',
                 'Resources': [],
                 'DetailType': event_type,
-                'Detail': detail
+                'Detail': json.dumps(detail)
             }])
 
         sorted_events_written_to_disk = map(
@@ -79,7 +79,8 @@ class EventsTest(unittest.TestCase):
         sorted_events = list(filter(lambda event: event['DetailType'] == event_type,
                                     sorted_events_written_to_disk))
 
-        self.assertListEqual(event_details_to_publish, list(map(lambda event: event['Detail'], sorted_events)))
+        self.assertListEqual(event_details_to_publish,
+                             list(map(lambda event: json.loads(event['Detail']), sorted_events)))
 
     def test_list_tags_for_resource(self):
         rule_name = 'rule-{}'.format(short_uid())
@@ -148,7 +149,7 @@ class EventsTest(unittest.TestCase):
                 'EventBusName': TEST_EVENT_BUS_NAME,
                 'Source': TEST_EVENT_PATTERN['Source'],
                 'DetailType': TEST_EVENT_PATTERN['DetailType'],
-                'Detail': TEST_EVENT_PATTERN['Detail']
+                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'])
             }]
         )
 
@@ -223,13 +224,13 @@ class EventsTest(unittest.TestCase):
                 'EventBusName': TEST_EVENT_BUS_NAME,
                 'Source': TEST_EVENT_PATTERN['Source'],
                 'DetailType': TEST_EVENT_PATTERN['DetailType'],
-                'Detail': TEST_EVENT_PATTERN['Detail']
+                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'])
             }]
         )
 
         # Get lambda's log events
-        events = get_lambda_log_events(function_name)
-        self.assertEqual(len(events), 1)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=function_name, expected_length=1)
         actual_event = events[0]
         self.assertIsValidEvent(actual_event)
         self.assertDictEqual(json.loads(actual_event['detail']), json.loads(TEST_EVENT_PATTERN['Detail']))
@@ -425,7 +426,7 @@ class EventsTest(unittest.TestCase):
                 'EventBusName': TEST_EVENT_BUS_NAME,
                 'Source': TEST_EVENT_PATTERN['Source'],
                 'DetailType': TEST_EVENT_PATTERN['DetailType'],
-                'Detail': TEST_EVENT_PATTERN['Detail']
+                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'])
             }]
         )
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import os
 import re
 import json
 import base64
@@ -13,12 +13,17 @@ from localstack import config
 from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, json_safe, clone, short_uid, get_free_tcp_port, safe_requests as requests
+from localstack.utils.common import (
+    to_str, json_safe, clone, short_uid, get_free_tcp_port, load_file, safe_requests as requests)
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import add_event_source
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
+
+
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, 'files', 'swagger.json')
 
 
 class TestAPIGateway(unittest.TestCase):
@@ -123,7 +128,7 @@ class TestAPIGateway(unittest.TestCase):
     def test_api_gateway_sqs_integration_with_event_source(self):
         # create target SQS stream
         queue_name = 'queue-%s' % short_uid()
-        aws_stack.create_sqs_queue(queue_name)
+        queue_url = aws_stack.create_sqs_queue(queue_name)['QueueUrl']
 
         # create API Gateway and connect it to the target queue
         result = connect_api_gateway_to_sqs(
@@ -155,6 +160,13 @@ class TestAPIGateway(unittest.TestCase):
         body_md5 = result['MD5OfMessageBody']
 
         self.assertEqual(body_md5, 'b639f52308afd65866c86f274c59033f')
+
+        # clean up
+        sqs_client = aws_stack.connect_to_service('sqs')
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.delete_function(FunctionName=self.TEST_LAMBDA_SQS_HANDLER_NAME)
 
     def test_api_gateway_sqs_integration(self):
         # create target SQS stream
@@ -707,7 +719,6 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(result['items'][0]['description'], description)
 
     def test_get_model_by_name(self):
-
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
         rest_api_id = response['id']
@@ -737,7 +748,6 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(e.response['Error']['Message'], 'Invalid Rest API Id specified')
 
     def test_get_model_with_invalid_name(self):
-
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
         rest_api_id = response['id']
@@ -751,7 +761,6 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
-
         api_id = self.create_api_gateway_and_deploy({})
         url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
         response = requests.put(
@@ -820,9 +829,29 @@ class TestAPIGateway(unittest.TestCase):
         # when the api key is passed as part of the header
         self.assertEqual(response.status_code, 200)
 
+    def test_import_rest_api(self):
+        rest_api_name = 'restapi-%s' % short_uid()
+
+        client = aws_stack.connect_to_service('apigateway')
+        rest_api_id = client.create_rest_api(name=rest_api_name)['id']
+
+        spec_file = load_file(TEST_SWAGGER_FILE)
+        rs = client.put_rest_api(
+            restApiId=rest_api_id, body=spec_file)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rs = client.get_resources(restApiId=rest_api_id)
+        self.assertEqual(len(rs['items']), 1)
+
+        resource = rs['items'][0]
+        self.assertEqual(resource['path'], '/test')
+        self.assertIn('GET', resource['resourceMethods'])
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
     @staticmethod
     def start_http_backend(test_port):
-
         # test listener for target HTTP backend
         class TestListener(ProxyListener):
             def forward_request(self, **kwargs):

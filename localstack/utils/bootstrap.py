@@ -13,6 +13,7 @@ import six
 import shutil
 import pip as pip_mod
 from datetime import datetime
+from concurrent.futures._base import Future
 from localstack import constants, config
 
 # set up logger
@@ -52,9 +53,6 @@ API_COMPOSITES = {
     'serverless': ['cloudformation', 'iam', 'sts', 'lambda', 'dynamodb', 'apigateway', 's3'],
     'cognito': ['cognito-idp', 'cognito-identity']
 }
-
-# name of main Docker container
-MAIN_CONTAINER_NAME = 'localstack_main'
 
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
@@ -186,7 +184,7 @@ def get_docker_container_names():
 
 
 def get_main_container_ip():
-    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % MAIN_CONTAINER_NAME
+    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % config.MAIN_CONTAINER_NAME
     return run(cmd).strip()
 
 
@@ -372,7 +370,7 @@ def extract_port_flags(user_flags, port_mappings):
 
 def start_infra_in_docker():
 
-    container_name = MAIN_CONTAINER_NAME
+    container_name = config.MAIN_CONTAINER_NAME
 
     if docker_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
@@ -508,14 +506,18 @@ class FuncThread(threading.Thread):
         self.params = params
         self.func = func
         self.quiet = quiet
+        self.result_future = Future()
 
     def run(self):
+        result = None
         try:
-            self.func(self.params)
-        except Exception:
+            result = self.func(self.params)
+        except Exception as e:
             if not self.quiet:
-                LOG.warning('Thread run method %s(%s) failed: %s' %
-                    (self.func, self.params, traceback.format_exc()))
+                LOG.warning('Thread run method %s(%s) failed: %s %s' %
+                    (self.func, self.params, e, traceback.format_exc()))
+        finally:
+            self.result_future.set_result(result)
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:

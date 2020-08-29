@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, date
 from localstack.utils import common
 from localstack.utils.bootstrap import extract_port_flags, PortMappings
 
@@ -44,6 +44,13 @@ class TestCommon(unittest.TestCase):
     def test_mktime(self):
         env = common.mktime(datetime(2010, 3, 20, 7, 24, 00, 0), True)
         self.assertEqual(env, 1269069840.0)
+
+    def test_timestamp_millis(self):
+        result = common.timestamp_millis(datetime.now())
+        self.assertIn('T', result)
+        result = common.timestamp_millis(date.today())
+        self.assertIn('00:00:00', result)
+        self.assertIn('T', result)
 
 
 class TestCommandLine(unittest.TestCase):
