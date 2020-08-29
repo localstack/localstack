@@ -248,7 +248,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
     uri = integration.get('uri') or ''
 
     if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
-        if integration['type'] in ['AWS', 'AWS_PROXY']:
+        if integration['type'].upper() in ['AWS', 'AWS_PROXY']:
             func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
             data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
             account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
@@ -297,7 +297,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 response = result
             else:
                 response = LambdaResponse()
-                parsed_result = result if isinstance(result, dict) else json.loads(str(result))
+                parsed_result = result if isinstance(result, dict) else json.loads(str(result or '{}'))
                 parsed_result = common.json_safe(parsed_result)
                 parsed_result = {} if parsed_result is None else parsed_result
                 response.status_code = int(parsed_result.get('statusCode', 200))
@@ -324,7 +324,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         LOGGER.warning(msg)
         return make_error_response(msg, 404)
 
-    elif integration['type'] == 'AWS':
+    elif integration['type'].upper() == 'AWS':
         if 'kinesis:action/' in uri:
             if uri.endswith('kinesis:action/PutRecords'):
                 target = kinesis_listener.ACTION_PUT_RECORDS
@@ -358,7 +358,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         LOGGER.warning(msg)
         return make_error_response(msg, 404)
 
-    elif integration['type'] == 'AWS_PROXY':
+    elif integration['type'].upper() == 'AWS_PROXY':
         if uri.startswith('arn:aws:apigateway:') and ':dynamodb:action' in uri:
             # arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection
             table_name = uri.split(':dynamodb:action')[1].split('&Table=')[1]
@@ -395,7 +395,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             LOGGER.warning(msg)
             return make_error_response(msg, 404)
 
-    elif integration['type'] in ['HTTP_PROXY', 'HTTP']:
+    elif integration['type'].upper() in ['HTTP_PROXY', 'HTTP']:
         function = getattr(requests, method.lower())
 
         # apply custom request template

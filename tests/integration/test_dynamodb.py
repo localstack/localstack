@@ -3,7 +3,8 @@
 import unittest
 import json
 from datetime import datetime
-
+from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.types import STRING
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -231,6 +232,38 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         item = table.get_item(Key={PARTITION_KEY: item_id})['Item']
         self.assertEqual(item['attr1'], 'value1')
         self.assertEqual(item['attr2'], 'value2')
+        attributes = [{'AttributeName': 'id', 'AttributeType': STRING}]
+
+        user_id_idx = [
+            {'Create': {
+                'IndexName': 'id-index',
+                'KeySchema': [{
+                    'AttributeName': 'id',
+                    'KeyType': 'HASH'
+                }],
+                'Projection': {
+                    'ProjectionType': 'INCLUDE',
+                    'NonKeyAttributes': ['data']
+
+                },
+                'ProvisionedThroughput': {
+                    'ReadCapacityUnits': 5,
+                    'WriteCapacityUnits': 5
+                }
+            }},
+        ]
+
+        # for each index
+        table.update(AttributeDefinitions=attributes, GlobalSecondaryIndexUpdates=user_id_idx)
+
+        with self.assertRaises(Exception) as ctx:
+            table.query(
+                TableName=TEST_DDB_TABLE_NAME,
+                IndexName='id-index',
+                KeyConditionExpression=Key(PARTITION_KEY).eq(item_id),
+                Select='ALL_ATTRIBUTES'
+            )
+        self.assertIn('ValidationException', str(ctx.exception))
 
     def test_return_values_in_put_item(self):
         aws_stack.create_dynamodb_table(TEST_DDB_TABLE_NAME, partition_key=PARTITION_KEY)

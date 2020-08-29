@@ -27,7 +27,7 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
-    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port, Mock)
+    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port, Mock, start_thread)
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import (
     get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names
@@ -225,7 +225,8 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
     for entry in default_attrs:
         if res_type == entry[0] and not props.get(entry[1]):
-            props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(canonical_json(props)))
+            props_str = canonical_json(json_safe(props))
+            props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(props_str))
 
 
 def apply_patches():
@@ -240,7 +241,13 @@ def apply_patches():
 
     # Patch clean_json in moto
     def clean_json(resource_json, resources_map):
-        result = clean_json_orig(resource_json, resources_map)
+        try:
+            result = clean_json_orig(resource_json, resources_map)
+        except RecursionError:
+            if isinstance(resource_json, dict) and 'Ref' in resource_json:
+                LOG.info('Potential circular dependency detected when resolving Ref "%s"' % resource_json['Ref'])
+                return resource_json['Ref']
+            raise
         if isinstance(result, BaseModel):
             if isinstance(resource_json, dict) and 'Ref' in resource_json:
                 entity_id = get_entity_id(result, resource_json)
@@ -422,14 +429,15 @@ def apply_patches():
 
         backend = apigw_models.apigateway_backends[region_name]
         if isinstance(resource, apigw_models.RestAPI):
-            api = resource
-            backend.apis.pop(api.id, None)
-            api.id = new_id
-            backend.apis[new_id] = api
             # We also need to fetch the resources to replace the root resource
             # that moto automatically adds to newly created RestAPI objects
             client = aws_stack.connect_to_service('apigateway')
             resources = client.get_resources(restApiId=new_id, limit=500)['items']
+            # repoint ID mappings (make sure this stays BELOW calling get_resources() above)
+            api = resource
+            backend.apis.pop(api.id, None)
+            api.id = new_id
+            backend.apis[new_id] = api
             # make sure no resources have been added in addition to the root /
             assert len(api.resources) == 1
             api.resources = {}
@@ -446,7 +454,9 @@ def apply_patches():
 
                     path_int = res_method_path[key]['x-amazon-apigateway-integration']
                     child.add_integration(
-                        method_type, path_int['type'], path_int['uri'], None, path_int['httpMethod'])
+                        method_type, path_int['type'], path_int.get('uri'),
+                        request_templates=path_int.get('requestTemplates'),
+                        integration_method=path_int.get('httpMethod'))
 
                 api.resources.pop(child.id)
                 child.id = res['id']
@@ -909,11 +919,12 @@ def apply_patches():
         if region not in lambda_models.lambda_backends:
             lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
 
+    def set_stack_status(stack, status):
+        stack._add_stack_event(status)
+        stack.status = status
+
     # patch FakeStack.initialize_resources
     def run_dependencies_deployment_loop(stack, action):
-        def set_status(status):
-            stack._add_stack_event(status)
-            stack.status = status
 
         def run_loop(*args):
             # NOTE: We're adding this additional loop, as it seems that in some cases moto
@@ -925,7 +936,7 @@ def apply_patches():
                 LOG.debug('Running CloudFormation stack deployment loop iteration %s' % (i + 1))
                 unresolved = getattr(resource_map, '_unresolved_resources', {})
                 if not unresolved:
-                    set_status('%s_COMPLETE' % action)
+                    set_stack_status(stack, '%s_COMPLETE' % action)
                     return resource_map
                 resource_map._unresolved_resources = {}
                 for resource_id, resource_details in unresolved.items():
@@ -935,7 +946,7 @@ def apply_patches():
                     # looks like no more resources can be resolved -> bail
                     LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
                     break
-            set_status('%s_FAILED' % action)
+            set_stack_status(stack, '%s_FAILED' % action)
             raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
                 'dependency tree (maximum depth %s reached): %s' % (MAX_DEPENDENCY_DEPTH, list(unresolved.keys())))
 
@@ -1012,7 +1023,6 @@ def apply_patches():
 
     def cloudformation_backend_execute_change_set(self, change_set_name, stack_name=None):
         change_set_name = change_set_name.replace(TEST_AWS_ACCOUNT_ID, MOTO_CFN_ACCOUNT_ID)
-        resp = cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
 
         stack = self.change_sets.get(change_set_name)
         if not stack:
@@ -1020,11 +1030,21 @@ def apply_patches():
                 if self.change_sets[cs].change_set_name == change_set_name:
                     stack = self.change_sets[cs]
 
-        stack.output_map = stack._create_output_map()
-        for export in stack.exports:
-            self.exports[export.name] = export
+        def do_execute(*args):
+            try:
+                cloudformation_backend_execute_change_set_orig(self, change_set_name, stack_name)
+                stack.output_map = stack._create_output_map()
+                for export in stack.exports:
+                    self.exports[export.name] = export
+                set_stack_status(stack, 'CREATE_COMPLETE')
+            except Exception:
+                set_stack_status(stack, 'CREATE_FAILED')
+                raise
 
-        return resp
+        # start execution in background thread, to avoid timeouts/retries from the client
+        set_stack_status(stack, 'CREATE_IN_PROGRESS')
+        start_thread(do_execute)
+        return True
 
     CloudFormationBackend.describe_change_set = cloudformation_backend_describe_change_set
     CloudFormationBackend.execute_change_set = cloudformation_backend_execute_change_set
