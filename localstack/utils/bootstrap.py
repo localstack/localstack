@@ -54,9 +54,6 @@ API_COMPOSITES = {
     'cognito': ['cognito-idp', 'cognito-identity']
 }
 
-# name of main Docker container
-MAIN_CONTAINER_NAME = 'localstack_main'
-
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
@@ -187,7 +184,7 @@ def get_docker_container_names():
 
 
 def get_main_container_ip():
-    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % MAIN_CONTAINER_NAME
+    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % config.MAIN_CONTAINER_NAME
     return run(cmd).strip()
 
 
@@ -373,7 +370,7 @@ def extract_port_flags(user_flags, port_mappings):
 
 def start_infra_in_docker():
 
-    container_name = MAIN_CONTAINER_NAME
+    container_name = config.MAIN_CONTAINER_NAME
 
     if docker_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
