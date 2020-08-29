@@ -14,7 +14,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid
 )
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns import sns_listener
@@ -548,9 +548,9 @@ class SNSTest(unittest.TestCase):
             Subject='test subject'
         )
 
-        events = get_lambda_log_events(func_name)
         # Lambda invoked 1 time
-        self.assertEqual(len(events), 1)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=func_name, expected_length=1)
 
         message = events[0]['Records'][0]
         self.assertEqual(message['EventSubscriptionArn'], subscription_arn)
@@ -561,7 +561,8 @@ class SNSTest(unittest.TestCase):
             Subject='test subject'
         )
 
-        events = get_lambda_log_events(func_name)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=func_name, expected_length=2)
         # Lambda invoked 1 more time
         self.assertEqual(len(events), 2)
 

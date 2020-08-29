@@ -20,7 +20,7 @@ from botocore.exceptions import ClientError
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    short_uid, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, retry)
+    short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
@@ -1156,9 +1156,14 @@ class S3ListenerTest(unittest.TestCase):
         time.sleep(2)
 
         table = aws_stack.connect_to_resource('dynamodb').Table(table_name)
-        rs = table.scan()
 
-        self.assertEqual(len(rs['Items']), 1)
+        def check_table():
+            rs = table.scan()
+            self.assertEqual(len(rs['Items']), 1)
+            return rs
+
+        rs = retry(check_table, retries=4, sleep=3)
+
         record = rs['Items'][0]
         self.assertEqual(record['data']['s3']['bucket']['name'], bucket_name)
         self.assertEqual(record['data']['s3']['object']['eTag'], etag)
