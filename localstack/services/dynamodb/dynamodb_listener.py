@@ -124,6 +124,14 @@ class ProxyListenerDynamoDB(ProxyListener):
                             existing_items.append(find_existing_item(inner_request, table_name))
             ProxyListenerDynamoDB.thread_local.existing_items = existing_items
 
+        elif action == '%s.Query' % ACTION_PREFIX:
+            if data.get('IndexName'):
+                if not is_index_query_valid(to_str(data['TableName']), data.get('Select')):
+                    return error_response(message='One or more parameter values were invalid: Select type '
+                                                  'ALL_ATTRIBUTES is not supported for global secondary index id-index '
+                                                  'because its projection type is not ALL',
+                                          error_type='ValidationException', code=400)
+
         elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
             existing_items = []
             for item in data['TransactItems']:
@@ -506,6 +514,17 @@ def update_global_table(data):
             details['ReplicationGroup'].append(new_group)
     result = {'GlobalTableDescription': details}
     return result
+
+
+def is_index_query_valid(table_name, index_query_type):
+    ddb_client = aws_stack.connect_to_service('dynamodb')
+
+    schema = ddb_client.describe_table(TableName=table_name)
+    for index in schema['Table'].get('GlobalSecondaryIndexes', []):
+        index_projection_type = index.get('Projection').get('ProjectionType')
+        if index_query_type == 'ALL_ATTRIBUTES' and index_projection_type != 'ALL':
+            return False
+    return True
 
 
 def find_existing_item(put_item, table_name=None):
