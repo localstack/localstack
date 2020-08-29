@@ -246,7 +246,7 @@ def apply_patches():
         except RecursionError:
             if isinstance(resource_json, dict) and 'Ref' in resource_json:
                 LOG.info('Potential circular dependency detected when resolving Ref "%s"' % resource_json['Ref'])
-                return resource_json['"Ref']
+                return resource_json['Ref']
             raise
         if isinstance(result, BaseModel):
             if isinstance(resource_json, dict) and 'Ref' in resource_json:
@@ -1043,7 +1043,6 @@ def apply_patches():
 
         # start execution in background thread, to avoid timeouts/retries from the client
         set_stack_status(stack, 'CREATE_IN_PROGRESS')
-        print('!!!!START THREAD cloudformation_backend_execute_change_set', aws_stack.get_region())
         start_thread(do_execute)
         return True
 
