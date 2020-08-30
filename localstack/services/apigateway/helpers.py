@@ -207,7 +207,7 @@ def extract_query_string_params(path):
             query_string_params[query_param_name] = query_param_values
 
     # strip trailing slashes from path to fix downstream lookups
-    path = path.rstrip('/')
+    path = path.rstrip('/') or '/'
     return [path, query_string_params]
 
 
