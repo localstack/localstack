@@ -5,7 +5,7 @@ LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 
 # install some common libs
 RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates curl cyrus-sasl-dev g++ gcc \
-        git groff iputils libffi-dev libtool linux-headers make openssl openssl-dev postgresql-dev \
+        git groff iputils libffi-dev libtool linux-headers make nss openssl openssl-dev postgresql-dev \
         py3-pip python3 python3-dev tar xz zip && \
     update-ca-certificates
 
@@ -27,7 +27,6 @@ RUN { \
 ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
 ENV PATH $PATH:/usr/lib/jvm/java-1.8-openjdk/jre/bin:/usr/lib/jvm/java-1.8-openjdk/bin
 RUN set -x && apk add --no-cache openjdk8 && [ "$JAVA_HOME" = "$(docker-java-home)" ]
-RUN apk add --no-cache nss
 
 # Install Maven - taken from official repo:
 # https://github.com/carlossg/docker-maven/blob/master/openjdk-8/Dockerfile)
