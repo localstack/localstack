@@ -1,3 +1,4 @@
+import gzip
 import re
 import json
 import uuid
@@ -1296,6 +1297,11 @@ class ProxyListenerS3(PersistingProxyListener):
 
             # convert to chunked encoding, for compatibility with certain SDKs (e.g., AWS PHP SDK)
             convert_to_chunked_encoding(method, path, response)
+
+            if headers.get('Accept-Encoding') == 'gzip':
+                response._content = gzip.compress(response._content)
+                response.headers['Content-Length'] = str(len(response._content))
+                response.headers['Content-Encoding'] = 'gzip'
 
 
 # instantiate listener
