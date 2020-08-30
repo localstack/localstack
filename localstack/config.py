@@ -152,6 +152,9 @@ WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get('WINDOWS_DOCKER_MOUNT_PREFIX', '/ho
 # whether to use a proxy server with HTTP/2 support. TODO: remove in the future
 USE_HTTP2_SERVER = os.environ.get('USE_HTTP2_SERVER', '').strip() not in FALSE_STRINGS
 
+# name of the main Docker container
+MAIN_CONTAINER_NAME = os.environ.get('MAIN_CONTAINER_NAME', '').strip() or 'localstack_main'
+
 
 def has_docker():
     try:

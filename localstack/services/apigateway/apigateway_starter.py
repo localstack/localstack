@@ -64,7 +64,7 @@ def apply_patches():
 
     def apigateway_models_backend_put_rest_api(self, function_id, body):
         rest_api = self.get_rest_api(function_id)
-        # Remove default root
+        # Remove default root, then add paths from API spec
         rest_api.resources = {}
         for path in body['paths']:
             child_id = create_id()
@@ -84,13 +84,13 @@ def apply_patches():
                 )
                 integration = Integration(
                     http_method=m,
-                    uri=None,
+                    uri=payload.get('uri'),
                     integration_type=payload['type'],
-                    pass_through_behavior=payload['passthroughBehavior'],
-                    request_templates=payload['requestTemplates']
+                    pass_through_behavior=payload.get('passthroughBehavior'),
+                    request_templates=payload.get('requestTemplates') or {}
                 )
                 integration.create_integration_response(
-                    status_code=payload['responses']['default']['statusCode'],
+                    status_code=payload.get('responses', {}).get('default', {}).get('statusCode', 200),
                     selection_pattern=None,
                     response_templates=None,
                     content_handling=None
@@ -125,7 +125,8 @@ def apply_patches():
         apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
         APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
         apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
-    apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
+    if not hasattr(apigateway_models.APIGatewayBackend, 'delete_method'):
+        apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration

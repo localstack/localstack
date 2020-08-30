@@ -103,7 +103,7 @@ def get_main_endpoint_from_container():
                 LOG.info('Determined main container target IP: %s' % DOCKER_MAIN_CONTAINER_IP)
         except Exception as e:
             LOG.info('Unable to get IP address of main Docker container "%s": %s' %
-                (bootstrap.MAIN_CONTAINER_NAME, e))
+                (config.MAIN_CONTAINER_NAME, e))
     # return main container IP, or fall back to Docker host (bridge IP, or host DNS address)
     return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
 
