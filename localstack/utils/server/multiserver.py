@@ -97,13 +97,13 @@ def start_server(port, asynchronous=False):
 
 
 def start_api_server(api, port, server_port=None):
-    print('start_api_server', api, port, server_port, get_moto_server_port())
-    server_port = server_port or get_moto_server_port()
+    print('!!start_api_server', api, port, server_port, get_moto_server_port())
+    server_port = server_port or get_multi_server_port()
     thread = start_server_process(server_port)
     url = 'http://localhost:%s%s' % (server_port, API_PATH_SERVERS)
     payload = {
         'api': api,
-        'port': port
+        'port': get_moto_server_port()
     }
     result = requests.post(url, json=payload)
     if result.status_code >= 400:

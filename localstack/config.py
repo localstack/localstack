@@ -121,7 +121,9 @@ DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 # whether to start the web API
 START_WEB = os.environ.get('START_WEB', '').strip() not in FALSE_STRINGS
 
-USE_ONLY_EDGE_PORT = True
+# whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
+# TODO: this will likely become the default and may get removed in the future
+FORWARD_EDGE_INMEM = True
 # port number for the edge service, the main entry point for all API invocations
 EDGE_PORT = int(os.environ.get('EDGE_PORT') or 0) or DEFAULT_PORT_EDGE
 # fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
@@ -336,7 +338,7 @@ def populate_configs(service_ports=None):
 
 
 def service_port(service_key):
-    if USE_ONLY_EDGE_PORT:
+    if FORWARD_EDGE_INMEM:
         return EDGE_PORT
     return SERVICE_PORTS.get(service_key, 0)
 
