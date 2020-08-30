@@ -123,22 +123,23 @@ def start_ses(port=None, asynchronous=False):
 
 def start_elasticsearch_service(port=None, asynchronous=False):
     port = port or config.PORT_ES
-    return start_local_api('ES', port, method=es_api.serve, asynchronous=asynchronous)
+    return start_local_api('ES', port, api='es', method=es_api.serve, asynchronous=asynchronous)
 
 
 def start_firehose(port=None, asynchronous=False):
     port = port or config.PORT_FIREHOSE
-    return start_local_api('Firehose', port, method=firehose_api.serve, asynchronous=asynchronous)
+    return start_local_api('Firehose', port, api='firehose', method=firehose_api.serve, asynchronous=asynchronous)
 
 
 def start_dynamodbstreams(port=None, asynchronous=False):
     port = port or config.PORT_DYNAMODBSTREAMS
-    return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, asynchronous=asynchronous)
+    return start_local_api('DynamoDB Streams', port, api='dynamodbstreams',
+        method=dynamodbstreams_api.serve, asynchronous=asynchronous)
 
 
 def start_lambda(port=None, asynchronous=False):
     port = port or config.PORT_LAMBDA
-    return start_local_api('Lambda', port, method=lambda_api.serve, asynchronous=asynchronous)
+    return start_local_api('Lambda', port, api='lambda', method=lambda_api.serve, asynchronous=asynchronous)
 
 
 def start_ssm(port=None, asynchronous=False, update_listener=None):
@@ -285,9 +286,11 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
     return do_run(cmd, asynchronous)
 
 
-def start_local_api(name, port, method, asynchronous=False):
-    print('Starting mock %s service on %s port %s ...' % (
-        name, get_service_protocol(), config.EDGE_PORT))
+def start_local_api(name, port, api, method, asynchronous=False):
+    print('Starting mock %s service on %s port %s ...' % (name, get_service_protocol(), config.EDGE_PORT))
+    if config.FORWARD_EDGE_INMEM:
+        port = get_free_tcp_port()
+        PROXY_LISTENERS[api] = (api, port, None)
     if asynchronous:
         thread = start_thread(method, port, quiet=True)
         return thread

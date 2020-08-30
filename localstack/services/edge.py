@@ -52,7 +52,7 @@ class ProxyListenerEdge(ProxyListener):
             return 404
 
         if not port:
-            api, port = get_api_from_custom_rules(method, path, data, headers) or port
+            api, port = get_api_from_custom_rules(method, path, data, headers) or (api, port)
 
         if not port:
             if api in ['', None, '_unknown_']:
@@ -85,7 +85,7 @@ def do_forward_request_inmem(method, path, data, headers, api, port):
     client_address = 'TODO'
     server_address = 'TODO'
     forward_url = 'http://%s:%s/' % (config.HOSTNAME, backend_port)
-    print('!EDGE forward', api, method, path, port, listener, forward_url, backend_port, len(PROXY_LISTENERS))
+    # print('!EDGE forward', api, method, path, port, listener, forward_url, backend_port, len(PROXY_LISTENERS))
     response = modify_and_forward(method=method, path=path, data_bytes=data, headers=headers,
         forward_base_url=forward_url, listeners=[listener], request_handler=None,
         client_address=client_address, server_address=server_address)
@@ -140,6 +140,8 @@ def get_api_from_headers(headers, path=None):
         result = 'cloudwatch', config.PORT_CLOUDWATCH
     elif '.execute-api.' in host:
         result = 'apigateway', config.PORT_APIGATEWAY
+    elif target.startswith('Firehose_'):
+        result = 'firehose', config.PORT_FIREHOSE
     elif target.startswith('DynamoDBStreams') or host.startswith('streams.dynamodb.'):
         # Note: DDB streams requests use ../dynamodb/.. auth header, hence we also need to update result_before
         result = result_before = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
@@ -191,7 +193,7 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     # API Gateway invocation URLs
     if ('/%s/' % PATH_USER_REQUEST) in path:
-        return config.PORT_APIGATEWAY
+        return 'apigateway', config.PORT_APIGATEWAY
 
     data_bytes = to_bytes(data or '')
 
@@ -218,7 +220,7 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     if stripped.count('/') == 1 and method == 'PUT':
         # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
-        return config.PORT_S3
+        return 's3', config.PORT_S3
 
     # detect S3 requests sent from aws-cli using --no-sign-request option
     if 'aws-cli/' in headers.get('User-Agent', ''):

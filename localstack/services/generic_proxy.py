@@ -370,7 +370,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
 
         requests_method = getattr(requests, method.lower())
         response = requests_method(request_url, data=data_to_send,
-            headers=headers, stream=True)
+            headers=headers, stream=True, verify=False)
 
     # prevent requests from processing response body (e.g., to pass-through gzip encoded content unmodified)
     pass_raw = ((hasattr(response, '_content_consumed') and not response._content_consumed) or
@@ -574,7 +574,9 @@ def serve_flask_app(app, port, quiet=True, host=None, cors=True):
         logging.getLogger('werkzeug').setLevel(logging.ERROR)
     if not host:
         host = '0.0.0.0'
-    ssl_context = GenericProxy.get_flask_ssl_context(serial_number=port)
+    ssl_context = None
+    if not config.FORWARD_EDGE_INMEM:
+        ssl_context = GenericProxy.get_flask_ssl_context(serial_number=port)
     app.config['ENV'] = 'development'
 
     def noecho(*args, **kwargs):
