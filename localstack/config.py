@@ -347,6 +347,10 @@ def external_service_url(service_key, host=None):
     return '%s://%s:%s' % (get_protocol(), host, service_port(service_key))
 
 
+def get_edge_url():
+    return '%s://%s:%s' % (get_protocol(), LOCALSTACK_HOSTNAME, EDGE_PORT)
+
+
 # initialize config values
 populate_configs()
 
