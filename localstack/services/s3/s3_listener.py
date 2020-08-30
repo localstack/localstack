@@ -10,6 +10,7 @@ import datetime
 import xmltodict
 import collections
 import dateutil.parser
+import urllib.parse
 import six
 import botocore.config
 from pytz import timezone
@@ -155,7 +156,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag=''
                     'arn': 'arn:aws:s3:::%s' % bucket_name
                 },
                 'object': {
-                    'key': file_name,
+                    'key': urllib.parse.quote(file_name),
                     'size': file_size,
                     'eTag': etag,
                     'versionId': version_id,
