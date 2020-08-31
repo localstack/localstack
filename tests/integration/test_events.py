@@ -459,3 +459,38 @@ class EventsTest(unittest.TestCase):
         self.events_client.delete_event_bus(
             Name=TEST_EVENT_BUS_NAME
         )
+
+    def test_put_events_with_target_sqs_new_region(self):
+        self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
+        queue_name = 'queue-{}'.format(short_uid())
+        rule_name = 'rule-{}'.format(short_uid())
+        target_id = 'target-{}'.format(short_uid())
+
+        sqs_client = aws_stack.connect_to_service('sqs', Region='eu-west-1')
+        sqs_client.create_queue(QueueName=queue_name)
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        self.events_client.put_rule(Name=rule_name)
+        self.events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': queue_arn
+                }
+            ]
+        )
+
+        response = self.events_client.put_events(
+            Entries=[
+                {
+                    'Source': 'com.mycompany.myapp',
+                    'Detail': '{ "key1": "value1", "key": "value2" }',
+                    'Resources': [],
+                    'DetailType': 'myDetailType'
+                }
+            ]
+        )
+        self.assertIn('Entries', response)
+        self.assertEqual(len(response.get('Entries')), 1)
+        self.assertIn('EventId', response.get('Entries')[0])

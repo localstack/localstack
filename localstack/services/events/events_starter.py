@@ -26,9 +26,9 @@ EVENT_RULES = {
 
 
 def send_event_to_sqs(event, arn):
+    region = arn.split(':')[3]
     queue_url = aws_stack.get_sqs_queue_url(arn)
-    sqs_client = aws_stack.connect_to_service('sqs')
-
+    sqs_client = aws_stack.connect_to_service('sqs', region_name=region)
     sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
 
 
