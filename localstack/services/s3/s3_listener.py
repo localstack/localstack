@@ -1117,7 +1117,6 @@ class ProxyListenerS3(PersistingProxyListener):
         if path == path_new:
             return
 
-        # TODO fix PORT_S3_BACKEND!
         url = 'http://%s:%s%s' % (constants.LOCALHOST, PORT_S3_BACKEND, path_new)
         return url
 

@@ -44,9 +44,10 @@ def patch_moto_server():
 
 def start_api_server_locally(request):
 
-    if '__started__' in API_SERVERS:
-        return
-    API_SERVERS['__started__'] = True
+    if localstack_config.FORWARD_EDGE_INMEM:
+        if '__started__' in API_SERVERS:
+            return
+        API_SERVERS['__started__'] = True
 
     api = request.get('api')
     port = request.get('port')
@@ -100,9 +101,11 @@ def start_api_server(api, port, server_port=None):
     server_port = server_port or get_multi_server_port()
     thread = start_server_process(server_port)
     url = 'http://localhost:%s%s' % (server_port, API_PATH_SERVERS)
+    if localstack_config.FORWARD_EDGE_INMEM:
+        port = get_moto_server_port()
     payload = {
         'api': api,
-        'port': get_moto_server_port()
+        'port': port
     }
     result = requests.post(url, json=payload)
     if result.status_code >= 400:
