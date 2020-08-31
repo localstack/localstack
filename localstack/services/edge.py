@@ -7,6 +7,7 @@ from requests.models import Response
 from localstack import config
 from localstack.services import plugins
 from localstack.dashboard import infra as dashboard_infra
+from localstack.utils.aws import aws_stack
 from localstack.constants import (
     HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER,
     PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
@@ -68,6 +69,9 @@ class ProxyListenerEdge(ProxyListener):
             response.status_code = 404
             response._content = '{"status": "running"}'
             return response
+
+        if api and not headers.get('Authorization'):
+            headers['Authorization'] = aws_stack.mock_aws_request_headers(api)['Authorization']
 
         headers['Host'] = host
         if isinstance(data, dict):
@@ -149,6 +153,8 @@ def get_api_from_headers(headers, path=None):
         result = 'apigateway', config.PORT_APIGATEWAY
     elif target.startswith('Firehose_'):
         result = 'firehose', config.PORT_FIREHOSE
+    elif target.startswith('DynamoDB_'):
+        result = 'dynamodb', config.PORT_DYNAMODB
     elif target.startswith('DynamoDBStreams') or host.startswith('streams.dynamodb.'):
         # Note: DDB streams requests use ../dynamodb/.. auth header, hence we also need to update result_before
         result = result_before = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
@@ -236,6 +242,10 @@ def get_api_from_custom_rules(method, path, data, headers):
     # S3 delete object requests
     if method == 'POST' and 'delete=' in path and b'<Delete' in data_bytes and b'<Key>' in data_bytes:
         return 's3', config.PORT_S3
+
+    # SQS queue requests
+    if ('QueueUrl=' in path and 'Action=' in path) or (b'QueueUrl=' in data_bytes and b'Action=' in data_bytes):
+        return 'sqs', config.PORT_SQS
 
 
 def get_service_port_for_account(service, headers):
