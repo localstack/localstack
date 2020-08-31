@@ -1275,6 +1275,12 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                 httpMethod=resource_props['HttpMethod'], statusCode=str(response['StatusCode']),
                 responseParameters=response.get('ResponseParameters', {}))
 
+    elif resource_type == 'ApiGateway::RestApi':
+        body = resource_props.get('Body')
+        if body:
+            body = json.dumps(body) if isinstance(body, dict) else body
+            client.put_rest_api(restApiId=result['id'], body=common.to_bytes(body))
+
     elif resource_type == 'SNS::Topic':
         subscriptions = resource_props.get('Subscription', [])
         for subscription in subscriptions:

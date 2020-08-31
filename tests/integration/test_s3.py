@@ -1259,6 +1259,21 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_encoding_notification_messages(self):
+        key = 'a@b'
+        queue_url = self.sqs_client.create_queue(QueueName='testQueue')['QueueUrl']
+        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+
+        self._create_test_notification_bucket(queue_attributes)
+
+        # put an object where the bucket_name is in the path
+        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key, Body='something')
+
+        response = self.sqs_client.receive_message(QueueUrl=queue_url)
+        self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], 'a%40b')
+        # clean up
+        self.s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Delete={'Objects': [{'Key': key}]})
+
     def test_s3_batch_delete_objects_using_requests(self):
         bucket_name = 'bucket-%s' % short_uid()
         object_key_1 = 'key-%s' % short_uid()
