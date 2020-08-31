@@ -48,7 +48,7 @@ CACHE_CLEAN_TIMEOUT = 60 * 5
 CACHE_MAX_AGE = 60 * 60
 CACHE_FILE_PATTERN = os.path.join(tempfile.gettempdir(), '_random_dir_', 'cache.*.json')
 last_cache_clean_time = {'time': 0}
-mutex_clean = threading.Semaphore(1)
+MUTEX_CLEAN = threading.Semaphore(1)
 
 # misc. constants
 TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
@@ -709,12 +709,13 @@ def is_linux():
 
 def is_alpine():
     try:
-        if '_is_alpine_' not in CACHE:
-            CACHE['_is_alpine_'] = False
-            if not os.path.exists('/etc/issue'):
-                return False
-            out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
-            CACHE['_is_alpine_'] = 'Alpine' in out
+        with MUTEX_CLEAN:
+            if '_is_alpine_' not in CACHE:
+                CACHE['_is_alpine_'] = False
+                if not os.path.exists('/etc/issue'):
+                    return False
+                out = to_str(subprocess.check_output('cat /etc/issue', shell=True))
+                CACHE['_is_alpine_'] = 'Alpine' in out
     except subprocess.CalledProcessError:
         return False
     return CACHE['_is_alpine_']
@@ -1197,9 +1198,8 @@ class SafeStringIO(io.StringIO):
 def clean_cache(file_pattern=CACHE_FILE_PATTERN,
         last_clean_time=last_cache_clean_time, max_age=CACHE_MAX_AGE):
 
-    mutex_clean.acquire()
-    time_now = now()
-    try:
+    with MUTEX_CLEAN:
+        time_now = now()
         if last_clean_time['time'] > time_now - CACHE_CLEAN_TIMEOUT:
             return
         for cache_file in set(glob.glob(file_pattern)):
@@ -1207,8 +1207,6 @@ def clean_cache(file_pattern=CACHE_FILE_PATTERN,
             if time_now > mod_time + max_age:
                 rm_rf(cache_file)
         last_clean_time['time'] = time_now
-    finally:
-        mutex_clean.release()
     return time_now
 
 

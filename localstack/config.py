@@ -54,6 +54,7 @@ DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', 
 DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
 
 # expose services on a specific host internally
+# TODO: evaluate whether this should be hardcoded as HOSTNAME=LOCALHOST ..?
 HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 
 # expose services on a specific host externally
