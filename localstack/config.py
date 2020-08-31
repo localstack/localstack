@@ -9,7 +9,7 @@ from os.path import expanduser
 import six
 from boto3 import Session
 from localstack.constants import (
-    DEFAULT_SERVICE_PORTS, LOCALHOST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
+    DEFAULT_SERVICE_PORTS, LOCALHOST, LOCALHOST_IP, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1)
 
 
@@ -264,7 +264,7 @@ if not is_in_docker:
     CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, '127.0.0.1', '[::1]')))
+no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, LOCALHOST_IP, '[::1]')))
 if os.environ.get('no_proxy'):
     os.environ['no_proxy'] += ',' + no_proxy
 elif os.environ.get('NO_PROXY'):

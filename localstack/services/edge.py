@@ -8,7 +8,8 @@ from localstack import config
 from localstack.services import plugins
 from localstack.dashboard import infra as dashboard_infra
 from localstack.constants import (
-    HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER, PATH_USER_REQUEST)
+    HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER,
+    PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
 from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str, get_service_protocol
 from localstack.utils.common import safe_requests as requests
 from localstack.services.infra import PROXY_LISTENERS
@@ -27,8 +28,6 @@ HEADER_KILL_SIGNAL = 'x-localstack-kill'
 class ProxyListenerEdge(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        if method == 'OPTIONS':
-            return 200
 
         if path.split('?')[0] == '/health':
             return serve_health_endpoint(method, path, data)
@@ -55,6 +54,9 @@ class ProxyListenerEdge(ProxyListener):
             api, port = get_api_from_custom_rules(method, path, data, headers) or (api, port)
 
         if not port:
+            if method == 'OPTIONS':
+                return 200
+
             if api in ['', None, '_unknown_']:
                 truncated = truncate(data)
                 LOG.info(('Unable to find forwarding rule for host "%s", path "%s", '
@@ -76,16 +78,21 @@ class ProxyListenerEdge(ProxyListener):
 
 def do_forward_request(api, method, url, data, headers):
     if config.FORWARD_EDGE_INMEM:
-        return do_forward_request_inmem(method, path, data, headers, api, port)
-    return do_forward_request_network(method, path, data, headers, port)
+        result = do_forward_request_inmem(method, path, data, headers, api, port)
+    else:
+        result = do_forward_request_network(method, path, data, headers, port)
+    if hasattr(result, 'status_code') and result.status_code >= 400 and method == 'OPTIONS':
+        # fall back to successful response for OPTIONS requests
+        return 200
+    return result
 
 
 def do_forward_request_inmem(method, path, data, headers, api, port):
     service_name, backend_port, listener = PROXY_LISTENERS[api]
-    client_address = 'TODO'
-    server_address = 'TODO'
-    forward_url = 'http://%s:%s/' % (config.HOSTNAME, backend_port)
-    # print('!EDGE forward', api, method, path, port, listener, forward_url, backend_port, len(PROXY_LISTENERS))
+    # TODO determine client address..?
+    client_address = LOCALHOST_IP
+    server_address = headers.get('host') or LOCALHOST
+    forward_url = 'http://%s:%s' % (config.HOSTNAME, backend_port)
     response = modify_and_forward(method=method, path=path, data_bytes=data, headers=headers,
         forward_base_url=forward_url, listeners=[listener], request_handler=None,
         client_address=client_address, server_address=server_address)
@@ -277,7 +284,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
 
         def stop(self, quiet=True):
             try:
-                url = 'http%s://localhost:%s' % ('s' if use_ssl else '', port)
+                url = 'http%s://%s:%s' % ('s' if use_ssl else '', LOCALHOST, port)
                 requests.verify_ssl = False
                 requests.post(url, headers={HEADER_KILL_SIGNAL: 'kill'})
             except Exception:

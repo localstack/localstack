@@ -6,7 +6,7 @@ import requests
 from flask_cors import CORS
 from moto import server as moto_server
 from requests.models import Response
-from localstack import constants
+from localstack import constants, config as localstack_config
 from localstack.utils.common import (
     FuncThread, ShellCommandThread, TMP_THREADS, to_str, json_safe,
     wait_for_port_open, is_port_open, get_free_tcp_port)
@@ -55,9 +55,9 @@ def start_api_server_locally(request):
     result = API_SERVERS[api] = {}
 
     def thread_func(params):
-        print('!!!!START', port)
-        return moto_server.main(['-p', str(port), '-H', constants.BIND_HOST])
-        # return moto_server.main([api, '-p', str(port), '-H', constants.BIND_HOST])
+        if localstack_config.FORWARD_EDGE_INMEM:
+            return moto_server.main(['-p', str(port), '-H', constants.BIND_HOST])
+        return moto_server.main([api, '-p', str(port), '-H', constants.BIND_HOST])
 
     thread = FuncThread(thread_func)
     thread.start()
@@ -97,7 +97,6 @@ def start_server(port, asynchronous=False):
 
 
 def start_api_server(api, port, server_port=None):
-    print('!!start_api_server', api, port, server_port, get_moto_server_port())
     server_port = server_port or get_multi_server_port()
     thread = start_server_process(server_port)
     url = 'http://localhost:%s%s' % (server_port, API_PATH_SERVERS)

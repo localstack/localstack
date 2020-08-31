@@ -26,7 +26,8 @@ def stop_elasticsearch():
         return
     LOG.info('Terminating Elasticsearch instance, as all clusters have been removed')
     thread.stop()
-    STATE['_proxy_'].stop()
+    if STATE['_proxy_']:
+        STATE['_proxy_'].stop()
     del STATE['_thread_']
     del STATE['_proxy_']
 

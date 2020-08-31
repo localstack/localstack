@@ -247,7 +247,8 @@ def do_run(cmd, asynchronous, print_output=None, env_vars={}):
 
 def start_proxy_for_service(service_name, port, backend_port, update_listener, quiet=False, params={}):
     if config.FORWARD_EDGE_INMEM:
-        PROXY_LISTENERS[service_name] = (service_name, backend_port, update_listener)
+        if backend_port:
+            PROXY_LISTENERS[service_name] = (service_name, backend_port, update_listener)
         return
     # check if we have a custom backend configured
     custom_backend_url = os.environ.get('%s_BACKEND' % service_name.upper())
@@ -266,12 +267,12 @@ def start_moto_server(key, port, name=None, backend_port=None, asynchronous=Fals
     if not name:
         name = key
     print('Starting mock %s service on %s port %s ...' % (name, get_service_protocol(), config.EDGE_PORT))
-    if not backend_port and (config.USE_SSL or update_listener):
+    if not backend_port:
         if config.FORWARD_EDGE_INMEM:
             backend_port = multiserver.get_moto_server_port()
-        else:
+        elif config.USE_SSL or update_listener:
             backend_port = get_free_tcp_port()
-    if backend_port:
+    if backend_port or config.FORWARD_EDGE_INMEM:
         start_proxy_for_service(key, port, backend_port, update_listener)
     if config.BUNDLE_API_PROCESSES:
         return multiserver.start_api_server(key, backend_port or port)

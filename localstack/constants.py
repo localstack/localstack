@@ -20,6 +20,7 @@ DEFAULT_PORT_WEB_UI = 8080
 
 # host name for localhost
 LOCALHOST = 'localhost'
+LOCALHOST_IP = '127.0.0.1'
 
 # version of the Maven dependency with Java utility code
 LOCALSTACK_MAVEN_VERSION = '0.2.1'

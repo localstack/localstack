@@ -487,8 +487,7 @@ class TestAPIGateway(unittest.TestCase):
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
         result = self.connect_api_gateway_to_http_with_lambda_proxy(
-            'test_gateway3', target_uri, methods=['ANY'], path=path
-        )
+            'test_gateway3', target_uri, methods=['ANY'], path=path)
 
         # make test request to gateway and check response
         path = path.replace('{test_param1}', 'foo1')
