@@ -368,6 +368,8 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
                 request_url = '%s%s' % (forward_base_url, modified_request.url)
             data_to_send = modified_request.data
 
+        # make sure we drop "chunked" transfer encoding from the headers to be forwarded
+        headers.pop('Transfer-Encoding', None)
         requests_method = getattr(requests, method.lower())
         response = requests_method(request_url, data=data_to_send,
             headers=headers, stream=True, verify=False)

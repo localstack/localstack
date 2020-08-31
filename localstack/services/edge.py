@@ -204,7 +204,7 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     data_bytes = to_bytes(data or '')
 
-    if path == '/' and to_bytes('QueueName=') in data_bytes:
+    if path == '/' and b'QueueName=' in data_bytes:
         return 'sqs', config.PORT_SQS
 
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
@@ -231,6 +231,10 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     # detect S3 requests sent from aws-cli using --no-sign-request option
     if 'aws-cli/' in headers.get('User-Agent', ''):
+        return 's3', config.PORT_S3
+
+    # S3 delete object requests
+    if method == 'POST' and 'delete=' in path and b'<Delete' in data_bytes and b'<Key>' in data_bytes:
         return 's3', config.PORT_S3
 
 

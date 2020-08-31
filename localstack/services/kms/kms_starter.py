@@ -19,6 +19,8 @@ def start_kms(port=None, backend_port=None, asynchronous=None, update_listener=N
     env_vars = {
         'PORT': str(backend_port),
         'KMS_REGION': config.DEFAULT_REGION,
-        'KMS_ACCOUNT_ID': TEST_AWS_ACCOUNT_ID
+        'REGION': config.DEFAULT_REGION,
+        'KMS_ACCOUNT_ID': TEST_AWS_ACCOUNT_ID,
+        'ACCOUNT_ID': TEST_AWS_ACCOUNT_ID
     }
     return do_run(kms_binary, asynchronous, env_vars=env_vars)
