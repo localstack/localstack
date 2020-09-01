@@ -190,8 +190,8 @@ def get_main_container_ip():
 
 
 def get_main_container_name():
-    cmd = "docker inspect -f '{{ .Name }}' %s | cut -c 2-" % config.HOSTNAME
-    return run(cmd).strip()
+    cmd = "docker inspect -f '{{ .Name }}' %s" % config.HOSTNAME
+    return run(cmd).strip().lstrip('/')
 
 
 def setup_logging():
