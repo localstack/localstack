@@ -12,6 +12,7 @@ from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncat
 from localstack.utils.common import safe_requests as requests
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
+from localstack.utils.aws.aws_stack import set_default_region_in_headers
 
 LOG = logging.getLogger(__name__)
 
@@ -39,6 +40,8 @@ class ProxyListenerEdge(ProxyListener):
 
         # extract API details
         api, port, path, host = get_api_from_headers(headers, path)
+
+        set_default_region_in_headers(headers)
 
         if port and int(port) < 0:
             return 404
