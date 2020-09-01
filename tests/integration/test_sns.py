@@ -723,3 +723,22 @@ class SNSTest(unittest.TestCase):
         def check_messages():
             self.assertEqual(len(list_of_contacts), len(sns_listener.SMS_MESSAGES))
         retry(check_messages, retries=3, sleep=0.5)
+
+    def test_publish_sqs_from_sns(self):
+        topic = self.sns_client.create_topic(Name='test_topic3')
+        topic_arn = topic['TopicArn']
+        test_queue = self.sqs_client.create_queue(QueueName='test_queue3')
+
+        queue_url = test_queue['QueueUrl']
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_url)
+        self.sns_client.publish(TargetArn=topic_arn, Message='Test msg')
+
+        response = self.sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=['SentTimestamp'],
+            MaxNumberOfMessages=1,
+            MessageAttributeNames=['All'],
+            VisibilityTimeout=2,
+            WaitTimeSeconds=2,
+        )
+        self.assertEqual(len(response['Messages']), 1)
