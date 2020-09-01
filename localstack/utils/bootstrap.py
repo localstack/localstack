@@ -184,8 +184,14 @@ def get_docker_container_names():
 
 
 def get_main_container_ip():
-    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % config.MAIN_CONTAINER_NAME
+    container_name = get_main_container_name()
+    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % container_name
     return run(cmd).strip()
+
+
+def get_main_container_name():
+    cmd = "docker inspect -f '{{ .Name }}' %s" % config.HOSTNAME
+    return run(cmd).strip().lstrip('/')
 
 
 def setup_logging():

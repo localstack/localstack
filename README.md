@@ -62,6 +62,7 @@ future release - please reconfigure your client SDKs to start using the single e
 * **ACM** ~at http://localhost:4619~
 
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
+* **Amplify**
 * **API Gateway V2 (WebSockets support)**
 * **AppSync**
 * **Athena**
