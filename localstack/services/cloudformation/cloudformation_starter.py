@@ -294,7 +294,7 @@ def apply_patches():
             return None
 
         # parse and get final resource JSON
-        resource_tuple = parsing.parse_resource(logical_id, resource_json, resources_map)
+        resource_tuple = parsing.parse_resource_and_generate_name(logical_id, resource_json, resources_map)
         if not resource_tuple:
             return None
         _, resource_json, resource_name = resource_tuple
