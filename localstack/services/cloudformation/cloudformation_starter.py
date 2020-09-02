@@ -209,6 +209,9 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
     if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
         props['StartingPosition'] = 'LATEST'
 
+    if res_type == 'AWS::Lambda::Function' and not props.get('FunctionName'):
+        props['FunctionName'] = '{}-lambda-{}'.format(stack_name[:45], short_uid())
+
     if res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
         props['TopicName'] = 'topic-%s' % short_uid()
 
@@ -227,6 +230,17 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
         if res_type == entry[0] and not props.get(entry[1]):
             props_str = canonical_json(json_safe(props))
             props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(props_str))
+
+
+def extract_attr_from_props_json(resource_id, attr, resources):
+    # print('!!!!!!extract_attr_from_props_json', resource_id, attr, resources)
+    resource = resources.get(resource_id)
+    if not resource:
+        return
+    # res_type = resource['Type']
+    # res_props = resource['Properties']
+    # if res_type == ''
+    # return result
 
 
 def apply_patches():
@@ -248,8 +262,16 @@ def apply_patches():
                 LOG.info('Potential circular dependency detected when resolving Ref "%s"' % resource_json['Ref'])
                 return resource_json['Ref']
             raise
-        if isinstance(result, BaseModel):
-            if isinstance(resource_json, dict) and 'Ref' in resource_json:
+        if isinstance(resource_json, dict):
+            if isinstance(resource_json.get('Fn::GetAtt'), list) and result == resource_json:
+                # resource_id, attr_name = resource_json['Fn::GetAtt']
+                # print('!!!!getattr', resource_id, attr_name, resources_map._parsed_resources)
+                # attr_from_props = extract_attr_from_props_json(
+                #       resource_id, attr_name, resources_map._resource_json_map)
+                # if attr_from_props:
+                #     return attr_from_props
+                return None
+            if 'Ref' in resource_json and isinstance(result, BaseModel):
                 entity_id = get_entity_id(result, resource_json)
                 if entity_id:
                     return entity_id
@@ -617,7 +639,9 @@ def apply_patches():
         result = SQS_Queue_physical_resource_id_orig.fget(self)
         if '://' not in result:
             # convert ID to queue URL
-            return aws_stack.get_sqs_queue_url(result)
+            self._physical_resource_id = (getattr(self, '_physical_resource_id', None) or
+                aws_stack.get_sqs_queue_url(result))
+            return self._physical_resource_id
         return result
 
     SQS_Queue_physical_resource_id_orig = sqs_models.Queue.physical_resource_id
@@ -793,7 +817,7 @@ def apply_patches():
     if not hasattr(iam_models.Role, 'update_from_cloudformation_json'):
         iam_models.Role.update_from_cloudformation_json = Role_update_from_cloudformation_json
 
-    # patch ApiGateway Deployment
+    # patch ApiGateway Deployment deletion
     @staticmethod
     def depl_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
@@ -802,7 +826,7 @@ def apply_patches():
     if not hasattr(apigw_models.Deployment, 'delete_from_cloudformation_json'):
         apigw_models.Deployment.delete_from_cloudformation_json = depl_delete_from_cloudformation_json
 
-    # patch Lambda Version
+    # patch Lambda Version deletion
     @staticmethod
     def vers_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
