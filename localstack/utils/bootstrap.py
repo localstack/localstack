@@ -523,7 +523,11 @@ class FuncThread(threading.Thread):
                 LOG.warning('Thread run method %s(%s) failed: %s %s' %
                     (self.func, self.params, e, traceback.format_exc()))
         finally:
-            self.result_future.set_result(result)
+            try:
+                self.result_future.set_result(result)
+            except Exception:
+                # this can happen as InvalidStateError on shutdown, if the task is already canceled
+                pass
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:
