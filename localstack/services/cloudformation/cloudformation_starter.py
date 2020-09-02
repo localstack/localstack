@@ -232,17 +232,6 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
             props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(props_str))
 
 
-def extract_attr_from_props_json(resource_id, attr, resources):
-    # print('!!!!!!extract_attr_from_props_json', resource_id, attr, resources)
-    resource = resources.get(resource_id)
-    if not resource:
-        return
-    # res_type = resource['Type']
-    # res_props = resource['Properties']
-    # if res_type == ''
-    # return result
-
-
 def apply_patches():
     """ Apply patches to make LocalStack seamlessly interact with the moto backend.
         TODO: Eventually, these patches should be contributed to the upstream repo! """
@@ -264,12 +253,8 @@ def apply_patches():
             raise
         if isinstance(resource_json, dict):
             if isinstance(resource_json.get('Fn::GetAtt'), list) and result == resource_json:
-                # resource_id, attr_name = resource_json['Fn::GetAtt']
-                # print('!!!!getattr', resource_id, attr_name, resources_map._parsed_resources)
-                # attr_from_props = extract_attr_from_props_json(
-                #       resource_id, attr_name, resources_map._resource_json_map)
-                # if attr_from_props:
-                #     return attr_from_props
+                # if the attribute cannot be resolved (i.e., result == resource_json), then return None,
+                # to avoid returning the original JSON struct (which otherwise results in downstream issues..)
                 return None
             if 'Ref' in resource_json and isinstance(result, BaseModel):
                 entity_id = get_entity_id(result, resource_json)
