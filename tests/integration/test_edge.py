@@ -127,7 +127,7 @@ class TestEdgeAPI(unittest.TestCase):
         test_queue = sqs_client.create_queue(QueueName='test_queue3')
 
         queue_url = test_queue['QueueUrl']
-        r = sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+        sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
         sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_url)
         sns_client.publish(TargetArn=topic_arn, Message='Test msg')
 
