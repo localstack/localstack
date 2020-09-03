@@ -173,7 +173,7 @@ def docker_container_running(container_name):
 
 
 def get_docker_container_names():
-    cmd = "docker ps --format '{{.Names}}'"
+    cmd = "%s ps --format '{{.Names}}'" % config.DOCKER_CMD
     try:
         output = to_str(run(cmd))
         container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
@@ -185,12 +185,13 @@ def get_docker_container_names():
 
 def get_main_container_ip():
     container_name = get_main_container_name()
-    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % container_name
+    cmd = ("%s inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" %
+        (config.DOCKER_CMD, container_name))
     return run(cmd).strip()
 
 
 def get_main_container_name():
-    cmd = "docker inspect -f '{{ .Name }}' %s" % config.HOSTNAME
+    cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
     return run(cmd).strip().lstrip('/')
 
 
