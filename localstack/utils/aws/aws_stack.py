@@ -221,7 +221,14 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
             if is_local_env(env):
                 endpoint_url = get_local_service_url(service_name)
                 verify = False
+            backend_env_name = '%s_BACKEND' % service_name.upper()
+            backend_url = os.environ.get(backend_env_name, '').strip()
+            if backend_url:
+                endpoint_url = backend_url
         config = config or botocore.client.Config()
+        # configure S3 path style addressing
+        if service_name == 's3':
+            config.s3 = {'addressing_style': 'path'}
         # prevent error "Connection pool is full, discarding connection ..."
         config.max_pool_connections = 150
         BOTO_CLIENTS_CACHE[cache_key] = method(service_name, region_name=region,
@@ -277,18 +284,6 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
         response.headers['content-length'] = len(response._content)
         return response
     return content
-
-
-def get_s3_client():
-    if 'S3_BACKEND' in os.environ:
-        endpoint_url = os.environ.get('S3_BACKEND')
-    else:
-        endpoint_url = config.TEST_S3_URL
-
-    return boto3.resource('s3',
-        endpoint_url=endpoint_url,
-        config=boto3.session.Config(s3={'addressing_style': 'path'}),
-        verify=False)
 
 
 def inject_test_credentials_into_env(env):
