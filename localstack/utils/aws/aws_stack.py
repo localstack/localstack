@@ -280,8 +280,13 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
 
 
 def get_s3_client():
+    if 'S3_BACKEND' in os.environ:
+        endpoint_url = os.environ.get('S3_BACKEND')
+    else:
+        endpoint_url = config.TEST_S3_URL
+
     return boto3.resource('s3',
-        endpoint_url=config.TEST_S3_URL,
+        endpoint_url=endpoint_url,
         config=boto3.session.Config(s3={'addressing_style': 'path'}),
         verify=False)
 
