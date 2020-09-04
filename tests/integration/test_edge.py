@@ -117,6 +117,7 @@ class TestEdgeAPI(unittest.TestCase):
 
     def test_invoke_sns_sqs_integration_using_edge_port(self):
         edge_port = config.EDGE_PORT_HTTP or config.EDGE_PORT
+        region_original = os.environ.get('DEFAULT_REGION')
         os.environ['DEFAULT_REGION'] = 'us-southeast-2'
         edge_url = '%s://localhost:%s' % (get_service_protocol(), edge_port)
         sns_client = aws_stack.connect_to_service('sns', endpoint_url=edge_url)
@@ -140,3 +141,7 @@ class TestEdgeAPI(unittest.TestCase):
             WaitTimeSeconds=2,
         )
         self.assertEqual(len(response['Messages']), 1)
+
+        os.environ.pop('DEFAULT_REGION')
+        if region_original is not None:
+            os.environ['DEFAULT_REGION'] = region_original
