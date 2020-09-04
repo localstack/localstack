@@ -9,7 +9,8 @@ import botocore
 from localstack import config
 from localstack.constants import (
     REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
-    APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
+    APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
+    MAX_POOL_CONNECTIONS)
 from localstack.utils.aws import templating
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
@@ -229,8 +230,9 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         # configure S3 path style addressing
         if service_name == 's3':
             config.s3 = {'addressing_style': 'path'}
-        # prevent error "Connection pool is full, discarding connection ..."
-        config.max_pool_connections = 150
+        # To, prevent error "Connection pool is full, discarding connection ...",
+        # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
+        config.max_pool_connections = MAX_POOL_CONNECTIONS
         BOTO_CLIENTS_CACHE[cache_key] = method(service_name, region_name=region,
             endpoint_url=endpoint_url, verify=verify, config=config)
 
