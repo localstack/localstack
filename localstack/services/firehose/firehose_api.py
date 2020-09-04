@@ -14,7 +14,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_responses
 from localstack.utils.common import short_uid, to_str, timestamp
 from localstack.utils.aws.aws_stack import (
-    get_s3_client, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
+    connect_to_resource, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.analytics import event_publisher
 
@@ -84,7 +84,7 @@ def put_records(stream_name, records):
             s3_dest = dest['S3DestinationDescription']
             bucket = bucket_name(s3_dest['BucketARN'])
             prefix = s3_dest.get('Prefix', '')
-            s3 = get_s3_client()
+            s3 = connect_to_resource('s3')
             for record in records:
 
                 # DirectPut

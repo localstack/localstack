@@ -6,10 +6,12 @@ import logging
 from requests.models import Response
 from localstack import config
 from localstack.services import plugins
+from localstack.dashboard import infra as dashboard_infra
 from localstack.constants import (
     HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER, PATH_USER_REQUEST)
 from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str, get_service_protocol
 from localstack.utils.common import safe_requests as requests
+from localstack.utils.aws.aws_stack import Environment
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 
@@ -28,6 +30,8 @@ class ProxyListenerEdge(ProxyListener):
 
         if path.split('?')[0] == '/health':
             return serve_health_endpoint(method, path, data)
+        if method == 'POST' and path == '/graph':
+            return serve_resource_graph(data)
 
         # kill the process if we receive this header
         headers.get(HEADER_KILL_SIGNAL) and os._exit(0)
@@ -114,7 +118,7 @@ def get_api_from_headers(headers, path=None):
     elif target.startswith('DynamoDBStreams') or host.startswith('streams.dynamodb.'):
         # Note: DDB streams requests use ../dynamodb/.. auth header, hence we also need to update result_before
         result = result_before = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
-    elif ls_target == 'web' or path == '/graph':
+    elif ls_target == 'web':
         result = 'web', config.PORT_WEB_UI
 
     return result[0], result_before[1] or result[1], path, host
@@ -136,6 +140,13 @@ def serve_health_endpoint(method, path, data):
         data = json.loads(to_str(data))
         plugins.set_services_health(data)
         return {'status': 'OK'}
+
+
+def serve_resource_graph(data):
+    data = json.loads(to_str(data or '{}'))
+    env = Environment.from_string(data.get('awsEnvironment'))
+    graph = dashboard_infra.get_graph(name_filter=data.get('nameFilter') or '.*', env=env)
+    return graph
 
 
 def get_port_from_custom_rules(method, path, data, headers):
