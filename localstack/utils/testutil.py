@@ -263,7 +263,7 @@ def download_s3_object(s3, bucket, path):
 
 
 def map_all_s3_objects(to_json=True, buckets=None):
-    s3_client = aws_stack.get_s3_client()
+    s3_client = aws_stack.connect_to_resource('s3')
     result = {}
     buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
     for bucket in buckets:
@@ -330,6 +330,12 @@ def create_sqs_queue(queue_name):
 
 def get_lambda_log_group_name(function_name):
     return '/aws/lambda/{}'.format(function_name)
+
+
+def check_expected_lambda_log_events_length(expected_length, function_name):
+    events = get_lambda_log_events(function_name)
+    assert len(events) == expected_length
+    return events
 
 
 def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY):

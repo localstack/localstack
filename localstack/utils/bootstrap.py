@@ -54,9 +54,6 @@ API_COMPOSITES = {
     'cognito': ['cognito-idp', 'cognito-identity']
 }
 
-# name of main Docker container
-MAIN_CONTAINER_NAME = 'localstack_main'
-
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
@@ -176,7 +173,7 @@ def docker_container_running(container_name):
 
 
 def get_docker_container_names():
-    cmd = "docker ps --format '{{.Names}}'"
+    cmd = "%s ps --format '{{.Names}}'" % config.DOCKER_CMD
     try:
         output = to_str(run(cmd))
         container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
@@ -187,8 +184,15 @@ def get_docker_container_names():
 
 
 def get_main_container_ip():
-    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % MAIN_CONTAINER_NAME
+    container_name = get_main_container_name()
+    cmd = ("%s inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" %
+        (config.DOCKER_CMD, container_name))
     return run(cmd).strip()
+
+
+def get_main_container_name():
+    cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
+    return run(cmd).strip().lstrip('/')
 
 
 def setup_logging():
@@ -373,7 +377,7 @@ def extract_port_flags(user_flags, port_mappings):
 
 def start_infra_in_docker():
 
-    container_name = MAIN_CONTAINER_NAME
+    container_name = config.MAIN_CONTAINER_NAME
 
     if docker_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
@@ -520,7 +524,11 @@ class FuncThread(threading.Thread):
                 LOG.warning('Thread run method %s(%s) failed: %s %s' %
                     (self.func, self.params, e, traceback.format_exc()))
         finally:
-            self.result_future.set_result(result)
+            try:
+                self.result_future.set_result(result)
+            except Exception:
+                # this can happen as InvalidStateError on shutdown, if the task is already canceled
+                pass
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:

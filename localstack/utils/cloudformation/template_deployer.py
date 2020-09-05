@@ -747,9 +747,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     resource_props = resource.get('Properties')
     try:
         if resource_type == 'Lambda::Function':
-            resource_props['FunctionName'] = (resource_props.get('FunctionName') or
-                '{}-lambda-{}'.format(stack_name[:45], common.short_uid()))
-            resource_id = resource_props['FunctionName'] if resource else resource_id
+            func_name = resolve_refs_recursively(stack_name, resource_props['FunctionName'], resources)
+            resource_id = func_name if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
         elif resource_type == 'Lambda::Version':
             name = resource_props.get('FunctionName')
@@ -1274,6 +1273,12 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
             apigateway.put_method_response(restApiId=api_id, resourceId=res_id,
                 httpMethod=resource_props['HttpMethod'], statusCode=str(response['StatusCode']),
                 responseParameters=response.get('ResponseParameters', {}))
+
+    elif resource_type == 'ApiGateway::RestApi':
+        body = resource_props.get('Body')
+        if body:
+            body = json.dumps(body) if isinstance(body, dict) else body
+            client.put_rest_api(restApiId=result['id'], body=common.to_bytes(body))
 
     elif resource_type == 'SNS::Topic':
         subscriptions = resource_props.get('Subscription', [])

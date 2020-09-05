@@ -14,7 +14,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     to_str, get_free_tcp_port, retry, wait_for_port_open, get_service_protocol, short_uid
 )
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 from localstack.services.infra import start_proxy
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.sns import sns_listener
@@ -548,9 +548,9 @@ class SNSTest(unittest.TestCase):
             Subject='test subject'
         )
 
-        events = get_lambda_log_events(func_name)
         # Lambda invoked 1 time
-        self.assertEqual(len(events), 1)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=func_name, expected_length=1)
 
         message = events[0]['Records'][0]
         self.assertEqual(message['EventSubscriptionArn'], subscription_arn)
@@ -561,7 +561,8 @@ class SNSTest(unittest.TestCase):
             Subject='test subject'
         )
 
-        events = get_lambda_log_events(func_name)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=func_name, expected_length=2)
         # Lambda invoked 1 more time
         self.assertEqual(len(events), 2)
 
@@ -722,3 +723,22 @@ class SNSTest(unittest.TestCase):
         def check_messages():
             self.assertEqual(len(list_of_contacts), len(sns_listener.SMS_MESSAGES))
         retry(check_messages, retries=3, sleep=0.5)
+
+    def test_publish_sqs_from_sns(self):
+        topic = self.sns_client.create_topic(Name='test_topic3')
+        topic_arn = topic['TopicArn']
+        test_queue = self.sqs_client.create_queue(QueueName='test_queue3')
+
+        queue_url = test_queue['QueueUrl']
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_url)
+        self.sns_client.publish(TargetArn=topic_arn, Message='Test msg')
+
+        response = self.sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=['SentTimestamp'],
+            MaxNumberOfMessages=1,
+            MessageAttributeNames=['All'],
+            VisibilityTimeout=2,
+            WaitTimeSeconds=2,
+        )
+        self.assertEqual(len(response['Messages']), 1)

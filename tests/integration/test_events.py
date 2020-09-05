@@ -13,7 +13,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     load_file, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, get_service_protocol
 )
-from localstack.utils.testutil import get_lambda_log_events
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -229,8 +229,8 @@ class EventsTest(unittest.TestCase):
         )
 
         # Get lambda's log events
-        events = get_lambda_log_events(function_name)
-        self.assertEqual(len(events), 1)
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=function_name, expected_length=1)
         actual_event = events[0]
         self.assertIsValidEvent(actual_event)
         self.assertDictEqual(json.loads(actual_event['detail']), json.loads(TEST_EVENT_PATTERN['Detail']))
@@ -459,3 +459,38 @@ class EventsTest(unittest.TestCase):
         self.events_client.delete_event_bus(
             Name=TEST_EVENT_BUS_NAME
         )
+
+    def test_put_events_with_target_sqs_new_region(self):
+        self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
+        queue_name = 'queue-{}'.format(short_uid())
+        rule_name = 'rule-{}'.format(short_uid())
+        target_id = 'target-{}'.format(short_uid())
+
+        sqs_client = aws_stack.connect_to_service('sqs', Region='eu-west-1')
+        sqs_client.create_queue(QueueName=queue_name)
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        self.events_client.put_rule(Name=rule_name)
+        self.events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': queue_arn
+                }
+            ]
+        )
+
+        response = self.events_client.put_events(
+            Entries=[
+                {
+                    'Source': 'com.mycompany.myapp',
+                    'Detail': '{ "key1": "value1", "key": "value2" }',
+                    'Resources': [],
+                    'DetailType': 'myDetailType'
+                }
+            ]
+        )
+        self.assertIn('Entries', response)
+        self.assertEqual(len(response.get('Entries')), 1)
+        self.assertIn('EventId', response.get('Entries')[0])

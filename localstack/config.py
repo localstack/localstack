@@ -152,6 +152,9 @@ WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get('WINDOWS_DOCKER_MOUNT_PREFIX', '/ho
 # whether to use a proxy server with HTTP/2 support. TODO: remove in the future
 USE_HTTP2_SERVER = os.environ.get('USE_HTTP2_SERVER', '').strip() not in FALSE_STRINGS
 
+# name of the main Docker container
+MAIN_CONTAINER_NAME = os.environ.get('MAIN_CONTAINER_NAME', '').strip() or 'localstack_main'
+
 
 def has_docker():
     try:
@@ -196,7 +199,7 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
-                   'DYNAMODB_HEAP_SIZE']
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -342,6 +345,10 @@ def get_protocol():
 def external_service_url(service_key, host=None):
     host = host or HOSTNAME_EXTERNAL
     return '%s://%s:%s' % (get_protocol(), host, service_port(service_key))
+
+
+def get_edge_url():
+    return '%s://%s:%s' % (get_protocol(), LOCALSTACK_HOSTNAME, EDGE_PORT)
 
 
 # initialize config values

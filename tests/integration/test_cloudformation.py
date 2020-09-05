@@ -1120,11 +1120,9 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        rs = cloudformation.describe_stacks(
-            StackName=stack_name
-        )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        _await_stack_completion(stack_name)
 
+        rs = cloudformation.describe_stacks(StackName=stack_name)
         stack = rs['Stacks'][0]
         parameters = stack['Parameters']
 
@@ -1149,6 +1147,8 @@ class CloudFormationTest(unittest.TestCase):
         role_name = 'role-%s' % short_uid()
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
+        iam_client = aws_stack.connect_to_service('iam')
+        roles_before = iam_client.list_roles()['Roles']
 
         try:
             cloudformation.describe_stacks(
@@ -1184,19 +1184,16 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        rs = cloudformation.describe_stacks(
-            StackName=stack_name
-        )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        _await_stack_completion(stack_name)
 
+        rs = cloudformation.describe_stacks(StackName=stack_name)
         stack = rs['Stacks'][0]
         self.assertEqual(stack['StackName'], stack_name)
 
-        iam_client = aws_stack.connect_to_service('iam')
         rs = iam_client.list_roles()
 
-        self.assertEqual(len(rs['Roles']), 1)
-        self.assertEqual(rs['Roles'][0]['RoleName'], role_name)
+        self.assertEqual(len(rs['Roles']), len(roles_before) + 1)
+        self.assertEqual(rs['Roles'][-1]['RoleName'], role_name)
 
         rs = iam_client.list_role_policies(
             RoleName=role_name
@@ -1251,11 +1248,9 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        rs = cloudformation.describe_stacks(
-            StackName=stack_name
-        )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        _await_stack_completion(stack_name)
 
+        rs = cloudformation.describe_stacks(StackName=stack_name)
         stack = rs['Stacks'][0]
         self.assertEqual(stack['StackName'], stack_name)
         outputs = stack['Outputs']
@@ -1320,10 +1315,8 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        rs = cloudformation.describe_stacks(
-            StackName=stack_name
-        )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        _await_stack_completion(stack_name)
+        rs = cloudformation.describe_stacks(StackName=stack_name)
 
         stacks = [stack for stack in rs['Stacks'] if stack['StackName'] == stack_name]
         self.assertEqual(len(stacks), 1)
@@ -1388,10 +1381,7 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        rs = cloudformation.describe_stacks(
-            StackName=stack_name
-        )
-        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        _await_stack_completion(stack_name)
 
         rs = iam_client.list_roles()
         # 1 role was created

@@ -43,6 +43,20 @@ class ProxyListenerDynamoDB(ProxyListener):
     def __init__(self):
         self._table_ttl_map = {}
 
+    @staticmethod
+    def table_exists(ddb_client, table_name):
+        paginator = ddb_client.get_paginator('list_tables')
+        pages = paginator.paginate(
+            PaginationConfig={
+                'PageSize': 100
+            }
+        )
+        for page in pages:
+            table_names = page['TableNames']
+            if to_str(table_name) in table_names:
+                return True
+        return False
+
     def forward_request(self, method, path, data, headers):
         if path.startswith('/shell') or method == 'GET':
             if path == '/shell':
@@ -68,8 +82,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         if action == '%s.CreateTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) in table_names:
+            if self.table_exists(ddb_client, data['TableName']):
                 return error_response(message='Table already created',
                                       error_type='ResourceInUseException', code=400)
 
@@ -104,14 +117,12 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         elif action == '%s.DescribeTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) not in table_names:
+            if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
 
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) not in table_names:
+            if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
 
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
@@ -123,6 +134,14 @@ class ProxyListenerDynamoDB(ProxyListener):
                         if inner_request:
                             existing_items.append(find_existing_item(inner_request, table_name))
             ProxyListenerDynamoDB.thread_local.existing_items = existing_items
+
+        elif action == '%s.Query' % ACTION_PREFIX:
+            if data.get('IndexName'):
+                if not is_index_query_valid(to_str(data['TableName']), data.get('Select')):
+                    return error_response(message='One or more parameter values were invalid: Select type '
+                                                  'ALL_ATTRIBUTES is not supported for global secondary index id-index '
+                                                  'because its projection type is not ALL',
+                                          error_type='ValidationException', code=400)
 
         elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
             existing_items = []
@@ -508,6 +527,17 @@ def update_global_table(data):
     return result
 
 
+def is_index_query_valid(table_name, index_query_type):
+    ddb_client = aws_stack.connect_to_service('dynamodb')
+
+    schema = ddb_client.describe_table(TableName=table_name)
+    for index in schema['Table'].get('GlobalSecondaryIndexes', []):
+        index_projection_type = index.get('Projection').get('ProjectionType')
+        if index_query_type == 'ALL_ATTRIBUTES' and index_projection_type != 'ALL':
+            return False
+    return True
+
+
 def find_existing_item(put_item, table_name=None):
     table_name = table_name or put_item['TableName']
     ddb_client = aws_stack.connect_to_service('dynamodb')
@@ -535,7 +565,7 @@ def find_existing_item(put_item, table_name=None):
     if 'Item' not in existing_item:
         if 'message' in existing_item:
             table_names = ddb_client.list_tables()['TableNames']
-            msg = ('Unable to get item from DynamoDB (existing tables: %s): %s' %
+            msg = ('Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s' %
                 (table_names, existing_item['message']))
             LOGGER.warning(msg)
         return

@@ -206,6 +206,8 @@ def extract_query_string_params(path):
         else:
             query_string_params[query_param_name] = query_param_values
 
+    # strip trailing slashes from path to fix downstream lookups
+    path = path.rstrip('/') or '/'
     return [path, query_string_params]
 
 
@@ -227,7 +229,8 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
     resource_map = {}
     for resource in resources['items']:
-        path = aws_stack.get_apigateway_path_for_resource(rest_api_id, resource['id'], region_name=region_name)
+        path = resource.get('path')
+        path = path or aws_stack.get_apigateway_path_for_resource(rest_api_id, resource['id'], region_name=region_name)
         resource_map[path] = resource
     return resource_map
 

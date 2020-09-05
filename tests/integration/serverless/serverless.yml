@@ -7,6 +7,8 @@ provider:
   versionFunctions: false
   timeout: 900
   runtime: "nodejs12.x"
+  deploymentBucket:
+    name: custom-sls-depl-bucket-123
 
 functions:
   test:
@@ -25,8 +27,10 @@ functions:
           path: /test/v1
           method: get
           integration: lambda-proxy
+
 plugins:
-  - "serverless-localstack"
+  - serverless-deployment-bucket
+  - serverless-localstack
 
 custom:
   localstack:
