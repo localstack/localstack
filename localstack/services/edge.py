@@ -70,12 +70,16 @@ class ProxyListenerEdge(ProxyListener):
         url = '%s://%s%s' % (get_service_protocol(), connect_host, path)
 
         headers['Host'] = host
-        function = getattr(requests, method.lower())
         if isinstance(data, dict):
             data = json.dumps(data)
 
-        response = function(url, data=data, headers=headers, verify=False, stream=True)
-        return response
+        return do_forward_request(api, method, url, data, headers)
+
+
+def do_forward_request(api, method, url, data, headers):
+    function = getattr(requests, method.lower())
+    response = function(url, data=data, headers=headers, verify=False, stream=True)
+    return response
 
 
 def get_api_from_headers(headers, path=None):

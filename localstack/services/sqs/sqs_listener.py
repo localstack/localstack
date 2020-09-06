@@ -3,14 +3,13 @@ import json
 import xmltodict
 from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
-from six.moves.urllib import parse as urlparse
-from six.moves.urllib.parse import urlencode
 from requests.models import Request
+from six.moves.urllib.parse import urlencode
 from localstack import config, constants
 from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
 from localstack.services.sns import sns_listener
-from localstack.utils.common import to_str, clone, path_from_url, get_service_protocol
+from localstack.utils.common import to_str, clone, path_from_url, get_service_protocol, parse_request_data
 from localstack.utils.analytics import event_publisher
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.persistence import PersistingProxyListener
@@ -35,19 +34,6 @@ UNSUPPORTED_ATTRIBUTE_NAMES = [
 # maps queue URLs to attributes set via the API
 # TODO: add region as first level in the map
 QUEUE_ATTRIBUTES = {}
-
-
-def parse_request_data(method, path, data):
-    """ Extract request data either from query string (for GET) or request body (for POST). """
-    if method == 'POST':
-        result = urlparse.parse_qs(to_str(data))
-    elif method == 'GET':
-        parsed_path = urlparse.urlparse(path)
-        result = urlparse.parse_qs(parsed_path.query)
-    else:
-        return {}
-    result = dict([(k, v[0]) for k, v in result.items()])
-    return result
 
 
 # Format attributes as a list. Example input:

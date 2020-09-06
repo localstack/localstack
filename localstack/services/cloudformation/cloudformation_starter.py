@@ -252,13 +252,16 @@ def apply_patches():
                 return resource_json['Ref']
             raise
         if isinstance(resource_json, dict):
-            if isinstance(resource_json.get('Fn::GetAtt'), list) and result == resource_json:
+            attr_ref = resource_json.get('Fn::GetAtt')
+            if isinstance(attr_ref, list) and result == resource_json:
                 # If the attribute cannot be resolved (i.e., result == resource_json), then return
                 # an empty value, to avoid returning the original JSON struct (which otherwise
                 # results in downstream issues, e.g., when concatenating template values).
                 # TODO: Note that this workaround could point towards a general issue with
                 # dependency resolution - in fact, this case should never be happening (but it does).
-                return ''
+                LOG.debug('Unable to resolve attribute reference %s in resource map keys %s' %
+                    (attr_ref, list(resources_map.keys())))
+                return None
             if 'Ref' in resource_json and isinstance(result, BaseModel):
                 entity_id = get_entity_id(result, resource_json)
                 if entity_id:
@@ -890,7 +893,7 @@ def apply_patches():
             if aws_stack.get_region() != self.region:
                 msg = '%s/%s' % (msg, self.region)
             LOG.warning(msg)
-            response = aws_responses.flask_error_response(msg, code=404, error_type='ResourceNotFoundException')
+            response = aws_responses.flask_error_response_json(msg, code=404, error_type='ResourceNotFoundException')
             return 404, response.headers, response.data
 
         for stack_resource in stack.stack_resources:
