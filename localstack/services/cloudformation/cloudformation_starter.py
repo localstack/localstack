@@ -279,16 +279,14 @@ def apply_patches():
                 logical_id, resource_json, resources_map, region_name, force_create=force_create
             )
         except Exception as e:
-            LOG.error('Unable to parse and create resource "%s": %s %s' %
-                      (logical_id, e, traceback.format_exc()))
+            LOG.error('Unable to parse and create resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
             raise
 
     def parse_and_update_resource(logical_id, resource_json, resources_map, region_name):
         try:
             return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=True)
         except Exception as e:
-            LOG.error('Unable to parse and update resource "%s": %s %s' %
-                      (logical_id, e, traceback.format_exc()))
+            LOG.error('Unable to parse and update resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
             raise
 
     def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name,
