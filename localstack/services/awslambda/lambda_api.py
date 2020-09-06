@@ -296,7 +296,7 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_id,
         message_attributes, unsubscribe_url, subject='',):
     event = {
         'Records': [{
@@ -305,7 +305,7 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
             'EventSubscriptionArn': subscription_arn,
             'Sns': {
                 'Type': 'Notification',
-                'MessageId': str(uuid.uuid4()),
+                'MessageId': message_id,
                 'TopicArn': topic_arn,
                 'Subject': subject,
                 'Message': message,
