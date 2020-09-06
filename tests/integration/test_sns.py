@@ -604,12 +604,14 @@ class SNSTest(unittest.TestCase):
             Message=message_body
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        message_id = rs['MessageId']
 
         def get_message(q_url):
             resp = self.sqs_client.receive_message(QueueUrl=q_url)
             return json.loads(resp['Messages'][0]['Body'])
 
         message = retry(get_message, retries=3, sleep=2, q_url=queue_url)
+        self.assertEqual(message['MessageId'], message_id)
         self.assertEqual(message['Subject'], message_subject)
         self.assertEqual(message['Message'], message_body)
 

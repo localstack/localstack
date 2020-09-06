@@ -69,7 +69,8 @@ class SNSTests(unittest.TestCase):
         action = {
             'Message': ['msg']
         }
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+
+        result_str = sns_listener.create_sns_message_body(self.subscriber, action, str(uuid.uuid4()))
         result = json.loads(result_str)
         try:
             uuid.UUID(result.pop('MessageId'))
