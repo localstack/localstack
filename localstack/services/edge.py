@@ -77,21 +77,21 @@ class ProxyListenerEdge(ProxyListener):
         if isinstance(data, dict):
             data = json.dumps(data)
 
-        return do_forward_request(api, method, url, data, headers)
+        return do_forward_request(api, port, method, path, data, headers)
 
 
-def do_forward_request(api, method, url, data, headers):
+def do_forward_request(api, port, method, path, data, headers):
     if config.FORWARD_EDGE_INMEM:
-        result = do_forward_request_inmem(method, path, data, headers, api, port)
+        result = do_forward_request_inmem(api, port, method, path, data, headers)
     else:
-        result = do_forward_request_network(method, path, data, headers, port)
+        result = do_forward_request_network(port, method, path, data, headers)
     if hasattr(result, 'status_code') and result.status_code >= 400 and method == 'OPTIONS':
         # fall back to successful response for OPTIONS requests
         return 200
     return result
 
 
-def do_forward_request_inmem(method, path, data, headers, api, port):
+def do_forward_request_inmem(api, port, method, path, data, headers):
     service_name, backend_port, listener = PROXY_LISTENERS[api]
     # TODO determine client address..?
     client_address = LOCALHOST_IP
@@ -103,7 +103,7 @@ def do_forward_request_inmem(method, path, data, headers, api, port):
     return response
 
 
-def do_forward_request_network(method, path, data, headers, port):
+def do_forward_request_network(port, method, path, data, headers):
     connect_host = '%s:%s' % (config.HOSTNAME, port)
     url = '%s://%s%s' % (get_service_protocol(), connect_host, path)
     function = getattr(requests, method.lower())
