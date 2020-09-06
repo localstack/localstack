@@ -212,7 +212,7 @@ def error_not_found(stream_name):
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
-    return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
+    return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
 @app.route('/', methods=['POST'])

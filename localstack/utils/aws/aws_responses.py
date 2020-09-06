@@ -9,7 +9,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
-def flask_error_response(msg, code=500, error_type='InternalFailure'):
+def flask_error_response_json(msg, code=500, error_type='InternalFailure'):
     result = {
         'Type': 'User' if code < 500 else 'Server',
         'message': msg,
@@ -21,9 +21,35 @@ def flask_error_response(msg, code=500, error_type='InternalFailure'):
     return Response(json.dumps(result), status=code, headers=headers)
 
 
-def requests_error_response(msg, code=500, error_type='InternalFailure'):
-    response = flask_error_response(msg, code=code, error_type=error_type)
+def requests_error_response_json(msg, code=500, error_type='InternalFailure'):
+    response = flask_error_response_json(msg, code=code, error_type=error_type)
     return flask_to_requests_response(response)
+
+
+def requests_error_response_xml(message, code=400, code_string='InvalidParameter'):
+    response = RequestsResponse()
+    response._content = """<ErrorResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/"><Error>
+        <Type>Sender</Type>
+        <Code>{code_string}</Code>
+        <Message>{message}</Message>
+        </Error><RequestId>{req_id}</RequestId>
+        </ErrorResponse>""".format(message=message, code_string=code_string, req_id=short_uid())
+    response.status_code = code
+    return response
+
+
+def flask_error_response_xml(message, code=500, code_string='InternalFailure'):
+    response = requests_error_response_xml(message, code=code, code_string=code_string)
+    return requests_to_flask_response(response)
+
+
+def requests_error_response(req_headers, message, code=500, error_type='InternalFailure'):
+    ctype = req_headers.get('Content-Type', '')
+    accept = req_headers.get('Accept', '')
+    is_json = 'json' in ctype or 'json' in accept
+    if is_json:
+        return requests_error_response_json(msg=message, code=code, error_type=error_type)
+    return requests_error_response_xml(message, code=code, code_string=error_type)
 
 
 def requests_response(content, status_code=200, headers={}):
@@ -49,23 +75,11 @@ def response_regex_replace(response, search, replace):
 
 
 def make_requests_error(*args, **kwargs):
-    return flask_to_requests_response(make_flask_error(*args, **kwargs))
+    return flask_to_requests_response(flask_error_response_xml(*args, **kwargs))
 
 
 def make_error(*args, **kwargs):
-    return make_flask_error(*args, **kwargs)
-
-
-def make_flask_error(message, code=400, code_string='InvalidParameter'):
-    response = Response()
-    response._content = """<ErrorResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/"><Error>
-        <Type>Sender</Type>
-        <Code>{code_string}</Code>
-        <Message>{message}</Message>
-        </Error><RequestId>{req_id}</RequestId>
-        </ErrorResponse>""".format(message=message, code_string=code_string, req_id=short_uid())
-    response.status_code = code
-    return response
+    return flask_error_response_xml(*args, **kwargs)
 
 
 class LambdaResponse(object):
