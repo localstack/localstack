@@ -218,6 +218,12 @@ def get_service_status(service, port=None):
     return status
 
 
+def get_multiserver_or_free_service_port():
+    if config.FORWARD_EDGE_INMEM:
+        return multiserver.get_moto_server_port()
+    return get_free_tcp_port()
+
+
 def register_signal_handlers():
     global SIGNAL_HANDLERS_SETUP
     if SIGNAL_HANDLERS_SETUP:

@@ -345,7 +345,7 @@ def service_port(service_key):
             # the edge service, as that would require too many route mappings. In the future, we
             # should integrate them with.
             return SERVICE_PORTS.get(service_key, 0)
-        return EDGE_PORT
+        return EDGE_PORT_HTTP or EDGE_PORT
     return SERVICE_PORTS.get(service_key, 0)
 
 
