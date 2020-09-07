@@ -296,7 +296,7 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_id,
         message_attributes, unsubscribe_url, subject='',):
     event = {
         'Records': [{
@@ -305,7 +305,7 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
             'EventSubscriptionArn': subscription_arn,
             'Sns': {
                 'Type': 'Notification',
-                'MessageId': str(uuid.uuid4()),
+                'MessageId': message_id,
                 'TopicArn': topic_arn,
                 'Subject': subject,
                 'Message': message,
@@ -621,7 +621,7 @@ def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME)
 
 def error_response(msg, code=500, error_type='InternalFailure'):
     LOG.warning(msg)
-    return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
+    return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
 def get_zip_bytes(function_code):

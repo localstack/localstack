@@ -123,10 +123,10 @@ class ProxyListenerSNS(PersistingProxyListener):
                     if topic_arn not in SNS_SUBSCRIPTIONS.keys():
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
 
-                publish_message(topic_arn, req_data)
+                message_id = publish_message(topic_arn, req_data)
 
                 # return response here because we do not want the request to be forwarded to SNS backend
-                return make_response(req_action)
+                return make_response(req_action, message_id=message_id)
 
             elif req_action == 'ListTagsForResource':
                 tags = do_list_tags_for_resource(topic_arn)
@@ -259,6 +259,7 @@ def unsubscribe_sqs_queue(queue_url):
 
 def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
     message = req_data['Message'][0]
+    message_id = str(uuid.uuid4())
 
     LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
 
@@ -271,11 +272,13 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
     for subscriber in list(subscriptions):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
             continue
+
         filter_policy = json.loads(subscriber.get('FilterPolicy') or '{}')
         message_attributes = get_message_attributes(req_data)
         if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
             LOG.info('SNS filter policy %s does not match attributes %s' % (filter_policy, message_attributes))
             continue
+
         if subscriber['Protocol'] == 'sms':
             event = {
                 'topic_arn': topic_arn,
@@ -301,7 +304,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
                 sqs_client = aws_stack.connect_to_service('sqs')
                 sqs_client.send_message(
                     QueueUrl=queue_url,
-                    MessageBody=create_sns_message_body(subscriber, req_data),
+                    MessageBody=create_sns_message_body(subscriber, req_data, message_id),
                     MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
                 )
             except Exception as exc:
@@ -321,6 +324,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
                     topic_arn,
                     subscriber['SubscriptionArn'],
                     message,
+                    message_id,
                     message_attributes,
                     unsubscribe_url,
                     subject=req_data.get('Subject', [None])[0]
@@ -337,7 +341,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
         elif subscriber['Protocol'] in ['http', 'https']:
             msg_type = (req_data.get('Type') or ['Notification'])[0]
             try:
-                message_body = create_sns_message_body(subscriber, req_data)
+                message_body = create_sns_message_body(subscriber, req_data, message_id)
             except Exception:
                 continue
             try:
@@ -370,6 +374,8 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
 
         else:
             LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
+
+    return message_id
 
 
 def do_create_topic(topic_arn):
@@ -492,10 +498,12 @@ def get_subscription_by_arn(sub_arn):
                 return sub
 
 
-def make_response(op_name, content=''):
+def make_response(op_name, content='', message_id=None):
     response = Response()
     if not content:
-        content = '<MessageId>%s</MessageId>' % short_uid()
+        message_id = message_id or str(uuid.uuid4())
+        content = '<MessageId>%s</MessageId>' % message_id
+
     response._content = """<{op_name}Response xmlns="http://sns.amazonaws.com/doc/2010-03-31/">
         <{op_name}Result>
             {content}
@@ -519,7 +527,7 @@ def make_error(message, code=400, code_string='InvalidParameter'):
     return response
 
 
-def create_sns_message_body(subscriber, req_data):
+def create_sns_message_body(subscriber, req_data, message_id=None):
     message = req_data['Message'][0]
     subject = req_data.get('Subject', [None])[0]
     protocol = subscriber['Protocol']
@@ -540,7 +548,7 @@ def create_sns_message_body(subscriber, req_data):
 
     data = {
         'Type': req_data.get('Type', ['Notification'])[0],
-        'MessageId': str(uuid.uuid4()),
+        'MessageId': message_id,
         'Token': req_data.get('Token', [None])[0],
         'TopicArn': subscriber['TopicArn'],
         'Message': message,
