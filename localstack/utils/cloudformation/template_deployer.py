@@ -747,9 +747,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     resource_props = resource.get('Properties')
     try:
         if resource_type == 'Lambda::Function':
-            resource_props['FunctionName'] = (resource_props.get('FunctionName') or
-                '{}-lambda-{}'.format(stack_name[:45], common.short_uid()))
-            resource_id = resource_props['FunctionName'] if resource else resource_id
+            func_name = resolve_refs_recursively(stack_name, resource_props['FunctionName'], resources)
+            resource_id = func_name if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
         elif resource_type == 'Lambda::Version':
             name = resource_props.get('FunctionName')
@@ -1187,6 +1186,15 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     if 'Properties' not in resource:
         resource['Properties'] = {}
     resource_props = resource['Properties']
+
+    # Validate props for each resource type
+    if resource_type == 'Lambda::Function':
+        # Properties will be validated by botocore before sending request to AWS
+        # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
+        if 'Environment' in resource_props:
+            environment_variables = resource_props['Environment'].get('Variables', {})
+            resource_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
 
     if callable(params):
         params = params(resource_props, stack_name=stack_name, resources=resources)

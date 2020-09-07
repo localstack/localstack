@@ -32,7 +32,7 @@ def do_register_localstack_plugins():
         from localstack.services import edge
         from localstack.services.apigateway import apigateway_starter
         from localstack.services.s3 import s3_listener, s3_starter
-        from localstack.services.ec2 import ec2_starter
+        from localstack.services.ec2 import ec2_starter, ec2_listener
         from localstack.services.kms import kms_starter
         from localstack.services.sns import sns_listener
         from localstack.services.sqs import sqs_listener, sqs_starter
@@ -90,7 +90,8 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'ec2',
-            start=ec2_starter.start_ec2))
+            start=ec2_starter.start_ec2,
+            listener=ec2_listener.UPDATE_EC2))
 
         register_plugin(Plugin(
             'es',

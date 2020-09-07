@@ -107,3 +107,9 @@ AWS_REGION_US_EAST_1 = 'us-east-1'
 
 # Default lambda registry
 DEFAULT_LAMBDA_CONTAINER_REGISTRY = 'lambci/lambda'
+
+# Environment variable to override max pool connections
+try:
+    MAX_POOL_CONNECTIONS = int(os.environ['MAX_POOL_CONNECTIONS'])
+except (KeyError, ValueError):
+    MAX_POOL_CONNECTIONS = 150

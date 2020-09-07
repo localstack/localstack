@@ -3,6 +3,8 @@ import json
 import time
 import unittest
 
+from localstack.utils.testutil import create_zip_file
+
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry, short_uid, to_str
@@ -750,6 +752,77 @@ Resources:
             return {'body': 'Hello World!', 'statusCode': 200}
 """
 
+TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = {
+    'AWSTemplateFormatVersion': '2010-09-09',
+    'Resources': {
+        'PullMarketsRole': {
+            'Type': 'AWS::IAM::Role',
+            'Properties': {
+                'RoleName': '',
+                'AssumeRolePolicyDocument': {
+                    'Version': '2012-10-17',
+                    'Statement': [
+                        {
+                            'Effect': 'Allow',
+                            'Principal': {
+                                'Service': [
+                                    'lambda.amazonaws.com'
+                                ]
+                            },
+                            'Action': [
+                                'sts:AssumeRole'
+                            ]
+                        }
+                    ]
+                },
+                'Path': '/',
+                'Policies': [
+                    {
+                        'PolicyName': 'AWSLambdaBasicExecutionRole',
+                        'PolicyDocument': {
+                            'Version': '2012-10-17',
+                            'Statement': [
+                                {
+                                    'Effect': 'Allow',
+                                    'Action': [
+                                        'logs:PutLogEvents'
+                                    ],
+                                    'Resource': '*'
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        'SomeNameFunction': {
+            'Type': 'AWS::Lambda::Function',
+            'Properties': {
+                'Code': {
+                    'S3Bucket': '',
+                    'S3Key': ''
+                },
+                'FunctionName': '',
+                'Handler': 'lambda_echo.handler',
+                'MemorySize': 1024,
+                'Role': {
+                    'Fn::GetAtt': [
+                        'PullMarketsRole',
+                        'Arn'
+                    ]
+                },
+                'Runtime': 'nodejs12.x',
+                'Timeout': 6,
+                'Environment': {
+                    'Variables': {
+                        'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -1147,6 +1220,8 @@ class CloudFormationTest(unittest.TestCase):
         role_name = 'role-%s' % short_uid()
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
+        iam_client = aws_stack.connect_to_service('iam')
+        roles_before = iam_client.list_roles()['Roles']
 
         try:
             cloudformation.describe_stacks(
@@ -1188,11 +1263,10 @@ class CloudFormationTest(unittest.TestCase):
         stack = rs['Stacks'][0]
         self.assertEqual(stack['StackName'], stack_name)
 
-        iam_client = aws_stack.connect_to_service('iam')
         rs = iam_client.list_roles()
 
-        self.assertEqual(len(rs['Roles']), 1)
-        self.assertEqual(rs['Roles'][0]['RoleName'], role_name)
+        self.assertEqual(len(rs['Roles']), len(roles_before) + 1)
+        self.assertEqual(rs['Roles'][-1]['RoleName'], role_name)
 
         rs = iam_client.list_role_policies(
             RoleName=role_name
@@ -1828,19 +1902,6 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.delete_stack(StackName='myteststack2')
         cloudformation.delete_stack(StackName='myteststack')
 
-    def test_delete_stack_across_regions(self):
-        domain_name = 'es-%s' % short_uid()
-
-        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
-
-        cloudformation.create_stack(
-            StackName='myteststack',
-            TemplateBody=TEST_TEMPLATE_3,
-            Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
-        )
-
-        cloudformation.delete_stack(StackName='myteststack')
-
     def test_cft_with_on_demand_dynamodb_resource(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
@@ -1852,6 +1913,60 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         cloudformation.delete_stack(StackName='myteststack')
+
+    def test_update_lambda_function(self):
+        bucket_name = 'bucket-{}'.format(short_uid())
+        key_name = 'lambda-package'
+        role_name = 'role-{}'.format(short_uid())
+        function_name = 'func-{}'.format(short_uid())
+
+        package_path = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.js')
+
+        stack_name = 'stack-{}'.format(short_uid())
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE['Resources']['PullMarketsRole']['Properties']['RoleName'] = role_name
+
+        props = TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE['Resources']['SomeNameFunction']['Properties']
+        props['Code']['S3Bucket'] = bucket_name
+        props['Code']['S3Key'] = key_name
+        props['FunctionName'] = function_name
+
+        s3 = aws_stack.connect_to_service('s3')
+        s3.create_bucket(Bucket=bucket_name, ACL='public-read')
+        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, True))
+        time.sleep(1)
+
+        rs = cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=json.dumps(TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE),
+        )
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+
+        props.update({
+            'Environment': {
+                'Variables': {
+                    'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1
+                }
+            }
+        })
+
+        rs = cloudformation.update_stack(
+            StackName=stack_name,
+            TemplateBody=json.dumps(TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE),
+        )
+        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        rs = lambda_client.get_function(
+            FunctionName=function_name
+        )
+        self.assertEqual(rs['Configuration']['FunctionName'], function_name)
+        self.assertIn('AWS_NODEJS_CONNECTION_REUSE_ENABLED', rs['Configuration']['Environment']['Variables'])
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
 
     def test_globalindex_read_write_provisioned_throughput_dynamodb_table(self):
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -1890,3 +2005,16 @@ class CloudFormationTest(unittest.TestCase):
             self.assertTrue(isinstance(test_read_capacity, int))
             self.assertTrue(isinstance(test_write_capacity, int))
         cf_client.delete_stack(StackName=stack_name)
+
+    def test_delete_stack_across_regions(self):
+        domain_name = 'es-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
+
+        cloudformation.create_stack(
+            StackName='myteststack',
+            TemplateBody=TEST_TEMPLATE_3,
+            Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
+        )
+
+        cloudformation.delete_stack(StackName='myteststack')

@@ -209,6 +209,9 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
     if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
         props['StartingPosition'] = 'LATEST'
 
+    if res_type == 'AWS::Lambda::Function' and not props.get('FunctionName'):
+        props['FunctionName'] = '{}-lambda-{}'.format(stack_name[:45], short_uid())
+
     if res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
         props['TopicName'] = 'topic-%s' % short_uid()
 
@@ -248,8 +251,18 @@ def apply_patches():
                 LOG.info('Potential circular dependency detected when resolving Ref "%s"' % resource_json['Ref'])
                 return resource_json['Ref']
             raise
-        if isinstance(result, BaseModel):
-            if isinstance(resource_json, dict) and 'Ref' in resource_json:
+        if isinstance(resource_json, dict):
+            attr_ref = resource_json.get('Fn::GetAtt')
+            if isinstance(attr_ref, list) and result == resource_json:
+                # If the attribute cannot be resolved (i.e., result == resource_json), then return
+                # an empty value, to avoid returning the original JSON struct (which otherwise
+                # results in downstream issues, e.g., when concatenating template values).
+                # TODO: Note that this workaround could point towards a general issue with
+                # dependency resolution - in fact, this case should never be happening (but it does).
+                LOG.debug('Unable to resolve attribute reference %s in resource map keys %s' %
+                    (attr_ref, list(resources_map.keys())))
+                return None
+            if 'Ref' in resource_json and isinstance(result, BaseModel):
                 entity_id = get_entity_id(result, resource_json)
                 if entity_id:
                     return entity_id
@@ -269,16 +282,14 @@ def apply_patches():
                 logical_id, resource_json, resources_map, region_name, force_create=force_create
             )
         except Exception as e:
-            LOG.error('Unable to parse and create resource "%s": %s %s' %
-                      (logical_id, e, traceback.format_exc()))
+            LOG.error('Unable to parse and create resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
             raise
 
     def parse_and_update_resource(logical_id, resource_json, resources_map, region_name):
         try:
             return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=True)
         except Exception as e:
-            LOG.error('Unable to parse and update resource "%s": %s %s' %
-                      (logical_id, e, traceback.format_exc()))
+            LOG.error('Unable to parse and update resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
             raise
 
     def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name,
@@ -294,7 +305,7 @@ def apply_patches():
             return None
 
         # parse and get final resource JSON
-        resource_tuple = parsing.parse_resource(logical_id, resource_json, resources_map)
+        resource_tuple = parsing.parse_resource_and_generate_name(logical_id, resource_json, resources_map)
         if not resource_tuple:
             return None
         _, resource_json, resource_name = resource_tuple
@@ -617,7 +628,9 @@ def apply_patches():
         result = SQS_Queue_physical_resource_id_orig.fget(self)
         if '://' not in result:
             # convert ID to queue URL
-            return aws_stack.get_sqs_queue_url(result)
+            self._physical_resource_id = (getattr(self, '_physical_resource_id', None) or
+                aws_stack.get_sqs_queue_url(result))
+            return self._physical_resource_id
         return result
 
     SQS_Queue_physical_resource_id_orig = sqs_models.Queue.physical_resource_id
@@ -793,7 +806,7 @@ def apply_patches():
     if not hasattr(iam_models.Role, 'update_from_cloudformation_json'):
         iam_models.Role.update_from_cloudformation_json = Role_update_from_cloudformation_json
 
-    # patch ApiGateway Deployment
+    # patch ApiGateway Deployment deletion
     @staticmethod
     def depl_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
@@ -802,7 +815,7 @@ def apply_patches():
     if not hasattr(apigw_models.Deployment, 'delete_from_cloudformation_json'):
         apigw_models.Deployment.delete_from_cloudformation_json = depl_delete_from_cloudformation_json
 
-    # patch Lambda Version
+    # patch Lambda Version deletion
     @staticmethod
     def vers_delete_from_cloudformation_json(resource_name, resource_json, region_name):
         properties = resource_json['Properties']
@@ -880,7 +893,7 @@ def apply_patches():
             if aws_stack.get_region() != self.region:
                 msg = '%s/%s' % (msg, self.region)
             LOG.warning(msg)
-            response = aws_responses.flask_error_response(msg, code=404, error_type='ResourceNotFoundException')
+            response = aws_responses.flask_error_response_json(msg, code=404, error_type='ResourceNotFoundException')
             return 404, response.headers, response.data
 
         for stack_resource in stack.stack_resources:
