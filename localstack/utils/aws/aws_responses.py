@@ -87,7 +87,6 @@ def calculate_crc32(content):
     return crc32(to_bytes(content)) & 0xffffffff
 
 
-
 class LambdaResponse(object):
     """ Helper class to support multi_value_headers in Lambda responses """
 
