@@ -8,12 +8,12 @@ from requests.models import Request, Response
 from localstack import config
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import to_bytes, to_str, clone, select_attributes
-from localstack.utils.aws.aws_responses import calculate_crc32
 from localstack.utils.analytics import event_publisher
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.dynamodbstreams import dynamodbstreams_api
+
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
@@ -594,6 +594,10 @@ def update_put_item_response_content(data, response_content):
     if data.get('ReturnValues'):
         response_content = json.dumps({'Attributes': data['Item']})
     return response_content
+
+
+def calculate_crc32(response):
+    return crc32(to_bytes(response.content)) & 0xffffffff
 
 
 def create_dynamodb_stream(data, latest_stream_label):
