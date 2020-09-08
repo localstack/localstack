@@ -4,6 +4,7 @@ import random
 import logging
 import threading
 import time
+from binascii import crc32
 from requests.models import Request, Response
 from localstack import config
 from localstack.utils.aws import aws_stack, aws_responses
