@@ -13,8 +13,10 @@ from botocore.exceptions import ClientError
 from botocore.parsers import ResponseParserError
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+
 TEST_TEMPLATE_1 = os.path.join(THIS_FOLDER, 'templates', 'template1.yaml')
 TEST_TEMPLATE_2 = os.path.join(THIS_FOLDER, 'templates', 'template2.yaml')
+APIGW_INTEGRATION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'apigateway_integration.json')
 
 TEST_TEMPLATE_3 = """
 AWSTemplateFormatVersion: 2010-09-09
@@ -1964,6 +1966,34 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['Configuration']['FunctionName'], function_name)
         self.assertIn('AWS_NODEJS_CONNECTION_REUSE_ENABLED', rs['Configuration']['Environment']['Variables'])
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_cfn_deploy_apigateway_integration(self):
+        stack_name = 'stack-%s' % short_uid()
+        bucket_name = 'hofund-local-deployment'
+        key_name = 'serverless/hofund/local/1599143878432/authorizer.zip'
+        package_path = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.js')
+
+        template = template_deployer.template_to_json(load_file(APIGW_INTEGRATION_TEMPLATE))
+
+        s3 = aws_stack.connect_to_service('s3')
+        s3.create_bucket(Bucket=bucket_name, ACL='public-read')
+        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, True))
+        time.sleep(1)
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        apigw_client = aws_stack.connect_to_service('apigateway')
+
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        stack_resources = cloudformation.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
+        rest_apis = [res for res in stack_resources if res['ResourceType'] == 'AWS::ApiGateway::RestApi']
+
+        rs = apigw_client.get_rest_api(restApiId=rest_apis[0]['PhysicalResourceId'])
+        self.assertEqual(rs['name'], 'ApiGatewayRestApi')
 
         # clean up
         cloudformation.delete_stack(StackName=stack_name)
