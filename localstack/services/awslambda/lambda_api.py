@@ -341,6 +341,11 @@ def process_kinesis_records(records, stream_name):
                         {
                             'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
                             'eventSourceARN': stream_arn,
+                            'eventSource': 'aws:kinesis',
+                            'eventVersion': '1.0',
+                            'eventName': 'aws:kinesis:record',
+                            'invokeIdentityArn': 'arn:aws:iam::{0}:role/lambda-role'.format(TEST_AWS_ACCOUNT_ID),
+                            'awsRegion': aws_stack.get_region(),
                             'kinesis': rec
                         }
                         for rec in chunk
