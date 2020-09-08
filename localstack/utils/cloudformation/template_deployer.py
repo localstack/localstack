@@ -5,7 +5,10 @@ import yaml
 import logging
 import traceback
 import moto.cloudformation.utils
+
 from six import iteritems
+from urllib.parse import urlparse
+
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import AWS_REGION_US_EAST_1
@@ -1270,11 +1273,27 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
             kwargs = {}
             if integration.get('Uri'):
                 uri = resolve_refs_recursively(stack_name, integration.get('Uri'), resources)
+
+                # Moto has a validate method on Uri for integration_type "HTTP" | "HTTP_PROXY" that does not accept
+                # Uri value without path, we need to add path ("/") if not exists
+                if integration.get('Type') in ['HTTP', 'HTTP_PROXY']:
+                    rs = urlparse(uri)
+                    if not rs.path:
+                        uri = '{}/'.format(uri)
+
                 kwargs['uri'] = uri
+
             if integration.get('IntegrationHttpMethod'):
                 kwargs['integrationHttpMethod'] = integration['IntegrationHttpMethod']
-            apigateway.put_integration(restApiId=api_id, resourceId=res_id,
-                httpMethod=resource_props['HttpMethod'], type=integration['Type'], **kwargs)
+
+            apigateway.put_integration(
+                restApiId=api_id,
+                resourceId=res_id,
+                httpMethod=resource_props['HttpMethod'],
+                type=integration['Type'],
+                **kwargs
+            )
+
         responses = resource_props.get('MethodResponses') or []
         for response in responses:
             api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
