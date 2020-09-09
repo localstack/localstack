@@ -560,6 +560,35 @@ class DynamoDBIntegrationTest (unittest.TestCase):
 
         dynamodb.delete_table(TableName=table_name)
 
+    def test_query_on_deleted_resource(self):
+        table_name = 'ddb-table-%s' % short_uid()
+        partition_key = 'username'
+
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        aws_stack.create_dynamodb_table(table_name, partition_key)
+
+        rs = dynamodb.query(
+            TableName=table_name,
+            KeyConditionExpression='{} = :username'.format(partition_key),
+            ExpressionAttributeValues={
+                ':username': {'S': 'test'}
+            }
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        dynamodb.delete_table(TableName=table_name)
+
+        with self.assertRaises(Exception) as ctx:
+            dynamodb.query(
+                TableName=table_name,
+                KeyConditionExpression='{} = :username'.format(partition_key),
+                ExpressionAttributeValues={
+                    ':username': {'S': 'test'}
+                }
+            )
+
+        self.assertIn('ResourceNotFoundException', str(ctx.exception))
+
 
 def delete_table(name):
     dynamodb_client = aws_stack.connect_to_service('dynamodb')

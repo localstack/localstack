@@ -30,7 +30,7 @@ from contextlib import closing
 from datetime import datetime, date
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse, parse_qs
 from multiprocessing.dummy import Pool
 from localstack import config
 from localstack.config import DEFAULT_ENCODING
@@ -672,6 +672,19 @@ def download(url, path, verify_ssl=True):
     finally:
         r.close()
         s.close()
+
+
+def parse_request_data(method, path, data):
+    """ Extract request data either from query string (for GET) or request body (for POST). """
+    if method == 'POST':
+        result = parse_qs(to_str(data))
+    elif method == 'GET':
+        parsed_path = urlparse(path)
+        result = parse_qs(parsed_path.query)
+    else:
+        return {}
+    result = dict([(k, v[0]) for k, v in result.items()])
+    return result
 
 
 def first_char_to_lower(s):

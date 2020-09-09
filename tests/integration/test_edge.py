@@ -1,4 +1,5 @@
 import io
+import os
 import json
 import time
 import unittest
@@ -113,3 +114,34 @@ class TestEdgeAPI(unittest.TestCase):
         time.sleep(1)
         response = requests.post(url, verify=False)
         self.assertEqual({'method': 'POST', 'path': '/foo/bar', 'data': ''}, json.loads(to_str(response.content)))
+
+    def test_invoke_sns_sqs_integration_using_edge_port(self):
+        edge_port = config.EDGE_PORT_HTTP or config.EDGE_PORT
+        region_original = os.environ.get('DEFAULT_REGION')
+        os.environ['DEFAULT_REGION'] = 'us-southeast-2'
+        edge_url = '%s://localhost:%s' % (get_service_protocol(), edge_port)
+        sns_client = aws_stack.connect_to_service('sns', endpoint_url=edge_url)
+        sqs_client = aws_stack.connect_to_service('sqs', endpoint_url=edge_url)
+
+        topic = sns_client.create_topic(Name='test_topic3')
+        topic_arn = topic['TopicArn']
+        test_queue = sqs_client.create_queue(QueueName='test_queue3')
+
+        queue_url = test_queue['QueueUrl']
+        sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+        sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_url)
+        sns_client.publish(TargetArn=topic_arn, Message='Test msg')
+
+        response = sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=['SentTimestamp'],
+            MaxNumberOfMessages=1,
+            MessageAttributeNames=['All'],
+            VisibilityTimeout=2,
+            WaitTimeSeconds=2,
+        )
+        self.assertEqual(len(response['Messages']), 1)
+
+        os.environ.pop('DEFAULT_REGION')
+        if region_original is not None:
+            os.environ['DEFAULT_REGION'] = region_original
