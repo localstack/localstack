@@ -87,9 +87,7 @@ def put_records(stream_name, records):
 
             s3 = connect_to_resource('s3')
             batched_data = b''.join(
-                [ base64.b64decode(r.get('Data') or r['data'])
-                  for r in records
-                ])
+                [base64.b64decode(r.get('Data') or r['data']) for r in records])
 
             obj_path = get_s3_object_path(stream_name, prefix)
             try:
