@@ -1300,6 +1300,8 @@ class ProxyListenerS3(PersistingProxyListener):
             convert_to_chunked_encoding(method, path, response)
 
             if headers.get('Accept-Encoding') == 'gzip':
+                if (isinstance(response._content, str)):
+                    response._content = response._content.encode()
                 response._content = gzip.compress(response._content)
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Encoding'] = 'gzip'
