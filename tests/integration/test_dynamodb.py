@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
-
+import os
 import unittest
 import json
 from datetime import datetime
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
+from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON36
+
 from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.aws.aws_stack import get_environment
-from localstack.utils.common import json_safe, short_uid
+from localstack.utils.common import json_safe, short_uid, retry
+from localstack.utils.testutil import check_expected_lambda_log_events_length
 
 PARTITION_KEY = 'id'
 
@@ -29,6 +32,9 @@ TEST_DDB_TAGS = [
         'Value': 'true'
     }
 ]
+
+THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
+TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 
 
 class DynamoDBIntegrationTest (unittest.TestCase):
@@ -588,6 +594,50 @@ class DynamoDBIntegrationTest (unittest.TestCase):
             )
 
         self.assertIn('ResourceNotFoundException', str(ctx.exception))
+
+    def test_dynamodb_stream_to_lambda(self):
+        table_name = 'ddb-table-%s' % short_uid()
+        function_name = 'func-%s' % short_uid()
+        partition_key = 'SK'
+
+        aws_stack.create_dynamodb_table(
+            table_name=table_name,
+            partition_key=partition_key,
+            stream_view_type='NEW_AND_OLD_IMAGES'
+        )
+        table = self.dynamodb.Table(table_name)
+        latest_stream_arn = table.latest_stream_arn
+
+        testutil.create_lambda_function(handler_file=TEST_LAMBDA_ECHO_FILE,
+                                        func_name=function_name,
+                                        runtime=LAMBDA_RUNTIME_PYTHON36)
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=latest_stream_arn,
+            FunctionName=function_name
+        )
+
+        item = {
+            'SK': short_uid(),
+            'Name': 'name-{}'.format(short_uid())
+        }
+
+        table.put_item(Item=item)
+
+        events = retry(check_expected_lambda_log_events_length, retries=3,
+                       sleep=1, function_name=function_name, expected_length=1)
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(len(events[0]['Records']), 1)
+
+        dynamodb_event = events[0]['Records'][0]['dynamodb']
+        self.assertEqual(dynamodb_event['StreamViewType'], 'NEW_AND_OLD_IMAGES')
+        self.assertEqual(dynamodb_event['Keys'], {'SK': {'S': item['SK']}})
+        self.assertEqual(dynamodb_event['NewImage']['Name'], {'S': item['Name']})
+
+        dynamodb = aws_stack.connect_to_service('dynamodb')
+        dynamodb.delete_table(TableName=table_name)
 
 
 def delete_table(name):
