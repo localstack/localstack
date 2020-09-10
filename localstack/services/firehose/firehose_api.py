@@ -84,22 +84,17 @@ def put_records(stream_name, records):
             s3_dest = dest['S3DestinationDescription']
             bucket = bucket_name(s3_dest['BucketARN'])
             prefix = s3_dest.get('Prefix', '')
+
             s3 = connect_to_resource('s3')
-            for record in records:
+            batched_data = b''.join(
+                [base64.b64decode(r.get('Data') or r['data']) for r in records])
 
-                # DirectPut
-                if 'Data' in record:
-                    data = base64.b64decode(record['Data'])
-                # KinesisAsSource
-                elif 'data' in record:
-                    data = base64.b64decode(record['data'])
-
-                obj_path = get_s3_object_path(stream_name, prefix)
-                try:
-                    s3.Object(bucket, obj_path).put(Body=data)
-                except Exception as e:
-                    LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
-                    raise e
+            obj_path = get_s3_object_path(stream_name, prefix)
+            try:
+                s3.Object(bucket, obj_path).put(Body=batched_data)
+            except Exception as e:
+                LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
+                raise e
 
 
 def get_s3_object_path(stream_name, prefix):
