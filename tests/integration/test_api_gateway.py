@@ -587,7 +587,8 @@ class TestAPIGateway(unittest.TestCase):
                 'httpMethod': method,
                 'integrations': [{
                     'type': 'AWS_PROXY',
-                    'uri': target_uri
+                    'uri': target_uri,
+                    'httpMethod': 'POST'
                 }]
             })
         return aws_stack.create_api_gateway(
