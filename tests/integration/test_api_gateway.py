@@ -434,7 +434,7 @@ class TestAPIGateway(unittest.TestCase):
         response = requests.get('%s?param1=foobar' % url)
         self.assertLess(response.status_code, 400)
         content = json.loads(to_str(response.content))
-        self.assertEqual(content.get('httpMethod'), 'POST')
+        self.assertEqual(content.get('httpMethod'), 'GET')
         self.assertEqual(content.get('requestContext', {}).get('resourceId'), api_resource['id'])
         self.assertEqual(content.get('requestContext', {}).get('stage'), self.TEST_STAGE_NAME)
         self.assertEqual(content.get('body'), '{"param1": "foobar"}')
