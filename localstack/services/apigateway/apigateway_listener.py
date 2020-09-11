@@ -279,7 +279,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                     'sourceIp': source_ip,
                     'userAgent': headers['User-Agent'],
                 },
-                'httpMethod': integration_method,
+                'httpMethod': method,
                 'protocol': 'HTTP/1.1',
                 'requestTime': datetime.datetime.utcnow(),
                 'requestTimeEpoch': int(time.time() * 1000),
