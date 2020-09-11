@@ -254,6 +254,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
             source_ip = headers['X-Forwarded-For'].split(',')[-2]
             integration_method = integration.get('httpMethod')
+            # Intergration Method HAS to be POST for AWS or AWS_PROXY, AWS returns an error if not.
             integration_method = method if integration_method in [None, 'ANY'] else integration_method
 
             try:
