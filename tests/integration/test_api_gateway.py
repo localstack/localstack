@@ -848,7 +848,6 @@ class TestAPIGateway(unittest.TestCase):
             integrationHttpMethod='POST',
             type='AWS_PROXY',
             uri='arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection',
-            integrationHttpMethod='PUT',
         )
 
         apigw_client.put_integration_response(
