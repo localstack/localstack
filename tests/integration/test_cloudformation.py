@@ -918,7 +918,7 @@ class CloudFormationTest(unittest.TestCase):
         test_api_name = 'test-api'
         api = [a for a in apigateway.get_rest_apis()['items'] if a['name'] == test_api_name][0]
         responses = apigateway.get_gateway_responses(restApiId=api['id'])['items']
-        self.assertEqual(len(responses), 2)
+        self.assertEqual(len(responses), 0)
         types = [r['responseType'] for r in responses]
         self.assertEqual(set(types), set(['UNAUTHORIZED', 'DEFAULT_5XX']))
 

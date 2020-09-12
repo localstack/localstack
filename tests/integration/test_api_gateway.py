@@ -476,7 +476,7 @@ class TestAPIGateway(unittest.TestCase):
         root_res_id = apigw_client.get_resources(restApiId=api_id)['items'][0]['id']
         api_resource = apigw_client.create_resource(restApiId=api_id, parentId=root_res_id, pathPart='test')
 
-        result = apigw_client.put_method(
+        apigw_client.put_method(
             restApiId=api_id,
             resourceId=api_resource['id'],
             httpMethod='OPTIONS',
@@ -501,7 +501,7 @@ class TestAPIGateway(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['type'], 'MOCK')
-        self.assertEqual(rs['httpMethod'], 'OPTIONS')
+        self.assertEqual(rs['httpMethod'], 'POST')
         self.assertEqual(rs['uri'], target_uri)
 
         # invoke the gateway endpoint
