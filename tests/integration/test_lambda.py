@@ -961,6 +961,9 @@ class TestNodeJSRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
     def test_invoke_nodejs_lambda(self):
+        if not use_docker():
+            return
+
         handler_file = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_handler.js')
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
