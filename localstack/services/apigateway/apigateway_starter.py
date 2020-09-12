@@ -125,8 +125,10 @@ def apply_patches():
         apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
         APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
         apigateway_models.APIGatewayBackend.put_rest_api = apigateway_models_backend_put_rest_api
+
     if not hasattr(apigateway_models.APIGatewayBackend, 'delete_method'):
         apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
+
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
