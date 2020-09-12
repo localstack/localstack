@@ -1197,6 +1197,7 @@ class TestJavaRuntimes(LambdaTestBase):
 
     def test_trigger_java_lambda_through_sns(self):
         topic_name = 'topic-%s' % short_uid()
+        function_name = 'func-%s' % short_uid()
         bucket_name = 'bucket-%s' % short_uid()
         key = 'key-%s' % short_uid()
 
@@ -1218,10 +1219,17 @@ class TestJavaRuntimes(LambdaTestBase):
             }
         )
 
+        testutil.create_lambda_function(
+            func_name=function_name,
+            zip_file=load_file(TEST_LAMBDA_JAVA, mode='rb'),
+            runtime=LAMBDA_RUNTIME_JAVA8,
+            handler='cloud.localstack.sample.LambdaHandler'
+        )
+
         sns_client.subscribe(
             TopicArn=topic_arn,
             Protocol='lambda',
-            Endpoint=aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_JAVA)
+            Endpoint=aws_stack.lambda_function_arn(function_name)
         )
 
         s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
@@ -1230,10 +1238,12 @@ class TestJavaRuntimes(LambdaTestBase):
         # We got an event that confirm lambda invoked
         retry(function=check_expected_lambda_log_events_length,
               expected_length=1, retries=3, sleep=1,
-              function_name=TEST_LAMBDA_NAME_JAVA)
+              function_name=function_name)
 
         # clean up
         sns_client.delete_topic(TopicArn=topic_arn)
+        testutil.delete_lambda_function(function_name)
+
         s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
         s3_client.delete_bucket(Bucket=bucket_name)
 
