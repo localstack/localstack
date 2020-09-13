@@ -283,7 +283,7 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
             'body': payload,
             'isBase64Encoded': False,
             'resource': resource_path,
-            'httpMethod': request_context['httpMethod'],
+            'httpMethod': method,
             'queryStringParameters': query_string_params,
             'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params),
             'requestContext': request_context,

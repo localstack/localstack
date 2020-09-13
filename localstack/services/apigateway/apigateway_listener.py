@@ -253,10 +253,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
             account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
             source_ip = headers['X-Forwarded-For'].split(',')[-2]
-            integration_method = integration.get('httpMethod')
-            # Intergration Method HAS to be POST for AWS or AWS_PROXY, AWS returns an error if not.
-            integration_method = method if integration_method in [None, 'ANY'] else integration_method
-
+            
             try:
                 path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
             except Exception:
@@ -289,7 +286,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, stage, api_id,
                                                               headers, path_params=path_params,
                                                               query_string_params=query_string_params,
-                                                              method=integration_method, resource_path=path,
+                                                              method=method, resource_path=path,
                                                               request_context=request_context)
 
             if isinstance(result, FlaskResponse):
