@@ -16,6 +16,7 @@ from localstack.utils.testutil import (
     get_lambda_log_events, check_expected_lambda_log_events_length,
     create_lambda_archive
 )
+from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
@@ -445,6 +446,53 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url_1)
         lambda_client.delete_function(FunctionName=function_name)
+
+    def test_create_kinesis_event_source_mapping(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        stream_name = 'test-foobar'
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        arn = aws_stack.kinesis_stream_arn(stream_name, account_id='000000000000')
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.create_event_source_mapping(
+            EventSourceArn=arn,
+            FunctionName=function_name
+        )
+
+        stream_name = 'test-foobar'
+        aws_stack.create_kinesis_stream(stream_name, delete=True)
+        kinesis_connector.listen_to_kinesis(
+            stream_name=stream_name,
+            wait_until_started=True)
+
+        kinesis = aws_stack.connect_to_service('kinesis')
+        stream_summary = kinesis.describe_stream_summary(StreamName=stream_name)
+        self.assertEqual(stream_summary['StreamDescriptionSummary']['OpenShardCount'], 1)
+        num_events_kinesis = 10
+        kinesis.put_records(Records=[
+            {
+                'Data': '{}',
+                'PartitionKey': 'test_%s' % i
+            } for i in range(0, num_events_kinesis)
+        ], StreamName=stream_name)
+
+        events = get_lambda_log_events(function_name)
+        self.assertEqual(len(events[0]['Records']), 10)
+
+        self.assertIn('eventID', events[0]['Records'][0])
+        self.assertIn('eventSourceARN', events[0]['Records'][0])
+        self.assertIn('eventSource', events[0]['Records'][0])
+        self.assertIn('eventVersion', events[0]['Records'][0])
+        self.assertIn('eventName', events[0]['Records'][0])
+        self.assertIn('invokeIdentityArn', events[0]['Records'][0])
+        self.assertIn('awsRegion', events[0]['Records'][0])
+        self.assertIn('kinesis', events[0]['Records'][0])
 
 
 class TestPythonRuntimes(LambdaTestBase):

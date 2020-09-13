@@ -62,6 +62,7 @@ future release - please reconfigure your client SDKs to start using the single e
 * **ACM** ~at http://localhost:4619~
 
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
+* **Amplify**
 * **API Gateway V2 (WebSockets support)**
 * **AppSync**
 * **Athena**
@@ -227,6 +228,12 @@ Additionally, the following *read-only* environment variables are available:
   Use this hostname as endpoint (e.g., `http://${LOCALSTACK_HOSTNAME}:4566`) in order
   to **access the services from within your Lambda functions**
   (e.g., to store an item to DynamoDB or S3 from a Lambda).
+  
+An example passing the above environment variables to LocalStack to start Kinesis, Lambda, Dynamodb and SQS:
+
+```
+SERVICES=kinesis,lambda,sqs,dynamodb localstack start
+```
 
 ### Dynamically updating configuration at runtime
 

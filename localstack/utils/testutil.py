@@ -263,7 +263,7 @@ def download_s3_object(s3, bucket, path):
 
 
 def map_all_s3_objects(to_json=True, buckets=None):
-    s3_client = aws_stack.get_s3_client()
+    s3_client = aws_stack.connect_to_resource('s3')
     result = {}
     buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
     for bucket in buckets:

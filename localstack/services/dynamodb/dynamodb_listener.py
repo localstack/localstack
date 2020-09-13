@@ -43,6 +43,20 @@ class ProxyListenerDynamoDB(ProxyListener):
     def __init__(self):
         self._table_ttl_map = {}
 
+    @staticmethod
+    def table_exists(ddb_client, table_name):
+        paginator = ddb_client.get_paginator('list_tables')
+        pages = paginator.paginate(
+            PaginationConfig={
+                'PageSize': 100
+            }
+        )
+        for page in pages:
+            table_names = page['TableNames']
+            if to_str(table_name) in table_names:
+                return True
+        return False
+
     def forward_request(self, method, path, data, headers):
         if path.startswith('/shell') or method == 'GET':
             if path == '/shell':
@@ -68,8 +82,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         if action == '%s.CreateTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) in table_names:
+            if self.table_exists(ddb_client, data['TableName']):
                 return error_response(message='Table already created',
                                       error_type='ResourceInUseException', code=400)
 
@@ -104,14 +117,12 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         elif action == '%s.DescribeTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) not in table_names:
+            if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
 
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) not in table_names:
+            if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
 
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
@@ -554,7 +565,7 @@ def find_existing_item(put_item, table_name=None):
     if 'Item' not in existing_item:
         if 'message' in existing_item:
             table_names = ddb_client.list_tables()['TableNames']
-            msg = ('Unable to get item from DynamoDB (existing tables: %s): %s' %
+            msg = ('Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s' %
                 (table_names, existing_item['message']))
             LOGGER.warning(msg)
         return

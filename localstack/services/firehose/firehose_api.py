@@ -14,7 +14,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_responses
 from localstack.utils.common import short_uid, to_str, timestamp
 from localstack.utils.aws.aws_stack import (
-    get_s3_client, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
+    connect_to_resource, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.analytics import event_publisher
 
@@ -84,22 +84,17 @@ def put_records(stream_name, records):
             s3_dest = dest['S3DestinationDescription']
             bucket = bucket_name(s3_dest['BucketARN'])
             prefix = s3_dest.get('Prefix', '')
-            s3 = get_s3_client()
-            for record in records:
 
-                # DirectPut
-                if 'Data' in record:
-                    data = base64.b64decode(record['Data'])
-                # KinesisAsSource
-                elif 'data' in record:
-                    data = base64.b64decode(record['data'])
+            s3 = connect_to_resource('s3')
+            batched_data = b''.join(
+                [base64.b64decode(r.get('Data') or r['data']) for r in records])
 
-                obj_path = get_s3_object_path(stream_name, prefix)
-                try:
-                    s3.Object(bucket, obj_path).put(Body=data)
-                except Exception as e:
-                    LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
-                    raise e
+            obj_path = get_s3_object_path(stream_name, prefix)
+            try:
+                s3.Object(bucket, obj_path).put(Body=batched_data)
+            except Exception as e:
+                LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
+                raise e
 
 
 def get_s3_object_path(stream_name, prefix):
@@ -212,7 +207,7 @@ def error_not_found(stream_name):
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
-    return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
+    return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
 @app.route('/', methods=['POST'])
