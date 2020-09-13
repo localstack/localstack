@@ -840,7 +840,7 @@ class TestAPIGateway(unittest.TestCase):
 
         aws_stack.create_dynamodb_table('MusicCollection', partition_key='id')
 
-        # Ensure that it works fine when providing the integrationHttpMethod-argument (should always be POST for AWS_PROXY)
+        # Ensure that it works fine when providing the integrationHttpMethod-argument
         apigw_client.put_integration(
             restApiId=api_id,
             resourceId=root_id,
