@@ -270,6 +270,77 @@ class TestLambdaBaseFeatures(unittest.TestCase):
                                                StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
+    def test_lambda_asynchronous_invocations(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # adding event invoke config
+        response = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=123,
+            MaximumEventAgeInSeconds=123,
+            DestinationConfig={
+                'OnSuccess': {
+                    'Destination': function_name
+                },
+                'OnFailure': {
+                    'Destination': function_name
+                }
+            }
+        )
+
+        destination_config = {
+            'OnSuccess': {
+                'Destination': function_name
+            },
+            'OnFailure': {
+                'Destination': function_name
+            }
+        }
+
+        # checking for parameter configuration
+        self.assertEqual(response['MaximumRetryAttempts'], 123)
+        self.assertEqual(response['MaximumEventAgeInSeconds'], 123)
+        self.assertEqual(response['DestinationConfig'], destination_config)
+
+        # over writing event invoke config
+        response = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=123,
+            DestinationConfig={
+                'OnSuccess': {
+                    'Destination': function_name
+                },
+                'OnFailure': {
+                    'Destination': function_name
+                }
+            }
+        )
+
+        # checking if 'MaximumEventAgeInSeconds' is removed
+        self.assertNotIn('MaximumEventAgeInSeconds', response)
+
+        # updating event invoke config
+        response = lambda_client.update_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=111,
+        )
+
+        # checking for updated and existing configuration
+        self.assertEqual(response['MaximumRetryAttempts'], 111)
+        self.assertEqual(response['DestinationConfig'], destination_config)
+
+        # clean up
+        response = lambda_client.delete_function_event_invoke_config(
+            FunctionName=function_name)
+        lambda_client.delete_function(FunctionName=function_name)
+
     def test_event_source_mapping_default_batch_size(self):
         function_name = 'lambda_func-{}'.format(short_uid())
         queue_name_1 = 'queue-{}-1'.format(short_uid())

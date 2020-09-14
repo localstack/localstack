@@ -1496,11 +1496,11 @@ def untag_resource(version, arn):
     return jsonify({})
 
 
-@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['PUT'])
+@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['PUT', 'POST'])
 def put_function_event_invoke_config(function):
-    """ Updates the configuration for asynchronous invocation for a function
+    """ Add/Updates the configuration for asynchronous invocation for a function
         ---
-        operationId: PutFunctionEventInvokeConfig
+        operationId: PutFunctionEventInvokeConfig | UpdateFunctionEventInvokeConfig
         parameters:
             - name: 'function'
               in: path
@@ -1512,7 +1512,10 @@ def put_function_event_invoke_config(function):
     data = json.loads(to_str(request.data))
     function_arn = func_arn(function)
     lambda_obj = ARN_TO_LAMBDA[function_arn]
-    response = lambda_obj.put_function_event_invoke_config(data)
+
+    if request.method == 'PUT':
+        response = lambda_obj.clear_function_event_invoke_config()
+    response = lambda_obj.put_function_event_invoke_config(data, request.method)
 
     return jsonify({
         'LastModified': response.last_modified,
@@ -1551,6 +1554,18 @@ def get_function_event_invoke_config(function):
 
     response = lambda_obj.get_function_event_invoke_config()
     return jsonify(response)
+
+
+@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['DELETE'])
+def delete_function_event_invoke_config(function):
+    try:
+        function_arn = func_arn(function)
+        lambda_obj = ARN_TO_LAMBDA[function_arn]
+    except Exception as e:
+        return error_response(str(e), 400)
+
+    lambda_obj.clear_function_event_invoke_config()
+    return Response('', status=204)
 
 
 def serve(port, quiet=True):
