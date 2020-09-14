@@ -1498,6 +1498,7 @@ def untag_resource(version, arn):
 
 @app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['PUT', 'POST'])
 def put_function_event_invoke_config(function):
+    # TODO: resouce validation required to check if resource exists
     """ Add/Updates the configuration for asynchronous invocation for a function
         ---
         operationId: PutFunctionEventInvokeConfig | UpdateFunctionEventInvokeConfig
@@ -1515,7 +1516,7 @@ def put_function_event_invoke_config(function):
 
     if request.method == 'PUT':
         response = lambda_obj.clear_function_event_invoke_config()
-    response = lambda_obj.put_function_event_invoke_config(data, request.method)
+    response = lambda_obj.put_function_event_invoke_config(data)
 
     return jsonify({
         'LastModified': response.last_modified,
