@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37
+from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
 from localstack.utils import testutil
 from localstack.utils.testutil import (
     get_lambda_log_events, check_expected_lambda_log_events_length,
@@ -956,6 +956,32 @@ class TestNodeJSRuntimes(LambdaTestBase):
         # assert that logs are present
         expected = ['.*Node.js Lambda handler executing.']
         self.check_lambda_logs(TEST_LAMBDA_NAME_JS, expected_lines=expected)
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
+
+    def test_invoke_nodejs_lambda(self):
+        if not use_docker():
+            return
+
+        handler_file = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_handler.js')
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JS,
+            zip_file=testutil.create_zip_file(handler_file, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS12X,
+            handler='lambda_handler.handler'
+        )
+
+        rs = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JS,
+            Payload=json.dumps({
+                'event_type': 'test_lambda'
+            })
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
+        self.assertGreater(len(events), 0)
 
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
