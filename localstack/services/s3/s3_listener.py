@@ -156,7 +156,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag=''
                     'arn': 'arn:aws:s3:::%s' % bucket_name
                 },
                 'object': {
-                    'key': urllib.parse.quote(file_name),
+                    'key': file_name,
                     'size': file_size,
                     'eTag': etag,
                     'versionId': version_id,
