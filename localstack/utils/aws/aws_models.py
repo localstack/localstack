@@ -220,6 +220,16 @@ class LambdaFunction(Component):
 
         return response
 
+    def clear_function_event_invoke_config(self):
+        if hasattr(self, 'dead_letter_config'):
+            self.dead_letter_config = None
+        if hasattr(self, 'on_successful_invocation'):
+            self.on_successful_invocation = None
+        if hasattr(self, 'max_retry_attempts'):
+            self.max_retry_attempts = None
+        if hasattr(self, 'max_event_age'):
+            self.max_event_age = None
+
     def put_function_event_invoke_config(self, data):
         if not isinstance(data, dict):
             return
