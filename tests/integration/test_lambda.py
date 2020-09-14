@@ -181,7 +181,6 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         proxy.stop()
 
     def test_adding_fallback_function_name_in_headers(self):
-
         lambda_client = aws_stack.connect_to_service('lambda')
         ddb_client = aws_stack.connect_to_service('dynamodb')
 
@@ -1221,6 +1220,58 @@ class TestJavaRuntimes(LambdaTestBase):
             json.loads(to_str(result_data)),
             {'validated': True, 'bucket': 'test_bucket', 'key': 'test_key'}
         )
+
+    def test_trigger_java_lambda_through_sns(self):
+        topic_name = 'topic-%s' % short_uid()
+        function_name = 'func-%s' % short_uid()
+        bucket_name = 'bucket-%s' % short_uid()
+        key = 'key-%s' % short_uid()
+
+        sns_client = aws_stack.connect_to_service('sns')
+        topic_arn = sns_client.create_topic(Name=topic_name)['TopicArn']
+
+        s3_client = aws_stack.connect_to_service('s3')
+
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                'TopicConfigurations': [
+                    {
+                        'TopicArn': topic_arn,
+                        'Events': ['s3:ObjectCreated:*']
+                    }
+                ]
+            }
+        )
+
+        testutil.create_lambda_function(
+            func_name=function_name,
+            zip_file=load_file(TEST_LAMBDA_JAVA, mode='rb'),
+            runtime=LAMBDA_RUNTIME_JAVA8,
+            handler='cloud.localstack.sample.LambdaHandler'
+        )
+
+        sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol='lambda',
+            Endpoint=aws_stack.lambda_function_arn(function_name)
+        )
+
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
+        time.sleep(2)
+
+        # We got an event that confirm lambda invoked
+        retry(function=check_expected_lambda_log_events_length,
+              expected_length=1, retries=3, sleep=1,
+              function_name=function_name)
+
+        # clean up
+        sns_client.delete_topic(TopicArn=topic_arn)
+        testutil.delete_lambda_function(function_name)
+
+        s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
+        s3_client.delete_bucket(Bucket=bucket_name)
 
 
 class TestDockerBehaviour(LambdaTestBase):
