@@ -1,9 +1,10 @@
 import re
 import json
 from flask import Response
+from binascii import crc32
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, to_bytes
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
@@ -80,6 +81,10 @@ def make_requests_error(*args, **kwargs):
 
 def make_error(*args, **kwargs):
     return flask_error_response_xml(*args, **kwargs)
+
+
+def calculate_crc32(content):
+    return crc32(to_bytes(content)) & 0xffffffff
 
 
 class LambdaResponse(object):
