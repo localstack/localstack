@@ -337,8 +337,8 @@ def start_infra(asynchronous=False, apis=None):
                    'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
                    'be properly set in your Lambdas.') % config.LAMBDA_EXECUTOR)
 
-        if is_in_docker and config.LAMBDA_REMOTE_DOCKER and not os.environ.get('HOST_TMP_FOLDER'):
-            print('!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=1 - '
+        if is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not os.environ.get('HOST_TMP_FOLDER'):
+            print('!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - '
                   "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR")
 
         # apply patches
