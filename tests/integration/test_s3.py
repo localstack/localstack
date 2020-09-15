@@ -457,12 +457,12 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.create_bucket(Bucket=bucket_name)
         body = 'Hello\r\n\r\n\r\n\r\n'
         headers = """
-            Authorization: foobar
+            Authorization: %s
             Content-Type: audio/mpeg
             X-Amz-Content-Sha256: STREAMING-AWS4-HMAC-SHA256-PAYLOAD
             X-Amz-Date: 20190918T051509Z
             X-Amz-Decoded-Content-Length: %s
-        """ % len(body)
+        """ % (aws_stack.mock_aws_request_headers('s3')['Authorization'], len(body))
         headers = dict([[field.strip() for field in pair.strip().split(':', 1)]
             for pair in headers.strip().split('\n')])
         data = ('d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n' +
@@ -1285,10 +1285,7 @@ class S3ListenerTest(unittest.TestCase):
 
         base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_S3)
         url = '{}/{}?delete='.format(base_url, bucket_name)
-        r = requests.post(
-            url=url,
-            data=BATCH_DELETE_BODY % (object_key_1, object_key_2)
-        )
+        r = requests.post(url=url, data=BATCH_DELETE_BODY % (object_key_1, object_key_2))
 
         self.assertEqual(r.status_code, 200)
 

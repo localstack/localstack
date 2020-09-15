@@ -9,7 +9,7 @@ from os.path import expanduser
 import six
 from boto3 import Session
 from localstack.constants import (
-    DEFAULT_SERVICE_PORTS, LOCALHOST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
+    DEFAULT_SERVICE_PORTS, LOCALHOST, LOCALHOST_IP, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
     DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1)
 
 
@@ -54,6 +54,7 @@ DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', 
 DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
 
 # expose services on a specific host internally
+# TODO: evaluate whether this should be hardcoded as HOSTNAME=LOCALHOST ..?
 HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 
 # expose services on a specific host externally
@@ -121,6 +122,9 @@ DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 # whether to start the web API
 START_WEB = os.environ.get('START_WEB', '').strip() not in FALSE_STRINGS
 
+# whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
+# TODO: this will likely become the default and may get removed in the future
+FORWARD_EDGE_INMEM = True
 # port number for the edge service, the main entry point for all API invocations
 EDGE_PORT = int(os.environ.get('EDGE_PORT') or 0) or DEFAULT_PORT_EDGE
 # fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
@@ -261,7 +265,7 @@ if not is_in_docker:
     CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, '127.0.0.1', '[::1]')))
+no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, LOCALHOST_IP, '[::1]')))
 if os.environ.get('no_proxy'):
     os.environ['no_proxy'] += ',' + no_proxy
 elif os.environ.get('NO_PROXY'):
@@ -335,6 +339,13 @@ def populate_configs(service_ports=None):
 
 
 def service_port(service_key):
+    if FORWARD_EDGE_INMEM:
+        if service_key == 'elasticsearch':
+            # TODO Elasticsearch domains are a special case - we do not want to route them through
+            # the edge service, as that would require too many route mappings. In the future, we
+            # should integrate them with.
+            return SERVICE_PORTS.get(service_key, 0)
+        return EDGE_PORT_HTTP or EDGE_PORT
     return SERVICE_PORTS.get(service_key, 0)
 
 

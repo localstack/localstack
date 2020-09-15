@@ -16,6 +16,7 @@ ADD localstack/services/install.py localstack/services/
 ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
 ADD localstack/utils/aws/ localstack/utils/aws/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
+ADD localstack/utils/analytics/ localstack/utils/analytics/
 
 # install dependencies
 RUN make install

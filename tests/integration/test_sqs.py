@@ -821,10 +821,7 @@ class SQSTest(unittest.TestCase):
             'QueueUrl': '{}/{}/{}/'.format(base_url, TEST_AWS_ACCOUNT_ID, queue_name),
             'MessageBody': 'test body'
         })
-        r = requests.post(
-            url=base_url,
-            data=encoded_url
-        )
+        r = requests.post(url=base_url, data=encoded_url)
         self.assertEqual(r.status_code, 200)
 
         # We can get the message back

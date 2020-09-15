@@ -28,12 +28,16 @@ from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
 from localstack.services.dynamodbstreams import dynamodbstreams_api
+from localstack.utils.analytics.profiler import log_duration
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
 
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
+
+# maps ports to proxy listener details
+PROXY_LISTENERS = {}
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -119,22 +123,23 @@ def start_ses(port=None, asynchronous=False):
 
 def start_elasticsearch_service(port=None, asynchronous=False):
     port = port or config.PORT_ES
-    return start_local_api('ES', port, method=es_api.serve, asynchronous=asynchronous)
+    return start_local_api('ES', port, api='es', method=es_api.serve, asynchronous=asynchronous)
 
 
 def start_firehose(port=None, asynchronous=False):
     port = port or config.PORT_FIREHOSE
-    return start_local_api('Firehose', port, method=firehose_api.serve, asynchronous=asynchronous)
+    return start_local_api('Firehose', port, api='firehose', method=firehose_api.serve, asynchronous=asynchronous)
 
 
 def start_dynamodbstreams(port=None, asynchronous=False):
     port = port or config.PORT_DYNAMODBSTREAMS
-    return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, asynchronous=asynchronous)
+    return start_local_api('DynamoDB Streams', port, api='dynamodbstreams',
+        method=dynamodbstreams_api.serve, asynchronous=asynchronous)
 
 
 def start_lambda(port=None, asynchronous=False):
     port = port or config.PORT_LAMBDA
-    return start_local_api('Lambda', port, method=lambda_api.serve, asynchronous=asynchronous)
+    return start_local_api('Lambda', port, api='lambda', method=lambda_api.serve, asynchronous=asynchronous)
 
 
 def start_ssm(port=None, asynchronous=False, update_listener=None):
@@ -213,6 +218,12 @@ def get_service_status(service, port=None):
     return status
 
 
+def get_multiserver_or_free_service_port():
+    if config.FORWARD_EDGE_INMEM:
+        return multiserver.get_moto_server_port()
+    return get_free_tcp_port()
+
+
 def register_signal_handlers():
     global SIGNAL_HANDLERS_SETUP
     if SIGNAL_HANDLERS_SETUP:
@@ -241,6 +252,11 @@ def do_run(cmd, asynchronous, print_output=None, env_vars={}):
 
 
 def start_proxy_for_service(service_name, port, backend_port, update_listener, quiet=False, params={}):
+    # TODO: remove special switch for Elasticsearch (see also note in service_port(...) in config.py)
+    if config.FORWARD_EDGE_INMEM and service_name != 'elasticsearch':
+        if backend_port:
+            PROXY_LISTENERS[service_name] = (service_name, backend_port, update_listener)
+        return
     # check if we have a custom backend configured
     custom_backend_url = os.environ.get('%s_BACKEND' % service_name.upper())
     backend_url = custom_backend_url or ('http://%s:%s' % (DEFAULT_BACKEND_HOST, backend_port))
@@ -257,11 +273,13 @@ def start_proxy(port, backend_url, update_listener=None, quiet=False, params={},
 def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
     if not name:
         name = key
-    print('Starting mock %s service on %s ports %s (recommended) and %s (deprecated)...' % (
-        name, get_service_protocol(), config.EDGE_PORT, port))
-    if not backend_port and (config.USE_SSL or update_listener):
-        backend_port = get_free_tcp_port()
-    if backend_port:
+    print('Starting mock %s service on %s port %s ...' % (name, get_service_protocol(), config.EDGE_PORT))
+    if not backend_port:
+        if config.FORWARD_EDGE_INMEM:
+            backend_port = multiserver.get_moto_server_port()
+        elif config.USE_SSL or update_listener:
+            backend_port = get_free_tcp_port()
+    if backend_port or config.FORWARD_EDGE_INMEM:
         start_proxy_for_service(key, port, backend_port, update_listener)
     if config.BUNDLE_API_PROCESSES:
         return multiserver.start_api_server(key, backend_port or port)
@@ -276,9 +294,11 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
     return do_run(cmd, asynchronous)
 
 
-def start_local_api(name, port, method, asynchronous=False):
-    print('Starting mock %s service on %s ports %s (recommended) and %s (deprecated)...' % (
-        name, get_service_protocol(), config.EDGE_PORT, port))
+def start_local_api(name, port, api, method, asynchronous=False):
+    print('Starting mock %s service on %s port %s ...' % (name, get_service_protocol(), config.EDGE_PORT))
+    if config.FORWARD_EDGE_INMEM:
+        port = get_free_tcp_port()
+        PROXY_LISTENERS[api] = (api, port, None)
     if asynchronous:
         thread = start_thread(method, port, quiet=True)
         return thread
@@ -370,35 +390,50 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     # prepare APIs
     apis = canonicalize_api_names(apis)
-    # set environment
-    os.environ['AWS_REGION'] = config.DEFAULT_REGION
-    os.environ['ENV'] = ENV_DEV
-    # register signal handlers
-    if not is_local_test_mode():
-        register_signal_handlers()
-    # make sure AWS credentials are configured, otherwise boto3 bails on us
-    check_aws_credentials()
-    # install libs if not present
-    install.install_components(apis)
-    # Some services take a bit to come up
-    sleep_time = 5
-    # start services
-    thread = None
 
-    # loop through plugins and start each service
-    for name, plugin in SERVICE_PLUGINS.items():
-        if plugin.is_enabled(api_names=apis):
-            record_service_health(name, 'starting')
-            t1 = plugin.start(asynchronous=True)
-            thread = thread or t1
+    @log_duration()
+    def prepare_environment():
+        # set environment
+        os.environ['AWS_REGION'] = config.DEFAULT_REGION
+        os.environ['ENV'] = ENV_DEV
+        # register signal handlers
+        if not is_local_test_mode():
+            register_signal_handlers()
+        # make sure AWS credentials are configured, otherwise boto3 bails on us
+        check_aws_credentials()
 
-    time.sleep(sleep_time)
-    # ensure that all infra components are up and running
-    check_infra(apis=apis)
-    # restore persisted data
-    persistence.restore_persisted_data(apis=apis)
+    @log_duration()
+    def prepare_installation():
+        # install libs if not present
+        install.install_components(apis)
+
+    @log_duration()
+    def start_api_services():
+        # Some services take a bit to come up
+        sleep_time = 5
+        # start services
+        thread = None
+
+        # loop through plugins and start each service
+        for name, plugin in SERVICE_PLUGINS.items():
+            if plugin.is_enabled(api_names=apis):
+                record_service_health(name, 'starting')
+                t1 = plugin.start(asynchronous=True)
+                thread = thread or t1
+
+        time.sleep(sleep_time)
+        # ensure that all infra components are up and running
+        check_infra(apis=apis)
+        # restore persisted data
+        persistence.restore_persisted_data(apis=apis)
+        return thread
+
+    prepare_environment()
+    prepare_installation()
+    thread = start_api_services()
     print('Ready.')
     sys.stdout.flush()
+
     if not asynchronous and thread:
         # this is a bit of an ugly hack, but we need to make sure that we
         # stay in the execution context of the main thread, otherwise our

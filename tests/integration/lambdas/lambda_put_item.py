@@ -1,13 +1,15 @@
 import boto3
 import os
 
+# TODO - merge this file with lambda_send_message.py, to avoid duplication
+
+EDGE_PORT = 4566
+
 
 def handler(event, context):
     protocol = 'https' if os.environ.get('USE_SSL') else 'http'
-    ddb = boto3.resource('dynamodb',
-                         endpoint_url='{}://{}:4569'.format(protocol, os.environ['LOCALSTACK_HOSTNAME']),
-                         region_name=event['region_name'],
-                         verify=False)
+    endpoint_url = '{}://{}:{}'.format(protocol, os.environ['LOCALSTACK_HOSTNAME'], EDGE_PORT)
+    ddb = boto3.resource('dynamodb', endpoint_url=endpoint_url, region_name=event['region_name'], verify=False)
 
     table_name = event['table_name']
     for item in event['items']:

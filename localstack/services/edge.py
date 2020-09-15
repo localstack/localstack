@@ -7,12 +7,15 @@ from requests.models import Response
 from localstack import config
 from localstack.services import plugins
 from localstack.dashboard import infra as dashboard_infra
+from localstack.utils.aws import aws_stack
 from localstack.constants import (
-    HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER, PATH_USER_REQUEST)
+    HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER,
+    PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
 from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str, get_service_protocol
 from localstack.utils.common import safe_requests as requests
+from localstack.services.infra import PROXY_LISTENERS
 from localstack.utils.aws.aws_stack import Environment
-from localstack.services.generic_proxy import ProxyListener, start_proxy_server
+from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils.aws.aws_stack import set_default_region_in_headers
 
@@ -26,8 +29,6 @@ HEADER_KILL_SIGNAL = 'x-localstack-kill'
 class ProxyListenerEdge(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-        if method == 'OPTIONS':
-            return 200
 
         if path.split('?')[0] == '/health':
             return serve_health_endpoint(method, path, data)
@@ -51,9 +52,12 @@ class ProxyListenerEdge(ProxyListener):
             return 404
 
         if not port:
-            port = get_port_from_custom_rules(method, path, data, headers) or port
+            api, port = get_api_from_custom_rules(method, path, data, headers) or (api, port)
 
         if not port:
+            if method == 'OPTIONS':
+                return 200
+
             if api in ['', None, '_unknown_']:
                 truncated = truncate(data)
                 LOG.info(('Unable to find forwarding rule for host "%s", path "%s", '
@@ -66,17 +70,42 @@ class ProxyListenerEdge(ProxyListener):
             response._content = '{"status": "running"}'
             return response
 
-        connect_host = '%s:%s' % (config.HOSTNAME, port)
-        url = '%s://%s%s' % (get_service_protocol(), connect_host, path)
+        if api and not headers.get('Authorization'):
+            headers['Authorization'] = aws_stack.mock_aws_request_headers(api)['Authorization']
 
         headers['Host'] = host
         if isinstance(data, dict):
             data = json.dumps(data)
 
-        return do_forward_request(api, method, url, data, headers)
+        return do_forward_request(api, port, method, path, data, headers)
 
 
-def do_forward_request(api, method, url, data, headers):
+def do_forward_request(api, port, method, path, data, headers):
+    if config.FORWARD_EDGE_INMEM:
+        result = do_forward_request_inmem(api, port, method, path, data, headers)
+    else:
+        result = do_forward_request_network(port, method, path, data, headers)
+    if hasattr(result, 'status_code') and result.status_code >= 400 and method == 'OPTIONS':
+        # fall back to successful response for OPTIONS requests
+        return 200
+    return result
+
+
+def do_forward_request_inmem(api, port, method, path, data, headers):
+    service_name, backend_port, listener = PROXY_LISTENERS[api]
+    # TODO determine client address..?
+    client_address = LOCALHOST_IP
+    server_address = headers.get('host') or LOCALHOST
+    forward_url = 'http://%s:%s' % (config.HOSTNAME, backend_port)
+    response = modify_and_forward(method=method, path=path, data_bytes=data, headers=headers,
+        forward_base_url=forward_url, listeners=[listener], request_handler=None,
+        client_address=client_address, server_address=server_address)
+    return response
+
+
+def do_forward_request_network(port, method, path, data, headers):
+    connect_host = '%s:%s' % (config.HOSTNAME, port)
+    url = '%s://%s%s' % (get_service_protocol(), connect_host, path)
     function = getattr(requests, method.lower())
     response = function(url, data=data, headers=headers, verify=False, stream=True)
     return response
@@ -122,6 +151,10 @@ def get_api_from_headers(headers, path=None):
         result = 'cloudwatch', config.PORT_CLOUDWATCH
     elif '.execute-api.' in host:
         result = 'apigateway', config.PORT_APIGATEWAY
+    elif target.startswith('Firehose_'):
+        result = 'firehose', config.PORT_FIREHOSE
+    elif target.startswith('DynamoDB_'):
+        result = 'dynamodb', config.PORT_DYNAMODB
     elif target.startswith('DynamoDBStreams') or host.startswith('streams.dynamodb.'):
         # Note: DDB streams requests use ../dynamodb/.. auth header, hence we also need to update result_before
         result = result_before = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
@@ -156,35 +189,35 @@ def serve_resource_graph(data):
     return graph
 
 
-def get_port_from_custom_rules(method, path, data, headers):
+def get_api_from_custom_rules(method, path, data, headers):
     """ Determine backend port based on custom rules. """
 
     # detect S3 presigned URLs
     if 'AWSAccessKeyId=' in path or 'Signature=' in path:
-        return config.PORT_S3
+        return 's3', config.PORT_S3
 
     # heuristic for SQS queue URLs
     if is_sqs_queue_url(path):
-        return config.PORT_SQS
+        return 'sqs', config.PORT_SQS
 
     # DynamoDB shell URLs
     if path.startswith('/shell') or path.startswith('/dynamodb/shell'):
-        return config.PORT_DYNAMODB
+        return 'dynamodb', config.PORT_DYNAMODB
 
     # API Gateway invocation URLs
     if ('/%s/' % PATH_USER_REQUEST) in path:
-        return config.PORT_APIGATEWAY
+        return 'apigateway', config.PORT_APIGATEWAY
 
     data_bytes = to_bytes(data or '')
 
-    if path == '/' and to_bytes('QueueName=') in data_bytes:
-        return config.PORT_SQS
+    if path == '/' and b'QueueName=' in data_bytes:
+        return 'sqs', config.PORT_SQS
 
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip('/')
     if method in ['GET', 'HEAD'] and '/' in stripped:
         # assume that this is an S3 GET request with URL path `/<bucket>/<key ...>`
-        return config.PORT_S3
+        return 's3', config.PORT_S3
 
     # detect S3 URLs
     if stripped and '/' not in stripped:
@@ -193,18 +226,26 @@ def get_port_from_custom_rules(method, path, data, headers):
             return config.PORT_S3
         if method == 'PUT':
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
-            return config.PORT_S3
+            return 's3', config.PORT_S3
         if method == 'POST' and is_s3_form_data(data_bytes):
             # assume that this is an S3 POST request with form parameters or multipart form in the body
-            return config.PORT_S3
+            return 's3', config.PORT_S3
 
     if stripped.count('/') == 1 and method == 'PUT':
         # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
-        return config.PORT_S3
+        return 's3', config.PORT_S3
 
     # detect S3 requests sent from aws-cli using --no-sign-request option
     if 'aws-cli/' in headers.get('User-Agent', ''):
-        return config.PORT_S3
+        return 's3', config.PORT_S3
+
+    # S3 delete object requests
+    if method == 'POST' and 'delete=' in path and b'<Delete' in data_bytes and b'<Key>' in data_bytes:
+        return 's3', config.PORT_S3
+
+    # SQS queue requests
+    if ('QueueUrl=' in path and 'Action=' in path) or (b'QueueUrl=' in data_bytes and b'Action=' in data_bytes):
+        return 'sqs', config.PORT_SQS
 
 
 def get_service_port_for_account(service, headers):
@@ -257,7 +298,7 @@ def start_edge(port=None, use_ssl=True, asynchronous=False):
 
         def stop(self, quiet=True):
             try:
-                url = 'http%s://localhost:%s' % ('s' if use_ssl else '', port)
+                url = 'http%s://%s:%s' % ('s' if use_ssl else '', LOCALHOST, port)
                 requests.verify_ssl = False
                 requests.post(url, headers={HEADER_KILL_SIGNAL: 'kill'})
             except Exception:
