@@ -224,6 +224,9 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
     if res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
 
+    if res_type == 'AWS::S3::Bucket':
+        props['BucketName'] = props.get('BucketName') or resource_name
+
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
     for entry in default_attrs:
