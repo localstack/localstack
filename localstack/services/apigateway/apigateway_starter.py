@@ -7,7 +7,7 @@ from moto.apigateway.exceptions import MethodNotFoundException, NoIntegrationDef
 from moto.apigateway.utils import create_id
 from localstack import config
 from localstack.utils.common import short_uid, to_str
-from localstack.services.infra import start_moto_server, PROXY_LISTENERS
+from localstack.services.infra import start_moto_server
 
 LOG = logging.getLogger(__name__)
 
@@ -137,5 +137,4 @@ def start_apigateway(port=None, backend_port=None, asynchronous=None, update_lis
         key='apigateway', name='API Gateway', asynchronous=asynchronous,
         port=port, backend_port=backend_port, update_listener=update_listener
     )
-    PROXY_LISTENERS['execute-api'] = PROXY_LISTENERS['apigateway']
     return result

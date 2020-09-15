@@ -34,6 +34,9 @@ RUN_SERVER_IN_PROCESS = False
 def patch_moto_server():
 
     def create_backend_app(service):
+        if not service:
+            LOG.warning('Unable to create moto backend app for empty service: "%s"' % service)
+            return None
         backend_app = create_backend_app_orig(service)
         CORS(backend_app)
         return backend_app
