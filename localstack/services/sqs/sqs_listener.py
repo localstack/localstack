@@ -14,7 +14,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.awslambda import lambda_api
-from localstack.utils.aws.aws_responses import requests_response, make_requests_error
+from localstack.utils.aws.aws_responses import requests_response, make_requests_error, calculate_crc32
 
 API_VERSION = '2012-11-05'
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/%s/' % API_VERSION
@@ -331,6 +331,7 @@ class ProxyListenerSQS(PersistingProxyListener):
         if content_str_original != content_str:
             # if changes have been made, return patched response
             response.headers['content-length'] = len(content_str)
+            response.headers['x-amz-crc32'] = calculate_crc32(content_str)
             return requests_response(content_str, headers=response.headers, status_code=response.status_code)
 
     @classmethod

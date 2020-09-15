@@ -434,7 +434,7 @@ class TestAPIGateway(unittest.TestCase):
         response = requests.get('%s?param1=foobar' % url)
         self.assertLess(response.status_code, 400)
         content = json.loads(to_str(response.content))
-        self.assertEqual(content.get('httpMethod'), 'POST')
+        self.assertEqual(content.get('httpMethod'), 'GET')
         self.assertEqual(content.get('requestContext', {}).get('resourceId'), api_resource['id'])
         self.assertEqual(content.get('requestContext', {}).get('stage'), self.TEST_STAGE_NAME)
         self.assertEqual(content.get('body'), '{"param1": "foobar"}')
@@ -587,7 +587,8 @@ class TestAPIGateway(unittest.TestCase):
                 'httpMethod': method,
                 'integrations': [{
                     'type': 'AWS_PROXY',
-                    'uri': target_uri
+                    'uri': target_uri,
+                    'httpMethod': 'POST'
                 }]
             })
         return aws_stack.create_api_gateway(
@@ -844,9 +845,9 @@ class TestAPIGateway(unittest.TestCase):
             restApiId=api_id,
             resourceId=root_id,
             httpMethod='PUT',
+            integrationHttpMethod='PUT',
             type='AWS_PROXY',
             uri='arn:aws:apigateway:us-east-1:dynamodb:action/PutItem&Table=MusicCollection',
-            integrationHttpMethod='PUT',
         )
 
         apigw_client.put_integration_response(
