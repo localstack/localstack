@@ -2036,6 +2036,64 @@ class CloudFormationTest(unittest.TestCase):
             self.assertTrue(isinstance(test_write_capacity, int))
         cf_client.delete_stack(StackName=stack_name)
 
+    def test_updating_stack_with_iam_role(self):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        iam = aws_stack.connect_to_service('iam')
+
+        rs = lambda_client.list_functions()
+        # Number of lambdas before of stack creation
+        lambdas_before = len(rs['Functions'])
+
+        stack_name = 'stack-%s' % short_uid()
+        lambda_role_name = 'lambda-role-%s' % short_uid()
+        lambda_function_name = 'lambda-function-%s' % short_uid()
+        TEST_TEMPLATE_7['Resources']['LambdaExecutionRole']['Properties']['RoleName'] = lambda_role_name
+        TEST_TEMPLATE_7['Resources']['LambdaFunction1']['Properties']['FunctionName'] = lambda_function_name
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_7))
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('StackId', rs)
+        self.assertIn(stack_name, rs['StackId'])
+
+        _await_stack_completion(stack_name)
+
+        list_functions = lambda_client.list_functions()
+        list_roles = iam.list_roles()
+
+        if len(list_functions) == 1:
+            self.assertEqual(lambda_function_name, list_functions['Functions'][0]['FunctionName'])
+        if len(list_roles) == 1:
+            self.assertEqual(lambda_role_name, list_functions['Roles'][0]['RoleName'])
+
+        lambda_role_name = 'lambda-role-%s' % short_uid()
+        lambda_function_name = 'lambda-function-%s' % short_uid()
+        TEST_TEMPLATE_7['Resources']['LambdaExecutionRole']['Properties']['RoleName'] = lambda_role_name
+        TEST_TEMPLATE_7['Resources']['LambdaFunction1']['Properties']['FunctionName'] = lambda_function_name
+        rs = cloudformation.update_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_7))
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('StackId', rs)
+        self.assertIn(stack_name, rs['StackId'])
+
+        _await_stack_completion(stack_name)
+
+        list_functions = lambda_client.list_functions()
+        list_roles = iam.list_roles()
+
+        if len(list_functions) == 1:
+            self.assertEqual(lambda_function_name, list_functions['Functions'][0]['FunctionName'])
+        if len(list_roles) == 1:
+            self.assertEqual(lambda_role_name, list_functions['Roles'][0]['RoleName'])
+
+        # delete the stack
+        cloudformation.delete_stack(StackName=stack_name)
+
+        rs = lambda_client.list_functions()
+
+        # Back to what we had before
+        self.assertEqual(lambdas_before, len(rs['Functions']))
+
     def test_delete_stack_across_regions(self):
         domain_name = 'es-%s' % short_uid()
 
