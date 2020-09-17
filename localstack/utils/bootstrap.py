@@ -15,6 +15,7 @@ import pip as pip_mod
 from datetime import datetime
 from concurrent.futures._base import Future
 from localstack import constants, config
+from localstack.utils.analytics.profiler import log_duration
 
 # set up logger
 LOG = logging.getLogger(os.path.basename(__file__))
@@ -46,7 +47,8 @@ API_DEPENDENCIES = {
     'dynamodbstreams': ['kinesis'],
     'es': ['elasticsearch'],
     'lambda': ['logs'],
-    'kinesis': ['dynamodb']
+    'kinesis': ['dynamodb'],
+    'firehose': ['kinesis']
 }
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {
@@ -98,6 +100,7 @@ def run_pip_main(args):
     return pip._internal.main.main(args)
 
 
+@log_duration()
 def load_plugin_from_path(file_path, scope=None):
     if os.path.exists(file_path):
         module = re.sub(r'(^|.+/)([^/]+)/plugins.py', r'\2', file_path)
@@ -122,6 +125,13 @@ def load_plugin_from_path(file_path, scope=None):
                 LOG.warning('Unable to load plugins from file %s: %s' % (file_path, e))
 
 
+def should_load_module(module, scope):
+    if module == 'localstack_ext' and not os.environ.get('LOCALSTACK_API_KEY'):
+        return False
+    return True
+
+
+@log_duration()
 def load_plugins(scope=None):
     scope = scope or PLUGIN_SCOPE_SERVICES
     if PLUGINS_LOADED.get(scope):
@@ -138,6 +148,8 @@ def load_plugins(scope=None):
     search_modules = PLUGIN_MODULES
 
     for module in search_modules:
+        if not should_load_module(module, scope):
+            continue
         file_path = None
         if isinstance(module, six.string_types):
             loader = pkgutil.get_loader(module)
@@ -307,7 +319,7 @@ class PortMappings(object):
             for i in range(port[1] - port[0] + 1):
                 self.add(port[0] + i, mapped[0] + i)
             return
-        if int(port) <= 0:
+        if port is None or int(port) <= 0:
             raise Exception('Unable to add mapping for invalid port: %s' % port)
         if self.contains(port):
             return

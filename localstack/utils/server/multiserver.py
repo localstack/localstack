@@ -6,7 +6,7 @@ import requests
 from flask_cors import CORS
 from moto import server as moto_server
 from requests.models import Response
-from localstack import constants
+from localstack import constants, config as localstack_config
 from localstack.utils.common import (
     FuncThread, ShellCommandThread, TMP_THREADS, to_str, json_safe,
     wait_for_port_open, is_port_open, get_free_tcp_port)
@@ -21,6 +21,9 @@ API_SERVERS = {}
 # network port for multiserver instance (lazily initialized on startup)
 MULTI_SERVER_PORT = None
 
+# network port for moto server instance (lazily initialized on startup)
+MOTO_SERVER_PORT = None
+
 # API paths
 API_PATH_SERVERS = '/servers'
 
@@ -31,6 +34,9 @@ RUN_SERVER_IN_PROCESS = False
 def patch_moto_server():
 
     def create_backend_app(service):
+        if not service:
+            LOG.warning('Unable to create moto backend app for empty service: "%s"' % service)
+            return None
         backend_app = create_backend_app_orig(service)
         CORS(backend_app)
         return backend_app
@@ -41,6 +47,11 @@ def patch_moto_server():
 
 def start_api_server_locally(request):
 
+    if localstack_config.FORWARD_EDGE_INMEM:
+        if '__started__' in API_SERVERS:
+            return
+        API_SERVERS['__started__'] = True
+
     api = request.get('api')
     port = request.get('port')
     if api in API_SERVERS:
@@ -48,6 +59,8 @@ def start_api_server_locally(request):
     result = API_SERVERS[api] = {}
 
     def thread_func(params):
+        if localstack_config.FORWARD_EDGE_INMEM:
+            return moto_server.main(['-p', str(port), '-H', constants.BIND_HOST])
         return moto_server.main([api, '-p', str(port), '-H', constants.BIND_HOST])
 
     thread = FuncThread(thread_func)
@@ -91,6 +104,8 @@ def start_api_server(api, port, server_port=None):
     server_port = server_port or get_multi_server_port()
     thread = start_server_process(server_port)
     url = 'http://localhost:%s%s' % (server_port, API_PATH_SERVERS)
+    if localstack_config.FORWARD_EDGE_INMEM:
+        port = get_moto_server_port()
     payload = {
         'api': api,
         'port': port
@@ -128,6 +143,12 @@ def get_multi_server_port():
     global MULTI_SERVER_PORT
     MULTI_SERVER_PORT = MULTI_SERVER_PORT or get_free_tcp_port()
     return MULTI_SERVER_PORT
+
+
+def get_moto_server_port():
+    global MOTO_SERVER_PORT
+    MOTO_SERVER_PORT = MOTO_SERVER_PORT or get_free_tcp_port()
+    return MOTO_SERVER_PORT
 
 
 def main():

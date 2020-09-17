@@ -57,15 +57,17 @@ def forward_events(records):
 
 @app.route('/', methods=['POST'])
 def post_request():
-    action = request.headers.get('x-amz-target')
+    action = request.headers.get('x-amz-target', '')
+    action = action.split('.')[-1]
     data = json.loads(to_str(request.data))
     result = {}
     kinesis = aws_stack.connect_to_service('kinesis')
-    if action == '%s.ListStreams' % ACTION_HEADER_PREFIX:
+    if action == 'ListStreams':
         result = {
             'Streams': list(DDB_STREAMS.values())
         }
-    elif action == '%s.DescribeStream' % ACTION_HEADER_PREFIX:
+
+    elif action == 'DescribeStream':
         for stream in DDB_STREAMS.values():
             if stream['StreamArn'] == data['StreamArn']:
                 result = {
@@ -88,7 +90,8 @@ def post_request():
                 break
         if not result:
             return error_response('Requested resource not found', error_type='ResourceNotFoundException')
-    elif action == '%s.GetShardIterator' % ACTION_HEADER_PREFIX:
+
+    elif action == 'GetShardIterator':
         # forward request to Kinesis API
         stream_name = stream_name_from_stream_arn(data['StreamArn'])
         stream_shard_id = kinesis_shard_id(data['ShardId'])
@@ -97,7 +100,7 @@ def post_request():
         result = kinesis.get_shard_iterator(StreamName=stream_name, ShardId=stream_shard_id,
                                             ShardIteratorType=data['ShardIteratorType'], **kwargs)
 
-    elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
+    elif action == 'GetRecords':
         kinesis_records = kinesis.get_records(**data)
         result = {'Records': [], 'NextShardIterator': kinesis_records.get('NextShardIterator')}
         for record in kinesis_records['Records']:

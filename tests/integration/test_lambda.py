@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37
+from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
 from localstack.utils import testutil
 from localstack.utils.testutil import (
     get_lambda_log_events, check_expected_lambda_log_events_length,
@@ -181,7 +181,6 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         proxy.stop()
 
     def test_adding_fallback_function_name_in_headers(self):
-
         lambda_client = aws_stack.connect_to_service('lambda')
         ddb_client = aws_stack.connect_to_service('dynamodb')
 
@@ -270,6 +269,77 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
                                                StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+
+    def test_lambda_asynchronous_invocations(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # adding event invoke config
+        response = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=123,
+            MaximumEventAgeInSeconds=123,
+            DestinationConfig={
+                'OnSuccess': {
+                    'Destination': function_name
+                },
+                'OnFailure': {
+                    'Destination': function_name
+                }
+            }
+        )
+
+        destination_config = {
+            'OnSuccess': {
+                'Destination': function_name
+            },
+            'OnFailure': {
+                'Destination': function_name
+            }
+        }
+
+        # checking for parameter configuration
+        self.assertEqual(response['MaximumRetryAttempts'], 123)
+        self.assertEqual(response['MaximumEventAgeInSeconds'], 123)
+        self.assertEqual(response['DestinationConfig'], destination_config)
+
+        # over writing event invoke config
+        response = lambda_client.put_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=123,
+            DestinationConfig={
+                'OnSuccess': {
+                    'Destination': function_name
+                },
+                'OnFailure': {
+                    'Destination': function_name
+                }
+            }
+        )
+
+        # checking if 'MaximumEventAgeInSeconds' is removed
+        self.assertNotIn('MaximumEventAgeInSeconds', response)
+
+        # updating event invoke config
+        response = lambda_client.update_function_event_invoke_config(
+            FunctionName=function_name,
+            MaximumRetryAttempts=111,
+        )
+
+        # checking for updated and existing configuration
+        self.assertEqual(response['MaximumRetryAttempts'], 111)
+        self.assertEqual(response['DestinationConfig'], destination_config)
+
+        # clean up
+        response = lambda_client.delete_function_event_invoke_config(
+            FunctionName=function_name)
+        lambda_client.delete_function(FunctionName=function_name)
 
     def test_event_source_mapping_default_batch_size(self):
         function_name = 'lambda_func-{}'.format(short_uid())
@@ -960,6 +1030,32 @@ class TestNodeJSRuntimes(LambdaTestBase):
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
 
+    def test_invoke_nodejs_lambda(self):
+        if not use_docker():
+            return
+
+        handler_file = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_handler.js')
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JS,
+            zip_file=testutil.create_zip_file(handler_file, get_content=True),
+            runtime=LAMBDA_RUNTIME_NODEJS12X,
+            handler='lambda_handler.handler'
+        )
+
+        rs = self.lambda_client.invoke(
+            FunctionName=TEST_LAMBDA_NAME_JS,
+            Payload=json.dumps({
+                'event_type': 'test_lambda'
+            })
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        events = get_lambda_log_events(TEST_LAMBDA_NAME_JS)
+        self.assertGreater(len(events), 0)
+
+        # clean up
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JS)
+
 
 class TestCustomRuntimes(LambdaTestBase):
     @classmethod
@@ -1195,6 +1291,58 @@ class TestJavaRuntimes(LambdaTestBase):
             json.loads(to_str(result_data)),
             {'validated': True, 'bucket': 'test_bucket', 'key': 'test_key'}
         )
+
+    def test_trigger_java_lambda_through_sns(self):
+        topic_name = 'topic-%s' % short_uid()
+        function_name = 'func-%s' % short_uid()
+        bucket_name = 'bucket-%s' % short_uid()
+        key = 'key-%s' % short_uid()
+
+        sns_client = aws_stack.connect_to_service('sns')
+        topic_arn = sns_client.create_topic(Name=topic_name)['TopicArn']
+
+        s3_client = aws_stack.connect_to_service('s3')
+
+        s3_client.create_bucket(Bucket=bucket_name)
+        s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                'TopicConfigurations': [
+                    {
+                        'TopicArn': topic_arn,
+                        'Events': ['s3:ObjectCreated:*']
+                    }
+                ]
+            }
+        )
+
+        testutil.create_lambda_function(
+            func_name=function_name,
+            zip_file=load_file(TEST_LAMBDA_JAVA, mode='rb'),
+            runtime=LAMBDA_RUNTIME_JAVA8,
+            handler='cloud.localstack.sample.LambdaHandler'
+        )
+
+        sns_client.subscribe(
+            TopicArn=topic_arn,
+            Protocol='lambda',
+            Endpoint=aws_stack.lambda_function_arn(function_name)
+        )
+
+        s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
+        time.sleep(2)
+
+        # We got an event that confirm lambda invoked
+        retry(function=check_expected_lambda_log_events_length,
+              expected_length=1, retries=3, sleep=1,
+              function_name=function_name)
+
+        # clean up
+        sns_client.delete_topic(TopicArn=topic_arn)
+        testutil.delete_lambda_function(function_name)
+
+        s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
+        s3_client.delete_bucket(Bucket=bucket_name)
 
 
 class TestDockerBehaviour(LambdaTestBase):

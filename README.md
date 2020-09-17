@@ -15,6 +15,7 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 
 # Announcements
 
+* **2020-11-15**: A major (breaking) change has been merged in PR #2905 - starting with releases after `v0.11.5`, all services are now exposed via the edge service (port 4566) only! Please update your client configurations to use this new endpoint.
 * **2019-10-09**: **LocalStack Pro is out!** We're incredibly excited to announce the launch of LocalStack Pro - the enterprise version of LocalStack with additional APIs and advanced features. Check out the free trial at https://localstack.cloud
 * **2018-01-10**: **Help wanted!** Please [fill out this survey](https://lambdastudy.typeform.com/to/kDUvvy?source=localstack-github) to support a research study on the usage of Serverless and Function-as-a-Service (FaaS) services, conducted at the Chalmers University of Technology. The survey only takes 5-10 minutes of your time. Many thanks for your participation!!
   * The result from this study can be found [here](https://research.chalmers.se/en/publication/508147)
@@ -32,34 +33,32 @@ LocalStack spins up the following core Cloud APIs on your local machine.
 
 **Note:** Starting with version `0.11.0`, all APIs are exposed via a single _edge service_, which is
 accessible on **http://localhost:4566** by default (customizable via `EDGE_PORT`, see further below).
-The API-specific endpoints below are still left for backward-compatibility but may get removed in a
-future release - please reconfigure your client SDKs to start using the single edge endpoint URL!
 
-* **API Gateway** ~at http://localhost:4567~
-* **Kinesis** ~at http://localhost:4568~
-* **DynamoDB** ~at http://localhost:4569~
-* **DynamoDB Streams** ~at http://localhost:4570~
-* **S3** ~at http://localhost:4572~
-* **Firehose** ~at http://localhost:4573~
-* **Lambda** ~at http://localhost:4574~
-* **SNS** ~at http://localhost:4575~
-* **SQS** ~at http://localhost:4576~
-* **Redshift** ~at http://localhost:4577~
-* **Elasticsearch Service** ~at http://localhost:4578~
-* **SES** ~at http://localhost:4579~
-* **Route53** ~at http://localhost:4580~
-* **CloudFormation** ~at http://localhost:4581~
-* **CloudWatch** ~at http://localhost:4582~
-* **SSM** ~at http://localhost:4583~
-* **SecretsManager** ~at http://localhost:4584~
-* **StepFunctions** ~at http://localhost:4585~
-* **CloudWatch Logs** ~at http://localhost:4586~
-* **EventBridge (CloudWatch Events)** ~at http://localhost:4587~
-* **STS** ~at http://localhost:4592~
-* **IAM** ~at http://localhost:4593~
-* **EC2** ~at http://localhost:4597~
-* **KMS** ~at http://localhost:4599~
-* **ACM** ~at http://localhost:4619~
+* **ACM**
+* **API Gateway**
+* **CloudFormation**
+* **CloudWatch**
+* **CloudWatch Logs**
+* **DynamoDB**
+* **DynamoDB Streams**
+* **EC2**
+* **Elasticsearch Service**
+* **EventBridge (CloudWatch Events)**
+* **Firehose**
+* **IAM**
+* **Kinesis**
+* **KMS**
+* **Lambda**
+* **Redshift**
+* **Route53**
+* **S3**
+* **SecretsManager**
+* **SES**
+* **SNS**
+* **SQS**
+* **SSM**
+* **StepFunctions**
+* **STS**
 
 In addition to the above, the [**Pro version** of LocalStack](https://localstack.cloud/#pricing) supports additional APIs and advanced features, including:
 * **Amplify**
@@ -97,11 +96,10 @@ on top of them:
 * **Error injection:** LocalStack allows to inject errors frequently occurring in real Cloud environments,
   for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
   read/write throughput is exceeded.
-* **Isolated processes**: Services in LocalStack can be run in separate processes. The overhead of additional
-  processes is acceptable, and the entire stack can easily be executed on any developer machine and CI server.
+* **Isolated processes**: Services in LocalStack can be run in separate processes.
   In moto, components are often hard-wired in memory (e.g., when forwarding a message on an SNS topic to an
   SQS queue, the queue endpoint is looked up in a local hash map). In contrast, LocalStack services live in
-  isolation (separate processes communicating via HTTP), which fosters true decoupling and more closely
+  isolation (separate processes/threads communicating via HTTP), which fosters true decoupling and more closely
   resembles the real cloud environment.
 * **Pluggable services**: All services in LocalStack are easily pluggable (and replaceable), due to the fact that
   we are using isolated processes for each service. This allows us to keep the framework up-to-date and select
@@ -228,7 +226,7 @@ Additionally, the following *read-only* environment variables are available:
   Use this hostname as endpoint (e.g., `http://${LOCALSTACK_HOSTNAME}:4566`) in order
   to **access the services from within your Lambda functions**
   (e.g., to store an item to DynamoDB or S3 from a Lambda).
-  
+
 An example passing the above environment variables to LocalStack to start Kinesis, Lambda, Dynamodb and SQS:
 
 ```

@@ -702,6 +702,7 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
         self.LAMBDA_OBJ.role = self.ROLE
         self.LAMBDA_OBJ.memory_size = self.MEMORY_SIZE
 
+    # TODO: remove this test case. Already added it in integration test case
     def test_put_function_event_invoke_config(self):
         # creating a lambda function
         self._create_function(self.FUNCTION_NAME)
