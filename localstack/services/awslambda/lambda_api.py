@@ -767,7 +767,7 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
         main_file = '%s/%s' % (lambda_cwd, handler_file)
-        
+
         # Checking if the handler function exists while creating lambda function
         # HANDLER_CHECK is the switch for disabling this functionality
         HANDLER_CHECK = False
