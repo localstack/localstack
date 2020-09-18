@@ -8,6 +8,30 @@ provider:
   timeout: 900
   runtime: "nodejs12.x"
 
+resources:
+  Resources:
+    TestTable:
+      Type: AWS::DynamoDB::Table
+      DeletionPolicy: Retain
+      Properties:
+        TableName: 'Test'
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+    KinesisStream:
+      Type: AWS::Kinesis::Stream
+      Properties:
+        Name: KinesisTestStream
+        ShardCount: 1
+
 functions:
   test:
     handler: "handler.test"
@@ -26,9 +50,34 @@ functions:
           method: get
           integration: lambda-proxy
 
+  dynamodbStreamHandler:
+    handler: handler.processItem
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt:
+              - TestTable
+              - StreamArn
+          batchSize: 10
+          startingPosition: TRIM_HORIZON
+  kinesisStreamHandler:
+    handler: handler.processKinesis
+    events:
+      - stream:
+          type: kinesis
+          arn:
+            Fn::GetAtt:
+              - KinesisStream
+              - Arn
+          batchSize: 10
+          startingPosition: TRIM_HORIZON
+
 plugins:
   - serverless-localstack
 
 custom:
   localstack:
     stages: "local"
+    lambda:
+      mountCode: false
