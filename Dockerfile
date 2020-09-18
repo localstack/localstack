@@ -7,8 +7,11 @@ LABEL authors="LocalStack Contributors"
 RUN pip install awscli awscli-local requests --upgrade
 RUN apk add iputils
 
-# add files required to run "make install"
+# add files required to install virtualenv dependencies
 ADD Makefile requirements.txt ./
+RUN make install-venv
+
+# add files required to run "make init"
 RUN mkdir -p localstack/utils/kinesis/ && mkdir -p localstack/services/ && \
   touch localstack/__init__.py localstack/utils/__init__.py localstack/services/__init__.py localstack/utils/kinesis/__init__.py
 ADD localstack/constants.py localstack/config.py localstack/
@@ -17,15 +20,11 @@ ADD localstack/utils/common.py localstack/utils/bootstrap.py localstack/utils/
 ADD localstack/utils/aws/ localstack/utils/aws/
 ADD localstack/utils/kinesis/ localstack/utils/kinesis/
 ADD localstack/utils/analytics/ localstack/utils/analytics/
-
-# install dependencies
-RUN make install
-
-# add files required to run "make init"
 ADD localstack/package.json localstack/package.json
 ADD localstack/services/__init__.py localstack/services/install.py localstack/services/
 
 # initialize installation (downloads remaining dependencies)
+RUN make init-testlibs
 RUN make init
 
 # (re-)install web dashboard dependencies (already installed in base image)

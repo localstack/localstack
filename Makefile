@@ -20,10 +20,18 @@ setup-venv:
 	(test `which virtualenv` || $(PIP_CMD) install --user virtualenv) && \
 		(test -e $(VENV_DIR) || virtualenv $(VENV_OPTS) $(VENV_DIR))
 
-install:           ## Install full dependencies in virtualenv
+install-venv:
 	make setup-venv && \
-		(test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt && \
-			PYTHONPATH=. exec python localstack/services/install.py testlibs)) || exit 1
+		test ! -e requirements.txt || ($(VENV_RUN); $(PIP_CMD) -q install -r requirements.txt)
+
+init:              ## Initialize the infrastructure, make sure all libs are downloaded
+	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py libs
+
+init-testlibs:
+	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py testlibs
+
+install:           ## Install full dependencies in virtualenv
+	(make install-venv && make init-testlibs) || exit 1
 
 install-basic:     ## Install basic dependencies for CLI usage in virtualenv
 	make setup-venv && \
@@ -39,9 +47,6 @@ publish:           ## Publish the library to the central PyPi repository
 
 coveralls:         ## Publish coveralls metrics
 	($(VENV_RUN); coveralls)
-
-init:              ## Initialize the infrastructure, make sure all libs are downloaded
-	$(VENV_RUN); PYTHONPATH=. exec python localstack/services/install.py libs
 
 infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
