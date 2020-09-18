@@ -42,7 +42,6 @@ def start_dynamodb(port=None, asynchronous=False, update_listener=None):
     cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +
         '-Xmx%s -jar DynamoDBLocal.jar -sharedDb -port %s %s') % (
         ROOT_PATH, config.DYNAMODB_HEAP_SIZE, PORT_DYNAMODB_BACKEND, ddb_data_dir_param)
-    print('Starting mock DynamoDB service in %s ports %s (recommended) and %s (deprecated)...' % (
-        get_service_protocol(), config.EDGE_PORT, port))
+    print('Starting mock DynamoDB service on %s port %s ...' % (get_service_protocol(), config.EDGE_PORT))
     start_proxy_for_service('dynamodb', port, backend_port=PORT_DYNAMODB_BACKEND, update_listener=update_listener)
     return do_run(cmd, asynchronous)

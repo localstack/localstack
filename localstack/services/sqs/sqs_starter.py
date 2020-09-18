@@ -27,7 +27,8 @@ def check_sqs(expect_shutdown=False, print_error=False):
     out = None
     try:
         # wait for port to be opened
-        wait_for_port_open(PORT_SQS_BACKEND)
+        if PORT_SQS_BACKEND:
+            wait_for_port_open(PORT_SQS_BACKEND)
         # check SQS
         out = aws_stack.connect_to_service(service_name='sqs').list_queues()
     except Exception as e:
@@ -105,11 +106,9 @@ def patch_moto():
 
 
 def start_sqs_moto(port=None, asynchronous=False, update_listener=None):
-    global PORT_SQS_BACKEND
     port = port or config.PORT_SQS
-    PORT_SQS_BACKEND = get_free_tcp_port()
     patch_moto()
-    return start_moto_server('sqs', port, backend_port=PORT_SQS_BACKEND, name='SQS',
+    return start_moto_server('sqs', port, name='SQS',
         asynchronous=asynchronous, update_listener=update_listener)
 
 
@@ -141,7 +140,6 @@ def start_sqs_elasticmq(port=None, asynchronous=False, update_listener=None):
     # start process
     cmd = ('java -Dconfig.file=%s -Xmx%s -jar %s/elasticmq-server.jar' % (
         config_file, MAX_HEAP_SIZE, INSTALL_DIR_ELASTICMQ))
-    print('Starting mock SQS service in %s ports %s (recommended) and %s (deprecated)...' % (
-        get_service_protocol(), config.EDGE_PORT, port))
+    print('Starting mock SQS service on %s port %s ...' % (get_service_protocol(), config.EDGE_PORT))
     start_proxy_for_service('sqs', port, PORT_SQS_BACKEND, update_listener)
     return do_run(cmd, asynchronous)

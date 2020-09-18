@@ -235,18 +235,18 @@ class LambdaFunction(Component):
             return
 
         updated = False
-        if 'DestinationConfig' in data.keys():
-            if 'OnFailure' in data['DestinationConfig'].keys():
+        if 'DestinationConfig' in data:
+            if 'OnFailure' in data['DestinationConfig']:
                 dlq_arn = data['DestinationConfig']['OnFailure']['Destination']
                 self.dead_letter_config = dlq_arn
                 updated = True
 
-            if 'OnSuccess' in data['DestinationConfig'].keys():
+            if 'OnSuccess' in data['DestinationConfig']:
                 sq_arn = data['DestinationConfig']['OnSuccess']['Destination']
                 self.on_successful_invocation = sq_arn
                 updated = True
 
-        if 'MaximumRetryAttempts' in data.keys():
+        if 'MaximumRetryAttempts' in data:
             try:
                 max_retry_attempts = int(data['MaximumRetryAttempts'])
             except Exception:
@@ -255,7 +255,7 @@ class LambdaFunction(Component):
             self.max_retry_attempts = max_retry_attempts
             updated = True
 
-        if 'MaximumEventAgeInSeconds' in data.keys():
+        if 'MaximumEventAgeInSeconds' in data:
             try:
                 max_event_age = int(data['MaximumEventAgeInSeconds'])
             except Exception:

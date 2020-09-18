@@ -2,14 +2,13 @@ import types
 import logging
 import traceback
 from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
+from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys
 from moto.s3.exceptions import S3ClientError
-from moto.s3.responses import (
-    minidom, MalformedXML, undo_clean_key_name, is_delete_keys
-)
 from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
+from localstack.utils.server import multiserver
 from localstack.utils.common import wait_for_port_open, get_free_tcp_port
 from localstack.services.infra import start_moto_server
 from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
@@ -41,7 +40,12 @@ def check_s3(expect_shutdown=False, print_error=False):
 
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_S3
-    backend_port = s3_listener.PORT_S3_BACKEND = backend_port or get_free_tcp_port()
+    if not backend_port:
+        if config.FORWARD_EDGE_INMEM:
+            backend_port = multiserver.get_moto_server_port()
+        else:
+            backend_port = get_free_tcp_port()
+        s3_listener.PORT_S3_BACKEND = backend_port
 
     apply_patches()
 

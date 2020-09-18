@@ -72,8 +72,8 @@ MODEL_MAP = {
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_CLOUDFORMATION
-    print('Starting mock CloudFormation service in %s ports %s (recommended) and %s (deprecated)...' % (
-        get_service_protocol(), config.EDGE_PORT, port))
+    print('Starting mock CloudFormation service on %s port %s ...' % (
+        get_service_protocol(), config.EDGE_PORT))
     backend_port = get_free_tcp_port()
     start_proxy_for_service('cloudformation', port, backend_port, update_listener)
     if RUN_SERVER_IN_PROCESS:
@@ -223,6 +223,9 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
 
     if res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
+
+    if res_type == 'AWS::S3::Bucket':
+        props['BucketName'] = props.get('BucketName') or resource_name
 
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))

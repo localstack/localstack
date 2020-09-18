@@ -33,7 +33,6 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     # TODO: local port is currently hard coded in Step Functions Local :/
     backend_port = 8083
     cmd = get_command()
-    print('Starting mock StepFunctions service in %s ports %s (recommended) and %s (deprecated)...' % (
-        get_service_protocol(), config.EDGE_PORT, port))
+    print('Starting mock StepFunctions service on %s port %s...' % (get_service_protocol(), config.EDGE_PORT))
     start_proxy_for_service('stepfunctions', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)

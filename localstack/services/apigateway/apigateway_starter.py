@@ -1,14 +1,10 @@
 import json
 import logging
-
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.models import Resource, Integration
 from moto.apigateway.responses import APIGatewayResponse
-from moto.apigateway.exceptions import (
-    MethodNotFoundException, NoIntegrationDefined
-)
+from moto.apigateway.exceptions import MethodNotFoundException, NoIntegrationDefined
 from moto.apigateway.utils import create_id
-
 from localstack import config
 from localstack.utils.common import short_uid, to_str
 from localstack.services.infra import start_moto_server
@@ -136,10 +132,9 @@ def apply_patches():
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_APIGATEWAY
-
     apply_patches()
-
-    return start_moto_server(
+    result = start_moto_server(
         key='apigateway', name='API Gateway', asynchronous=asynchronous,
         port=port, backend_port=backend_port, update_listener=update_listener
     )
+    return result
