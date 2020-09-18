@@ -4,6 +4,7 @@ services:
   localstack:
     container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
     image: localstack/localstack
+    network_mode: bridge
     ports:
       - "4566:4566"
       - "4571:4571"

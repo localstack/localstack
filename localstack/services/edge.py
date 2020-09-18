@@ -92,7 +92,12 @@ def do_forward_request(api, port, method, path, data, headers):
 
 
 def do_forward_request_inmem(api, port, method, path, data, headers):
-    service_name, backend_port, listener = PROXY_LISTENERS[api]
+    listener_details = PROXY_LISTENERS.get(api)
+    if not listener_details:
+        message = 'Unable to find listener for service "%s" - please make sure to include it in $SERVICES' % api
+        LOG.warning(message)
+        raise Exception(message)
+    service_name, backend_port, listener = listener_details
     # TODO determine client address..?
     client_address = LOCALHOST_IP
     server_address = headers.get('host') or LOCALHOST
