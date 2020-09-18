@@ -74,6 +74,8 @@ INVALID_PARAMETER_VALUE_EXCEPTION = 'InvalidParameterValueException'
 
 VERSION_LATEST = '$LATEST'
 
+FUNCTION_MAX_SIZE = 69905067
+
 BATCH_SIZE_RANGES = {
     'kinesis': (100, 10000),
     'dynamodb': (100, 1000),
@@ -765,18 +767,23 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
         main_file = '%s/%s' % (lambda_cwd, handler_file)
-        if not os.path.exists(main_file):
-            # Raise an error if (1) this is not a local mount lambda, or (2) we're
-            # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
-            # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
-            if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
-                file_list = run('cd "%s"; du -d 3 .' % lambda_cwd)
-                config_debug = ('Config for local mount, docker, remote: "%s", "%s", "%s"' %
-                    (is_local_mount, use_docker(), config.LAMBDA_REMOTE_DOCKER))
-                LOG.debug('Lambda archive content:\n%s' % file_list)
-                raise ClientError(error_response(
-                    'Unable to find handler script (%s) in Lambda archive. %s' % (main_file, config_debug),
-                    400, error_type='ValidationError'))
+
+        # Checking if the handler function exists while creating lambda function
+        # HANDLER_CHECK is the switch for disabling this functionality
+        HANDLER_CHECK = False
+        if HANDLER_CHECK:
+            if not os.path.exists(main_file):
+                # Raise an error if (1) this is not a local mount lambda, or (2) we're
+                # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
+                # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
+                if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
+                    file_list = run('cd "%s"; du -d 3 .' % lambda_cwd)
+                    config_debug = ('Config for local mount, docker, remote: "%s", "%s", "%s"' %
+                        (is_local_mount, use_docker(), config.LAMBDA_REMOTE_DOCKER))
+                    LOG.debug('Lambda archive content:\n%s' % file_list)
+                    raise ClientError(error_response(
+                        'Unable to find handler script (%s) in Lambda archive. %s' % (main_file, config_debug),
+                        400, error_type='ValidationError'))
 
         if runtime.startswith('python') and not use_docker():
             try:
@@ -937,6 +944,9 @@ def create_function():
     """
     arn = 'n/a'
     try:
+        if len(request.data) > FUNCTION_MAX_SIZE:
+            return error_response('Request must be smaller than %s bytes for the CreateFunction operation' %
+                FUNCTION_MAX_SIZE, 413, error_type='RequestEntityTooLargeException')
         data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
         event_publisher.fire_event(event_publisher.EVENT_LAMBDA_CREATE_FUNC,
