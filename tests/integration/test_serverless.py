@@ -14,6 +14,11 @@ class TestServerless(unittest.TestCase):
             # install dependencies
             run('cd %s; npm install' % base_dir)
 
+        # list apigateway before sls deployment
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        apis = apigw_client.get_rest_apis()['items']
+        cls.api_ids = [api['id'] for api in apis]
+
         # deploy serverless app
         run('cd %s; npm run serverless -- --region=%s' % (base_dir, aws_stack.get_region()))
 
@@ -104,9 +109,10 @@ class TestServerless(unittest.TestCase):
 
         apigw_client = aws_stack.connect_to_service('apigateway')
         apis = apigw_client.get_rest_apis()['items']
-        self.assertEqual(len(apis), 1)
+        api_ids = [api['id'] for api in apis if api['id'] not in self.api_ids]
+        self.assertEqual(len(api_ids), 1)
 
-        resources = apigw_client.get_resources(restApiId=apis[0]['id'])['items']
+        resources = apigw_client.get_resources(restApiId=api_ids[0])['items']
         proxy_resources = [res for res in resources if res['path'] == '/{proxy+}']
         self.assertEqual(len(proxy_resources), 1)
 
