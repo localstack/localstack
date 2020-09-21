@@ -17,6 +17,7 @@ from localstack.services.infra import PROXY_LISTENERS
 from localstack.utils.aws.aws_stack import Environment
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
+from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.utils.aws.aws_stack import set_default_region_in_headers
 
 LOG = logging.getLogger(__name__)
@@ -92,7 +93,12 @@ def do_forward_request(api, port, method, path, data, headers):
 
 
 def do_forward_request_inmem(api, port, method, path, data, headers):
-    service_name, backend_port, listener = PROXY_LISTENERS[api]
+    listener_details = PROXY_LISTENERS.get(api)
+    if not listener_details:
+        message = 'Unable to find listener for service "%s" - please make sure to include it in $SERVICES' % api
+        LOG.warning(message)
+        raise HTTPErrorResponse(message, code=400)
+    service_name, backend_port, listener = listener_details
     # TODO determine client address..?
     client_address = LOCALHOST_IP
     server_address = headers.get('host') or LOCALHOST

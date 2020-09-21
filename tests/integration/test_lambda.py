@@ -512,6 +512,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # lambda was invoked 1 time
         self.assertEqual(len(events[0]['Records']), 1)
+        rs = sqs_client.receive_message(QueueUrl=queue_url_1)
+        self.assertEqual(rs.get('Messages'), None)
 
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url_1)

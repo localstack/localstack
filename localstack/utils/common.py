@@ -1050,7 +1050,7 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     cert.gmtime_adj_notAfter(2 * 365 * 24 * 60 * 60)
     cert.set_issuer(cert.get_subject())
     cert.set_pubkey(k)
-    alt_names = b'DNS:localhost,DNS:test.localhost.atlassian.io,IP:127.0.0.1'
+    alt_names = b'DNS:localhost,DNS:test.localhost.atlassian.io,DNS:localhost.localstack.cloud,IP:127.0.0.1'
     cert.add_extensions([
         crypto.X509Extension(b'subjectAltName', False, alt_names),
         crypto.X509Extension(b'basicConstraints', True, b'CA:false'),

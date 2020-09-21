@@ -70,6 +70,12 @@ def apply_patches():
     Config.create_ssl_context = create_ssl_context
 
 
+class HTTPErrorResponse(Exception):
+    def __init__(self, *args, code=None, **kwargs):
+        super(HTTPErrorResponse, self).__init__(*args, **kwargs)
+        self.code = code
+
+
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
     ensure_event_loop()
@@ -84,10 +90,14 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
             data = await request.get_data()
             try:
                 result = await run_sync(handler, request, data)
+                if isinstance(result, Exception):
+                    raise result
             except Exception as e:
                 LOG.warning('Error in proxy handler for request %s %s: %s %s' %
                     (request.method, request.url, e, traceback.format_exc()))
                 response.status_code = 500
+                if isinstance(e, HTTPErrorResponse):
+                    response.status_code = e.code or response.status_code
                 return response
             if result is not None:
                 is_chunked = uses_chunked_encoding(result)
