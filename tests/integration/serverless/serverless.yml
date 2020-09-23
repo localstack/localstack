@@ -7,6 +7,44 @@ provider:
   versionFunctions: false
   timeout: 900
   runtime: "nodejs12.x"
+  apiGateway:
+    minimumCompressionSize: 1024
+    environment:
+      AWS_NODEJS_CONNECTION_REUSE_ENABLED: '1'
+      ML_EXT_LOOPBACK: 'NO'
+      ML_EXT_DEBUG: 'YES'
+      ML_EXT_SYSENV: ${opt:stage}
+      ML_CLOUD_REGION: ${opt:region}
+  iamRoleStatements:
+    - Effect: 'Allow'
+      Action:
+        - 'sqs:ReceiveMessage'
+        - 'sqs:DeleteMessage'
+      Resource:
+        - "arn:aws:sqs:::${self:service}-${opt:stage}-CreateQueue"
+    - Effect: 'Allow'
+      Action:
+        - 'sqs:SendMessage'
+      Resource: '*'
+    - Effect: 'Allow'
+      Action:
+        - 'dynamodb:DeleteItem'
+        - 'dynamodb:PutItem'
+        - 'dynamodb:Query'
+        - 'dynamodb:Scan'
+      Resource:
+        - "arn:aws:dynamodb:::jizo.${opt:stage}.loginsTable"
+        - "arn:aws:dynamodb:::jizo.${opt:stage}.authAuditTrailTable"
+    - Effect: 'Allow'
+      Action:
+        - 'lambda:InvokeFunction'
+        - 'lambda:InvokeAsync'
+      Resource:
+        - "arn:aws:lambda:::function:jizo-accts-prod-userGet:*"
+    - Effect: 'Allow'
+      Action:
+        - 'sns:Subscribe'
+      Resource: '*'
 
 resources:
   Resources:
@@ -31,6 +69,52 @@ resources:
       Properties:
         Name: KinesisTestStream
         ShardCount: 1
+
+    # DynamoDB configuration
+    loginsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: "jizo.${opt:stage}.loginsTable"
+        AttributeDefinitions:
+          - AttributeName: object_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: object_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+    authAuditTrailTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: "jizo.${opt:stage}.authAuditTrailTable"
+        AttributeDefinitions:
+          - AttributeName: object_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: object_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    # incoming SQS configuration
+    CreateQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: "${self:service}-${opt:stage}-CreateQueue"
+        VisibilityTimeout: 1080
+        MessageRetentionPeriod: 2160
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt:
+              - CreateBackupQueue
+              - Arn
+          maxReceiveCount: 3
+    CreateBackupQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: "${self:service}-${opt:stage}-CreateBackupQueue"
 
 functions:
   test:
@@ -72,6 +156,26 @@ functions:
               - Arn
           batchSize: 10
           startingPosition: TRIM_HORIZON
+  queueHandler:
+    handler: src/sqs.create
+    description: "To handle create new login"
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - CreateQueue
+              - Arn
+  router:
+    handler: src/http.router
+    description: 'primary REST related handlers for this service'
+    events:
+      - http: 'GET {proxy+}'
+      - http: 'POST {proxy+}'
+      - http: 'PATCH {proxy+}'
+      - http: 'PUT {proxy+}'
+      - http: 'DELETE {proxy+}'
+      - http: 'OPTIONS {proxy+}'
+      - http: 'HEAD {proxy+}'
 
 plugins:
   - serverless-localstack
@@ -79,5 +183,6 @@ plugins:
 custom:
   localstack:
     stages: "local"
+    host: "http://localhost"
     lambda:
       mountCode: false
