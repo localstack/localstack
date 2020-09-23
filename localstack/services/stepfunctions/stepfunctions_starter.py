@@ -3,7 +3,7 @@ from localstack import config
 from localstack.services import install
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
-from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
+from localstack.services.infra import edge_ports_info, start_proxy_for_service, do_run
 
 LOG = logging.getLogger(__name__)
 
@@ -33,6 +33,6 @@ def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
     # TODO: local port is currently hard coded in Step Functions Local :/
     backend_port = 8083
     cmd = get_command()
-    print('Starting mock StepFunctions service on %s port %s...' % (get_service_protocol(), config.EDGE_PORT))
+    print('Starting mock StepFunctions service on %s ...' % edge_ports_info())
     start_proxy_for_service('stepfunctions', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
