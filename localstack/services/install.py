@@ -293,6 +293,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 if __name__ == '__main__':
 
     if len(sys.argv) > 1:
+        os.environ['LOCALSTACK_API_KEY'] = os.environ.get('LOCALSTACK_API_KEY') or 'test'
         if sys.argv[1] == 'libs':
             print('Initializing installation.')
             logging.basicConfig(level=logging.INFO)
