@@ -178,33 +178,9 @@ functions:
       - http: 'HEAD {proxy+}'
 
 plugins:
-  - serverless-dynamodb-local
-  - serverless-offline-sqs
-  - serverless-offline
   - serverless-localstack
 
 custom:
-  serverless-offline-sqs:
-    autoCreate: false
-    apiVersion: '2012-11-05'
-    endpoint: http://0.0.0.0:4576
-    region: us-east-1
-    accessKeyId: root
-    secretAccessKey: root
-    skipCacheInvalidation: false
-  serverless-offline:
-    stage:
-      -local
-    lambdaPort: 4574
-  dynamodb:
-    stages:
-      - local
-    start:
-      port: 4569
-      inMemory: true
-      heapInitial: 128m
-      heapMax: 1g
-      migrate: true
   localstack:
     stages: "local"
     host: "http://localhost"
