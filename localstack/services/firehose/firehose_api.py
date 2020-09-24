@@ -61,7 +61,10 @@ def put_records(stream_name, records):
         if 'ESDestinationDescription' in dest:
             es_dest = dest['ESDestinationDescription']
             es_index = es_dest['IndexName']
-            es_type = es_dest['TypeName']
+            try:
+                es_type = es_dest['TypeName']
+            except KeyError:
+                es_type = None
             es = connect_elasticsearch()
             for record in records:
                 obj_id = uuid.uuid4()
