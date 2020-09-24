@@ -15,7 +15,7 @@ from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
 from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux, start_thread,
-    ShellCommandThread, get_service_protocol, in_docker, is_port_open, sleep_forever, print_debug)
+    ShellCommandThread, in_docker, is_port_open, sleep_forever, print_debug, edge_ports_info)
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.bootstrap import (
@@ -273,7 +273,7 @@ def start_proxy(port, backend_url, update_listener=None, quiet=False, params={},
 def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
     if not name:
         name = key
-    print('Starting mock %s service on %s port %s ...' % (name, get_service_protocol(), config.EDGE_PORT))
+    print('Starting mock %s service on %s ...' % (name, edge_ports_info()))
     if not backend_port:
         if config.FORWARD_EDGE_INMEM:
             backend_port = multiserver.get_moto_server_port()
@@ -295,7 +295,7 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
 
 
 def start_local_api(name, port, api, method, asynchronous=False):
-    print('Starting mock %s service on %s port %s ...' % (name, get_service_protocol(), config.EDGE_PORT))
+    print('Starting mock %s service on %s ...' % (name, edge_ports_info()))
     if config.FORWARD_EDGE_INMEM:
         port = get_free_tcp_port()
         PROXY_LISTENERS[api] = (api, port, None)

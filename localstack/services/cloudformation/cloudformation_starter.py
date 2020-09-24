@@ -27,11 +27,10 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
-    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port, Mock, start_thread)
+    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json,
+    get_free_tcp_port, Mock, start_thread, edge_ports_info)
 from localstack.stepfunctions import models as sfn_models
-from localstack.services.infra import (
-    get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names
-)
+from localstack.services.infra import start_proxy_for_service, do_run, canonicalize_api_names
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.cloudformation import service_models
@@ -72,8 +71,7 @@ MODEL_MAP = {
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_CLOUDFORMATION
-    print('Starting mock CloudFormation service on %s port %s ...' % (
-        get_service_protocol(), config.EDGE_PORT))
+    print('Starting mock CloudFormation service on %s ...' % edge_ports_info())
     backend_port = get_free_tcp_port()
     start_proxy_for_service('cloudformation', port, backend_port, update_listener)
     if RUN_SERVER_IN_PROCESS:

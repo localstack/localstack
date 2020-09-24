@@ -462,6 +462,15 @@ def get_service_protocol():
     return 'https' if config.USE_SSL else 'http'
 
 
+def edge_ports_info():
+    if config.EDGE_PORT_HTTP:
+        result = 'ports %s/%s' % (config.EDGE_PORT, config.EDGE_PORT_HTTP)
+    else:
+        result = 'port %s' % config.EDGE_PORT
+    result = '%s %s' % (get_service_protocol(), result)
+    return result
+
+
 def timestamp(time=None, format=TIMESTAMP_FORMAT):
     if not time:
         time = datetime.utcnow()
