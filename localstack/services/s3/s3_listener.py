@@ -1204,13 +1204,14 @@ class ProxyListenerS3(PersistingProxyListener):
                 s3_client.head_bucket(Bucket=bucket_name)
                 website_config = s3_client.get_bucket_website(Bucket=bucket_name)
                 error_doc_key = website_config.get('ErrorDocument', {}).get('Key')
-                error_doc_path = '/' + bucket_name + '/' + error_doc_key
 
-                if error_doc_key and parsed.path != error_doc_path:
-                    error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
-                    response.status_code = 200
-                    response._content = error_object['Body'].read()
-                    response.headers['Content-Length'] = str(len(response._content))
+                if error_doc_key:
+                    error_doc_path = '/' + bucket_name + '/' + error_doc_key
+                    if parsed.path != error_doc_path:
+                        error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
+                        response.status_code = 200
+                        response._content = error_object['Body'].read()
+                        response.headers['Content-Length'] = str(len(response._content))
             except ClientError:
                 # Pass on the 404 as usual
                 pass
