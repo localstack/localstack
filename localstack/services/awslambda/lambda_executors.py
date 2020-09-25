@@ -399,6 +399,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 network = config.LAMBDA_DOCKER_NETWORK
                 network_str = '--network="%s"' % network if network else ''
 
+                dns = config.LAMBDA_DOCKER_DNS
+                dns_str = '--dns="%s"' % dns if dns else ''
+
                 mount_volume = not config.LAMBDA_REMOTE_DOCKER
                 lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
                 if (':' in lambda_cwd and '\\' in lambda_cwd):
@@ -419,8 +422,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     '  %s'  # env_vars
                     '  %s'  # network
+                    '  %s'  # dns
                     ' %s'
-                ) % (docker_cmd, rm_flag, container_name, mount_volume_str, env_vars_str, network_str, docker_image)
+                ) % (docker_cmd, rm_flag, container_name, mount_volume_str,
+                    env_vars_str, network_str, dns_str, docker_image)
                 LOG.debug(cmd)
                 run(cmd)
 
@@ -649,6 +654,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             env_vars['DOCKER_LAMBDA_API_PORT'] = port
             env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
 
+        dns = config.LAMBDA_DOCKER_DNS
+        dns_str = '--dns="%s"' % dns if dns else ''
+
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
         debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
         docker_cmd = self._docker_cmd()
@@ -662,12 +670,14 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'  # debug_docker_java_port
                 ' %s'  # env
                 ' %s'  # network
+                ' %s'  # dns
                 ' %s'  # --rm flag
                 ' %s %s'  # image and command
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str, rm_flag,
+            ) % (docker_cmd, entrypoint, debug_docker_java_port,
+                env_vars_string, network_str, dns_str, rm_flag,
                  docker_image, command,
                  docker_cmd, lambda_cwd,
                  docker_cmd)
@@ -678,10 +688,11 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s -v "%s":/var/task'
                 ' %s'
                 ' %s'  # network
+                ' %s'  # dns
                 ' %s'  # --rm flag
                 ' %s %s'
             ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string,
-                 network_str, rm_flag, docker_image, command)
+                 network_str, dns_str, rm_flag, docker_image, command)
         return cmd
 
 
