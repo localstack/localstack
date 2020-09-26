@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import glob
 import json
 import time
@@ -60,6 +61,7 @@ LOG = logging.getLogger(__name__)
 # maximum time a pre-allocated container can sit idle before getting killed
 MAX_CONTAINER_IDLE_TIME_MS = 600 * 1000
 
+# SQS event source name
 EVENT_SOURCE_SQS = 'aws:sqs'
 
 # IP address of main Docker container (lazily initialized)
@@ -709,12 +711,17 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
-            if lambda_cwd:
-                os.chdir(lambda_cwd)
-            if environment:
-                os.environ.update(environment)
-            result = lambda_function(event, context)
-            queue.put(result)
+            path_before = sys.path
+            try:
+                if lambda_cwd:
+                    os.chdir(lambda_cwd)
+                    sys.path = [lambda_cwd] + sys.path
+                if environment:
+                    os.environ.update(environment)
+                result = lambda_function(event, context)
+                queue.put(result)
+            finally:
+                sys.path = path_before
 
         process = Process(target=do_execute)
         with CaptureOutput() as c:
