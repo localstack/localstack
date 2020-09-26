@@ -40,14 +40,7 @@ class AuthorizationError(Exception):
 class ProxyListenerApiGateway(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if re.match(PATH_REGEX_USER_REQUEST, path):
-            search_match = re.search(PATH_REGEX_USER_REQUEST, path)
-            api_id = search_match.group(1)
-            stage = search_match.group(2)
-            relative_path_w_query_params = '/%s' % search_match.group(3)
-            try:
-                return invoke_rest_api(api_id, stage, method, relative_path_w_query_params, data, headers, path=path)
-            except AuthorizationError as e:
-                return make_error_response('Not authorized to invoke REST API %s: %s' % (api_id, e), 403)
+            return invoke_rest_api_from_request(method, path, data, headers)
 
         data = data and json.loads(to_str(data))
 
@@ -217,7 +210,19 @@ def apply_template(integration, req_res_type, data, path_params={}, query_params
     return data
 
 
-def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None):
+def invoke_rest_api_from_request(method, path, data, headers, context={}):
+    search_match = re.search(PATH_REGEX_USER_REQUEST, path)
+    api_id = search_match.group(1)
+    stage = search_match.group(2)
+    relative_path_w_query_params = '/%s' % search_match.group(3)
+    try:
+        return invoke_rest_api(api_id, stage, method, relative_path_w_query_params,
+            data, headers, path=path, context=context)
+    except AuthorizationError as e:
+        return make_error_response('Not authorized to invoke REST API %s: %s' % (api_id, e), 403)
+
+
+def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=None, context={}):
     path = path or invocation_path
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
 
@@ -283,11 +288,9 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
                 'requestTimeEpoch': int(time.time() * 1000),
             }
 
-            result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str, stage, api_id,
-                                                              headers, path_params=path_params,
-                                                              query_string_params=query_string_params,
-                                                              method=method, resource_path=path,
-                                                              request_context=request_context)
+            result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
+                stage, api_id, headers, path_params=path_params, query_string_params=query_string_params,
+                method=method, resource_path=path, request_context=request_context, event_context=context)
 
             if isinstance(result, FlaskResponse):
                 response = flask_to_requests_response(result)

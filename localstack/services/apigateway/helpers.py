@@ -1,11 +1,11 @@
 import re
 import json
-
 from jsonpatch import apply_patch
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
+from localstack import config
 from localstack.utils import common
-from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON
+from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 
@@ -106,10 +106,8 @@ def to_authorizer_response_json(api_id, data):
 
 def normalize_authorizer(data):
     result = common.clone(data)
-
     # terraform sends this as a string in patch, so convert to int
     result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
-
     return result
 
 
@@ -171,6 +169,12 @@ def handle_authorizers(method, path, data, headers):
         return delete_authorizer(path)
 
     return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
+
+
+def gateway_request_url(api_id, stage_name, path):
+    """ Return URL for inbound API gateway for given API ID, stage name, and path """
+    pattern = '%s/restapis/{api_id}/{stage_name}/%s{path}' % (config.TEST_APIGATEWAY_URL, PATH_USER_REQUEST)
+    return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
 
 
 def tokenize_path(path):

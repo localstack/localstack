@@ -18,7 +18,7 @@ from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
-    to_str, run, cp_r, json_safe, get_free_tcp_port)
+    to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
@@ -261,9 +261,10 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
-            if hasattr(context, 'client_context'):
-                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(base64.b64decode(
-                    bytes(context.client_context, encoding='utf8'))))
+            environment['AWS_LAMBDA_COGNITO_IDENTITY'] = json.dumps(context.cognito_identity or {})
+            if context.client_context is not None:
+                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(
+                    base64.b64decode(to_bytes(context.client_context))))
 
         # custom command to execute in the container
         command = ''
