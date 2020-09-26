@@ -100,17 +100,17 @@ API_ENDPOINT = os.environ.get('API_ENDPOINT') or 'https://api.localstack.cloud/v
 LOCALSTACK_WEB_PROCESS = 'LOCALSTACK_WEB_PROCESS'
 LOCALSTACK_INFRA_PROCESS = 'LOCALSTACK_INFRA_PROCESS'
 
-# Hardcoded AWS account ID used by moto
+# hardcoded AWS account ID used by moto
 MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
 
 # default AWS region us-east-1
 AWS_REGION_US_EAST_1 = 'us-east-1'
 
-# Default lambda registry
+# default lambda registry
 DEFAULT_LAMBDA_CONTAINER_REGISTRY = 'lambci/lambda'
 
-# Environment variable to override max pool connections
+# environment variable to override max pool connections
 try:
     MAX_POOL_CONNECTIONS = int(os.environ['MAX_POOL_CONNECTIONS'])
-except (KeyError, ValueError):
+except Exception:
     MAX_POOL_CONNECTIONS = 150

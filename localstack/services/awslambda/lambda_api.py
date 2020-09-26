@@ -123,6 +123,9 @@ LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTO
 IAM_POLICY_VERSION = '2012-10-17'
 POLICY_NAME_PATTERN = 'lambda_policy_%s_%s'
 
+# Whether to check if the handler function exists while creating lambda function
+CHECK_HANDLER_ON_CREATION = False
+
 # Marker name to indicate that a bucket represents the local file system. This is used for testing
 # Serverless applications where we mount the Lambda code directly into the container from the host OS.
 BUCKET_MARKER_LOCAL = '__local__'
@@ -768,22 +771,18 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
 
         main_file = '%s/%s' % (lambda_cwd, handler_file)
 
-        # Checking if the handler function exists while creating lambda function
-        # HANDLER_CHECK is the switch for disabling this functionality
-        HANDLER_CHECK = False
-        if HANDLER_CHECK:
-            if not os.path.exists(main_file):
-                # Raise an error if (1) this is not a local mount lambda, or (2) we're
-                # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
-                # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
-                if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
-                    file_list = run('cd "%s"; du -d 3 .' % lambda_cwd)
-                    config_debug = ('Config for local mount, docker, remote: "%s", "%s", "%s"' %
-                        (is_local_mount, use_docker(), config.LAMBDA_REMOTE_DOCKER))
-                    LOG.debug('Lambda archive content:\n%s' % file_list)
-                    raise ClientError(error_response(
-                        'Unable to find handler script (%s) in Lambda archive. %s' % (main_file, config_debug),
-                        400, error_type='ValidationError'))
+        if CHECK_HANDLER_ON_CREATION and not os.path.exists(main_file):
+            # Raise an error if (1) this is not a local mount lambda, or (2) we're
+            # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
+            # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
+            if not is_local_mount or not use_docker() or config.LAMBDA_REMOTE_DOCKER:
+                file_list = run('cd "%s"; du -d 3 .' % lambda_cwd)
+                config_debug = ('Config for local mount, docker, remote: "%s", "%s", "%s"' %
+                    (is_local_mount, use_docker(), config.LAMBDA_REMOTE_DOCKER))
+                LOG.debug('Lambda archive content:\n%s' % file_list)
+                raise ClientError(error_response(
+                    'Unable to find handler script (%s) in Lambda archive. %s' % (main_file, config_debug),
+                    400, error_type='ValidationError'))
 
         if runtime.startswith('python') and not use_docker():
             try:

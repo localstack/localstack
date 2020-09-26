@@ -5,8 +5,8 @@ import traceback
 from localstack import config
 from localstack.services import install
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port
-from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
+from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port, get_service_protocol
+from localstack.services.infra import start_proxy_for_service, do_run
 
 LOG = logging.getLogger(__name__)
 
