@@ -586,7 +586,7 @@ class TestPythonRuntimes(LambdaTestBase):
         result_data = json.loads(result['Payload'].read())
 
         self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(result_data['event'], json.loads('{}'))
+        self.assertEqual(result_data['event'], {})
 
     def test_invocation_type_request_response(self):
         result = self.lambda_client.invoke(

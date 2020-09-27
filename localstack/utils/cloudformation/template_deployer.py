@@ -5,10 +5,8 @@ import yaml
 import logging
 import traceback
 import moto.cloudformation.utils
-
 from six import iteritems
 from urllib.parse import urlparse
-
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import AWS_REGION_US_EAST_1
@@ -19,6 +17,7 @@ from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
+PLACEHOLDER_AWS_NO_VALUE = '__aws_no_value__'
 
 LOG = logging.getLogger(__name__)
 
@@ -221,6 +220,13 @@ def param_defaults(param_func, defaults):
                 result[key] = value
         return result
     return replace
+
+
+def iam_create_policy_params(params, **kwargs):
+    result = {'PolicyName': params['PolicyName']}
+    policy_doc = remove_none_values(params['PolicyDocument'])
+    result['PolicyDocument'] = json.dumps(policy_doc)
+    return result
 
 
 def get_ddb_provisioned_throughput(params, **kwargs):
@@ -506,6 +512,13 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
+    'IAM::Policy': {
+        'create': {
+            'function': 'create_policy',
+            # TODO: associate policies with users, groups, roles
+            'parameters': iam_create_policy_params
+        }
+    },
     'ApiGateway::RestApi': {
         'create': {
             'function': 'create_rest_api',
@@ -540,6 +553,8 @@ RESOURCE_TO_FUNCTION = {
         }
     },
     'ApiGateway::Method::Integration': {
+    },
+    'ApiGateway::Account': {
     },
     'ApiGateway::Deployment': {
         'create': {
@@ -968,6 +983,8 @@ def resolve_ref(stack_name, ref, resources, attribute):
         return 'aws'
     if ref == 'AWS::StackName':
         return stack_name
+    if ref == 'AWS::NoValue':
+        return PLACEHOLDER_AWS_NO_VALUE
 
     # first, check stack parameters
     stack_param = get_stack_parameter(stack_name, ref)
@@ -1126,6 +1143,9 @@ def remove_none_values(params):
             for k, v in dict(o).items():
                 if v is None:
                     o.pop(k)
+        if isinstance(o, list):
+            common.run_safe(o.remove, None)
+            common.run_safe(o.remove, PLACEHOLDER_AWS_NO_VALUE)
         return o
     result = common.recurse_object(params, remove_nones)
     return result
