@@ -1103,7 +1103,8 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     return file_content
 
 
-def run_safe(_python_lambda, *args, print_error=False, **kwargs):
+def run_safe(_python_lambda, *args, **kwargs):
+    print_error = kwargs.get('print_error', False)
     try:
         return _python_lambda(*args, **kwargs)
     except Exception as e:
