@@ -9,9 +9,9 @@ from localstack import config
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port, to_str, escape_html
+    wait_for_port_open, save_file, short_uid, TMP_FILES, get_free_tcp_port, to_str, escape_html, edge_ports_info
 )
-from localstack.services.infra import start_proxy_for_service, get_service_protocol, do_run, start_moto_server
+from localstack.services.infra import start_proxy_for_service, do_run, start_moto_server
 from localstack.services.install import INSTALL_DIR_ELASTICMQ, SQS_BACKEND_IMPL, install_elasticmq
 
 LOG = logging.getLogger(__name__)
@@ -140,6 +140,6 @@ def start_sqs_elasticmq(port=None, asynchronous=False, update_listener=None):
     # start process
     cmd = ('java -Dconfig.file=%s -Xmx%s -jar %s/elasticmq-server.jar' % (
         config_file, MAX_HEAP_SIZE, INSTALL_DIR_ELASTICMQ))
-    print('Starting mock SQS service on %s port %s ...' % (get_service_protocol(), config.EDGE_PORT))
+    print('Starting mock SQS service on %s ...' % edge_ports_info())
     start_proxy_for_service('sqs', port, PORT_SQS_BACKEND, update_listener)
     return do_run(cmd, asynchronous)

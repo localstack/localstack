@@ -190,6 +190,34 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
     return resp
 
 
+def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_uri,
+        stage_name=None, methods=[], path=None, auth_type=None, http_method=None):
+    if not methods:
+        methods = ['GET', 'POST', 'DELETE']
+    if not path:
+        path = '/'
+    stage_name = stage_name or 'test'
+    resources = {}
+    resource_path = path.lstrip('/')
+    resources[resource_path] = []
+    for method in methods:
+        int_meth = http_method or method
+        resources[resource_path].append({
+            'httpMethod': method,
+            'authorizationType': auth_type,
+            'integrations': [{
+                'type': 'AWS_PROXY',
+                'uri': target_uri,
+                'httpMethod': int_meth
+            }]
+        })
+    return aws_stack.create_api_gateway(
+        name=gateway_name,
+        resources=resources,
+        stage_name=stage_name
+    )
+
+
 def assert_objects(asserts, all_objects):
     if type(asserts) is not list:
         asserts = [asserts]

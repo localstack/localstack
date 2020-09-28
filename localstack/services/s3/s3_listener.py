@@ -18,7 +18,7 @@ from botocore.client import ClientError
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack import config, constants
-from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
+from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
 from localstack.utils.common import (
@@ -828,7 +828,7 @@ def get_key_name(path, headers):
 
 def uses_path_addressing(headers):
     host = headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1] or headers['host']
-    return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL)
+    return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL) or host.startswith(LOCALHOST_IP)
 
 
 def get_bucket_name(path, headers):

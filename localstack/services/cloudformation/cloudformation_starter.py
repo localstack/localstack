@@ -27,11 +27,10 @@ from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
-    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json, get_free_tcp_port, Mock, start_thread)
+    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json,
+    get_free_tcp_port, Mock, start_thread, edge_ports_info)
 from localstack.stepfunctions import models as sfn_models
-from localstack.services.infra import (
-    get_service_protocol, start_proxy_for_service, do_run, canonicalize_api_names
-)
+from localstack.services.infra import start_proxy_for_service, do_run, canonicalize_api_names
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.cloudformation import service_models
@@ -58,6 +57,7 @@ MODEL_MAP = {
     'AWS::ApiGateway::Method': apigw_models.Method,
     'AWS::ApiGateway::Resource': apigw_models.Resource,
     'AWS::ApiGateway::RestApi': apigw_models.RestAPI,
+    'AWS::ApiGateway::Stage': apigw_models.Stage,
     'AWS::StepFunctions::StateMachine': sfn_models.StateMachine,
     'AWS::CloudFormation::Stack': service_models.CloudFormationStack,
     'AWS::SSM::Parameter': service_models.SSMParameter,
@@ -72,8 +72,7 @@ MODEL_MAP = {
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_CLOUDFORMATION
-    print('Starting mock CloudFormation service on %s port %s ...' % (
-        get_service_protocol(), config.EDGE_PORT))
+    print('Starting mock CloudFormation service on %s ...' % edge_ports_info())
     backend_port = get_free_tcp_port()
     start_proxy_for_service('cloudformation', port, backend_port, update_listener)
     if RUN_SERVER_IN_PROCESS:
@@ -218,8 +217,8 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
     if res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
         props['QueueName'] = 'queue-%s' % short_uid()
 
-    if res_type == 'AWS::ApiGateway::RestApi':
-        props['Name'] = props.get('Name') or resource_name
+    if res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
+        props['Name'] = resource_name
 
     if res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
@@ -306,6 +305,7 @@ def apply_patches():
         LOG.debug('Currently processing stack resource %s/%s: %s' % (stack_name, logical_id, updating))
         if updating:
             return None
+        CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
 
         # parse and get final resource JSON
         resource_tuple = parsing.parse_resource_and_generate_name(logical_id, resource_json, resources_map)
@@ -326,6 +326,7 @@ def apply_patches():
         # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
         resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
         set_moto_account_ids(resource_json_arns_fixed)
+        template_deployer.remove_none_values(resource_json_arns_fixed)
 
         # create resource definition and store CloudFormation metadata in moto
         moto_create_error = None
@@ -390,7 +391,6 @@ def apply_patches():
                   (update, not should_be_created, is_updateable, resource_json))
 
         try:
-            CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
             deploy_func = template_deployer.update_resource if update else template_deployer.deploy_resource
             result = deploy_func(logical_id, resource_map_new, stack_name=stack_name)
         finally:
@@ -856,10 +856,10 @@ def apply_patches():
     @classmethod
     def Deployment_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
-        name = props['StageName']
+        stage_name = props.get('StageName')
         deployment_id = props.get('Id') or short_uid()
         description = props.get('Description') or ''
-        return apigw_models.Deployment(deployment_id, name, description)
+        return apigw_models.Deployment(deployment_id, stage_name, description)
 
     @classmethod
     def Resource_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):

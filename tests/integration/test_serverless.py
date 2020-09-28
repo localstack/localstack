@@ -14,6 +14,11 @@ class TestServerless(unittest.TestCase):
             # install dependencies
             run('cd %s; npm install' % base_dir)
 
+        # list apigateway before sls deployment
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        apis = apigw_client.get_rest_apis()['items']
+        cls.api_ids = [api['id'] for api in apis]
+
         # deploy serverless app
         run('cd %s; npm run serverless -- --region=%s' % (base_dir, aws_stack.get_region()))
 
@@ -73,3 +78,46 @@ class TestServerless(unittest.TestCase):
             StreamName=stream_name
         )
         self.assertEqual(resp['StreamDescription']['StreamARN'], event_source_arn)
+
+    def test_queue_handler_deployed(self):
+        function_name = 'sls-test-local-queueHandler'
+        queue_name = 'sls-test-local-CreateQueue'
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        resp = lambda_client.list_functions()
+        function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
+        self.assertEqual(function['Handler'], 'src/sqs.create')
+
+        resp = lambda_client.list_event_source_mappings(
+            FunctionName=function_name,
+        )
+        events = resp['EventSourceMappings']
+        self.assertEqual(len(events), 1)
+        event_source_arn = events[0]['EventSourceArn']
+
+        self.assertEqual(aws_stack.sqs_queue_arn(queue_name), event_source_arn)
+
+    def test_apigateway_deployed(self):
+        function_name = 'sls-test-local-router'
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        resp = lambda_client.list_functions()
+        function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
+        self.assertEqual(function['Handler'], 'src/http.router')
+
+        apigw_client = aws_stack.connect_to_service('apigateway')
+        apis = apigw_client.get_rest_apis()['items']
+        api_ids = [api['id'] for api in apis if api['id'] not in self.api_ids]
+        self.assertEqual(len(api_ids), 1)
+
+        resources = apigw_client.get_resources(restApiId=api_ids[0])['items']
+        proxy_resources = [res for res in resources if res['path'] == '/{proxy+}']
+        self.assertEqual(len(proxy_resources), 1)
+
+        proxy_resource = proxy_resources[0]
+        for method in ['DELETE', 'OPTIONS', 'GET', 'POST', 'PUT', 'PATCH', 'HEAD']:
+            self.assertIn(method, proxy_resource['resourceMethods'])
+            resource_method = proxy_resource['resourceMethods'][method]
+            self.assertIn(aws_stack.lambda_function_arn(function_name), resource_method['methodIntegration']['uri'])

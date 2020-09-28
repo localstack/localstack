@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import glob
 import json
 import time
@@ -18,7 +19,7 @@ from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
-    to_str, run, cp_r, json_safe, get_free_tcp_port)
+    to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
@@ -60,6 +61,7 @@ LOG = logging.getLogger(__name__)
 # maximum time a pre-allocated container can sit idle before getting killed
 MAX_CONTAINER_IDLE_TIME_MS = 600 * 1000
 
+# SQS event source name
 EVENT_SOURCE_SQS = 'aws:sqs'
 
 # IP address of main Docker container (lazily initialized)
@@ -261,9 +263,10 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
-            if hasattr(context, 'client_context'):
-                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(base64.b64decode(
-                    bytes(context.client_context, encoding='utf8'))))
+            environment['AWS_LAMBDA_COGNITO_IDENTITY'] = json.dumps(context.cognito_identity or {})
+            if context.client_context is not None:
+                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(
+                    base64.b64decode(to_bytes(context.client_context))))
 
         # custom command to execute in the container
         command = ''
@@ -399,6 +402,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 network = config.LAMBDA_DOCKER_NETWORK
                 network_str = '--network="%s"' % network if network else ''
 
+                dns = config.LAMBDA_DOCKER_DNS
+                dns_str = '--dns="%s"' % dns if dns else ''
+
                 mount_volume = not config.LAMBDA_REMOTE_DOCKER
                 lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
                 if (':' in lambda_cwd and '\\' in lambda_cwd):
@@ -419,8 +425,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     '  %s'  # env_vars
                     '  %s'  # network
+                    '  %s'  # dns
                     ' %s'
-                ) % (docker_cmd, rm_flag, container_name, mount_volume_str, env_vars_str, network_str, docker_image)
+                ) % (docker_cmd, rm_flag, container_name, mount_volume_str,
+                    env_vars_str, network_str, dns_str, docker_image)
                 LOG.debug(cmd)
                 run(cmd)
 
@@ -649,6 +657,9 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
             env_vars['DOCKER_LAMBDA_API_PORT'] = port
             env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
 
+        dns = config.LAMBDA_DOCKER_DNS
+        dns_str = '--dns="%s"' % dns if dns else ''
+
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
         debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
         docker_cmd = self._docker_cmd()
@@ -662,12 +673,14 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'  # debug_docker_java_port
                 ' %s'  # env
                 ' %s'  # network
+                ' %s'  # dns
                 ' %s'  # --rm flag
                 ' %s %s'  # image and command
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str, rm_flag,
+            ) % (docker_cmd, entrypoint, debug_docker_java_port,
+                env_vars_string, network_str, dns_str, rm_flag,
                  docker_image, command,
                  docker_cmd, lambda_cwd,
                  docker_cmd)
@@ -678,10 +691,11 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s -v "%s":/var/task'
                 ' %s'
                 ' %s'  # network
+                ' %s'  # dns
                 ' %s'  # --rm flag
                 ' %s %s'
             ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string,
-                 network_str, rm_flag, docker_image, command)
+                 network_str, dns_str, rm_flag, docker_image, command)
         return cmd
 
 
@@ -697,12 +711,17 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
-            if lambda_cwd:
-                os.chdir(lambda_cwd)
-            if environment:
-                os.environ.update(environment)
-            result = lambda_function(event, context)
-            queue.put(result)
+            path_before = sys.path
+            try:
+                if lambda_cwd:
+                    os.chdir(lambda_cwd)
+                    sys.path = [lambda_cwd] + sys.path
+                if environment:
+                    os.environ.update(environment)
+                result = lambda_function(event, context)
+                queue.put(result)
+            finally:
+                sys.path = path_before
 
         process = Process(target=do_execute)
         with CaptureOutput() as c:

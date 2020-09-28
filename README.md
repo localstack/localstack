@@ -196,6 +196,7 @@ You can pass the following environment variables to LocalStack:
       volume (potentially faster). This requires to have the Docker client and the Docker
       host on the same machine.
 * `LAMBDA_DOCKER_NETWORK`: Optional Docker network for the container running your lambda function.
+* `LAMBDA_DOCKER_DNS`: Optional DNS server for the container running your lambda function.
 * `LAMBDA_CONTAINER_REGISTRY` Use an alternative docker registry to pull lambda execution containers (default: `lambci/lambda`).
 * `LAMBDA_REMOVE_CONTAINERS`: Whether to remove containers after Lambdas finished executing (default: `true`).
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:

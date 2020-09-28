@@ -13,8 +13,7 @@ from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDE
 from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
 from localstack.utils import testutil
 from localstack.utils.testutil import (
-    get_lambda_log_events, check_expected_lambda_log_events_length,
-    create_lambda_archive
+    get_lambda_log_events, check_expected_lambda_log_events_length, create_lambda_archive
 )
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
@@ -587,7 +586,7 @@ class TestPythonRuntimes(LambdaTestBase):
         result_data = json.loads(result['Payload'].read())
 
         self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(result_data['event'], json.loads('{}'))
+        self.assertEqual(result_data['event'], {})
 
     def test_invocation_type_request_response(self):
         result = self.lambda_client.invoke(
@@ -1429,17 +1428,24 @@ class TestDockerBehaviour(LambdaTestBase):
         handler = 'handler'
         lambda_cwd = '/app/lambda'
         network = 'compose_network'
+        dns = 'some-ip-address'
 
         config.LAMBDA_DOCKER_NETWORK = network
+        config.LAMBDA_DOCKER_DNS = dns
 
-        cmd = executor.prepare_execution(func_arn, {}, LAMBDA_RUNTIME_NODEJS810, '', handler, lambda_cwd)
+        try:
+            cmd = executor.prepare_execution(
+                func_arn, {}, LAMBDA_RUNTIME_NODEJS810, '', handler, lambda_cwd)
+            expected = 'docker run -v "%s":/var/task   --network="%s"  --dns="%s"  --rm "lambci/lambda:%s" "%s"' % (
+                lambda_cwd, network, dns, LAMBDA_RUNTIME_NODEJS810, handler)
 
-        expected = 'docker run -v "%s":/var/task   --network="%s"  --rm "lambci/lambda:%s" "%s"' % (
-            lambda_cwd, network, LAMBDA_RUNTIME_NODEJS810, handler)
-
-        self.assertIn(('--network="%s"' % network), cmd, 'cmd=%s expected=%s' % (cmd, expected))
-
-        config.LAMBDA_DOCKER_NETWORK = ''
+            self.assertIn(('--network="%s"' % network), cmd,
+                        'cmd=%s expected=%s' % (cmd, expected))
+            self.assertIn(('--dns="%s"' % dns), cmd,
+                        'cmd=%s expected=%s' % (cmd, expected))
+        finally:
+            config.LAMBDA_DOCKER_NETWORK = ''
+            config.LAMBDA_DOCKER_DNS = ''
 
     def test_destroy_idle_containers(self):
         # run these tests only for the "reuse containers" Lambda executor
