@@ -494,3 +494,16 @@ class EventsTest(unittest.TestCase):
         self.assertIn('Entries', response)
         self.assertEqual(len(response.get('Entries')), 1)
         self.assertIn('EventId', response.get('Entries')[0])
+
+    def test_put_event_without_source(self):
+        self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
+
+        response = self.events_client.put_events(
+            Entries=[
+                {
+                    'DetailType': 'Test',
+                    'Detail': '{}'
+                }
+            ]
+        )
+        self.assertIn('Entries', response)
