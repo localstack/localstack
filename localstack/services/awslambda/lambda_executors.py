@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import glob
 import json
 import time
@@ -18,7 +19,7 @@ from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
-    to_str, run, cp_r, json_safe, get_free_tcp_port)
+    to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
@@ -60,6 +61,7 @@ LOG = logging.getLogger(__name__)
 # maximum time a pre-allocated container can sit idle before getting killed
 MAX_CONTAINER_IDLE_TIME_MS = 600 * 1000
 
+# SQS event source name
 EVENT_SOURCE_SQS = 'aws:sqs'
 
 # IP address of main Docker container (lazily initialized)
@@ -261,9 +263,10 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
-            if hasattr(context, 'client_context'):
-                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(base64.b64decode(
-                    bytes(context.client_context, encoding='utf8'))))
+            environment['AWS_LAMBDA_COGNITO_IDENTITY'] = json.dumps(context.cognito_identity or {})
+            if context.client_context is not None:
+                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(
+                    base64.b64decode(to_bytes(context.client_context))))
 
         # custom command to execute in the container
         command = ''
@@ -708,12 +711,17 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
-            if lambda_cwd:
-                os.chdir(lambda_cwd)
-            if environment:
-                os.environ.update(environment)
-            result = lambda_function(event, context)
-            queue.put(result)
+            path_before = sys.path
+            try:
+                if lambda_cwd:
+                    os.chdir(lambda_cwd)
+                    sys.path = [lambda_cwd] + sys.path
+                if environment:
+                    os.environ.update(environment)
+                result = lambda_function(event, context)
+                queue.put(result)
+            finally:
+                sys.path = path_before
 
         process = Process(target=do_execute)
         with CaptureOutput() as c:

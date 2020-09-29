@@ -9,16 +9,15 @@ from botocore.exceptions import ClientError
 from jsonpatch import apply_patch
 from requests.models import Response
 from requests.structures import CaseInsensitiveDict
-from localstack import config
-from localstack.constants import PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import (
     to_str, json_safe, clone, short_uid, get_free_tcp_port, load_file, safe_requests as requests)
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.awslambda.lambda_api import add_event_source
 from localstack.services.apigateway.helpers import (
-    get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs)
+    get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs, gateway_request_url)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 
@@ -104,11 +103,8 @@ class TestAPIGateway(unittest.TestCase):
             {'data': '{"foo": "bar3"}'}
         ]}
 
-        url = self.gateway_request_url(
-            api_id=result['id'],
-            stage_name=self.TEST_STAGE_NAME,
-            path=self.API_PATH_DATA_INBOUND
-        )
+        url = gateway_request_url(
+            api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=self.API_PATH_DATA_INBOUND)
 
         # list Kinesis streams via API Gateway
         result = requests.get(url)
@@ -146,11 +142,8 @@ class TestAPIGateway(unittest.TestCase):
         # generate test data
         test_data = {'spam': 'eggs & beans'}
 
-        url = self.gateway_request_url(
-            api_id=result['id'],
-            stage_name=self.TEST_STAGE_NAME,
-            path=self.API_PATH_DATA_INBOUND
-        )
+        url = gateway_request_url(
+            api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=self.API_PATH_DATA_INBOUND)
         result = requests.post(url, data=json.dumps(test_data))
         self.assertEqual(result.status_code, 200)
 
@@ -180,11 +173,8 @@ class TestAPIGateway(unittest.TestCase):
         # generate test data
         test_data = {'spam': 'eggs'}
 
-        url = self.gateway_request_url(
-            api_id=result['id'],
-            stage_name=self.TEST_STAGE_NAME,
-            path=self.API_PATH_DATA_INBOUND
-        )
+        url = gateway_request_url(
+            api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=self.API_PATH_DATA_INBOUND)
         result = requests.post(url, data=json.dumps(test_data))
         self.assertEqual(result.status_code, 200)
 
@@ -211,11 +201,8 @@ class TestAPIGateway(unittest.TestCase):
             path=self.API_PATH_HTTP_BACKEND
         )
 
-        url = self.gateway_request_url(
-            api_id=result['id'],
-            stage_name=self.TEST_STAGE_NAME,
-            path=self.API_PATH_HTTP_BACKEND
-        )
+        url = gateway_request_url(
+            api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=self.API_PATH_HTTP_BACKEND)
 
         # make sure CORS headers are present
         origin = 'localhost'
@@ -268,10 +255,10 @@ class TestAPIGateway(unittest.TestCase):
         # create API Gateway and connect it to the Lambda proxy backend
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
         invocation_uri = 'arn:aws:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations'
-        target_uri = invocation_uri % (config.DEFAULT_REGION, lambda_uri)
+        target_uri = invocation_uri % (aws_stack.get_region(), lambda_uri)
 
-        result = self.connect_api_gateway_to_http_with_lambda_proxy(
-            'test_gateway2', target_uri, path=path)
+        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
+            'test_gateway2', target_uri, path=path, stage_name=self.TEST_STAGE_NAME)
 
         api_id = result['id']
         path_map = get_rest_api_paths(api_id)
@@ -281,8 +268,7 @@ class TestAPIGateway(unittest.TestCase):
         path = path.replace('{test_param1}', 'foo1')
         path = path + '?foo=foo&bar=bar&bar=baz'
 
-        url = self.gateway_request_url(
-            api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path)
+        url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path=path)
 
         data = {'return_status_code': 203, 'return_headers': {'foo': 'bar123'}}
         result = requests.post(url, data=json.dumps(data),
@@ -430,7 +416,7 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(rs['uri'], target_uri)
 
         # invoke the gateway endpoint
-        url = self.gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path='/test')
+        url = gateway_request_url(api_id=api_id, stage_name=self.TEST_STAGE_NAME, path='/test')
         response = requests.get('%s?param1=foobar' % url)
         self.assertLess(response.status_code, 400)
         content = json.loads(to_str(response.content))
@@ -486,12 +472,12 @@ class TestAPIGateway(unittest.TestCase):
         lambda_uri = aws_stack.lambda_function_arn(fn_name)
         target_uri = aws_stack.apigateway_invocations_arn(lambda_uri)
 
-        result = self.connect_api_gateway_to_http_with_lambda_proxy(
-            'test_gateway3', target_uri, methods=['ANY'], path=path)
+        result = testutil.connect_api_gateway_to_http_with_lambda_proxy(
+            'test_gateway3', target_uri, methods=['ANY'], path=path, stage_name=self.TEST_STAGE_NAME)
 
         # make test request to gateway and check response
         path = path.replace('{test_param1}', 'foo1')
-        url = self.gateway_request_url(api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=path)
+        url = gateway_request_url(api_id=result['id'], stage_name=self.TEST_STAGE_NAME, path=path)
         data = {}
 
         for method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'):
@@ -508,12 +494,6 @@ class TestAPIGateway(unittest.TestCase):
     # Helper methods
     # =====================================================================
 
-    @staticmethod
-    def gateway_request_url(api_id, stage_name, path):
-        """ Return URL for inbound API gateway for given API ID, stage name, and path """
-        pattern = '%s/restapis/{api_id}/{stage_name}/%s{path}' % (config.TEST_APIGATEWAY_URL, PATH_USER_REQUEST)
-        return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
-
     def connect_api_gateway_to_kinesis(self, gateway_name, kinesis_stream):
         resources = {}
         template = self.APIGATEWAY_DATA_INBOUND_TEMPLATE % kinesis_stream
@@ -523,7 +503,7 @@ class TestAPIGateway(unittest.TestCase):
             'authorizationType': 'NONE',
             'integrations': [{
                 'type': 'AWS',
-                'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % config.DEFAULT_REGION,
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/PutRecords' % aws_stack.get_region(),
                 'requestTemplates': {
                     'application/json': template
                 }
@@ -533,7 +513,7 @@ class TestAPIGateway(unittest.TestCase):
             'authorizationType': 'NONE',
             'integrations': [{
                 'type': 'AWS',
-                'uri': 'arn:aws:apigateway:%s:kinesis:action/ListStreams' % config.DEFAULT_REGION,
+                'uri': 'arn:aws:apigateway:%s:kinesis:action/ListStreams' % aws_stack.get_region(),
                 'requestTemplates': {
                     'application/json': '{}'
                 }
@@ -564,30 +544,6 @@ class TestAPIGateway(unittest.TestCase):
                     'uri': target_url,
                     'requestTemplates': req_templates,
                     'responseTemplates': {}
-                }]
-            })
-        return aws_stack.create_api_gateway(
-            name=gateway_name,
-            resources=resources,
-            stage_name=self.TEST_STAGE_NAME
-        )
-
-    def connect_api_gateway_to_http_with_lambda_proxy(self, gateway_name, target_uri, methods=[], path=None):
-
-        if not methods:
-            methods = ['GET', 'POST', 'DELETE']
-        if not path:
-            path = '/'
-        resources = {}
-        resource_path = path.lstrip('/')
-        resources[resource_path] = []
-        for method in methods:
-            resources[resource_path].append({
-                'httpMethod': method,
-                'integrations': [{
-                    'type': 'AWS_PROXY',
-                    'uri': target_uri,
-                    'httpMethod': 'POST'
                 }]
             })
         return aws_stack.create_api_gateway(
@@ -713,7 +669,7 @@ class TestAPIGateway(unittest.TestCase):
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
         api_id = self.create_api_gateway_and_deploy({})
-        url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
+        url = gateway_request_url(api_id=api_id, stage_name='staging', path='/')
         response = requests.put(
             url,
             json.dumps({'id': 'id1', 'data': 'foobar123'}),
@@ -726,7 +682,7 @@ class TestAPIGateway(unittest.TestCase):
                                          'Item': {'id': '$.Id', 'data': '$.data'}})}
 
         api_id = self.create_api_gateway_and_deploy(response_templates)
-        url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
+        url = gateway_request_url(api_id=api_id, stage_name='staging', path='/')
 
         response = requests.put(
             url,
@@ -744,7 +700,7 @@ class TestAPIGateway(unittest.TestCase):
                                                               'Item': {'id': '$.Id', 'data': '$.data'}})}
 
         api_id = self.create_api_gateway_and_deploy(response_templates, True)
-        url = self.gateway_request_url(api_id=api_id, stage_name='staging', path='/')
+        url = gateway_request_url(api_id=api_id, stage_name='staging', path='/')
 
         payload = {
             'name': 'TEST-PLAN-2',

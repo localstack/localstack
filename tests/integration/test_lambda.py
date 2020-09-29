@@ -13,8 +13,7 @@ from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDE
 from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
 from localstack.utils import testutil
 from localstack.utils.testutil import (
-    get_lambda_log_events, check_expected_lambda_log_events_length,
-    create_lambda_archive
+    get_lambda_log_events, check_expected_lambda_log_events_length, create_lambda_archive
 )
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
@@ -587,7 +586,7 @@ class TestPythonRuntimes(LambdaTestBase):
         result_data = json.loads(result['Payload'].read())
 
         self.assertEqual(result['StatusCode'], 200)
-        self.assertEqual(result_data['event'], json.loads('{}'))
+        self.assertEqual(result_data['event'], {})
 
     def test_invocation_type_request_response(self):
         result = self.lambda_client.invoke(
