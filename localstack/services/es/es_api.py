@@ -18,7 +18,7 @@ LOG = logging.getLogger(__name__)
 APP_NAME = 'es_api'
 API_PREFIX = '/2015-01-01'
 
-DEFAULT_ES_VERSION = '7.1'
+DEFAULT_ES_VERSION = '7.7'
 
 ES_DOMAINS = {}
 
@@ -177,6 +177,8 @@ def get_install_version_for_api_version(version):
         result = '6.7.0'
     elif version == '7.4':
         result = '7.4.0'
+    elif version == '7.7':
+        result = '7.7.0'
     if not result.startswith(result):
         LOG.info('Elasticsearch version %s not yet supported, defaulting to %s' % (version, result))
     return result
@@ -297,6 +299,9 @@ def get_compatible_versions():
     }, {
         'SourceVersion': '6.8',
         'TargetVersions': ['7.1']
+    }, {
+        'SourceVersion': '7.1',
+        'TargetVersions': ['7.4', '7.7']
     }]
     return jsonify({'CompatibleElasticsearchVersions': result})
 
