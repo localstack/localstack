@@ -48,7 +48,8 @@ SYNCHRONOUS_DYNAMODB_EVENTS = is_env_not_false('SYNCHRONOUS_DYNAMODB_EVENTS')
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
 
 # randomly inject faults to DynamoDB
-DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', '').strip() or 0.0)
+DYNAMODB_READ_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_READ_ERROR_PROBABILITY', '').strip() or 0.0)
+DYNAMODB_WRITE_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_WRITE_ERROR_PROBABILITY', '').strip() or 0.0)
 
 # JAVA EE heap size for dynamodb
 DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'

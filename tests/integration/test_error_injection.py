@@ -38,9 +38,27 @@ def test_kinesis_error_injection():
     config.KINESIS_ERROR_PROBABILITY = 0.0
 
 
-def test_dynamodb_error_injection():
-    if not do_run():
-        return
+def test_dynamodb_read_error_injection():
+
+    dynamodb = aws_stack.connect_to_resource('dynamodb')
+    # create table with stream forwarding config
+    aws_stack.create_dynamodb_table(TEST_TABLE_NAME, partition_key=PARTITION_KEY)
+    table = dynamodb.Table(TEST_TABLE_NAME)
+
+    # by default, no errors
+    partition_key = short_uid()
+    test_no_errors = table.get_item(Key={PARTITION_KEY: partition_key})
+    assert_equal(test_no_errors['ResponseMetadata']['HTTPStatusCode'], 200)
+
+    # with a probability of 1, always throw errors
+    config.DYNAMODB_READ_ERROR_PROBABILITY = 1.0
+    assert_raises(ClientError, table.get_item, Key={PARTITION_KEY: partition_key})
+
+    # reset probability to zero
+    config.DYNAMODB_READ_ERROR_PROBABILITY = 0.0
+
+
+def test_dynamodb_write_error_injection():
 
     dynamodb = aws_stack.connect_to_resource('dynamodb')
     # create table with stream forwarding config
@@ -52,11 +70,11 @@ def test_dynamodb_error_injection():
     assert_equal(test_no_errors['ResponseMetadata']['HTTPStatusCode'], 200)
 
     # with a probability of 1, always throw errors
-    config.DYNAMODB_ERROR_PROBABILITY = 1.0
+    config.DYNAMODB_WRITE_ERROR_PROBABILITY = 1.0
     assert_raises(ClientError, table.put_item, Item={PARTITION_KEY: short_uid(), 'data': 'foobar123'})
 
     # reset probability to zero
-    config.DYNAMODB_ERROR_PROBABILITY = 0.0
+    config.DYNAMODB_WRITE_ERROR_PROBABILITY = 0.0
 
 
 def do_run():
