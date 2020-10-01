@@ -39,6 +39,8 @@ def test_kinesis_error_injection():
 
 
 def test_dynamodb_read_error_injection():
+    if not do_run():
+        return
 
     dynamodb = aws_stack.connect_to_resource('dynamodb')
     # create table with stream forwarding config
@@ -59,6 +61,8 @@ def test_dynamodb_read_error_injection():
 
 
 def test_dynamodb_write_error_injection():
+    if not do_run():
+        return
 
     dynamodb = aws_stack.connect_to_resource('dynamodb')
     # create table with stream forwarding config
