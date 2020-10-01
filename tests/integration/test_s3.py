@@ -860,6 +860,22 @@ class S3ListenerTest(unittest.TestCase):
         # cleanup
         self.s3_client.delete_bucket(Bucket=bucket_name)
 
+    def test_s3_website_errordocument_missing(self):
+        # check that 404 is returned when error document is configured but missing
+        bucket_name = 'test-bucket-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
+        )
+        url = self.s3_client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
+        )
+        response = requests.get(url, verify=False)
+        self.assertEqual(response.status_code, 404)
+
+        self.s3_client.delete_bucket(Bucket=bucket_name)
+
     def test_s3_event_notification_with_sqs(self):
         key_by_path = 'aws/bucket=2020/test1.txt'
 
