@@ -52,28 +52,6 @@ MAP_STATE_MACHINE_DEF = {
         }
     }
 }
-MAP_STATE_MACHINE_OUTPUT = [
-    {
-        'Hello': 'Bob'
-    },
-    {
-        'Hello': 'Meg'
-    },
-    {
-        'Hello': 'Joe'
-    }
-]
-MAP_STATE_MACHINE_INPUT = [
-    {
-        'map': 'Bob'
-    },
-    {
-        'map': 'Meg'
-    },
-    {
-        'map': 'Joe'
-    }
-]
 
 
 class TestStateMachine(unittest.TestCase):
@@ -114,6 +92,28 @@ class TestStateMachine(unittest.TestCase):
         cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_2)
 
     def test_create_run_map_state_machine(self):
+        test_input = [
+            {
+                'map': 'Bob'
+            },
+            {
+                'map': 'Meg'
+            },
+            {
+                'map': 'Joe'
+            }
+        ]
+        test_output = [
+            {
+                'Hello': 'Bob'
+            },
+            {
+                'Hello': 'Meg'
+            },
+            {
+                'Hello': 'Joe'
+            }
+        ]
         state_machines_before = self.sfn_client.list_state_machines()['stateMachines']
 
         role_arn = aws_stack.role_arn('sfn_role')
@@ -131,7 +131,7 @@ class TestStateMachine(unittest.TestCase):
         # run state machine
         state_machines = self.sfn_client.list_state_machines()['stateMachines']
         sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == MAP_STATE_MACHINE_NAME][0]
-        result = self.sfn_client.start_execution(stateMachineArn=sm_arn, input=json.dumps(MAP_STATE_MACHINE_INPUT))
+        result = self.sfn_client.start_execution(stateMachineArn=sm_arn, input=json.dumps(test_input))
         self.assertTrue(result.get('executionArn'))
 
         def check_invocations():
@@ -142,7 +142,7 @@ class TestStateMachine(unittest.TestCase):
             result = self.sfn_client.get_execution_history(executionArn=execution['executionArn'])
             events = sorted(result['events'], key=lambda event: event['id'])
             result = json.loads(events[-1]['executionSucceededEventDetails']['output'])
-            self.assertEqual(result, MAP_STATE_MACHINE_OUTPUT)
+            self.assertEqual(result, test_output)
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=0.7, retries=2)

@@ -10,6 +10,11 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
 
+class ErrorResponse(Exception):
+    def __init__(self, response):
+        self.response = response
+
+
 def flask_error_response_json(msg, code=500, error_type='InternalFailure'):
     result = {
         'Type': 'User' if code < 500 else 'Server',
