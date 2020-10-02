@@ -60,13 +60,18 @@ class ProxyListenerDynamoDB(ProxyListener):
                 return True
         return False
 
-    def error_response(self, action, actions):
+    def action_should_throttle(self, action, actions):
         throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in actions]
-        if action in throttled:
-            return error_response_throughput()
+        return action in throttled
 
-    def should_throttle(self, probability):
-        return random.random() < probability
+    def should_throttle(self, action):
+        rand = random.random()
+        if rand < config.DYNAMODB_READ_ERROR_PROBABILITY:
+            return self.action_should_throttle(action, READ_THROTTLED_ACTIONS)
+        if rand < config.DYNAMODB_WRITE_ERROR_PROBABILITY:
+            return self.action_should_throttle(action, WRITE_THROTTLED_ACTIONS)
+        if rand < config.DYNAMODB_ERROR_PROBABILITY:
+            return self.action_should_throttle(action, THROTTLED_ACTIONS)
 
     def forward_request(self, method, path, data, headers):
         if path.startswith('/shell') or method == 'GET':
@@ -84,14 +89,8 @@ class ProxyListenerDynamoDB(ProxyListener):
         ddb_client = aws_stack.connect_to_service('dynamodb')
         action = headers.get('X-Amz-Target')
 
-        if self.should_throttle(config.DYNAMODB_ERROR_PROBABILITY):
-            return self.error_response(action, THROTTLED_ACTIONS)
-
-        if self.should_throttle(config.DYNAMODB_READ_ERROR_PROBABILITY):
-            return self.error_response(action, READ_THROTTLED_ACTIONS)
-
-        if self.should_throttle(config.DYNAMODB_WRITE_ERROR_PROBABILITY):
-            return self.error_response(action, WRITE_THROTTLED_ACTIONS)
+        if self.should_throttle(action):
+            return self.error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
 
