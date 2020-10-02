@@ -9,6 +9,8 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
 
+REGEX_FLAGS = re.MULTILINE | re.DOTALL
+
 
 class ErrorResponse(Exception):
     def __init__(self, response):
@@ -109,7 +111,7 @@ class LambdaResponse(object):
 class MessageConversion(object):
 
     @staticmethod
-    def _fix_date_format(response):
+    def fix_date_format(response):
         """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
 
         def _replace(response, pattern, replacement):
@@ -121,17 +123,24 @@ class MessageConversion(object):
         _replace(response, pattern, replacement)
 
     @staticmethod
-    def _fix_account_id(response):
+    def fix_account_id(response):
         return aws_stack.fix_account_id_in_arns(
             response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
 
     @staticmethod
-    def _fix_error_codes(method, data, response):
+    def fix_error_codes(method, data, response):
+        regex = r'<Errors>\s*(<Error>(\s|.)*</Error>)\s*</Errors>'
         if method == 'POST' and 'Action=CreateRole' in to_str(data) and response.status_code >= 400:
             content = to_str(response.content)
-            flags = re.MULTILINE | re.DOTALL
             # remove the <Errors> wrapper element, as this breaks AWS Java SDKs (issue #2231)
-            response._content = re.sub(r'<Errors>\s*(<Error>(\s|.)*</Error>)\s*</Errors>', r'\1', content, flags)
+            response._content = re.sub(regex, r'\1', content, flags=REGEX_FLAGS)
+
+    @staticmethod
+    def fix_xml_empty_boolean(response, tag_names):
+        for tag_name in tag_names:
+            regex = r'<{tag}>\s*([Nn]one|null)\s*</{tag}>'.format(tag=tag_name)
+            replace = r'<{tag}>false</{tag}>'.format(tag=tag_name)
+            response._content = re.sub(regex, replace, to_str(response.content), flags=REGEX_FLAGS)
 
     @staticmethod
     def _reset_account_id(data):
