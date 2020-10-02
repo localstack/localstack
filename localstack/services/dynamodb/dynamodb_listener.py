@@ -31,6 +31,10 @@ ACTION_PREFIX = 'DynamoDB_20120810'
 GLOBAL_TABLES = {}
 
 # list of actions subject to throughput limitations
+THROTTLED_ACTIONS = [
+    'GetItem', 'Query', 'Scan', 'TransactGetItems', 'BatchGetItem'
+    'PutItem', 'BatchWriteItem', 'UpdateItem', 'DeleteItem', 'TransactWriteItems',
+]
 READ_THROTTLED_ACTIONS = [
     'GetItem', 'Query', 'Scan', 'TransactGetItems', 'BatchGetItem'
 ]
@@ -74,6 +78,11 @@ class ProxyListenerDynamoDB(ProxyListener):
         data = json.loads(to_str(data))
         ddb_client = aws_stack.connect_to_service('dynamodb')
         action = headers.get('X-Amz-Target')
+
+        if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
+            throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in THROTTLED_ACTIONS]
+            if action in throttled:
+                return error_response_throughput()
 
         if random.random() < config.DYNAMODB_READ_ERROR_PROBABILITY:
             throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in READ_THROTTLED_ACTIONS]
