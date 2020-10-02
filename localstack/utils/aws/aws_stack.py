@@ -172,7 +172,7 @@ def get_local_region():
         session = boto3.session.Session()
         LOCAL_REGION = session.region_name or ''
     return LOCAL_REGION or config.DEFAULT_REGION
-   
+
 
 def get_local_service_url(service_name_or_port):
     """ Return the local service URL for the given service name or port. """
