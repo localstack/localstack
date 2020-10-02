@@ -5,6 +5,7 @@ from copy import deepcopy
 from urllib.parse import quote
 
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE
+from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
 from moto.iam.models import (
     iam_backend as moto_iam_backend, aws_managed_policies, AWSManagedPolicy, IAMNotFoundException, Policy, User
 )
@@ -105,6 +106,9 @@ def apply_patches():
         AWSManagedPolicy.from_data(k, v)
         for k, v in ADDITIONAL_MANAGED_POLICIES.items()
     ])
+
+    if 'Principal' not in VALID_STATEMENT_ELEMENTS:
+        VALID_STATEMENT_ELEMENTS.append('Principal')
 
     def iam_response_create_user(self):
         user = moto_iam_backend.create_user(

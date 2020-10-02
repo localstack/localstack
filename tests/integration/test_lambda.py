@@ -247,8 +247,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         # create lambda permission
         action = 'lambda:InvokeFunction'
         sid = 's3'
+        principal = 's3.amazonaws.com'
         resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
-                                            StatementId=sid, Principal='s3.amazonaws.com',
+                                            StatementId=sid, Principal=principal,
                                             SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
         self.assertIn('Statement', resp)
         # fetch lambda policy
@@ -258,6 +259,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(policy['Statement'][0]['Action'], action)
         self.assertEqual(policy['Statement'][0]['Sid'], sid)
         self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
+        self.assertEqual(policy['Statement'][0]['Principal']['Service'], principal)
+        self.assertEqual(policy['Statement'][0]['Condition']['ArnLike']['AWS:SourceArn'],
+                         aws_stack.s3_bucket_arn('test-bucket'))
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
         matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s_%s' % (TEST_LAMBDA_NAME_PY, sid)]
@@ -266,7 +270,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # remove permission that we just added
         resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
-                                               StatementId=resp['Statement'], Qualifier='qual1', RevisionId='r1')
+                                               StatementId=sid, Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_lambda_asynchronous_invocations(self):

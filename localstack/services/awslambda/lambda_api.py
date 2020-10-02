@@ -1151,6 +1151,17 @@ def add_permission(function):
     data = json.loads(to_str(request.data))
     iam_client = aws_stack.connect_to_service('iam')
     sid = data.get('StatementId')
+    action = data.get('Action')
+    principal = data.get('Principal')
+    sourcearn = data.get('SourceArn')
+    arn = func_arn(function)
+
+    if not re.match(r'lambda:[*]|lambda:[a-zA-Z]+|[*]', action):
+        return error_response('1 validation error detected: Value "%s" at "action" failed to satisfy '
+                              'constraint: Member must satisfy regular expression pattern: '
+                              '(lambda:[*]|lambda:[a-zA-Z]+|[*])' % action,
+                              400, error_type='ValidationException')
+
     policy = {
         'Version': IAM_POLICY_VERSION,
         'Id': 'LambdaFuncAccess-%s' % sid,
@@ -1159,15 +1170,31 @@ def add_permission(function):
             'Effect': 'Allow',
             # TODO: 'Principal' in policies not yet supported in upstream moto
             # 'Principal': data.get('Principal') or {'AWS': TEST_AWS_ACCOUNT_ID},
-            'Action': data.get('Action'),
-            'Resource': func_arn(function)
+            'Action': action,
+            'Resource': arn,
         }]
     }
+
+    # Adds SourceArn only if SourceArn is present
+    if sourcearn:
+        condition = {
+            'ArnLike': {
+                'AWS:SourceArn': sourcearn
+            }
+        }
+        policy['Statement'][0]['Condition'] = condition
+
+    # Adds Principal only if Principal is present
+    if principal:
+        principal = {
+            'Service': principal
+        }
+        policy['Statement'][0]['Principal'] = principal
+
     iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % (function, sid),
                              PolicyDocument=json.dumps(policy),
                              Description='Policy for Lambda function "%s"' % function)
-    result = {'Statement': sid}
-    return jsonify(result)
+    return jsonify(policy)
 
 
 @app.route('%s/functions/<function>/policy/<statement>' % PATH_ROOT, methods=['DELETE'])
