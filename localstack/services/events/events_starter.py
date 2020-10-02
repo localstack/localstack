@@ -44,10 +44,21 @@ def send_event_to_firehose(event, arn):
         Record={'Data': to_bytes(json.dumps(event))})
 
 
+def filter_event_with_target_input_path(target, event):
+    input_path = target.get('InputPath')
+    if input_path:
+        paths = input_path.split('.')
+        for path in paths[1:]:
+            print(path, event)
+            event = event.get(path)
+    return event
+
+
 def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
         service = arn.split(':')[2]
+        event = filter_event_with_target_input_path(target, event)
 
         if service == 'sqs':
             send_event_to_sqs(event, arn)
