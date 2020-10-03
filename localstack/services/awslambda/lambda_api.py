@@ -1168,8 +1168,6 @@ def add_permission(function):
         'Statement': [{
             'Sid': sid,
             'Effect': 'Allow',
-            # TODO: 'Principal' in policies not yet supported in upstream moto
-            # 'Principal': data.get('Principal') or {'AWS': TEST_AWS_ACCOUNT_ID},
             'Action': action,
             'Resource': arn,
         }]
@@ -1194,7 +1192,8 @@ def add_permission(function):
     iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % (function, sid),
                              PolicyDocument=json.dumps(policy),
                              Description='Policy for Lambda function "%s"' % function)
-    return jsonify(policy)
+    result = {'Statement': json.dumps(policy['Statement'][0])}
+    return jsonify(result) 
 
 
 @app.route('%s/functions/<function>/policy/<statement>' % PATH_ROOT, methods=['DELETE'])
