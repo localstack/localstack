@@ -642,6 +642,7 @@ def get_zip_bytes(function_code):
     :param function_code: https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionCode.html
     :returns: bytes of the Zip file.
     """
+    function_code = function_code or {}
     if 'S3Bucket' in function_code:
         s3_client = aws_stack.connect_to_service('s3')
         bytes_io = BytesIO()
@@ -654,7 +655,7 @@ def get_zip_bytes(function_code):
         zip_file_content = function_code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
     else:
-        raise ClientError('No valid Lambda archive specified.')
+        raise ClientError('No valid Lambda archive specified: %s' % list(function_code.keys()))
     return zip_file_content
 
 

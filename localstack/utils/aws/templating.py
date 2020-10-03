@@ -3,7 +3,7 @@ import json
 import base64
 from six.moves.urllib.parse import quote_plus, unquote_plus
 from localstack import config
-from localstack.utils.common import recurse_object
+from localstack.utils.common import recurse_object, extract_jsonpath
 
 
 class VelocityInput(object):
@@ -14,12 +14,8 @@ class VelocityInput(object):
         self.value = value
 
     def path(self, path):
-        from jsonpath_rw import parse
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-        jsonpath_expr = parse(path)
-        result = [match.value for match in jsonpath_expr.find(value)]
-        result = result[0] if len(result) == 1 else result
-        return result
+        return extract_jsonpath(value, path)
 
     def json(self, path):
         return json.dumps(self.path(path))
