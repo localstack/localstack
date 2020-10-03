@@ -66,12 +66,17 @@ class ProxyListenerDynamoDB(ProxyListener):
 
     def should_throttle(self, action):
         rand = random.random()
-        if rand < config.DYNAMODB_READ_ERROR_PROBABILITY:
-            return self.action_should_throttle(action, READ_THROTTLED_ACTIONS)
-        if rand < config.DYNAMODB_WRITE_ERROR_PROBABILITY:
-            return self.action_should_throttle(action, WRITE_THROTTLED_ACTIONS)
-        if rand < config.DYNAMODB_ERROR_PROBABILITY:
-            return self.action_should_throttle(action, THROTTLED_ACTIONS)
+        if (rand < config.DYNAMODB_READ_ERROR_PROBABILITY and
+                self.action_should_throttle(action, READ_THROTTLED_ACTIONS)):
+            return True
+        elif (rand < config.DYNAMODB_WRITE_ERROR_PROBABILITY and
+                self.action_should_throttle(action, WRITE_THROTTLED_ACTIONS)):
+            return True
+        elif (rand < config.DYNAMODB_ERROR_PROBABILITY and
+                self.action_should_throttle(action, THROTTLED_ACTIONS)):
+            return True
+        else:
+            return False
 
     def forward_request(self, method, path, data, headers):
         if path.startswith('/shell') or method == 'GET':
