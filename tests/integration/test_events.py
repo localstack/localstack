@@ -542,3 +542,34 @@ class EventsTest(unittest.TestCase):
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         self.assertEqual(len(messages), 1)
         self.assertEqual(json.loads(messages[0].get('Body')), EVENT_DETAIL)
+
+        # clean up
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        self.events_client.remove_targets(
+            Rule=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Ids=[target_id],
+            Force=True
+        )
+        self.events_client.delete_rule(
+            Name=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Force=True
+        )
+        self.events_client.delete_event_bus(
+            Name=TEST_EVENT_BUS_NAME
+        )
+
+    def test_put_event_without_source(self):
+        self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
+
+        response = self.events_client.put_events(
+            Entries=[
+                {
+                    'DetailType': 'Test',
+                    'Detail': '{}'
+                }
+            ]
+        )
+        self.assertIn('Entries', response)

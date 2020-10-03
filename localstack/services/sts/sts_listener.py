@@ -14,11 +14,11 @@ class ProxyListenerSTS(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         if response.content:
             # fix hardcoded account ID in ARNs returned from this API
-            MessageConversion._fix_account_id(response)
+            MessageConversion.fix_account_id(response)
             # fix dates returned from this API (fixes an issue with Terraform)
-            MessageConversion._fix_date_format(response)
-
-            MessageConversion._fix_error_codes(method, data, response)
+            MessageConversion.fix_date_format(response)
+            # fix returned error codes
+            MessageConversion.fix_error_codes(method, data, response)
             # fix content-length header
             response.headers['content-length'] = str(len(response._content))
 

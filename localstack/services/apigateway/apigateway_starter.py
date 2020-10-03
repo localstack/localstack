@@ -3,7 +3,7 @@ import logging
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.models import Resource, Integration
 from moto.apigateway.responses import APIGatewayResponse
-from moto.apigateway.exceptions import MethodNotFoundException, NoIntegrationDefined
+from moto.apigateway.exceptions import NoIntegrationDefined
 from moto.apigateway.utils import create_id
 from localstack import config
 from localstack.utils.common import short_uid, to_str
@@ -17,14 +17,14 @@ def apply_patches():
         resource = self.get_resource(function_id, resource_id)
         method = resource.get_method(method_type)
         if not method:
-            raise MethodNotFoundException()
+            raise NoIntegrationDefined()
 
         return resource.resource_methods.pop(method_type)
 
     def apigateway_models_resource_get_method(self, method_type):
         method = self.resource_methods.get(method_type)
         if not method:
-            raise MethodNotFoundException()
+            raise NoIntegrationDefined()
 
         return method
 
