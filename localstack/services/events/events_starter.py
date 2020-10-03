@@ -132,13 +132,13 @@ def apply_patches():
             formatted_event = {
                 'version': '0',
                 'id': event_envelope['uuid'],
-                'detail-type': event['DetailType'],
-                'source': event['Source'],
+                'detail-type': event.get('DetailType'),
+                'source': event.get('Source'),
                 'account': TEST_AWS_ACCOUNT_ID,
                 'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'region': self.region,
                 'resources': event.get('Resources', []),
-                'detail': json.loads(event['Detail']),
+                'detail': json.loads(event.get('Detail')),
             }
             # process event
             process_events(formatted_event, targets)
