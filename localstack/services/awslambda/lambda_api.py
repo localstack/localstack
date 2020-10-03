@@ -1193,7 +1193,7 @@ def add_permission(function):
                              PolicyDocument=json.dumps(policy),
                              Description='Policy for Lambda function "%s"' % function)
     result = {'Statement': json.dumps(policy['Statement'][0])}
-    return jsonify(result) 
+    return jsonify(result)
 
 
 @app.route('%s/functions/<function>/policy/<statement>' % PATH_ROOT, methods=['DELETE'])
