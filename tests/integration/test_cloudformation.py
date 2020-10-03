@@ -825,6 +825,19 @@ TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = {
     }
 }
 
+dummy_sqs_attribute_template = {
+    'TemplateFormatVersion': '2010-09-09',
+    'Description': 'Deploys an SQS queue',
+    'Resources': {
+        'MyQueue': {
+            'Type': 'AWS::SQS::Queue',
+            'Properties': {
+                'ReceiveMessageWaitTimeSeconds': 1
+            }
+        }
+    }
+}
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -2048,3 +2061,13 @@ class CloudFormationTest(unittest.TestCase):
         )
 
         cloudformation.delete_stack(StackName='myteststack')
+
+    def test_boto3_create_stack_with_sqs_attributes(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation', region_name='us-east-1')
+
+        cloudformation.create_stack(StackName='test_stack', TemplateBody=json.dumps(dummy_sqs_attribute_template))
+
+        sqs_conn = aws_stack.connect_to_service('sqs', region_name='us-east-1')
+        result = sqs_conn.list_queues()
+
+        self.assertEqual(len(result.get('QueueUrls')), 1)
