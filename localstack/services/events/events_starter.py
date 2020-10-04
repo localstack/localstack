@@ -8,7 +8,7 @@ from localstack import config
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_bytes
+from localstack.utils.common import short_uid, to_bytes, extract_jsonpath
 from localstack.services.infra import start_moto_server
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.awslambda.lambda_api import run_lambda
@@ -47,10 +47,7 @@ def send_event_to_firehose(event, arn):
 def filter_event_with_target_input_path(target, event):
     input_path = target.get('InputPath')
     if input_path:
-        paths = input_path.split('.')
-        for path in paths[1:]:
-            print(path, event)
-            event = event.get(path)
+        event = extract_jsonpath(event, input_path)
     return event
 
 
