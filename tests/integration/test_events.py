@@ -495,6 +495,72 @@ class EventsTest(unittest.TestCase):
         self.assertEqual(len(response.get('Entries')), 1)
         self.assertIn('EventId', response.get('Entries')[0])
 
+    def test_put_events_with_input_path(self):
+        queue_name = 'queue-{}'.format(short_uid())
+        rule_name = 'rule-{}'.format(short_uid())
+        target_id = 'target-{}'.format(short_uid())
+
+        sqs_client = aws_stack.connect_to_service('sqs')
+        queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        self.events_client.create_event_bus(
+            Name=TEST_EVENT_BUS_NAME
+        )
+
+        self.events_client.put_rule(
+            Name=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            EventPattern=json.dumps(TEST_EVENT_PATTERN)
+        )
+
+        self.events_client.put_targets(
+            Rule=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Targets=[
+                {
+                    'Id': target_id,
+                    'Arn': queue_arn,
+                    'InputPath': '$.detail'
+                }
+            ]
+        )
+
+        self.events_client.put_events(
+            Entries=[{
+                'EventBusName': TEST_EVENT_BUS_NAME,
+                'Source': TEST_EVENT_PATTERN['Source'],
+                'DetailType': TEST_EVENT_PATTERN['DetailType'],
+                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'])
+            }]
+        )
+
+        def get_message(queue_url):
+            resp = sqs_client.receive_message(QueueUrl=queue_url)
+            return resp['Messages']
+
+        messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(json.loads(messages[0].get('Body')), EVENT_DETAIL)
+
+        # clean up
+        sqs_client.delete_queue(QueueUrl=queue_url)
+
+        self.events_client.remove_targets(
+            Rule=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Ids=[target_id],
+            Force=True
+        )
+        self.events_client.delete_rule(
+            Name=rule_name,
+            EventBusName=TEST_EVENT_BUS_NAME,
+            Force=True
+        )
+        self.events_client.delete_event_bus(
+            Name=TEST_EVENT_BUS_NAME
+        )
+
     def test_put_event_without_source(self):
         self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
 
