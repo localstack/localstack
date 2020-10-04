@@ -775,6 +775,14 @@ def canonical_json(obj):
     return json.dumps(obj, sort_keys=True)
 
 
+def extract_jsonpath(value, path):
+    from jsonpath_rw import parse
+    jsonpath_expr = parse(path)
+    result = [match.value for match in jsonpath_expr.find(value)]
+    result = result[0] if len(result) == 1 else result
+    return result
+
+
 def save_file(file, content, append=False):
     mode = 'a' if append else 'w+'
     if not isinstance(content, six.string_types):
