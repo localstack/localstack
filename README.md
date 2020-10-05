@@ -217,6 +217,7 @@ You can pass the following environment variables to LocalStack:
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
 * `LAMBDA_JAVA_OPTS`: Allow passing custom JVM options (e.g., `-Xmx512M`) to Java Lambdas executed in Docker. Use `_debug_port_` placeholder to configure the debug port (e.g., `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_`).
 * `MAIN_CONTAINER_NAME`: Specify the main docker container name (default: `localstack_main`).
+* `INIT_SCRIPTS_PATH`: Specify the path to the initializing files with extensions .sh that are found default in `/docker-entrypoint-initaws.d`.
 
 The following environment configurations are *deprecated*:
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
@@ -251,7 +252,7 @@ The service `/health` check endpoint on the edge port (`http://localhost:4566/he
 
 ### Initializing a fresh instance
 
-When a container is started for the first time, it will execute files with extensions .sh that are found in `/docker-entrypoint-initaws.d`. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
+When a container is started for the first time, it will execute files with extensions .sh that are found in `/docker-entrypoint-initaws.d` or an alternate path defined in `INIT_SCRIPTS_PATH`. Files will be executed in alphabetical order. You can easily create aws resources on localstack using `awslocal` (or `aws`) cli tool in the initialization scripts.
 
 ## Using custom SSL certificates
 
