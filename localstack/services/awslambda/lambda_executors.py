@@ -272,21 +272,22 @@ class LambdaExecutorContainers(LambdaExecutor):
         command = ''
         events_file = ''
 
-        # if running a Java Lambda, set up classpath arguments
-        if is_java_lambda(runtime):
-            java_opts = Util.get_java_opts()
-            stdin = None
-            # copy executor jar into temp directory
-            target_file = os.path.join(lambda_cwd, os.path.basename(LAMBDA_EXECUTOR_JAR))
-            if not os.path.exists(target_file):
-                cp_r(LAMBDA_EXECUTOR_JAR, target_file)
-            # TODO cleanup once we have custom Java Docker image
-            taskdir = '/var/task'
-            events_file = '_lambda.events.%s.json' % short_uid()
-            save_file(os.path.join(lambda_cwd, events_file), event_body)
-            classpath = Util.get_java_classpath(target_file)
-            command = ("bash -c 'cd %s; java %s -cp \"%s\" \"%s\" \"%s\" \"%s\"'" %
-                (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, events_file))
+        if False:
+            # if running a Java Lambda, set up classpath arguments
+            if is_java_lambda(runtime):
+                java_opts = Util.get_java_opts()
+                stdin = None
+                # copy executor jar into temp directory
+                target_file = os.path.join(lambda_cwd, os.path.basename(LAMBDA_EXECUTOR_JAR))
+                if not os.path.exists(target_file):
+                    cp_r(LAMBDA_EXECUTOR_JAR, target_file)
+                # TODO cleanup once we have custom Java Docker image
+                taskdir = '/var/task'
+                events_file = '_lambda.events.%s.json' % short_uid()
+                save_file(os.path.join(lambda_cwd, events_file), event_body)
+                classpath = Util.get_java_classpath(target_file)
+                command = ("bash -c 'cd %s; java %s -cp \"%s\" \"%s\" \"%s\" \"%s\"'" %
+                    (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, events_file))
 
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):

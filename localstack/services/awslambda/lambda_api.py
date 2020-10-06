@@ -763,8 +763,8 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
             raise ClientError(
                 'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
         # Unzipping should only be required for (1) non-Java Lambdas, or (2) zip files containing JAR files
-        if not is_java or zip_contains_jar_entries(zip_file_content, 'lib/'):
-            unzip(tmp_file, lambda_cwd)
+        # if not is_java or zip_contains_jar_entries(zip_file_content, 'lib/'):
+        unzip(tmp_file, lambda_cwd)
 
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
