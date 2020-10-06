@@ -814,16 +814,13 @@ TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = {
                     ]
                 },
                 'Runtime': 'nodejs12.x',
-                'Timeout': 6,
-                'Environment': {
-                    'Variables': {
-                        'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1
-                    }
-                }
+                'Timeout': 6
             }
         }
     }
 }
+
+SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
 
 
 def bucket_exists(name):
@@ -2048,3 +2045,26 @@ class CloudFormationTest(unittest.TestCase):
         )
 
         cloudformation.delete_stack(StackName='myteststack')
+
+    def test_update_stack_with_same_template(self):
+        stack_name = 'stack-%s' % short_uid()
+        template_data = load_file(SQS_TEMPLATE)
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        params = {
+            'StackName': stack_name,
+            'TemplateBody': template_data
+        }
+        cloudformation.create_stack(**params)
+
+        with self.assertRaises(Exception) as ctx:
+            cloudformation.update_stack(**params)
+            waiter = cloudformation.get_waiter('stack_update_complete')
+            waiter.wait(StackName=stack_name)
+
+        error_message = str(ctx.exception)
+        self.assertIn('UpdateStack', error_message)
+        self.assertIn('No updates are to be performed.', error_message)
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
