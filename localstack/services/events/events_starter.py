@@ -8,7 +8,7 @@ from localstack import config
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_bytes
+from localstack.utils.common import short_uid, to_bytes, extract_jsonpath
 from localstack.services.infra import start_moto_server
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.awslambda.lambda_api import run_lambda
@@ -44,10 +44,18 @@ def send_event_to_firehose(event, arn):
         Record={'Data': to_bytes(json.dumps(event))})
 
 
+def filter_event_with_target_input_path(target, event):
+    input_path = target.get('InputPath')
+    if input_path:
+        event = extract_jsonpath(event, input_path)
+    return event
+
+
 def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
         service = arn.split(':')[2]
+        event = filter_event_with_target_input_path(target, event)
 
         if service == 'sqs':
             send_event_to_sqs(event, arn)
@@ -132,13 +140,13 @@ def apply_patches():
             formatted_event = {
                 'version': '0',
                 'id': event_envelope['uuid'],
-                'detail-type': event['DetailType'],
-                'source': event['Source'],
+                'detail-type': event.get('DetailType'),
+                'source': event.get('Source'),
                 'account': TEST_AWS_ACCOUNT_ID,
                 'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'region': self.region,
                 'resources': event.get('Resources', []),
-                'detail': json.loads(event['Detail']),
+                'detail': json.loads(event.get('Detail')),
             }
             # process event
             process_events(formatted_event, targets)

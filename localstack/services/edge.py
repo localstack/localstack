@@ -219,6 +219,9 @@ def get_api_from_custom_rules(method, path, data, headers):
     if path == '/' and b'QueueName=' in data_bytes:
         return 'sqs', config.PORT_SQS
 
+    if path.startswith('/2015-03-31/functions/'):
+        return 'lambda', config.PORT_LAMBDA
+
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip('/')
     if method in ['GET', 'HEAD'] and '/' in stripped:

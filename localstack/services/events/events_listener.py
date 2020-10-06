@@ -25,11 +25,11 @@ def _replace(response, pattern, replacement):
     response._content = re.sub(pattern, replacement, content)
 
 
-def _fix_account_id(response):
+def fix_account_id(response):
     return aws_stack.fix_account_id_in_arns(response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
 
 
-def _fix_date_format(response):
+def fix_date_format(response):
     """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
     pattern = r'<CreateDate>([^<]+) ([^<+]+)(\+[^<]*)?</CreateDate>'
     replacement = r'<CreateDate>\1T\2Z</CreateDate>'
@@ -159,10 +159,10 @@ class ProxyListenerEvents(ProxyListener):
     def return_response(self, method, path, data, headers, response, request_handler=None):
         if response.content:
             # fix hardcoded account ID in ARNs returned from this API
-            _fix_account_id(response)
+            fix_account_id(response)
 
             # fix dates returned from this API (fixes an issue with Terraform)
-            _fix_date_format(response)
+            fix_date_format(response)
 
             # fix content-length header
             response.headers['content-length'] = len(response._content)
