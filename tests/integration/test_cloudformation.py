@@ -814,12 +814,7 @@ TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = {
                     ]
                 },
                 'Runtime': 'nodejs12.x',
-                'Timeout': 6,
-                'Environment': {
-                    'Variables': {
-                        'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1
-                    }
-                }
+                'Timeout': 6
             }
         }
     }
