@@ -18,10 +18,11 @@ from localstack.utils.testutil import (
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download,
-    run_safe, get_free_tcp_port, get_service_protocol, retry, to_bytes
+    unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download, save_file,
+    run_safe, get_free_tcp_port, get_service_protocol, retry, to_bytes, cp_r
 )
 from localstack.services.infra import start_proxy
+from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
@@ -56,6 +57,7 @@ TEST_LAMBDA_NAME_CUSTOM_RUNTIME = 'test_lambda_custom_runtime'
 TEST_LAMBDA_NAME_JAVA = 'test_lambda_java'
 TEST_LAMBDA_NAME_JAVA_STREAM = 'test_lambda_java_stream'
 TEST_LAMBDA_NAME_JAVA_SERIALIZABLE = 'test_lambda_java_serializable'
+TEST_LAMBDA_NAME_JAVA_KINESIS = 'test_lambda_java_kinesis'
 TEST_LAMBDA_NAME_ENV = 'test_lambda_env'
 
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
@@ -1178,7 +1180,13 @@ class TestJavaRuntimes(LambdaTestBase):
         # Lambda supports single JAR deployments without the zip,
         # so we upload the JAR directly.
         cls.test_java_jar = load_file(TEST_LAMBDA_JAVA, mode='rb')
-        cls.test_java_zip = testutil.create_zip_file(TEST_LAMBDA_JAVA, get_content=True)
+        zip_dir = new_tmp_dir()
+        zip_lib_dir = os.path.join(zip_dir, 'lib')
+        zip_jar_path = os.path.join(zip_lib_dir, 'test.lambda.jar')
+        mkdir(zip_lib_dir)
+        cp_r(INSTALL_PATH_LOCALSTACK_FAT_JAR, os.path.join(zip_lib_dir, 'executor.lambda.jar'))
+        save_file(zip_jar_path, cls.test_java_jar)
+        cls.test_java_zip = testutil.create_zip_file(zip_dir, get_content=True)
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JAVA,
             zip_file=cls.test_java_jar,
@@ -1202,12 +1210,21 @@ class TestJavaRuntimes(LambdaTestBase):
             handler='cloud.localstack.sample.SerializedInputLambdaHandler'
         )
 
+        # deploy lambda - Java with Kinesis input object
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_JAVA_KINESIS,
+            zip_file=cls.test_java_zip,
+            runtime=LAMBDA_RUNTIME_JAVA8,
+            handler='cloud.localstack.sample.KinesisLambdaHandler'
+        )
+
     @classmethod
     def tearDownClass(cls):
         # clean up
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA)
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_STREAM)
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_SERIALIZABLE)
+        testutil.delete_lambda_function(TEST_LAMBDA_NAME_JAVA_KINESIS)
 
     def test_java_runtime(self):
         self.assertIsNotNone(self.test_java_jar)
@@ -1261,7 +1278,7 @@ class TestJavaRuntimes(LambdaTestBase):
 
     def test_kinesis_invocation(self):
         result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA,
+            FunctionName=TEST_LAMBDA_NAME_JAVA_KINESIS,
             Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
         result_data = result['Payload'].read()
 

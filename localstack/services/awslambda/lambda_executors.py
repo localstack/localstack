@@ -210,9 +210,7 @@ class LambdaExecutor(object):
 
 
 class ContainerInfo:
-    """
-    Contains basic information about a docker container.
-    """
+    """ Contains basic information about a docker container. """
     def __init__(self, name, entry_point):
         self.name = name
         self.entry_point = entry_point
