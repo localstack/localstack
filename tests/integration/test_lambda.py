@@ -1233,8 +1233,9 @@ class TestJavaRuntimes(LambdaTestBase):
         result_data = result['Payload'].read()
 
         self.assertEqual(result['StatusCode'], 200)
+        # TODO: find out why the assertion below does not work in Travis-CI! (seems to work locally)
         # self.assertIn('LinkedHashMap', to_str(result_data))
-        print('Lambda result: %s' % to_str(result_data))
+        self.assertIsNotNone(result_data)
 
     def test_java_runtime_with_lib(self):
         java_jar_with_lib = load_file(TEST_LAMBDA_JAVA_WITH_LIB, mode='rb')
