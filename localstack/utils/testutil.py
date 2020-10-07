@@ -362,6 +362,9 @@ def get_lambda_log_group_name(function_name):
 
 def check_expected_lambda_log_events_length(expected_length, function_name):
     events = get_lambda_log_events(function_name)
+    events = [line for line in events if line not in ['\x1b[0m', '\\x1b[0m']]
+    if len(events) != expected_length:
+        print('Invalid # of Lambda %s log events: %s / %s: %s' % (function_name, len(events), expected_length, events))
     assert len(events) == expected_length
     return events
 

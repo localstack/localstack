@@ -1177,8 +1177,7 @@ class TestJavaRuntimes(LambdaTestBase):
             mkdir(os.path.dirname(TEST_LAMBDA_JAVA))
             download(TEST_LAMBDA_JAR_URL, TEST_LAMBDA_JAVA)
 
-        # Lambda supports single JAR deployments without the zip,
-        # so we upload the JAR directly.
+        # deploy Lambda - default handler
         cls.test_java_jar = load_file(TEST_LAMBDA_JAVA, mode='rb')
         zip_dir = new_tmp_dir()
         zip_lib_dir = os.path.join(zip_dir, 'lib')
@@ -1189,12 +1188,13 @@ class TestJavaRuntimes(LambdaTestBase):
         cls.test_java_zip = testutil.create_zip_file(zip_dir, get_content=True)
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JAVA,
-            zip_file=cls.test_java_jar,
+            zip_file=cls.test_java_zip,
             runtime=LAMBDA_RUNTIME_JAVA8,
             handler='cloud.localstack.sample.LambdaHandler'
         )
 
-        # deploy lambda - Java with stream handler
+        # Deploy lambda - Java with stream handler.
+        # Lambda supports single JAR deployments without the zip, so we upload the JAR directly.
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JAVA_STREAM,
             zip_file=cls.test_java_jar,
@@ -1243,9 +1243,10 @@ class TestJavaRuntimes(LambdaTestBase):
         jar_dir = new_tmp_dir()
         zip_dir = new_tmp_dir()
         unzip(TEST_LAMBDA_JAVA_WITH_LIB, jar_dir)
-        shutil.move(os.path.join(jar_dir, 'lib'), os.path.join(zip_dir, 'lib'))
+        zip_lib_dir = os.path.join(zip_dir, 'lib')
+        shutil.move(os.path.join(jar_dir, 'lib'), zip_lib_dir)
         jar_without_libs_file = testutil.create_zip_file(jar_dir)
-        shutil.copy(jar_without_libs_file, os.path.join(zip_dir, 'lib', 'lambda.jar'))
+        shutil.copy(jar_without_libs_file, os.path.join(zip_lib_dir, 'lambda.jar'))
         java_zip_with_lib = testutil.create_zip_file(zip_dir, get_content=True)
 
         for archive in [java_jar_with_lib, java_zip_with_lib]:
@@ -1277,13 +1278,12 @@ class TestJavaRuntimes(LambdaTestBase):
         self.assertEqual(result['StatusCode'], 202)
 
     def test_kinesis_invocation(self):
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_JAVA_KINESIS,
-            Payload=b'{"Records": [{"Kinesis": {"Data": "data", "PartitionKey": "partition"}}]}')
+        payload = b'{"Records": [{"kinesis": {"data": "dGVzdA==", "partitionKey": "partition"}}]}'
+        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_JAVA_KINESIS, Payload=payload)
         result_data = result['Payload'].read()
 
         self.assertEqual(result['StatusCode'], 200)
-        self.assertIn('KinesisEvent', to_str(result_data))
+        self.assertEqual(to_str(result_data).strip(), '"test "')
 
     def test_kinesis_event(self):
         result = self.lambda_client.invoke(
@@ -1316,9 +1316,9 @@ class TestJavaRuntimes(LambdaTestBase):
 
     def test_trigger_java_lambda_through_sns(self):
         topic_name = 'topic-%s' % short_uid()
-        function_name = 'func-%s' % short_uid()
         bucket_name = 'bucket-%s' % short_uid()
         key = 'key-%s' % short_uid()
+        function_name = TEST_LAMBDA_NAME_JAVA
 
         sns_client = aws_stack.connect_to_service('sns')
         topic_arn = sns_client.create_topic(Name=topic_name)['TopicArn']
@@ -1338,26 +1338,20 @@ class TestJavaRuntimes(LambdaTestBase):
             }
         )
 
-        testutil.create_lambda_function(
-            func_name=function_name,
-            zip_file=load_file(TEST_LAMBDA_JAVA, mode='rb'),
-            runtime=LAMBDA_RUNTIME_JAVA8,
-            handler='cloud.localstack.sample.LambdaHandler'
-        )
-
         sns_client.subscribe(
             TopicArn=topic_arn,
             Protocol='lambda',
             Endpoint=aws_stack.lambda_function_arn(function_name)
         )
 
+        events_before = run_safe(get_lambda_log_events, function_name) or []
+
         s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
         time.sleep(2)
 
         # We got an event that confirm lambda invoked
-        retry(function=check_expected_lambda_log_events_length,
-              expected_length=1, retries=3, sleep=1,
-              function_name=function_name)
+        retry(function=check_expected_lambda_log_events_length, retries=3, sleep=1,
+              expected_length=len(events_before) + 1, function_name=function_name)
 
         # clean up
         sns_client.delete_topic(TopicArn=topic_arn)
