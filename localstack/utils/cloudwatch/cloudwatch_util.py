@@ -27,14 +27,18 @@ def publish_lambda_metric(metric, value, kwargs):
     if not config.service_port('cloudwatch'):
         return
     cw_client = aws_stack.connect_to_service('cloudwatch')
-    cw_client.put_metric_data(Namespace='AWS/Lambda',
-        MetricData=[{
-            'MetricName': metric,
-            'Dimensions': dimension_lambda(kwargs),
-            'Timestamp': datetime.now(),
-            'Value': value
-        }]
-    )
+    try:
+        cw_client.put_metric_data(Namespace='AWS/Lambda',
+            MetricData=[{
+                'MetricName': metric,
+                'Dimensions': dimension_lambda(kwargs),
+                'Timestamp': datetime.now(),
+                'Value': value
+            }]
+        )
+    except:
+        print("INFO: cloudwatch has not started, it seems.")
+
 
 
 def publish_lambda_duration(time_before, kwargs):
