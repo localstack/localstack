@@ -358,6 +358,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             ' %s'  # container name
             ' %s'  # run cmd
         ) % (copy_command, docker_cmd, exec_env_vars, container_info.name, command)
+        print('command', command)
         LOG.debug('Command for docker-reuse Lambda executor: %s' % cmd)
 
         return cmd
