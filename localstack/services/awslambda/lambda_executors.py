@@ -67,6 +67,10 @@ EVENT_SOURCE_SQS = 'aws:sqs'
 # IP address of main Docker container (lazily initialized)
 DOCKER_MAIN_CONTAINER_IP = None
 
+# whether to use our custom Java executor, or the default from lambci
+# TODO: deprecated, should be removed in the future
+USE_CUSTOM_JAVA_EXECUTOR = False
+
 
 def get_from_event(event, key):
     try:
@@ -210,9 +214,7 @@ class LambdaExecutor(object):
 
 
 class ContainerInfo:
-    """
-    Contains basic information about a docker container.
-    """
+    """ Contains basic information about a docker container. """
     def __init__(self, name, entry_point):
         self.name = name
         self.entry_point = entry_point
@@ -272,8 +274,8 @@ class LambdaExecutorContainers(LambdaExecutor):
         command = ''
         events_file = ''
 
-        # if running a Java Lambda, set up classpath arguments
-        if is_java_lambda(runtime):
+        if USE_CUSTOM_JAVA_EXECUTOR and is_java_lambda(runtime):
+            # if running a Java Lambda with our custom executor, set up classpath arguments
             java_opts = Util.get_java_opts()
             stdin = None
             # copy executor jar into temp directory

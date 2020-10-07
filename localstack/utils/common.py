@@ -643,9 +643,8 @@ def rm_rf(path):
 def cp_r(src, dst):
     """Recursively copies file/directory"""
     if os.path.isfile(src):
-        shutil.copy(src, dst)
-    else:
-        shutil.copytree(src, dst)
+        return shutil.copy(src, dst)
+    return shutil.copytree(src, dst)
 
 
 def download(url, path, verify_ssl=True):
@@ -787,6 +786,9 @@ def save_file(file, content, append=False):
     mode = 'a' if append else 'w+'
     if not isinstance(content, six.string_types):
         mode = mode + 'b'
+    # make sure that the parent dir exsits
+    mkdir(os.path.dirname(file))
+    # store file contents
     with open(file, mode) as f:
         f.write(content)
         f.flush()
