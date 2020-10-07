@@ -1355,8 +1355,6 @@ class TestJavaRuntimes(LambdaTestBase):
 
         # clean up
         sns_client.delete_topic(TopicArn=topic_arn)
-        testutil.delete_lambda_function(function_name)
-
         s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
         s3_client.delete_bucket(Bucket=bucket_name)
 

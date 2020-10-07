@@ -391,6 +391,8 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
         raw_message = event['message']
         if not raw_message or 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
             continue
+        if raw_message in ['\x1b[0m', '\\x1b[0m']:
+            continue
 
         try:
             rs.append(json.loads(raw_message))
