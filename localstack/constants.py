@@ -23,7 +23,7 @@ LOCALHOST = 'localhost'
 LOCALHOST_IP = '127.0.0.1'
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = '0.2.1'
+LOCALSTACK_MAVEN_VERSION = '0.2.5'
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
@@ -61,6 +61,7 @@ ENV_INTERNAL_TEST_RUN = 'LOCALSTACK_INTERNAL_TEST_RUN'
 # content types
 APPLICATION_AMZ_JSON_1_0 = 'application/x-amz-json-1.0'
 APPLICATION_AMZ_JSON_1_1 = 'application/x-amz-json-1.1'
+APPLICATION_AMZ_CBOR_1_1 = 'application/x-amz-cbor-1.1'
 APPLICATION_JSON = 'application/json'
 APPLICATION_XML = 'application/xml'
 APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'

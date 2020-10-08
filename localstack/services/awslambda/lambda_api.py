@@ -40,7 +40,7 @@ from localstack.services.awslambda.lambda_executors import (
 from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 from localstack.utils.common import (
     to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, json_safe,
-    mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, first_char_to_lower,
+    mkdir, unzip, is_zip_file, run, first_char_to_lower,
     timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
@@ -762,9 +762,8 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         if not is_zip_file(zip_file_content):
             raise ClientError(
                 'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
-        # Unzipping should only be required for (1) non-Java Lambdas, or (2) zip files containing JAR files
-        if not is_java or zip_contains_jar_entries(zip_file_content, 'lib/'):
-            unzip(tmp_file, lambda_cwd)
+        # Unzip the Lambda archive contents
+        unzip(tmp_file, lambda_cwd)
 
     # Obtain handler details for any non-Java Lambda function
     if not is_java:

@@ -108,8 +108,8 @@ def get_entity_id(entity, resource_json=None):
     for attr in attr_candidates:
         if hasattr(entity, attr):
             if attr in ['id', 'name'] and not isinstance(entity, types_with_ref_as_id_or_name):
-                LOG.warning('Unable to find ARN, using "%s" instead: %s - %s',
-                            attr, resource_json, entity)
+                LOG.warning('Unable to find ARN, using "%s" instead: %s - %s', attr, resource_json, entity)
+
             return getattr(entity, attr)
         if hasattr(entity, 'get_cfn_attribute'):
             try:
@@ -545,6 +545,20 @@ def apply_patches():
         {% endif %}
         """
         responses.DESCRIBE_STACKS_TEMPLATE = responses.DESCRIBE_STACKS_TEMPLATE.replace(find, replace)
+
+    resource_map_diff_orig = parsing.ResourceMap.diff
+
+    def resource_map_diff(self, template, parameters=None):
+        resources_diff = resource_map_diff_orig(self, template, parameters)
+        if resources_diff['Add'] or resources_diff['Remove'] or resources_diff['Modify']:
+            return resources_diff
+
+        raise ValidationError(
+            name_or_id='',
+            message='No updates are to be performed.'
+        )
+
+    parsing.ResourceMap.diff = resource_map_diff
 
     # Patch CloudFormationBackend.update_stack method in moto
     def make_cf_update_stack(cf_backend):

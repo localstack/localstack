@@ -1,5 +1,6 @@
 import json
 import random
+import cbor2
 from requests.models import Response
 from localstack import config
 from localstack.utils.common import to_str, json_safe, clone, timestamp_millis, now_utc
@@ -24,7 +25,7 @@ class ProxyListenerKinesis(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
         global STREAM_CONSUMERS
-        data = json.loads(to_str(data or '{}'))
+        data = self.decode_content(data or '{}')
         action = headers.get('X-Amz-Target')
 
         if action == '%s.RegisterStreamConsumer' % ACTION_PREFIX:
@@ -72,7 +73,7 @@ class ProxyListenerKinesis(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target')
-        data = json.loads(to_str(data or '{}'))
+        data = self.decode_content(data or '{}')
 
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):
@@ -83,7 +84,7 @@ class ProxyListenerKinesis(ProxyListener):
                 payload['s'] = data.get('ShardCount')
             event_publisher.fire_event(event_type, payload=payload)
         elif action == ACTION_PUT_RECORD:
-            response_body = json.loads(to_str(response.content))
+            response_body = self.decode_content(response.content)
             event_record = {
                 'approximateArrivalTimestamp': timestamp_millis(),
                 'data': data['Data'],
@@ -96,7 +97,7 @@ class ProxyListenerKinesis(ProxyListener):
             lambda_api.process_kinesis_records(event_records, stream_name)
         elif action == ACTION_PUT_RECORDS:
             event_records = []
-            response_body = json.loads(to_str(response.content))
+            response_body = self.decode_content(response.content)
             if 'Records' in response_body:
                 response_records = response_body['Records']
                 records = data['Records']
@@ -133,6 +134,13 @@ class ProxyListenerKinesis(ProxyListener):
             response.encoding = 'UTF-8'
             response._content = json.dumps(content)
             return response
+
+    def decode_content(self, data):
+        # return json.loads(to_str(data))
+        try:
+            return json.loads(to_str(data))
+        except UnicodeDecodeError:
+            return cbor2.loads(data)
 
 
 # instantiate listener

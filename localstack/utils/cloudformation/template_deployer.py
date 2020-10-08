@@ -1071,6 +1071,7 @@ def update_resource(resource_id, resources, stack_name):
         return
     LOG.info('Updating resource %s of type %s' % (resource_id, resource_type))
     props = resource['Properties']
+
     if resource_type == 'Lambda::Function':
         client = aws_stack.connect_to_service('lambda')
         keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
@@ -1078,7 +1079,12 @@ def update_resource(resource_id, resources, stack_name):
         update_props = resolve_refs_recursively(stack_name, update_props, resources)
         if 'Code' in props:
             client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
+        if 'Environment' in update_props:
+            environment_variables = update_props['Environment'].get('Variables', {})
+            update_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
+
         return client.update_function_configuration(**update_props)
+
     if resource_type == 'ApiGateway::Method':
         client = aws_stack.connect_to_service('apigateway')
         integration = props.get('Integration')
@@ -1095,6 +1101,7 @@ def update_resource(resource_id, resources, stack_name):
             kwargs['uri'] = integration.get('Uri')
             return client.put_integration(**kwargs)
         kwargs['authorizationType'] = props.get('AuthorizationType')
+
         return client.put_method(**kwargs)
 
 
