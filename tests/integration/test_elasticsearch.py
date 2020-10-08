@@ -66,7 +66,7 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertTrue(status['DomainStatus']['Created'])
         self.assertFalse(status['DomainStatus']['Processing'])
         self.assertFalse(status['DomainStatus']['Deleted'])
-        self.assertEqual(status['DomainStatus']['Endpoint'], 'http://localhost:%s' % config.PORT_ELASTICSEARCH)
+        self.assertEqual(status['DomainStatus']['Endpoint'], 'http://localhost:%s' % config.DEFAULT_PORT_EDGE)
         self.assertTrue(status['DomainStatus']['EBSOptions']['EBSEnabled'])
 
         # make sure we can fake adding tags to a domain

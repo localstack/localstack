@@ -139,7 +139,7 @@ def get_domain_config(domain_name):
 
 def get_domain_status(domain_name, deleted=False):
     status = ES_DOMAINS.get(domain_name) or {}
-    endpoint = '%s://%s:%s' % (get_service_protocol(), config.HOSTNAME_EXTERNAL, config.PORT_ELASTICSEARCH)
+    endpoint = '%s://%s:%s' % (get_service_protocol(), config.HOSTNAME_EXTERNAL, config.DEFAULT_PORT_EDGE)
     return {
         'DomainStatus': {
             'ARN': 'arn:aws:es:%s:%s:domain/%s' % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, domain_name),
