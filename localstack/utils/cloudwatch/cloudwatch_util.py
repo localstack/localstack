@@ -36,9 +36,8 @@ def publish_lambda_metric(metric, value, kwargs):
                 'Value': value
             }]
         )
-    except:
-        print("INFO: cloudwatch has not started, it seems.")
-
+    except Exception as e:
+        LOG.info('Unable to put metric data for metric "%s" to CloudWatch: %e' % (metric, e))
 
 
 def publish_lambda_duration(time_before, kwargs):
