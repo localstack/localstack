@@ -21,7 +21,8 @@ from localstack import config
 from localstack.config import USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON
 from localstack.utils.server import http2_server
-from localstack.utils.common import FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS, path_from_url
+from localstack.utils.common import (
+    FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS, path_from_url, Mock)
 from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.http_utils import uses_chunked_encoding, create_chunked_data
 from localstack.utils.aws.aws_responses import LambdaResponse
@@ -47,6 +48,9 @@ CORS_ALLOWED_METHODS = ('HEAD', 'GET', 'PUT', 'POST', 'DELETE', 'OPTIONS', 'PATC
 CORS_EXPOSE_HEADERS = ('x-amz-version-id', )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
+
+# Whether to update socket options (setting to blocking) if we run into "Resource temporarily unavailable"
+SET_SOCKET_TO_BLOCKING = False
 
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
@@ -446,7 +450,11 @@ class DuplexSocket(ssl.SSLSocket):
             return peek_ssl_header()
         except Exception:
             # Fix for "[Errno 11] Resource temporarily unavailable" - This can
-            # happen if we're using a non-blocking socket in a blocking thread
+            #   happen if we're using a non-blocking socket in a blocking thread.
+            # NOTE: This is currently disabled by default since it can result in deadlocks or
+            #   forever blocking socket connections (e.g., when connecting to S3 from Chrome browser)
+            if not SET_SOCKET_TO_BLOCKING:
+                return False
             newsock.setblocking(1)
             return peek_ssl_header()
 
@@ -464,9 +472,10 @@ async def _accept_connection2(self, protocol_factory, conn, extra, sslcontext, *
 
 
 # patch asyncio server to accept SSL and non-SSL traffic over same port
-if hasattr(BaseSelectorEventLoop, '_accept_connection2'):
+if hasattr(BaseSelectorEventLoop, '_accept_connection2') and not hasattr(BaseSelectorEventLoop, '_ls_patched'):
     _accept_connection2_orig = BaseSelectorEventLoop._accept_connection2
     BaseSelectorEventLoop._accept_connection2 = _accept_connection2
+    BaseSelectorEventLoop._ls_patched = True
 
 
 class GenericProxy(FuncThread):
@@ -548,11 +557,8 @@ def run_proxy_server_http2(port, listener=None, forward_url=None, asynchronous=T
         method = request.method
         headers = request.headers
 
-        class T:
-            pass
-
-        request_handler = T()
-        request_handler.proxy = T()
+        request_handler = Mock()
+        request_handler.proxy = Mock()
         request_handler.proxy.port = port
         response = modify_and_forward(method=method, path=path_with_params, data_bytes=data, headers=headers,
             forward_base_url=forward_url, listeners=[listener], request_handler=None,
