@@ -49,9 +49,6 @@ CORS_EXPOSE_HEADERS = ('x-amz-version-id', )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
 
-# Whether to update socket options (setting to blocking) if we run into "Resource temporarily unavailable"
-SET_SOCKET_TO_BLOCKING = False
-
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle each request in a separate thread."""
@@ -451,12 +448,12 @@ class DuplexSocket(ssl.SSLSocket):
         except Exception:
             # Fix for "[Errno 11] Resource temporarily unavailable" - This can
             #   happen if we're using a non-blocking socket in a blocking thread.
-            # NOTE: This is currently disabled by default since it can result in deadlocks or
-            #   forever blocking socket connections (e.g., when connecting to S3 from Chrome browser)
-            if not SET_SOCKET_TO_BLOCKING:
-                return config.USE_SSL
             newsock.setblocking(1)
-            return peek_ssl_header()
+            newsock.settimeout(1)
+            try:
+                return peek_ssl_header()
+            except Exception:
+                return False
 
 
 # set globally defined SSL socket implementation class
