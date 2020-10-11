@@ -18,7 +18,7 @@ from six.moves.socketserver import ThreadingMixIn
 from six.moves.urllib.parse import urlparse
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack import config
-from localstack.config import USE_SSL, EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
+from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON
 from localstack.utils.server import http2_server
 from localstack.utils.common import (
@@ -454,7 +454,7 @@ class DuplexSocket(ssl.SSLSocket):
             # NOTE: This is currently disabled by default since it can result in deadlocks or
             #   forever blocking socket connections (e.g., when connecting to S3 from Chrome browser)
             if not SET_SOCKET_TO_BLOCKING:
-                return False
+                return config.USE_SSL
             newsock.setblocking(1)
             return peek_ssl_header()
 
@@ -523,7 +523,7 @@ class GenericProxy(FuncThread):
 
     @classmethod
     def get_flask_ssl_context(cls, serial_number=None):
-        if USE_SSL:
+        if config.USE_SSL:
             _, cert_file_name, key_file_name = cls.create_ssl_cert(serial_number=serial_number)
             return (cert_file_name, key_file_name)
         return None
