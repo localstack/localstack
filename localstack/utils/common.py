@@ -485,6 +485,10 @@ def timestamp_millis(time=None):
     return microsecond_time[:-4] + microsecond_time[-1]
 
 
+def epoch_timestamp():
+    return time.time()
+
+
 def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
@@ -1127,7 +1131,6 @@ def run_cmd_safe(**kwargs):
 
 
 def run(cmd, cache_duration_secs=0, **kwargs):
-
     def do_run(cmd):
         return bootstrap.run(cmd, **kwargs)
 
@@ -1200,7 +1203,6 @@ class safe_requests(with_metaclass(_RequestsSafe)):
 
 
 def make_http_request(url, data=None, headers=None, method='GET'):
-
     if is_string(method):
         method = requests.__dict__[method.lower()]
 

@@ -3,7 +3,7 @@ import random
 import cbor2
 from requests.models import Response
 from localstack import config
-from localstack.utils.common import to_str, json_safe, clone, timestamp_millis, now_utc
+from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -86,7 +86,7 @@ class ProxyListenerKinesis(ProxyListener):
         elif action == ACTION_PUT_RECORD:
             response_body = self.decode_content(response.content)
             event_record = {
-                'approximateArrivalTimestamp': timestamp_millis(),
+                'approximateArrivalTimestamp': epoch_timestamp(),
                 'data': data['Data'],
                 'encryptionType': 'NONE',
                 'partitionKey': data['PartitionKey'],
@@ -104,7 +104,7 @@ class ProxyListenerKinesis(ProxyListener):
                 for index in range(0, len(records)):
                     record = records[index]
                     event_record = {
-                        'approximateArrivalTimestamp': timestamp_millis(),
+                        'approximateArrivalTimestamp': epoch_timestamp(),
                         'data': record['Data'],
                         'encryptionType': 'NONE',
                         'partitionKey': record['PartitionKey'],
