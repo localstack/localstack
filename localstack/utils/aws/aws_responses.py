@@ -1,5 +1,6 @@
 import re
 import json
+import binascii
 from flask import Response
 from binascii import crc32
 from requests.models import CaseInsensitiveDict
@@ -34,14 +35,35 @@ def requests_error_response_json(msg, code=500, error_type='InternalFailure'):
     return flask_to_requests_response(response)
 
 
-def requests_error_response_xml(message, code=400, code_string='InvalidParameter'):
+def requests_error_response_xml(service, message, code=400, code_string='InvalidParameter'):
     response = RequestsResponse()
-    response._content = """<ErrorResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/"><Error>
+    response._content = """<ErrorResponse xmlns="http://{service}.amazonaws.com/doc/2010-03-31/"><Error>
         <Type>Sender</Type>
         <Code>{code_string}</Code>
         <Message>{message}</Message>
         </Error><RequestId>{req_id}</RequestId>
-        </ErrorResponse>""".format(message=message, code_string=code_string, req_id=short_uid())
+        </ErrorResponse>""".format(service=service, message=message, code_string=code_string, req_id=short_uid())
+    response.status_code = code
+    return response
+
+
+def requests_error_response_xml_sign_not_valid_presign_url(string_to_sign, signature, message, code=400,
+        code_string='SignatureDoesNotMatch', aws_access_token='temp'):
+    response = RequestsResponse()
+    response._content = """<?xml version="1.0" encoding="UTF-8"?>
+    <Error>
+        <Code>{code_string}</Code>
+        <Message>{message}</Message>
+        <AWSAccessKeyId>{aws_access_token}</AWSAccessKeyId>
+        <StringToSign>{string_to_sign}</StringToSign>
+        <SignatureProvided>{signature}</SignatureProvided>
+        <StringToSignBytes>{signature_in_bytes}</StringToSignBytes>
+        <RequestId>{req_id}</RequestId>
+        <HostId>{host_id}</HostId>
+    </Error>""".format(message=message, code_string=code_string, req_id=short_uid(), host_id=short_uid(),
+                aws_access_token=aws_access_token, string_to_sign=string_to_sign, signature=signature,
+                signature_in_bytes=binascii.hexlify(bytes(signature, encoding='utf-8')))
+    print(response._content)
     response.status_code = code
     return response
 

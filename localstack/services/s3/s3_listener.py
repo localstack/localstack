@@ -14,7 +14,12 @@ import urllib.parse
 import six
 import botocore.config
 from pytz import timezone
+from urllib.parse import parse_qs
+from botocore.compat import urlsplit
 from botocore.client import ClientError
+from botocore.credentials import Credentials
+from localstack.utils.auth import HmacV1QueryAuth
+from botocore.awsrequest import create_request_object
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack import config, constants
@@ -27,7 +32,7 @@ from localstack.utils.common import (
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.persistence import PersistingProxyListener
-from localstack.utils.aws.aws_responses import requests_response
+from localstack.utils.aws.aws_responses import requests_response, requests_error_response_xml_sign_not_valid_presign_url
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
@@ -978,6 +983,13 @@ class ProxyListenerS3(PersistingProxyListener):
             return True
 
     def forward_request(self, method, path, data, headers):
+
+        # Detecting pre-sign url and checking signature
+        if 'Signature=' in path or 'Expires' in path:
+            response = authenticate_presign_url(method=method, path=path, data=data, headers=headers)
+            if response is not None:
+                return response
+
         # parse path and query params
         parsed_path = urlparse.urlparse(path)
 
@@ -1305,6 +1317,59 @@ class ProxyListenerS3(PersistingProxyListener):
                 response._content = gzip.compress(to_bytes(response._content))
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Encoding'] = 'gzip'
+
+
+def authenticate_presign_url(method, path, data=None, headers={}):
+    not_allowed_headers_in_sign = []
+    extra_headers = []
+    url = 'http://localhost:4566' + path
+    url_without_query_params = 'http://localhost:4566' + path.split('?')[0]
+    parsed = urlparse.urlparse(url)
+    query_params = parse_qs(parsed.query)
+    AWS_ACCESS_KEY = 'temp'
+    AWS_ACCESS_SECRET_KEY = 'temp'
+
+    # Fetching headers which has been setn to the requets
+    for header in headers:
+        key = header[0]
+        if key not in not_allowed_headers_in_sign:
+            extra_headers.append(header)
+
+    # Preparnig dictionary of request to build AWSRequest's object of the botocore
+    request_dict = {
+        'url_path': path.split('?')[0],
+        'query_string': {},
+        'method': method,
+        'headers': dict(extra_headers),
+        'body': b'',
+        'url': url_without_query_params,
+        'context': {
+            'is_presign_request': True,
+            'use_global_endpoint': True,
+            'signing': {
+                'bucket': str(path.split('?')[0]).split('/')[1]
+            }
+        }
+    }
+    aws_request = create_request_object(request_dict)
+
+    # Calculating Signature
+    credentials = Credentials(access_key=AWS_ACCESS_KEY, secret_key=AWS_ACCESS_SECRET_KEY)
+    auth = HmacV1QueryAuth(credentials=credentials, expires=query_params['Expires'][0])
+    split = urlsplit(aws_request.url)
+    string_to_sign = auth.get_string_to_sign(method=method, split=split, headers=aws_request.headers)
+    signature = auth.get_signature(string_to_sign=string_to_sign)
+    if query_params['Signature'][0] != signature:
+        return requests_error_response_xml_sign_not_valid_presign_url(
+            code=403,
+            aws_access_token=AWS_ACCESS_KEY,
+            string_to_sign=string_to_sign,
+            signature=signature,
+            message='The request signature we calculated does not match the signature you provided. \
+                    Check your key and signing method.')
+    # else if query_params['Signature'] == signature and query_params['Expires'] < str(time.time()):
+    # else if 'Signature' not in query_params:
+    # else if 'Expires' not in query_params:
 
 
 # instantiate listener
