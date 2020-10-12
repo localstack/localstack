@@ -334,7 +334,7 @@ class S3ListenerTest(unittest.TestCase):
         # waiting for the url to expire
         time.sleep(3)
         resp = requests.get(url, verify=False)
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 403)
 
         url = self.s3_client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=120
@@ -736,7 +736,7 @@ class S3ListenerTest(unittest.TestCase):
         dest_key2 = 'dest'
         url = self.s3_client.generate_presigned_url(
             'copy_object', Params={'Bucket': bucket_name, 'CopySource': {'Bucket': bucket_name, 'Key': src_key},
-                                   'Key': dest_key2}
+                                   'Key': dest_key2, 'ContentMD5': 'ignored_md5'}
         )
         # Set a Content-MD5 header that should be ignored on a copy request
         request_response = requests.put(url, verify=False, headers={'Content-MD5': 'ignored_md5'})
@@ -1389,3 +1389,30 @@ class S3ListenerTest(unittest.TestCase):
         )
         url = url + '&X-Amz-Credential=x&X-Amz-Signature=y'
         requests.put(url, data='something', verify=False)
+
+    def _presigned_url_signature_authentication_testing(self):
+        OBJECT_KEY = 'test.txt'
+        OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
+        BUCKET = 'presign-testing'
+
+        self.s3_client.create_bucket(Bucket=BUCKET)
+        presign_url = self.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=5
+        )
+
+        # Valid request
+        response = requests.put(presign_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        response = requests.put(presign_url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # Expired request
+        time.sleep(5)
+        response = requests.put(presign_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 403)
+
+        self.s3_client.delete_bucket(Bucket=BUCKET)
