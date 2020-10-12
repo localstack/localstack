@@ -19,8 +19,8 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
         # Fix Incorrect response content-type header from cloudwatch logs #1343
         response.headers['content-type'] = APPLICATION_AMZ_JSON_1_1
         str_content = re.sub(
-            r':1:',
-            ':{}:'.format(TEST_AWS_ACCOUNT_ID),
+            r'arn:aws:logs:([^:]+):1:',
+            r'arn:aws:logs:\1:%s:' % TEST_AWS_ACCOUNT_ID,
             to_str(response.content or '')
         )
         response._content = str.encode(str_content)
