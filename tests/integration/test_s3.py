@@ -739,10 +739,10 @@ class S3ListenerTest(unittest.TestCase):
         dest_key2 = 'dest'
         url = self.s3_client.generate_presigned_url(
             'copy_object', Params={'Bucket': bucket_name, 'CopySource': {'Bucket': bucket_name, 'Key': src_key},
-                                   'Key': dest_key2, 'ContentMD5': 'ignored_md5'}
+                                   'Key': dest_key2}
         )
-        # Set a Content-MD5 header that should be ignored on a copy request
-        request_response = requests.put(url, verify=False, headers={'Content-MD5': 'ignored_md5'})
+
+        request_response = requests.put(url, verify=False)
         self.assertEqual(request_response.status_code, 200)
 
         # Cleanup
