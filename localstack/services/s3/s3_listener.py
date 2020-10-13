@@ -986,7 +986,7 @@ class ProxyListenerS3(PersistingProxyListener):
     def forward_request(self, method, path, data, headers):
 
         # Detecting pre-sign url and checking signature
-        if 'Signature=' in path or 'Expires' in path:
+        if 'Signature' in path or 'Expires' in path or 'AWSAccessKeyId' in path:
             response = authenticate_presign_url(method=method, path=path, data=data, headers=headers)
             if response is not None:
                 return response
@@ -1321,16 +1321,16 @@ class ProxyListenerS3(PersistingProxyListener):
 
 
 def authenticate_presign_url(method, path, data=None, headers={}):
-    # 'not_allowed_headers_in_sign' conatins headers which don't get involved in signature calculations process
+    # ignored_headers conatins headers which don't get involved in signature calculations process
     # these headers are being sent by the localstack by default.
-    not_allowed_headers = [
+    ignored_headers = [
         'Remote-Addr', 'Host', 'User-Agent', 'Accept-Encoding',
-        'Accept', 'Connection', 'Origin', 'Content-Length',
+        'Accept', 'Connection', 'Origin',
         'X-Forwarded-For', 'x-localstack-edge', 'Authorization'
     ]
 
     sign_headers = []
-    url = 'http://localhost:4566' + path
+    url = 'http://localhost:4566{}'.format(path)
     parsed = urlparse.urlparse(url)
     query_params = parse_qs(parsed.query)
     AWS_ACCESS_KEY = 'temp'
@@ -1347,15 +1347,16 @@ def authenticate_presign_url(method, path, data=None, headers={}):
     # Fetching headers which has been sent to the requets
     for header in headers:
         key = header[0]
-        if key not in not_allowed_headers:
+        if key not in ignored_headers:
             sign_headers.append(header)
 
     # Request's headers are more essentials than the query parameters in the requets.
     # Different values of header in the header of the request and in the query paramter of the requets url
     # will fail the signature calulation. As per the AWS behaviour
+    presign_query_params = ['Signature', 'Expires', 'AWSAccessKeyId']
     if len(query_params) > 2:
         for key in query_params:
-            if key != 'Signature' and key != 'Expires' and key != 'AWSAccessKeyId':
+            if key not in presign_query_params:
                 if key.lower() not in (header[0].lower() for header in headers):
                     sign_headers.append((key, query_params[key][0]))
 
