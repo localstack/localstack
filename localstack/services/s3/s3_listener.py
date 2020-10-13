@@ -1322,7 +1322,12 @@ class ProxyListenerS3(PersistingProxyListener):
 
 def authenticate_presign_url(method, path, data=None, headers={}):
     # 'not_allowed_headers_in_sign' conatins headers which don't get involved in signature calculations process
-    not_allowed_headers = []
+    not_allowed_headers = [
+        'Remote-Addr', 'Host', 'User-Agent', 'Accept-Encoding',
+        'Accept', 'Connection', 'Origin', 'Content-Length',
+        'X-Forwarded-For', 'x-localstack-edge', 'Authorization', 'Content-Type'
+    ]
+
     sign_headers = []
     url = 'http://localhost:4566' + path
     parsed = urlparse.urlparse(url)
@@ -1342,6 +1347,11 @@ def authenticate_presign_url(method, path, data=None, headers={}):
         key = header[0]
         if key not in not_allowed_headers:
             sign_headers.append(header)
+
+    if len(query_params) > 2:
+        for key in query_params:
+            if key != 'Signature' and key != 'Expires' and key != 'AWSAccessKeyId':
+                sign_headers.append((key, query_params[key][0]))
 
     # Preparnig dictionary of request to build AWSRequest's object of the botocore
     request_dict = {
