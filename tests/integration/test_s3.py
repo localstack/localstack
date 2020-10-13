@@ -254,13 +254,16 @@ class S3ListenerTest(unittest.TestCase):
         bucket_name = 'test-bucket-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
+        metadata = {
+            'foo': 'bar'
+        }
+
         # put object
         object_key = 'key-by-hostname'
         url = self.s3_client.generate_presigned_url(
-            'put_object', Params={'Bucket': bucket_name, 'Key': object_key})
+            'put_object', Params={'Bucket': bucket_name, 'Key': object_key, 'Metadata': metadata})
         # append metadata manually to URL (this is not easily possible with boto3, as "Metadata" cannot
         # be passed to generate_presigned_url, and generate_presigned_post works differently)
-        url += '&x-amz-meta-foo=bar'
 
         # get object and assert metadata is present
         response = requests.put(url, data='content 123', verify=False)
