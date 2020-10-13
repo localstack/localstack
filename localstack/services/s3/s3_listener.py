@@ -1322,10 +1322,11 @@ class ProxyListenerS3(PersistingProxyListener):
 
 def authenticate_presign_url(method, path, data=None, headers={}):
     # 'not_allowed_headers_in_sign' conatins headers which don't get involved in signature calculations process
+    # these headers are being sent by the localstack by default.
     not_allowed_headers = [
         'Remote-Addr', 'Host', 'User-Agent', 'Accept-Encoding',
         'Accept', 'Connection', 'Origin', 'Content-Length',
-        'X-Forwarded-For', 'x-localstack-edge', 'Authorization', 'Content-Type'
+        'X-Forwarded-For', 'x-localstack-edge', 'Authorization'
     ]
 
     sign_headers = []
@@ -1335,6 +1336,7 @@ def authenticate_presign_url(method, path, data=None, headers={}):
     AWS_ACCESS_KEY = 'temp'
     AWS_ACCESS_SECRET_KEY = 'temp'
 
+    # Checking required parameters are present in url or not
     if 'Signature' not in query_params or 'Expires' not in query_params or 'AWSAccessKeyId' not in query_params:
         return requests_error_response_xml_presign_url_auth(
             code=403,
@@ -1342,16 +1344,20 @@ def authenticate_presign_url(method, path, data=None, headers={}):
             code_string='AccessDenied'
         )
 
-    # Fetching headers which has been setn to the requets
+    # Fetching headers which has been sent to the requets
     for header in headers:
         key = header[0]
         if key not in not_allowed_headers:
             sign_headers.append(header)
 
+    # Request's headers are more essentials than the query parameters in the requets.
+    # Different values of header in the header of the request and in the query paramter of the requets url
+    # will fail the signature calulation. As per the AWS behaviour
     if len(query_params) > 2:
         for key in query_params:
             if key != 'Signature' and key != 'Expires' and key != 'AWSAccessKeyId':
-                sign_headers.append((key, query_params[key][0]))
+                if key.lower() not in (header[0].lower() for header in headers):
+                    sign_headers.append((key, query_params[key][0]))
 
     # Preparnig dictionary of request to build AWSRequest's object of the botocore
     request_dict = {
@@ -1378,7 +1384,7 @@ def authenticate_presign_url(method, path, data=None, headers={}):
     string_to_sign = auth.get_string_to_sign(method=method, split=split, headers=aws_request.headers)
     signature = auth.get_signature(string_to_sign=string_to_sign)
 
-    # Comparing signature we got with signature we calculated
+    # Comparing the signature in url with signature we calculated
     if query_params['Signature'][0] != signature:
         return requests_error_response_xml_presign_url_auth(
             code=403,
