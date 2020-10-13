@@ -232,7 +232,7 @@ def get_api_from_custom_rules(method, path, data, headers):
     if stripped and '/' not in stripped:
         if method == 'HEAD':
             # assume that this is an S3 HEAD bucket request with URL path `/<bucket>`
-            return config.PORT_S3
+            return 's3', config.PORT_S3
         if method == 'PUT':
             # assume that this is an S3 PUT bucket request with URL path `/<bucket>`
             return 's3', config.PORT_S3
