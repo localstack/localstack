@@ -66,6 +66,7 @@ def requests_error_response_xml_presign_url_auth(message, string_to_sign=None, s
                     aws_access_token=aws_access_token, string_to_sign=string_to_sign, signature=signature,
                     signature_in_bytes=binascii.hexlify(bytes(signature, encoding='utf-8')))
         response.status_code = code
+        response.headers['Content-Length'] = str(len(response.content))
         return response
 
     if expires and code_string == 'AccessDenied':
@@ -81,6 +82,7 @@ def requests_error_response_xml_presign_url_auth(message, string_to_sign=None, s
         </Error>""".format(message=message, code_string=code_string, req_id=short_uid(), host_id=short_uid(),
                     expires=datetime.datetime.fromtimestamp(int(expires)).isoformat()[:-4], server_time=server_time)
         response.status_code = code
+        response.headers['Content-Length'] = str(len(response.content))
         return response
 
     if not signature and not expires and code_string == 'AccessDenied':
@@ -92,6 +94,7 @@ def requests_error_response_xml_presign_url_auth(message, string_to_sign=None, s
             <HostId>{host_id}</HostId>
         </Error>""".format(message=message, code_string=code_string, req_id=short_uid(), host_id=short_uid())
         response.status_code = code
+        response.headers['Content-Length'] = str(len(response.content))
         return response
 
 
