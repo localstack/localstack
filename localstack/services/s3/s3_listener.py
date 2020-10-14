@@ -1266,7 +1266,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
-            if method == 'PUT' and ('X-Amz-Security-Token=' in path or
+            if method == 'PUT' and response.status_code < 400 and ('X-Amz-Security-Token=' in path or
                     'X-Amz-Credential=' in path or 'AWSAccessKeyId=' in path):
                 response._content = ''
                 reset_content_length = True
