@@ -333,12 +333,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_url_expired(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         # put object and CORS configuration
@@ -408,11 +403,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_get_response_content_type_same_as_upload_and_range(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID)
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         # put object
@@ -465,12 +456,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_head_response_content_length_same_as_upload(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
         body = 'something body \n \n\r'
         # put object
@@ -516,12 +502,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_put_object_on_presigned_url(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
@@ -541,12 +522,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_post_object_on_presigned_post(self):
         bucket_name = 'test-presigned-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
@@ -566,12 +542,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_post_success_action_status_201_response(self):
         bucket_name = 'test-presigned-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
@@ -605,12 +576,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_post_expires(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         # presign a post with a short expiry time
@@ -636,12 +602,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_delete_response_content_length_zero(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         # put object
@@ -723,12 +684,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         # put object and CORS configuration
@@ -760,12 +716,7 @@ class S3ListenerTest(unittest.TestCase):
         # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
 
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         # put object
@@ -797,12 +748,7 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_copy_md5(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         # put object
@@ -907,12 +853,7 @@ class S3ListenerTest(unittest.TestCase):
     def test_s3_website_errordocument(self):
         # check that the error document is returned when configured
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
 
         client.create_bucket(Bucket=bucket_name)
         client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
@@ -959,11 +900,7 @@ class S3ListenerTest(unittest.TestCase):
     def test_s3_website_errordocument_missing(self):
         # check that 404 is returned when error document is configured but missing
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID)
+        client = self._get_test_client()
 
         client.create_bucket(Bucket=bucket_name)
         client.put_bucket_website(
@@ -1177,11 +1114,7 @@ class S3ListenerTest(unittest.TestCase):
         self._delete_bucket(bucket_name, keys)
 
     def test_cors_with_single_origin_error(self):
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID)
+        client = self._get_test_client()
 
         BUCKET_CORS_CONFIG = {
             'CORSRules': [{
@@ -1420,6 +1353,36 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [])
 
+    def test_presigned_url_signature_authentication(self):
+        client = self._get_test_client()
+
+        OBJECT_KEY = 'test.txt'
+        OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
+        BUCKET = 'presign-testing'
+
+        client.create_bucket(Bucket=BUCKET)
+        presign_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=3
+        )
+
+        # Valid request
+        response = requests.put(presign_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        response = requests.put(presign_url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # Expired request
+        time.sleep(3)
+        response = requests.put(presign_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 403)
+
+        client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
+        client.delete_bucket(Bucket=BUCKET)
+
     # ---------------
     # HELPER METHODS
     # ---------------
@@ -1490,48 +1453,17 @@ class S3ListenerTest(unittest.TestCase):
         )
 
     def _perform_presigned_url_upload(self, bucket, key):
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
-        )
+        client = self._get_test_client()
         url = client.generate_presigned_url(
             'put_object', Params={'Bucket': bucket, 'Key': key}
         )
         url = url + '&X-Amz-Credential=x&X-Amz-Signature=y'
         requests.put(url, data='something', verify=False)
 
-    def _presigned_url_signature_authentication_testing(self):
-        client = boto3.client(
+    def _get_test_client(self):
+        return boto3.client(
             's3',
-            endpoint_url='http://localhost:4566',
+            endpoint_url=config.get_edge_url(),
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
-
-        OBJECT_KEY = 'test.txt'
-        OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
-        BUCKET = 'presign-testing'
-
-        client.create_bucket(Bucket=BUCKET)
-        presign_url = client.generate_presigned_url(
-            'put_object',
-            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
-            ExpiresIn=5
-        )
-
-        # Valid request
-        response = requests.put(presign_url, data=OBJECT_DATA)
-        self.assertEqual(response.status_code, 200)
-
-        # Invalid request
-        response = requests.put(presign_url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
-
-        # Expired request
-        time.sleep(5)
-        response = requests.put(presign_url, data=OBJECT_DATA)
-        self.assertEqual(response.status_code, 403)
-
-        client.delete_bucket(Bucket=BUCKET)
