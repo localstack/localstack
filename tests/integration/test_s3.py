@@ -22,6 +22,7 @@ from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
@@ -238,8 +239,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
         )
         client.create_bucket(Bucket=bucket_name)
 
@@ -262,8 +263,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
         )
         client.create_bucket(Bucket=bucket_name)
 
@@ -335,8 +336,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
 
@@ -410,8 +411,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp')
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID)
         client.create_bucket(Bucket=bucket_name)
 
         # put object
@@ -467,8 +468,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
         body = 'something body \n \n\r'
@@ -518,8 +519,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
         body = 'something body'
@@ -543,8 +544,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
         body = 'something body'
@@ -568,8 +569,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
         body = 'something body'
@@ -607,8 +608,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
 
@@ -638,8 +639,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
 
@@ -725,8 +726,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
 
@@ -762,8 +763,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
 
@@ -799,8 +800,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         client.create_bucket(Bucket=bucket_name)
 
@@ -909,8 +910,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
 
         client.create_bucket(Bucket=bucket_name)
@@ -961,8 +962,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp')
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID)
 
         client.create_bucket(Bucket=bucket_name)
         client.put_bucket_website(
@@ -1179,8 +1180,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp')
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID)
 
         BUCKET_CORS_CONFIG = {
             'CORSRules': [{
@@ -1492,8 +1493,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
         url = client.generate_presigned_url(
             'put_object', Params={'Bucket': bucket, 'Key': key}
@@ -1505,8 +1506,8 @@ class S3ListenerTest(unittest.TestCase):
         client = boto3.client(
             's3',
             endpoint_url='http://localhost:4566',
-            aws_access_key_id='temp',
-            aws_secret_access_key='temp'
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
         )
 
         OBJECT_KEY = 'test.txt'
