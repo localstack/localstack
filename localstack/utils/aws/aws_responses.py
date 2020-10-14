@@ -1,6 +1,7 @@
 import re
 import json
 import binascii
+import xmltodict
 from flask import Response
 from binascii import crc32
 from requests.models import CaseInsensitiveDict
@@ -48,53 +49,47 @@ def requests_error_response_xml(service, message, code=400, code_string='Invalid
     return response
 
 
-def requests_error_response_xml_presign_url_auth(message, string_to_sign=None, signature=None, expires=None, code=400,
-        code_string='AccessDenied', aws_access_token='temp'):
+def requests_error_response_xml_signature_calculation(message, string_to_sign=None, signature=None, expires=None,
+        code=400, code_string='AccessDenied', aws_access_token='temp'):
     response = RequestsResponse()
-    if signature and string_to_sign or code_string == 'SignatureDoesNotMatch':
-        response._content = """<?xml version="1.0" encoding="UTF-8"?>
-        <Error>
-            <Code>{code_string}</Code>
-            <Message>{message}</Message>
-            <AWSAccessKeyId>{aws_access_token}</AWSAccessKeyId>
-            <StringToSign>{string_to_sign}</StringToSign>
-            <SignatureProvided>{signature}</SignatureProvided>
-            <StringToSignBytes>{signature_in_bytes}</StringToSignBytes>
-            <RequestId>{req_id}</RequestId>
-            <HostId>{host_id}</HostId>
-        </Error>""".format(message=message, code_string=code_string, req_id=short_uid(), host_id=short_uid(),
-                    aws_access_token=aws_access_token, string_to_sign=string_to_sign, signature=signature,
-                    signature_in_bytes=binascii.hexlify(bytes(signature, encoding='utf-8')))
-        response.status_code = code
-        response.headers['Content-Length'] = str(len(response.content))
-        return response
-
-    if expires and code_string == 'AccessDenied':
-        server_time = datetime.datetime.utcnow().isoformat()[:-4]
-        response._content = """<?xml version="1.0" encoding="UTF-8"?>
-        <Error>
-            <Code>{code_string}</Code>
-            <Message>{message}</Message>
-            <Expires>{expires}Z</Expires>
-            <ServerTime>{server_time}Z</ServerTime>
-            <RequestId>{req_id}</RequestId>
-            <HostId>{host_id}</HostId>
-        </Error>""".format(message=message, code_string=code_string, req_id=short_uid(), host_id=short_uid(),
-                    expires=datetime.datetime.fromtimestamp(int(expires)).isoformat()[:-4], server_time=server_time)
-        response.status_code = code
-        response.headers['Content-Length'] = str(len(response.content))
-        return response
-
-    if not signature and not expires and code_string == 'AccessDenied':
-        response._content = """<?xml version="1.0" encoding="UTF-8"?>
+    response_template = """<?xml version="1.0" encoding="UTF-8"?>
         <Error>
             <Code>{code_string}</Code>
             <Message>{message}</Message>
             <RequestId>{req_id}</RequestId>
             <HostId>{host_id}</HostId>
         </Error>""".format(message=message, code_string=code_string, req_id=short_uid(), host_id=short_uid())
-        response.status_code = code
-        response.headers['Content-Length'] = str(len(response.content))
+
+    parsed_response = xmltodict.parse(response_template)
+    response.status_code = code
+
+    if signature and string_to_sign or code_string == 'SignatureDoesNotMatch':
+
+        bytes_signature = binascii.hexlify(bytes(signature, encoding='utf-8'))
+        parsed_response['Error']['Code'] = code_string
+        parsed_response['Error']['AWSAccessKeyId'] = aws_access_token
+        parsed_response['Error']['StringToSign'] = string_to_sign
+        parsed_response['Error']['SignatureProvided'] = signature
+        parsed_response['Error']['StringToSignBytes'] = '{}'.format(bytes_signature.decode('utf-8'))
+        response._content = xmltodict.unparse(parsed_response)
+        response.headers['Content-Length'] = str(len(response._content))
+        return response
+
+    if expires and code_string == 'AccessDenied':
+
+        server_time = datetime.datetime.utcnow().isoformat()[:-4]
+        expires_isoformat = datetime.datetime.fromtimestamp(int(expires)).isoformat()[:-4]
+        parsed_response['Error']['Code'] = code_string
+        parsed_response['Error']['Expires'] = '{}Z'.format(expires_isoformat)
+        parsed_response['Error']['ServerTime'] = '{}Z'.format(server_time)
+        response._content = xmltodict.unparse(parsed_response)
+        response.headers['Content-Length'] = str(len(response._content))
+        return response
+
+    if not signature and not expires and code_string == 'AccessDenied':
+
+        response._content = xmltodict.unparse(parsed_response)
+        response.headers['Content-Length'] = str(len(response._content))
         return response
 
 
