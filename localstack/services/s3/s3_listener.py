@@ -1360,10 +1360,10 @@ def authenticate_presign_url(method, path, headers, data=None):
     # Request's headers are more essentials than the query parameters in the requets.
     # Different values of header in the header of the request and in the query paramter of the requets url
     # will fail the signature calulation. As per the AWS behaviour
-    presign_query_params = ['Signature', 'Expires', 'AWSAccessKeyId']
+    presign_params_lower = [p.lower() for p in PRESIGN_QUERY_PARAMS]
     if len(query_params) > 2:
         for key in query_params:
-            if key not in presign_query_params:
+            if key.lower() not in presign_params_lower:
                 if key.lower() not in (header[0].lower() for header in headers):
                     sign_headers.append((key, query_params[key][0]))
 
