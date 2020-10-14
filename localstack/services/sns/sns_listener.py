@@ -17,7 +17,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
-from localstack.utils.common import timestamp_millis, short_uid, to_str, to_bytes
+from localstack.utils.common import timestamp_millis, short_uid, to_str, to_bytes, start_thread
 from localstack.utils.persistence import PersistingProxyListener
 
 # set up logger
@@ -257,17 +257,7 @@ def unsubscribe_sqs_queue(queue_url):
                 subscriptions.remove(subscriber)
 
 
-def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
-    message = req_data['Message'][0]
-    message_id = str(uuid.uuid4())
-
-    LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
-
-    if topic_arn and ':endpoint/' in topic_arn:
-        # cache messages published to platform endpoints
-        cache = PLATFORM_ENDPOINT_MESSAGES[topic_arn] = PLATFORM_ENDPOINT_MESSAGES.get(topic_arn) or []
-        cache.append(req_data)
-
+def message_to_subscribers(message_id, message, topic_arn, req_data, subscription_arn=None, skip_checks=False):
     subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
     for subscriber in list(subscriptions):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
@@ -375,6 +365,19 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
         else:
             LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
+
+def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
+    message = req_data['Message'][0]
+    message_id = str(uuid.uuid4())
+
+    if topic_arn and ':endpoint/' in topic_arn:
+        # cache messages published to platform endpoints
+        cache = PLATFORM_ENDPOINT_MESSAGES[topic_arn] = PLATFORM_ENDPOINT_MESSAGES.get(topic_arn) or []
+        cache.append(req_data)
+
+    LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
+    start_thread(
+        lambda _: message_to_subscribers(message_id, message, topic_arn, req_data, subscription_arn, skip_checks))
     return message_id
 
 
