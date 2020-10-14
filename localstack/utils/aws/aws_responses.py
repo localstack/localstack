@@ -83,6 +83,8 @@ def response_regex_replace(response, search, replace):
 
 
 def set_response_content(response, content):
+    if isinstance(content, dict):
+        content = json.dumps(content)
     response._content = content or ''
     response.headers['Content-Length'] = str(len(response._content))
 
