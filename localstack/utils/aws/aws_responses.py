@@ -73,7 +73,6 @@ def requests_error_response_xml_signature_calculation(message, string_to_sign=No
         parsed_response['Error']['StringToSignBytes'] = '{}'.format(bytes_signature.decode('utf-8'))
         response._content = xmltodict.unparse(parsed_response)
         response.headers['Content-Length'] = str(len(response._content))
-        return response
 
     if expires and code_string == 'AccessDenied':
 
@@ -84,12 +83,13 @@ def requests_error_response_xml_signature_calculation(message, string_to_sign=No
         parsed_response['Error']['ServerTime'] = '{}Z'.format(server_time)
         response._content = xmltodict.unparse(parsed_response)
         response.headers['Content-Length'] = str(len(response._content))
-        return response
 
     if not signature and not expires and code_string == 'AccessDenied':
 
         response._content = xmltodict.unparse(parsed_response)
         response.headers['Content-Length'] = str(len(response._content))
+
+    if response._content:
         return response
 
 
