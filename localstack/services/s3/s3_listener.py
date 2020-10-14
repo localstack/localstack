@@ -33,7 +33,8 @@ from localstack.utils.common import (
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.persistence import PersistingProxyListener
-from localstack.utils.aws.aws_responses import requests_response, requests_error_response_xml_presign_url_auth
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.utils.aws.aws_responses import requests_response, requests_error_response_xml_signature_calculation
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
@@ -91,6 +92,17 @@ ALLOWED_HEADER_OVERRIDES = {
 # From botocore's auth.py:
 # https://github.com/boto/botocore/blob/30206ab9e9081c80fa68e8b2cb56296b09be6337/botocore/auth.py#L47
 POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+
+# ignored_headers_lower conatins headers which don't get involved in signature calculations process
+# these headers are being sent by the localstack by default.
+IGNORED_HEADERS_LOWER = [
+    'remote-addr', 'host', 'user-agent', 'accept-encoding',
+    'accept', 'connection', 'origin',
+    'x-forwarded-for', 'x-localstack-edge', 'authorization'
+]
+
+# params are required in presigned url
+PRESIGN_QUERY_PARAMS = ['Signature', 'Expires', 'AWSAccessKeyId']
 
 
 def event_type_matches(events, action, api_method):
@@ -985,8 +997,12 @@ class ProxyListenerS3(PersistingProxyListener):
 
     def forward_request(self, method, path, data, headers):
 
+        # Create list of query parameteres from the url
+        parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
+        query_params = parse_qs(parsed.query)
+
         # Detecting pre-sign url and checking signature
-        if 'Signature' in path or 'Expires' in path or 'AWSAccessKeyId' in path:
+        if any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
             response = authenticate_presign_url(method=method, path=path, data=data, headers=headers)
             if response is not None:
                 return response
@@ -1320,25 +1336,16 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.headers['Content-Encoding'] = 'gzip'
 
 
-def authenticate_presign_url(method, path, data=None, headers={}):
-    # ignored_headers conatins headers which don't get involved in signature calculations process
-    # these headers are being sent by the localstack by default.
-    ignored_headers = [
-        'Remote-Addr', 'Host', 'User-Agent', 'Accept-Encoding',
-        'Accept', 'Connection', 'Origin',
-        'X-Forwarded-For', 'x-localstack-edge', 'Authorization'
-    ]
+def authenticate_presign_url(method, path, headers, data=None):
 
     sign_headers = []
-    url = 'http://localhost:4566{}'.format(path)
+    url = '{}{}'.format(config.get_edge_url(), path)
     parsed = urlparse.urlparse(url)
     query_params = parse_qs(parsed.query)
-    AWS_ACCESS_KEY = 'temp'
-    AWS_ACCESS_SECRET_KEY = 'temp'
 
     # Checking required parameters are present in url or not
-    if 'Signature' not in query_params or 'Expires' not in query_params or 'AWSAccessKeyId' not in query_params:
-        return requests_error_response_xml_presign_url_auth(
+    if not all([p in query_params for p in PRESIGN_QUERY_PARAMS]):
+        return requests_error_response_xml_signature_calculation(
             code=403,
             message='Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters',
             code_string='AccessDenied'
@@ -1347,7 +1354,7 @@ def authenticate_presign_url(method, path, data=None, headers={}):
     # Fetching headers which has been sent to the requets
     for header in headers:
         key = header[0]
-        if key not in ignored_headers:
+        if key.lower() not in IGNORED_HEADERS_LOWER:
             sign_headers.append(header)
 
     # Request's headers are more essentials than the query parameters in the requets.
@@ -1379,7 +1386,7 @@ def authenticate_presign_url(method, path, data=None, headers={}):
     aws_request = create_request_object(request_dict)
 
     # Calculating Signature
-    credentials = Credentials(access_key=AWS_ACCESS_KEY, secret_key=AWS_ACCESS_SECRET_KEY)
+    credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY)
     auth = HmacV1QueryAuth(credentials=credentials, expires=query_params['Expires'][0])
     split = urlsplit(aws_request.url)
     string_to_sign = auth.get_string_to_sign(method=method, split=split, headers=aws_request.headers)
@@ -1387,18 +1394,18 @@ def authenticate_presign_url(method, path, data=None, headers={}):
 
     # Comparing the signature in url with signature we calculated
     if query_params['Signature'][0] != signature:
-        return requests_error_response_xml_presign_url_auth(
+        return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',
-            aws_access_token=AWS_ACCESS_KEY,
+            aws_access_token=TEST_AWS_ACCESS_KEY_ID,
             string_to_sign=string_to_sign,
             signature=signature,
             message='The request signature we calculated does not match the signature you provided. \
                     Check your key and signing method.')
 
     # Checking whether the url is expired or not
-    if query_params['Signature'][0] == signature and int(query_params['Expires'][0]) < time.time():
-        return requests_error_response_xml_presign_url_auth(
+    if int(query_params['Expires'][0]) < time.time():
+        return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='AccessDenied',
             message='Request has expired',
