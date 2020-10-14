@@ -78,7 +78,14 @@ def requests_to_flask_response(r):
 
 
 def response_regex_replace(response, search, replace):
-    response._content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
+    content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
+    set_response_content(response, content)
+
+
+def set_response_content(response, content):
+    if isinstance(content, dict):
+        content = json.dumps(content)
+    response._content = content or ''
     response.headers['Content-Length'] = str(len(response._content))
 
 
