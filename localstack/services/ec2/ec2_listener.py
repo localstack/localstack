@@ -17,11 +17,17 @@ def fix_creation_date(method, path, response):
     response.headers['Content-Length'] = str(len(response._content))
 
 
+def fix_error_tag(response):
+    # fix error root element from moto
+    response._content = re.sub(r'<(/?)ErrorResponse', r'<\1Response', to_str(response.content or ''))
+
+
 class ProxyListenerEC2(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
         if response.content:
             fix_creation_date(method, path, response)
+            fix_error_tag(response)
 
 
 # instantiate listener
