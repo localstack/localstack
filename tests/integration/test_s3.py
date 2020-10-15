@@ -236,12 +236,7 @@ class S3ListenerTest(unittest.TestCase):
         # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
 
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         # put object
@@ -260,12 +255,7 @@ class S3ListenerTest(unittest.TestCase):
         # Object metadata should be passed as query params via presigned URL
         # https://github.com/localstack/localstack/issues/544
         bucket_name = 'test-bucket-%s' % short_uid()
-        client = boto3.client(
-            's3',
-            endpoint_url='http://localhost:4566',
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
-        )
+        client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
         metadata = {
