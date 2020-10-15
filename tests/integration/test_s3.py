@@ -1455,5 +1455,5 @@ class S3ListenerTest(unittest.TestCase):
             's3',
             endpoint_url=config.get_edge_url(),
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=TEST_AWS_ACCESS_KEY_ID
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
         )
