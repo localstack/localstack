@@ -170,7 +170,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag=''
 def send_notifications(method, bucket_name, object_path, version_id):
     bucket_name = normalize_bucket_name(bucket_name)
     for bucket, notifs in S3_NOTIFICATIONS.items():
-        if bucket == bucket_name:
+        if bucket.lower() == bucket_name.lower():
             action = {'PUT': 'ObjectCreated', 'POST': 'ObjectCreated', 'DELETE': 'ObjectRemoved'}[method]
             # TODO: support more detailed methods, e.g., DeleteMarkerCreated
             # http://docs.aws.amazon.com/AmazonS3/latest/dev/NotificationHowTo.html
