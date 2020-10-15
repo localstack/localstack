@@ -29,6 +29,7 @@ def spec():
 
 @app.route('/graph', methods=['POST'])
 def get_graph():
+    # TODO remove?
     """ Get deployment graph
         ---
         operationId: 'getGraph'
@@ -38,7 +39,7 @@ def get_graph():
     """
     data = get_payload()
     env = Environment.from_string(data.get('awsEnvironment'))
-    graph = infra.get_graph(name_filter=data['nameFilter'], env=env)
+    graph = infra.get_graph(name_filter=data['nameFilter'], env=env, region=data.get('awsRegion'))
     return jsonify(graph)
 
 

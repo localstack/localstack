@@ -46,7 +46,7 @@ PLUGIN_SCOPE_COMMANDS = 'commands'
 API_DEPENDENCIES = {
     'dynamodbstreams': ['kinesis'],
     'es': ['elasticsearch'],
-    'lambda': ['logs'],
+    'lambda': ['logs', 'cloudwatch'],
     'kinesis': ['dynamodb'],
     'firehose': ['kinesis']
 }

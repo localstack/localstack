@@ -121,7 +121,7 @@ def get_kinesis_streams(filter='.*', pool={}, env=None):
                 pool[arn] = stream
                 stream.shards = get_kinesis_shards(stream_details=details, env=env)
                 result.append(stream)
-    except socket.error:
+    except Exception:
         pass
     return result
 
@@ -153,7 +153,7 @@ def get_sqs_queues(filter='.*', pool={}, env=None):
             if re.match(filter, name):
                 queue = SqsQueue(arn)
                 result.append(queue)
-    except socket.error:
+    except Exception:
         pass
     return result
 
@@ -237,7 +237,7 @@ def get_lambda_functions(filter='.*', details=False, pool={}, env=None):
         out = cmd_lambda('list-functions', env)
         out = json.loads(out)
         parallelize(handle, out['Functions'])
-    except socket.error:
+    except Exception:
         pass
     return result
 
@@ -320,7 +320,7 @@ def get_elasticsearch_domains(filter='.*', pool={}, env=None):
                 result.append(es)
                 pool[arn] = es
         parallelize(handle, out['DomainNames'])
-    except socket.error:
+    except Exception:
         pass
 
     return result
@@ -344,7 +344,7 @@ def get_dynamo_dbs(filter='.*', pool={}, env=None):
                 result.append(db)
                 pool[arn] = db
         parallelize(handle, out['TableNames'])
-    except socket.error:
+    except Exception:
         pass
     return result
 
@@ -377,7 +377,7 @@ def get_s3_buckets(filter='.*', pool={}, details=False, env=None):
         out = cmd_s3api('list-buckets', env)
         out = json.loads(out)
         parallelize(handle, out['Buckets'])
-    except socket.error:
+    except Exception:
         pass
     return result
 
@@ -399,7 +399,7 @@ def get_firehose_streams(filter='.*', pool={}, env=None):
                     bucket = EventSource.get(dest_s3, pool=pool)
                     s.destinations.append(bucket)
                 result.append(s)
-    except socket.error:
+    except Exception:
         pass
     return result
 
@@ -413,87 +413,84 @@ def read_kinesis_iterator(shard_iterator, max_results=10, env=None):
 
 
 def get_kinesis_events(stream_name, shard_id, max_results=10, env=None):
-    env = aws_stack.get_environment(env)
-    records = aws_stack.kinesis_get_latest_records(stream_name, shard_id, count=max_results, env=env)
-    for r in records:
-        r['ApproximateArrivalTimestamp'] = mktime(r['ApproximateArrivalTimestamp'])
-    result = {
-        'events': records
-    }
+    records = []
+    try:
+        env = aws_stack.get_environment(env)
+        records = aws_stack.kinesis_get_latest_records(stream_name, shard_id, count=max_results, env=env)
+        for r in records:
+            r['ApproximateArrivalTimestamp'] = mktime(r['ApproximateArrivalTimestamp'])
+    except Exception:
+        pass
+    result = {'events': records}
     return result
 
 
-def get_graph(name_filter='.*', env=None):
+def get_graph(name_filter='.*', env=None, **kwargs):
     result = {
         'nodes': [],
         'edges': []
     }
 
     pool = {}
+    node_ids = {}
 
-    if True:
-        result = {
-            'nodes': [],
-            'edges': []
-        }
-        node_ids = {}
-        # Make sure we load components in the right order:
-        # (ES,DynamoDB,S3) -> (Kinesis,Lambda)
-        domains = get_elasticsearch_domains(name_filter, pool=pool, env=env)
-        dbs = get_dynamo_dbs(name_filter, pool=pool, env=env)
-        buckets = get_s3_buckets(name_filter, details=True, pool=pool, env=env)
-        streams = get_kinesis_streams(name_filter, pool=pool, env=env)
-        firehoses = get_firehose_streams(name_filter, pool=pool, env=env)
-        lambdas = get_lambda_functions(name_filter, details=True, pool=pool, env=env)
-        queues = get_sqs_queues(name_filter, pool=pool, env=env)
+    # Make sure we load components in the right order:
+    # (ES,DynamoDB,S3) -> (Kinesis,Lambda)
+    domains = get_elasticsearch_domains(name_filter, pool=pool, env=env)
+    dbs = get_dynamo_dbs(name_filter, pool=pool, env=env)
+    buckets = get_s3_buckets(name_filter, details=True, pool=pool, env=env)
+    streams = get_kinesis_streams(name_filter, pool=pool, env=env)
+    firehoses = get_firehose_streams(name_filter, pool=pool, env=env)
+    lambdas = get_lambda_functions(name_filter, details=True, pool=pool, env=env)
+    queues = get_sqs_queues(name_filter, pool=pool, env=env)
 
-        for es in domains:
-            uid = short_uid()
-            node_ids[es.id] = uid
-            result['nodes'].append({'id': uid, 'arn': es.id, 'name': es.name(), 'type': 'es'})
-        for b in buckets:
-            uid = short_uid()
-            node_ids[b.id] = uid
-            result['nodes'].append({'id': uid, 'arn': b.id, 'name': b.name(), 'type': 's3'})
-        for db in dbs:
-            uid = short_uid()
-            node_ids[db.id] = uid
-            result['nodes'].append({'id': uid, 'arn': db.id, 'name': db.name(), 'type': 'dynamodb'})
-        for s in streams:
-            uid = short_uid()
-            node_ids[s.id] = uid
-            result['nodes'].append({'id': uid, 'arn': s.id, 'name': s.name(), 'type': 'kinesis'})
-            for shard in s.shards:
-                uid1 = short_uid()
-                name = re.sub(r'shardId-0*', '', shard.id) or '0'
-                result['nodes'].append({'id': uid1, 'arn': shard.id, 'name': name,
-                    'type': 'kinesis_shard', 'streamName': s.name(), 'parent': uid})
-        for f in firehoses:
-            uid = short_uid()
-            node_ids[f.id] = uid
-            result['nodes'].append({'id': uid, 'arn': f.id, 'name': f.name(), 'type': 'firehose'})
-            for d in f.destinations:
-                result['edges'].append({'source': uid, 'target': node_ids[d.id]})
-        for q in queues:
-            uid = short_uid()
-            node_ids[q.id] = uid
-            result['nodes'].append({'id': uid, 'arn': q.id, 'name': q.name(), 'type': 'sqs'})
-        for lda in lambdas:
-            uid = short_uid()
-            node_ids[lda.id] = uid
-            result['nodes'].append({'id': uid, 'arn': lda.id, 'name': lda.name(), 'type': 'lambda'})
-            for s in lda.event_sources:
-                lookup_id = s.id
-                if isinstance(s, DynamoDBStream):
-                    lookup_id = s.table.id
-                result['edges'].append({'source': node_ids.get(lookup_id), 'target': uid})
-            for t in lda.targets:
-                lookup_id = t.id
-                result['edges'].append({'source': uid, 'target': node_ids.get(lookup_id)})
-        for b in buckets:
-            for n in b.notifications:
-                src_uid = node_ids[b.id]
-                tgt_uid = node_ids[n.target.id]
-                result['edges'].append({'source': src_uid, 'target': tgt_uid})
+    for es in domains:
+        uid = short_uid()
+        node_ids[es.id] = uid
+        result['nodes'].append({'id': uid, 'arn': es.id, 'name': es.name(), 'type': 'es'})
+    for b in buckets:
+        uid = short_uid()
+        node_ids[b.id] = uid
+        result['nodes'].append({'id': uid, 'arn': b.id, 'name': b.name(), 'type': 's3'})
+    for db in dbs:
+        uid = short_uid()
+        node_ids[db.id] = uid
+        result['nodes'].append({'id': uid, 'arn': db.id, 'name': db.name(), 'type': 'dynamodb'})
+    for s in streams:
+        uid = short_uid()
+        node_ids[s.id] = uid
+        result['nodes'].append({'id': uid, 'arn': s.id, 'name': s.name(), 'type': 'kinesis'})
+        for shard in s.shards:
+            uid1 = short_uid()
+            name = re.sub(r'shardId-0*', '', shard.id) or '0'
+            result['nodes'].append({'id': uid1, 'arn': shard.id, 'name': name,
+                'type': 'kinesis_shard', 'streamName': s.name(), 'parent': uid})
+    for f in firehoses:
+        uid = short_uid()
+        node_ids[f.id] = uid
+        result['nodes'].append({'id': uid, 'arn': f.id, 'name': f.name(), 'type': 'firehose'})
+        for d in f.destinations:
+            result['edges'].append({'source': uid, 'target': node_ids[d.id]})
+    for q in queues:
+        uid = short_uid()
+        node_ids[q.id] = uid
+        result['nodes'].append({'id': uid, 'arn': q.id, 'name': q.name(), 'type': 'sqs'})
+    for lda in lambdas:
+        uid = short_uid()
+        node_ids[lda.id] = uid
+        result['nodes'].append({'id': uid, 'arn': lda.id, 'name': lda.name(), 'type': 'lambda'})
+        for s in lda.event_sources:
+            lookup_id = s.id
+            if isinstance(s, DynamoDBStream):
+                lookup_id = s.table.id
+            result['edges'].append({'source': node_ids.get(lookup_id), 'target': uid})
+        for t in lda.targets:
+            lookup_id = t.id
+            result['edges'].append({'source': uid, 'target': node_ids.get(lookup_id)})
+    for b in buckets:
+        for n in b.notifications:
+            src_uid = node_ids[b.id]
+            tgt_uid = node_ids[n.target.id]
+            result['edges'].append({'source': src_uid, 'target': tgt_uid})
 
     return result
