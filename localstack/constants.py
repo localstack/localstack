@@ -116,3 +116,7 @@ try:
     MAX_POOL_CONNECTIONS = int(os.environ['MAX_POOL_CONNECTIONS'])
 except Exception:
     MAX_POOL_CONNECTIONS = 150
+
+# test credentials being used while generating signature for S3 presign url
+TEST_AWS_ACCESS_KEY_ID = 'test'
+TEST_AWS_SECRET_ACCESS_KEY = 'test'

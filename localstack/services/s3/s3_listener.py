@@ -1,3 +1,4 @@
+import time
 import gzip
 import re
 import json
@@ -14,7 +15,12 @@ import urllib.parse
 import six
 import botocore.config
 from pytz import timezone
+from urllib.parse import parse_qs
+from botocore.compat import urlsplit
 from botocore.client import ClientError
+from botocore.credentials import Credentials
+from localstack.utils.auth import HmacV1QueryAuth
+from botocore.awsrequest import create_request_object
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack import config, constants
@@ -27,7 +33,8 @@ from localstack.utils.common import (
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.persistence import PersistingProxyListener
-from localstack.utils.aws.aws_responses import requests_response
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.utils.aws.aws_responses import requests_response, requests_error_response_xml_signature_calculation
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
@@ -85,6 +92,17 @@ ALLOWED_HEADER_OVERRIDES = {
 # From botocore's auth.py:
 # https://github.com/boto/botocore/blob/30206ab9e9081c80fa68e8b2cb56296b09be6337/botocore/auth.py#L47
 POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+
+# ignored_headers_lower conatins headers which don't get involved in signature calculations process
+# these headers are being sent by the localstack by default.
+IGNORED_HEADERS_LOWER = [
+    'remote-addr', 'host', 'user-agent', 'accept-encoding',
+    'accept', 'connection', 'origin',
+    'x-forwarded-for', 'x-localstack-edge', 'authorization'
+]
+
+# params are required in presigned url
+PRESIGN_QUERY_PARAMS = ['Signature', 'Expires', 'AWSAccessKeyId']
 
 
 def event_type_matches(events, action, api_method):
@@ -978,6 +996,17 @@ class ProxyListenerS3(PersistingProxyListener):
             return True
 
     def forward_request(self, method, path, data, headers):
+
+        # Create list of query parameteres from the url
+        parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
+        query_params = parse_qs(parsed.query)
+
+        # Detecting pre-sign url and checking signature
+        if any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
+            response = authenticate_presign_url(method=method, path=path, data=data, headers=headers)
+            if response is not None:
+                return response
+
         # parse path and query params
         parsed_path = urlparse.urlparse(path)
 
@@ -1237,7 +1266,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
-            if method == 'PUT' and ('X-Amz-Security-Token=' in path or
+            if method == 'PUT' and response.status_code < 400 and ('X-Amz-Security-Token=' in path or
                     'X-Amz-Credential=' in path or 'AWSAccessKeyId=' in path):
                 response._content = ''
                 reset_content_length = True
@@ -1305,6 +1334,83 @@ class ProxyListenerS3(PersistingProxyListener):
                 response._content = gzip.compress(to_bytes(response._content))
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Encoding'] = 'gzip'
+
+
+def authenticate_presign_url(method, path, headers, data=None):
+
+    sign_headers = []
+    url = '{}{}'.format(config.get_edge_url(), path)
+    parsed = urlparse.urlparse(url)
+    query_params = parse_qs(parsed.query)
+
+    # Checking required parameters are present in url or not
+    if not all([p in query_params for p in PRESIGN_QUERY_PARAMS]):
+        return requests_error_response_xml_signature_calculation(
+            code=403,
+            message='Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters',
+            code_string='AccessDenied'
+        )
+
+    # Fetching headers which has been sent to the requets
+    for header in headers:
+        key = header[0]
+        if key.lower() not in IGNORED_HEADERS_LOWER:
+            sign_headers.append(header)
+
+    # Request's headers are more essentials than the query parameters in the requets.
+    # Different values of header in the header of the request and in the query paramter of the requets url
+    # will fail the signature calulation. As per the AWS behaviour
+    presign_params_lower = [p.lower() for p in PRESIGN_QUERY_PARAMS]
+    if len(query_params) > 2:
+        for key in query_params:
+            if key.lower() not in presign_params_lower:
+                if key.lower() not in (header[0].lower() for header in headers):
+                    sign_headers.append((key, query_params[key][0]))
+
+    # Preparnig dictionary of request to build AWSRequest's object of the botocore
+    request_dict = {
+        'url_path': path.split('?')[0],
+        'query_string': {},
+        'method': method,
+        'headers': dict(sign_headers),
+        'body': b'',
+        'url': url.split('?')[0],
+        'context': {
+            'is_presign_request': True,
+            'use_global_endpoint': True,
+            'signing': {
+                'bucket': str(path.split('?')[0]).split('/')[1]
+            }
+        }
+    }
+    aws_request = create_request_object(request_dict)
+
+    # Calculating Signature
+    credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY)
+    auth = HmacV1QueryAuth(credentials=credentials, expires=query_params['Expires'][0])
+    split = urlsplit(aws_request.url)
+    string_to_sign = auth.get_string_to_sign(method=method, split=split, headers=aws_request.headers)
+    signature = auth.get_signature(string_to_sign=string_to_sign)
+
+    # Comparing the signature in url with signature we calculated
+    if query_params['Signature'][0] != signature:
+        return requests_error_response_xml_signature_calculation(
+            code=403,
+            code_string='SignatureDoesNotMatch',
+            aws_access_token=TEST_AWS_ACCESS_KEY_ID,
+            string_to_sign=string_to_sign,
+            signature=signature,
+            message='The request signature we calculated does not match the signature you provided. \
+                    Check your key and signing method.')
+
+    # Checking whether the url is expired or not
+    if int(query_params['Expires'][0]) < time.time():
+        return requests_error_response_xml_signature_calculation(
+            code=403,
+            code_string='AccessDenied',
+            message='Request has expired',
+            expires=query_params['Expires'][0]
+        )
 
 
 # instantiate listener

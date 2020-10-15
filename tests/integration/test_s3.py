@@ -1,6 +1,7 @@
 import io
 import os
 import ssl
+import boto3
 import gzip
 import json
 import time
@@ -21,6 +22,7 @@ from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
@@ -234,12 +236,13 @@ class S3ListenerTest(unittest.TestCase):
         # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
 
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
-        url = self.s3_client.generate_presigned_url(
+        client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key})
 
         # get object and assert headers
@@ -252,22 +255,26 @@ class S3ListenerTest(unittest.TestCase):
         # Object metadata should be passed as query params via presigned URL
         # https://github.com/localstack/localstack/issues/544
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
+
+        metadata = {
+            'foo': 'bar'
+        }
 
         # put object
         object_key = 'key-by-hostname'
-        url = self.s3_client.generate_presigned_url(
-            'put_object', Params={'Bucket': bucket_name, 'Key': object_key})
+        url = client.generate_presigned_url(
+            'put_object', Params={'Bucket': bucket_name, 'Key': object_key, 'Metadata': metadata})
         # append metadata manually to URL (this is not easily possible with boto3, as "Metadata" cannot
         # be passed to generate_presigned_url, and generate_presigned_post works differently)
-        url += '&x-amz-meta-foo=bar'
 
         # get object and assert metadata is present
         response = requests.put(url, data='content 123', verify=False)
         self.assertLess(response.status_code, 400)
         # response body should be empty, see https://github.com/localstack/localstack/issues/1317
         self.assertEqual('', to_str(response.content))
-        response = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)
+        response = client.head_object(Bucket=bucket_name, Key=object_key)
         self.assertEquals('bar', response.get('Metadata', {}).get('foo'))
 
         # clean up
@@ -316,14 +323,15 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_url_expired(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object and CORS configuration
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
 
         # get object and assert headers
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=2
         )
         # retrieving it before expiry
@@ -334,9 +342,9 @@ class S3ListenerTest(unittest.TestCase):
         # waiting for the url to expire
         time.sleep(3)
         resp = requests.get(url, verify=False)
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 403)
 
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=120
         )
 
@@ -385,16 +393,18 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_get_response_content_type_same_as_upload_and_range(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         object_key = '/foo/bar/key-by-hostname'
         content_type = 'foo/bar; charset=utf-8'
-        self.s3_client.put_object(Bucket=bucket_name,
-                                  Key=object_key,
-                                  Body='something ' * 20,
-                                  ContentType=content_type)
-        url = self.s3_client.generate_presigned_url(
+        client.put_object(Bucket=bucket_name,
+            Key=object_key,
+            Body='something ' * 20,
+            ContentType=content_type)
+
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
 
@@ -436,12 +446,13 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_head_response_content_length_same_as_upload(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
         body = 'something body \n \n\r'
         # put object
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body, ContentType='text/html; charset=utf-8')
-        url = self.s3_client.generate_presigned_url(
+        client.put_object(Bucket=bucket_name, Key=object_key, Body=body, ContentType='text/html; charset=utf-8')
+        url = client.generate_presigned_url(
             'head_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         # get object and assert headers
@@ -481,18 +492,19 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_put_object_on_presigned_url(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
         object_key = 'test-presigned-key'
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'put_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         # put object
         response = requests.put(url, data=body, verify=False)
         self.assertEqual(response.status_code, 200)
         # get object and compare results
-        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        downloaded_object = client.get_object(Bucket=bucket_name, Key=object_key)
         download_object = downloaded_object['Body'].read()
         self.assertEqual(to_str(body), to_str(download_object))
         # clean up
@@ -500,18 +512,19 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_post_object_on_presigned_post(self):
         bucket_name = 'test-presigned-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
         object_key = 'test-presigned-post-key'
-        presigned_request = self.s3_client.generate_presigned_post(
+        presigned_request = client.generate_presigned_post(
             Bucket=bucket_name, Key=object_key, ExpiresIn=60)
         # put object
         files = {'file': body}
         response = requests.post(presigned_request['url'], data=presigned_request['fields'], files=files, verify=False)
         self.assertIn(response.status_code, [200, 204])
         # get object and compare results
-        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        downloaded_object = client.get_object(Bucket=bucket_name, Key=object_key)
         download_object = downloaded_object['Body'].read()
         self.assertEqual(to_str(body), to_str(download_object))
         # clean up
@@ -519,11 +532,12 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_post_success_action_status_201_response(self):
         bucket_name = 'test-presigned-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
         object_key = 'key-${filename}'
-        presigned_request = self.s3_client.generate_presigned_post(
+        presigned_request = client.generate_presigned_post(
             Bucket=bucket_name,
             Key=object_key,
             Fields={'success_action_status': 201},
@@ -552,11 +566,12 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_post_expires(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # presign a post with a short expiry time
         object_key = 'test-presigned-post-key'
-        presigned_request = self.s3_client.generate_presigned_post(
+        presigned_request = client.generate_presigned_post(
             Bucket=bucket_name,
             Key=object_key,
             ExpiresIn=2
@@ -577,15 +592,16 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_delete_response_content_length_zero(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name,
-                                  Key=object_key,
-                                  Body='something',
-                                  ContentType='text/html; charset=utf-8')
-        url = self.s3_client.generate_presigned_url(
+        client.put_object(Bucket=bucket_name,
+            Key=object_key,
+            Body='something',
+            ContentType='text/html; charset=utf-8')
+        url = client.generate_presigned_url(
             'delete_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
 
@@ -658,12 +674,13 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object and CORS configuration
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
-        self.s3_client.put_bucket_cors(Bucket=bucket_name,
+        client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        client.put_bucket_cors(Bucket=bucket_name,
             CORSConfiguration={
                 'CORSRules': [{
                     'AllowedMethods': ['GET', 'PUT', 'POST'],
@@ -676,7 +693,7 @@ class S3ListenerTest(unittest.TestCase):
         )
 
         # get object and assert headers
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         response = requests.get(url, verify=False)
@@ -689,14 +706,15 @@ class S3ListenerTest(unittest.TestCase):
         # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
 
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
 
         # get object and assert headers
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={
                 'Bucket': bucket_name,
                 'Key': object_key,
@@ -720,26 +738,33 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_copy_md5(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         src_key = 'src'
-        self.s3_client.put_object(Bucket=bucket_name, Key=src_key, Body='something')
+        client.put_object(Bucket=bucket_name, Key=src_key, Body='something')
 
         # copy object
         dest_key = 'dest'
-        response = self.s3_client.copy_object(Bucket=bucket_name, CopySource={'Bucket': bucket_name, 'Key': src_key},
-                                              Key=dest_key)
+        response = client.copy_object(
+            Bucket=bucket_name,
+            CopySource={
+                'Bucket': bucket_name,
+                'Key': src_key
+            },
+            Key=dest_key
+        )
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
         # Create copy object to try to match s3a setting Content-MD5
         dest_key2 = 'dest'
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'copy_object', Params={'Bucket': bucket_name, 'CopySource': {'Bucket': bucket_name, 'Key': src_key},
                                    'Key': dest_key2}
         )
-        # Set a Content-MD5 header that should be ignored on a copy request
-        request_response = requests.put(url, verify=False, headers={'Content-MD5': 'ignored_md5'})
+
+        request_response = requests.put(url, verify=False)
         self.assertEqual(request_response.status_code, 200)
 
         # Cleanup
@@ -818,63 +843,67 @@ class S3ListenerTest(unittest.TestCase):
     def test_s3_website_errordocument(self):
         # check that the error document is returned when configured
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
-        self.s3_client.put_bucket_website(
+        client = self._get_test_client()
+
+        client.create_bucket(Bucket=bucket_name)
+        client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
+        client.put_bucket_website(
             Bucket=bucket_name,
             WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
         )
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
         )
         response = requests.get(url, verify=False)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, 'This is the error document')
         # cleanup
-        self.s3_client.delete_object(Bucket=bucket_name, Key='error.html')
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        client.delete_object(Bucket=bucket_name, Key='error.html')
+        client.delete_bucket(Bucket=bucket_name)
 
         # check that normal responses are returned for bucket with index configuration, but not error document
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_bucket_website(
+        client.create_bucket(Bucket=bucket_name)
+        client.put_bucket_website(
             Bucket=bucket_name,
             WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'}}
         )
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
         )
         response = requests.get(url, verify=False)
         self.assertEqual(response.status_code, 404)
         # cleanup
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        client.delete_bucket(Bucket=bucket_name)
 
         # check that normal responses are returned for bucket without configuration
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        url = self.s3_client.generate_presigned_url(
+        client.create_bucket(Bucket=bucket_name)
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
         )
         response = requests.get(url, verify=False)
         self.assertEqual(response.status_code, 404)
         # cleanup
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        client.delete_bucket(Bucket=bucket_name)
 
     def test_s3_website_errordocument_missing(self):
         # check that 404 is returned when error document is configured but missing
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_bucket_website(
+        client = self._get_test_client()
+
+        client.create_bucket(Bucket=bucket_name)
+        client.put_bucket_website(
             Bucket=bucket_name,
             WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
         )
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
         )
         response = requests.get(url, verify=False)
         self.assertEqual(response.status_code, 404)
 
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        client.delete_bucket(Bucket=bucket_name)
 
     def test_s3_event_notification_with_sqs(self):
         key_by_path = 'aws/bucket=2020/test1.txt'
@@ -1075,7 +1104,7 @@ class S3ListenerTest(unittest.TestCase):
         self._delete_bucket(bucket_name, keys)
 
     def test_cors_with_single_origin_error(self):
-        client = self.s3_client
+        client = self._get_test_client()
 
         BUCKET_CORS_CONFIG = {
             'CORSRules': [{
@@ -1314,6 +1343,36 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [])
 
+    def test_presigned_url_signature_authentication(self):
+        client = self._get_test_client()
+
+        OBJECT_KEY = 'test.txt'
+        OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
+        BUCKET = 'presign-testing'
+
+        client.create_bucket(Bucket=BUCKET)
+        presign_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=3
+        )
+
+        # Valid request
+        response = requests.put(presign_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        response = requests.put(presign_url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # Expired request
+        time.sleep(3)
+        response = requests.put(presign_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 403)
+
+        client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
+        client.delete_bucket(Bucket=BUCKET)
+
     # ---------------
     # HELPER METHODS
     # ---------------
@@ -1384,8 +1443,17 @@ class S3ListenerTest(unittest.TestCase):
         )
 
     def _perform_presigned_url_upload(self, bucket, key):
-        url = self.s3_client.generate_presigned_url(
+        client = self._get_test_client()
+        url = client.generate_presigned_url(
             'put_object', Params={'Bucket': bucket, 'Key': key}
         )
         url = url + '&X-Amz-Credential=x&X-Amz-Signature=y'
         requests.put(url, data='something', verify=False)
+
+    def _get_test_client(self):
+        return boto3.client(
+            's3',
+            endpoint_url=config.get_edge_url(),
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
+        )
