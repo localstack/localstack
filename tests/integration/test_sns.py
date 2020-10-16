@@ -25,6 +25,7 @@ TEST_TOPIC_NAME = 'TestTopic_snsTest'
 TEST_QUEUE_NAME = 'TestQueue_snsTest'
 TEST_QUEUE_DLQ_NAME = 'TestQueue_DLQ_snsTest'
 TEST_TOPIC_NAME_2 = 'topic-test-2'
+PUBLICATION_TIMEOUT = .500
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
@@ -54,6 +55,7 @@ class SNSTest(unittest.TestCase):
         # publish message to SNS, receive it from SQS, assert that messages are equal
         message = u'ö§a1"_!?,. £$-'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message)
+        time.sleep(PUBLICATION_TIMEOUT)
         msgs = self.sqs_client.receive_message(QueueUrl=queue_url)
         msg_received = msgs['Messages'][0]
         msg_received = json.loads(to_str(msg_received['Body']))
@@ -123,7 +125,7 @@ class SNSTest(unittest.TestCase):
         # https://github.com/localstack/localstack/issues/2432
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
                                 MessageAttributes={'store': {'DataType': 'Binary', 'BinaryValue': binary_attribute}})
-
+        time.sleep(PUBLICATION_TIMEOUT)
         msgs = self.sqs_client.receive_message(QueueUrl=self.queue_url, MessageAttributeNames=['All'])
         msg_received = msgs['Messages'][0]
 
@@ -151,6 +153,7 @@ class SNSTest(unittest.TestCase):
         message = u'This is a test message'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
             MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99'}})
+        time.sleep(PUBLICATION_TIMEOUT)
         num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_1, num_msgs_0 + 1)
 
@@ -188,6 +191,7 @@ class SNSTest(unittest.TestCase):
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
                                 MessageAttributes={'store': {'DataType': 'Number', 'StringValue': '99'},
                                                    'def': {'DataType': 'Number', 'StringValue': '99'}})
+        time.sleep(PUBLICATION_TIMEOUT)
         num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_1, num_msgs_0 + 1)
 
@@ -195,6 +199,7 @@ class SNSTest(unittest.TestCase):
         message = u'This is a test message'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
                                 MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '111'}})
+        time.sleep(PUBLICATION_TIMEOUT)
         num_msgs_2 = len(self.sqs_client.receive_message(QueueUrl=queue_url, VisibilityTimeout=0)['Messages'])
         self.assertEqual(num_msgs_2, num_msgs_1)
 
@@ -210,6 +215,7 @@ class SNSTest(unittest.TestCase):
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
                                 MessageAttributes={'store': {'DataType': 'Number', 'StringValue': '99'},
                                                    'def': {'DataType': 'Number', 'StringValue': '99'}})
+        time.sleep(PUBLICATION_TIMEOUT)
         num_msgs_1 = len(self.sqs_client.receive_message(QueueUrl=self.queue_url,
                                                          VisibilityTimeout=0).get('Messages', []))
         self.assertEqual(num_msgs_1, num_msgs_0)
@@ -243,6 +249,7 @@ class SNSTest(unittest.TestCase):
         sns = self.sns_client
         app_arn = sns.create_platform_application(Name='app1', Platform='p1', Attributes={})['PlatformApplicationArn']
         platform_arn = sns.create_platform_endpoint(PlatformApplicationArn=app_arn, Token='token_1')['EndpointArn']
+        time.sleep(PUBLICATION_TIMEOUT)
         subscription = self._publish_sns_message_with_attrs(platform_arn, 'application')
 
         # assert that message has been received
@@ -270,6 +277,7 @@ class SNSTest(unittest.TestCase):
         message = u'This is a test message'
         self.sns_client.publish(TopicArn=self.topic_arn, Message=message,
                                 MessageAttributes={'attr1': {'DataType': 'Number', 'StringValue': '99.12'}})
+        time.sleep(PUBLICATION_TIMEOUT)
         return subscription
 
     def test_unknown_topic_publish(self):
@@ -355,6 +363,7 @@ class SNSTest(unittest.TestCase):
             Protocol='email',
             Endpoint='localstack@yopmail.com'
         )
+        time.sleep(PUBLICATION_TIMEOUT)
         subscription_arn = subscription['SubscriptionArn']
         subscription_obj = sns_listener.SUBSCRIPTION_STATUS[subscription_arn]
         self.assertEqual(subscription_obj['Status'], 'Not Subscribed')
@@ -384,6 +393,7 @@ class SNSTest(unittest.TestCase):
             lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1,
         }
         self.sns_client.publish(TopicArn=topic_arn, Message=json.dumps(payload))
+        time.sleep(PUBLICATION_TIMEOUT)
 
         def receive_dlq():
             result = self.sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
@@ -426,6 +436,7 @@ class SNSTest(unittest.TestCase):
         time.sleep(5)
 
         self.sns_client.publish(TopicArn=self.topic_arn, Message=json.dumps({'message': 'test_redrive_policy'}))
+        time.sleep(PUBLICATION_TIMEOUT)
 
         def receive_dlq():
             result = self.sqs_client.receive_message(QueueUrl=self.dlq_url, MessageAttributeNames=['All'])
