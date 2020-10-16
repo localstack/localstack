@@ -769,9 +769,9 @@ class Util:
             opts = opts.replace('_debug_port_', ('%s' % cls.debug_java_port))
         else:
             # Parse the debug port from opts
-            m = re.match('.*address=(\\d+).*', opts)
+            m = re.match('.*address=(.+:)?(\\d+).*', opts)
             if m is not None:
-                cls.debug_java_port = m.groups()[0]
+                cls.debug_java_port = m.groups()[1]
 
         return opts
 
