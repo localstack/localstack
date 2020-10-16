@@ -1,6 +1,4 @@
-import re
-from datetime import datetime
-from localstack.utils.common import to_str
+from localstack.utils.common import _replace
 from localstack.services.generic_proxy import ProxyListener
 
 
@@ -8,26 +6,19 @@ class ProxyListenerCloudWatch(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
         # Fix Incorrect date format to iso 8601
-        str_content = to_str(response.content)
-        date_tag_regex = '<AlarmConfigurationUpdatedTimestamp>(.*?)</AlarmConfigurationUpdatedTimestamp>'
-        replace_str = '<AlarmConfigurationUpdatedTimestamp>%s</AlarmConfigurationUpdatedTimestamp>'
-        str_content = self.update_date_format(str_content, date_tag_regex, replace_str)
-        date_tag_regex = '<StateUpdatedTimestamp>(.*?)</StateUpdatedTimestamp>'
-        replace_str = '<StateUpdatedTimestamp>%s</StateUpdatedTimestamp>'
-        str_content = self.update_date_format(str_content, date_tag_regex, replace_str)
-        response.headers['content-length'] = len(str_content)
-        response._content = str.encode(str_content)
+        timestamp_tags = [
+            'AlarmConfigurationUpdatedTimestamp',
+            'StateUpdatedTimestamp'
+        ]
+        for tag in timestamp_tags:
+            self.fix_date_format(response, tag)
+        response.headers['content-length'] = len(response.content)
 
-    def update_date_format(self, str_content, date_tag_regex, replace_str):
-        search_result = re.compile(date_tag_regex).search(str_content)
-        if search_result:
-            date = datetime.strptime(search_result.group(1), '%Y-%m-%d %H:%M:%S.%f')
-            date_iso = date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-            str_content = str_content.replace(
-                replace_str % search_result.group(1),
-                replace_str % date_iso
-            )
-        return str_content
+    def fix_date_format(self, response, timestamp_tag):
+        """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
+        pattern = r'<{}>([^<]+) ([^<+]+)(\+[^<]*)?</{}>'.format(timestamp_tag, timestamp_tag)
+        replacement = r'<{}>\1T\2Z</{}>'.format(timestamp_tag, timestamp_tag)
+        _replace(response, pattern, replacement)
 
 
 # instantiate listener
