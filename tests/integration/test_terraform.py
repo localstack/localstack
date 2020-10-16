@@ -3,7 +3,7 @@ import unittest
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import run
 
-BUCKET_NAME = 'test-bucket'
+BUCKET_NAME = 'tf-bucket'
 
 
 class TestTerraform(unittest.TestCase):
