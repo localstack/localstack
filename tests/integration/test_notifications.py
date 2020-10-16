@@ -1,5 +1,6 @@
 import json
 import unittest
+import time
 from io import BytesIO
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
@@ -10,6 +11,7 @@ TEST_QUEUE_NAME_FOR_S3 = 'test_queue'
 TEST_TOPIC_NAME = 'test_topic_name_for_sqs'
 TEST_S3_TOPIC_NAME = 'test_topic_name_for_s3_to_sns_to_sqs'
 TEST_QUEUE_NAME_FOR_SNS = 'test_queue_for_sns'
+PUBLICATION_TIMEOUT = 0.500
 
 
 class TestNotifications(unittest.TestCase):
@@ -35,6 +37,7 @@ class TestNotifications(unittest.TestCase):
         test_value = short_uid()
         sns_client.publish(TopicArn=topic_info['TopicArn'], Message='test message for SQS',
             MessageAttributes={'attr1': {'DataType': 'String', 'StringValue': test_value}})
+        time.sleep(PUBLICATION_TIMEOUT)
 
         # receive, assert, and delete message from SQS
         queue_url = queue_info['QueueUrl']
@@ -189,6 +192,7 @@ class TestNotifications(unittest.TestCase):
         test_data2 = b'{"test": "bucket_notification2"}'
 
         s3_client.upload_fileobj(BytesIO(test_data2), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_key2)
+        time.sleep(PUBLICATION_TIMEOUT)
 
         # verify subject and records
 
