@@ -85,6 +85,15 @@ RUN mkdir -p /opt/code/localstack/localstack/infra && \
         bin/elasticsearch-plugin install analysis-smartcn && \
         bin/elasticsearch-plugin install analysis-stempel && \
         bin/elasticsearch-plugin install analysis-ukrainian)
+
+# installing terraform temporary - removed in the final docker image
+# TODO: Remove $PATH variable from the final docker image
+ARG TERRAFORM_ZIP_URL=https://releases.hashicorp.com/terraform/0.13.4/terraform_0.13.4_linux_amd64.zip
+RUN mkdir -p /opt/terraform && \
+    curl -L -o /opt/terraform/terraform.zip ${TERRAFORM_ZIP_URL} && \
+    (cd /opt/terraform && unzip -q /opt/terraform/terraform.zip && rm /opt/terraform/terraform.zip)
+ENV PATH="${PATH}:/opt/terraform"
+
 ADD requirements.txt .
 RUN (pip install --upgrade pip) && \
     (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
