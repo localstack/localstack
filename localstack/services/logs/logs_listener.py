@@ -1,7 +1,7 @@
 import re
 from requests.models import Request
 from localstack.utils.common import to_str
-from localstack.constants import APPLICATION_AMZ_JSON_1_1
+from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
 from localstack.services.generic_proxy import ProxyListener
 
 
@@ -18,8 +18,13 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         # Fix Incorrect response content-type header from cloudwatch logs #1343
         response.headers['content-type'] = APPLICATION_AMZ_JSON_1_1
-
-        if 'nextToken' in to_str(response.content or ''):
+        str_content = re.sub(
+            r'arn:aws:logs:([^:]+):1:',
+            r'arn:aws:logs:\1:%s:' % TEST_AWS_ACCOUNT_ID,
+            to_str(response.content or '')
+        )
+        response._content = str.encode(str_content)
+        if 'nextToken' in str_content:
             self._fix_next_token_response(response)
             response.headers['content-length'] = str(len(response._content))
 

@@ -31,10 +31,13 @@ ACTION_PREFIX = 'DynamoDB_20120810'
 GLOBAL_TABLES = {}
 
 # list of actions subject to throughput limitations
-THROTTLED_ACTIONS = [
-    'PutItem', 'BatchWriteItem', 'UpdateItem', 'DeleteItem', 'TransactWriteItems',
+READ_THROTTLED_ACTIONS = [
     'GetItem', 'Query', 'Scan', 'TransactGetItems', 'BatchGetItem'
 ]
+WRITE_THROTTLED_ACTIONS = [
+    'PutItem', 'BatchWriteItem', 'UpdateItem', 'DeleteItem', 'TransactWriteItems',
+]
+THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 
 
 class ProxyListenerDynamoDB(ProxyListener):
@@ -57,6 +60,24 @@ class ProxyListenerDynamoDB(ProxyListener):
                 return True
         return False
 
+    def action_should_throttle(self, action, actions):
+        throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in actions]
+        return action in throttled
+
+    def should_throttle(self, action):
+        rand = random.random()
+        if (rand < config.DYNAMODB_READ_ERROR_PROBABILITY and
+                self.action_should_throttle(action, READ_THROTTLED_ACTIONS)):
+            return True
+        elif (rand < config.DYNAMODB_WRITE_ERROR_PROBABILITY and
+                self.action_should_throttle(action, WRITE_THROTTLED_ACTIONS)):
+            return True
+        elif (rand < config.DYNAMODB_ERROR_PROBABILITY and
+                self.action_should_throttle(action, THROTTLED_ACTIONS)):
+            return True
+        else:
+            return False
+
     def forward_request(self, method, path, data, headers):
         if path.startswith('/shell') or method == 'GET':
             if path == '/shell':
@@ -73,10 +94,8 @@ class ProxyListenerDynamoDB(ProxyListener):
         ddb_client = aws_stack.connect_to_service('dynamodb')
         action = headers.get('X-Amz-Target')
 
-        if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
-            throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in THROTTLED_ACTIONS]
-            if action in throttled:
-                return error_response_throughput()
+        if self.should_throttle(action):
+            return self.error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
 

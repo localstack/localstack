@@ -1,5 +1,7 @@
 import re
 import json
+import binascii
+import xmltodict
 from flask import Response
 from binascii import crc32
 from requests.models import CaseInsensitiveDict
@@ -8,6 +10,9 @@ from localstack.utils.common import to_str, to_bytes
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid
+import datetime
+
+REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
 
 class ErrorResponse(Exception):
@@ -32,16 +37,60 @@ def requests_error_response_json(msg, code=500, error_type='InternalFailure'):
     return flask_to_requests_response(response)
 
 
-def requests_error_response_xml(message, code=400, code_string='InvalidParameter'):
+def requests_error_response_xml(service, message, code=400, code_string='InvalidParameter'):
     response = RequestsResponse()
-    response._content = """<ErrorResponse xmlns="http://sns.amazonaws.com/doc/2010-03-31/"><Error>
+    response._content = """<ErrorResponse xmlns="http://{service}.amazonaws.com/doc/2010-03-31/"><Error>
         <Type>Sender</Type>
         <Code>{code_string}</Code>
         <Message>{message}</Message>
         </Error><RequestId>{req_id}</RequestId>
-        </ErrorResponse>""".format(message=message, code_string=code_string, req_id=short_uid())
+        </ErrorResponse>""".format(service=service, message=message, code_string=code_string, req_id=short_uid())
     response.status_code = code
     return response
+
+
+def requests_error_response_xml_signature_calculation(message, string_to_sign=None, signature=None, expires=None,
+        code=400, code_string='AccessDenied', aws_access_token='temp'):
+    response = RequestsResponse()
+    response_template = """<?xml version="1.0" encoding="UTF-8"?>
+        <Error>
+            <Code>{code_string}</Code>
+            <Message>{message}</Message>
+            <RequestId>{req_id}</RequestId>
+            <HostId>{host_id}</HostId>
+        </Error>""".format(message=message, code_string=code_string, req_id=short_uid(), host_id=short_uid())
+
+    parsed_response = xmltodict.parse(response_template)
+    response.status_code = code
+
+    if signature and string_to_sign or code_string == 'SignatureDoesNotMatch':
+
+        bytes_signature = binascii.hexlify(bytes(signature, encoding='utf-8'))
+        parsed_response['Error']['Code'] = code_string
+        parsed_response['Error']['AWSAccessKeyId'] = aws_access_token
+        parsed_response['Error']['StringToSign'] = string_to_sign
+        parsed_response['Error']['SignatureProvided'] = signature
+        parsed_response['Error']['StringToSignBytes'] = '{}'.format(bytes_signature.decode('utf-8'))
+        response._content = xmltodict.unparse(parsed_response)
+        response.headers['Content-Length'] = str(len(response._content))
+
+    if expires and code_string == 'AccessDenied':
+
+        server_time = datetime.datetime.utcnow().isoformat()[:-4]
+        expires_isoformat = datetime.datetime.fromtimestamp(int(expires)).isoformat()[:-4]
+        parsed_response['Error']['Code'] = code_string
+        parsed_response['Error']['Expires'] = '{}Z'.format(expires_isoformat)
+        parsed_response['Error']['ServerTime'] = '{}Z'.format(server_time)
+        response._content = xmltodict.unparse(parsed_response)
+        response.headers['Content-Length'] = str(len(response._content))
+
+    if not signature and not expires and code_string == 'AccessDenied':
+
+        response._content = xmltodict.unparse(parsed_response)
+        response.headers['Content-Length'] = str(len(response._content))
+
+    if response._content:
+        return response
 
 
 def flask_error_response_xml(message, code=500, code_string='InternalFailure'):
@@ -76,7 +125,14 @@ def requests_to_flask_response(r):
 
 
 def response_regex_replace(response, search, replace):
-    response._content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
+    content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
+    set_response_content(response, content)
+
+
+def set_response_content(response, content):
+    if isinstance(content, dict):
+        content = json.dumps(content)
+    response._content = content or ''
     response.headers['Content-Length'] = str(len(response._content))
 
 
@@ -109,7 +165,7 @@ class LambdaResponse(object):
 class MessageConversion(object):
 
     @staticmethod
-    def _fix_date_format(response):
+    def fix_date_format(response):
         """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
 
         def _replace(response, pattern, replacement):
@@ -121,17 +177,24 @@ class MessageConversion(object):
         _replace(response, pattern, replacement)
 
     @staticmethod
-    def _fix_account_id(response):
+    def fix_account_id(response):
         return aws_stack.fix_account_id_in_arns(
             response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
 
     @staticmethod
-    def _fix_error_codes(method, data, response):
+    def fix_error_codes(method, data, response):
+        regex = r'<Errors>\s*(<Error>(\s|.)*</Error>)\s*</Errors>'
         if method == 'POST' and 'Action=CreateRole' in to_str(data) and response.status_code >= 400:
             content = to_str(response.content)
-            flags = re.MULTILINE | re.DOTALL
             # remove the <Errors> wrapper element, as this breaks AWS Java SDKs (issue #2231)
-            response._content = re.sub(r'<Errors>\s*(<Error>(\s|.)*</Error>)\s*</Errors>', r'\1', content, flags)
+            response._content = re.sub(regex, r'\1', content, flags=REGEX_FLAGS)
+
+    @staticmethod
+    def fix_xml_empty_boolean(response, tag_names):
+        for tag_name in tag_names:
+            regex = r'<{tag}>\s*([Nn]one|null)\s*</{tag}>'.format(tag=tag_name)
+            replace = r'<{tag}>false</{tag}>'.format(tag=tag_name)
+            response._content = re.sub(regex, replace, to_str(response.content), flags=REGEX_FLAGS)
 
     @staticmethod
     def _reset_account_id(data):

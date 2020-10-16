@@ -52,6 +52,23 @@ class TestCommon(unittest.TestCase):
         self.assertIn('00:00:00', result)
         self.assertIn('T', result)
 
+    def test_extract_jsonpath(self):
+        obj = {'a': {'b': [{'c': 123}, 'foo']}, 'e': 234}
+        result = common.extract_jsonpath(obj, '$.a.b')
+        self.assertEqual(result, [{'c': 123}, 'foo'])
+        result = common.extract_jsonpath(obj, '$.a.b.c')
+        self.assertFalse(result)
+        result = common.extract_jsonpath(obj, '$.foobar')
+        self.assertFalse(result)
+        result = common.extract_jsonpath(obj, '$.e')
+        self.assertEqual(result, 234)
+        result = common.extract_jsonpath(obj, '$.a.b[0]')
+        self.assertEqual(result, {'c': 123})
+        result = common.extract_jsonpath(obj, '$.a.b[0].c')
+        self.assertEqual(result, 123)
+        result = common.extract_jsonpath(obj, '$.a.b[1]')
+        self.assertEqual(result, 'foo')
+
 
 class TestCommandLine(unittest.TestCase):
 

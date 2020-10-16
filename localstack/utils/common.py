@@ -1,7 +1,6 @@
 import io
 import os
 import re
-import pwd
 import grp
 import sys
 import json
@@ -485,6 +484,10 @@ def timestamp_millis(time=None):
     return microsecond_time[:-4] + microsecond_time[-1]
 
 
+def epoch_timestamp():
+    return time.time()
+
+
 def retry(function, retries=3, sleep=1, sleep_before=0, **kwargs):
     raise_error = None
     if sleep_before > 0:
@@ -598,6 +601,7 @@ def ensure_readable(file_path, default_perms=None):
 
 def chown_r(path, user):
     """ Recursive chown """
+    import pwd  # keep this import here for Windows compatibility
     uid = pwd.getpwnam(user).pw_uid
     gid = grp.getgrnam(user).gr_gid
     os.chown(path, uid, gid)
@@ -643,9 +647,8 @@ def rm_rf(path):
 def cp_r(src, dst):
     """Recursively copies file/directory"""
     if os.path.isfile(src):
-        shutil.copy(src, dst)
-    else:
-        shutil.copytree(src, dst)
+        return shutil.copy(src, dst)
+    return shutil.copytree(src, dst)
 
 
 def download(url, path, verify_ssl=True):
@@ -775,10 +778,21 @@ def canonical_json(obj):
     return json.dumps(obj, sort_keys=True)
 
 
+def extract_jsonpath(value, path):
+    from jsonpath_rw import parse
+    jsonpath_expr = parse(path)
+    result = [match.value for match in jsonpath_expr.find(value)]
+    result = result[0] if len(result) == 1 else result
+    return result
+
+
 def save_file(file, content, append=False):
     mode = 'a' if append else 'w+'
     if not isinstance(content, six.string_types):
         mode = mode + 'b'
+    # make sure that the parent dir exsits
+    mkdir(os.path.dirname(file))
+    # store file contents
     with open(file, mode) as f:
         f.write(content)
         f.flush()
@@ -1117,7 +1131,6 @@ def run_cmd_safe(**kwargs):
 
 
 def run(cmd, cache_duration_secs=0, **kwargs):
-
     def do_run(cmd):
         return bootstrap.run(cmd, **kwargs)
 
@@ -1190,7 +1203,6 @@ class safe_requests(with_metaclass(_RequestsSafe)):
 
 
 def make_http_request(url, data=None, headers=None, method='GET'):
-
     if is_string(method):
         method = requests.__dict__[method.lower()]
 

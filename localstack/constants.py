@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.11.5'
+VERSION = '0.12.0'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -23,7 +23,7 @@ LOCALHOST = 'localhost'
 LOCALHOST_IP = '127.0.0.1'
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = '0.2.1'
+LOCALSTACK_MAVEN_VERSION = '0.2.5'
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
@@ -61,6 +61,7 @@ ENV_INTERNAL_TEST_RUN = 'LOCALSTACK_INTERNAL_TEST_RUN'
 # content types
 APPLICATION_AMZ_JSON_1_0 = 'application/x-amz-json-1.0'
 APPLICATION_AMZ_JSON_1_1 = 'application/x-amz-json-1.1'
+APPLICATION_AMZ_CBOR_1_1 = 'application/x-amz-cbor-1.1'
 APPLICATION_JSON = 'application/json'
 APPLICATION_XML = 'application/xml'
 APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
@@ -115,3 +116,7 @@ try:
     MAX_POOL_CONNECTIONS = int(os.environ['MAX_POOL_CONNECTIONS'])
 except Exception:
     MAX_POOL_CONNECTIONS = 150
+
+# test credentials being used while generating signature for S3 presign url
+TEST_AWS_ACCESS_KEY_ID = 'test'
+TEST_AWS_SECRET_ACCESS_KEY = 'test'
