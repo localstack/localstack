@@ -1,10 +1,9 @@
 import json
 import unittest
-import time
 from io import BytesIO
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, short_uid
+from localstack.utils.common import to_str, short_uid, retry
 
 TEST_BUCKET_NAME_WITH_NOTIFICATIONS = 'test-bucket-notif-1'
 TEST_QUEUE_NAME_FOR_S3 = 'test_queue'
@@ -12,6 +11,7 @@ TEST_TOPIC_NAME = 'test_topic_name_for_sqs'
 TEST_S3_TOPIC_NAME = 'test_topic_name_for_s3_to_sns_to_sqs'
 TEST_QUEUE_NAME_FOR_SNS = 'test_queue_for_sns'
 PUBLICATION_TIMEOUT = 0.500
+PUBLICATION_RETRIES = 4
 
 
 class TestNotifications(unittest.TestCase):
@@ -37,16 +37,17 @@ class TestNotifications(unittest.TestCase):
         test_value = short_uid()
         sns_client.publish(TopicArn=topic_info['TopicArn'], Message='test message for SQS',
             MessageAttributes={'attr1': {'DataType': 'String', 'StringValue': test_value}})
-        time.sleep(PUBLICATION_TIMEOUT)
 
-        # receive, assert, and delete message from SQS
-        queue_url = queue_info['QueueUrl']
-        assertions = []
-        # make sure we receive the correct topic ARN in notifications
-        assertions.append({'TopicArn': topic_info['TopicArn']})
-        # make sure the notification contains message attributes
-        assertions.append({'Value': test_value})
-        self._receive_assert_delete(queue_url, assertions, sqs_client)
+        def assert_message():
+            # receive, assert, and delete message from SQS
+            queue_url = queue_info['QueueUrl']
+            assertions = []
+            # make sure we receive the correct topic ARN in notifications
+            assertions.append({'TopicArn': topic_info['TopicArn']})
+            # make sure the notification contains message attributes
+            assertions.append({'Value': test_value})
+            self._receive_assert_delete(queue_url, assertions, sqs_client)
+        retry(assert_message, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     def test_bucket_notifications(self):
 
@@ -192,23 +193,23 @@ class TestNotifications(unittest.TestCase):
         test_data2 = b'{"test": "bucket_notification2"}'
 
         s3_client.upload_fileobj(BytesIO(test_data2), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_key2)
-        time.sleep(PUBLICATION_TIMEOUT)
 
         # verify subject and records
+        def verify():
+            response = sqs_client.receive_message(QueueUrl=queue_url)
+            for message in response['Messages']:
+                snsObj = json.loads(message['Body'])
+                testutil.assert_object({'Subject': 'Amazon S3 Notification'}, snsObj)
+                notificationObj = json.loads(snsObj['Message'])
+                testutil.assert_objects(
+                    [
+                        {'key': test_key2},
+                        {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}
+                    ], notificationObj['Records'])
 
-        response = sqs_client.receive_message(QueueUrl=queue_url)
-        for message in response['Messages']:
-            snsObj = json.loads(message['Body'])
-            testutil.assert_object({'Subject': 'Amazon S3 Notification'}, snsObj)
-            notificationObj = json.loads(snsObj['Message'])
-            testutil.assert_objects(
-                [
-                    {'key': test_key2},
-                    {'name': TEST_BUCKET_NAME_WITH_NOTIFICATIONS}
-                ], notificationObj['Records'])
+                sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
 
-            sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=message['ReceiptHandle'])
-
+        retry(verify, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
         self._delete_notification_config()
 
     def _delete_notification_config(self):
