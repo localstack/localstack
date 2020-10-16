@@ -612,7 +612,7 @@ class TestLambdaAPI(unittest.TestCase):
             '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:([0-9]+)',
             '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=\\*:([0-9]+)'
         ]
-        
+
         for i in range(len(options)):
             result = self.prepare_java_opts(options[i])
             m = re.match(expected_results[i], result)
@@ -630,6 +630,7 @@ class TestLambdaAPI(unittest.TestCase):
             '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:1234',
             '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:1234'
         ]
+
         for item in options:
             result = self.prepare_java_opts(item)
             self.assertEqual('1234', lambda_executors.Util.debug_java_port)
