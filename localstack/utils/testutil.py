@@ -2,19 +2,27 @@ import os
 import json
 import glob
 import tempfile
+import time
 import requests
 import shutil
 import zipfile
 import importlib
 from six import iteritems
 from localstack.utils.aws import aws_stack
-from localstack.constants import (LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER,
-    LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID)
+from localstack.constants import (
+    LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, ENV_INTERNAL_TEST_RUN)
 from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
-from localstack.services.awslambda.lambda_api import (get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER,
-    LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION, LAMBDA_DEFAULT_TIMEOUT)
+from localstack.services.awslambda.lambda_api import (
+    get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
+DEFAULT_GET_LOG_EVENTS_DELAY = 3
+LAMBDA_TIMEOUT_SEC = 6
+
+
+def is_local_test_mode():
+    """ Whether we are running in the context of our local integration tests. """
+    return bool(os.environ.get(ENV_INTERNAL_TEST_RUN))
 
 
 def copy_dir(source, target):
@@ -27,7 +35,8 @@ def copy_dir(source, target):
 def rm_dir(dir):
     if is_alpine():
         # Using the native command can be an order of magnitude faster on Travis-CI
-        return run('rm -r %s' % (dir))
+        return run('rm -r %s' % dir)
+
     shutil.rmtree(dir)
 
 
@@ -121,7 +130,7 @@ def create_zip_file(file_path, get_content=False):
 
 
 def create_lambda_function(func_name, zip_file=None, event_source_arn=None, handler_file=None,
-        handler=LAMBDA_DEFAULT_HANDLER, starting_position=None, runtime=None, envvars={},
+        handler=None, starting_position=None, runtime=None, envvars={},
         tags={}, libs=[], delete=False, layers=None, **kwargs):
     """Utility method to create a new function via the Lambda API"""
 
@@ -131,8 +140,13 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
 
     # load zip file content if handler_file is specified
     if not zip_file and handler_file:
-        zip_file = create_lambda_archive(load_file(handler_file), libs=libs,
-            get_content=True, runtime=runtime or LAMBDA_DEFAULT_RUNTIME)
+        if libs or not handler:
+            zip_file = create_lambda_archive(load_file(handler_file), libs=libs,
+                get_content=True, runtime=runtime or LAMBDA_DEFAULT_RUNTIME)
+        else:
+            zip_file = create_zip_file(handler_file, get_content=True)
+
+    handler = handler or LAMBDA_DEFAULT_HANDLER
 
     if delete:
         try:
@@ -151,21 +165,57 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
         'Code': {
             'ZipFile': zip_file
         },
-        'Timeout': LAMBDA_DEFAULT_TIMEOUT,
+        'Timeout': LAMBDA_TIMEOUT_SEC,
         'Environment': dict(Variables=envvars),
         'Tags': tags
     }
     kwargs.update(additional_kwargs)
     if layers:
         kwargs['Layers'] = layers
-    client.create_function(**kwargs)
+    create_func_resp = client.create_function(**kwargs)
+
+    resp = {
+        'CreateFunctionResponse': create_func_resp,
+        'CreateEventSourceMappingResponse': None
+    }
+
     # create event source mapping
     if event_source_arn:
-        client.create_event_source_mapping(
+        resp['CreateEventSourceMappingResponse'] = client.create_event_source_mapping(
             FunctionName=func_name,
             EventSourceArn=event_source_arn,
             StartingPosition=starting_position
         )
+
+    return resp
+
+
+def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_uri,
+        stage_name=None, methods=[], path=None, auth_type=None, http_method=None):
+    if not methods:
+        methods = ['GET', 'POST', 'DELETE']
+    if not path:
+        path = '/'
+    stage_name = stage_name or 'test'
+    resources = {}
+    resource_path = path.lstrip('/')
+    resources[resource_path] = []
+    for method in methods:
+        int_meth = http_method or method
+        resources[resource_path].append({
+            'httpMethod': method,
+            'authorizationType': auth_type,
+            'integrations': [{
+                'type': 'AWS_PROXY',
+                'uri': target_uri,
+                'httpMethod': int_meth
+            }]
+        })
+    return aws_stack.create_api_gateway(
+        name=gateway_name,
+        resources=resources,
+        stage_name=stage_name
+    )
 
 
 def assert_objects(asserts, all_objects):
@@ -241,7 +291,7 @@ def download_s3_object(s3, bucket, path):
 
 
 def map_all_s3_objects(to_json=True, buckets=None):
-    s3_client = aws_stack.get_s3_client()
+    s3_client = aws_stack.connect_to_resource('s3')
     result = {}
     buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
     for bucket in buckets:
@@ -304,3 +354,49 @@ def create_sqs_queue(queue_name):
         'QueueUrl': queue_url,
         'QueueArn': queue_arn,
     }
+
+
+def get_lambda_log_group_name(function_name):
+    return '/aws/lambda/{}'.format(function_name)
+
+
+def check_expected_lambda_log_events_length(expected_length, function_name):
+    events = get_lambda_log_events(function_name)
+    events = [line for line in events if line not in ['\x1b[0m', '\\x1b[0m']]
+    if len(events) != expected_length:
+        print('Invalid # of Lambda %s log events: %s / %s: %s' % (function_name, len(events), expected_length, events))
+    assert len(events) == expected_length
+    return events
+
+
+def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY):
+    def get_log_events(function_name, delay_time):
+        time.sleep(delay_time)
+
+        logs = aws_stack.connect_to_service('logs')
+        log_group_name = get_lambda_log_group_name(function_name)
+        rs = logs.filter_log_events(logGroupName=log_group_name)
+
+        return rs['events']
+
+    try:
+        events = get_log_events(function_name, delay_time)
+    except Exception as e:
+        if 'ResourceNotFoundException' in str(e):
+            return []
+        raise
+
+    rs = []
+    for event in events:
+        raw_message = event['message']
+        if not raw_message or 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
+            continue
+        if raw_message in ['\x1b[0m', '\\x1b[0m']:
+            continue
+
+        try:
+            rs.append(json.loads(raw_message))
+        except Exception:
+            rs.append(raw_message)
+
+    return rs

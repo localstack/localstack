@@ -1,11 +1,11 @@
 import re
 import json
-
 from jsonpatch import apply_patch
 from requests.models import Response
 from six.moves.urllib import parse as urlparse
+from localstack import config
 from localstack.utils import common
-from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON
+from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
 
@@ -106,10 +106,8 @@ def to_authorizer_response_json(api_id, data):
 
 def normalize_authorizer(data):
     result = common.clone(data)
-
     # terraform sends this as a string in patch, so convert to int
     result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
-
     return result
 
 
@@ -173,6 +171,12 @@ def handle_authorizers(method, path, data, headers):
     return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
 
 
+def gateway_request_url(api_id, stage_name, path):
+    """ Return URL for inbound API gateway for given API ID, stage name, and path """
+    pattern = '%s/restapis/{api_id}/{stage_name}/%s{path}' % (config.TEST_APIGATEWAY_URL, PATH_USER_REQUEST)
+    return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
+
+
 def tokenize_path(path):
     return path.lstrip('/').split('/')
 
@@ -206,6 +210,8 @@ def extract_query_string_params(path):
         else:
             query_string_params[query_param_name] = query_param_values
 
+    # strip trailing slashes from path to fix downstream lookups
+    path = path.rstrip('/') or '/'
     return [path, query_string_params]
 
 
@@ -227,7 +233,8 @@ def get_rest_api_paths(rest_api_id, region_name=None):
     resources = apigateway.get_resources(restApiId=rest_api_id, limit=100)
     resource_map = {}
     for resource in resources['items']:
-        path = aws_stack.get_apigateway_path_for_resource(rest_api_id, resource['id'], region_name=region_name)
+        path = resource.get('path')
+        path = path or aws_stack.get_apigateway_path_for_resource(rest_api_id, resource['id'], region_name=region_name)
         resource_map[path] = resource
     return resource_map
 
@@ -246,8 +253,23 @@ def get_resource_for_path(path, path_map):
         for match in matches:
             if match[0] == path:
                 return match
+            if path_matches_pattern(path, match[0]):
+                return match
         raise Exception('Ambiguous API path %s - matches found: %s' % (path, matches))
     return matches[0]
+
+
+def path_matches_pattern(path, api_path):
+    api_paths = api_path.split('/')
+    paths = path.split('/')
+    reg_check = re.compile(r'\{(.*)\}')
+    results = []
+    if len(api_paths) != len(paths):
+        return False
+    for indx, part in enumerate(api_paths):
+        if reg_check.match(part) is None and part:
+            results.append(part == paths[indx])
+    return len(results) > 0 and all(results)
 
 
 def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, region_name=None):

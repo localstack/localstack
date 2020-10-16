@@ -1,4 +1,3 @@
-
 class TaggingService():
     def __init__(self):
         self.tags = {}

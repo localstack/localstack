@@ -8,7 +8,7 @@ from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
 from samtranslator.translator.transform import transform as transform_sam
 from localstack import config
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp_millis
@@ -53,6 +53,7 @@ def make_response(operation_name, content='', code=200):
 def validate_template(req_data):
     LOG.debug('Validate CloudFormation template: %s' % req_data)
     # TODO implement actual validation logic
+    # Note: if we enable this via moto, ensure that we have cfnlint module available (adds ~58MB in size :/)
     response_content = """
         <Capabilities></Capabilities>
         <CapabilitiesReason></CapabilitiesReason>
@@ -170,8 +171,12 @@ class ProxyListenerCloudFormation(ProxyListener):
 
         data = data or ''
         data_orig = data
+        data = aws_stack.fix_account_id_in_arns(data, existing='%3A{}%3Astack/'.format(TEST_AWS_ACCOUNT_ID),
+            replace='%3A{}%3Astack/'.format(MOTO_CLOUDFORMATION_ACCOUNT_ID), colon_delimiter='')
+        data = aws_stack.fix_account_id_in_arns(data, existing='%3A{}%3AchangeSet/'.format(TEST_AWS_ACCOUNT_ID),
+            replace='%3A{}%3AchangeSet/'.format(MOTO_CLOUDFORMATION_ACCOUNT_ID), colon_delimiter='')
         data = aws_stack.fix_account_id_in_arns(data, existing=TEST_AWS_ACCOUNT_ID,
-            replace=MOTO_CLOUDFORMATION_ACCOUNT_ID, colon_delimiter='%3A')
+            replace=MOTO_ACCOUNT_ID, colon_delimiter='%3A')
 
         req_data = None
         if method == 'POST' and path == '/':
@@ -188,7 +193,10 @@ class ProxyListenerCloudFormation(ProxyListener):
                 )
 
             if action == 'DeleteStack':
-                client = aws_stack.connect_to_service('cloudformation')
+                client = aws_stack.connect_to_service(
+                    'cloudformation',
+                    region_name=aws_stack.extract_region_from_auth_header(headers)
+                )
                 stack_resources = client.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
                 template_deployer.delete_stack(stack_name, stack_resources)
 
@@ -215,7 +223,7 @@ class ProxyListenerCloudFormation(ProxyListener):
             if action == 'ValidateTemplate':
                 return validate_template(req_data)
 
-            if action in ['CreateStack', 'UpdateStack']:
+            if action in ['CreateStack', 'UpdateStack', 'CreateChangeSet']:
                 do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
                 if do_replace_url:
                     req_data['TemplateURL'] = convert_s3_to_local_url(req_data['TemplateURL'])

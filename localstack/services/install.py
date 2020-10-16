@@ -7,36 +7,45 @@ import glob
 import shutil
 import logging
 import tempfile
+from localstack import config
 from localstack.utils import bootstrap
 from localstack.constants import (DEFAULT_SERVICE_PORTS, ELASTICMQ_JAR_URL, STS_JAR_URL,
-    ELASTICSEARCH_JAR_URL, ELASTICSEARCH_PLUGIN_LIST, ELASTICSEARCH_DELETE_MODULES,
-    DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION, STEPFUNCTIONS_ZIP_URL,
-    KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
+    ELASTICSEARCH_URLS, ELASTICSEARCH_DEFAULT_VERSION, ELASTICSEARCH_PLUGIN_LIST,
+    ELASTICSEARCH_DELETE_MODULES, DYNAMODB_JAR_URL, DYNAMODB_JAR_URL_ALPINE, LOCALSTACK_MAVEN_VERSION,
+    STEPFUNCTIONS_ZIP_URL, KMS_URL_PATTERN, LOCALSTACK_INFRA_PROCESS)
 if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
 from localstack.utils.common import (
-    download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf, chmod_r, is_alpine,
-    in_docker, get_arch)
+    download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf,
+    chmod_r, is_alpine, in_docker, get_arch)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
 
 INSTALL_DIR_INFRA = '%s/infra' % ROOT_PATH
 INSTALL_DIR_NPM = '%s/node_modules' % ROOT_PATH
-INSTALL_DIR_ES = '%s/elasticsearch' % INSTALL_DIR_INFRA
 INSTALL_DIR_DDB = '%s/dynamodb' % INSTALL_DIR_INFRA
 INSTALL_DIR_KCL = '%s/amazon-kinesis-client' % INSTALL_DIR_INFRA
 INSTALL_DIR_STEPFUNCTIONS = '%s/stepfunctions' % INSTALL_DIR_INFRA
 INSTALL_DIR_KMS = '%s/kms' % INSTALL_DIR_INFRA
 INSTALL_DIR_ELASTICMQ = '%s/elasticmq' % INSTALL_DIR_INFRA
 INSTALL_PATH_LOCALSTACK_FAT_JAR = '%s/localstack-utils-fat.jar' % INSTALL_DIR_INFRA
+INSTALL_PATH_DDB_JAR = os.path.join(INSTALL_DIR_DDB, 'DynamoDBLocal.jar')
+INSTALL_PATH_KCL_JAR = os.path.join(INSTALL_DIR_KCL, 'aws-java-sdk-sts.jar')
+INSTALL_PATH_STEPFUNCTIONS_JAR = os.path.join(INSTALL_DIR_STEPFUNCTIONS, 'StepFunctionsLocal.jar')
 INSTALL_PATH_KMS_BINARY_PATTERN = os.path.join(INSTALL_DIR_KMS, 'local-kms.<arch>.bin')
+INSTALL_PATH_ELASTICMQ_JAR = os.path.join(INSTALL_DIR_ELASTICMQ, 'elasticmq-server.jar')
+INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, 'kinesalite', 'cli.js')
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
+MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
+
+# SQS backend implementation provider - either "moto" or "elasticmq"
+SQS_BACKEND_IMPL = os.environ.get('SQS_PROVIDER') or 'moto'
 
 # As of 2019-10-09, the DDB fix (see below) doesn't seem to be required anymore
 APPLY_DDB_ALPINE_FIX = False
@@ -44,23 +53,46 @@ APPLY_DDB_ALPINE_FIX = False
 OVERWRITE_DDB_FILES_IN_DOCKER = False
 
 # set up logger
-LOGGER = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
-def install_elasticsearch():
-    if not os.path.exists(INSTALL_DIR_ES):
-        log_install_msg('Elasticsearch')
-        mkdir(INSTALL_DIR_INFRA)
+def get_elasticsearch_install_version(version=None):
+    if config.SKIP_INFRA_DOWNLOADS:
+        return ELASTICSEARCH_DEFAULT_VERSION
+    return version or ELASTICSEARCH_DEFAULT_VERSION
+
+
+def get_elasticsearch_install_dir(version=None):
+    version = get_elasticsearch_install_version(version)
+    if version == ELASTICSEARCH_DEFAULT_VERSION and not os.path.exists(MARKER_FILE_LIGHT_VERSION):
+        # install the default version into a subfolder of the code base
+        install_dir = os.path.join(INSTALL_DIR_INFRA, 'elasticsearch')
+    else:
+        install_dir = os.path.join(config.TMP_FOLDER, 'elasticsearch', version)
+    return install_dir
+
+
+def install_elasticsearch(version=None):
+    version = get_elasticsearch_install_version(version)
+    install_dir = get_elasticsearch_install_dir(version)
+    installed_executable = os.path.join(install_dir, 'bin', 'elasticsearch')
+    if not os.path.exists(installed_executable):
+        log_install_msg('Elasticsearch (%s)' % version)
+        es_url = ELASTICSEARCH_URLS.get(version)
+        if not es_url:
+            raise Exception('Unable to find download URL for Elasticsearch version "%s"' % version)
+        install_dir_parent = os.path.dirname(install_dir)
+        mkdir(install_dir_parent)
         # download and extract archive
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.es.tar.gz')
-        download_and_extract_with_retry(ELASTICSEARCH_JAR_URL, tmp_archive, INSTALL_DIR_INFRA)
-        elasticsearch_dir = glob.glob(os.path.join(INSTALL_DIR_INFRA, 'elasticsearch*'))
+        tmp_archive = os.path.join(config.TMP_FOLDER, 'localstack.%s' % os.path.basename(es_url))
+        download_and_extract_with_retry(es_url, tmp_archive, install_dir_parent)
+        elasticsearch_dir = glob.glob(os.path.join(install_dir_parent, 'elasticsearch*'))
         if not elasticsearch_dir:
-            raise Exception('Unable to find Elasticsearch folder in %s' % INSTALL_DIR_INFRA)
-        shutil.move(elasticsearch_dir[0], INSTALL_DIR_ES)
+            raise Exception('Unable to find Elasticsearch folder in %s' % install_dir_parent)
+        shutil.move(elasticsearch_dir[0], install_dir)
 
         for dir_name in ('data', 'logs', 'modules', 'plugins', 'config/scripts'):
-            dir_path = '%s/%s' % (INSTALL_DIR_ES, dir_name)
+            dir_path = os.path.join(install_dir, dir_name)
             mkdir(dir_path)
             chmod_r(dir_path, 0o777)
 
@@ -69,21 +101,23 @@ def install_elasticsearch():
             if is_alpine():
                 # https://github.com/pires/docker-elasticsearch/issues/56
                 os.environ['ES_TMPDIR'] = '/tmp'
-            plugin_binary = os.path.join(INSTALL_DIR_ES, 'bin', 'elasticsearch-plugin')
-            print('install elasticsearch-plugin %s' % (plugin))
-            run('%s install -b  %s' % (plugin_binary, plugin))
+            plugin_binary = os.path.join(install_dir, 'bin', 'elasticsearch-plugin')
+            plugin_dir = os.path.join(install_dir, 'plugins', plugin)
+            if not os.path.exists(plugin_dir):
+                LOG.info('Installing Elasticsearch plugin %s' % (plugin))
+                run('%s install -b %s' % (plugin_binary, plugin))
 
     # delete some plugins to free up space
     for plugin in ELASTICSEARCH_DELETE_MODULES:
-        module_dir = os.path.join(INSTALL_DIR_ES, 'modules', plugin)
+        module_dir = os.path.join(install_dir, 'modules', plugin)
         rm_rf(module_dir)
 
     # disable x-pack-ml plugin (not working on Alpine)
-    xpack_dir = os.path.join(INSTALL_DIR_ES, 'modules', 'x-pack-ml', 'platform')
+    xpack_dir = os.path.join(install_dir, 'modules', 'x-pack-ml', 'platform')
     rm_rf(xpack_dir)
 
     # patch JVM options file - replace hardcoded heap size settings
-    jvm_options_file = os.path.join(INSTALL_DIR_ES, 'config', 'jvm.options')
+    jvm_options_file = os.path.join(install_dir, 'config', 'jvm.options')
     if os.path.exists(jvm_options_file):
         jvm_options = load_file(jvm_options_file)
         jvm_options_replaced = re.sub(r'(^-Xm[sx][a-zA-Z0-9\.]+$)', r'# \1', jvm_options, flags=re.MULTILINE)
@@ -92,7 +126,10 @@ def install_elasticsearch():
 
 
 def install_elasticmq():
-    if not os.path.exists(INSTALL_DIR_ELASTICMQ):
+    if SQS_BACKEND_IMPL != 'elasticmq':
+        return
+    # TODO remove this function if we stop using ElasticMQ entirely
+    if not os.path.exists(INSTALL_PATH_ELASTICMQ_JAR):
         log_install_msg('ElasticMQ')
         mkdir(INSTALL_DIR_ELASTICMQ)
         # download archive
@@ -103,24 +140,24 @@ def install_elasticmq():
 
 
 def install_kinesalite():
-    target_dir = '%s/kinesalite' % INSTALL_DIR_NPM
-    if not os.path.exists(target_dir):
+    if not os.path.exists(INSTALL_PATH_KINESALITE_CLI):
         log_install_msg('Kinesis')
         run('cd "%s" && npm install' % ROOT_PATH)
 
 
 def install_local_kms():
-    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', get_arch())
+    local_arch = get_arch()
+    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', local_arch)
     if not os.path.exists(binary_path):
         log_install_msg('KMS')
         mkdir(INSTALL_DIR_KMS)
-        kms_url = KMS_URL_PATTERN.replace('<arch>', get_arch())
+        kms_url = KMS_URL_PATTERN.replace('<arch>', local_arch)
         download(kms_url, binary_path)
         chmod_r(binary_path, 0o777)
 
 
 def install_stepfunctions_local():
-    if not os.path.exists(INSTALL_DIR_STEPFUNCTIONS):
+    if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
         log_install_msg('Step Functions')
         tmp_archive = os.path.join(tempfile.gettempdir(), 'stepfunctions.zip')
         download_and_extract_with_retry(
@@ -130,7 +167,7 @@ def install_stepfunctions_local():
 def install_dynamodb_local():
     if OVERWRITE_DDB_FILES_IN_DOCKER and in_docker():
         rm_rf(INSTALL_DIR_DDB)
-    if not os.path.exists(INSTALL_DIR_DDB):
+    if not os.path.exists(INSTALL_PATH_DDB_JAR):
         log_install_msg('DynamoDB')
         # download and extract archive
         tmp_archive = os.path.join(tempfile.gettempdir(), 'localstack.ddb.zip')
@@ -169,7 +206,7 @@ def install_dynamodb_local():
 
 def install_amazon_kinesis_client_libs():
     # install KCL/STS JAR files
-    if not os.path.exists(INSTALL_DIR_KCL):
+    if not os.path.exists(INSTALL_PATH_KCL_JAR):
         mkdir(INSTALL_DIR_KCL)
         tmp_archive = os.path.join(tempfile.gettempdir(), 'aws-java-sdk-sts.jar')
         if not os.path.exists(tmp_archive):
@@ -196,7 +233,6 @@ def install_component(name):
     installers = {
         'kinesis': install_kinesalite,
         'dynamodb': install_dynamodb_local,
-        'es': install_elasticsearch,
         'sqs': install_elasticmq,
         'stepfunctions': install_stepfunctions_local,
         'kms': install_local_kms
@@ -225,7 +261,7 @@ def install_all_components():
 
 def log_install_msg(component, verbatim=False):
     component = component if verbatim else 'local %s server' % component
-    LOGGER.info('Downloading and installing %s. This may take some time.' % component)
+    LOG.info('Downloading and installing %s. This may take some time.' % component)
 
 
 def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
@@ -233,6 +269,8 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 
     def download_and_extract():
         if not os.path.exists(tmp_archive):
+            # create temporary placeholder file, to avoid duplicate parallel downloads
+            save_file(tmp_archive, '')
             download(archive_url, tmp_archive)
 
         _, ext = os.path.splitext(tmp_archive)
@@ -247,7 +285,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
         download_and_extract()
     except Exception as e:
         # try deleting and re-downloading the zip file
-        LOGGER.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
+        LOG.info('Unable to extract file, re-downloading ZIP archive %s: %s' % (tmp_archive, e))
         rm_rf(tmp_archive)
         download_and_extract()
 
@@ -255,6 +293,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 if __name__ == '__main__':
 
     if len(sys.argv) > 1:
+        os.environ['LOCALSTACK_API_KEY'] = os.environ.get('LOCALSTACK_API_KEY') or 'test'
         if sys.argv[1] == 'libs':
             print('Initializing installation.')
             logging.basicConfig(level=logging.INFO)

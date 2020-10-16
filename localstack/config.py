@@ -9,8 +9,19 @@ from os.path import expanduser
 import six
 from boto3 import Session
 from localstack.constants import (
-    DEFAULT_SERVICE_PORTS, LOCALHOST, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
-    DEFAULT_LAMBDA_CONTAINER_REGISTRY)
+    DEFAULT_SERVICE_PORTS, LOCALHOST, LOCALHOST_IP, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
+    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1)
+
+
+def is_env_true(env_var_name):
+    """ Whether the given environment variable has a truthy value. """
+    return os.environ.get(env_var_name, '').lower().strip() in TRUE_STRINGS
+
+
+def is_env_not_false(env_var_name):
+    """ Whether the given environment variable is empty or has a truthy value. """
+    return os.environ.get(env_var_name, '').lower().strip() not in FALSE_STRINGS
+
 
 # java options to Lambda
 LAMBDA_JAVA_OPTS = os.environ.get('LAMBDA_JAVA_OPTS', '').strip()
@@ -23,16 +34,29 @@ KINESIS_LATENCY = os.environ.get('KINESIS_LATENCY', '').strip() or '500'
 
 # default AWS region
 if 'DEFAULT_REGION' not in os.environ:
-    os.environ['DEFAULT_REGION'] = 'us-east-1'
+    os.environ['DEFAULT_REGION'] = AWS_REGION_US_EAST_1
 DEFAULT_REGION = os.environ['DEFAULT_REGION']
+
+# Whether or not to handle lambda event sources as synchronous invocations
+SYNCHRONOUS_SNS_EVENTS = is_env_true('SYNCHRONOUS_SNS_EVENTS')
+SYNCHRONOUS_SQS_EVENTS = is_env_true('SYNCHRONOUS_SQS_EVENTS')
+SYNCHRONOUS_API_GATEWAY_EVENTS = is_env_not_false('SYNCHRONOUS_API_GATEWAY_EVENTS')
+SYNCHRONOUS_KINESIS_EVENTS = is_env_not_false('SYNCHRONOUS_KINESIS_EVENTS')
+SYNCHRONOUS_DYNAMODB_EVENTS = is_env_not_false('SYNCHRONOUS_DYNAMODB_EVENTS')
 
 # randomly inject faults to Kinesis
 KINESIS_ERROR_PROBABILITY = float(os.environ.get('KINESIS_ERROR_PROBABILITY', '').strip() or 0.0)
 
 # randomly inject faults to DynamoDB
 DYNAMODB_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_ERROR_PROBABILITY', '').strip() or 0.0)
+DYNAMODB_READ_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_READ_ERROR_PROBABILITY', '').strip() or 0.0)
+DYNAMODB_WRITE_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_WRITE_ERROR_PROBABILITY', '').strip() or 0.0)
+
+# JAVA EE heap size for dynamodb
+DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
 
 # expose services on a specific host internally
+# TODO: evaluate whether this should be hardcoded as HOSTNAME=LOCALHOST ..?
 HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
 
 # expose services on a specific host externally
@@ -45,10 +69,13 @@ SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
 
 # whether to remotely copy the lambda or locally mount a volume
-LAMBDA_REMOTE_DOCKER = os.environ.get('LAMBDA_REMOTE_DOCKER', '').lower().strip() in TRUE_STRINGS
+LAMBDA_REMOTE_DOCKER = is_env_true('LAMBDA_REMOTE_DOCKER')
 
 # network that the docker lambda container will be joining
 LAMBDA_DOCKER_NETWORK = os.environ.get('LAMBDA_DOCKER_NETWORK', '').strip()
+
+# custom DNS server that the docker lambda container will use
+LAMBDA_DOCKER_DNS = os.environ.get('LAMBDA_DOCKER_DNS', '').strip()
 
 # default container registry for lambda execution images
 LAMBDA_CONTAINER_REGISTRY = os.environ.get('LAMBDA_CONTAINER_REGISTRY', '').strip() or DEFAULT_LAMBDA_CONTAINER_REGISTRY
@@ -79,8 +106,11 @@ if TMP_FOLDER.startswith('/var/folders/') and os.path.exists('/private%s' % TMP_
 # temporary folder of the host (required when running in Docker). Fall back to local tmp folder if not set
 HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
 
+# whether to enable verbose debug logging
+DEBUG = is_env_true('DEBUG')
+
 # whether to use SSL encryption for the services
-USE_SSL = os.environ.get('USE_SSL', '').strip() in TRUE_STRINGS
+USE_SSL = is_env_true('USE_SSL')
 
 # default encoding used to convert strings to byte arrays (mainly for Python 3 compatibility)
 DEFAULT_ENCODING = 'utf-8'
@@ -97,6 +127,14 @@ DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 # whether to start the web API
 START_WEB = os.environ.get('START_WEB', '').strip() not in FALSE_STRINGS
 
+# whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
+# TODO: this will likely become the default and may get removed in the future
+FORWARD_EDGE_INMEM = True
+# port number for the edge service, the main entry point for all API invocations
+EDGE_PORT = int(os.environ.get('EDGE_PORT') or 0) or DEFAULT_PORT_EDGE
+# fallback port for non-SSL HTTP edge service (in case HTTPS edge service cannot be used)
+EDGE_PORT_HTTP = int(os.environ.get('EDGE_PORT_HTTP') or 0)
+
 # port of Web UI
 PORT_WEB_UI = int(os.environ.get('PORT_WEB_UI', '').strip() or DEFAULT_PORT_WEB_UI)
 PORT_WEB_UI_SSL = PORT_WEB_UI + 1
@@ -109,7 +147,22 @@ EXTRA_CORS_ALLOWED_HEADERS = os.environ.get('EXTRA_CORS_ALLOWED_HEADERS', '').st
 EXTRA_CORS_EXPOSE_HEADERS = os.environ.get('EXTRA_CORS_EXPOSE_HEADERS', '').strip()
 
 # whether to disable publishing events to the API
-DISABLE_EVENTS = os.environ.get('DISABLE_EVENTS') in TRUE_STRINGS
+DISABLE_EVENTS = is_env_true('DISABLE_EVENTS')
+
+# Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
+SKIP_INFRA_DOWNLOADS = os.environ.get('SKIP_INFRA_DOWNLOADS', '').strip()
+
+# Stepfunctions lambda endpoint override
+STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get('STEPFUNCTIONS_LAMBDA_ENDPOINT', '').strip()
+
+# path prefix for windows volume mounting
+WINDOWS_DOCKER_MOUNT_PREFIX = os.environ.get('WINDOWS_DOCKER_MOUNT_PREFIX', '/host_mnt')
+
+# whether to use a proxy server with HTTP/2 support. TODO: remove in the future
+USE_HTTP2_SERVER = os.environ.get('USE_HTTP2_SERVER', '').strip() not in FALSE_STRINGS
+
+# name of the main Docker container
+MAIN_CONTAINER_NAME = os.environ.get('MAIN_CONTAINER_NAME', '').strip() or 'localstack_main'
 
 
 def has_docker():
@@ -126,7 +179,7 @@ def is_linux():
         out = subprocess.check_output('uname -a', shell=True)
         out = out.decode('utf-8') if isinstance(out, six.binary_type) else out
         return 'Linux' in out
-    except subprocess.CalledProcessError:
+    except Exception:
         return False
 
 
@@ -150,7 +203,12 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'LAMBDA_EXECUTOR', 'LAMBDA_REMOTE_DOCKER', 'LAMBDA_DOCKER_NETWORK', 'LAMBDA_REMOVE_CONTAINERS',
                    'USE_SSL', 'DEBUG', 'KINESIS_ERROR_PROBABILITY', 'DYNAMODB_ERROR_PROBABILITY', 'PORT_WEB_UI',
                    'START_WEB', 'DOCKER_BRIDGE_IP', 'DEFAULT_REGION', 'LAMBDA_JAVA_OPTS', 'LOCALSTACK_API_KEY',
-                   'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS']
+                   'LAMBDA_CONTAINER_REGISTRY', 'TEST_AWS_ACCOUNT_ID', 'DISABLE_EVENTS', 'EDGE_PORT',
+                   'EDGE_PORT_HTTP', 'SKIP_INFRA_DOWNLOADS', 'STEPFUNCTIONS_LAMBDA_ENDPOINT',
+                   'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
+                   'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
+                   'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -207,10 +265,12 @@ if is_in_docker and not os.environ.get('LAMBDA_REMOTE_DOCKER', '').strip():
     LAMBDA_REMOTE_DOCKER = True
 
 # local config file path in home directory
-CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
+CONFIG_FILE_PATH = os.path.join(TMP_FOLDER, '.localstack')
+if not is_in_docker:
+    CONFIG_FILE_PATH = os.path.join(expanduser('~'), '.localstack')
 
 # set variables no_proxy, i.e., run internal service calls directly
-no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, '127.0.0.1', '[::1]')))
+no_proxy = ','.join(set((LOCALSTACK_HOSTNAME, HOSTNAME, LOCALHOST, LOCALHOST_IP, '[::1]')))
 if os.environ.get('no_proxy'):
     os.environ['no_proxy'] += ',' + no_proxy
 elif os.environ.get('NO_PROXY'):
@@ -268,7 +328,7 @@ def populate_configs(service_ports=None):
         port_var_name = 'PORT_%s' % key_upper
         port_number = service_port(key)
         globs[port_var_name] = port_number
-        url = 'http%s://%s:%s' % ('s' if USE_SSL else '', LOCALSTACK_HOSTNAME, port_number)
+        url = '%s://%s:%s' % (get_protocol(), LOCALSTACK_HOSTNAME, port_number)
         # define TEST_*_URL variables with mock service endpoints
         url_key = 'TEST_%s_URL' % key_upper
         globs[url_key] = url
@@ -284,19 +344,35 @@ def populate_configs(service_ports=None):
 
 
 def service_port(service_key):
+    if FORWARD_EDGE_INMEM:
+        if service_key == 'elasticsearch':
+            # TODO Elasticsearch domains are a special case - we do not want to route them through
+            # the edge service, as that would require too many route mappings. In the future, we
+            # should integrate them with the port range for external services (4510-4530)
+            return SERVICE_PORTS.get(service_key, 0)
+        return EDGE_PORT_HTTP or EDGE_PORT
     return SERVICE_PORTS.get(service_key, 0)
+
+
+def get_protocol():
+    return 'https' if USE_SSL else 'http'
 
 
 def external_service_url(service_key, host=None):
     host = host or HOSTNAME_EXTERNAL
-    return 'http%s://%s:%s' % ('s' if USE_SSL else '', host, service_port(service_key))
+    return '%s://%s:%s' % (get_protocol(), host, service_port(service_key))
+
+
+def get_edge_url():
+    port = EDGE_PORT_HTTP or EDGE_PORT
+    return '%s://%s:%s' % (get_protocol(), LOCALSTACK_HOSTNAME, port)
 
 
 # initialize config values
 populate_configs()
 
-# set log level
-if os.environ.get('DEBUG', '').lower() in TRUE_STRINGS:
+# set log levels
+if DEBUG:
     logging.getLogger('').setLevel(logging.DEBUG)
     logging.getLogger('localstack').setLevel(logging.DEBUG)
 
@@ -304,4 +380,4 @@ if os.environ.get('DEBUG', '').lower() in TRUE_STRINGS:
 BUNDLE_API_PROCESSES = True
 
 # whether to use a CPU/memory profiler when running the integration tests
-USE_PROFILER = os.environ.get('USE_PROFILER', '').lower() in TRUE_STRINGS
+USE_PROFILER = is_env_true('USE_PROFILER')

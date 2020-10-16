@@ -1,0 +1,39 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "MyQueue": {
+      "Properties": {
+        "QueueName": "MyQueue.fifo",
+        "FifoQueue": true,
+        "ContentBasedDeduplication": true
+      },
+      "Type": "AWS::SQS::Queue"
+    }
+  },
+  "Outputs": {
+    "QueueName": {
+      "Description": "The name of the queue",
+      "Value": {
+        "Fn::GetAtt": [
+          "MyQueue",
+          "QueueName"
+        ]
+      }
+    },
+    "QueueURL": {
+      "Description": "The URL of the queue",
+      "Value": {
+        "Ref": "MyQueue"
+      }
+    },
+    "QueueARN": {
+      "Description": "The ARN of the queue",
+      "Value": {
+        "Fn::GetAtt": [
+          "MyQueue",
+          "Arn"
+        ]
+      }
+    }
+  }
+}

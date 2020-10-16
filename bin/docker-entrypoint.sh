@@ -3,6 +3,11 @@
 set -eo pipefail
 shopt -s nullglob
 
+if [[ ! $INIT_SCRIPTS_PATH ]]
+then
+  INIT_SCRIPTS_PATH=/docker-entrypoint-initaws.d
+fi
+
 # Strip `LOCALSTACK_` prefix in environment variables name (except LOCALSTACK_HOSTNAME)
 source <(
   env |
@@ -17,12 +22,12 @@ cat /dev/null > /tmp/localstack_infra.err
 supervisord -c /etc/supervisord.conf &
 
 function run_startup_scripts {
-  until grep -q "^Ready.$" /tmp/localstack_infra.log >/dev/null 2>&1 ; do
+  until grep -q '^Ready.' /tmp/localstack_infra.log >/dev/null 2>&1 ; do
     echo "Waiting for all LocalStack services to be ready"
     sleep 7
   done
 
-  for f in /docker-entrypoint-initaws.d/*; do
+  for f in $INIT_SCRIPTS_PATH/*; do
     case "$f" in
       *.sh)     echo "$0: running $f"; . "$f" ;;
       *)        echo "$0: ignoring $f" ;;

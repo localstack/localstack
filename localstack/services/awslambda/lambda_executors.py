@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import glob
 import json
 import time
@@ -7,18 +8,21 @@ import logging
 import threading
 import subprocess
 import six
+import base64
 from multiprocessing import Process, Queue
 try:
     from shlex import quote as cmd_quote
 except ImportError:
     from pipes import quote as cmd_quote  # for Python 2.7
 from localstack import config
+from localstack.utils import bootstrap
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file,
-    to_str, run, cp_r, json_safe, get_free_tcp_port)
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
+    to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
-from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs
+from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -39,12 +43,11 @@ LAMBDA_RUNTIME_JAVA8 = 'java8'
 LAMBDA_RUNTIME_JAVA11 = 'java11'
 LAMBDA_RUNTIME_DOTNETCORE2 = 'dotnetcore2.0'
 LAMBDA_RUNTIME_DOTNETCORE21 = 'dotnetcore2.1'
+LAMBDA_RUNTIME_DOTNETCORE31 = 'dotnetcore3.1'
 LAMBDA_RUNTIME_GOLANG = 'go1.x'
 LAMBDA_RUNTIME_RUBY = 'ruby'
 LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
 LAMBDA_RUNTIME_PROVIDED = 'provided'
-
-LAMBDA_EVENT_FILE = 'event_file.json'
 
 LAMBDA_SERVER_UNIQUE_PORTS = 500
 LAMBDA_SERVER_PORT_OFFSET = 5000
@@ -58,7 +61,15 @@ LOG = logging.getLogger(__name__)
 # maximum time a pre-allocated container can sit idle before getting killed
 MAX_CONTAINER_IDLE_TIME_MS = 600 * 1000
 
+# SQS event source name
 EVENT_SOURCE_SQS = 'aws:sqs'
+
+# IP address of main Docker container (lazily initialized)
+DOCKER_MAIN_CONTAINER_IP = None
+
+# whether to use our custom Java executor, or the default from lambci
+# TODO: deprecated, should be removed in the future
+USE_CUSTOM_JAVA_EXECUTOR = False
 
 
 def get_from_event(event, key):
@@ -88,40 +99,70 @@ def _store_logs(func_details, log_output, invocation_time=None, container_id=Non
     return store_cloudwatch_logs(log_group_name, log_stream_name, log_output, invocation_time)
 
 
+def get_main_endpoint_from_container():
+    global DOCKER_MAIN_CONTAINER_IP
+    if DOCKER_MAIN_CONTAINER_IP is None:
+        DOCKER_MAIN_CONTAINER_IP = False
+        try:
+            if in_docker():
+                DOCKER_MAIN_CONTAINER_IP = bootstrap.get_main_container_ip()
+                LOG.info('Determined main container target IP: %s' % DOCKER_MAIN_CONTAINER_IP)
+        except Exception as e:
+            container_name = bootstrap.get_main_container_name()
+            LOG.info('Unable to get IP address of main Docker container "%s": %s' %
+                (container_name, e))
+    # return main container IP, or fall back to Docker host (bridge IP, or host DNS address)
+    return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
+
+
 class LambdaExecutor(object):
     """ Base class for Lambda executors. Subclasses must overwrite the _execute method """
     def __init__(self):
         # keeps track of each function arn and the last time it was invoked
         self.function_invoke_times = {}
 
+    def _prepare_environment(self, func_details):
+        # setup environment pre-defined variables for docker environment
+        result = func_details.envvars.copy()
+
+        # injecting aws credentials into docker environment if not provided
+        aws_stack.inject_test_credentials_into_env(result)
+
+        return result
+
     def execute(self, func_arn, func_details, event, context=None, version=None,
             asynchronous=False, callback=None):
         def do_execute(*args):
-            # set the invocation time in milliseconds
-            invocation_time = int(time.time() * 1000)
-            # start the execution
-            raised_error = None
-            result = None
-            dlq_sent = None
-            try:
-                result = self._execute(func_arn, func_details, event, context, version)
-            except Exception as e:
-                raised_error = e
-                if asynchronous:
-                    if get_from_event(event, 'eventSource') == EVENT_SOURCE_SQS:
-                        sqs_queue_arn = get_from_event(event, 'eventSourceARN')
-                        if sqs_queue_arn:
-                            # event source is SQS, send event back to dead letter queue
-                            dlq_sent = sqs_error_to_dead_letter_queue(sqs_queue_arn, event, e)
-                    else:
-                        # event source is not SQS, send back to lambda dead letter queue
-                        lambda_error_to_dead_letter_queue(func_details, event, e)
-                raise e
-            finally:
-                self.function_invoke_times[func_arn] = invocation_time
-                callback and callback(result, func_arn, event, error=raised_error, dlq_sent=dlq_sent)
-            # return final result
-            return result
+
+            @cloudwatched('lambda')
+            def _run(func_arn=None):
+                # set the invocation time in milliseconds
+                invocation_time = int(time.time() * 1000)
+                # start the execution
+                raised_error = None
+                result = None
+                dlq_sent = None
+                try:
+                    result = self._execute(func_arn, func_details, event, context, version)
+                except Exception as e:
+                    raised_error = e
+                    if asynchronous:
+                        if get_from_event(event, 'eventSource') == EVENT_SOURCE_SQS:
+                            sqs_queue_arn = get_from_event(event, 'eventSourceARN')
+                            if sqs_queue_arn:
+                                # event source is SQS, send event back to dead letter queue
+                                dlq_sent = sqs_error_to_dead_letter_queue(sqs_queue_arn, event, e)
+                        else:
+                            # event source is not SQS, send back to lambda dead letter queue
+                            lambda_error_to_dead_letter_queue(func_details, event, e)
+                    raise e
+                finally:
+                    self.function_invoke_times[func_arn] = invocation_time
+                    callback and callback(result, func_arn, event, error=raised_error, dlq_sent=dlq_sent)
+                # return final result
+                return result
+
+            return _run(func_arn=func_arn)
 
         # Inform users about asynchronous mode of the lambda execution.
         if asynchronous:
@@ -173,9 +214,7 @@ class LambdaExecutor(object):
 
 
 class ContainerInfo:
-    """
-    Contains basic information about a docker container.
-    """
+    """ Contains basic information about a docker container. """
     def __init__(self, name, entry_point):
         self.name = name
         self.entry_point = entry_point
@@ -201,7 +240,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         lambda_cwd = func_details.cwd
         runtime = func_details.runtime
         handler = func_details.handler
-        environment = func_details.envvars.copy()
+        environment = self._prepare_environment(func_details)
 
         # configure USE_SSL in environment
         if config.USE_SSL:
@@ -214,23 +253,29 @@ class LambdaExecutorContainers(LambdaExecutor):
         event_body = json.dumps(json_safe(event))
         stdin = self.prepare_event(environment, event_body)
 
-        docker_host = config.DOCKER_HOST_FROM_CONTAINER
+        main_endpoint = get_main_endpoint_from_container()
 
-        environment['HOSTNAME'] = docker_host
-        environment['LOCALSTACK_HOSTNAME'] = docker_host
+        environment['LOCALSTACK_HOSTNAME'] = main_endpoint
         environment['_HANDLER'] = handler
+        if os.environ.get('HTTP_PROXY'):
+            environment['HTTP_PROXY'] = os.environ['HTTP_PROXY']
         if func_details.timeout:
             environment['AWS_LAMBDA_FUNCTION_TIMEOUT'] = str(func_details.timeout)
         if context:
             environment['AWS_LAMBDA_FUNCTION_NAME'] = context.function_name
             environment['AWS_LAMBDA_FUNCTION_VERSION'] = context.function_version
             environment['AWS_LAMBDA_FUNCTION_INVOKED_ARN'] = context.invoked_function_arn
+            environment['AWS_LAMBDA_COGNITO_IDENTITY'] = json.dumps(context.cognito_identity or {})
+            if context.client_context is not None:
+                environment['AWS_LAMBDA_CLIENT_CONTEXT'] = json.dumps(to_str(
+                    base64.b64decode(to_bytes(context.client_context))))
 
         # custom command to execute in the container
         command = ''
+        events_file = ''
 
-        # if running a Java Lambda, set up classpath arguments
-        if is_java_lambda(runtime):
+        if USE_CUSTOM_JAVA_EXECUTOR and is_java_lambda(runtime):
+            # if running a Java Lambda with our custom executor, set up classpath arguments
             java_opts = Util.get_java_opts()
             stdin = None
             # copy executor jar into temp directory
@@ -239,10 +284,11 @@ class LambdaExecutorContainers(LambdaExecutor):
                 cp_r(LAMBDA_EXECUTOR_JAR, target_file)
             # TODO cleanup once we have custom Java Docker image
             taskdir = '/var/task'
-            save_file(os.path.join(lambda_cwd, LAMBDA_EVENT_FILE), event_body)
+            events_file = '_lambda.events.%s.json' % short_uid()
+            save_file(os.path.join(lambda_cwd, events_file), event_body)
             classpath = Util.get_java_classpath(target_file)
             command = ("bash -c 'cd %s; java %s -cp \"%s\" \"%s\" \"%s\" \"%s\"'" %
-                (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, LAMBDA_EVENT_FILE))
+                (taskdir, java_opts, classpath, LAMBDA_EXECUTOR_CLASS, handler, events_file))
 
         # accept any self-signed certificates for outgoing calls from the Lambda
         if is_nodejs_runtime(runtime):
@@ -254,6 +300,9 @@ class LambdaExecutorContainers(LambdaExecutor):
         # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
         LOG.info('Running lambda cmd: %s' % cmd)
         result = self.run_lambda_executor(cmd, stdin, env_vars=environment, func_details=func_details)
+
+        # clean up events file
+        events_file and os.path.exists(events_file) and rm_rf(events_file)
 
         return result
 
@@ -297,13 +346,9 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         # determine files to be copied into the container
         copy_command = ''
         docker_cmd = self._docker_cmd()
-        event_file = os.path.join(lambda_cwd, LAMBDA_EVENT_FILE)
         if not has_been_invoked_before and config.LAMBDA_REMOTE_DOCKER:
             # if this is the first invocation: copy the entire folder into the container
             copy_command = '%s cp "%s/." "%s:/var/task";' % (docker_cmd, lambda_cwd, container_info.name)
-        elif os.path.exists(event_file):
-            # otherwise, copy only the event file if it exists
-            copy_command = '%s cp "%s" "%s:/var/task";' % (docker_cmd, event_file, container_info.name)
 
         cmd = (
             '%s'
@@ -359,8 +404,13 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                 network = config.LAMBDA_DOCKER_NETWORK
                 network_str = '--network="%s"' % network if network else ''
 
+                dns = config.LAMBDA_DOCKER_DNS
+                dns_str = '--dns="%s"' % dns if dns else ''
+
                 mount_volume = not config.LAMBDA_REMOTE_DOCKER
                 lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
+                if (':' in lambda_cwd and '\\' in lambda_cwd):
+                    lambda_cwd_on_host = Util.format_windows_path(lambda_cwd_on_host)
                 mount_volume_str = '-v "%s":/var/task' % lambda_cwd_on_host if mount_volume else ''
 
                 # Create and start the container
@@ -377,8 +427,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
                     '  %s'  # env_vars
                     '  %s'  # network
+                    '  %s'  # dns
                     ' %s'
-                ) % (docker_cmd, rm_flag, container_name, mount_volume_str, env_vars_str, network_str, docker_image)
+                ) % (docker_cmd, rm_flag, container_name, mount_volume_str,
+                    env_vars_str, network_str, dns_str, docker_image)
                 LOG.debug(cmd)
                 run(cmd)
 
@@ -584,7 +636,6 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
     def __init__(self):
         super(LambdaExecutorSeparateContainers, self).__init__()
-        self.next_port = 1
         self.max_port = LAMBDA_API_UNIQUE_PORTS
         self.port_offset = LAMBDA_API_PORT_OFFSET
 
@@ -604,10 +655,12 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         network = config.LAMBDA_DOCKER_NETWORK
         network_str = '--network="%s"' % network if network else ''
         if network == 'host':
-            port = str(self.next_port + self.port_offset)
+            port = get_free_tcp_port()
             env_vars['DOCKER_LAMBDA_API_PORT'] = port
             env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = port
-            self.next_port = (self.next_port + 1) % self.max_port
+
+        dns = config.LAMBDA_DOCKER_DNS
+        dns_str = '--dns="%s"' % dns if dns else ''
 
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
         debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
@@ -622,12 +675,14 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'  # debug_docker_java_port
                 ' %s'  # env
                 ' %s'  # network
+                ' %s'  # dns
                 ' %s'  # --rm flag
                 ' %s %s'  # image and command
                 ')";'
                 '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
                 '%s start -ai "$CONTAINER_ID";'
-            ) % (docker_cmd, entrypoint, debug_docker_java_port, env_vars_string, network_str, rm_flag,
+            ) % (docker_cmd, entrypoint, debug_docker_java_port,
+                env_vars_string, network_str, dns_str, rm_flag,
                  docker_image, command,
                  docker_cmd, lambda_cwd,
                  docker_cmd)
@@ -638,17 +693,18 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s -v "%s":/var/task'
                 ' %s'
                 ' %s'  # network
+                ' %s'  # dns
                 ' %s'  # --rm flag
                 ' %s %s'
             ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string,
-                 network_str, rm_flag, docker_image, command)
+                 network_str, dns_str, rm_flag, docker_image, command)
         return cmd
 
 
 class LambdaExecutorLocal(LambdaExecutor):
     def _execute(self, func_arn, func_details, event, context=None, version=None):
         lambda_cwd = func_details.cwd
-        environment = func_details.envvars.copy()
+        environment = self._prepare_environment(func_details)
 
         # execute the Lambda function in a forked sub-process, sync result via queue
         queue = Queue()
@@ -657,19 +713,26 @@ class LambdaExecutorLocal(LambdaExecutor):
 
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
-            if lambda_cwd:
-                os.chdir(lambda_cwd)
-            if environment:
-                os.environ.update(environment)
-            result = lambda_function(event, context)
-            queue.put(result)
+            path_before = sys.path
+            try:
+                if lambda_cwd:
+                    os.chdir(lambda_cwd)
+                    sys.path = [lambda_cwd] + sys.path
+                if environment:
+                    os.environ.update(environment)
+                result = lambda_function(event, context)
+                queue.put(result)
+            finally:
+                sys.path = path_before
 
         process = Process(target=do_execute)
         with CaptureOutput() as c:
             process.run()
         result = queue.get()
+
+        # Make sure to keep the log line below, to ensure the log stream gets created
+        log_output = 'START: Lambda %s started via "local" executor ...' % func_arn
         # TODO: Interweaving stdout/stderr currently not supported
-        log_output = ''
         for stream in (c.stdout(), c.stderr()):
             if stream:
                 log_output += ('\n' if log_output else '') + stream
@@ -683,10 +746,10 @@ class LambdaExecutorLocal(LambdaExecutor):
         handler = func_details.handler
         opts = config.LAMBDA_JAVA_OPTS if config.LAMBDA_JAVA_OPTS else ''
         event_file = EVENT_FILE_PATTERN.replace('*', short_uid())
-        save_file(event_file, json.dumps(event))
+        save_file(event_file, json.dumps(json_safe(event)))
         TMP_FILES.append(event_file)
         class_name = handler.split('::')[0]
-        classpath = '%s:%s:%s' % (LAMBDA_EXECUTOR_JAR, main_file, Util.get_java_classpath(main_file))
+        classpath = '%s:%s:%s' % (main_file, Util.get_java_classpath(main_file), LAMBDA_EXECUTOR_JAR)
         cmd = 'java %s -cp %s %s %s %s' % (opts, classpath, LAMBDA_EXECUTOR_CLASS, class_name, event_file)
         LOG.warning(cmd)
         result = self.run_lambda_executor(cmd, func_details=func_details)
@@ -699,10 +762,17 @@ class Util:
     @classmethod
     def get_java_opts(cls):
         opts = config.LAMBDA_JAVA_OPTS or ''
+        # Replace _debug_port_ with a random free port
         if '_debug_port_' in opts:
             if not cls.debug_java_port:
                 cls.debug_java_port = get_free_tcp_port()
             opts = opts.replace('_debug_port_', ('%s' % cls.debug_java_port))
+        else:
+            # Parse the debug port from opts
+            m = re.match('.*address=(\\d+).*', opts)
+            if m is not None:
+                cls.debug_java_port = m.groups()[0]
+
         return opts
 
     @classmethod
@@ -711,12 +781,20 @@ class Util:
                       r'%s/\1' % config.HOST_TMP_FOLDER, path)
 
     @classmethod
+    def format_windows_path(cls, path):
+        temp = path.replace(':', '').replace('\\', '/')
+        if len(temp) >= 1 and temp[:1] != '/':
+            temp = '/' + temp
+        temp = '%s%s' % (config.WINDOWS_DOCKER_MOUNT_PREFIX, temp)
+        return temp
+
+    @classmethod
     def docker_image_for_runtime(cls, runtime):
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
         # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
         # See https://github.com/lambci/docker-lambda/pull/218
-        lambdas_to_add_prefix = ['dotnetcore', 'python2.7', 'python3.6', 'python3.7']
+        lambdas_to_add_prefix = ['dotnetcore2.0', 'dotnetcore2.1', 'python2.7', 'python3.6', 'python3.7']
         if docker_image == 'lambci/lambda' and any(img in docker_tag for img in lambdas_to_add_prefix):
             docker_tag = '20191117-%s' % docker_tag
         return '"%s:%s"' % (docker_image, docker_tag)
@@ -740,13 +818,15 @@ class Util:
         """
         entries = ['.']
         base_dir = os.path.dirname(archive)
-        for pattern in ['%s/*.jar', '%s/lib/*.jar', '%s/*.zip']:
+        for pattern in ['%s/*.jar', '%s/lib/*.jar', '%s/java/lib/*.jar', '%s/*.zip']:
             for entry in glob.glob(pattern % base_dir):
                 if os.path.realpath(archive) != os.path.realpath(entry):
                     entries.append(os.path.relpath(entry, base_dir))
         # make sure to append the localstack-utils.jar at the end of the classpath
         # https://github.com/localstack/localstack/issues/1160
         entries.append(os.path.relpath(archive, base_dir))
+        entries.append('*.jar')
+        entries.append('java/lib/*.jar')
         result = ':'.join(entries)
         return result
 

@@ -46,24 +46,30 @@ def handler(event, context):
         body['requestContext'] = event.get('requestContext')
         body['queryStringParameters'] = event.get('queryStringParameters')
         body['httpMethod'] = event.get('httpMethod')
+        body['body'] = event.get('body')
+        if body['httpMethod'] == 'DELETE':
+            return {'statusCode': 204}
+
         status_code = body.get('return_status_code', 200)
         headers = body.get('return_headers', {})
         body = body.get('return_raw_body') or body
         return {
             'body': body,
             'statusCode': status_code,
-            'headers': headers
+            'headers': headers,
+            'multiValueHeaders': {'set-cookie': ['language=en-US', 'theme=blue moon']},
         }
 
     if 'Records' not in event:
-        return {
-            'event': event,
-            'context': {
-                'invoked_function_arn': context.invoked_function_arn,
-                'function_version': context.function_version,
-                'function_name': context.function_name
-            }
-        }
+        result_map = {'event': event, 'context': {}}
+        result_map['context']['invoked_function_arn'] = context.invoked_function_arn
+        result_map['context']['function_version'] = context.function_version
+        result_map['context']['function_name'] = context.function_name
+
+        if hasattr(context, 'client_context'):
+            result_map['context']['client_context'] = context.client_context
+
+        return result_map
 
     raw_event_messages = []
     for record in event['Records']:

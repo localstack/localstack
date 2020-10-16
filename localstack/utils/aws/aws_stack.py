@@ -3,13 +3,15 @@ import re
 import json
 import time
 import boto3
-import base64
 import logging
 import six
+import botocore
 from localstack import config
 from localstack.constants import (
     REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
-    APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
+    APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
+    MAX_POOL_CONNECTIONS)
+from localstack.utils.aws import templating
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
 from localstack.utils.aws.aws_models import KinesisStream
@@ -144,7 +146,10 @@ def get_boto3_credentials():
         return CUSTOM_BOTO3_SESSION.get_credentials()
     if not INITIAL_BOTO3_SESSION:
         INITIAL_BOTO3_SESSION = boto3.session.Session()
-    return INITIAL_BOTO3_SESSION.get_credentials()
+    try:
+        return INITIAL_BOTO3_SESSION.get_credentials()
+    except Exception:
+        return boto3.session.Session().get_credentials()
 
 
 def get_boto3_session():
@@ -200,7 +205,7 @@ def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=N
 
 
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None,
-        config=None, *args, **kwargs):
+        config=None, verify=False, *args, **kwargs):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
@@ -213,73 +218,30 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         # Cache clients, as this is a relatively expensive operation
         my_session = get_boto3_session()
         method = my_session.client if client else my_session.resource
-        verify = True
         if not endpoint_url:
             if is_local_env(env):
                 endpoint_url = get_local_service_url(service_name)
                 verify = False
+            backend_env_name = '%s_BACKEND' % service_name.upper()
+            backend_url = os.environ.get(backend_env_name, '').strip()
+            if backend_url:
+                endpoint_url = backend_url
+        config = config or botocore.client.Config()
+        # configure S3 path style addressing
+        if service_name == 's3':
+            config.s3 = {'addressing_style': 'path'}
+        # To, prevent error "Connection pool is full, discarding connection ...",
+        # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
+        config.max_pool_connections = MAX_POOL_CONNECTIONS
         BOTO_CLIENTS_CACHE[cache_key] = method(service_name, region_name=region,
             endpoint_url=endpoint_url, verify=verify, config=config)
 
     return BOTO_CLIENTS_CACHE[cache_key]
 
 
-class VelocityInput:
-    """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
-    def __init__(self, value):
-        self.value = value
-
-    def path(self, path):
-        from jsonpath_rw import parse
-        value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-        jsonpath_expr = parse(path)
-        result = [match.value for match in jsonpath_expr.find(value)]
-        result = result[0] if len(result) == 1 else result
-        return result
-
-    def json(self, path):
-        return json.dumps(self.path(path))
-
-    def __repr__(self):
-        return '$input'
-
-
-class VelocityUtil:
-    """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration velocity templates.
-    See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
-    def base64Encode(self, s):
-        if not isinstance(s, str):
-            s = json.dumps(s)
-        encoded_str = s.encode(config.DEFAULT_ENCODING)
-        encoded_b64_str = base64.b64encode(encoded_str)
-        return encoded_b64_str.decode(config.DEFAULT_ENCODING)
-
-    def base64Decode(self, s):
-        if not isinstance(s, str):
-            s = json.dumps(s)
-        return base64.b64decode(s)
-
-    def toJson(self, obj):
-        return obj and json.dumps(obj)
-
-
-def render_velocity_template(template, context, variables={}, as_json=False):
-    import airspeed
-
-    # run a few fixes to properly prepare the template
-    template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
-
-    t = airspeed.Template(template)
-    var_map = {
-        'input': VelocityInput(context),
-        'util': VelocityUtil()
-    }
-    var_map.update(variables or {})
-    replaced = t.merge(var_map)
-    if as_json:
-        replaced = json.loads(replaced)
-    return replaced
+# TODO remove from here in the future
+def render_velocity_template(*args, **kwargs):
+    return templating.render_velocity_template(*args, **kwargs)
 
 
 def check_valid_region(headers):
@@ -326,11 +288,11 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
     return content
 
 
-def get_s3_client():
-    return boto3.resource('s3',
-        endpoint_url=config.TEST_S3_URL,
-        config=boto3.session.Config(s3={'addressing_style': 'path'}),
-        verify=False)
+def inject_test_credentials_into_env(env):
+    env = env or {}
+    if ENV_ACCESS_KEY not in env and ENV_SECRET_KEY not in env:
+        env[ENV_ACCESS_KEY] = 'test'
+        env[ENV_SECRET_KEY] = 'test'
 
 
 def sqs_queue_url_for_arn(queue_arn):
@@ -414,6 +376,11 @@ def log_group_arn(group_name, account_id=None, region_name=None):
     return _resource_arn(group_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def events_rule_arn(rule_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:events:%s:%s:rule/%s'
+    return _resource_arn(rule_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def lambda_function_arn(function_name, account_id=None, region_name=None):
     return lambda_function_or_layer_arn('function', function_name, account_id=account_id, region_name=region_name)
 
@@ -471,14 +438,19 @@ def cognito_user_pool_arn(user_pool_id, account_id=None, region_name=None):
     return _resource_arn(user_pool_id, pattern, account_id=account_id, region_name=region_name)
 
 
-def kinesis_stream_arn(stream_name, account_id=None):
-    account_id = get_account_id(account_id)
-    return 'arn:aws:kinesis:%s:%s:stream/%s' % (get_region(), account_id, stream_name)
+def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:kinesis:%s:%s:stream/%s'
+    return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def firehose_stream_arn(stream_name, account_id=None):
-    account_id = get_account_id(account_id)
-    return ('arn:aws:firehose:%s:%s:deliverystream/%s' % (get_region(), account_id, stream_name))
+def firehose_stream_arn(stream_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:firehose:%s:%s:deliverystream/%s'
+    return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def es_domain_arn(domain_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:es:%s:%s:domain/%s'
+    return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
 def s3_bucket_arn(bucket_name, account_id=None):
@@ -538,12 +510,21 @@ def sqs_receive_message(queue_arn):
     return response
 
 
+def firehose_name(firehose_arn):
+    return firehose_arn.split('/')[-1]
+
+
+def kinesis_stream_name(kinesis_arn):
+    return kinesis_arn.split(':stream/')[-1]
+
+
 def mock_aws_request_headers(service='dynamodb', region_name=None):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == 'kinesis':
         ctype = APPLICATION_AMZ_JSON_1_1
-    elif service == 'sqs':
+    elif service in ['sns', 'sqs']:
         ctype = APPLICATION_X_WWW_FORM_URLENCODED
+
     access_key = get_boto3_credentials().access_key
     region_name = region_name or get_region()
     headers = {
@@ -563,7 +544,8 @@ def dynamodb_get_item_raw(request):
     headers['X-Amz-Target'] = 'DynamoDB_20120810.GetItem'
     new_item = make_http_request(url=config.TEST_DYNAMODB_URL,
         method='POST', data=json.dumps(request), headers=headers)
-    new_item = json.loads(new_item.text)
+    new_item = new_item.text
+    new_item = new_item and json.loads(new_item)
     return new_item
 
 
@@ -795,7 +777,7 @@ def create_kinesis_stream(stream_name, shards=1, env=None, delete=False):
     if delete:
         run_safe(lambda: stream.destroy(), print_error=False)
     stream.create()
-    stream.wait_for()
+    # Note: Returning the stream without awaiting its creation (via wait_for()) to avoid API call timeouts/retries.
     return stream
 
 

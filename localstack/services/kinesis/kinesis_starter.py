@@ -1,11 +1,10 @@
 import logging
 import traceback
 from localstack import config
-from localstack.constants import DEFAULT_PORT_KINESIS_BACKEND
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import mkdir
+from localstack.utils.common import mkdir, get_free_tcp_port, edge_ports_info
 from localstack.services import install
-from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
+from localstack.services.infra import start_proxy_for_service, do_run
 from localstack.services.install import ROOT_PATH
 
 LOGGER = logging.getLogger(__name__)
@@ -14,7 +13,7 @@ LOGGER = logging.getLogger(__name__)
 def start_kinesis(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_KINESIS
     install.install_kinesalite()
-    backend_port = DEFAULT_PORT_KINESIS_BACKEND
+    backend_port = get_free_tcp_port()
     latency = config.KINESIS_LATENCY
     kinesis_data_dir_param = ''
     if config.DATA_DIR:
@@ -28,7 +27,7 @@ def start_kinesis(port=None, asynchronous=False, update_listener=None):
         ROOT_PATH, config.KINESIS_SHARD_LIMIT, backend_port,
         latency, latency, latency, kinesis_data_dir_param
     )
-    print('Starting mock Kinesis (%s port %s)...' % (get_service_protocol(), port))
+    print('Starting mock Kinesis service on %s ...' % edge_ports_info())
     start_proxy_for_service('kinesis', port, backend_port, update_listener)
     return do_run(cmd, asynchronous)
 

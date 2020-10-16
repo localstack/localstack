@@ -1,27 +1,8 @@
 #!/usr/bin/env python
 
-"""
-Command line interface (CLI) for LocalStack.
-
-Usage:
-  localstack [options] <command> [ <args> ... ]
-  localstack (-v | --version)
-  localstack (-h | --help)
-
-Commands:%s
-
-Options:
-  -d --debug                  Show verbose debug output
-  -h --help                   Show this screen
-  -v --version                Show version
-%s
-"""
-
 import os
 import sys
 import glob
-import json
-import traceback
 
 PARENT_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 venv_dir = os.path.join(PARENT_FOLDER, '.venv')
@@ -30,65 +11,8 @@ if os.path.isdir(venv_dir):
         sys.path.insert(0, path)
     sys.path.insert(0, PARENT_FOLDER)
 
-from docopt import docopt
-from localstack import config, constants
-from localstack.utils import cli, bootstrap
+from localstack.utils import cli
 
 
 if __name__ == '__main__':
-
-    # set basic CLI commands
-    config.CLI_COMMANDS['infra'] = {
-        'description': 'Commands to manage the infrastructure',
-        'function': cli.cmd_infra
-    }
-    config.CLI_COMMANDS['start'] = {
-        'description': 'Shorthand to start the infrastructure',
-        'function': cli.cmd_infra
-    }
-    config.CLI_COMMANDS['web'] = {
-        'description': 'Commands to manage the Web dashboard',
-        'function': cli.cmd_web
-    }
-    config.CLI_COMMANDS['ssh'] = {
-        'description': 'Shorthand to obtain a shell in the running container',
-        'function': cli.cmd_ssh
-    }
-
-    # load CLI plugins
-    bootstrap.load_plugins(scope=bootstrap.PLUGIN_SCOPE_COMMANDS)
-
-    # create final usage string
-    additional_params = []
-    additional_commands = ''
-    for cmd in sorted(config.CLI_COMMANDS.keys()):
-        cmd_details = config.CLI_COMMANDS[cmd]
-        additional_commands += '\n  %s%s%s' % (cmd, (20 - len(cmd)) * ' ', cmd_details['description'])
-        for param in cmd_details.get('parameters', []):
-            additional_params.append(param)
-    additional_params = '\n'.join(additional_params)
-    doc_string = __doc__ % (additional_commands, additional_params)
-
-    args = docopt(doc_string, options_first=True)
-
-    if args['--version']:
-        print(constants.VERSION)
-        sys.exit(0)
-
-    if args['--debug']:
-        os.environ['DEBUG'] = '1'
-
-    # invoke subcommand
-    argv = [args['<command>']] + args['<args>']
-    subcommand = config.CLI_COMMANDS.get(args['<command>'])
-    if subcommand:
-        try:
-            subcommand['function'](argv, args)
-        except Exception as e:
-            if os.environ.get('DEBUG') in ['1', 'true']:
-                print(traceback.format_exc())
-            print('ERROR: %s' % e)
-            sys.exit(1)
-    else:
-        print('ERROR: Invalid command "%s"' % args['<command>'])
-        sys.exit(1)
+    cli.main()

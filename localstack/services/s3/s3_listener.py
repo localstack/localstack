@@ -1,31 +1,46 @@
+import time
+import gzip
 import re
-import logging
 import json
 import uuid
 import base64
 import codecs
+import random
+import logging
+import datetime
 import xmltodict
 import collections
-import botocore.config
-import six
-import datetime
 import dateutil.parser
-from six.moves.urllib import parse as urlparse
+import urllib.parse
+import six
+import botocore.config
+from pytz import timezone
+from urllib.parse import parse_qs
+from botocore.compat import urlsplit
 from botocore.client import ClientError
+from botocore.credentials import Credentials
+from localstack.utils.auth import HmacV1QueryAuth
+from botocore.awsrequest import create_request_object
 from requests.models import Response, Request
+from six.moves.urllib import parse as urlparse
 from localstack import config, constants
-from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL
-from localstack.utils import persistence
+from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import (
-    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol)
-from localstack.utils.analytics import event_publisher
-from localstack.utils.aws.aws_responses import requests_response
 from localstack.services.s3 import multipart_content
-from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.common import (
+    short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
+)
+from localstack.utils.analytics import event_publisher
+from localstack.utils.http_utils import uses_chunked_encoding
+from localstack.utils.persistence import PersistingProxyListener
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.utils.aws.aws_responses import requests_response, requests_error_response_xml_signature_calculation
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
+
+# backend port (configured in s3_starter.py on startup)
+PORT_S3_BACKEND = None
 
 # mappings for S3 bucket notifications
 S3_NOTIFICATIONS = {}
@@ -44,6 +59,9 @@ BUCKET_ENCRYPTIONS = {}
 
 # maps bucket name to object lock settings
 OBJECT_LOCK_CONFIGS = {}
+
+# map to store the s3 expiry dates
+OBJECT_EXPIRY = {}
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -70,6 +88,21 @@ ALLOWED_HEADER_OVERRIDES = {
     'response-content-disposition': 'Content-Disposition',
     'response-content-encoding': 'Content-Encoding',
 }
+
+# From botocore's auth.py:
+# https://github.com/boto/botocore/blob/30206ab9e9081c80fa68e8b2cb56296b09be6337/botocore/auth.py#L47
+POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+
+# ignored_headers_lower conatins headers which don't get involved in signature calculations process
+# these headers are being sent by the localstack by default.
+IGNORED_HEADERS_LOWER = [
+    'remote-addr', 'host', 'user-agent', 'accept-encoding',
+    'accept', 'connection', 'origin',
+    'x-forwarded-for', 'x-localstack-edge', 'authorization'
+]
+
+# params are required in presigned url
+PRESIGN_QUERY_PARAMS = ['Signature', 'Expires', 'AWSAccessKeyId']
 
 
 def event_type_matches(events, action, api_method):
@@ -110,7 +143,7 @@ def prefix_with_slash(s):
     return s if s[0] == '/' else '/%s' % s
 
 
-def get_event_message(event_name, bucket_name, file_name='testfile.txt', version_id=None, file_size=0):
+def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag='', version_id=None, file_size=0):
     # Based on: http://docs.aws.amazon.com/AmazonS3/latest/dev/notification-content-structure.html
     bucket_name = normalize_bucket_name(bucket_name)
     return {
@@ -141,9 +174,9 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', version
                     'arn': 'arn:aws:s3:::%s' % bucket_name
                 },
                 'object': {
-                    'key': file_name,
+                    'key': urllib.parse.quote(file_name),
                     'size': file_size,
-                    'eTag': 'd41d8cd98f00b204e9800998ecf8427e',
+                    'eTag': etag,
                     'versionId': version_id,
                     'sequencer': '0055AED6DCD90281E5'
                 }
@@ -180,17 +213,20 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
     key = urlparse.unquote(object_path.replace('//', '/'))[1:]
 
     s3_client = aws_stack.connect_to_service('s3')
+    object_data = {}
     try:
-        object_size = s3_client.head_object(Bucket=bucket_name, Key=key).get('ContentLength', 0)
+        object_data = s3_client.head_object(Bucket=bucket_name, Key=key)
+
     except botocore.exceptions.ClientError:
-        object_size = 0
+        pass
 
     # build event message
     message = get_event_message(
         event_name=event_name,
         bucket_name=bucket_name,
         file_name=key,
-        file_size=object_size,
+        etag=object_data.get('ETag', ''),
+        file_size=object_data.get('ContentLength', 0),
         version_id=version_id
     )
     message = json.dumps(message)
@@ -222,6 +258,7 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
         except Exception:
             LOGGER.warning('Unable to send notification for S3 bucket "%s" to Lambda function "%s".' %
                 (bucket_name, lambda_function_config))
+
     if not filter(lambda x: notif.get(x), NOTIFICATION_DESTINATION_TYPES):
         LOGGER.warning('Neither of %s defined for S3 notification.' %
             '/'.join(NOTIFICATION_DESTINATION_TYPES))
@@ -258,6 +295,7 @@ def set_cors(bucket_name, cors):
 
     if not isinstance(cors, dict):
         cors = xmltodict.parse(cors)
+
     BUCKET_CORS[bucket_name] = cors
     response.status_code = 200
     return response
@@ -277,12 +315,19 @@ def delete_cors(bucket_name):
     return response
 
 
+def convert_origins_into_list(allowed_origins):
+    if isinstance(allowed_origins, list):
+        return allowed_origins
+    return [allowed_origins]
+
+
 def append_cors_headers(bucket_name, request_method, request_headers, response):
     bucket_name = normalize_bucket_name(bucket_name)
 
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
         return
+
     origin = request_headers.get('Origin', '')
     rules = cors['CORSConfiguration']['CORSRule']
     if not isinstance(rules, list):
@@ -292,6 +337,9 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
         allowed_methods = rule.get('AllowedMethod', [])
         if request_method in allowed_methods:
             allowed_origins = rule.get('AllowedOrigin', [])
+            # when only one origin is being set in cors then the allowed_origins is being
+            # reflected as a string here,so making it a list and then proceeding.
+            allowed_origins = convert_origins_into_list(allowed_origins)
             for allowed in allowed_origins:
                 if origin in allowed or re.match(allowed.replace('*', '.*'), origin):
                     response.headers['Access-Control-Allow-Origin'] = origin
@@ -300,6 +348,53 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                         response.headers['Access-Control-Expose-Headers'] = \
                             ','.join(expose_headers) if isinstance(expose_headers, list) else expose_headers
                     break
+
+
+def append_aws_request_troubleshooting_headers(response):
+    gen_amz_request_id = ''.join(random.choice('0123456789ABCDEF') for i in range(16))
+    if response.headers.get('x-amz-request-id') is None:
+        response.headers['x-amz-request-id'] = gen_amz_request_id
+    if response.headers.get('x-amz-id-2') is None:
+        response.headers['x-amz-id-2'] = 'MzRISOwyjmnup' + gen_amz_request_id + '7/JypPGXLh0OVFGcJaaO3KW/hRAqKOpIEEp'
+
+
+def add_accept_range_header(response):
+    if response.headers.get('accept-ranges') is None:
+        response.headers['accept-ranges'] = 'bytes'
+
+
+def is_object_expired(path):
+    object_expiry = get_object_expiry(path)
+    if not object_expiry:
+        return False
+    if dateutil.parser.parse(object_expiry) > \
+            datetime.datetime.now(timezone(dateutil.parser.parse(object_expiry).tzname())):
+        return False
+    return True
+
+
+def set_object_expiry(path, headers):
+    OBJECT_EXPIRY[path] = headers.get('expires')
+
+
+def get_object_expiry(path):
+    return OBJECT_EXPIRY.get(path)
+
+
+def is_url_already_expired(expiry_timestamp):
+    if int(expiry_timestamp) < int(now_utc()):
+        return True
+    return False
+
+
+def add_reponse_metadata_headers(response):
+    if response.headers.get('content-language') is None:
+        response.headers['content-language'] = 'en-US'
+    if response.headers.get('cache-control') is None:
+        response.headers['cache-control'] = 'no-cache'
+    if response.headers.get('content-encoding') is None:
+        if not uses_chunked_encoding(response):
+            response.headers['content-encoding'] = 'identity'
 
 
 def append_last_modified_headers(response, content=None):
@@ -337,7 +432,7 @@ def append_list_objects_marker(method, path, data, response):
             query_map = urlparse.parse_qs(parsed.query)
             insert = '<Marker>%s</Marker>' % query_map.get('marker')[0]
             response._content = content.replace('</ListBucketResult>', '%s</ListBucketResult>' % insert)
-            response.headers['Content-Length'] = str(len(response._content))
+            response.headers.pop('Content-Length', None)
 
 
 def append_metadata_headers(method, query_map, headers):
@@ -421,7 +516,44 @@ def fix_metadata_key_underscores(request_headers={}, response=None):
 def fix_creation_date(method, path, response):
     if method != 'GET' or path != '/':
         return
-    response._content = re.sub(r'([0-9])</CreationDate>', r'\1Z</CreationDate>', to_str(response._content))
+    response._content = re.sub(r'(\.[0-9]+)(\+00:00)?</CreationDate>',
+        r'\1Z</CreationDate>', to_str(response._content))
+
+
+def fix_delimiter(data, headers, response):
+    if response.status_code == 200 and response._content:
+        c, xml_prefix, delimiter = response._content, '<?xml', '<Delimiter><'
+        pattern = '[<]Delimiter[>]None[<]'
+        if isinstance(c, bytes):
+            xml_prefix, delimiter = xml_prefix.encode(), delimiter.encode()
+            pattern = pattern.encode()
+        if c.startswith(xml_prefix):
+            response._content = re.compile(pattern).sub(delimiter, c)
+
+
+def convert_to_chunked_encoding(method, path, response):
+    if method != 'GET' or path != '/':
+        return
+    if response.headers.get('Transfer-Encoding', '').lower() == 'chunked':
+        return
+    response.headers['Transfer-Encoding'] = 'chunked'
+    response.headers.pop('Content-Encoding', None)
+    response.headers.pop('Content-Length', None)
+
+
+def unquote(s):
+    if (s[0], s[-1]) in (('"', '"'), ("'", "'")):
+        return s[1:-1]
+    return s
+
+
+def ret304_on_etag(data, headers, response):
+    etag = response.headers.get('ETag')
+    if etag:
+        match = headers.get('If-None-Match')
+        if match and unquote(match) == unquote(etag):
+            response.status_code = 304
+            response._content = ''
 
 
 def fix_etag_for_multipart(data, headers, response):
@@ -451,13 +583,16 @@ def remove_xml_preamble(response):
 #   for lifecycle/replication/encryption/...
 # --------------
 
-
 def get_lifecycle(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     lifecycle = BUCKET_LIFECYCLE.get(bucket_name)
     status_code = 200
+
     if not lifecycle:
-        # TODO: check if bucket actually exists
         lifecycle = {
             'Error': {
                 'Code': 'NoSuchLifecycleConfiguration',
@@ -471,10 +606,13 @@ def get_lifecycle(bucket_name):
 
 def get_replication(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     replication = BUCKET_REPLICATIONS.get(bucket_name)
     status_code = 200
     if not replication:
-        # TODO: check if bucket actually exists
         replication = {
             'Error': {
                 'Code': 'ReplicationConfigurationNotFoundError',
@@ -488,10 +626,13 @@ def get_replication(bucket_name):
 
 def get_encryption(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     encryption = BUCKET_ENCRYPTIONS.get(bucket_name)
     status_code = 200
     if not encryption:
-        # TODO: check if bucket actually exists
         encryption = {
             'Error': {
                 'Code': 'ServerSideEncryptionConfigurationNotFoundError',
@@ -505,10 +646,13 @@ def get_encryption(bucket_name):
 
 def get_object_lock(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     lock_config = OBJECT_LOCK_CONFIGS.get(bucket_name)
     status_code = 200
     if not lock_config:
-        # TODO: check if bucket actually exists
         lock_config = {
             'Error': {
                 'Code': 'ObjectLockConfigurationNotFoundError',
@@ -522,7 +666,10 @@ def get_object_lock(bucket_name):
 
 def set_lifecycle(bucket_name, lifecycle):
     bucket_name = normalize_bucket_name(bucket_name)
-    # TODO: check if bucket exists, otherwise return 404-like error
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     if isinstance(to_str(lifecycle), six.string_types):
         lifecycle = xmltodict.parse(lifecycle)
     BUCKET_LIFECYCLE[bucket_name] = lifecycle
@@ -531,7 +678,10 @@ def set_lifecycle(bucket_name, lifecycle):
 
 def set_replication(bucket_name, replication):
     bucket_name = normalize_bucket_name(bucket_name)
-    # TODO: check if bucket exists, otherwise return 404-like error
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     if isinstance(to_str(replication), six.string_types):
         replication = xmltodict.parse(replication)
     BUCKET_REPLICATIONS[bucket_name] = replication
@@ -540,7 +690,10 @@ def set_replication(bucket_name, replication):
 
 def set_encryption(bucket_name, encryption):
     bucket_name = normalize_bucket_name(bucket_name)
-    # TODO: check if bucket exists, otherwise return 404-like error
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     if isinstance(to_str(encryption), six.string_types):
         encryption = xmltodict.parse(encryption)
     BUCKET_ENCRYPTIONS[bucket_name] = encryption
@@ -549,7 +702,10 @@ def set_encryption(bucket_name, encryption):
 
 def set_object_lock(bucket_name, lock_config):
     bucket_name = normalize_bucket_name(bucket_name)
-    # TODO: check if bucket exists, otherwise return 404-like error
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
     if isinstance(to_str(lock_config), six.string_types):
         lock_config = xmltodict.parse(lock_config)
     OBJECT_LOCK_CONFIGS[bucket_name] = lock_config
@@ -560,7 +716,6 @@ def set_object_lock(bucket_name, lock_config):
 # UTIL METHODS
 # -------------
 
-
 def strip_chunk_signatures(data):
     # For clients that use streaming v4 authentication, the request contains chunk signatures
     # in the HTTP body (see example below) which we need to strip as moto cannot handle them
@@ -568,11 +723,27 @@ def strip_chunk_signatures(data):
     # 17;chunk-signature=6e162122ec4962bea0b18bc624025e6ae4e9322bdc632762d909e87793ac5921
     # <payload data ...>
     # 0;chunk-signature=927ab45acd82fc90a3c210ca7314d59fedc77ce0c914d79095f8cc9563cf2c70
-
-    data_new = re.sub(b'(^|\r\n)[0-9a-fA-F]+;chunk-signature=[0-9a-f]{64}(\r\n)(\r\n$)?', b'',
-        data, flags=re.MULTILINE | re.DOTALL)
+    data_new = ''
+    if data is not None:
+        data_new = re.sub(b'(^|\r\n)[0-9a-fA-F]+;chunk-signature=[0-9a-f]{64}(\r\n)(\r\n$)?', b'',
+            to_bytes(data), flags=re.MULTILINE | re.DOTALL)
 
     return data_new
+
+
+def is_bucket_available(bucket_name):
+    body = {'Code': '200'}
+    exists, code = bucket_exists(bucket_name)
+    if not exists:
+        body = {
+            'Error': {
+                'Code': code,
+                'Message': 'The bucket does not exist'
+            }
+        }
+        return exists, code, body
+
+    return True, 200, body
 
 
 def bucket_exists(bucket_name):
@@ -593,17 +764,38 @@ def bucket_exists(bucket_name):
 
 def check_content_md5(data, headers):
     actual = md5(strip_chunk_signatures(data))
-    expected = headers['Content-MD5']
     try:
-        expected = to_str(codecs.encode(base64.b64decode(expected), 'hex'))
+        md5_header = headers['Content-MD5']
+        if not is_base64(md5_header):
+            raise Exception('Content-MD5 header is not in Base64 format: "%s"' % md5_header)
+        expected = to_str(codecs.encode(base64.b64decode(md5_header), 'hex'))
     except Exception:
-        expected = '__invalid__'
+        return error_response('The Content-MD5 you specified is not valid.', 'InvalidDigest', status_code=400)
     if actual != expected:
-        return error_response('The Content-MD5 you specified was invalid', 'InvalidDigest', status_code=400)
+        return error_response('The Content-MD5 you specified did not match what we received.',
+            'BadDigest', status_code=400)
 
 
 def error_response(message, code, status_code=400):
     result = {'Error': {'Code': code, 'Message': message}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
+def no_such_key_error(resource, requestId=None, status_code=400):
+    result = {'Error': {'Code': 'NoSuchKey',
+            'Message': 'The resource you requested does not exist',
+            'Resource': resource, 'RequestId': requestId}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
+def token_expired_error(resource, requestId=None, status_code=400):
+    result = {'Error': {'Code': 'ExpiredToken',
+            'Message': 'The provided token has expired.',
+            'Resource': resource, 'RequestId': requestId}}
     content = xmltodict.unparse(result)
     headers = {'content-type': 'application/xml'}
     return requests_response(content, status_code=status_code, headers=headers)
@@ -653,8 +845,8 @@ def get_key_name(path, headers):
 
 
 def uses_path_addressing(headers):
-    host = headers['host']
-    return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL)
+    host = headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1] or headers['host']
+    return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL) or host.startswith(LOCALHOST_IP)
 
 
 def get_bucket_name(path, headers):
@@ -747,12 +939,73 @@ def handle_notification_request(bucket, method, data):
     return response
 
 
-class ProxyListenerS3(ProxyListener):
+def remove_bucket_notification(bucket):
+    S3_NOTIFICATIONS.pop(bucket, None)
 
-    def is_s3_copy_request(self, headers, path):
+
+def not_none_or(value, alternative):
+    return value if value is not None else alternative
+
+
+class ProxyListenerS3(PersistingProxyListener):
+    def api_name(self):
+        return 's3'
+
+    @staticmethod
+    def is_s3_copy_request(headers, path):
         return 'x-amz-copy-source' in headers or 'x-amz-copy-source' in path
 
+    @staticmethod
+    def get_201_response(key, bucket_name):
+        return """
+                <PostResponse>
+                    <Location>{protocol}://{host}/{encoded_key}</Location>
+                    <Bucket>{bucket}</Bucket>
+                    <Key>{key}</Key>
+                    <ETag>{etag}</ETag>
+                </PostResponse>
+                """.format(
+            protocol=get_service_protocol(),
+            host=config.HOSTNAME_EXTERNAL,
+            encoded_key=urlparse.quote(key, safe=''),
+            key=key,
+            bucket=bucket_name,
+            etag='d41d8cd98f00b204e9800998ecf8427f',
+        )
+
+    @staticmethod
+    def _update_location(content, bucket_name):
+        bucket_name = normalize_bucket_name(bucket_name)
+
+        host = config.HOSTNAME_EXTERNAL
+        if ':' not in host:
+            host = '%s:%s' % (host, config.PORT_S3)
+        return re.sub(r'<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>',
+                      r'<Location>%s://%s/%s/\2</Location>' % (get_service_protocol(), host, bucket_name),
+                      content, flags=re.MULTILINE)
+
+    @staticmethod
+    def is_query_allowable(method, query):
+        # Generally if there is a query (some/path/with?query) we don't want to send notifications
+        if not query:
+            return True
+        # Except we do want to notify on multipart and presigned url upload completion
+        contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
+        contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
+        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
+            return True
+
     def forward_request(self, method, path, data, headers):
+
+        # Create list of query parameteres from the url
+        parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
+        query_params = parse_qs(parsed.query)
+
+        # Detecting pre-sign url and checking signature
+        if any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
+            response = authenticate_presign_url(method=method, path=path, data=data, headers=headers)
+            if response is not None:
+                return response
 
         # parse path and query params
         parsed_path = urlparse.urlparse(path)
@@ -777,25 +1030,30 @@ class ProxyListenerS3(ProxyListener):
                 return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
                     'configured to use path style addressing, or send a valid <Bucket>.s3.amazonaws.com "Host" header',
                     'InvalidBucketName', status_code=400)
+
             return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
-        to_find = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
-        if data and data.startswith(to_bytes('<')) and to_find in data:
-            modified_data = data.replace(to_find, to_bytes(''))
+        to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
+        to_find2 = to_bytes('<CreateBucketConfiguration')
+        if data and data.startswith(to_bytes('<')) and to_find1 in data and to_find2 in data:
+            # Note: with the latest version, <CreateBucketConfiguration> must either
+            # contain a valid <LocationConstraint>, or not be present at all in the body.
+            modified_data = b''
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98
         # TODO we should evaluate whether to replace moto s3 with scality/S3:
         # https://github.com/scality/S3/issues/237
-        if headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD:
-            modified_data = strip_chunk_signatures(modified_data or data)
-            headers['content-length'] = headers.get('x-amz-decoded-content-length')
+        is_streaming_payload = headers.get(CONTENT_SHA256_HEADER) == STREAMING_HMAC_PAYLOAD
+        if is_streaming_payload:
+            modified_data = strip_chunk_signatures(not_none_or(modified_data, data))
+            headers['Content-Length'] = headers.get('x-amz-decoded-content-length')
 
         # POST requests to S3 may include a "${filename}" placeholder in the
         # key, which should be replaced with an actual file name before storing.
         if method == 'POST':
-            original_data = modified_data or data
+            original_data = not_none_or(modified_data, data)
             expanded_data = multipart_content.expand_multipart_filename(original_data, headers)
             if expanded_data is not original_data:
                 modified_data = expanded_data
@@ -821,6 +1079,23 @@ class ProxyListenerS3(ProxyListener):
             # handle and return response for ?notification request
             response = handle_notification_request(bucket, method, data)
             return response
+
+        # if the Expires key in the url is already expired then return error
+        if method == 'GET' and 'Expires' in query_map:
+            if is_url_already_expired(query_map.get('Expires')[0]):
+                return token_expired_error(path, headers.get('x-amz-request-id'), 400)
+
+        # If multipart POST with policy in the params, return error if the policy has expired
+        if method == 'POST':
+            policy_key, policy_value = multipart_content.find_multipart_key_value(data, headers, 'policy')
+            if policy_key and policy_value:
+                policy = json.loads(base64.b64decode(policy_value).decode('utf-8'))
+                expiration_string = policy.get('expiration', None)  # Example: 2020-06-05T13:37:12Z
+                if expiration_string:
+                    expiration_datetime = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT)
+                    expiration_timestamp = expiration_datetime.timestamp()
+                    if is_url_already_expired(expiration_timestamp):
+                        return token_expired_error(path, headers.get('x-amz-request-id'), 400)
 
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
@@ -855,25 +1130,11 @@ class ProxyListenerS3(ProxyListener):
                 return set_object_lock(bucket, data)
 
         if modified_data is not None or headers_changed:
-            return Request(data=modified_data or data, headers=headers, method=method)
+            data_to_return = not_none_or(modified_data, data)
+            if modified_data is not None:
+                headers['Content-Length'] = str(len(data_to_return or ''))
+            return Request(data=data_to_return, headers=headers, method=method)
         return True
-
-    def get_201_reponse(self, key, bucket_name):
-        return """
-            <PostResponse>
-                <Location>{protocol}://{host}/{encoded_key}</Location>
-                <Bucket>{bucket}</Bucket>
-                <Key>{key}</Key>
-                <ETag>{etag}</ETag>
-            </PostResponse>
-            """.format(
-            protocol=get_service_protocol(),
-            host=config.HOSTNAME_EXTERNAL,
-            encoded_key=urlparse.quote(key, safe=''),
-            key=key,
-            bucket=bucket_name,
-            etag='d41d8cd98f00b204e9800998ecf8427f',
-        )
 
     def get_forward_url(self, method, path, data, headers):
         def sub(match):
@@ -884,19 +1145,18 @@ class ProxyListenerS3(ProxyListener):
         path_new = re.sub(r'/([^?/]+)([?/].*)?', sub, path)
         if path == path_new:
             return
-        url = 'http://%s:%s%s' % (constants.LOCALHOST, constants.DEFAULT_PORT_S3_BACKEND, path_new)
+
+        url = 'http://%s:%s%s' % (constants.LOCALHOST, PORT_S3_BACKEND, path_new)
         return url
 
-    def return_response(self, method, path, data, headers, response):
-
+    def return_response(self, method, path, data, headers, response, request_handler=None):
         path = to_str(path)
         method = to_str(method)
-        bucket_name = get_bucket_name(path, headers)
-
         # persist this API call to disk
-        persistence.record('s3', method, path, data, headers, response=response)
+        super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
         # No path-name based bucket name? Try host-based
+        bucket_name = get_bucket_name(path, headers)
         hostname_parts = headers['host'].split('.')
         if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
             bucket_name = hostname_parts[0]
@@ -913,14 +1173,18 @@ class ProxyListenerS3(ProxyListener):
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
                 LOGGER.debug('S3 POST {} to {}'.format(response.status_code, response.headers['Location']))
 
+            expanded_data = multipart_content.expand_multipart_filename(data, headers)
             key, status_code = multipart_content.find_multipart_key_value(
-                data, headers, 'success_action_status')
-            if response.status_code == 200 and status_code == '201' and key:
-                response.status_code = 201
-                response._content = self.get_201_reponse(key, bucket_name)
+                expanded_data, headers, 'success_action_status'
+            )
+
+            if response.status_code == 201 and key:
+                response._content = self.get_201_response(key, bucket_name)
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
+        if method == 'GET' and response.status_code == 416:
+            return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
 
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = headers['host'].startswith(bucket_name)
@@ -961,7 +1225,6 @@ class ProxyListenerS3(ProxyListener):
             return response
 
         # emulate ErrorDocument functionality if a website is configured
-
         if method == 'GET' and response.status_code == 404 and parsed.query != 'website':
             s3_client = aws_stack.connect_to_service('s3')
 
@@ -972,17 +1235,18 @@ class ProxyListenerS3(ProxyListener):
                 error_doc_key = website_config.get('ErrorDocument', {}).get('Key')
 
                 if error_doc_key:
-                    error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
-                    response.status_code = 200
-                    response._content = error_object['Body'].read()
-                    response.headers['content-length'] = len(response._content)
+                    error_doc_path = '/' + bucket_name + '/' + error_doc_key
+                    if parsed.path != error_doc_path:
+                        error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
+                        response.status_code = 200
+                        response._content = error_object['Body'].read()
+                        response.headers['Content-Length'] = str(len(response._content))
             except ClientError:
                 # Pass on the 404 as usual
                 pass
 
-        if response:
+        if response is not None:
             reset_content_length = False
-
             # append CORS headers and other annotations/patches to response
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
             append_last_modified_headers(response=response)
@@ -993,10 +1257,16 @@ class ProxyListenerS3(ProxyListener):
             fix_metadata_key_underscores(response=response)
             fix_creation_date(method, path, response=response)
             fix_etag_for_multipart(data, headers, response)
+            ret304_on_etag(data, headers, response)
+            append_aws_request_troubleshooting_headers(response)
+            fix_delimiter(data, headers, response)
+
+            if method == 'PUT':
+                set_object_expiry(path, headers)
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
-            if method == 'PUT' and ('X-Amz-Security-Token=' in path or
+            if method == 'PUT' and response.status_code < 400 and ('X-Amz-Security-Token=' in path or
                     'X-Amz-Credential=' in path or 'AWSAccessKeyId=' in path):
                 response._content = ''
                 reset_content_length = True
@@ -1010,6 +1280,11 @@ class ProxyListenerS3(ProxyListener):
             # Honor response header overrides
             # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
             if method == 'GET':
+                add_accept_range_header(response)
+                add_reponse_metadata_headers(response)
+                if is_object_expired(path):
+                    return no_such_key_error(path, headers.get('x-amz-request-id'), 400)
+
                 query_map = urlparse.parse_qs(parsed.query, keep_blank_values=True)
                 for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
                     if param_name in query_map:
@@ -1050,28 +1325,92 @@ class ProxyListenerS3(ProxyListener):
                 reset_content_length = True
 
             if reset_content_length:
-                response.headers['content-length'] = len(response._content)
+                response.headers['Content-Length'] = str(len(response._content))
 
-    def _update_location(self, content, bucket_name):
-        bucket_name = normalize_bucket_name(bucket_name)
+            # convert to chunked encoding, for compatibility with certain SDKs (e.g., AWS PHP SDK)
+            convert_to_chunked_encoding(method, path, response)
 
-        host = config.HOSTNAME_EXTERNAL
-        if ':' not in host:
-            host = '%s:%s' % (host, config.PORT_S3)
-        return re.sub(r'<Location>\s*([a-zA-Z0-9\-]+)://[^/]+/([^<]+)\s*</Location>',
-            r'<Location>%s://%s/%s/\2</Location>' % (get_service_protocol(), host, bucket_name),
-            content, flags=re.MULTILINE)
+            if headers.get('Accept-Encoding') == 'gzip':
+                response._content = gzip.compress(to_bytes(response._content))
+                response.headers['Content-Length'] = str(len(response._content))
+                response.headers['Content-Encoding'] = 'gzip'
 
-    @staticmethod
-    def is_query_allowable(method, query):
-        # Generally if there is a query (some/path/with?query) we don't want to send notifications
-        if not query:
-            return True
-        # Except we do want to notify on multipart and presigned url upload completion
-        contains_cred = 'X-Amz-Credential' in query and 'X-Amz-Signature' in query
-        contains_key = 'AWSAccessKeyId' in query and 'Signature' in query
-        if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
-            return True
+
+def authenticate_presign_url(method, path, headers, data=None):
+
+    sign_headers = []
+    url = '{}{}'.format(config.get_edge_url(), path)
+    parsed = urlparse.urlparse(url)
+    query_params = parse_qs(parsed.query)
+
+    # Checking required parameters are present in url or not
+    if not all([p in query_params for p in PRESIGN_QUERY_PARAMS]):
+        return requests_error_response_xml_signature_calculation(
+            code=403,
+            message='Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters',
+            code_string='AccessDenied'
+        )
+
+    # Fetching headers which has been sent to the requets
+    for header in headers:
+        key = header[0]
+        if key.lower() not in IGNORED_HEADERS_LOWER:
+            sign_headers.append(header)
+
+    # Request's headers are more essentials than the query parameters in the requets.
+    # Different values of header in the header of the request and in the query paramter of the requets url
+    # will fail the signature calulation. As per the AWS behaviour
+    presign_params_lower = [p.lower() for p in PRESIGN_QUERY_PARAMS]
+    if len(query_params) > 2:
+        for key in query_params:
+            if key.lower() not in presign_params_lower:
+                if key.lower() not in (header[0].lower() for header in headers):
+                    sign_headers.append((key, query_params[key][0]))
+
+    # Preparnig dictionary of request to build AWSRequest's object of the botocore
+    request_dict = {
+        'url_path': path.split('?')[0],
+        'query_string': {},
+        'method': method,
+        'headers': dict(sign_headers),
+        'body': b'',
+        'url': url.split('?')[0],
+        'context': {
+            'is_presign_request': True,
+            'use_global_endpoint': True,
+            'signing': {
+                'bucket': str(path.split('?')[0]).split('/')[1]
+            }
+        }
+    }
+    aws_request = create_request_object(request_dict)
+
+    # Calculating Signature
+    credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY)
+    auth = HmacV1QueryAuth(credentials=credentials, expires=query_params['Expires'][0])
+    split = urlsplit(aws_request.url)
+    string_to_sign = auth.get_string_to_sign(method=method, split=split, headers=aws_request.headers)
+    signature = auth.get_signature(string_to_sign=string_to_sign)
+
+    # Comparing the signature in url with signature we calculated
+    if query_params['Signature'][0] != signature:
+        return requests_error_response_xml_signature_calculation(
+            code=403,
+            code_string='SignatureDoesNotMatch',
+            aws_access_token=TEST_AWS_ACCESS_KEY_ID,
+            string_to_sign=string_to_sign,
+            signature=signature,
+            message='The request signature we calculated does not match the signature you provided. \
+                    Check your key and signing method.')
+
+    # Checking whether the url is expired or not
+    if int(query_params['Expires'][0]) < time.time():
+        return requests_error_response_xml_signature_calculation(
+            code=403,
+            code_string='AccessDenied',
+            message='Request has expired',
+            expires=query_params['Expires'][0]
+        )
 
 
 # instantiate listener

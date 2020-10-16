@@ -1,17 +1,17 @@
 import types
 import logging
 import traceback
-from moto.s3 import models as s3_models
-from moto.s3 import responses as s3_responses
-from moto.s3.responses import (
-    minidom, MalformedXML, undo_clean_key_name
-)
+from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
+from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys
+from moto.s3.exceptions import S3ClientError
+from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
-from localstack.constants import DEFAULT_PORT_S3_BACKEND
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import wait_for_port_open
+from localstack.utils.server import multiserver
+from localstack.utils.common import wait_for_port_open, get_free_tcp_port
 from localstack.services.infra import start_moto_server
+from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
 
 LOG = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def check_s3(expect_shutdown=False, print_error=False):
     out = None
     try:
         # wait for port to be opened
-        wait_for_port_open(DEFAULT_PORT_S3_BACKEND)
+        wait_for_port_open(s3_listener.PORT_S3_BACKEND)
         # check S3
         out = aws_stack.connect_to_service(service_name='s3').list_buckets()
     except Exception as e:
@@ -40,7 +40,12 @@ def check_s3(expect_shutdown=False, print_error=False):
 
 def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_S3
-    backend_port = backend_port or DEFAULT_PORT_S3_BACKEND
+    if not backend_port:
+        if config.FORWARD_EDGE_INMEM:
+            backend_port = multiserver.get_moto_server_port()
+        else:
+            backend_port = get_free_tcp_port()
+        s3_listener.PORT_S3_BACKEND = backend_port
 
     apply_patches()
 
@@ -71,7 +76,7 @@ def apply_patches():
         if not query.get('uploadId'):
             return
         bucket = self.backend.get_bucket(bucket_name)
-        key = bucket and self.backend.get_key(bucket_name, key_name)
+        key = bucket and self.backend.get_object(bucket_name, key_name)
         if not key:
             return
         acl = acl or TMP_STATE.pop(acl_key, None) or bucket.acl
@@ -101,6 +106,8 @@ def apply_patches():
     # patch S3Bucket.get_bucket(..)
     def get_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
+        if bucket_name == BUCKET_MARKER_LOCAL:
+            return None
         return get_bucket_orig(bucket_name, *args, **kwargs)
 
     get_bucket_orig = s3_models.s3_backend.get_bucket
@@ -109,7 +116,10 @@ def apply_patches():
     # patch S3Bucket.get_bucket(..)
     def delete_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-        return delete_bucket_orig(bucket_name, *args, **kwargs)
+        try:
+            return delete_bucket_orig(bucket_name, *args, **kwargs)
+        except s3_exceptions.MissingBucket:
+            pass
 
     delete_bucket_orig = s3_models.s3_backend.delete_bucket
     s3_models.s3_backend.delete_bucket = types.MethodType(delete_bucket, s3_models.s3_backend)
@@ -140,8 +150,9 @@ def apply_patches():
         if query.get('tagging'):
             self._set_action('KEY', 'DELETE', query)
             self._authenticate_and_authorize_s3_action()
-            key = self.backend.get_key(bucket_name, key_name)
-            key.tags = s3_models.FakeTagging()
+            key = self.backend.get_object(bucket_name, key_name)
+            key.tags = {}
+            self.backend.tagger.delete_all_tags_for_resource(key.arn)
             return 204, {}, ''
         result = s3_key_response_delete_orig(bucket_name, query, key_name, *args, **kwargs)
         return result
@@ -149,7 +160,34 @@ def apply_patches():
     s3_key_response_delete_orig = s3_responses.S3ResponseInstance._key_response_delete
     s3_responses.S3ResponseInstance._key_response_delete = types.MethodType(
         s3_key_response_delete, s3_responses.S3ResponseInstance)
-    s3_responses.ACTION_MAP['KEY']['DELETE']['tagging'] = 'DeleteObjectTagging'
+    action_map = s3_responses.ACTION_MAP
+    action_map['KEY']['DELETE']['tagging'] = action_map['KEY']['DELETE'].get('tagging') or 'DeleteObjectTagging'
+
+    # patch _key_response_get(..)
+    # https://github.com/localstack/localstack/issues/2724
+    class InvalidObjectState(S3ClientError):
+        code = 400
+
+        def __init__(self, *args, **kwargs):
+            super(InvalidObjectState, self).__init__(
+                'InvalidObjectState',
+                'The operation is not valid for the object\"s storage class.',
+                *args,
+                **kwargs
+            )
+
+    def s3_key_response_get(self, bucket_name, query, key_name, headers, *args, **kwargs):
+        resp_status, resp_headers, resp_value = s3_key_response_get_orig(
+            bucket_name, query, key_name, headers, *args, **kwargs
+        )
+        if resp_headers.get('x-amz-storage-class') == 'DEEP_ARCHIVE':
+            raise InvalidObjectState()
+
+        return resp_status, resp_headers, resp_value
+
+    s3_key_response_get_orig = s3_responses.S3ResponseInstance._key_response_get
+    s3_responses.S3ResponseInstance._key_response_get = types.MethodType(
+        s3_key_response_get, s3_responses.S3ResponseInstance)
 
     # patch max-keys
     def s3_truncate_result(self, result_keys, max_keys):
@@ -178,7 +216,6 @@ def apply_patches():
 
     def s3_bucket_response_delete_keys(self, request, body, bucket_name):
         template = self.response_template(s3_delete_keys_response_template)
-
         elements = minidom.parseString(body).getElementsByTagName('Object')
         if len(elements) == 0:
             raise MalformedXML()
@@ -201,7 +238,7 @@ def apply_patches():
         for k in keys:
             key_name = k['key_name']
             version_id = k['version_id']
-            success = self.backend.delete_key(
+            success = self.backend.delete_object(
                 bucket_name, undo_clean_key_name(key_name), version_id)
 
             if success:
@@ -234,3 +271,21 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance._handle_range_header = types.MethodType(
         s3_response_handle_range_header, s3_responses.S3ResponseInstance)
+
+    # Patch utils_is_delete_keys
+    # https://github.com/localstack/localstack/issues/2866
+    # https://github.com/localstack/localstack/issues/2850
+
+    utils_is_delete_keys_orig = s3bucket_path_utils.is_delete_keys
+
+    def utils_is_delete_keys(request, path, bucket_name):
+        return path == '/' + bucket_name + '?delete=' or utils_is_delete_keys_orig(request, path, bucket_name)
+
+    def s3_response_is_delete_keys(self, request, path, bucket_name):
+        if self.subdomain_based_buckets(request):
+            return is_delete_keys(request, path, bucket_name)
+        else:
+            return utils_is_delete_keys(request, path, bucket_name)
+
+    s3_responses.S3ResponseInstance.is_delete_keys = types.MethodType(
+        s3_response_is_delete_keys, s3_responses.S3ResponseInstance)

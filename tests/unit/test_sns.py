@@ -1,5 +1,6 @@
 import json
 import uuid
+import base64
 import unittest
 import dateutil.parser
 import re
@@ -23,15 +24,15 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(error.status_code, 400)
 
     def test_unsubscribe_should_remove_listener(self):
-        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
-        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+        sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+        topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
         sns_listener.do_create_topic(topic_arn)
         self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
         sns_listener.do_subscribe(
             topic_arn,
-            'arn:aws:sqs:us-east-1:123456789012:test-queue',
+            'arn:aws:sqs:us-east-1:000000000000:test-queue',
             'sqs',
             sub_arn,
             {}
@@ -68,7 +69,8 @@ class SNSTests(unittest.TestCase):
         action = {
             'Message': ['msg']
         }
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+
+        result_str = sns_listener.create_sns_message_body(self.subscriber, action, str(uuid.uuid4()))
         result = json.loads(result_str)
         try:
             uuid.UUID(result.pop('MessageId'))
@@ -176,7 +178,8 @@ class SNSTests(unittest.TestCase):
             'MessageAttributes.entry.1.Value.StringValue': ['value1'],
             'MessageAttributes.entry.2.Name': ['attr2'],
             'MessageAttributes.entry.2.Value.DataType': ['Binary'],
-            'MessageAttributes.entry.2.Value.BinaryValue': ['value2'.encode('utf-8')],
+            # SNS gets binary data as base64 encoded string, but it should pass raw bytes further to SQS
+            'MessageAttributes.entry.2.Value.BinaryValue': [base64.b64encode('value2'.encode('utf-8'))],
             'MessageAttributes.entry.3.Name': ['attr3'],
             'MessageAttributes.entry.3.Value.DataType': ['Number'],
             'MessageAttributes.entry.3.Value.StringValue': ['3'],
@@ -190,7 +193,7 @@ class SNSTests(unittest.TestCase):
         self.assertEqual(result['attr2']['DataType'], 'Binary')
         self.assertEqual(result['attr2']['BinaryValue'], 'value2'.encode('utf-8'))
         self.assertEqual(result['attr3']['DataType'], 'Number')
-        self.assertEqual(result['attr3']['StringValue'], '3.0')
+        self.assertEqual(result['attr3']['StringValue'], '3')
 
     def test_create_sns_message_timestamp_millis(self):
         action = {
@@ -205,8 +208,8 @@ class SNSTests(unittest.TestCase):
         self.assertTrue(match is not None)
 
     def test_only_one_subscription_per_topic_per_endpoint(self):
-        sub_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
-        topic_arn = 'arn:aws:sns:us-east-1:123456789012:test-topic'
+        sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
+        topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
         sns_listener.do_create_topic(topic_arn)
@@ -214,7 +217,7 @@ class SNSTests(unittest.TestCase):
         for i in [1, 2]:
             sns_listener.do_subscribe(
                 topic_arn,
-                'arn:aws:sqs:us-east-1:123456789012:test-queue-1',
+                'arn:aws:sqs:us-east-1:000000000000:test-queue-1',
                 'sqs',
                 sub_arn,
                 {}

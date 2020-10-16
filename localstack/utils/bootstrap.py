@@ -8,15 +8,14 @@ import logging
 import warnings
 import threading
 import traceback
-import pip as pip_mod
-import shutil
-try:
-    import subprocess32 as subprocess
-except Exception:
-    import subprocess
+import subprocess
 import six
+import shutil
+import pip as pip_mod
 from datetime import datetime
+from concurrent.futures._base import Future
 from localstack import constants, config
+from localstack.utils.analytics.profiler import log_duration
 
 # set up logger
 LOG = logging.getLogger(os.path.basename(__file__))
@@ -25,7 +24,8 @@ LOG = logging.getLogger(os.path.basename(__file__))
 PLUGINS_LOADED = {}
 
 # predefined list of plugin modules, to speed up the plugin loading at startup
-PLUGIN_MODULES = ['localstack', 'localstack_ext']
+# note: make sure to load localstack_ext before localstack
+PLUGIN_MODULES = ['localstack_ext', 'localstack']
 
 # marker for extended/ignored libs in requirements.txt
 IGNORED_LIB_MARKER = '#extended-lib'
@@ -46,23 +46,19 @@ PLUGIN_SCOPE_COMMANDS = 'commands'
 API_DEPENDENCIES = {
     'dynamodbstreams': ['kinesis'],
     'es': ['elasticsearch'],
-    'lambda': ['logs']
+    'lambda': ['logs', 'cloudwatch'],
+    'kinesis': ['dynamodb'],
+    'firehose': ['kinesis']
 }
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {
-    'serverless': ['cloudformation', 'iam', 'sts', 'lambda', 'dynamodb', 'apigateway', 's3'],
+    'serverless': ['cloudformation', 'cloudwatch', 'iam', 'sts', 'lambda', 'dynamodb', 'apigateway', 's3'],
     'cognito': ['cognito-idp', 'cognito-identity']
 }
-
-# name of main Docker container
-MAIN_CONTAINER_NAME = 'localstack_main'
 
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
 ENV_SCRIPT_STARTING_DOCKER = 'LS_SCRIPT_STARTING_DOCKER'
-
-# semaphore for locking access to Popen
-mutex_popen = threading.Semaphore(1)
 
 
 def bootstrap_installation():
@@ -104,6 +100,7 @@ def run_pip_main(args):
     return pip._internal.main.main(args)
 
 
+@log_duration()
 def load_plugin_from_path(file_path, scope=None):
     if os.path.exists(file_path):
         module = re.sub(r'(^|.+/)([^/]+)/plugins.py', r'\2', file_path)
@@ -121,12 +118,20 @@ def load_plugin_from_path(file_path, scope=None):
                 LOG.debug('Unable to load plugins from module %s: %s' % (module, e))
             return
         try:
+            LOG.debug('Loading plugins - scope "%s", module "%s": %s' % (scope, module, method_to_execute))
             return method_to_execute()
         except Exception as e:
             if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
                 LOG.warning('Unable to load plugins from file %s: %s' % (file_path, e))
 
 
+def should_load_module(module, scope):
+    if module == 'localstack_ext' and not os.environ.get('LOCALSTACK_API_KEY'):
+        return False
+    return True
+
+
+@log_duration()
 def load_plugins(scope=None):
     scope = scope or PLUGIN_SCOPE_SERVICES
     if PLUGINS_LOADED.get(scope):
@@ -143,6 +148,8 @@ def load_plugins(scope=None):
     search_modules = PLUGIN_MODULES
 
     for module in search_modules:
+        if not should_load_module(module, scope):
+            continue
         file_path = None
         if isinstance(module, six.string_types):
             loader = pkgutil.get_loader(module)
@@ -178,13 +185,33 @@ def docker_container_running(container_name):
 
 
 def get_docker_container_names():
-    output = to_str(run("docker ps --format '{{.Names}}'"))
-    container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
-    return container_names
+    cmd = "%s ps --format '{{.Names}}'" % config.DOCKER_CMD
+    try:
+        output = to_str(run(cmd))
+        container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
+        return container_names
+    except Exception as e:
+        LOG.info('Unable to list Docker containers via "%s": %s' % (cmd, e))
+        return []
+
+
+def get_main_container_ip():
+    container_name = get_main_container_name()
+    cmd = ("%s inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" %
+        (config.DOCKER_CMD, container_name))
+    return run(cmd).strip()
+
+
+def get_main_container_name():
+    cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
+    return run(cmd).strip().lstrip('/')
 
 
 def setup_logging():
     # determine and set log level
+    if PLUGINS_LOADED.get('_logging_'):
+        return
+    PLUGINS_LOADED['_logging_'] = True
     log_level = logging.DEBUG if is_debug() else logging.INFO
     logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
 
@@ -207,6 +234,7 @@ def setup_logging():
     # disable some logs and warnings
     warnings.filterwarnings('ignore')
     logging.captureWarnings(True)
+    logging.getLogger('asyncio').setLevel(logging.INFO)
     logging.getLogger('boto3').setLevel(logging.INFO)
     logging.getLogger('s3transfer').setLevel(logging.INFO)
     logging.getLogger('docker').setLevel(logging.WARNING)
@@ -272,9 +300,96 @@ def start_infra_locally():
     return infra.start_infra()
 
 
+class PortMappings(object):
+    """ Maps source to target port ranges for Docker port mappings. """
+
+    class HashableList(list):
+        def __hash__(self):
+            result = 0
+            for i in self:
+                result += hash(i)
+            return result
+
+    def __init__(self):
+        self.mappings = {}
+
+    def add(self, port, mapped=None):
+        mapped = mapped or port
+        if isinstance(port, list):
+            for i in range(port[1] - port[0] + 1):
+                self.add(port[0] + i, mapped[0] + i)
+            return
+        if port is None or int(port) <= 0:
+            raise Exception('Unable to add mapping for invalid port: %s' % port)
+        if self.contains(port):
+            return
+        for from_range, to_range in self.mappings.items():
+            if not self.in_expanded_range(port, from_range):
+                continue
+            if not self.in_expanded_range(mapped, to_range):
+                continue
+            self.expand_range(port, from_range)
+            self.expand_range(mapped, to_range)
+            return
+        self.mappings[self.HashableList([port, port])] = [mapped, mapped]
+
+    def to_str(self):
+        def entry(k, v):
+            if k[0] == k[1] and v[0] == v[1]:
+                return '-p %s:%s' % (k[0], v[0])
+            return '-p %s-%s:%s-%s' % (k[0], k[1], v[0], v[1])
+
+        return ' '.join([entry(k, v) for k, v in self.mappings.items()])
+
+    def contains(self, port):
+        for from_range, to_range in self.mappings.items():
+            if self.in_range(port, from_range):
+                return True
+
+    def in_range(self, port, range):
+        return port >= range[0] and port <= range[1]
+
+    def in_expanded_range(self, port, range):
+        return port >= range[0] - 1 and port <= range[1] + 1
+
+    def expand_range(self, port, range):
+        if self.in_range(port, range):
+            return
+        if port == range[0] - 1:
+            range[0] = port
+        elif port == range[1] + 1:
+            range[1] = port
+        else:
+            raise Exception('Unable to add port %s to existing range %s' % (port, range))
+
+
+def get_docker_image_to_start():
+    image_name = os.environ.get('IMAGE_NAME')
+    if not image_name:
+        image_name = constants.DOCKER_IMAGE_NAME
+        if os.environ.get('USE_LIGHT_IMAGE') in constants.FALSE_STRINGS:
+            image_name = constants.DOCKER_IMAGE_NAME_FULL
+    return image_name
+
+
+def extract_port_flags(user_flags, port_mappings):
+    regex = r'-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-([0-9]+))?'
+    matches = re.match('.*%s' % regex, user_flags)
+    start = end = 0
+    if matches:
+        for match in re.findall(regex, user_flags):
+            start = int(match[0])
+            end = int(match[2] or match[0])
+            start_target = int(match[3] or start)
+            end_target = int(match[5] or end)
+            port_mappings.add([start, end], [start_target, end_target])
+        user_flags = re.sub(regex, r'', user_flags)
+    return user_flags
+
+
 def start_infra_in_docker():
 
-    container_name = MAIN_CONTAINER_NAME
+    container_name = config.MAIN_CONTAINER_NAME
 
     if docker_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
@@ -287,11 +402,10 @@ def start_infra_in_docker():
     # prepare APIs
     canonicalize_api_names()
 
-    services = os.environ.get('SERVICES', '')
     entrypoint = os.environ.get('ENTRYPOINT', '')
     cmd = os.environ.get('CMD', '')
     user_flags = config.DOCKER_FLAGS
-    image_name = os.environ.get('IMAGE_NAME', constants.DOCKER_IMAGE_NAME)
+    image_name = get_docker_image_to_start()
     service_ports = config.SERVICE_PORTS
     force_noninteractive = os.environ.get('FORCE_NONINTERACTIVE', '')
 
@@ -299,44 +413,19 @@ def start_infra_in_docker():
     plugin_run_params = ' '.join([
         entry.get('docker', {}).get('run_flags', '') for entry in plugin_configs])
 
+    # container for port mappings
+    port_mappings = PortMappings()
+
     # get port ranges defined via DOCKER_FLAGS (if any)
-    regex = r'.*-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-[0-9]+)?.*'
-    match = re.match(regex, user_flags)
-    start = end = 0
-    if match:
-        start = int(match.group(1))
-        end = int(match.group(3) or match.group(1))
+    user_flags = extract_port_flags(user_flags, port_mappings)
+    plugin_run_params = extract_port_flags(plugin_run_params, port_mappings)
 
-    def is_mapped(start_port, end_port=None):
-        existing_range = range(start, end)
-        return (int(start_port) in existing_range) or (start_port and int(start_port) in existing_range)
-
-    # construct port mappings
-    ports_list = sorted(service_ports.values())
-    start_port = 0
-    last_port = 0
-    port_ranges = []
-    for i in range(0, len(ports_list)):
-        if not start_port:
-            start_port = ports_list[i]
-        if not last_port:
-            last_port = ports_list[i]
-        if ports_list[i] > last_port + 1:
-            port_ranges.append([start_port, last_port])
-            start_port = ports_list[i]
-        elif i >= len(ports_list) - 1:
-            port_ranges.append([start_port, ports_list[i]])
-        last_port = ports_list[i]
-    port_mappings = ' '.join([
-        '-p {start}-{end}:{start}-{end}'.format(start=entry[0], end=entry[1])
-        if entry[0] < entry[1] else '-p {port}:{port}'.format(port=entry[0])
-        for entry in port_ranges if not is_mapped(entry[0], entry[1])])
-
-    if services:
-        port_mappings = ''
-        for port in set(service_ports.values()):
-            if not is_mapped(port):
-                port_mappings += ' -p {port}:{port}'.format(port=port)
+    # construct default port mappings
+    if service_ports.get('edge') == 0:
+        service_ports.pop('edge')
+    service_ports.pop('dashboard', None)
+    for port in service_ports.values():
+        port_mappings.add(port)
 
     env_str = ''
     for env_var in config.CONFIG_ENV_VARS:
@@ -357,19 +446,19 @@ def start_infra_in_docker():
     user_flags = '%s ' % user_flags if user_flags else user_flags
     entrypoint = '%s ' % entrypoint if entrypoint else entrypoint
     plugin_run_params = '%s ' % plugin_run_params if plugin_run_params else plugin_run_params
-    web_ui_flags = ''
     if config.START_WEB:
-        web_ui_flags = '-p {p}:{p} -p {p1}:{p1} '.format(p=config.PORT_WEB_UI, p1=config.PORT_WEB_UI_SSL)
+        for port in [config.PORT_WEB_UI, config.PORT_WEB_UI_SSL]:
+            port_mappings.add(port)
 
     docker_cmd = ('%s run %s%s%s%s%s' +
         '--rm --privileged ' +
         '--name %s ' +
-        '%s %s %s ' +
+        '%s %s ' +
         '-v "%s:/tmp/localstack" -v "%s:%s" ' +
         '-e DOCKER_HOST="unix://%s" ' +
         '-e HOST_TMP_FOLDER="%s" "%s" %s') % (
             config.DOCKER_CMD, interactive, entrypoint, env_str, user_flags, plugin_run_params,
-            container_name, web_ui_flags, port_mappings, data_dir_mount,
+            container_name, port_mappings.to_str(), data_dir_mount,
             config.TMP_FOLDER, config.DOCKER_SOCK, config.DOCKER_SOCK, config.DOCKER_SOCK,
             config.HOST_TMP_FOLDER, image_name, cmd
     )
@@ -436,31 +525,31 @@ class FuncThread(threading.Thread):
         self.params = params
         self.func = func
         self.quiet = quiet
+        self.result_future = Future()
 
     def run(self):
+        result = None
         try:
-            self.func(self.params)
-        except Exception:
+            result = self.func(self.params)
+        except Exception as e:
+            result = e
             if not self.quiet:
-                LOG.warning('Thread run method %s(%s) failed: %s' %
-                    (self.func, self.params, traceback.format_exc()))
+                LOG.warning('Thread run method %s(%s) failed: %s %s' %
+                    (self.func, self.params, e, traceback.format_exc()))
+        finally:
+            try:
+                self.result_future.set_result(result)
+            except Exception:
+                # this can happen as InvalidStateError on shutdown, if the task is already canceled
+                pass
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:
             LOG.warning('Not implemented: FuncThread.stop(..)')
 
 
-def run(cmd, print_error=True, asynchronous=False, stdin=False,
-        stderr=subprocess.STDOUT, outfile=None, env_vars=None, inherit_cwd=False,
-        inherit_env=True, tty=False):
-    # don't use subprocess module in Python 2 as it is not thread-safe
-    # http://stackoverflow.com/questions/21194380/is-subprocess-popen-not-thread-safe
-    # TODO: should be removed, now that Python 2 has reached its EOL
-    if six.PY2:
-        import subprocess32 as subprocess
-    else:
-        import subprocess
-
+def run(cmd, print_error=True, asynchronous=False, stdin=False, stderr=subprocess.STDOUT,
+        outfile=None, env_vars=None, inherit_cwd=False, inherit_env=True, tty=False):
     env_dict = os.environ.copy() if inherit_env else {}
     if env_vars:
         env_dict.update(env_vars)
@@ -479,41 +568,39 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
             output = subprocess.check_output(cmd, shell=True, stderr=stderr, env=env_dict, cwd=cwd)
             return output.decode(config.DEFAULT_ENCODING)
 
-        # subprocess.Popen is not thread-safe, hence use a mutex here.. (TODO: mutex still needed?)
-        with mutex_popen:
-            stdin_arg = subprocess.PIPE if stdin else None
-            stdout_arg = open(outfile, 'ab') if isinstance(outfile, six.string_types) else outfile
-            stderr_arg = stderr
-            if tty:
-                # Note: leave the "pty" import here (not supported in Windows)
-                import pty
-                master_fd, slave_fd = pty.openpty()
-                stdin_arg = slave_fd
-                stdout_arg = stderr_arg = None
+        stdin_arg = subprocess.PIPE if stdin else None
+        stdout_arg = open(outfile, 'ab') if isinstance(outfile, six.string_types) else outfile
+        stderr_arg = stderr
+        if tty:
+            # Note: leave the "pty" import here (not supported in Windows)
+            import pty
+            master_fd, slave_fd = pty.openpty()
+            stdin_arg = slave_fd
+            stdout_arg = stderr_arg = None
 
-            # start the actual sub process
-            kwargs = {}
-            if is_linux() or is_mac_os():
-                kwargs['preexec_fn'] = os.setsid
-            process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
-                stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, **kwargs)
+        # start the actual sub process
+        kwargs = {}
+        if is_linux() or is_mac_os():
+            kwargs['preexec_fn'] = os.setsid
+        process = subprocess.Popen(cmd, shell=True, stdin=stdin_arg, bufsize=-1,
+            stderr=stderr_arg, stdout=stdout_arg, env=env_dict, cwd=cwd, **kwargs)
 
-            if tty:
-                # based on: https://stackoverflow.com/questions/41542960
-                def pipe_streams(*args):
-                    while process.poll() is None:
-                        r, w, e = select.select([sys.stdin, master_fd], [], [])
-                        if sys.stdin in r:
-                            d = os.read(sys.stdin.fileno(), 10240)
-                            os.write(master_fd, d)
-                        elif master_fd in r:
-                            o = os.read(master_fd, 10240)
-                            if o:
-                                os.write(sys.stdout.fileno(), o)
+        if tty:
+            # based on: https://stackoverflow.com/questions/41542960
+            def pipe_streams(*args):
+                while process.poll() is None:
+                    r, w, e = select.select([sys.stdin, master_fd], [], [])
+                    if sys.stdin in r:
+                        d = os.read(sys.stdin.fileno(), 10240)
+                        os.write(master_fd, d)
+                    elif master_fd in r:
+                        o = os.read(master_fd, 10240)
+                        if o:
+                            os.write(sys.stdout.fileno(), o)
 
-                FuncThread(pipe_streams).start()
+            FuncThread(pipe_streams).start()
 
-            return process
+        return process
     except subprocess.CalledProcessError as e:
         if print_error:
             print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
@@ -522,19 +609,18 @@ def run(cmd, print_error=True, asynchronous=False, stdin=False,
 
 
 def is_mac_os():
-    try:
-        out = to_str(subprocess.check_output('uname -a', shell=True))
-        return 'Darwin' in out
-    except subprocess.CalledProcessError:
-        return False
+    return 'Darwin' in get_uname()
 
 
 def is_linux():
+    return 'Linux' in get_uname()
+
+
+def get_uname():
     try:
-        out = to_str(subprocess.check_output('uname -a', shell=True))
-        return 'Linux' in out
-    except subprocess.CalledProcessError:
-        return False
+        return to_str(subprocess.check_output('uname -a', shell=True))
+    except Exception:
+        return ''
 
 
 def mkdir(folder):

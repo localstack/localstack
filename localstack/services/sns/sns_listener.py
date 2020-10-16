@@ -1,25 +1,27 @@
 import ast
+import base64
 import json
+import uuid
 import logging
 import traceback
-import uuid
-
-import requests
 import six
+import requests
 import xmltodict
 from flask import Response as FlaskResponse
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
-
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api
-from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
-from localstack.utils.common import timestamp_millis, short_uid, to_str
+from localstack.utils.common import timestamp_millis, short_uid, to_str, to_bytes
+from localstack.utils.persistence import PersistingProxyListener
+
+# set up logger
+LOG = logging.getLogger(__name__)
 
 # mappings for SNS topic subscriptions
 SNS_SUBSCRIPTIONS = {}
@@ -30,11 +32,17 @@ SUBSCRIPTION_STATUS = {}
 # mappings for SNS tags
 SNS_TAGS = {}
 
-# set up logger
-LOGGER = logging.getLogger(__name__)
+# cache of platform endpoint messages (used primarily for testing)
+PLATFORM_ENDPOINT_MESSAGES = {}
+
+# maps phone numbers to list of sent messages
+SMS_MESSAGES = []
 
 
-class ProxyListenerSNS(ProxyListener):
+class ProxyListenerSNS(PersistingProxyListener):
+    def api_name(self):
+        return 'sns'
+
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
             return 200
@@ -46,9 +54,15 @@ class ProxyListenerSNS(ProxyListener):
         except Exception as e:
             return make_error(message=str(e), code=400)
 
-        if method == 'POST' and path == '/':
+        if method == 'POST':
             # parse payload and extract fields
             req_data = urlparse.parse_qs(to_str(data), keep_blank_values=True)
+
+            # parse data from query path
+            if not req_data:
+                parsed_path = urlparse.urlparse(path)
+                req_data = urlparse.parse_qs(parsed_path.query, keep_blank_values=True)
+
             req_action = req_data['Action'][0]
             topic_arn = req_data.get('TargetArn') or req_data.get('TopicArn') or req_data.get('ResourceArn')
 
@@ -109,10 +123,10 @@ class ProxyListenerSNS(ProxyListener):
                     if topic_arn not in SNS_SUBSCRIPTIONS.keys():
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
 
-                    publish_message(topic_arn, req_data)
+                message_id = publish_message(topic_arn, req_data)
 
                 # return response here because we do not want the request to be forwarded to SNS backend
-                return make_response(req_action)
+                return make_response(req_action, message_id=message_id)
 
             elif req_action == 'ListTagsForResource':
                 tags = do_list_tags_for_resource(topic_arn)
@@ -129,10 +143,14 @@ class ProxyListenerSNS(ProxyListener):
 
             elif req_action == 'CreateTopic':
                 topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
-                self._extract_tags(topic_arn, req_data)
+                tag_resource_success = self._extract_tags(topic_arn, req_data, True)
+                # in case if there is an error it returns an error , other wise it will continue as expected.
+                if not tag_resource_success:
+                    return make_error(code=400, code_string='InvalidParameter',
+                                  message='Topic already exists with different tags')
 
             elif req_action == 'TagResource':
-                self._extract_tags(topic_arn, req_data)
+                self._extract_tags(topic_arn, req_data, False)
                 return make_response(req_action)
 
             elif req_action == 'UntagResource':
@@ -149,16 +167,26 @@ class ProxyListenerSNS(ProxyListener):
 
         return True
 
-    def _extract_tags(self, topic_arn, req_data):
+    @staticmethod
+    def _extract_tags(topic_arn, req_data, is_create_topic_request):
         tags = []
         req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
         for i in range(int(len(req_tags.keys()) / 2)):
             key = req_tags['Tags.member.' + str(i + 1) + '.Key'][0]
             value = req_tags['Tags.member.' + str(i + 1) + '.Value'][0]
             tags.append({'Key': key, 'Value': value})
-        do_tag_resource(topic_arn, tags)
 
-    def _reset_account_id(self, data):
+            # this means topic already created with empty tags and when we try to create it
+            # again with other tag value then it should fail according to aws documentation.
+            existing_tags = SNS_TAGS.get(topic_arn, None)
+            if is_create_topic_request and existing_tags is not None and existing_tags != tags:
+                return False
+
+        do_tag_resource(topic_arn, tags)
+        return True
+
+    @staticmethod
+    def _reset_account_id(data):
         """ Fix account ID in request payload. All external-facing responses contain our
             predefined account ID (defaults to 000000000000), whereas the backend endpoint
             from moto expects a different hardcoded account ID (123456789012). """
@@ -166,6 +194,11 @@ class ProxyListenerSNS(ProxyListener):
             data, colon_delimiter='%3A', existing=TEST_AWS_ACCOUNT_ID, replace=MOTO_ACCOUNT_ID)
 
     def return_response(self, method, path, data, headers, response):
+        # persist requests to disk
+        super(ProxyListenerSNS, self).return_response(
+            method, path, data, headers, response
+        )
+
         if method == 'POST' and path == '/':
             # convert account IDs in ARNs
             data = aws_stack.fix_account_id_in_arns(data, colon_delimiter='%3A')
@@ -214,19 +247,49 @@ class ProxyListenerSNS(ProxyListener):
 UPDATE_SNS = ProxyListenerSNS()
 
 
-def publish_message(topic_arn, req_data, subscription_arn=None):
-    message = req_data['Message'][0]
-    sqs_client = aws_stack.connect_to_service('sqs')
+def unsubscribe_sqs_queue(queue_url):
+    """ Called upon deletion of an SQS queue, to remove the queue from subscriptions """
+    for topic_arn, subscriptions in SNS_SUBSCRIPTIONS.items():
+        subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
+        for subscriber in list(subscriptions):
+            sub_url = subscriber.get('sqs_queue_url') or subscriber['Endpoint']
+            if queue_url == sub_url:
+                subscriptions.remove(subscriber)
 
-    for subscriber in SNS_SUBSCRIPTIONS.get(topic_arn, []):
+
+def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
+    message = req_data['Message'][0]
+    message_id = str(uuid.uuid4())
+
+    LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
+
+    if topic_arn and ':endpoint/' in topic_arn:
+        # cache messages published to platform endpoints
+        cache = PLATFORM_ENDPOINT_MESSAGES[topic_arn] = PLATFORM_ENDPOINT_MESSAGES.get(topic_arn) or []
+        cache.append(req_data)
+
+    subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
+    for subscriber in list(subscriptions):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
             continue
+
         filter_policy = json.loads(subscriber.get('FilterPolicy') or '{}')
         message_attributes = get_message_attributes(req_data)
-        if not check_filter_policy(filter_policy, message_attributes):
+        if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
+            LOG.info('SNS filter policy %s does not match attributes %s' % (filter_policy, message_attributes))
             continue
 
-        if subscriber['Protocol'] == 'sqs':
+        if subscriber['Protocol'] == 'sms':
+            event = {
+                'topic_arn': topic_arn,
+                'endpoint': subscriber['Endpoint'],
+                'message_content': req_data['Message'][0]
+            }
+            SMS_MESSAGES.append(event)
+            LOG.info('Delivering SMS message to %s: %s', subscriber['Endpoint'], req_data['Message'][0])
+
+        elif subscriber['Protocol'] == 'sqs':
+            queue_url = None
             try:
                 endpoint = subscriber['Endpoint']
                 if 'sqs_queue_url' in subscriber:
@@ -238,38 +301,49 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                     queue_url = aws_stack.get_sqs_queue_url(queue_name)
                     subscriber['sqs_queue_url'] = queue_url
 
+                sqs_client = aws_stack.connect_to_service('sqs')
                 sqs_client.send_message(
                     QueueUrl=queue_url,
-                    MessageBody=create_sns_message_body(subscriber, req_data),
+                    MessageBody=create_sns_message_body(subscriber, req_data, message_id),
                     MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
                 )
             except Exception as exc:
+                LOG.warning('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
-                return make_error(message=str(exc), code=400)
+                if 'NonExistentQueue' in str(exc):
+                    LOG.info('Removing non-existent queue "%s" subscribed to topic "%s"' % (queue_url, topic_arn))
+                    subscriptions.remove(subscriber)
 
         elif subscriber['Protocol'] == 'lambda':
             try:
+                external_url = external_service_url('sns')
+                unsubscribe_url = '%s/?Action=Unsubscribe&SubscriptionArn=%s' % (external_url,
+                                    subscriber['SubscriptionArn'])
                 response = lambda_api.process_sns_notification(
                     subscriber['Endpoint'],
                     topic_arn,
                     subscriber['SubscriptionArn'],
                     message,
+                    message_id,
                     message_attributes,
+                    unsubscribe_url,
                     subject=req_data.get('Subject', [None])[0]
                 )
-                if isinstance(response, FlaskResponse):
+                if isinstance(response, Response):
                     response.raise_for_status()
+                elif isinstance(response, FlaskResponse):
+                    if response.status_code >= 400:
+                        raise Exception('Error response (code %s): %s' % (response.status_code, response.data))
             except Exception as exc:
-                LOGGER.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
+                LOG.warning('Unable to run Lambda function on SNS message: %s %s' % (exc, traceback.format_exc()))
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
-                return make_error(message=str(exc), code=400)
 
         elif subscriber['Protocol'] in ['http', 'https']:
             msg_type = (req_data.get('Type') or ['Notification'])[0]
             try:
-                message_body = create_sns_message_body(subscriber, req_data)
-            except Exception as exc:
-                return make_error(message=str(exc), code=400)
+                message_body = create_sns_message_body(subscriber, req_data, message_id)
+            except Exception:
+                continue
             try:
                 response = requests.post(
                     subscriber['Endpoint'],
@@ -287,10 +361,21 @@ def publish_message(topic_arn, req_data, subscription_arn=None):
                 )
                 response.raise_for_status()
             except Exception as exc:
+                LOG.info('Received error on sending SNS message, putting to DLQ (if configured): %s' % exc)
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
-                return make_error(message=str(exc), code=400)
+
+        elif subscriber['Protocol'] == 'application':
+            try:
+                sns_client = aws_stack.connect_to_service('sns')
+                sns_client.publish(TargetArn=subscriber['Endpoint'], Message=message)
+            except Exception as exc:
+                LOG.warning('Unable to forward SNS message to SNS platform app: %s %s' % (exc, traceback.format_exc()))
+                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+
         else:
-            LOGGER.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
+            LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
+
+    return message_id
 
 
 def do_create_topic(topic_arn):
@@ -347,7 +432,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
                         'To confirm the subscription, visit the SubscribeURL included in this message.'],
             'SubscribeURL': ['%s/?Action=ConfirmSubscription&TopicArn=%s&Token=%s' % (external_url, topic_arn, token)]
         }
-        publish_message(topic_arn, confirmation, subscription_arn)
+        publish_message(topic_arn, confirmation, subscription_arn, skip_checks=True)
 
 
 def do_unsubscribe(subscription_arn):
@@ -413,10 +498,12 @@ def get_subscription_by_arn(sub_arn):
                 return sub
 
 
-def make_response(op_name, content=''):
+def make_response(op_name, content='', message_id=None):
     response = Response()
     if not content:
-        content = '<MessageId>%s</MessageId>' % short_uid()
+        message_id = message_id or str(uuid.uuid4())
+        content = '<MessageId>%s</MessageId>' % message_id
+
     response._content = """<{op_name}Response xmlns="http://sns.amazonaws.com/doc/2010-03-31/">
         <{op_name}Result>
             {content}
@@ -440,7 +527,7 @@ def make_error(message, code=400, code_string='InvalidParameter'):
     return response
 
 
-def create_sns_message_body(subscriber, req_data):
+def create_sns_message_body(subscriber, req_data, message_id=None):
     message = req_data['Message'][0]
     subject = req_data.get('Subject', [None])[0]
     protocol = subscriber['Protocol']
@@ -461,7 +548,7 @@ def create_sns_message_body(subscriber, req_data):
 
     data = {
         'Type': req_data.get('Type', ['Notification'])[0],
-        'MessageId': str(uuid.uuid4()),
+        'MessageId': message_id,
         'Token': req_data.get('Token', [None])[0],
         'TopicArn': subscriber['TopicArn'],
         'Message': message,
@@ -494,7 +581,7 @@ def create_sqs_message_attributes(subscriber, attributes):
             'DataType': value['Type']
         }
         if value['Type'] == 'Binary':
-            attribute['BinaryValue'] = value['Value']
+            attribute['BinaryValue'] = base64.decodebytes(to_bytes(value['Value']))
         else:
             attribute['StringValue'] = str(value['Value'])
 
@@ -518,9 +605,6 @@ def get_message_attributes(req_data):
                 attribute['Value'] = string_value
             elif binary_value is not None:
                 attribute['Value'] = binary_value
-
-            if attribute['Type'] == 'Number':
-                attribute['Value'] = float(attribute['Value'])
 
             attributes[name] = attribute
             x += 1
@@ -551,8 +635,9 @@ def evaluate_numeric_condition(conditions, value):
         return False
 
     for i in range(0, len(conditions), 2):
+        value = float(value)
         operator = conditions[i]
-        operand = conditions[i + 1]
+        operand = float(conditions[i + 1])
 
         if operator == '=':
             if value != operand:
@@ -573,7 +658,15 @@ def evaluate_numeric_condition(conditions, value):
     return True
 
 
-def evaluate_condition(value, condition):
+def evaluate_exists_condition(conditions, message_attributes, criteria):
+    # filtering should not match any messages if the exists is set to false,As per aws docs
+    # https://docs.aws.amazon.com/sns/latest/dg/sns-subscription-filter-policies.html
+    if conditions:
+        return bool(message_attributes.get(criteria))
+    return False
+
+
+def evaluate_condition(value, condition, message_attributes, criteria):
     if type(condition) is not dict:
         return value == condition
     elif condition.get('anything-but'):
@@ -583,11 +676,13 @@ def evaluate_condition(value, condition):
         return value.startswith(prefix)
     elif condition.get('numeric'):
         return evaluate_numeric_condition(condition.get('numeric'), value)
+    elif condition.get('exists'):
+        return evaluate_exists_condition(condition.get('exists'), message_attributes, criteria)
 
     return False
 
 
-def evaluate_filter_policy_conditions(conditions, attribute):
+def evaluate_filter_policy_conditions(conditions, attribute, message_attributes, criteria):
     if type(conditions) is not list:
         conditions = [conditions]
 
@@ -595,11 +690,11 @@ def evaluate_filter_policy_conditions(conditions, attribute):
         values = ast.literal_eval(attribute['Value'])
         for value in values:
             for condition in conditions:
-                if evaluate_condition(value, condition):
+                if evaluate_condition(value, condition, message_attributes, criteria):
                     return True
     else:
         for condition in conditions:
-            if evaluate_condition(attribute['Value'], condition):
+            if evaluate_condition(attribute['Value'], condition, message_attributes, criteria):
                 return True
 
     return False
@@ -612,11 +707,10 @@ def check_filter_policy(filter_policy, message_attributes):
     for criteria in filter_policy:
         conditions = filter_policy.get(criteria)
         attribute = message_attributes.get(criteria)
-
         if attribute is None:
             return False
 
-        if evaluate_filter_policy_conditions(conditions, attribute) is False:
+        if evaluate_filter_policy_conditions(conditions, attribute, message_attributes, criteria) is False:
             return False
 
     return True

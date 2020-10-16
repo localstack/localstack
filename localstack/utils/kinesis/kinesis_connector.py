@@ -5,7 +5,7 @@ import re
 import logging
 import tempfile
 import threading
-import subprocess32 as subprocess
+import subprocess
 from six.moves import queue as Queue
 from six.moves.urllib.parse import urlparse
 from amazon_kclpy import kcl
@@ -15,7 +15,7 @@ from localstack.constants import LOCALSTACK_VENV_FOLDER, LOCALSTACK_ROOT_FOLDER
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     run, TMP_THREADS, TMP_FILES, save_file, now, retry, short_uid, to_str,
-    chmod_r, rm_rf, ShellCommandThread, FuncThread)
+    chmod_r, rm_rf, ShellCommandThread, FuncThread, get_service_protocol)
 from localstack.utils.kinesis import kclipy_helper
 from localstack.utils.aws.aws_models import KinesisStream
 from localstack.utils.kinesis.kinesis_util import EventFileReaderThread
@@ -256,6 +256,8 @@ def get_stream_info(stream_name, log_file=None, shards=None, env=None, endpoint_
     # construct stream info
     env = aws_stack.get_environment(env)
     props_file = os.path.join(tempfile.gettempdir(), 'kclipy.%s.properties' % short_uid())
+    # make sure to convert stream ARN to stream name
+    stream_name = aws_stack.kinesis_stream_name(stream_name)
     app_name = '%s%s' % (stream_name, ddb_lease_table_suffix)
     stream_info = {
         'name': stream_name,
@@ -287,6 +289,8 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
         endpoint_url=None, ddb_lease_table_suffix=None, env_vars={}, region_name=None,
         kcl_log_level=DEFAULT_KCL_LOG_LEVEL, log_subscribers=[]):
     env = aws_stack.get_environment(env)
+    # make sure to convert stream ARN to stream name
+    stream_name = aws_stack.kinesis_stream_name(stream_name)
     # decide which credentials provider to use
     credentialsProvider = None
     if (('AWS_ASSUME_ROLE_ARN' in os.environ or 'AWS_ASSUME_ROLE_ARN' in env_vars) and
@@ -326,8 +330,8 @@ def start_kcl_client_process(stream_name, listener_script, log_file=None, env=No
     if aws_stack.is_local_env(env):
         kwargs['kinesisEndpoint'] = '%s:%s' % (HOSTNAME, config.PORT_KINESIS)
         kwargs['dynamodbEndpoint'] = '%s:%s' % (HOSTNAME, config.PORT_DYNAMODB)
-        kwargs['kinesisProtocol'] = 'http%s' % ('s' if USE_SSL else '')
-        kwargs['dynamodbProtocol'] = 'http%s' % ('s' if USE_SSL else '')
+        kwargs['kinesisProtocol'] = get_service_protocol()
+        kwargs['dynamodbProtocol'] = get_service_protocol()
         kwargs['disableCertChecking'] = 'true'
     kwargs.update(configs)
     # create config file
@@ -349,12 +353,11 @@ def generate_processor_script(events_file, log_file=None):
     else:
         log_file = 'None'
     content = """#!/usr/bin/env python
-import os, sys, glob, json, socket, time, logging, tempfile
+import os, sys, glob, json, socket, time, logging, subprocess, tempfile
 logging.basicConfig(level=logging.INFO)
 for path in glob.glob('%s/lib/python*/site-packages'):
     sys.path.insert(0, path)
 sys.path.insert(0, '%s')
-import subprocess32 as subprocess
 from localstack.config import DEFAULT_ENCODING
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.common import timestamp

@@ -1,11 +1,8 @@
 import json
-import uuid
-import hashlib
-import six
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, to_bytes
+from localstack.utils.common import to_str, now_utc
 from localstack.utils.analytics import event_publisher
 
 APP_NAME = 'ddb_streams_api'
@@ -60,15 +57,17 @@ def forward_events(records):
 
 @app.route('/', methods=['POST'])
 def post_request():
-    action = request.headers.get('x-amz-target')
+    action = request.headers.get('x-amz-target', '')
+    action = action.split('.')[-1]
     data = json.loads(to_str(request.data))
     result = {}
     kinesis = aws_stack.connect_to_service('kinesis')
-    if action == '%s.ListStreams' % ACTION_HEADER_PREFIX:
+    if action == 'ListStreams':
         result = {
             'Streams': list(DDB_STREAMS.values())
         }
-    elif action == '%s.DescribeStream' % ACTION_HEADER_PREFIX:
+
+    elif action == 'DescribeStream':
         for stream in DDB_STREAMS.values():
             if stream['StreamArn'] == data['StreamArn']:
                 result = {
@@ -91,13 +90,17 @@ def post_request():
                 break
         if not result:
             return error_response('Requested resource not found', error_type='ResourceNotFoundException')
-    elif action == '%s.GetShardIterator' % ACTION_HEADER_PREFIX:
+
+    elif action == 'GetShardIterator':
         # forward request to Kinesis API
         stream_name = stream_name_from_stream_arn(data['StreamArn'])
         stream_shard_id = kinesis_shard_id(data['ShardId'])
-        result = kinesis.get_shard_iterator(StreamName=stream_name,
-            ShardId=stream_shard_id, ShardIteratorType=data['ShardIteratorType'])
-    elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
+
+        kwargs = {'StartingSequenceNumber': data['SequenceNumber']} if data.get('SequenceNumber') else {}
+        result = kinesis.get_shard_iterator(StreamName=stream_name, ShardId=stream_shard_id,
+                                            ShardIteratorType=data['ShardIteratorType'], **kwargs)
+
+    elif action == 'GetRecords':
         kinesis_records = kinesis.get_records(**data)
         result = {'Records': [], 'NextShardIterator': kinesis_records.get('NextShardIterator')}
         for record in kinesis_records['Records']:
@@ -138,19 +141,17 @@ def stream_name_from_stream_arn(stream_arn):
     return get_kinesis_stream_name(table_name)
 
 
-def random_id(stream_arn, kinesis_shard_id):
-    namespace = uuid.UUID(bytes=hashlib.sha1(to_bytes(stream_arn)).digest()[:16])
-    if six.PY2:
-        kinesis_shard_id = to_bytes(kinesis_shard_id, 'utf-8')
-    return uuid.uuid5(namespace, kinesis_shard_id).hex
-
-
 def shard_id(stream_arn, kinesis_shard_id):
-    return '-'.join([kinesis_shard_id, random_id(stream_arn, kinesis_shard_id)])
+    timestamp = str(now_utc())
+    timestamp = '%s00000000' % timestamp[:-5]
+    timestamp = '%s%s' % ('0' * (20 - len(timestamp)), timestamp)
+    suffix = kinesis_shard_id.replace('shardId-', '')[:32]
+    return 'shardId-%s-%s' % (timestamp, suffix)
 
 
 def kinesis_shard_id(dynamodbstream_shard_id):
-    return dynamodbstream_shard_id.rsplit('-', 1)[0]
+    shard_params = dynamodbstream_shard_id.rsplit('-')
+    return '{0}-{1}'.format(shard_params[0], shard_params[-1])
 
 
 def serve(port, quiet=True):

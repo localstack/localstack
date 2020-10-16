@@ -14,7 +14,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_responses
 from localstack.utils.common import short_uid, to_str, timestamp
 from localstack.utils.aws.aws_stack import (
-    get_s3_client, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
+    connect_to_resource, firehose_stream_arn, connect_elasticsearch, extract_region_from_auth_header)
 from localstack.utils.kinesis import kinesis_connector
 from localstack.utils.analytics import event_publisher
 
@@ -61,7 +61,7 @@ def put_records(stream_name, records):
         if 'ESDestinationDescription' in dest:
             es_dest = dest['ESDestinationDescription']
             es_index = es_dest['IndexName']
-            es_type = es_dest['TypeName']
+            es_type = es_dest.get('TypeName')
             es = connect_elasticsearch()
             for record in records:
                 obj_id = uuid.uuid4()
@@ -84,22 +84,17 @@ def put_records(stream_name, records):
             s3_dest = dest['S3DestinationDescription']
             bucket = bucket_name(s3_dest['BucketARN'])
             prefix = s3_dest.get('Prefix', '')
-            s3 = get_s3_client()
-            for record in records:
 
-                # DirectPut
-                if 'Data' in record:
-                    data = base64.b64decode(record['Data'])
-                # KinesisAsSource
-                elif 'data' in record:
-                    data = base64.b64decode(record['data'])
+            s3 = connect_to_resource('s3')
+            batched_data = b''.join(
+                [base64.b64decode(r.get('Data') or r['data']) for r in records])
 
-                obj_path = get_s3_object_path(stream_name, prefix)
-                try:
-                    s3.Object(bucket, obj_path).put(Body=data)
-                except Exception as e:
-                    LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
-                    raise e
+            obj_path = get_s3_object_path(stream_name, prefix)
+            try:
+                s3.Object(bucket, obj_path).put(Body=batched_data)
+            except Exception as e:
+                LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
+                raise e
 
 
 def get_s3_object_path(stream_name, prefix):
@@ -212,20 +207,22 @@ def error_not_found(stream_name):
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
-    return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
+    return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
 @app.route('/', methods=['POST'])
 def post_request():
-    action = request.headers.get('x-amz-target')
+    action = request.headers.get('x-amz-target', '')
+    action = action.split('.')[-1]
     data = json.loads(to_str(request.data))
     response = None
-    if action == '%s.ListDeliveryStreams' % ACTION_HEADER_PREFIX:
+
+    if action == 'ListDeliveryStreams':
         response = {
             'DeliveryStreamNames': get_delivery_stream_names(),
             'HasMoreDeliveryStreams': False
         }
-    elif action == '%s.CreateDeliveryStream' % ACTION_HEADER_PREFIX:
+    elif action == 'CreateDeliveryStream':
         stream_name = data['DeliveryStreamName']
         region_name = extract_region_from_auth_header(request.headers)
         _s3_destination = data.get('S3DestinationConfiguration') or data.get('ExtendedS3DestinationConfiguration')
@@ -238,10 +235,10 @@ def post_request():
             tags=data.get('Tags'),
             region_name=region_name
         )
-    elif action == '%s.DeleteDeliveryStream' % ACTION_HEADER_PREFIX:
+    elif action == 'DeleteDeliveryStream':
         stream_name = data['DeliveryStreamName']
         response = delete_stream(stream_name)
-    elif action == '%s.DescribeDeliveryStream' % ACTION_HEADER_PREFIX:
+    elif action == 'DescribeDeliveryStream':
         stream_name = data['DeliveryStreamName']
         response = get_stream(stream_name)
         if not response:
@@ -249,14 +246,14 @@ def post_request():
         response = {
             'DeliveryStreamDescription': response
         }
-    elif action == '%s.PutRecord' % ACTION_HEADER_PREFIX:
+    elif action == 'PutRecord':
         stream_name = data['DeliveryStreamName']
         record = data['Record']
         put_record(stream_name, record)
         response = {
             'RecordId': str(uuid.uuid4())
         }
-    elif action == '%s.PutRecordBatch' % ACTION_HEADER_PREFIX:
+    elif action == 'PutRecordBatch':
         stream_name = data['DeliveryStreamName']
         records = data['Records']
         put_records(stream_name, records)
@@ -267,7 +264,7 @@ def post_request():
             'FailedPutCount': 0,
             'RequestResponses': request_responses
         }
-    elif action == '%s.UpdateDestination' % ACTION_HEADER_PREFIX:
+    elif action == 'UpdateDestination':
         stream_name = data['DeliveryStreamName']
         version_id = data['CurrentDeliveryStreamVersionId']
         destination_id = data['DestinationId']
@@ -278,7 +275,7 @@ def post_request():
         update_destination(stream_name=stream_name, destination_id=destination_id,
                            elasticsearch_update=es_update, version_id=version_id)
         response = {}
-    elif action == '%s.ListTagsForDeliveryStream' % ACTION_HEADER_PREFIX:
+    elif action == 'ListTagsForDeliveryStream':
         response = get_delivery_stream_tags(data['DeliveryStreamName'], data.get('ExclusiveStartTagKey'),
                                             data.get('Limit', 50))
     else:

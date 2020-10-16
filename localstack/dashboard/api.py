@@ -29,6 +29,7 @@ def spec():
 
 @app.route('/graph', methods=['POST'])
 def get_graph():
+    # TODO remove?
     """ Get deployment graph
         ---
         operationId: 'getGraph'
@@ -38,7 +39,7 @@ def get_graph():
     """
     data = get_payload()
     env = Environment.from_string(data.get('awsEnvironment'))
-    graph = infra.get_graph(name_filter=data['nameFilter'], env=env)
+    graph = infra.get_graph(name_filter=data['nameFilter'], env=env, region=data.get('awsRegion'))
     return jsonify(graph)
 
 
@@ -104,14 +105,6 @@ def get_health():
     # TODO: this should be moved into a separate service, once the dashboard UI is removed
     reload = request.args.get('reload') is not None
     result = plugins.get_services_health(reload=reload)
-    return jsonify(result)
-
-
-@app.route('/health', methods=['PUT'])
-def put_health():
-    data = get_payload()
-    plugins.set_services_health(data)
-    result = {'status': 'OK'}
     return jsonify(result)
 
 

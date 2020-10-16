@@ -27,14 +27,17 @@ def publish_lambda_metric(metric, value, kwargs):
     if not config.service_port('cloudwatch'):
         return
     cw_client = aws_stack.connect_to_service('cloudwatch')
-    cw_client.put_metric_data(Namespace='AWS/Lambda',
-        MetricData=[{
-            'MetricName': metric,
-            'Dimensions': dimension_lambda(kwargs),
-            'Timestamp': datetime.now(),
-            'Value': value
-        }]
-    )
+    try:
+        cw_client.put_metric_data(Namespace='AWS/Lambda',
+            MetricData=[{
+                'MetricName': metric,
+                'Dimensions': dimension_lambda(kwargs),
+                'Timestamp': datetime.now(),
+                'Value': value
+            }]
+        )
+    except Exception as e:
+        LOG.info('Unable to put metric data for metric "%s" to CloudWatch: %s' % (metric, e))
 
 
 def publish_lambda_duration(time_before, kwargs):
@@ -78,6 +81,9 @@ def store_cloudwatch_logs(log_group_name, log_stream_name, log_output, start_tim
 
     # store new log events under the log stream
     finish_time = int(time.time() * 1000)
+    # fix for log lines that were merged into a singe line, e.g., "log line 1 ... \x1b[32mEND RequestId ..."
+    log_output = log_output.replace('\\x1b', '\n\\x1b')
+    log_output = log_output.replace('\x1b', '\n\x1b')
     log_lines = log_output.split('\n')
     time_diff_per_line = float(finish_time - start_time) / float(len(log_lines))
     log_events = []
@@ -111,7 +117,7 @@ def _func_name(kwargs):
 def publish_event(time_before, result, kwargs):
     event_publisher.fire_event(
         event_publisher.EVENT_LAMBDA_INVOKE_FUNC,
-        payload={'f': _func_name(kwargs), 'd': now_utc() - time_before, 'r': result[0]})
+        payload={'f': event_publisher.get_hash(_func_name(kwargs)), 'd': now_utc() - time_before, 'r': result[0]})
 
 
 def publish_result(ns, time_before, result, kwargs):

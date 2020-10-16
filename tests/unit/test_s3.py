@@ -1,6 +1,8 @@
 import unittest
 from localstack.services.s3 import s3_listener, multipart_content
 from requests.models import CaseInsensitiveDict, Response
+from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
+from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 
 
 class S3ListenerTest (unittest.TestCase):
@@ -111,11 +113,6 @@ class S3ListenerTest (unittest.TestCase):
         self.assertIsNot(expanded3, data3, 'Should have changed content of string data with filename to interpolate')
         self.assertIn(b'uploads/20170826T181315.679087009Z/upload/pixel.txt', expanded3,
             'Should see the interpolated filename')
-
-    def test_get_bucket_lifecycle(self):
-        bucket_name = 'test-bucket'
-        returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
-        self.assertRegexpMatches(returned_empty_lifecycle._content, r'LifecycleConfiguration')
 
     def test_get_bucket_name(self):
         bucket_name = 'test-bucket'
@@ -235,3 +232,18 @@ class S3ListenerTest (unittest.TestCase):
         response = Response()
         s3_listener.append_last_modified_headers(response)
         self.assertNotEqual('No header', response.headers.get('Last-Modified', 'No header'))
+
+    def test_path_addressing_enabled_hosts(self):
+        headers = [
+            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{HOSTNAME}:12345'}, True),
+            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{HOSTNAME_EXTERNAL}:12345'}, True),
+            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{LOCALHOST_IP}:12345'}, True),
+            ({'host': f'{HOSTNAME}:12345'}, True),
+            ({'host': f'{HOSTNAME_EXTERNAL}:12345'}, True),
+            ({'host': f'{LOCALHOST_IP}:12345'}, True),
+            ({'host': f'https://{HOSTNAME}:12345'}, False),
+            ({'host': f'https://{HOSTNAME_EXTERNAL}:12345'}, False),
+            ({'host': f'https://{LOCALHOST_IP}:12345'}, False),
+        ]
+        for example_header, expected_result in headers:
+            assert expected_result == s3_listener.uses_path_addressing(example_header)

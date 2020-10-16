@@ -127,7 +127,7 @@ def profiled_via_yappi(lines=50):
                 result = list(yappi.get_func_stats())
                 yappi.stop()
                 yappi.clear_stats()
-                result = [l for l in result if all([s not in l.full_name for s in skipped_lines])]
+                result = [r for r in result if all([s not in r.full_name for s in skipped_lines])]
                 entries = result[:lines]
                 prefix = LOCALSTACK_ROOT_FOLDER
                 result = []
@@ -141,5 +141,24 @@ def profiled_via_yappi(lines=50):
                     result.append('%s\t%s\t%s\t%s\t%s' % (c(e.ncall), c(e.ttot), c(e.tsub), c(e.tavg), name))
                 result = '\n'.join(result)
                 print(result)
+        return wrapped
+    return wrapper
+
+
+def log_duration(name=None):
+    """ Function decorator to log the duration of function invocations. """
+    def wrapper(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            from localstack.utils.common import now_utc
+            start_time = now_utc(millis=True)
+            try:
+                return f(*args, **kwargs)
+            finally:
+                end_time = now_utc(millis=True)
+                func_name = name or f.__name__
+                duration = (end_time - start_time) * 1000
+                if duration > 500:
+                    LOG.info('Execution of "%s" took %sms' % (func_name, duration))
         return wrapped
     return wrapper

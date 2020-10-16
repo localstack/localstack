@@ -3,9 +3,9 @@ import json
 import time
 from six.moves import queue
 from localstack import config
-from localstack.constants import ENV_INTERNAL_TEST_RUN, API_ENDPOINT
-from localstack.utils.common import (JsonObject, to_str,
-    timestamp, short_uid, save_file, FuncThread, load_file)
+from localstack.constants import API_ENDPOINT
+from localstack.utils.common import (
+    JsonObject, to_str, timestamp, short_uid, save_file, FuncThread, load_file, get_or_create_file)
 from localstack.utils.common import safe_requests as requests
 
 PROCESS_ID = short_uid()
@@ -80,22 +80,17 @@ def read_api_key_safe():
         return None
 
 
-def get_or_create_file(config_file):
-    if os.path.exists(config_file):
-        return config_file
-    try:
-        save_file(config_file, '{}')
-        return config_file
-    except Exception:
-        pass
+def _get_config_file(path):
+    get_or_create_file(path)
+    return path
 
 
 def get_config_file_homedir():
-    return get_or_create_file(config.CONFIG_FILE_PATH)
+    return _get_config_file(config.CONFIG_FILE_PATH)
 
 
 def get_config_file_tempdir():
-    return get_or_create_file(os.path.join(config.TMP_FOLDER, '.localstack'))
+    return _get_config_file(os.path.join(config.TMP_FOLDER, '.localstack'))
 
 
 def get_machine_id():
@@ -105,6 +100,7 @@ def get_machine_id():
 
     # determine MACHINE_ID from config files
     configs_map = {}
+    # TODO check if this distinction is needed - config.CONFIG_FILE_PATH already handles tmp vs home folder
     config_file_tmp = get_config_file_tempdir()
     config_file_home = get_config_file_homedir()
     for config_file in (config_file_home, config_file_tmp):
@@ -162,9 +158,9 @@ def get_hash(name):
 
 
 def fire_event(event_type, payload=None):
-    global SENDER_THREAD
     if config.DISABLE_EVENTS:
         return
+    global SENDER_THREAD
     if not SENDER_THREAD:
         SENDER_THREAD = FuncThread(poll_and_send_messages, {})
         SENDER_THREAD.start()
@@ -172,12 +168,13 @@ def fire_event(event_type, payload=None):
     if not api_key:
         # only store events if API key has been specified
         return
+    from localstack.utils.testutil import is_local_test_mode  # leave here to avoid circular dependency
     if payload is None:
         payload = {}
     if isinstance(payload, dict):
         if is_travis():
             payload['travis'] = True
-        if os.environ.get(ENV_INTERNAL_TEST_RUN):
+        if is_local_test_mode():
             payload['int'] = True
 
     event = AnalyticsEvent(event_type=event_type, payload=payload, api_key=api_key)
