@@ -84,4 +84,4 @@ ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-1.8-openjdk/jre/lib/amd64/server
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
 # clean up temporary files created during test execution
-RUN rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache
+RUN rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform

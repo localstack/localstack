@@ -820,6 +820,19 @@ TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = {
     }
 }
 
+dummy_sqs_attribute_template = {
+    'TemplateFormatVersion': '2010-09-09',
+    'Description': 'Deploys an SQS queue',
+    'Resources': {
+        'MyQueue': {
+            'Type': 'AWS::SQS::Queue',
+            'Properties': {
+                'ReceiveMessageWaitTimeSeconds': 1
+            }
+        }
+    }
+}
+
 SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
 
 
@@ -2045,6 +2058,17 @@ class CloudFormationTest(unittest.TestCase):
         )
 
         cloudformation.delete_stack(StackName='myteststack')
+
+    def test_boto3_create_stack_with_sqs_attributes(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        sqs_conn = aws_stack.connect_to_service('sqs')
+
+        queues_before = len(sqs_conn.list_queues()['QueueUrls'])
+
+        cloudformation.create_stack(StackName='test_stack', TemplateBody=json.dumps(dummy_sqs_attribute_template))
+
+        result = sqs_conn.list_queues()
+        self.assertEqual(len(result.get('QueueUrls')), queues_before + 1)
 
     def test_update_stack_with_same_template(self):
         stack_name = 'stack-%s' % short_uid()
