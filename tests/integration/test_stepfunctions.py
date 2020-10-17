@@ -62,16 +62,13 @@ CHOICE_STATE_MACHINE_DEF = {
             'Type': 'Choice',
             'Choices': [
                 {
-                    'And': [
-                        {
-                            'Variable': '$.x',
-                            'IsPresent': True
-                        },
-                        {
-                            'Variable': '$.y',
-                            'IsPresent': True
-                        }
-                    ],
+                    'And': [{
+                        'Variable': '$.x',
+                        'IsPresent': True
+                    }, {
+                        'Variable': '$.y',
+                        'IsPresent': True
+                    }],
                     'Next': 'Add'
                 }
             ],
@@ -89,10 +86,6 @@ CHOICE_STATE_MACHINE_DEF = {
             'End': True
         }
     }
-}
-
-input = {
-    'input': '{\"x\" : \"1\"}'
 }
 
 
@@ -138,6 +131,8 @@ class TestStateMachine(unittest.TestCase):
     def tearDownClass(cls):
         cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_1)
         cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_2)
+        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_3)
+        cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_4)
 
     def test_create_choice_state_machine(self):
         state_machines_before = self.sfn_client.list_state_machines()['stateMachines']
@@ -157,32 +152,27 @@ class TestStateMachine(unittest.TestCase):
         # run state machine
         state_machines = self.sfn_client.list_state_machines()['stateMachines']
         sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == CHOICE_STATE_MACHINE_NAME][0]
+        input = {'x': '1', 'y': '2'}
         result = self.sfn_client.start_execution(stateMachineArn=sm_arn, input=json.dumps(input))
         self.assertTrue(result.get('executionArn'))
 
+        # define expected output
+        test_output = {**input, 'added': {'Hello': TEST_RESULT_VALUE}}
+
+        def check_result():
+            result = self._get_execution_results(sm_arn)
+            self.assertEqual(result, test_output)
+
+        # assert that the result is correct
+        retry(check_result, sleep=2, retries=10)
+
+        # clean up
+        self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+
     def test_create_run_map_state_machine(self):
-        test_input = [
-            {
-                'map': 'Bob'
-            },
-            {
-                'map': 'Meg'
-            },
-            {
-                'map': 'Joe'
-            }
-        ]
-        test_output = [
-            {
-                'Hello': 'Bob'
-            },
-            {
-                'Hello': 'Meg'
-            },
-            {
-                'Hello': 'Joe'
-            }
-        ]
+        names = ['Bob', 'Meg', 'Joe']
+        test_input = [{'map': name} for name in names]
+        test_output = [{'Hello': name} for name in names]
         state_machines_before = self.sfn_client.list_state_machines()['stateMachines']
 
         role_arn = aws_stack.role_arn('sfn_role')
@@ -198,23 +188,18 @@ class TestStateMachine(unittest.TestCase):
         self.assertEqual(len(state_machines_after), len(state_machines_before) + 1)
 
         # run state machine
-        state_machines = self.sfn_client.list_state_machines()['stateMachines']
-        sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == MAP_STATE_MACHINE_NAME][0]
+        sm_arn = [m['stateMachineArn'] for m in state_machines_after if m['name'] == MAP_STATE_MACHINE_NAME][0]
         result = self.sfn_client.start_execution(stateMachineArn=sm_arn, input=json.dumps(test_input))
         self.assertTrue(result.get('executionArn'))
 
         def check_invocations():
             self.assertIn(lambda_arn_3, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             # assert that the result is correct
-            response = self.sfn_client.list_executions(stateMachineArn=sm_arn)
-            execution = response['executions'][0]
-            result = self.sfn_client.get_execution_history(executionArn=execution['executionArn'])
-            events = sorted(result['events'], key=lambda event: event['id'])
-            result = json.loads(events[-1]['executionSucceededEventDetails']['output'])
+            result = self._get_execution_results(sm_arn)
             self.assertEqual(result, test_output)
 
         # assert that the lambda has been invoked by the SM execution
-        retry(check_invocations, sleep=0.7, retries=2)
+        retry(check_invocations, sleep=1, retries=10)
 
         # clean up
         self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
@@ -247,11 +232,7 @@ class TestStateMachine(unittest.TestCase):
             self.assertIn(lambda_arn_1, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             # assert that the result is correct
-            response = self.sfn_client.list_executions(stateMachineArn=sm_arn)
-            execution = response['executions'][0]
-            result = self.sfn_client.get_execution_history(executionArn=execution['executionArn'])
-            events = sorted(result['events'], key=lambda event: event['id'])
-            result = json.loads(events[-1]['executionSucceededEventDetails']['output'])
+            result = self._get_execution_results(sm_arn)
             self.assertEqual(result['result_value'], {'Hello': TEST_RESULT_VALUE})
 
         # assert that the lambda has been invoked by the SM execution
@@ -259,3 +240,12 @@ class TestStateMachine(unittest.TestCase):
 
         # clean up
         self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+
+    def _get_execution_results(self, sm_arn):
+        response = self.sfn_client.list_executions(stateMachineArn=sm_arn)
+        executions = sorted(response['executions'], key=lambda x: x['startDate'])
+        execution = executions[-1]
+        result = self.sfn_client.get_execution_history(executionArn=execution['executionArn'])
+        events = sorted(result['events'], key=lambda event: event['timestamp'])
+        result = json.loads(events[-1]['executionSucceededEventDetails']['output'])
+        return result

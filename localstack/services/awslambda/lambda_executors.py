@@ -256,6 +256,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         main_endpoint = get_main_endpoint_from_container()
 
         environment['LOCALSTACK_HOSTNAME'] = main_endpoint
+        environment['EDGE_PORT'] = str(config.EDGE_PORT)
         environment['_HANDLER'] = handler
         if os.environ.get('HTTP_PROXY'):
             environment['HTTP_PROXY'] = os.environ['HTTP_PROXY']
@@ -425,6 +426,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
                     ' -e AWS_LAMBDA_EVENT_BODY="$AWS_LAMBDA_EVENT_BODY"'
                     ' -e HOSTNAME="$HOSTNAME"'
                     ' -e LOCALSTACK_HOSTNAME="$LOCALSTACK_HOSTNAME"'
+                    ' -e EDGE_PORT="$EDGE_PORT"'
                     '  %s'  # env_vars
                     '  %s'  # network
                     '  %s'  # dns

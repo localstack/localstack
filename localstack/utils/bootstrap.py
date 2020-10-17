@@ -44,6 +44,7 @@ PLUGIN_SCOPE_COMMANDS = 'commands'
 
 # maps from API names to list of other API names that they depend on
 API_DEPENDENCIES = {
+    'dynamodb': ['dynamodbstreams'],
     'dynamodbstreams': ['kinesis'],
     'es': ['elasticsearch'],
     'lambda': ['logs', 'cloudwatch'],
