@@ -90,6 +90,7 @@ CHOICE_STATE_MACHINE_DEF = {
         }
     }
 }
+
 input = {
     'input': '{\"x\" : \"1\"}'
 }
@@ -147,7 +148,7 @@ class TestStateMachine(unittest.TestCase):
         definition['States']['Add']['Resource'] = lambda_arn_4
         definition = json.dumps(definition)
         result = self.sfn_client.create_state_machine(
-            name=CHOICE_STATE_MACHINE_NAME, input=json.dumps(input), definition=definition, roleArn=role_arn)
+            name=CHOICE_STATE_MACHINE_NAME, definition=definition, roleArn=role_arn)
 
         # assert that the SM has been created
         state_machines_after = self.sfn_client.list_state_machines()['stateMachines']
