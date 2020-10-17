@@ -7,7 +7,9 @@ provider "aws" {
   skip_metadata_api_check     = true
   s3_force_path_style         = true
   endpoints {
-    s3 = "http://localhost:4566"
-    sqs = "http://localhost:4566"
+    s3     = "http://localhost:4566"
+    sqs    = "http://localhost:4566"
+    lambda = "http://localhost:4566"
+    iam    = "http://localhost:4566"
   }
 }

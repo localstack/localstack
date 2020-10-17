@@ -6,6 +6,12 @@ from localstack.utils.common import run
 BUCKET_NAME = 'tf-bucket'
 QUEUE_NAME = 'tf-queue'
 
+# lambda Testing Variables
+LAMBDA_NAME = 'tf-lambda'
+LAMBDA_HANDLER = 'DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler'
+LAMBDA_RUNTIME = 'dotnetcore2.0'
+LAMBDA_ROLE = 'arn:aws:iam::000000000000:role/iam_for_lambda'
+
 
 class TestTerraform(unittest.TestCase):
 
@@ -36,3 +42,11 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual(response['Attributes']['MaximumMessageSize'], '2048')
         self.assertEqual(response['Attributes']['MessageRetentionPeriod'], '86400')
         self.assertEqual(response['Attributes']['ReceiveMessageWaitTimeSeconds'], '10')
+
+    def test_lambda(self):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        response = lambda_client.get_function(FunctionName=LAMBDA_NAME)
+        self.assertEqual(response['Configuration']['FunctionName'], LAMBDA_NAME)
+        self.assertEqual(response['Configuration']['Handler'], LAMBDA_HANDLER)
+        self.assertEqual(response['Configuration']['Runtime'], LAMBDA_RUNTIME)
+        self.assertEqual(response['Configuration']['Role'], LAMBDA_ROLE)
