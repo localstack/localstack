@@ -53,6 +53,48 @@ MAP_STATE_MACHINE_DEF = {
     }
 }
 
+TEST_LAMBDA_NAME_4 = 'lambda_choice_sfn_4'
+CHOICE_STATE_MACHINE_NAME = 'test_choice_sm_4'
+CHOICE_STATE_MACHINE_DEF = {
+    'StartAt': 'CheckValues',
+    'States': {
+        'CheckValues': {
+            'Type': 'Choice',
+            'Choices': [
+                {
+                    'And': [
+                        {
+                            'Variable': '$.x',
+                            'IsPresent': True
+                        },
+                        {
+                            'Variable': '$.y',
+                            'IsPresent': True
+                        }
+                    ],
+                    'Next': 'Add'
+                }
+            ],
+            'Default': 'MissingValue'
+        },
+        'MissingValue': {
+            'Type': 'Fail',
+            'Cause': 'test'
+        },
+        'Add': {
+            'Type': 'Task',
+            'Resource': '__tbd__',
+            'ResultPath': '$.added',
+            'TimeoutSeconds': 10,
+            'End': True
+        }
+    }
+}
+
+input = {
+    'input': '{\"x\" : \"1\"}'
+}
+
 
 class TestStateMachine(unittest.TestCase):
 
@@ -85,11 +127,38 @@ class TestStateMachine(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36,
             envvars={'Hello': 'Replace Value'}
         )
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_4,
+            zip_file=zip_file,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+            envvars={'Hello': TEST_RESULT_VALUE}
+        )
 
     @classmethod
     def tearDownClass(cls):
         cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_1)
         cls.lambda_client.delete_function(FunctionName=TEST_LAMBDA_NAME_2)
+
+    def test_create_choice_state_machine(self):
+        state_machines_before = self.sfn_client.list_state_machines()['stateMachines']
+        role_arn = aws_stack.role_arn('sfn_role')
+
+        definition = clone(CHOICE_STATE_MACHINE_DEF)
+        lambda_arn_4 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_4)
+        definition['States']['Add']['Resource'] = lambda_arn_4
+        definition = json.dumps(definition)
+        result = self.sfn_client.create_state_machine(
+            name=CHOICE_STATE_MACHINE_NAME, definition=definition, roleArn=role_arn)
+
+        # assert that the SM has been created
+        state_machines_after = self.sfn_client.list_state_machines()['stateMachines']
+        self.assertEqual(len(state_machines_after), len(state_machines_before) + 1)
+
+        # run state machine
+        state_machines = self.sfn_client.list_state_machines()['stateMachines']
+        sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == CHOICE_STATE_MACHINE_NAME][0]
+        result = self.sfn_client.start_execution(stateMachineArn=sm_arn, input=json.dumps(input))
+        self.assertTrue(result.get('executionArn'))
 
     def test_create_run_map_state_machine(self):
         test_input = [
