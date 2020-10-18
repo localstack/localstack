@@ -30,8 +30,23 @@ class TestTerraform(unittest.TestCase):
 
     def test_bucket_exists(self):
         s3_client = aws_stack.connect_to_service('s3')
+
         response = s3_client.head_bucket(Bucket=BUCKET_NAME)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        cors = {
+            'AllowedHeaders': ['*'],
+            'AllowedMethods': ['GET', 'PUT', 'POST'],
+            'AllowedOrigins': ['*'],
+            'ExposeHeaders': ['ETag', 'x-amz-version-id'],
+            'MaxAgeSeconds': 3000
+        }
+
+        response = s3_client.get_bucket_cors(Bucket=BUCKET_NAME)
+        self.assertEqual(response['CORSRules'][0], cors)
+
+        response = s3_client.get_bucket_versioning(Bucket=BUCKET_NAME)
+        self.assertEqual(response['Status'], 'Enabled')
 
     def test_sqs(self):
         sqs_client = aws_stack.connect_to_service('sqs')
