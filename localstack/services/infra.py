@@ -91,11 +91,6 @@ def start_sns(port=None, asynchronous=False, update_listener=None):
         update_listener=update_listener)
 
 
-def start_cloudwatch(port=None, asynchronous=False):
-    port = port or config.PORT_CLOUDWATCH
-    return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
-
-
 def start_sts(port=None, asynchronous=False):
     port = port or config.PORT_STS
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)

@@ -1263,5 +1263,10 @@ def isoformat_milliseconds(t):
         return t.isoformat()[:-3]
 
 
+def _replace(response, pattern, replacement):
+    content = to_str(response.content)
+    response._content = re.sub(pattern, replacement, content)
+
+
 # Code that requires util functions from above
 CACHE_FILE_PATTERN = CACHE_FILE_PATTERN.replace('_random_dir_', short_uid())
