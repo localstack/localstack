@@ -37,14 +37,15 @@ def requests_error_response_json(msg, code=500, error_type='InternalFailure'):
     return flask_to_requests_response(response)
 
 
-def requests_error_response_xml(service, message, code=400, code_string='InvalidParameter'):
+def requests_error_response_xml(message, code=400, code_string='InvalidParameter', service=None, xmlns=None):
     response = RequestsResponse()
-    response._content = """<ErrorResponse xmlns="http://{service}.amazonaws.com/doc/2010-03-31/"><Error>
+    xmlns = xmlns or 'http://%s.amazonaws.com/doc/2010-03-31/' % service
+    response._content = """<ErrorResponse xmlns="{xmlns}"><Error>
         <Type>Sender</Type>
         <Code>{code_string}</Code>
         <Message>{message}</Message>
         </Error><RequestId>{req_id}</RequestId>
-        </ErrorResponse>""".format(service=service, message=message, code_string=code_string, req_id=short_uid())
+        </ErrorResponse>""".format(xmlns=xmlns, message=message, code_string=code_string, req_id=short_uid())
     response.status_code = code
     return response
 
@@ -93,18 +94,18 @@ def requests_error_response_xml_signature_calculation(message, string_to_sign=No
         return response
 
 
-def flask_error_response_xml(message, code=500, code_string='InternalFailure'):
-    response = requests_error_response_xml(message, code=code, code_string=code_string)
+def flask_error_response_xml(message, code=500, code_string='InternalFailure', service=None, xmlns=None):
+    response = requests_error_response_xml(message, code=code, code_string=code_string, service=service, xmlns=xmlns)
     return requests_to_flask_response(response)
 
 
-def requests_error_response(req_headers, message, code=500, error_type='InternalFailure'):
+def requests_error_response(req_headers, message, code=500, error_type='InternalFailure', service=None, xmlns=None):
     ctype = req_headers.get('Content-Type', '')
     accept = req_headers.get('Accept', '')
     is_json = 'json' in ctype or 'json' in accept
     if is_json:
         return requests_error_response_json(msg=message, code=code, error_type=error_type)
-    return requests_error_response_xml(message, code=code, code_string=error_type)
+    return requests_error_response_xml(message, code=code, code_string=error_type, service=service, xmlns=xmlns)
 
 
 def requests_response(content, status_code=200, headers={}):
