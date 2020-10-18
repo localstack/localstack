@@ -18,6 +18,12 @@ LAMBDA_HANDLER = 'DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandle
 LAMBDA_RUNTIME = 'dotnetcore2.0'
 LAMBDA_ROLE = 'arn:aws:iam::000000000000:role/iam_for_lambda'
 
+# lambda Testing Variables
+LAMBDA_NAME = 'tf-lambda'
+LAMBDA_HANDLER = 'DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandler'
+LAMBDA_RUNTIME = 'dotnetcore2.0'
+LAMBDA_ROLE = 'arn:aws:iam::000000000000:role/iam_for_lambda'
+
 
 class TestTerraform(unittest.TestCase):
 
