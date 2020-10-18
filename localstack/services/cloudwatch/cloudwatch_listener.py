@@ -13,6 +13,7 @@ class ProxyListenerCloudWatch(ProxyListener):
         for tag in timestamp_tags:
             self.fix_date_format(response, tag)
         response.headers['content-length'] = len(response.content)
+        return response
 
     def fix_date_format(self, response, timestamp_tag):
         """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
