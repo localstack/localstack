@@ -39,3 +39,8 @@ node_modules/
 
 requirements.copy.txt
 .serverless/
+
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*tfplan

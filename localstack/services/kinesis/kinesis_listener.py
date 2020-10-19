@@ -136,7 +136,6 @@ class ProxyListenerKinesis(ProxyListener):
             return response
 
     def decode_content(self, data):
-        # return json.loads(to_str(data))
         try:
             return json.loads(to_str(data))
         except UnicodeDecodeError:

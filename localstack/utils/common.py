@@ -1,7 +1,6 @@
 import io
 import os
 import re
-import pwd
 import grp
 import sys
 import json
@@ -602,6 +601,7 @@ def ensure_readable(file_path, default_perms=None):
 
 def chown_r(path, user):
     """ Recursive chown """
+    import pwd  # keep this import here for Windows compatibility
     uid = pwd.getpwnam(user).pw_uid
     gid = grp.getgrnam(user).gr_gid
     os.chown(path, uid, gid)
@@ -1261,6 +1261,11 @@ def isoformat_milliseconds(t):
         return t.isoformat(timespec='milliseconds')
     except TypeError:
         return t.isoformat()[:-3]
+
+
+def _replace(response, pattern, replacement):
+    content = to_str(response.content)
+    response._content = re.sub(pattern, replacement, content)
 
 
 # Code that requires util functions from above

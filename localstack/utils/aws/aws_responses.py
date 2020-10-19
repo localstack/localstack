@@ -37,20 +37,21 @@ def requests_error_response_json(msg, code=500, error_type='InternalFailure'):
     return flask_to_requests_response(response)
 
 
-def requests_error_response_xml(service, message, code=400, code_string='InvalidParameter'):
+def requests_error_response_xml(message, code=400, code_string='InvalidParameter', service=None, xmlns=None):
     response = RequestsResponse()
-    response._content = """<ErrorResponse xmlns="http://{service}.amazonaws.com/doc/2010-03-31/"><Error>
+    xmlns = xmlns or 'http://%s.amazonaws.com/doc/2010-03-31/' % service
+    response._content = """<ErrorResponse xmlns="{xmlns}"><Error>
         <Type>Sender</Type>
         <Code>{code_string}</Code>
         <Message>{message}</Message>
         </Error><RequestId>{req_id}</RequestId>
-        </ErrorResponse>""".format(service=service, message=message, code_string=code_string, req_id=short_uid())
+        </ErrorResponse>""".format(xmlns=xmlns, message=message, code_string=code_string, req_id=short_uid())
     response.status_code = code
     return response
 
 
 def requests_error_response_xml_signature_calculation(message, string_to_sign=None, signature=None, expires=None,
-        code=400, code_string='AccessDenied', aws_access_token='temp'):
+                                                      code=400, code_string='AccessDenied', aws_access_token='temp'):
     response = RequestsResponse()
     response_template = """<?xml version="1.0" encoding="UTF-8"?>
         <Error>
@@ -70,14 +71,16 @@ def requests_error_response_xml_signature_calculation(message, string_to_sign=No
         parsed_response['Error']['AWSAccessKeyId'] = aws_access_token
         parsed_response['Error']['StringToSign'] = string_to_sign
         parsed_response['Error']['SignatureProvided'] = signature
-        parsed_response['Error']['StringToSignBytes'] = '{}'.format(bytes_signature.decode('utf-8'))
+        parsed_response['Error']['StringToSignBytes'] = '{}'.format(
+            bytes_signature.decode('utf-8'))
         response._content = xmltodict.unparse(parsed_response)
         response.headers['Content-Length'] = str(len(response._content))
 
     if expires and code_string == 'AccessDenied':
 
         server_time = datetime.datetime.utcnow().isoformat()[:-4]
-        expires_isoformat = datetime.datetime.fromtimestamp(int(expires)).isoformat()[:-4]
+        expires_isoformat = datetime.datetime.fromtimestamp(
+            int(expires)).isoformat()[:-4]
         parsed_response['Error']['Code'] = code_string
         parsed_response['Error']['Expires'] = '{}Z'.format(expires_isoformat)
         parsed_response['Error']['ServerTime'] = '{}Z'.format(server_time)
@@ -93,18 +96,19 @@ def requests_error_response_xml_signature_calculation(message, string_to_sign=No
         return response
 
 
-def flask_error_response_xml(message, code=500, code_string='InternalFailure'):
-    response = requests_error_response_xml(message, code=code, code_string=code_string)
+def flask_error_response_xml(message, code=500, code_string='InternalFailure', service=None, xmlns=None):
+    response = requests_error_response_xml(
+        message, code=code, code_string=code_string, service=service, xmlns=xmlns)
     return requests_to_flask_response(response)
 
 
-def requests_error_response(req_headers, message, code=500, error_type='InternalFailure'):
+def requests_error_response(req_headers, message, code=500, error_type='InternalFailure', service=None, xmlns=None):
     ctype = req_headers.get('Content-Type', '')
     accept = req_headers.get('Accept', '')
     is_json = 'json' in ctype or 'json' in accept
     if is_json:
         return requests_error_response_json(msg=message, code=code, error_type=error_type)
-    return requests_error_response_xml(message, code=code, code_string=error_type)
+    return requests_error_response_xml(message, code=code, code_string=error_type, service=service, xmlns=xmlns)
 
 
 def requests_response(content, status_code=200, headers={}):
@@ -125,7 +129,8 @@ def requests_to_flask_response(r):
 
 
 def response_regex_replace(response, search, replace):
-    content = re.sub(search, replace, to_str(response._content), flags=re.DOTALL | re.MULTILINE)
+    content = re.sub(search, replace, to_str(
+        response._content), flags=re.DOTALL | re.MULTILINE)
     set_response_content(response, content)
 
 
@@ -187,14 +192,16 @@ class MessageConversion(object):
         if method == 'POST' and 'Action=CreateRole' in to_str(data) and response.status_code >= 400:
             content = to_str(response.content)
             # remove the <Errors> wrapper element, as this breaks AWS Java SDKs (issue #2231)
-            response._content = re.sub(regex, r'\1', content, flags=REGEX_FLAGS)
+            response._content = re.sub(
+                regex, r'\1', content, flags=REGEX_FLAGS)
 
     @staticmethod
     def fix_xml_empty_boolean(response, tag_names):
         for tag_name in tag_names:
             regex = r'<{tag}>\s*([Nn]one|null)\s*</{tag}>'.format(tag=tag_name)
             replace = r'<{tag}>false</{tag}>'.format(tag=tag_name)
-            response._content = re.sub(regex, replace, to_str(response.content), flags=REGEX_FLAGS)
+            response._content = re.sub(regex, replace, to_str(
+                response.content), flags=REGEX_FLAGS)
 
     @staticmethod
     def _reset_account_id(data):

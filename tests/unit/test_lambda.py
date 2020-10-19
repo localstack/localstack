@@ -590,26 +590,51 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertTrue(re.match(expected, result))
         self.assertTrue(lambda_executors.Util.debug_java_port is not False)
 
-    def test_java_options_with_unset_debug_port_in_middle(self):
-        expected = '.*transport=dt_socket,server=y,address=[0-9]+,suspend=y'
-        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
-                                      ',address=_debug_port_,suspend=y')
-        self.assertTrue(re.match(expected, result))
-        self.assertTrue(lambda_executors.Util.debug_java_port is not False)
+    def test_java_options_with_unset_debug_port(self):
+        options = [
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=_debug_port_,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=localhost:_debug_port_,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=127.0.0.1:_debug_port_,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=*:_debug_port_,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:_debug_port_',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:_debug_port_',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:_debug_port_'
+        ]
+
+        expected_results = [
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=([0-9]+),suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=localhost:([0-9]+),suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=127.0.0.1:([0-9]+),suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=\\*:([0-9]+),suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=([0-9]+)',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:([0-9]+)',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:([0-9]+)',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=\\*:([0-9]+)'
+        ]
+
+        for i in range(len(options)):
+            result = self.prepare_java_opts(options[i])
+            m = re.match(expected_results[i], result)
+            self.assertTrue(m)
+            self.assertEqual(m.groups()[0], lambda_executors.Util.debug_java_port)
 
     def test_java_options_with_configured_debug_port(self):
-        expected = '.*transport=dt_socket,server=y,suspend=y,address=1234'
-        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
-                                      ',suspend=y,address=1234')
-        self.assertTrue(re.match(expected, result))
-        self.assertEqual('1234', lambda_executors.Util.debug_java_port)
+        options = [
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=1234,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=localhost:1234,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=127.0.0.1:1234,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=*:1234,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=1234',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:1234',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:1234',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:1234'
+        ]
 
-    def test_java_options_with_configured_debug_port_in_middle(self):
-        expected = '.*transport=dt_socket,server=y,address=1234,suspend=y'
-        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
-                                      ',address=1234,suspend=y')
-        self.assertTrue(re.match(expected, result))
-        self.assertEqual('1234', lambda_executors.Util.debug_java_port)
+        for item in options:
+            result = self.prepare_java_opts(item)
+            self.assertEqual('1234', lambda_executors.Util.debug_java_port)
+            self.assertEqual(item, result)
 
     def prepare_java_opts(self, java_opts):
         lambda_executors.config.LAMBDA_JAVA_OPTS = java_opts
