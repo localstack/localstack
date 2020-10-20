@@ -1,4 +1,5 @@
-class TaggingService():
+class TaggingService(object):
+
     def __init__(self):
         self.tags = {}
 
@@ -16,6 +17,6 @@ class TaggingService():
             self.tags[arn][t['Key']] = t['Value']
 
     def untag_resource(self, arn, tag_names):
+        tags = self.tags.get(arn, {})
         for name in tag_names:
-            if name in self.tags.get(arn, {}):
-                del self.tags[arn][name]
+            tags.pop(name, None)

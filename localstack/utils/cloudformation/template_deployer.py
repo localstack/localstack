@@ -229,6 +229,12 @@ def iam_create_policy_params(params, **kwargs):
     return result
 
 
+def lambda_permission_params(params, **kwargs):
+    result = select_parameters('FunctionName', 'Action', 'Principal')(params, **kwargs)
+    result['StatementId'] = common.short_uid()
+    return result
+
+
 def get_ddb_provisioned_throughput(params, **kwargs):
     args = params.get('ProvisionedThroughput')
     if args:
@@ -426,25 +432,20 @@ RESOURCE_TO_FUNCTION = {
     'Lambda::Version': {
         'create': {
             'function': 'publish_version',
-            'parameters': {
-                'FunctionName': 'FunctionName',
-                'CodeSha256': 'CodeSha256',
-                'Description': 'Description'
-            }
+            'parameters': select_parameters('FunctionName', 'CodeSha256', 'Description')
         }
     },
-    'Lambda::Permission': {},
+    'Lambda::Permission': {
+        'create': {
+            'function': 'add_permission',
+            'parameters': lambda_permission_params
+        }
+    },
     'Lambda::EventSourceMapping': {
         'create': {
             'function': 'create_event_source_mapping',
-            'parameters': {
-                'FunctionName': 'FunctionName',
-                'EventSourceArn': 'EventSourceArn',
-                'StartingPosition': 'StartingPosition',
-                'Enabled': 'Enabled',
-                'BatchSize': 'BatchSize',
-                'StartingPositionTimestamp': 'StartingPositionTimestamp'
-            }
+            'parameters': select_parameters('FunctionName', 'EventSourceArn', 'Enabled',
+                'StartingPosition', 'BatchSize', 'StartingPositionTimestamp')
         }
     },
     'DynamoDB::Table': {
