@@ -537,11 +537,23 @@ class EventsTest(unittest.TestCase):
 
         def get_message(queue_url):
             resp = sqs_client.receive_message(QueueUrl=queue_url)
-            return resp['Messages']
+            return resp.get('Messages')
 
         messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
         self.assertEqual(len(messages), 1)
         self.assertEqual(json.loads(messages[0].get('Body')), EVENT_DETAIL)
+
+        self.events_client.put_events(
+            Entries=[{
+                'EventBusName': TEST_EVENT_BUS_NAME,
+                'Source': 'dummySource',
+                'DetailType': TEST_EVENT_PATTERN['DetailType'],
+                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'])
+            }]
+        )
+
+        messages = retry(get_message, retries=3, sleep=1, queue_url=queue_url)
+        self.assertEqual(messages, None)
 
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url)
