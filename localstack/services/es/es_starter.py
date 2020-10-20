@@ -5,12 +5,13 @@ import traceback
 from localstack import config
 from localstack.services import install
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port, get_service_protocol
+from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port, get_service_protocol, is_port_open
 from localstack.services.infra import start_proxy_for_service, do_run
 
 LOG = logging.getLogger(__name__)
 
 STATE = {}
+BACKEND_PORT = get_free_tcp_port()
 
 
 def delete_all_elasticsearch_data(version):
@@ -41,7 +42,6 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
     delete_all_elasticsearch_data(version)
 
     install.install_elasticsearch(version)
-    backend_port = get_free_tcp_port()
     base_dir = install.get_elasticsearch_install_dir(version)
     es_data_dir = os.path.join(base_dir, 'data')
     es_tmp_dir = os.path.join(base_dir, 'tmp')
@@ -55,7 +55,7 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
     cmd = (('%s/bin/elasticsearch ' +
         '-E http.port=%s -E http.publish_port=%s -E http.compression=false ' +
         '-E path.data=%s -E path.repo=%s') %
-        (base_dir, backend_port, backend_port, es_data_dir, backup_dir))
+        (base_dir, BACKEND_PORT, BACKEND_PORT, es_data_dir, backup_dir))
     if os.path.exists(os.path.join(es_mods_dir, 'x-pack-ml')):
         cmd += ' -E xpack.ml.enabled=false'
     env_vars = {
@@ -72,7 +72,7 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
     mkdir(es_tmp_dir)
     chmod_r(es_tmp_dir, 0o777)
     # start proxy and ES process
-    proxy = start_proxy_for_service('elasticsearch', port, backend_port,
+    proxy = start_proxy_for_service('elasticsearch', port, BACKEND_PORT,
         update_listener, quiet=True, params={'protocol_version': 'HTTP/1.0'})
     STATE['_proxy_'] = proxy
     if is_root():
@@ -87,6 +87,7 @@ def check_elasticsearch(expect_shutdown=False, print_error=False):
     try:
         # check Elasticsearch
         es = aws_stack.connect_elasticsearch()
+        assert is_port_open(BACKEND_PORT)
         out = es.cat.aliases()
     except Exception as e:
         if print_error:
