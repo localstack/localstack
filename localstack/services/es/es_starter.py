@@ -34,6 +34,9 @@ def stop_elasticsearch():
 
 
 def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=False, update_listener=None):
+    global BACKEND_PORT
+    BACKEND_PORT = get_free_tcp_port()
+
     if STATE.get('_thread_'):
         return STATE['_thread_']
 
@@ -42,7 +45,6 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
     delete_all_elasticsearch_data(version)
 
     install.install_elasticsearch(version)
-    global BACKEND_PORT = get_free_tcp_port()
     base_dir = install.get_elasticsearch_install_dir(version)
     es_data_dir = os.path.join(base_dir, 'data')
     es_tmp_dir = os.path.join(base_dir, 'tmp')
