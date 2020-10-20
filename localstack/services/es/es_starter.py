@@ -12,6 +12,7 @@ from localstack.services.infra import start_proxy_for_service, do_run
 LOG = logging.getLogger(__name__)
 
 STATE = {}
+BACKEND_PORT = 0
 
 
 def delete_all_elasticsearch_data(version):
@@ -34,11 +35,12 @@ def stop_elasticsearch():
 
 
 def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=False, update_listener=None):
-    global BACKEND_PORT
-    BACKEND_PORT = get_free_tcp_port()
 
     if STATE.get('_thread_'):
         return STATE['_thread_']
+
+    global BACKEND_PORT
+    BACKEND_PORT = get_free_tcp_port()
 
     port = port or config.PORT_ELASTICSEARCH
     # delete Elasticsearch data that may be cached locally from a previous test run
