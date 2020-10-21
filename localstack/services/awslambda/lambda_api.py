@@ -1155,6 +1155,11 @@ def add_permission(function):
     principal = data.get('Principal')
     sourcearn = data.get('SourceArn')
     arn = func_arn(function)
+    previous_policy = get_lambda_policy(function)
+
+    if previous_policy:
+        return error_response('A policy called %s already exists. Duplicate names are not allowed' % function,
+            400, error_type='EntityAlreadyExists')
 
     if not re.match(r'lambda:[*]|lambda:[a-zA-Z]+|[*]', action):
         return error_response('1 validation error detected: Value "%s" at "action" failed to satisfy '
