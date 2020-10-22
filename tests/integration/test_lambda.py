@@ -275,6 +275,39 @@ class TestLambdaBaseFeatures(unittest.TestCase):
                                                StatementId=sid, Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
+    def test_add_lambda_multiple_permission(self):
+        iam_client = aws_stack.connect_to_service('iam')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # create lambda permission
+        action = 'lambda:InvokeFunction'
+        sid = 's4'
+        principal = 's3.amazonaws.com'
+        resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+                                            StatementId=sid, Principal=principal,
+                                            SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+        self.assertIn('Statement', resp)
+
+        # create second policy statement
+        sid2 = 's5'
+        resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+                                            StatementId=sid2, Principal=principal,
+                                            SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+        self.assertIn('Statement', resp)
+
+        # fetch IAM policy
+        policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s_%s' % (TEST_LAMBDA_NAME_PY, sid)]
+        self.assertEqual(len(matching), 1)
+        self.assertIn(':policy/', matching[0]['Arn'])
+        print(matching[0])
+        self.assertEqual(len(matching[0]['Statement']), 2)
+
+        # remove permission that we just added
+        resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
+                                               StatementId=sid, Qualifier='qual1', RevisionId='r1')
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+
     def test_lambda_asynchronous_invocations(self):
         function_name = 'lambda_func-{}'.format(short_uid())
         testutil.create_lambda_function(
