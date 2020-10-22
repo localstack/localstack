@@ -51,6 +51,16 @@ def filter_event_with_target_input_path(target, event):
     return event
 
 
+def filter_event_based_on_event_format(self, rule, event):
+    rule_information = self.events_backend.describe_rule(rule)
+    if rule_information.event_pattern:
+        event_pattern = json.loads(rule_information.event_pattern)
+        for key, value in event_pattern.items():
+            if event.get(key.lower()) and event.get(key.lower()) not in value and event.get(key) != value:
+                return False
+    return True
+
+
 def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
@@ -133,10 +143,6 @@ def apply_patches():
 
             rules = EVENT_RULES.get(event_bus, [])
 
-            targets = []
-            for rule in rules:
-                targets.extend(self.events_backend.list_targets_by_rule(rule)['Targets'])
-
             formatted_event = {
                 'version': '0',
                 'id': event_envelope['uuid'],
@@ -148,6 +154,12 @@ def apply_patches():
                 'resources': event.get('Resources', []),
                 'detail': json.loads(event.get('Detail')),
             }
+
+            targets = []
+            for rule in rules:
+                if filter_event_based_on_event_format(self, rule, formatted_event):
+                    targets.extend(self.events_backend.list_targets_by_rule(rule)['Targets'])
+
             # process event
             process_events(formatted_event, targets)
 
