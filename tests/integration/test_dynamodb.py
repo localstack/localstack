@@ -528,7 +528,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         self.assertEqual(1, len(response['StreamDescription']['Shards']))
         shard_id = response['StreamDescription']['Shards'][0]['ShardId']
-        starting_sequence_number = int(response['StreamDescription']['Shards'][0]\
+        starting_sequence_number = int(response['StreamDescription']['Shards'][0]
             .get('SequenceNumberRange').get('StartingSequenceNumber'))
 
         response = ddbstreams.get_shard_iterator(
