@@ -929,7 +929,7 @@ def handle_notification_request(bucket, method, data):
                     s3_filter['FilterRule'] = [s3_filter['FilterRule']]
                 # create final details dict
                 notification_details = {
-                    'Id': config.get('Id', uuid.uuid4()),
+                    'Id': config.get('Id', str(uuid.uuid4())),
                     'Event': events,
                     dest: config.get(dest),
                     'Filter': event_filter
