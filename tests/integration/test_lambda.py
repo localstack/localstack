@@ -243,6 +243,12 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         lambda_client.delete_function(FunctionName=lambda_name)
 
     def test_add_lambda_permission(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
         iam_client = aws_stack.connect_to_service('iam')
         lambda_client = aws_stack.connect_to_service('lambda')
 
@@ -250,32 +256,39 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         action = 'lambda:InvokeFunction'
         sid = 's3'
         principal = 's3.amazonaws.com'
-        resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+        resp = lambda_client.add_permission(FunctionName=function_name, Action=action,
                                             StatementId=sid, Principal=principal,
                                             SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
         self.assertIn('Statement', resp)
         # fetch lambda policy
-        policy = lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
+        policy = lambda_client.get_policy(FunctionName=function_name)['Policy']
         self.assertIsInstance(policy, six.string_types)
         policy = json.loads(to_str(policy))
         self.assertEqual(policy['Statement'][0]['Action'], action)
         self.assertEqual(policy['Statement'][0]['Sid'], sid)
-        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
+        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(function_name))
         self.assertEqual(policy['Statement'][0]['Principal']['Service'], principal)
         self.assertEqual(policy['Statement'][0]['Condition']['ArnLike']['AWS:SourceArn'],
                          aws_stack.s3_bucket_arn('test-bucket'))
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
-        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % function_name]
         self.assertEqual(len(matching), 1)
         self.assertIn(':policy/', matching[0]['Arn'])
 
         # remove permission that we just added
-        resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
+        resp = lambda_client.remove_permission(FunctionName=function_name,
                                                StatementId=sid, Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+        lambda_client.delete_function(FunctionName=function_name)
 
     def test_add_lambda_multiple_permission(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
         iam_client = aws_stack.connect_to_service('iam')
         lambda_client = aws_stack.connect_to_service('lambda')
 
@@ -283,28 +296,29 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         action = 'lambda:InvokeFunction'
         sid = 's4'
         principal = 's3.amazonaws.com'
-        resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+        resp = lambda_client.add_permission(FunctionName=function_name, Action=action,
                                             StatementId=sid, Principal=principal,
                                             SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
         self.assertIn('Statement', resp)
 
         # create second policy statement
         sid2 = 's5'
-        resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+        resp = lambda_client.add_permission(FunctionName=function_name, Action=action,
                                             StatementId=sid2, Principal=principal,
                                             SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
         self.assertIn('Statement', resp)
 
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
-        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % function_name]
         self.assertEqual(len(matching), 1)
         self.assertIn(':policy/', matching[0]['Arn'])
 
         # remove permission that we just added
-        resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
+        resp = lambda_client.remove_permission(FunctionName=function_name,
                                                StatementId=sid, Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+        lambda_client.delete_function(FunctionName=function_name)
 
     def test_lambda_asynchronous_invocations(self):
         function_name = 'lambda_func-{}'.format(short_uid())

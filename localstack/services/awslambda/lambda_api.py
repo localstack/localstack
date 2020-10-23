@@ -1195,6 +1195,9 @@ def add_permission(function):
     arn = func_arn(function)
     previous_policy = get_lambda_policy(function)
 
+    if arn not in ARN_TO_LAMBDA:
+        return not_found_error(func_arn(function))
+
     if not re.match(r'lambda:[*]|lambda:[a-zA-Z]+|[*]', action):
         return error_response('1 validation error detected: Value "%s" at "action" failed to satisfy '
                               'constraint: Member must satisfy regular expression pattern: '
