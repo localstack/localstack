@@ -266,7 +266,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
                          aws_stack.s3_bucket_arn('test-bucket'))
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
-        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s_%s' % (TEST_LAMBDA_NAME_PY, sid)]
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
         self.assertEqual(len(matching), 1)
         self.assertIn(':policy/', matching[0]['Arn'])
 
@@ -297,11 +297,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
-        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s_%s' % (TEST_LAMBDA_NAME_PY, sid)]
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % TEST_LAMBDA_NAME_PY]
         self.assertEqual(len(matching), 1)
         self.assertIn(':policy/', matching[0]['Arn'])
-        print(matching[0])
-        self.assertEqual(len(matching[0]['Statement']), 2)
 
         # remove permission that we just added
         resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,

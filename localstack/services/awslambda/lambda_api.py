@@ -121,7 +121,7 @@ LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTO
 
 # IAM policy constants
 IAM_POLICY_VERSION = '2012-10-17'
-POLICY_NAME_PATTERN = 'lambda_policy_%s_%s'
+POLICY_NAME_PATTERN = 'lambda_policy_%s'
 
 # Whether to check if the handler function exists while creating lambda function
 CHECK_HANDLER_ON_CREATION = False
@@ -1211,7 +1211,7 @@ def add_permission(function):
         new_policy['Statement'].extend(previous_policy['Statement'])
         iam_client.delete_policy(PolicyArn=previous_policy['PolicyArn'])
 
-    iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % (function, sid),
+    iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % function,
                             PolicyDocument=json.dumps(new_policy),
                             Description='Policy for Lambda function "%s"' % function)
 
