@@ -117,38 +117,19 @@ def apply_patches():
 
         return 400, {}, ''
 
-    def apigateway_response_resource_methods(self, request, full_url, headers):
-        self.setup_class(request, full_url, headers)
-        url_path_parts = self.path.split('/')
-        function_id = url_path_parts[2]
-        resource_id = url_path_parts[4]
-        method_type = url_path_parts[6]
-
-        if self.method == 'GET':
-            method = self.backend.get_method(function_id, resource_id, method_type)
-            return 200, {}, json.dumps(method)
-        elif self.method == 'PUT':
-            authorization_type = self._get_param('authorizationType')
-            api_key_required = self._get_param('apiKeyRequired')
-            method = self.backend.create_method(
-                function_id,
-                resource_id,
-                method_type,
-                authorization_type,
-                api_key_required,
-            )
-            if authorization_type in ['CUSTOM', 'COGNITO_USER_POOLS']:
-                method['authorizerId'] = json.loads(request.data.decode('utf-8'))['authorizerId']
-            return 200, {}, json.dumps(method)
-
-        elif self.method == 'DELETE':
-            self.backend.delete_method(
-                function_id, resource_id, method_type
-            )
-
-            return 200, {}, ''
-
-        return 200, {}, ''
+    def apigateway_response_resource_methods(self, request, *args, **kwargs):
+        result = apigateway_response_resource_methods_orig(self, request, *args, **kwargs)
+        if len(result) != 3:
+            return result
+        print(result)
+        authorization_type = self._get_param('authorizationType')
+        if authorization_type in ['CUSTOM', 'COGNITO_USER_POOLS']:
+            data = json.loads(result[2])
+            print(data)
+            if not data.get('authorizerId'):
+                data['authorizerId'] = json.loads(request.data.decode('utf-8'))['authorizerId']
+                result = result[0], result[1], json.dumps(data)
+        return result
 
     if not hasattr(apigateway_models.APIGatewayBackend, 'put_rest_api'):
         apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
@@ -158,10 +139,11 @@ def apply_patches():
     if not hasattr(apigateway_models.APIGatewayBackend, 'delete_method'):
         apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
 
-    APIGatewayResponse.resource_methods = apigateway_response_resource_methods
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
+    apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
+    APIGatewayResponse.resource_methods = apigateway_response_resource_methods
 
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
