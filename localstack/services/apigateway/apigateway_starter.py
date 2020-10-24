@@ -121,11 +121,9 @@ def apply_patches():
         result = apigateway_response_resource_methods_orig(self, request, *args, **kwargs)
         if len(result) != 3:
             return result
-        print(result)
         authorization_type = self._get_param('authorizationType')
         if authorization_type in ['CUSTOM', 'COGNITO_USER_POOLS']:
             data = json.loads(result[2])
-            print(data)
             if not data.get('authorizerId'):
                 data['authorizerId'] = json.loads(request.data.decode('utf-8'))['authorizerId']
                 result = result[0], result[1], json.dumps(data)
