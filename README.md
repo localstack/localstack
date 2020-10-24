@@ -321,7 +321,7 @@ inside your Lambda function. See [Configurations](#Configurations) section for m
 
 ## Using the official AWS CLI version 2 Docker image with Localstack Docker container
 
-By default the the container running [amazon/aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-docker.html) is isolated from `0.0.0.0:4566` on the host machine, that means that aws-cli cannot reach localstack through your shell.
+By default the container running [amazon/aws-cli](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2-docker.html) is isolated from `0.0.0.0:4566` on the host machine, that means that aws-cli cannot reach localstack through your shell.
 
 To ensure that the two docker containers can communicate create a network on the docker engine:
 
@@ -332,38 +332,10 @@ $ ▶ docker network create localstack
 Then modify the `docker-compose.yml` specifying the network to use:
 
 ```yml
-version: "3.8"
-
 networks:
   default:
     external:
       name: "localstack"
-
-services:
-  localstack:
-    container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
-    image: localstack/localstack
-    ports:
-      - "4566:4566"
-      - "4571:4571"
-      - "8081:8081"
-    environment:
-      - SERVICES=${SERVICES- }
-      - DEBUG=${DEBUG- }
-      - DATA_DIR=${DATA_DIR- }
-      - PORT_WEB_UI=${PORT_WEB_UI- }
-      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - HOST_TMP_FOLDER=${TMPDIR}
-    volumes:
-      - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-```
-
-Start localstack:
-
-```bash
-$ ▶ docker-compose up
 ```
 
 Run AWS Cli v2 docker container using this network (example):
