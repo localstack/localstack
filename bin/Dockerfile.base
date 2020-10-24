@@ -25,7 +25,10 @@ RUN { \
     && chmod +x /usr/local/bin/docker-java-home
 ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk
 ENV PATH "${PATH}:${JAVA_HOME}/bin"
-RUN set -x && apk add --no-cache openjdk11 && [ "$JAVA_HOME" = "$(docker-java-home)" ]
+RUN set -x \
+  # Install JDK 11.0.8 due to JDK-8165852.
+  && apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community openjdk11 \
+  && [ "$JAVA_HOME" = "$(docker-java-home)" ]
 
 # Install Maven - taken from official repo:
 # https://github.com/carlossg/docker-maven/blob/master/openjdk-11/Dockerfile)
