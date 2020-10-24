@@ -140,7 +140,7 @@ localstack start
 
 ### Using `docker-compose`
 
-You can also use the `docker-compose.yml` file from the repository and use this command (currently requires `docker-compose` version 2.1+):
+You can also use the `docker-compose.yml` file from the repository and use this command (currently requires `docker-compose` version 1.9.0+):
 
 ```
 docker-compose up
