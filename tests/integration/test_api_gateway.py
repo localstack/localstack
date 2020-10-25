@@ -490,6 +490,43 @@ class TestAPIGateway(unittest.TestCase):
             else:
                 self.assertEqual(result.status_code, 204)
 
+    def test_apigateway_with_custom_authorization_method(self):
+        apigw_client = aws_stack.connect_to_service('apigateway')
+
+        # create Lambda function
+        lambda_name = 'apigw-lambda-%s' % short_uid()
+        self.create_lambda_function(lambda_name)
+        lambda_uri = aws_stack.lambda_function_arn(lambda_name)
+
+        # create REST API
+        api = apigw_client.create_rest_api(name='test-api', description='')
+        api_id = api['id']
+        root_res_id = apigw_client.get_resources(restApiId=api_id)['items'][0]['id']
+
+        # create authorizer at root resource
+        authorizer = apigw_client.create_authorizer(
+            restApiId=api_id,
+            name='lambda_authorizer',
+            type='TOKEN',
+            authorizerUri='arn:aws:apigateway:us-east-1:lambda:path/ \
+                2015-03-31/functions/{}/invocations'.format(lambda_uri),
+            identitySource='method.request.header.Auth'
+        )
+
+        # create method with custom authorizer
+        is_api_key_required = True
+        method_response = apigw_client.put_method(
+            restApiId=api_id, resourceId=root_res_id, httpMethod='GET', authorizationType='CUSTOM',
+            authorizerId=authorizer['id'], apiKeyRequired=is_api_key_required
+        )
+
+        self.assertEqual(authorizer['id'], method_response['authorizerId'])
+
+        # clean up
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.delete_function(FunctionName=lambda_name)
+        apigw_client.delete_rest_api(restApiId=api_id)
+
     # =====================================================================
     # Helper methods
     # =====================================================================
