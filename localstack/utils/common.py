@@ -1,7 +1,6 @@
 import io
 import os
 import re
-import grp
 import sys
 import json
 import uuid
@@ -17,16 +16,16 @@ import zipfile
 import binascii
 import calendar
 import tempfile
+import functools
 import threading
 import subprocess
 import six
 import shutil
 import requests
 import dns.resolver
-import functools
 from io import BytesIO
-from contextlib import closing
 from datetime import datetime, date
+from contextlib import closing
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse, parse_qs
@@ -608,7 +607,9 @@ def ensure_readable(file_path, default_perms=None):
 
 def chown_r(path, user):
     """ Recursive chown """
-    import pwd  # keep this import here for Windows compatibility
+    # keep these imports here for Windows compatibility
+    import pwd
+    import grp
     uid = pwd.getpwnam(user).pw_uid
     gid = grp.getgrnam(user).gr_gid
     os.chown(path, uid, gid)
