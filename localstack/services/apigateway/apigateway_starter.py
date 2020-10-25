@@ -125,8 +125,10 @@ def apply_patches():
         if authorization_type in ['CUSTOM', 'COGNITO_USER_POOLS']:
             data = json.loads(result[2])
             if not data.get('authorizerId'):
-                data['authorizerId'] = json.loads(request.data.decode('utf-8'))['authorizerId']
-                result = result[0], result[1], json.dumps(data)
+                payload = json.loads(to_str(request.data))
+                if 'authorizerId' in payload:
+                    data['authorizerId'] = payload['authorizerId']
+                    result = result[0], result[1], json.dumps(data)
         return result
 
     if not hasattr(apigateway_models.APIGatewayBackend, 'put_rest_api'):
