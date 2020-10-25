@@ -98,14 +98,15 @@ class ShellCommandThread(FuncThread):
     """ Helper class to run a shell command in a background thread. """
 
     def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
-            quiet=True, inherit_cwd=False, inherit_env=True):
+            quiet=True, inherit_cwd=False, inherit_env=True, log_listener=None):
         self.cmd = cmd
         self.process = None
-        self.outfile = outfile or os.devnull
+        self.outfile = outfile
         self.stdin = stdin
         self.env_vars = env_vars
         self.inherit_cwd = inherit_cwd
         self.inherit_env = inherit_env
+        self.log_listener = log_listener
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
@@ -118,11 +119,14 @@ class ShellCommandThread(FuncThread):
             """ Return True if this line should be filtered, i.e., not printed """
             return '(Press CTRL+C to quit)' in line
 
+        outfile = self.outfile or os.devnull
+        if self.log_listener and outfile == os.devnull:
+            outfile = subprocess.PIPE
         try:
-            self.process = run(self.cmd, asynchronous=True, stdin=self.stdin, outfile=self.outfile,
+            self.process = run(self.cmd, asynchronous=True, stdin=self.stdin, outfile=outfile,
                 env_vars=self.env_vars, inherit_cwd=self.inherit_cwd, inherit_env=self.inherit_env)
-            if self.outfile:
-                if self.outfile == subprocess.PIPE:
+            if outfile:
+                if outfile == subprocess.PIPE:
                     # get stdout/stderr from child process and write to parent output
                     streams = ((self.process.stdout, sys.stdout), (self.process.stderr, sys.stderr))
                     for instream, outstream in streams:
@@ -136,8 +140,11 @@ class ShellCommandThread(FuncThread):
                             line = convert_line(line)
                             if filter_line(line):
                                 continue
-                            outstream.write(line)
-                            outstream.flush()
+                            if self.log_listener:
+                                self.log_listener(line, stream=instream)
+                            if self.outfile not in [None, os.devnull]:
+                                outstream.write(line)
+                                outstream.flush()
                 self.process.wait()
             else:
                 self.process.communicate()
