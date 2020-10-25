@@ -119,8 +119,8 @@ class ShellCommandThread(FuncThread):
             """ Return True if this line should be filtered, i.e., not printed """
             return '(Press CTRL+C to quit)' in line
 
-        outfile = self.outfile
-        if self.log_listener and outfile in [None, os.devnull]:
+        outfile = self.outfile or os.devnull
+        if self.log_listener and outfile == os.devnull:
             outfile = subprocess.PIPE
         try:
             self.process = run(self.cmd, asynchronous=True, stdin=self.stdin, outfile=outfile,
@@ -142,7 +142,7 @@ class ShellCommandThread(FuncThread):
                                 continue
                             if self.log_listener:
                                 self.log_listener(line, stream=instream)
-                            if self.outfile:
+                            if self.outfile not in [None, os.devnull]:
                                 outstream.write(line)
                                 outstream.flush()
                 self.process.wait()
