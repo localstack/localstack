@@ -1373,6 +1373,22 @@ class S3ListenerTest(unittest.TestCase):
         client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
         client.delete_bucket(Bucket=BUCKET)
 
+    def test_precondition_failed_error(self):
+        bucket = 'bucket-%s' % short_uid()
+        client = self._get_test_client()
+
+        client.create_bucket(Bucket=bucket)
+        client.put_object(Bucket=bucket, Key='foo', Body=b'{"foo": "bar"}')
+
+        # this line makes localstack crash:
+        try:
+            client.get_object(Bucket=bucket, Key='foo', IfMatch='"not good etag"')
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], '412')
+            self.assertEqual(e.response['Error']['Message'], 'Precondition Failed')
+
+        client.delete_object(Bucket=bucket, Key='foo')
+        client.delete_bucket(Bucket=bucket)
     # ---------------
     # HELPER METHODS
     # ---------------

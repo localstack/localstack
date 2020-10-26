@@ -791,6 +791,15 @@ def no_such_key_error(resource, requestId=None, status_code=400):
     return requests_response(content, status_code=status_code, headers=headers)
 
 
+def precondition_failed_error(resource, requestId=None, status_code=412):
+    result = {'Error': {'Code': 'PreconditionFailed',
+            'Message': 'At least one of the preconditions you specified did not hold.',
+            'Resource': resource, 'RequestId': requestId}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml', 'Content-Length': 0}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
 def token_expired_error(resource, requestId=None, status_code=400):
     result = {'Error': {'Code': 'ExpiredToken',
             'Message': 'The provided token has expired.',
@@ -1184,6 +1193,10 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
         if method == 'GET' and response.status_code == 416:
             return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
+
+        if method == 'GET' and response.status_code == 412:
+            return precondition_failed_error('At least one of the preconditions you specified did not hold.',
+                                             'PreconditionFailed', 412)
 
         parsed = urlparse.urlparse(path)
         bucket_name_in_host = headers['host'].startswith(bucket_name)
