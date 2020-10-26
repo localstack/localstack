@@ -326,7 +326,7 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         dynamodb = aws_stack.connect_to_service('dynamodb')
         ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
 
-        table_name = 'table_with_stream'
+        table_name = 'table_with_stream-%s' % short_uid()
         table = dynamodb.create_table(
             TableName=table_name,
             KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'}],
@@ -528,6 +528,8 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
         self.assertEqual(1, len(response['StreamDescription']['Shards']))
         shard_id = response['StreamDescription']['Shards'][0]['ShardId']
+        starting_sequence_number = int(response['StreamDescription']['Shards'][0]
+            .get('SequenceNumberRange').get('StartingSequenceNumber'))
 
         response = ddbstreams.get_shard_iterator(
             StreamArn=table.latest_stream_arn,
@@ -559,10 +561,12 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         self.assertEqual('1.1', records['Records'][0]['eventVersion'])
         self.assertEqual('INSERT', records['Records'][0]['eventName'])
         self.assertNotIn('OldImage', records['Records'][0]['dynamodb'])
+        self.assertGreater(int(records['Records'][0]['dynamodb']['SequenceNumber']), starting_sequence_number)
         self.assertTrue(isinstance(records['Records'][1]['dynamodb']['ApproximateCreationDateTime'], datetime))
         self.assertEqual('1.1', records['Records'][1]['eventVersion'])
         self.assertEqual('MODIFY', records['Records'][1]['eventName'])
         self.assertIn('OldImage', records['Records'][1]['dynamodb'])
+        self.assertGreater(int(records['Records'][1]['dynamodb']['SequenceNumber']), starting_sequence_number)
 
         dynamodb.delete_table(TableName=table_name)
 

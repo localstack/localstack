@@ -901,7 +901,7 @@ def handle_notification_request(bucket, method, data):
                     if dest in notif:
                         dest_dict = {
                             '%sConfiguration' % dest: {
-                                'Id': uuid.uuid4(),
+                                'Id': notif['Id'],
                                 dest: notif[dest],
                                 'Event': notif['Event'],
                                 'Filter': notif['Filter']
@@ -929,7 +929,7 @@ def handle_notification_request(bucket, method, data):
                     s3_filter['FilterRule'] = [s3_filter['FilterRule']]
                 # create final details dict
                 notification_details = {
-                    'Id': config.get('Id'),
+                    'Id': config.get('Id', str(uuid.uuid4())),
                     'Event': events,
                     dest: config.get(dest),
                     'Filter': event_filter

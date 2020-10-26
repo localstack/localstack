@@ -104,7 +104,9 @@ def post_request():
         kinesis_records = kinesis.get_records(**data)
         result = {'Records': [], 'NextShardIterator': kinesis_records.get('NextShardIterator')}
         for record in kinesis_records['Records']:
-            result['Records'].append(json.loads(to_str(record['Data'])))
+            record_data = json.loads(to_str(record['Data']))
+            record_data['dynamodb']['SequenceNumber'] = record['SequenceNumber']
+            result['Records'].append(record_data)
     else:
         print('WARNING: Unknown operation "%s"' % action)
     return jsonify(result)
