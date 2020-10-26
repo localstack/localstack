@@ -67,79 +67,26 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual(response['Configuration']['Role'], LAMBDA_ROLE)
 
     def test_apigateway(self):
-        # mytestresource = {
-        #     'pathPart': 'mytestresource',
-        #     'path': '/mytestresource',
-        #     'resourceMethods': {
-        #         'OPTIONS': {
-        #             'httpMethod': 'OPTIONS',
-        #             'authorizationType': 'NONE',
-        #             'methodIntegration': {
-        #                 'type': 'MOCK',
-        #                 'httpMethod': 'OPTIONS',
-        #                 'passthroughBehavior': 'WHEN_NO_MATCH',
-        #             }
-        #         },
-        #         'GET': {
-        #             'httpMethod': 'GET',
-        #             'authorizationType': 'NONE',
-        #             'apiKeyRequired': False,
-        #             'methodIntegration': {
-        #                 'type': 'MOCK',
-        #                 'httpMethod': 'POST',
-        #                 'requestTemplates': {
-        #                     'application/xml': '  {\n     "body" : $input.json(\'$\')\n  }\n'
-        #                 },
-        #                 'passthroughBehavior': 'WHEN_NO_MATCH',
-        #             }
-        #         }
-        #     }
-        # }
-
-        # mytestresource1 = {
-        #     'pathPart': 'mytestresource1',
-        #     'path': '/mytestresource1',
-        #     'resourceMethods': {
-        #         'GET': {
-        #             'httpMethod': 'GET',
-        #             'authorizationType': 'NONE',
-        #             'apiKeyRequired': False,
-        #             'methodIntegration': {
-        #                 'type': 'AWS_PROXY',
-        #                 'httpMethod': 'POST',
-        #                 'uri': 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/' +
-        #                        'arn:aws:lambda:us-east-1:000000000000:function:tf-lambda/invocations',
-        #                 'passthroughBehavior': 'WHEN_NO_MATCH',
-        #             }
-        #         },
-        #         'OPTIONS': {
-        #             'httpMethod': 'OPTIONS',
-        #             'authorizationType': 'NONE',
-        #             'apiKeyRequired': False,
-        #             'methodIntegration': {
-        #                 'type': 'MOCK',
-        #                 'httpMethod': 'OPTIONS',
-        #                 'passthroughBehavior': 'WHEN_NO_MATCH',
-        #             }
-        #         }
-        #     }
-        # }
-        print('starting')
         apigateway_client = aws_stack.connect_to_service('apigateway')
-        print('starting1')
         rest_apis = apigateway_client.get_rest_apis()
-        print('starting2')
+
         for rest_api in rest_apis['items']:
             if rest_api['name'] == 'test-tf-apigateway':
                 rest_id = rest_api['id']
                 continue
-        print('starting4')
-        resources = apigateway_client.get_resources(restApiId=rest_id)['items']
-        self.assertEqual(len(resources), 3)
-        print(resources)
+
+        resources = apigateway_client.get_resources(restApiId=rest_id)['items'][1:]
+        self.assertEqual(len(resources), 2)
+
         res1 = [r for r in resources if r['pathPart'] == 'mytestresource']
         self.assertTrue(res1)
-        print(res1[0]['path'])
-        print(res1[1]['path'])
-        print(res1[2]['path'])
-        self.assertEqual(res1[1]['path'], '/mytestresource')
+        self.assertEqual(res1[0]['path'], '/mytestresource')
+        self.assertEqual(len(res1[0]['resourceMethods']), 2)
+        self.assertEqual(res1[0]['resourceMethods']['GET']['methodIntegration']['type'], 'MOCK')
+
+        res2 = [r for r in resources if r['pathPart'] == 'mytestresource1']
+        self.assertTrue(res2)
+        self.assertEqual(res2[0]['path'], '/mytestresource1')
+        self.assertEqual(len(res2[0]['resourceMethods']), 2)
+        self.assertEqual(res2[0]['resourceMethods']['GET']['methodIntegration']['type'], 'AWS_PROXY')
+        self.assertTrue(res2[0]['resourceMethods']['GET']['methodIntegration']['uri'])
