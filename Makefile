@@ -60,7 +60,7 @@ docker-squash:
 		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-build-base:
-	docker build -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
+	docker build --squash -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
 	docker tag $(IMAGE_NAME_BASE) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
 	docker tag $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):latest
 

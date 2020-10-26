@@ -47,8 +47,6 @@ script:
   # start pulling Docker base image in the background
   - nohup docker pull localstack/java-maven-node-python > /dev/null &
   - LAMBDA_EXECUTOR=docker-reuse TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
-  # build base image
-  - make docker-build-base
   # build Docker image
   - make docker-build
   # extract .coverage details from created image
