@@ -121,7 +121,7 @@ LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTO
 
 # IAM policy constants
 IAM_POLICY_VERSION = '2012-10-17'
-POLICY_NAME_PATTERN = 'lambda_policy_%s_%s'
+POLICY_NAME_PATTERN = 'lambda_policy_%s'
 
 # Whether to check if the handler function exists while creating lambda function
 CHECK_HANDLER_ON_CREATION = False
@@ -1146,31 +1146,12 @@ def update_function_configuration(function):
     return jsonify(data)
 
 
-@app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['POST'])
-def add_permission(function):
-    data = json.loads(to_str(request.data))
-    iam_client = aws_stack.connect_to_service('iam')
-    sid = data.get('StatementId')
-    action = data.get('Action')
-    principal = data.get('Principal')
-    sourcearn = data.get('SourceArn')
-    arn = func_arn(function)
-
-    if not re.match(r'lambda:[*]|lambda:[a-zA-Z]+|[*]', action):
-        return error_response('1 validation error detected: Value "%s" at "action" failed to satisfy '
-                              'constraint: Member must satisfy regular expression pattern: '
-                              '(lambda:[*]|lambda:[a-zA-Z]+|[*])' % action,
-                              400, error_type='ValidationException')
-
-    policy = {
-        'Version': IAM_POLICY_VERSION,
-        'Id': 'LambdaFuncAccess-%s' % sid,
-        'Statement': [{
-            'Sid': sid,
-            'Effect': 'Allow',
-            'Action': action,
-            'Resource': arn,
-        }]
+def generate_policy_statement(sid, action, arn, sourcearn, principal):
+    statement = {
+        'Sid': sid,
+        'Effect': 'Allow',
+        'Action': action,
+        'Resource': arn,
     }
 
     # Adds SourceArn only if SourceArn is present
@@ -1180,19 +1161,64 @@ def add_permission(function):
                 'AWS:SourceArn': sourcearn
             }
         }
-        policy['Statement'][0]['Condition'] = condition
+        statement['Condition'] = condition
 
     # Adds Principal only if Principal is present
     if principal:
         principal = {
             'Service': principal
         }
-        policy['Statement'][0]['Principal'] = principal
+        statement['Principal'] = principal
 
-    iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % (function, sid),
-                             PolicyDocument=json.dumps(policy),
-                             Description='Policy for Lambda function "%s"' % function)
-    result = {'Statement': json.dumps(policy['Statement'][0])}
+    return statement
+
+
+def generate_policy(sid, action, arn, sourcearn, principal):
+    new_statement = generate_policy_statement(sid, action, arn, sourcearn, principal)
+    policy = {
+        'Version': IAM_POLICY_VERSION,
+        'Id': 'LambdaFuncAccess-%s' % sid,
+        'Statement': [new_statement]
+    }
+
+    return policy
+
+
+@app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['POST'])
+def add_permission(function):
+    data = json.loads(to_str(request.data))
+    iam_client = aws_stack.connect_to_service('iam')
+    sid = data.get('StatementId')
+    action = data.get('Action')
+    principal = data.get('Principal')
+    sourcearn = data.get('SourceArn')
+    arn = func_arn(function)
+    previous_policy = get_lambda_policy(function)
+
+    if arn not in ARN_TO_LAMBDA:
+        return not_found_error(func_arn(function))
+
+    if not re.match(r'lambda:[*]|lambda:[a-zA-Z]+|[*]', action):
+        return error_response('1 validation error detected: Value "%s" at "action" failed to satisfy '
+                              'constraint: Member must satisfy regular expression pattern: '
+                              '(lambda:[*]|lambda:[a-zA-Z]+|[*])' % action,
+                              400, error_type='ValidationException')
+
+    new_policy = generate_policy(sid, action, arn, sourcearn, principal)
+    if previous_policy:
+        statment_with_sid = next((statement for statement in previous_policy['Statement'] if statement['Sid'] == sid),
+            None)
+        if statment_with_sid:
+            return error_response('The statement id (%s) provided already exists. Please provide a new statement id,'
+                        ' or remove the existing statement.' % sid, 400, error_type='ResourceConflictException')
+        new_policy['Statement'].extend(previous_policy['Statement'])
+        iam_client.delete_policy(PolicyArn=previous_policy['PolicyArn'])
+
+    iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % function,
+                            PolicyDocument=json.dumps(new_policy),
+                            Description='Policy for Lambda function "%s"' % function)
+
+    result = {'Statement': json.dumps(new_policy['Statement'][0])}
     return jsonify(result)
 
 
