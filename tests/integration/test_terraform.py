@@ -65,3 +65,13 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual(response['Configuration']['Handler'], LAMBDA_HANDLER)
         self.assertEqual(response['Configuration']['Runtime'], LAMBDA_RUNTIME)
         self.assertEqual(response['Configuration']['Role'], LAMBDA_ROLE)
+
+    def test_apigateway(self):
+        apigateway_client = aws_stack.connect_to_service('apigateway')
+        rest_apis = apigateway_client.get_rest_apis()
+        for rest_api in rest_apis['items']:
+            if rest_api['name'] == 'test-tf-apigateway':
+                rest_id = rest_api['id']
+                continue
+        resources = apigateway_client.get_resources(restApiId=rest_id)
+        print(resources)
