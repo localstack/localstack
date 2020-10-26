@@ -292,27 +292,35 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         iam_client = aws_stack.connect_to_service('iam')
         lambda_client = aws_stack.connect_to_service('lambda')
 
-        # create lambda permission
+        # create lambda permissions
         action = 'lambda:InvokeFunction'
-        sid = 's4'
         principal = 's3.amazonaws.com'
-        resp = lambda_client.add_permission(FunctionName=function_name, Action=action,
-                                            StatementId=sid, Principal=principal,
-                                            SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
-        self.assertIn('Statement', resp)
-
-        # create second policy statement
-        sid2 = 's5'
-        resp = lambda_client.add_permission(FunctionName=function_name, Action=action,
-                                            StatementId=sid2, Principal=principal,
-                                            SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
-        self.assertIn('Statement', resp)
+        statement_ids = ['s4', 's5']
+        for sid in statement_ids:
+            resp = lambda_client.add_permission(FunctionName=function_name, Action=action,
+                                                StatementId=sid, Principal=principal,
+                                                SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+            self.assertIn('Statement', resp)
 
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
         matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % function_name]
         self.assertEqual(len(matching), 1)
         self.assertIn(':policy/', matching[0]['Arn'])
+
+        # validate both statements
+        policy = matching[0]
+        versions = iam_client.list_policy_versions(PolicyArn=policy['Arn'])['Versions']
+        self.assertEqual(len(versions), 1)
+        statements = versions[0]['Document']['Statement']
+        for i in range(len(statement_ids)):
+            self.assertEqual(statements[i]['Action'], action)
+            self.assertEqual(statements[i]['Resource'], lambda_api.func_arn(function_name))
+            self.assertEqual(statements[i]['Principal']['Service'], principal)
+            self.assertEqual(statements[i]['Condition']['ArnLike']['AWS:SourceArn'],
+                             aws_stack.s3_bucket_arn('test-bucket'))
+            # check statement_ids in reverse order
+            self.assertEqual(statements[i]['Sid'], statement_ids[abs(i - 1)])
 
         # remove permission that we just added
         resp = lambda_client.remove_permission(FunctionName=function_name,
