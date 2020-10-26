@@ -995,7 +995,7 @@ class CloudFormationTest(unittest.TestCase):
         responses = apigateway.get_gateway_responses(restApiId=api['id'])['items']
         self.assertEqual(len(responses), 0)
         types = [r['responseType'] for r in responses]
-        self.assertEqual(set(types), set(['UNAUTHORIZED', 'DEFAULT_5XX']))
+        self.assertEqual(set(types), {'UNAUTHORIZED', 'DEFAULT_5XX'})
 
         # delete the stack
         cf_client.delete_stack(StackName=stack_name)
