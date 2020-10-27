@@ -6,9 +6,11 @@ import traceback
 import h11
 from quart import make_response, request, Quart
 from quart.app import _cancel_all_tasks
+from hypercorn import utils as hypercorn_utils
 from hypercorn.config import Config
 from hypercorn.events import Closed
 from hypercorn.asyncio import serve, tcp_server
+from hypercorn.protocol import http_stream
 from localstack import config
 from localstack.utils.common import TMP_THREADS, FuncThread, load_file, retry
 from localstack.utils.http_utils import uses_chunked_encoding
@@ -68,6 +70,17 @@ def apply_patches():
 
     create_ssl_context_orig = Config.create_ssl_context
     Config.create_ssl_context = create_ssl_context
+
+    # avoid "h11._util.LocalProtocolError: Too little data for declared Content-Length" for certain status codes
+
+    def suppress_body(method, status_code):
+        if status_code == 412:
+            return False
+        return suppress_body_orig(method, status_code)
+
+    suppress_body_orig = hypercorn_utils.suppress_body
+    hypercorn_utils.suppress_body = suppress_body
+    http_stream.suppress_body = suppress_body
 
 
 class HTTPErrorResponse(Exception):
