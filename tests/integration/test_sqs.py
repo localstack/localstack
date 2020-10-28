@@ -831,6 +831,18 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_create_queue_with_slashes(self):
+        queue_name = 'queue/%s' % short_uid()
+        queue_url = self.client.create_queue(QueueName=queue_name)
+
+        result = self.client.list_queues()
+        self.assertEqual(len(result.get('QueueUrls')), 1)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url.get('QueueUrl'))
+        result = self.client.list_queues()
+        self.assertEqual(result.get('QueueUrls'), None)
+
     # ---------------
     # HELPER METHODS
     # ---------------

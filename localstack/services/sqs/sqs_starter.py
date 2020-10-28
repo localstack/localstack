@@ -92,7 +92,13 @@ def patch_moto():
     def sqs_responses_get_queue_name(self):
         try:
             queue_url = self.querystring.get('QueueUrl')[0]
-            queue_name = queue_url.split('/')[4]
+            queue_name_data = queue_url.split('/')[4:]
+            queue_name = ''
+            for attr in range(0, len(queue_name_data)):
+                queue_name = queue_name + queue_name_data[attr]
+                if attr != len(queue_name_data) - 1:
+                    queue_name = queue_name + '/'
+
         except TypeError:
             # Fallback to reading from the URL
             queue_name = self.path.split('/')[2]
