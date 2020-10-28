@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
-from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
+from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.utils.aws import aws_stack
 from localstack.utils import testutil
 from localstack.utils.common import short_uid, retry
@@ -16,12 +16,13 @@ class CloudWatchLogsTest(unittest.TestCase):
         group = 'g-%s' % short_uid()
         stream = 's-%s' % short_uid()
 
+        groups_before = len(self.logs_client.describe_log_groups()['logGroups'])
+
         response = self.logs_client.create_log_group(logGroupName=group)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        response = self.logs_client.describe_log_groups()
-        arn = response['logGroups'][0]['arn']
-        self.assertEqual(arn, 'arn:aws:logs:us-east-1:{}:log-group:{}'.format(TEST_AWS_ACCOUNT_ID, group))
+        groups_after = len(self.logs_client.describe_log_groups()['logGroups'])
+        self.assertEqual(groups_after, groups_before + 1)
 
         response = self.logs_client.create_log_stream(logGroupName=group, logStreamName=stream)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
