@@ -25,7 +25,6 @@ from localstack.utils.common import (
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
-TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
 TEST_BUCKET_WITH_VERSIONING = 'test-bucket-versioning-1'
 
@@ -103,19 +102,19 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual(json.loads(saved_policy), policy)
 
     def test_s3_put_object_notification(self):
+        bucket_name = 'notif-%s' % short_uid()
         key_by_path = 'key-by-hostname'
         key_by_host = 'key-by-host'
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                             VersioningConfiguration={'Status': 'Enabled'})
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Enabled'})
 
         # put an object where the bucket_name is in the path
-        obj = self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body='something')
+        obj = self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body='something')
 
         # put an object where the bucket_name is in the host
         # it doesn't care about the authorization header as long as it's present
-        headers = {'Host': '{}.s3.amazonaws.com'.format(TEST_BUCKET_WITH_NOTIFICATION), 'authorization': 'some_token'}
+        headers = {'Host': '{}.s3.amazonaws.com'.format(bucket_name), 'authorization': 'some_token'}
         url = '{}/{}'.format(config.TEST_S3_URL, key_by_host)
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data='something else', headers=headers, verify=False)
@@ -130,22 +129,21 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEquals(record['s3']['object']['versionId'], obj['VersionId'])
 
         # clean up
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                             VersioningConfiguration={'Status': 'Disabled'})
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Disabled'})
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path, key_by_host])
+        self._delete_bucket(bucket_name, [key_by_path, key_by_host])
 
     def test_s3_upload_fileobj_with_large_file_notification(self):
+        bucket_name = 'notif-large-%s' % short_uid()
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
 
         # has to be larger than 64MB to be broken up into a multipart upload
         file_size = 75000000
         large_file = self.generate_large_file(file_size)
         download_file = new_tmp_file()
         try:
-            self.s3_client.upload_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                       Key=large_file.name, Filename=large_file.name)
+            self.s3_client.upload_file(Bucket=bucket_name, Key=large_file.name, Filename=large_file.name)
 
             self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
@@ -155,13 +153,12 @@ class S3ListenerTest(unittest.TestCase):
             self.assertEqual(message['Records'][0]['eventName'], 'ObjectCreated:CompleteMultipartUpload')
 
             # download the file, check file size
-            self.s3_client.download_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                         Key=large_file.name, Filename=download_file)
+            self.s3_client.download_file(Bucket=bucket_name, Key=large_file.name, Filename=download_file)
             self.assertEqual(os.path.getsize(download_file), file_size)
 
             # clean up
             self.sqs_client.delete_queue(QueueUrl=queue_url)
-            self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, large_file.name)
+            self._delete_bucket(bucket_name, large_file.name)
         finally:
             # clean up large files
             large_file.close()
@@ -172,21 +169,22 @@ class S3ListenerTest(unittest.TestCase):
         # In a multipart upload "Each part must be at least 5 MB in size, except the last part."
         # https://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
 
+        bucket_name = 'notif-large-%s' % short_uid()
         key_by_path = 'key-by-hostname'
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
 
         # perform upload
-        self._perform_multipart_upload(bucket=TEST_BUCKET_WITH_NOTIFICATION, key=key_by_path, zip=True)
+        self._perform_multipart_upload(bucket=bucket_name, key=key_by_path, zip=True)
 
         self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+        self._delete_bucket(bucket_name, [key_by_path])
 
     def test_invalid_range_error(self):
-        bucket_name = 'myBucket'
+        bucket_name = 'range-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         self.s3_client.create_bucket(Bucket=bucket_name)
@@ -219,16 +217,17 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_url_upload(self):
         key_by_path = 'key-by-hostname'
+        bucket_name = 'notif-large-%s' % short_uid()
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
 
-        self._perform_presigned_url_upload(bucket=TEST_BUCKET_WITH_NOTIFICATION, key=key_by_path)
+        self._perform_presigned_url_upload(bucket=bucket_name, key=key_by_path)
 
         self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+        self._delete_bucket(bucket_name, [key_by_path])
 
     def test_s3_get_response_default_content_type(self):
         # When no content type is provided by a PUT request
@@ -907,16 +906,16 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_event_notification_with_sqs(self):
         key_by_path = 'aws/bucket=2020/test1.txt'
+        bucket_name = 'notif-sqs-%s' % short_uid()
 
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                             VersioningConfiguration={'Status': 'Enabled'})
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Enabled'})
 
         body = 'Lorem ipsum dolor sit amet, ... ' * 30
 
         # put an object
-        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body=body)
+        self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body=body)
 
         self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
@@ -924,17 +923,14 @@ class S3ListenerTest(unittest.TestCase):
         record = [json.loads(to_str(m['Body'])) for m in rs['Messages']][0]['Records'][0]
 
         download_file = new_tmp_file()
-        self.s3_client.download_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                     Key=key_by_path, Filename=download_file)
+        self.s3_client.download_file(Bucket=bucket_name, Key=key_by_path, Filename=download_file)
 
         self.assertEqual(record['s3']['object']['size'], os.path.getsize(download_file))
 
         # clean up
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                             VersioningConfiguration={'Status': 'Disabled'})
-
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Disabled'})
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+        self._delete_bucket(bucket_name, [key_by_path])
 
     def test_s3_delete_object_with_version_id(self):
         test_1st_key = 'aws/s3/testkey1.txt'
@@ -1306,18 +1302,19 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_encoding_notification_messages(self):
         key = 'a@b'
+        bucket_name = 'notif-enc-%s' % short_uid()
         queue_url = self.sqs_client.create_queue(QueueName='testQueue')['QueueUrl']
         queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
 
-        self._create_test_notification_bucket(queue_attributes)
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
 
         # put an object where the bucket_name is in the path
-        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key, Body='something')
+        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
 
         response = self.sqs_client.receive_message(QueueUrl=queue_url)
         self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], 'a%40b')
         # clean up
-        self.s3_client.delete_objects(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Delete={'Objects': [{'Key': key}]})
+        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
 
     def test_s3_batch_delete_objects_using_requests(self):
         bucket_name = 'bucket-%s' % short_uid()
@@ -1392,10 +1389,10 @@ class S3ListenerTest(unittest.TestCase):
         queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
         return queue_url, queue_attributes
 
-    def _create_test_notification_bucket(self, queue_attributes):
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+    def _create_test_notification_bucket(self, queue_attributes, bucket_name):
+        self.s3_client.create_bucket(Bucket=bucket_name)
         self.s3_client.put_bucket_notification_configuration(
-            Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+            Bucket=bucket_name,
             NotificationConfiguration={
                 'QueueConfigurations': [
                     {
