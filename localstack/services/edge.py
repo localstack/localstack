@@ -80,6 +80,12 @@ class ProxyListenerEdge(ProxyListener):
 
         return do_forward_request(api, port, method, path, data, headers)
 
+    def return_response(self, method, path, data, headers, response):
+        # fix Content-Length header in response
+        length = response.headers.get('Content-Length')
+        if response.content and length and str(len(response.content)) != length:
+            response.headers['Content-Length'] = str(len(response.content))
+
 
 def do_forward_request(api, port, method, path, data, headers):
     if config.FORWARD_EDGE_INMEM:
