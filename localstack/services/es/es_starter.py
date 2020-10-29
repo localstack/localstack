@@ -40,7 +40,7 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
         return STATE['_thread_']
 
     global BACKEND_PORT
-    BACKEND_PORT = BACKEND_PORT or get_free_tcp_port()
+    BACKEND_PORT = get_free_tcp_port()
 
     port = port or config.PORT_ELASTICSEARCH
     # delete Elasticsearch data that may be cached locally from a previous test run
