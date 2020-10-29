@@ -1,5 +1,5 @@
 language: python
-dist: xenial
+dist: bionic
 python:
   - "3.7"
 
@@ -13,24 +13,21 @@ branches:
 addons:
   apt:
     packages:
-      - openjdk-8-jre-headless
+      - openjdk-11-jre-headless
 
 before_install:
-  - "sudo apt-get purge openjdk-6*"
-  - "sudo apt-get purge openjdk-7*"
-  - "sudo apt-get purge oracle-java7-*"
   - "sudo apt-get purge python2.7"
   - "nvm install 6; nvm alias default node"
   - "sudo useradd localstack -s /bin/bash"
 
 env:
   global:
-    - JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+    - JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
     - BOTO_CONFIG=/dev/null
 
 install:
   - set -e
-  - # install under python 3
+  # install under python 3
   - PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
   - make init
   - nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &

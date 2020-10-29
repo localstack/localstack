@@ -81,7 +81,7 @@ __Virtualenv__
 
 __OpenJDK__
 
-    apt-get install openjdk-8-jdk
+    apt-get install openjdk-11-jdk
 
 __Node__
 

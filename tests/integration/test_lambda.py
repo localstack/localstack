@@ -27,7 +27,7 @@ from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
-    use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8,
+    use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11,
     LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION,
     LAMBDA_DEFAULT_HANDLER)
 from .lambdas import lambda_integration
@@ -243,6 +243,12 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         lambda_client.delete_function(FunctionName=lambda_name)
 
     def test_add_lambda_permission(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
         iam_client = aws_stack.connect_to_service('iam')
         lambda_client = aws_stack.connect_to_service('lambda')
 
@@ -250,30 +256,77 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         action = 'lambda:InvokeFunction'
         sid = 's3'
         principal = 's3.amazonaws.com'
-        resp = lambda_client.add_permission(FunctionName=TEST_LAMBDA_NAME_PY, Action=action,
+        resp = lambda_client.add_permission(FunctionName=function_name, Action=action,
                                             StatementId=sid, Principal=principal,
                                             SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
         self.assertIn('Statement', resp)
         # fetch lambda policy
-        policy = lambda_client.get_policy(FunctionName=TEST_LAMBDA_NAME_PY)['Policy']
+        policy = lambda_client.get_policy(FunctionName=function_name)['Policy']
         self.assertIsInstance(policy, six.string_types)
         policy = json.loads(to_str(policy))
         self.assertEqual(policy['Statement'][0]['Action'], action)
         self.assertEqual(policy['Statement'][0]['Sid'], sid)
-        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(TEST_LAMBDA_NAME_PY))
+        self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(function_name))
         self.assertEqual(policy['Statement'][0]['Principal']['Service'], principal)
         self.assertEqual(policy['Statement'][0]['Condition']['ArnLike']['AWS:SourceArn'],
                          aws_stack.s3_bucket_arn('test-bucket'))
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
-        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s_%s' % (TEST_LAMBDA_NAME_PY, sid)]
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % function_name]
         self.assertEqual(len(matching), 1)
         self.assertIn(':policy/', matching[0]['Arn'])
 
         # remove permission that we just added
-        resp = lambda_client.remove_permission(FunctionName=TEST_LAMBDA_NAME_PY,
+        resp = lambda_client.remove_permission(FunctionName=function_name,
                                                StatementId=sid, Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+        lambda_client.delete_function(FunctionName=function_name)
+
+    def test_add_lambda_multiple_permission(self):
+        function_name = 'lambda_func-{}'.format(short_uid())
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+        iam_client = aws_stack.connect_to_service('iam')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # create lambda permissions
+        action = 'lambda:InvokeFunction'
+        principal = 's3.amazonaws.com'
+        statement_ids = ['s4', 's5']
+        for sid in statement_ids:
+            resp = lambda_client.add_permission(FunctionName=function_name, Action=action,
+                                                StatementId=sid, Principal=principal,
+                                                SourceArn=aws_stack.s3_bucket_arn('test-bucket'))
+            self.assertIn('Statement', resp)
+
+        # fetch IAM policy
+        policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
+        matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % function_name]
+        self.assertEqual(len(matching), 1)
+        self.assertIn(':policy/', matching[0]['Arn'])
+
+        # validate both statements
+        policy = matching[0]
+        versions = iam_client.list_policy_versions(PolicyArn=policy['Arn'])['Versions']
+        self.assertEqual(len(versions), 1)
+        statements = versions[0]['Document']['Statement']
+        for i in range(len(statement_ids)):
+            self.assertEqual(statements[i]['Action'], action)
+            self.assertEqual(statements[i]['Resource'], lambda_api.func_arn(function_name))
+            self.assertEqual(statements[i]['Principal']['Service'], principal)
+            self.assertEqual(statements[i]['Condition']['ArnLike']['AWS:SourceArn'],
+                             aws_stack.s3_bucket_arn('test-bucket'))
+            # check statement_ids in reverse order
+            self.assertEqual(statements[i]['Sid'], statement_ids[abs(i - 1)])
+
+        # remove permission that we just added
+        resp = lambda_client.remove_permission(FunctionName=function_name,
+                                               StatementId=sid, Qualifier='qual1', RevisionId='r1')
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+        lambda_client.delete_function(FunctionName=function_name)
 
     def test_lambda_asynchronous_invocations(self):
         function_name = 'lambda_func-{}'.format(short_uid())
@@ -1253,7 +1306,7 @@ class TestJavaRuntimes(LambdaTestBase):
         for archive in [java_jar_with_lib, java_zip_with_lib]:
             lambda_name = 'test-%s' % short_uid()
             testutil.create_lambda_function(func_name=lambda_name,
-                                            zip_file=archive, runtime=LAMBDA_RUNTIME_JAVA8,
+                                            zip_file=archive, runtime=LAMBDA_RUNTIME_JAVA11,
                                             handler='cloud.localstack.sample.LambdaHandlerWithLib')
 
             result = self.lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"echo":"echo"}')
