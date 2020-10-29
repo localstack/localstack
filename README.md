@@ -304,6 +304,7 @@ aws configure --profile default
 
 # Config & credential file will be created under ~/.aws folder
 ```
+**NOTE**: Please use `test` as Access key id and secret Access Key to make S3 presign url work. We have added presign url signature verification algorithm to validate the presign url and its expiration.
 
 **NEW**: Check out [awslocal](https://github.com/localstack/awscli-local), a thin CLI wrapper
 that runs commands directly against LocalStack (no need to specify `--endpoint-url` anymore).
