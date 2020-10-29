@@ -128,8 +128,9 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                     for value in values:
                         response.headers.add_header(key, value)
                 # set default headers, if required
-                if 'Content-Length' not in response.headers and not is_chunked:
-                    response.headers['Content-Length'] = str(len(result_content) if result_content else 0)
+                if not is_chunked and request.method not in ['OPTIONS', 'HEAD']:
+                    response_data = await response.get_data()
+                    response.headers['Content-Length'] = str(len(response_data or ''))
                 if 'Connection' not in response.headers:
                     response.headers['Connection'] = 'close'
         return response
