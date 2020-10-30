@@ -42,6 +42,8 @@ install:
 
 script:
   - set -e # fail fast
+  # check if the build environment contains a special command via $CUSTOM_CMD
+  - if [ "$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
   # run tests using Python 3 (limit the set of tests to reduce test duration)
   - DEBUG=1 LAMBDA_EXECUTOR=docker USE_SSL=1 TEST_ERROR_INJECTION=1 TEST_PATH="tests/integration/test_lambda.py tests/integration/test_integration.py" make test
   # start pulling Docker base image in the background

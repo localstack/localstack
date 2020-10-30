@@ -3,6 +3,7 @@ IMAGE_NAME_BASE ?= localstack/java-maven-node-python
 IMAGE_NAME_LIGHT ?= localstack/localstack-light
 IMAGE_NAME_FULL ?= localstack/localstack-full
 IMAGE_TAG ?= $(shell cat localstack/constants.py | grep '^VERSION =' | sed "s/VERSION = ['\"]\(.*\)['\"].*/\1/")
+DOCKER_SQUASH ?= --squash
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
 TEST_PATH ?= .
@@ -60,9 +61,15 @@ docker-squash:
 		docker-squash -t $(IMAGE_NAME):$(IMAGE_TAG) $(IMAGE_NAME):$(IMAGE_TAG)
 
 docker-build-base:
-	docker build --squash -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
+	docker build $(DOCKER_SQUASH) -t $(IMAGE_NAME_BASE) -f bin/Dockerfile.base .
 	docker tag $(IMAGE_NAME_BASE) $(IMAGE_NAME_BASE):$(IMAGE_TAG)
 	docker tag $(IMAGE_NAME_BASE):$(IMAGE_TAG) $(IMAGE_NAME_BASE):latest
+
+docker-build-base-ci:
+	DOCKER_SQUASH= make docker-build-base
+	IMAGE_NAME=$(IMAGE_NAME_BASE) IMAGE_TAG=latest make docker-squash
+	docker info | grep Username || docker login -u "$$DOCKER_USERNAME" -p "$$DOCKER_PASSWORD"
+	docker push $(IMAGE_NAME_BASE):latest
 
 docker-push:       ## Push Docker image to registry
 	make docker-squash
