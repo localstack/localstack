@@ -2,6 +2,8 @@ import os
 import types
 import logging
 import traceback
+
+from moto.core.utils import camelcase_to_underscores
 from moto.sqs import responses as sqs_responses
 from moto.sqs.exceptions import QueueDoesNotExist
 from moto.sqs.models import Queue
@@ -59,6 +61,21 @@ def patch_moto():
 
     add_message_orig = Queue.add_message
     Queue.add_message = add_message
+
+    _set_attributes_orig = Queue._set_attributes
+
+    def _set_attributes(self, attributes, now=None):
+        _set_attributes_orig(self, attributes, now)
+
+        integer_fields = [
+            'ReceiveMessageWaitTimeSeconds'
+        ]
+
+        for key in integer_fields:
+            attribute = camelcase_to_underscores(key)
+            setattr(self, attribute, int(getattr(self, attribute, 0)))
+
+    Queue._set_attributes = _set_attributes
 
     # pass additional globals (e.g., escaping methods) to template render method
     def response_template(self, template_str, *args, **kwargs):

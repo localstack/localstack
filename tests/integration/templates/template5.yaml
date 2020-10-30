@@ -1,0 +1,10 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  LocalParam:
+    Description: Local stack parameter (passed from parent stack)
+    Type: String
+Resources:
+  S3Setup:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'test-${LocalParam}'

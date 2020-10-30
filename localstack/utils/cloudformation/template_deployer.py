@@ -311,9 +311,10 @@ RESOURCE_TO_FUNCTION = {
             'function': 'create_queue',
             'parameters': {
                 'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME],
-                'Attributes': params_select_attributes('ContentBasedDeduplication', 'DelaySeconds', 'FifoQueue',
-                                                       'MaximumMessageSize', 'MessageRetentionPeriod',
-                                                       'VisibilityTimeout', 'RedrivePolicy'),
+                'Attributes': params_select_attributes(
+                    'ContentBasedDeduplication', 'DelaySeconds', 'FifoQueue', 'MaximumMessageSize',
+                    'MessageRetentionPeriod', 'VisibilityTimeout', 'RedrivePolicy', 'ReceiveMessageWaitTimeSeconds'
+                ),
                 'tags': params_list_to_dict('Tags')
             }
         },
@@ -1226,6 +1227,11 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
         if 'Environment' in resource_props:
             environment_variables = resource_props['Environment'].get('Variables', {})
             resource_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
+
+    if resource_type == 'SQS::Queue':
+        # https://github.com/localstack/localstack/issues/3004
+        if 'ReceiveMessageWaitTimeSeconds' in resource_props:
+            resource_props['ReceiveMessageWaitTimeSeconds'] = int(resource_props['ReceiveMessageWaitTimeSeconds'])
 
     if callable(params):
         params = params(resource_props, stack_name=stack_name, resources=resources)
