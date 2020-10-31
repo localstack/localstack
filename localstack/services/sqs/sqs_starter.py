@@ -93,12 +93,8 @@ def patch_moto():
         try:
             queue_url = self.querystring.get('QueueUrl')[0]
             queue_name_data = queue_url.split('/')[4:]
-            queue_name = ''
-            for attr in range(0, len(queue_name_data)):
-                queue_name = queue_name + queue_name_data[attr]
-                if attr != len(queue_name_data) - 1:
-                    queue_name = queue_name + '/'
-
+            queue_name_data = [queue_attr for queue_attr in queue_name_data if queue_attr]
+            queue_name = '/'.join(queue_name_data)
         except TypeError:
             # Fallback to reading from the URL
             queue_name = self.path.split('/')[2]

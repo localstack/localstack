@@ -836,10 +836,11 @@ class SQSTest(unittest.TestCase):
         queue_url = self.client.create_queue(QueueName=queue_name)
 
         result = self.client.list_queues()
-        self.assertEqual(len(result.get('QueueUrls')), 1)
+        self.assertIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
 
         # clean up
         self.client.delete_queue(QueueUrl=queue_url.get('QueueUrl'))
+
         result = self.client.list_queues()
         self.assertEqual(result.get('QueueUrls'), None)
 
