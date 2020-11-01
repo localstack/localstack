@@ -168,7 +168,6 @@ You can pass the following environment variables to LocalStack:
   started in different containers using docker-compose.
 * `HOSTNAME_EXTERNAL`: Name of the host to expose the services externally (default: `localhost`).
   This host is used, e.g., when returning queue URLs from the SQS service to the client.
-* `<SERVICE>_PORT`: Port number to bind a specific service to (defaults to service ports above).
 * `<SERVICE>_PORT_EXTERNAL`: Port number to expose a specific service externally (defaults to service ports above). `SQS_PORT_EXTERNAL`, for example, is used when returning queue URLs from the SQS service to the client.
 * `IMAGE_NAME`: Specific name and tag of LocalStack Docker image to use, e.g., `localstack/localstack:0.11.0` (default: `localstack/localstack`).
 * `USE_LIGHT_IMAGE`: Whether to use the light-weight Docker image (default: `1`). Overwritten by `IMAGE_NAME`.
@@ -303,6 +302,12 @@ aws requires the region and the credentials to be set in order to run the aws co
 aws configure --profile default
 
 # Config & credential file will be created under ~/.aws folder
+```
+**NOTE**: Please use `test` as Access key id and secret Access Key to make S3 presign url work. We have added presign url signature verification algorithm to validate the presign url and its expiration. You can configure credentials into the system environment using `export` command in the linux/Mac system. You also can add credentials in `~/.aws/credentials` file directly.
+
+```
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
 ```
 
 **NEW**: Check out [awslocal](https://github.com/localstack/awscli-local), a thin CLI wrapper

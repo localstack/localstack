@@ -210,11 +210,16 @@ def apply_template(integration, req_res_type, data, path_params={}, query_params
     return data
 
 
-def invoke_rest_api_from_request(method, path, data, headers, context={}):
+def get_api_id_stage_invocation_path(path):
     search_match = re.search(PATH_REGEX_USER_REQUEST, path)
     api_id = search_match.group(1)
     stage = search_match.group(2)
     relative_path_w_query_params = '/%s' % search_match.group(3)
+    return api_id, stage, relative_path_w_query_params
+
+
+def invoke_rest_api_from_request(method, path, data, headers, context={}):
+    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path)
     try:
         return invoke_rest_api(api_id, stage, method, relative_path_w_query_params,
             data, headers, path=path, context=context)
@@ -256,8 +261,6 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         if integration_type in ['AWS', 'AWS_PROXY']:
             func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
             data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
-            account_id = uri.split(':lambda:path')[1].split(':function:')[0].split(':')[-1]
-            source_ip = headers['X-Forwarded-For'].split(',')[-2].strip()
 
             try:
                 path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
@@ -270,23 +273,8 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
 
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
-            request_context = {
-                # adding stage to the request context path.
-                # https://github.com/localstack/localstack/issues/2210
-                'path': '/' + stage + relative_path,
-                'accountId': account_id,
-                'resourceId': resource.get('id'),
-                'stage': stage,
-                'identity': {
-                    'accountId': account_id,
-                    'sourceIp': source_ip,
-                    'userAgent': headers['User-Agent'],
-                },
-                'httpMethod': method,
-                'protocol': 'HTTP/1.1',
-                'requestTime': datetime.datetime.utcnow(),
-                'requestTimeEpoch': int(time.time() * 1000),
-            }
+            request_context = get_lambda_event_request_context(method, path, data, headers,
+                integration_uri=uri, resource_id=resource.get('id'))
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                 stage, api_id, headers, path_params=path_params, query_string_params=query_string_params,
@@ -424,6 +412,32 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
            (integration['type'], method, integration.get('uri')))
     LOGGER.warning(msg)
     return make_error_response(msg, 404)
+
+
+def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
+    _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path)
+    relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
+    source_ip = headers['X-Forwarded-For'].split(',')[-2].strip()
+    integration_uri = integration_uri or ''
+    account_id = integration_uri.split(':lambda:path')[-1].split(':function:')[0].split(':')[-1]
+    request_context = {
+        # adding stage to the request context path.
+        # https://github.com/localstack/localstack/issues/2210
+        'path': '/' + stage + relative_path,
+        'accountId': account_id,
+        'resourceId': resource_id,
+        'stage': stage,
+        'identity': {
+            'accountId': account_id,
+            'sourceIp': source_ip,
+            'userAgent': headers['User-Agent'],
+        },
+        'httpMethod': method,
+        'protocol': 'HTTP/1.1',
+        'requestTime': datetime.datetime.utcnow(),
+        'requestTimeEpoch': int(time.time() * 1000),
+    }
+    return request_context
 
 
 # instantiate listener
