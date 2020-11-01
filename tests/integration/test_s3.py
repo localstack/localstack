@@ -1381,8 +1381,9 @@ class S3ListenerTest(unittest.TestCase):
         try:
             client.get_object(Bucket=bucket, Key='foo', IfMatch='"not good etag"')
         except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], '412')
-            self.assertEqual(e.response['Error']['Message'], 'Precondition Failed')
+            self.assertEqual(e.response['Error']['Code'], 'PreconditionFailed')
+            self.assertEqual(e.response['Error']['Message'], 'At least one of the pre-conditions you '
+                                                             'specified did not hold')
 
         client.delete_object(Bucket=bucket, Key='foo')
         client.delete_bucket(Bucket=bucket)
