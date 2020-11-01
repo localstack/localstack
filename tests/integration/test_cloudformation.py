@@ -15,8 +15,12 @@ from botocore.parsers import ResponseParserError
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
 TEST_TEMPLATE_1 = os.path.join(THIS_FOLDER, 'templates', 'template1.yaml')
+
 TEST_TEMPLATE_2 = os.path.join(THIS_FOLDER, 'templates', 'template2.yaml')
+
 APIGW_INTEGRATION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'apigateway_integration.json')
+
+TEST_VALID_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'valid_template.json')
 
 TEST_TEMPLATE_3 = """
 AWSTemplateFormatVersion: 2010-09-09
@@ -27,98 +31,16 @@ Resources:
       BucketName: test-%s
 """ % short_uid()
 
-TEST_TEMPLATE_4 = """
-AWSTemplateFormatVersion: 2010-09-09
-Transform: AWS::Serverless-2016-10-31
-Parameters:
-  LambdaRuntime:
-    Type: String
-    Default: python3.6
-Resources:
-  MyRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: test-role-123
-      AssumeRolePolicyDocument: {}
-  MyFunc:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: %s
-      Handler: index.handler
-      Role: !GetAtt 'MyRole.Arn'
-      Runtime:
-        Ref: LambdaRuntime
-      InlineCode: |
-        def handler(event, context):
-            return {'hello': 'world'}
-"""
+TEST_TEMPLATE_4 = os.path.join(THIS_FOLDER, 'templates', 'template4.yaml')
 
-TEST_TEMPLATE_5 = """
-AWSTemplateFormatVersion: 2010-09-09
-Parameters:
-  LocalParam:
-    Description: Local stack parameter (passed from parent stack)
-    Type: String
-Resources:
-  S3Setup:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub 'test-${LocalParam}'
-"""
+TEST_TEMPLATE_5 = os.path.join(THIS_FOLDER, 'templates', 'template5.yaml')
 
 TEST_ARTIFACTS_BUCKET = 'cf-artifacts'
 TEST_ARTIFACTS_PATH = 'stack.yaml'
 
-TEST_TEMPLATE_6 = """
-AWSTemplateFormatVersion: 2010-09-09
-Parameters:
-  GlobalParam:
-    Description: Global stack parameter
-    Type: String
-Resources:
-  NestedStack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: http://localhost:4572/%s/%s
-      Parameters:
-        LocalParam: !Ref GlobalParam
-""" % (TEST_ARTIFACTS_BUCKET, TEST_ARTIFACTS_PATH)
+TEST_TEMPLATE_6 = os.path.join(THIS_FOLDER, 'templates', 'template6.yaml')
 
-TEST_TEMPLATE_7 = {
-    'AWSTemplateFormatVersion': '2010-09-09',
-    'Description': 'Template for AWS::AWS::Function.',
-    'Resources': {
-        'LambdaFunction1': {
-            'Type': 'AWS::Lambda::Function',
-            'Properties': {
-                'Code': {
-                    'ZipFile': 'file.zip'
-                },
-                'Runtime': 'nodejs12.x',
-                'Handler': 'index.handler',
-                'Role': {
-                    'Fn::GetAtt': ['LambdaExecutionRole', 'Arn']
-                },
-                'Timeout': 300
-            }
-        },
-        'LambdaExecutionRole': {
-            'Type': 'AWS::IAM::Role',
-            'Properties': {
-                'RoleName': '',
-                'AssumeRolePolicyDocument': {
-                    'Version': '2012-10-17',
-                    'Statement': [
-                        {
-                            'Action': 'sts:AssumeRole',
-                            'Principal': {'Service': 'lambda.amazonaws.com'}
-                        }
-                    ]
-                }
-            }
-        }
-    }
-}
+TEST_TEMPLATE_7 = os.path.join(THIS_FOLDER, 'templates', 'template7.json')
 
 TEST_TEMPLATE_8 = {
     'AWSTemplateFormatVersion': '2010-09-09',
@@ -311,12 +233,16 @@ Resources:
 TEST_TEMPLATE_15 = """
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
-  SQSQueue:
+  FifoQueue:
     Type: 'AWS::SQS::Queue'
     Properties:
         QueueName: %s
         ContentBasedDeduplication: "false"
         FifoQueue: "true"
+  NormalQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+        ReceiveMessageWaitTimeSeconds: 1
 """
 
 TEST_TEMPLATE_16 = """
@@ -411,227 +337,13 @@ Resources:
       BucketName: '%s'
 """
 
-TEST_DEPLOY_BODY_1 = """
-AWSTemplateFormatVersion: '2010-09-09'
-Resources:
-  # IAM role for running the step function
-  ExecutionRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: %s
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-        - Effect: "Allow"
-          Principal:
-            Service: !Sub states.${AWS::Region}.amazonaws.com
-          Action: "sts:AssumeRole"
-      Policies:
-      - PolicyName: StatesExecutionPolicy
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-          - Effect: Allow
-            Action: "lambda:InvokeFunction"
-            Resource: "*"
-"""
+TEST_DEPLOY_BODY_1 = os.path.join(THIS_FOLDER, 'templates', 'deploy_template_1.yaml')
 
-TEST_DEPLOY_BODY_2 = """
-AWSTemplateFormatVersion: '2010-09-09'
-Description:
-  SNS Topics for stuff
+TEST_DEPLOY_BODY_2 = os.path.join(THIS_FOLDER, 'templates', 'deploy_template_2.yaml')
 
-Parameters:
-  CompanyName:
-    Type: String
-    Description: 'Customer/Company name, commonly known-by name'
-    AllowedPattern: '[A-Za-z0-9-]{5,}'
-    ConstraintDescription: 'String must be 5 or more characters, letters, numbers and -'
+TEST_DEPLOY_BODY_3 = os.path.join(THIS_FOLDER, 'templates', 'deploy_template_3.yaml')
 
-  MyEmail1:
-    Type: String
-    Description: Email address for stuff
-    Default: ""
-
-  MyEmail2:
-    Type: String
-    Description: Email address for stuff
-    Default: ""
-
-Conditions:
-  HasMyEmail1: !Not [!Equals [!Ref MyEmail1, '']]
-  HasMyEmail2: !Not [!Equals [!Ref MyEmail2, '']]
-
-  SetupMy: !Or
-                - Condition: HasMyEmail1
-                - Condition: HasMyEmail2
-
-Resources:
-  MyTopic:
-    Condition: SetupMy
-    Type: AWS::SNS::Topic
-    Properties:
-      DisplayName: !Sub "${CompanyName} AWS MyTopic"
-      Subscription:
-        - !If
-          - HasMyEmail1
-          -
-            Endpoint: !Ref MyEmail1
-            Protocol: email
-          - !Ref AWS::NoValue
-        - !If
-          - HasMyEmail2
-          -
-            Endpoint: !Ref MyEmail2
-            Protocol: email
-          - !Ref AWS::NoValue
-
-Outputs:
-  StackName:
-    Description: 'Stack name'
-    Value: !Sub '${AWS::StackName}'
-    Export:
-      Name: !Sub '${AWS::StackName}-StackName'
-
-  MyTopic:
-    Condition: SetupMy
-    Description: 'My arn'
-    Value: !Ref MyTopic
-    Export:
-      Name: !Sub '${AWS::StackName}-MyTopicArn'
-
-  MyTopicName:
-    Condition: SetupMy
-    Description: 'My Name'
-    Value: !GetAtt MyTopic.TopicName
-    Export:
-      Name: !Sub '${AWS::StackName}-MyTopicName'
-"""
-
-TEST_DEPLOY_BODY_3 = """
-AWSTemplateFormatVersion: '2010-09-09'
-Description: DynamoDB resource stack creation using Amplify CLI
-Parameters:
-  partitionKeyName:
-    Type: String
-    Default: startTime
-  partitionKeyType:
-    Type: String
-    Default: String
-  env:
-    Type: String
-    Default: Staging
-  sortKeyName:
-    Type: String
-    Default: name
-  sortKeyType:
-    Type: String
-    Default: String
-  tableName:
-    Type: String
-    Default: ddb1
-Conditions:
-  ShouldNotCreateEnvResources:
-    Fn::Equals:
-    - Ref: env
-    - NONE
-Resources:
-  DynamoDBTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName:
-        Fn::If:
-          - ShouldNotCreateEnvResources
-          - Ref: tableName
-          - Fn::Join:
-              - ''
-              - - Ref: tableName
-                - "-"
-                - Ref: env
-      AttributeDefinitions:
-      - AttributeName: name
-        AttributeType: S
-      - AttributeName: startTime
-        AttributeType: S
-      - AttributeName: externalUserID
-        AttributeType: S
-      KeySchema:
-      - AttributeName: name
-        KeyType: HASH
-      - AttributeName: startTime
-        KeyType: RANGE
-      ProvisionedThroughput:
-        ReadCapacityUnits: '5'
-        WriteCapacityUnits: '5'
-      StreamSpecification:
-        StreamViewType: NEW_IMAGE
-      GlobalSecondaryIndexes:
-      - IndexName: byUser
-        KeySchema:
-        - AttributeName: externalUserID
-          KeyType: HASH
-        - AttributeName: startTime
-          KeyType: RANGE
-        Projection:
-          ProjectionType: ALL
-        ProvisionedThroughput:
-          ReadCapacityUnits: '5'
-          WriteCapacityUnits: '5'
-Outputs:
-  Name:
-    Value:
-      Ref: DynamoDBTable
-  Arn:
-    Value:
-      Fn::GetAtt:
-      - DynamoDBTable
-      - Arn
-  StreamArn:
-    Value:
-      Fn::GetAtt:
-      - DynamoDBTable
-      - StreamArn
-  PartitionKeyName:
-    Value:
-      Ref: partitionKeyName
-  PartitionKeyType:
-    Value:
-      Ref: partitionKeyType
-  SortKeyName:
-    Value:
-      Ref: sortKeyName
-  SortKeyType:
-    Value:
-      Ref: sortKeyType
-  Region:
-    Value:
-      Ref: AWS::Region
-"""
-
-TEST_DEPLOY_BODY_4 = """
-AWSTemplateFormatVersion: '2010-09-09'
-
-Resources:
-  # IAM role for running the step function
-  ExecutionRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-        - Effect: "Allow"
-          Principal:
-            Service: !Sub states.${AWS::Region}.amazonaws.com
-          Action: "sts:AssumeRole"
-      Policies:
-      - PolicyName: StatesExecutionPolicy
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-          - Effect: Allow
-            Action: "lambda:InvokeFunction"
-            Resource: "*"
-"""
+TEST_DEPLOY_BODY_4 = os.path.join(THIS_FOLDER, 'templates', 'deploy_template_4.yaml')
 
 TEST_TEMPLATE_19 = """
 Conditions:
@@ -671,61 +383,7 @@ Resources:
         ZipFile: 'file.zip'
 """
 
-TEST_TEMPLATE_21 = {
-    'AWSTemplateFormatVersion': '2010-09-09',
-    'Transform': 'AWS::Serverless-2016-10-31',
-    'Resources': {
-        'DynamoOnDemand': {
-            'Type': 'AWS::DynamoDB::Table',
-            'Properties': {
-                'TableName': 'ondemandtable',
-                'AttributeDefinitions': [
-                    {
-                        'AttributeName': 'foo',
-                        'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'bar',
-                        'AttributeType': 'S'
-                    },
-                    {
-                        'AttributeName': 'baz',
-                        'AttributeType': 'S'
-                    }
-                ],
-                'KeySchema': [
-                    {
-                        'AttributeName': 'foo',
-                        'KeyType': 'HASH'
-                    },
-                    {
-                        'AttributeName': 'bar',
-                        'KeyType': 'RANGE'
-                    }
-                ],
-                'GlobalSecondaryIndexes': [
-                    {
-                        'IndexName': 'by.baz',
-                        'KeySchema': [
-                            {
-                                'AttributeName': 'foo',
-                                'KeyType': 'HASH'
-                            },
-                            {
-                                'AttributeName': 'baz',
-                                'KeyType': 'RANGE'
-                            }
-                        ],
-                        'Projection': {
-                            'ProjectionType': 'ALL'
-                        },
-                    }
-                ],
-                'BillingMode': 'PAY_PER_REQUEST'
-            }
-        }
-    }
-}
+TEST_TEMPLATE_21 = os.path.join(THIS_FOLDER, 'templates', 'template21.json')
 
 TEST_TEMPLATE_22 = """
 AWSTemplateFormatVersion: '2010-09-09'
@@ -754,84 +412,8 @@ Resources:
             return {'body': 'Hello World!', 'statusCode': 200}
 """
 
-TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = {
-    'AWSTemplateFormatVersion': '2010-09-09',
-    'Resources': {
-        'PullMarketsRole': {
-            'Type': 'AWS::IAM::Role',
-            'Properties': {
-                'RoleName': '',
-                'AssumeRolePolicyDocument': {
-                    'Version': '2012-10-17',
-                    'Statement': [
-                        {
-                            'Effect': 'Allow',
-                            'Principal': {
-                                'Service': [
-                                    'lambda.amazonaws.com'
-                                ]
-                            },
-                            'Action': [
-                                'sts:AssumeRole'
-                            ]
-                        }
-                    ]
-                },
-                'Path': '/',
-                'Policies': [
-                    {
-                        'PolicyName': 'AWSLambdaBasicExecutionRole',
-                        'PolicyDocument': {
-                            'Version': '2012-10-17',
-                            'Statement': [
-                                {
-                                    'Effect': 'Allow',
-                                    'Action': [
-                                        'logs:PutLogEvents'
-                                    ],
-                                    'Resource': '*'
-                                }
-                            ]
-                        }
-                    }
-                ]
-            }
-        },
-        'SomeNameFunction': {
-            'Type': 'AWS::Lambda::Function',
-            'Properties': {
-                'Code': {
-                    'S3Bucket': '',
-                    'S3Key': ''
-                },
-                'FunctionName': '',
-                'Handler': 'lambda_echo.handler',
-                'MemorySize': 1024,
-                'Role': {
-                    'Fn::GetAtt': [
-                        'PullMarketsRole',
-                        'Arn'
-                    ]
-                },
-                'Runtime': 'nodejs12.x',
-                'Timeout': 6
-            }
-        }
-    }
-}
+TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'update_lambda_template.json')
 
-dummy_sqs_attribute_template = {
-    'TemplateFormatVersion': '2010-09-09',
-    'Description': 'Deploys an SQS queue',
-    'Resources': {
-        'MyQueue': {
-            'Type': 'AWS::SQS::Queue',
-            'Properties': {
-                'ReceiveMessageWaitTimeSeconds': 1
-            }
-        }
-    }
-}
 
 SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
 
@@ -1023,9 +605,15 @@ class CloudFormationTest(unittest.TestCase):
 
     def test_validate_template(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
-        template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
-        response = cloudformation.validate_template(TemplateBody=template)
-        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        template = template_deployer.template_to_json(load_file(TEST_VALID_TEMPLATE))
+        resp = cloudformation.validate_template(TemplateBody=template)
+
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertIn('Parameters', resp)
+        self.assertEqual(len(resp['Parameters']), 1)
+        self.assertEqual(resp['Parameters'][0]['ParameterKey'], 'KeyExample')
+        self.assertEqual(resp['Parameters'][0]['Description'], 'The EC2 Key Pair to allow SSH access to the instance')
 
     def test_validate_invalid_json_template_should_fail(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
@@ -1087,7 +675,7 @@ class CloudFormationTest(unittest.TestCase):
         # deploy template
         stack_name = 'stack-%s' % short_uid()
         func_name = 'test-%s' % short_uid()
-        template = TEST_TEMPLATE_4 % func_name
+        template = load_file(TEST_TEMPLATE_4) % func_name
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
         # run Lambda test invocation
@@ -1104,7 +692,7 @@ class CloudFormationTest(unittest.TestCase):
 
         # upload template to S3
         s3.create_bucket(Bucket=TEST_ARTIFACTS_BUCKET, ACL='public-read')
-        s3.put_object(Bucket=TEST_ARTIFACTS_BUCKET, Key=TEST_ARTIFACTS_PATH, Body=TEST_TEMPLATE_5)
+        s3.put_object(Bucket=TEST_ARTIFACTS_BUCKET, Key=TEST_ARTIFACTS_PATH, Body=load_file(TEST_TEMPLATE_5))
 
         # deploy template
         buckets_before = len(s3.list_buckets()['Buckets'])
@@ -1112,7 +700,7 @@ class CloudFormationTest(unittest.TestCase):
         param_value = short_uid()
         cloudformation.create_stack(
             StackName=stack_name,
-            TemplateBody=TEST_TEMPLATE_6,
+            TemplateBody=load_file(TEST_TEMPLATE_6) % (TEST_ARTIFACTS_BUCKET, TEST_ARTIFACTS_PATH),
             Parameters=[{'ParameterKey': 'GlobalParam', 'ParameterValue': param_value}]
         )
 
@@ -1136,8 +724,10 @@ class CloudFormationTest(unittest.TestCase):
 
         stack_name = 'stack-%s' % short_uid()
         lambda_role_name = 'lambda-role-%s' % short_uid()
-        TEST_TEMPLATE_7['Resources']['LambdaExecutionRole']['Properties']['RoleName'] = lambda_role_name
-        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_7))
+
+        template = json.loads(load_file(TEST_TEMPLATE_7))
+        template['Resources']['LambdaExecutionRole']['Properties']['RoleName'] = lambda_role_name
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template))
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('StackId', rs)
@@ -1247,7 +837,7 @@ class CloudFormationTest(unittest.TestCase):
         rs = cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
-            TemplateBody=TEST_DEPLOY_BODY_1 % role_name
+            TemplateBody=load_file(TEST_DEPLOY_BODY_1) % role_name
         )
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -1312,7 +902,7 @@ class CloudFormationTest(unittest.TestCase):
         rs = cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
-            TemplateBody=TEST_DEPLOY_BODY_2,
+            TemplateBody=load_file(TEST_DEPLOY_BODY_2),
             Parameters=[
                 {
                     'ParameterKey': 'CompanyName',
@@ -1379,7 +969,7 @@ class CloudFormationTest(unittest.TestCase):
         rs = cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
-            TemplateBody=TEST_DEPLOY_BODY_3,
+            TemplateBody=load_file(TEST_DEPLOY_BODY_3),
             Parameters=[
                 {
                     'ParameterKey': 'tableName',
@@ -1442,7 +1032,7 @@ class CloudFormationTest(unittest.TestCase):
         rs = cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
-            TemplateBody=TEST_DEPLOY_BODY_4
+            TemplateBody=load_file(TEST_DEPLOY_BODY_4)
         )
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -1719,14 +1309,14 @@ class CloudFormationTest(unittest.TestCase):
 
     def test_cfn_handle_sqs_resource(self):
         stack_name = 'stack-%s' % short_uid()
-        queue_name = 'queue-%s.fifo' % short_uid()
+        fifo_queue = 'queue-%s.fifo' % short_uid()
 
         cfn = aws_stack.connect_to_service('cloudformation')
         sqs = aws_stack.connect_to_service('sqs')
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_15 % queue_name)
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_15 % fifo_queue)
 
-        rs = sqs.get_queue_url(QueueName=queue_name)
+        rs = sqs.get_queue_url(QueueName=fifo_queue)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         queue_url = rs['QueueUrl']
@@ -1746,7 +1336,7 @@ class CloudFormationTest(unittest.TestCase):
         cfn.delete_stack(StackName=stack_name)
 
         try:
-            sqs.get_queue_url(QueueName=queue_name)
+            sqs.get_queue_url(QueueName=fifo_queue)
             self.fail('This call should not be successful as the queue was deleted')
 
         except ClientError as e:
@@ -1914,12 +1504,12 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.delete_stack(StackName='myteststack2')
         cloudformation.delete_stack(StackName='myteststack')
 
-    def test_cft_with_on_demand_dynamodb_resource(self):
+    def test_cfn_with_on_demand_dynamodb_resource(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
         response = cloudformation.create_stack(
             StackName='myteststack',
-            TemplateBody=json.dumps(TEST_TEMPLATE_21))
+            TemplateBody=load_file(TEST_TEMPLATE_21))
 
         self.assertIn('StackId', response)
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
@@ -1938,9 +1528,11 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
-        TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE['Resources']['PullMarketsRole']['Properties']['RoleName'] = role_name
+        template = json.loads(load_file(TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE))
 
-        props = TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE['Resources']['SomeNameFunction']['Properties']
+        template['Resources']['PullMarketsRole']['Properties']['RoleName'] = role_name
+
+        props = template['Resources']['SomeNameFunction']['Properties']
         props['Code']['S3Bucket'] = bucket_name
         props['Code']['S3Key'] = key_name
         props['FunctionName'] = function_name
@@ -1952,7 +1544,7 @@ class CloudFormationTest(unittest.TestCase):
 
         rs = cloudformation.create_stack(
             StackName=stack_name,
-            TemplateBody=json.dumps(TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE),
+            TemplateBody=json.dumps(template),
         )
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
@@ -1966,7 +1558,7 @@ class CloudFormationTest(unittest.TestCase):
 
         rs = cloudformation.update_stack(
             StackName=stack_name,
-            TemplateBody=json.dumps(TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE),
+            TemplateBody=json.dumps(template),
         )
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -2015,7 +1607,7 @@ class CloudFormationTest(unittest.TestCase):
 
         response = cf_client.create_stack(
             StackName=stack_name,
-            TemplateBody=TEST_DEPLOY_BODY_3,
+            TemplateBody=load_file(TEST_DEPLOY_BODY_3),
             Parameters=[
                 {
                     'ParameterKey': 'tableName',
@@ -2044,31 +1636,23 @@ class CloudFormationTest(unittest.TestCase):
 
             self.assertTrue(isinstance(test_read_capacity, int))
             self.assertTrue(isinstance(test_write_capacity, int))
+
         cf_client.delete_stack(StackName=stack_name)
 
     def test_delete_stack_across_regions(self):
         domain_name = 'es-%s' % short_uid()
+        stack_name = 'stack-%s' % short_uid()
 
         cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
 
         cloudformation.create_stack(
-            StackName='myteststack',
+            StackName=stack_name,
             TemplateBody=TEST_TEMPLATE_3,
             Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
         )
 
-        cloudformation.delete_stack(StackName='myteststack')
-
-    def test_boto3_create_stack_with_sqs_attributes(self):
-        cloudformation = aws_stack.connect_to_service('cloudformation')
-        sqs_conn = aws_stack.connect_to_service('sqs')
-
-        queues_before = len(sqs_conn.list_queues()['QueueUrls'])
-
-        cloudformation.create_stack(StackName='test_stack', TemplateBody=json.dumps(dummy_sqs_attribute_template))
-
-        result = sqs_conn.list_queues()
-        self.assertEqual(len(result.get('QueueUrls')), queues_before + 1)
+        resp = cloudformation.delete_stack(StackName=stack_name)
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_update_stack_with_same_template(self):
         stack_name = 'stack-%s' % short_uid()

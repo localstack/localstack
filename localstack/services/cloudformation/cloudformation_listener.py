@@ -51,25 +51,46 @@ def make_response(operation_name, content='', code=200):
 
 
 def validate_template(req_data):
-    LOG.debug('Validate CloudFormation template: %s' % req_data)
     # TODO implement actual validation logic
     # Note: if we enable this via moto, ensure that we have cfnlint module available (adds ~58MB in size :/)
     response_content = """
         <Capabilities></Capabilities>
         <CapabilitiesReason></CapabilitiesReason>
         <DeclaredTransforms></DeclaredTransforms>
-        <Description></Description>
+        <Description>{description}</Description>
         <Parameters>
+            {parameters}
         </Parameters>
     """
     try:
         template_body = get_template_body(req_data)
-        template_deployer.template_to_json(template_body)
-        response = make_response('ValidateTemplate', response_content)
-        return response
+        valid_template = json.loads(template_deployer.template_to_json(template_body))
+        parameters = ''.join([
+            """
+            <member>
+                <ParameterKey>{pk}</ParameterKey>
+                <DefaultValue>{dv}</DefaultValue>
+                <NoEcho>{echo}</NoEcho>
+                <Description>{desc}</Description>
+            </member>
+            """.format(
+                pk=k,
+                dv=v.get('Default', ''),
+                echo=False,
+                desc=v.get('Description', '')
+
+            )
+            for k, v in valid_template.get('Parameters', {}).items()
+        ])
+
+        resp = response_content.format(
+            parameters=parameters, description=valid_template.get('Description', '')
+        )
+
+        return make_response('ValidateTemplate', resp)
+
     except Exception as err:
-        response = error_response('Template Validation Error: %s' % err)
-        return response
+        return error_response('Template Validation Error: %s' % err)
 
 
 def transform_template(req_data):
