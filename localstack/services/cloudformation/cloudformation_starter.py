@@ -76,7 +76,7 @@ def start_cloudformation(port=None, asynchronous=False, update_listener=None):
     backend_port = get_free_tcp_port()
     start_proxy_for_service('cloudformation', port, backend_port, update_listener)
     if RUN_SERVER_IN_PROCESS:
-        cmd = 'python "%s" cloudformation -p %s -H 0.0.0.0' % (__file__, backend_port)
+        cmd = '%s "%s" cloudformation -p %s -H 0.0.0.0' % (sys.executable, __file__, backend_port)
         env_vars = {'PYTHONPATH': ':'.join(sys.path)}
         return do_run(cmd, asynchronous, env_vars=env_vars)
     else:
@@ -199,7 +199,7 @@ def update_dynamodb_index_resource(resource):
                 glob_index['ProvisionedThroughput'] = {'ReadCapacityUnits': 99, 'WriteCapacityUnits': 99}
 
 
-def add_default_resource_props(resource_props, stack_name, resource_name=None):
+def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None):
     """ Apply some fixes to resource props which otherwise cause deployments to fail """
 
     res_type = resource_props['Type']
@@ -230,8 +230,10 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None):
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
     for entry in default_attrs:
         if res_type == entry[0] and not props.get(entry[1]):
-            props_str = canonical_json(json_safe(props))
-            props[entry[1]] = 'cf-%s-%s' % (stack_name, md5(props_str))
+            if not resource_id:
+                resource_id = canonical_json(json_safe(props))
+                resource_id = md5(resource_id)
+            props[entry[1]] = 'cf-%s-%s' % (stack_name, resource_id)
 
 
 def apply_patches():
@@ -280,9 +282,10 @@ def apply_patches():
         try:
             if hasattr(resources_map, '_deleted'):
                 return
-            return _parse_and_create_resource(
+            result = _parse_and_create_resource(
                 logical_id, resource_json, resources_map, region_name, force_create=force_create
             )
+            return result
         except Exception as e:
             LOG.error('Unable to parse and create resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
             raise
@@ -314,9 +317,9 @@ def apply_patches():
         _, resource_json, resource_name = resource_tuple
 
         # add some fixes and default props which otherwise cause deployments to fail
-        add_default_resource_props(resource_json, stack_name, resource_name=resource_name)
-        for resource in resources_map._resource_json_map.values():
-            add_default_resource_props(resource, stack_name)
+        add_default_resource_props(resource_json, stack_name, resource_name=resource_name, resource_id=logical_id)
+        for res_id, resource in resources_map._resource_json_map.items():
+            add_default_resource_props(resource, stack_name, resource_id=res_id)
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
