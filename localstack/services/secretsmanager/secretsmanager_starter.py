@@ -1,5 +1,9 @@
 import logging
+import json
 from moto.secretsmanager import models as secretsmanager_models
+from moto.secretsmanager.responses import SecretsManagerResponse
+from moto.secretsmanager.models import secretsmanager_backends, SecretsManagerBackend, secret_arn
+from moto.iam.policy_validation import IAMPolicyDocumentValidator
 from localstack.services.infra import start_moto_server
 from localstack.utils.aws import aws_stack
 
@@ -19,6 +23,75 @@ def apply_patches():
         return SECRET_ARN_STORAGE[k]
 
     secretsmanager_models.secret_arn = secretsmanager_models_secret_arn
+
+    # patching resource policy in moto
+    for secretsmanager_backend in secretsmanager_backends.values():
+        if not hasattr(secretsmanager_backend, 'resource_policy'):
+            print('adding')
+            setattr(secretsmanager_backend, 'resource_policy', None)
+        if not hasattr(secretsmanager_backend, 'block_public_policy'):
+            print('adding2')
+            setattr(secretsmanager_backend, 'block_public_policy', None)
+        
+    def get_resource_policy_model(self, secret_id):
+        region = aws_stack.get_region()
+        result = {
+                "ARN": self.secrets[secret_id].arn,
+                "Name": secret_id
+        }
+        
+        if secret_id in self.secrets.keys() and self.secrets[secret_id].get('resource_policy'):
+            result["ResourcePolicy"] = json.dumps(self.resource_policy)
+        
+        return json.dumps(result)
+    setattr(SecretsManagerBackend, 'get_resource_policy', get_resource_policy_model)
+
+    def get_resource_policy_response(self):
+        secret_id = self._get_param("SecretId")
+        return secretsmanager_backends[self.region].get_resource_policy(
+            secret_id=secret_id
+        )
+    setattr(SecretsManagerResponse, 'get_resource_policy', get_resource_policy_response)
+
+
+    def delete_resource_policy_model(self, secret_id):
+        if secret_id in self.secrets.keys():
+            self.secrets[secret_id].policy = None
+        return json.dumps(
+            {
+                "ARN": self.secrets[secret_id].arn,
+                "Name": secret_id
+            }
+        )
+    if not hasattr(SecretsManagerBackend, 'delete_resource_policy'):
+        setattr(SecretsManagerBackend, 'delete_resource_policy', delete_resource_policy_model)
+
+    def delete_resource_policy_response(self):
+        secret_id = self._get_param("SecretId")
+        return secretsmanager_backends[self.region].delete_resource_policy(
+            secret_id=secret_id
+        )
+    if not hasattr(SecretsManagerResponse, 'delete_resource_policy'):
+        setattr(SecretsManagerResponse, 'delete_resource_policy', delete_resource_policy_response)
+
+
+    def put_resource_policy_model(self, secret_id, resource_policy, block_public_policy=None):
+        self.block_public_policy = block_public_policy
+        policy_validator =IAMPolicyDocumentValidator(resource_policy)
+        policy_validator.validate()
+        if secret_id in self.secrets.keys():
+            self.secrets[secret_id].policy = resource_policy
+        return json.dumps(
+            {
+                "ARN": secret_arn(region, secret_id),
+                "Name": secret_id
+            }
+        )
+
+    def put_resource_policy_response(self):
+        secret_id = self._get_param("SecretId")
+        resource_policy = self._get_param("ResourcePolicy")
+        secret_id = self._get_param("BlockPublicPolicy")
 
 
 def start_secretsmanager(port=None, asynchronous=None, backend_port=None, update_listener=None):
