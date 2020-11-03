@@ -311,9 +311,10 @@ RESOURCE_TO_FUNCTION = {
             'function': 'create_queue',
             'parameters': {
                 'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME],
-                'Attributes': params_select_attributes('ContentBasedDeduplication', 'DelaySeconds', 'FifoQueue',
-                                                       'MaximumMessageSize', 'MessageRetentionPeriod',
-                                                       'VisibilityTimeout', 'RedrivePolicy'),
+                'Attributes': params_select_attributes(
+                    'ContentBasedDeduplication', 'DelaySeconds', 'FifoQueue', 'MaximumMessageSize',
+                    'MessageRetentionPeriod', 'VisibilityTimeout', 'RedrivePolicy', 'ReceiveMessageWaitTimeSeconds'
+                ),
                 'tags': params_list_to_dict('Tags')
             }
         },
@@ -1208,6 +1209,21 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
     return (results or [None])[0]
 
 
+def fix_resource_props_for_sdk_deployment(resource_type, resource_props):
+    if resource_type == 'Lambda::Function':
+        # Properties will be validated by botocore before sending request to AWS
+        # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
+        if 'Environment' in resource_props:
+            environment_variables = resource_props['Environment'].get('Variables', {})
+            resource_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
+
+    if resource_type == 'SQS::Queue':
+        # https://github.com/localstack/localstack/issues/3004
+        if 'ReceiveMessageWaitTimeSeconds' in resource_props:
+            resource_props['ReceiveMessageWaitTimeSeconds'] = int(resource_props['ReceiveMessageWaitTimeSeconds'])
+
+
 def configure_resource_via_sdk(resource_id, resources, resource_type, func_details, stack_name):
     resource = resources[resource_id]
     client = get_client(resource, func_details)
@@ -1219,13 +1235,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     resource_props = resource['Properties']
 
     # Validate props for each resource type
-    if resource_type == 'Lambda::Function':
-        # Properties will be validated by botocore before sending request to AWS
-        # botocore/data/lambda/2015-03-31/service-2.json:1161 (EnvironmentVariableValue)
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-lambda-function-environment.html
-        if 'Environment' in resource_props:
-            environment_variables = resource_props['Environment'].get('Variables', {})
-            resource_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
+    fix_resource_props_for_sdk_deployment(resource_type, resource_props)
 
     if callable(params):
         params = params(resource_props, stack_name=stack_name, resources=resources)

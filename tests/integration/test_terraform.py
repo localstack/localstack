@@ -65,3 +65,28 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual(response['Configuration']['Handler'], LAMBDA_HANDLER)
         self.assertEqual(response['Configuration']['Runtime'], LAMBDA_RUNTIME)
         self.assertEqual(response['Configuration']['Role'], LAMBDA_ROLE)
+
+    def test_apigateway(self):
+        apigateway_client = aws_stack.connect_to_service('apigateway')
+        rest_apis = apigateway_client.get_rest_apis()
+
+        for rest_api in rest_apis['items']:
+            if rest_api['name'] == 'test-tf-apigateway':
+                rest_id = rest_api['id']
+                continue
+
+        resources = apigateway_client.get_resources(restApiId=rest_id)['items'][1:]
+        self.assertEqual(len(resources), 2)
+
+        res1 = [r for r in resources if r['pathPart'] == 'mytestresource']
+        self.assertTrue(res1)
+        self.assertEqual(res1[0]['path'], '/mytestresource')
+        self.assertEqual(len(res1[0]['resourceMethods']), 2)
+        self.assertEqual(res1[0]['resourceMethods']['GET']['methodIntegration']['type'], 'MOCK')
+
+        res2 = [r for r in resources if r['pathPart'] == 'mytestresource1']
+        self.assertTrue(res2)
+        self.assertEqual(res2[0]['path'], '/mytestresource1')
+        self.assertEqual(len(res2[0]['resourceMethods']), 2)
+        self.assertEqual(res2[0]['resourceMethods']['GET']['methodIntegration']['type'], 'AWS_PROXY')
+        self.assertTrue(res2[0]['resourceMethods']['GET']['methodIntegration']['uri'])

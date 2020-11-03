@@ -1,0 +1,39 @@
+{
+    "Parameters": {
+      "KeyExample": {
+        "Description": "The EC2 Key Pair to allow SSH access to the instance",
+        "Type": "AWS::EC2::KeyPair::KeyName"
+      }
+    },
+    "Resources": {
+      "Ec2Instance": {
+        "Type": "AWS::EC2::Instance",
+        "Properties": {
+          "SecurityGroups": [
+            {
+              "Ref": "SecurityGroupExample"
+            }
+          ],
+          "KeyName": {
+            "Ref": "KeyExample"
+          },
+          "ImageId": "ami-0e6d2e8684d4ccb3e",
+          "InstanceType": "t2.micro"
+        }
+      },
+      "SecurityGroupExample": {
+        "Type": "AWS::EC2::SecurityGroup",
+        "Properties": {
+          "GroupDescription": "this is an example",
+          "SecurityGroupIngress": [
+            {
+              "IpProtocol": "tcp",
+              "FromPort": "22",
+              "ToPort": "22",
+              "CidrIp": "0.0.0.0/0"
+            }
+          ]
+        }
+      }
+    }
+}
