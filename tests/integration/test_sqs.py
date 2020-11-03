@@ -842,7 +842,7 @@ class SQSTest(unittest.TestCase):
         self.client.delete_queue(QueueUrl=queue_url.get('QueueUrl'))
 
         result = self.client.list_queues()
-        self.assertEqual(result.get('QueueUrls'), None)
+        self.assertNotIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
 
     # ---------------
     # HELPER METHODS
