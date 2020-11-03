@@ -1,4 +1,5 @@
 import unittest
+import json
 
 from datetime import datetime
 from localstack.utils.aws import aws_stack
@@ -6,6 +7,17 @@ from localstack.utils.aws import aws_stack
 TEST_SECRET_NAME_1 = 'test_secret_put'
 TEST_SECRET_NAME_2 = 'test_secret_2nd'
 TEST_SECRET_NAME_3 = 'test_secret_3rd'
+RESOURCE_POLICY = {
+    'Version': '2012-10-17',
+    'Statement': [{
+        'Effect': 'Allow',
+        'Principal': {
+            'AWS': 'arn:aws:iam::123456789012:root'
+        },
+        'Action': 'secretsmanager:GetSecretValue',
+        'Resource': '*'
+    }]
+}
 
 
 class SecretsManagerTest(unittest.TestCase):
@@ -115,3 +127,36 @@ class SecretsManagerTest(unittest.TestCase):
 
         self.assertEqual(120, len(random_password['RandomPassword']))
         self.assertTrue(all([c not in 'xyzDje@?!.' for c in random_password['RandomPassword']]))
+
+    def test_resource_policy(self):
+        self.secretsmanager_client.create_secret(
+            Name=TEST_SECRET_NAME_1,
+            SecretString='my_secret',
+            Description='testing creation of secrets'
+        )
+
+        self.secretsmanager_client.put_resource_policy(
+            SecretId=TEST_SECRET_NAME_1,
+            ResourcePolicy=json.dumps(RESOURCE_POLICY)
+        )
+
+        rs = self.secretsmanager_client.get_resource_policy(
+            SecretId=TEST_SECRET_NAME_1
+        )
+
+        policy = json.loads(rs['ResourcePolicy'])
+
+        self.assertEqual(policy['Version'], RESOURCE_POLICY['Version'])
+        self.assertEqual(policy['Statement'], RESOURCE_POLICY['Statement'])
+
+        rs = self.secretsmanager_client.delete_resource_policy(
+            SecretId=TEST_SECRET_NAME_1
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        # clean up
+        self.secretsmanager_client.delete_secret(
+            SecretId=TEST_SECRET_NAME_1,
+            ForceDeleteWithoutRecovery=True
+        )
