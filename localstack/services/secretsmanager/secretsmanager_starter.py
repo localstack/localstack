@@ -47,7 +47,6 @@ def apply_patches():
         return secretsmanager_backends[self.region].get_resource_policy(
             secret_id=secret_id
         )
-
     setattr(SecretsManagerResponse, 'get_resource_policy', get_resource_policy_response)
 
     def delete_resource_policy_model(self, secret_id):
