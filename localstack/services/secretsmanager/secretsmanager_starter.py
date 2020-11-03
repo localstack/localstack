@@ -31,8 +31,12 @@ def apply_patches():
             result = {
                 'ARN': self.secrets[secret_id].arn,
                 'Name': self.secrets[secret_id].secret_id,
-                'ResourcePolicy': json.dumps(getattr(self.secrets[secret_id], 'policy', None))
             }
+
+            policy = getattr(self.secrets[secret_id], 'policy', None)
+            if policy:
+                result['ResourcePolicy'] = json.dumps(policy)
+
             return json.dumps(result)
         else:
             raise SecretNotFoundException()
@@ -43,6 +47,7 @@ def apply_patches():
         return secretsmanager_backends[self.region].get_resource_policy(
             secret_id=secret_id
         )
+
     setattr(SecretsManagerResponse, 'get_resource_policy', get_resource_policy_response)
 
     def delete_resource_policy_model(self, secret_id):
