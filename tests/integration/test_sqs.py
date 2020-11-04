@@ -269,6 +269,23 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_send_message_with_invalid_payload_characters(self):
+        queue_name = 'queue-%s' % short_uid()
+
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        # Some common control characters and some code points just outside of a permitted range
+        for invalid_char in ['\0', '\v', '\f', '\u0019', '\uFFFE', '\uFFFF']:
+            raw_payload = 'invalid character: ' + invalid_char
+            with self.assertRaisesRegex(Exception, 'invalid characters'):
+                self.client.send_message(QueueUrl=queue_url, MessageBody=raw_payload)
+
+        raw_payload = 'valid characters: \t\n\r\uD7FF\uE000\uFFFD\u10000\u10FFFF'
+        self.client.send_message(QueueUrl=queue_url, MessageBody=raw_payload)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_dead_letter_queue_config(self):
         queue_name = 'queue-%s' % short_uid()
         dlq_name = 'queue-%s' % short_uid()
