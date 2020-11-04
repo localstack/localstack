@@ -110,10 +110,6 @@ CORS_HEADERS = [
     'Access-Control-Request-Headers', 'Access-Control-Request-Method'
 ]
 
-CORS_PREFLIGHT_HEADERS = [
-    'Access-Control-Request-Headers', 'Access-Control-Request-Method', 'Origin'
-]
-
 
 def event_type_matches(events, action, api_method):
     """ check whether any of the event types in `events` matches the
