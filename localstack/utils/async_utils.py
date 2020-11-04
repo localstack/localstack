@@ -82,13 +82,25 @@ async def run_sync(func, *args, thread_pool=None):
     return await loop.run_in_executor(thread_pool, copy_context().run, func, *args)
 
 
+def run_coroutine(coroutine):
+    """ Run an async coroutine in a threadsafe way in the main event loop """
+    loop = get_main_event_loop()
+    future = asyncio.run_coroutine_threadsafe(coroutine, loop)
+    return future.result()
+
+
 def ensure_event_loop():
+    """ Ensure that an event loop is defined for the currently running thread """
     try:
         return asyncio.get_event_loop()
     except Exception:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         return loop
+
+
+def get_main_event_loop():
+    return get_named_event_loop('_main_')
 
 
 def get_named_event_loop(name):
