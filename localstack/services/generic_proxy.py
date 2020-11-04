@@ -49,6 +49,10 @@ CORS_EXPOSE_HEADERS = ('x-amz-version-id', )
 if EXTRA_CORS_EXPOSE_HEADERS:
     CORS_EXPOSE_HEADERS += tuple(EXTRA_CORS_EXPOSE_HEADERS.split(','))
 
+ALLOWED_CORS_RESPONSE_HEADERS = ['Access-Control-Allow-Origin', 'Access-Control-Allow-Methods',
+    'Access-Control-Allow-Headers', 'Access-Control-Max-Age', 'Access-Control-Allow-Credentials',
+    'Access-Control-Expose-Headers']
+
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle each request in a separate thread."""
@@ -296,6 +300,10 @@ def append_cors_headers(response=None):
     if 'Access-Control-Expose-Headers' not in headers:
         headers['Access-Control-Expose-Headers'] = ','.join(CORS_EXPOSE_HEADERS)
 
+    for header in ALLOWED_CORS_RESPONSE_HEADERS:
+        if headers.get(header) == '':
+            del headers[header]
+
 
 def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, forward_base_url=None,
         listeners=None, request_handler=None, client_address=None, server_address=None):
@@ -403,7 +411,10 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
             response = updated_response
 
     # allow pre-flight CORS headers by default
-    append_cors_headers(response)
+    from localstack.services.s3.s3_listener import ProxyListenerS3
+    is_s3_listener = any([isinstance(service_listener, ProxyListenerS3) for service_listener in listeners])
+    if not is_s3_listener:
+        append_cors_headers(response)
 
     return response
 
