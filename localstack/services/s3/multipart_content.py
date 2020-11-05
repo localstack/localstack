@@ -30,7 +30,7 @@ def _iter_multipart_parts(some_bytes, boundary):
         head_parsed = parse_data(part_head.lstrip(b'\r\n'))
 
         if 'Content-Disposition' in head_parsed:
-            _, params = cgi.parse_header(head_parsed['Content-Disposition'])
+            _, params = cgi.parse_header(str(head_parsed['Content-Disposition']))
             yield params, part
 
 
