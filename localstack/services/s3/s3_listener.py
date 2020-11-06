@@ -1365,9 +1365,7 @@ class ProxyListenerS3(PersistingProxyListener):
             # convert to chunked encoding, for compatibility with certain SDKs (e.g., AWS PHP SDK)
             convert_to_chunked_encoding(method, path, response)
 
-            if headers.get('Accept-Encoding') == 'gzip':
-                if response._content is None:
-                    response._content = ''
+            if headers.get('Accept-Encoding') == 'gzip' and response._content:
                 response._content = gzip.compress(to_bytes(response._content))
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Encoding'] = 'gzip'

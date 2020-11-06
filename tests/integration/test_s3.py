@@ -594,20 +594,28 @@ class S3ListenerTest(unittest.TestCase):
         client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
-        # put object
-        object_key = 'key-by-hostname'
-        client.put_object(Bucket=bucket_name,
-            Key=object_key,
-            Body='something',
-            ContentType='text/html; charset=utf-8')
-        url = client.generate_presigned_url(
-            'delete_object', Params={'Bucket': bucket_name, 'Key': object_key}
-        )
+        for encoding in None, 'gzip':
+            # put object
+            object_key = 'key-by-hostname'
+            client.put_object(Bucket=bucket_name,
+                Key=object_key,
+                Body='something',
+                ContentType='text/html; charset=utf-8')
+            url = client.generate_presigned_url(
+                'delete_object',
+                Params={'Bucket': bucket_name, 'Key': object_key}
+            )
 
-        # get object and assert headers
-        response = requests.delete(url, verify=False)
+            # get object and assert headers
+            headers = {}
+            if encoding:
+                headers['Accept-Encoding'] = encoding
+            response = requests.delete(url, headers=headers, verify=False)
 
-        self.assertEqual(response.headers['content-length'], '0')
+            self.assertEqual(response.headers['content-length'],
+                '0',
+                f'Unexpected response Content-Length for encoding {encoding}')
+
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
