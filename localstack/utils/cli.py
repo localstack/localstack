@@ -23,7 +23,8 @@ from docopt import docopt
 from localstack import config, constants
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import (
-    start_infra_in_docker, start_infra_locally, run, docker_container_running)
+    start_infra_in_docker, start_infra_locally, run, docker_container_running,
+    get_main_container_ip, get_main_container_name, get_docker_image_details, get_server_version)
 
 # Note: make sure we don't have other imports at the root level here
 
@@ -43,7 +44,6 @@ Options:
   --docker          Run the infrastructure in a Docker container (default)
   --host            Run the infrastructure on the local host
     """
-    print_version()
     if argv[0] == 'start':
         argv = ['infra', 'start'] + argv[1:]
         args['<command>'] = 'infra'
@@ -57,6 +57,7 @@ Options:
         if in_docker:
             start_infra_in_docker()
         else:
+            print_version()
             start_infra_locally()
 
 
@@ -102,6 +103,27 @@ Options:
         pass
 
 
+def cmd_status(argv, args):
+    """
+Usage:
+  localstack status
+    """
+    args.update(docopt(cmd_status.__doc__.strip(), argv=argv))
+    print_status()
+
+
+def print_status():
+    print('Base version:\t\t%s' % get_server_version())
+    img = get_docker_image_details()
+    print('Docker image:\t\tTag %s, ID %s, Created %s' % (img['tag'], img['id'], img['created']))
+    cont_name = config.MAIN_CONTAINER_NAME
+    running = docker_container_running(cont_name)
+    cont_status = 'stopped'
+    if running:
+        cont_status = 'running (name: "%s", IP: %s)' % (get_main_container_name(), get_main_container_ip())
+    print('Container status:\t%s' % cont_status)
+
+
 def print_version():
     print('LocalStack version: %s' % constants.VERSION)
 
@@ -124,6 +146,10 @@ def main():
     config.CLI_COMMANDS['ssh'] = {
         'description': 'Shorthand to obtain a shell in the running container',
         'function': cmd_ssh
+    }
+    config.CLI_COMMANDS['status'] = {
+        'description': 'Obtain status details about the installation',
+        'function': cmd_status
     }
 
     # load CLI plugins
