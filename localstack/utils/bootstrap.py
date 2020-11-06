@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import json
 import time
 import select
 import pkgutil
@@ -139,7 +140,8 @@ def load_plugins(scope=None):
         return PLUGINS_LOADED[scope]
 
     t1 = now_utc()
-    setup_logging()
+    log_level = logging.WARNING if scope == PLUGIN_SCOPE_COMMANDS else None
+    setup_logging(log_level=log_level)
 
     loaded_files = []
     result = []
@@ -185,6 +187,25 @@ def docker_container_running(container_name):
     return container_name in container_names
 
 
+def get_docker_image_details(image_name=None):
+    image_name = image_name or get_docker_image_to_start()
+    try:
+        result = run('%s inspect %s' % (config.DOCKER_CMD, image_name), print_error=False)
+        result = json.loads(to_str(result))
+        assert len(result)
+    except Exception:
+        return {}
+    if len(result) > 1:
+        LOG.warning('Found multiple images (%s) named "%s"' % (len(result), image_name))
+    result = result[0]
+    result = {
+        'id': result['Id'].replace('sha256:', '')[:12],
+        'tag': (result.get('RepoTags') or ['latest'])[0].split(':')[-1],
+        'created': result['Created'].split('.')[0]
+    }
+    return result
+
+
 def get_docker_container_names():
     cmd = "%s ps --format '{{.Names}}'" % config.DOCKER_CMD
     try:
@@ -205,15 +226,38 @@ def get_main_container_ip():
 
 def get_main_container_name():
     cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
-    return run(cmd).strip().lstrip('/')
+    try:
+        return run(cmd, print_error=False).strip().lstrip('/')
+    except Exception:
+        return config.MAIN_CONTAINER_NAME
 
 
-def setup_logging():
+def get_server_version():
+    docker_cmd = config.DOCKER_CMD
+    try:
+        # try to extract from existing running container
+        container_name = get_main_container_name()
+        version = run('%s exec -it %s bin/localstack --version' % (docker_cmd, container_name), print_error=False)
+        version = version.strip().split('\n')[-1]
+        return version
+    except Exception:
+        try:
+            # try to extract by starting a new container
+            img_name = get_docker_image_to_start()
+            version = run('%s run --entrypoint= -it %s bin/localstack --version' % (docker_cmd, img_name))
+            version = version.strip().split('\n')[-1]
+            return version
+        except Exception:
+            # fall back to default constant
+            return constants.VERSION
+
+
+def setup_logging(log_level=None):
     # determine and set log level
     if PLUGINS_LOADED.get('_logging_'):
         return
     PLUGINS_LOADED['_logging_'] = True
-    log_level = logging.DEBUG if is_debug() else logging.INFO
+    log_level = log_level or (logging.DEBUG if is_debug() else logging.INFO)
     logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
 
     # set up werkzeug logger

@@ -118,3 +118,6 @@ RUN rm -rf localstack/infra/elasticsearch/jdk/
 RUN rm -rf /root/.npm; \
   apk del --purge autoconf automake boost-dev build-base g++ gcc giflib krb5-conf krb5-libs libc-dev \
   libffi-dev libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev
+
+# final fixes
+RUN which python || ln -s /usr/bin/python3 /usr/bin/python
