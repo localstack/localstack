@@ -417,7 +417,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
 def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
     _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path)
     relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
-    source_ip = headers['X-Forwarded-For'].split(',')[-2].strip()
+    source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
     integration_uri = integration_uri or ''
     account_id = integration_uri.split(':lambda:path')[-1].split(':function:')[0].split(':')[-1]
     request_context = {
