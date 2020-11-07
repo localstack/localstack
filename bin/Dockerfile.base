@@ -23,12 +23,19 @@ RUN { \
         echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk
-ENV PATH "${PATH}:${JAVA_HOME}/bin"
 RUN set -x \
   # Install JDK 11.0.8 due to JDK-8165852.
-  && apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community openjdk11 \
-  && [ "$JAVA_HOME" = "$(docker-java-home)" ]
+  && apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community openjdk11
+
+# create a custom, minimized JRE via jlink
+RUN /usr/lib/jvm/java-11-openjdk/bin/jlink --add-modules \
+    java.base,java.naming,java.management,java.xml,java.security.jgss,java.instrument,java.desktop,jdk.compiler,java.scripting \
+    --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
+  cp /usr/lib/jvm/java-11-openjdk/bin/javac /usr/lib/jvm/java-11/bin/javac && \
+  cp -r /usr/lib/jvm/java-11-openjdk/include /usr/lib/jvm/java-11/include && \
+  rm -rf /usr/bin/java /usr/lib/jvm/java-11-openjdk && ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
+ENV JAVA_HOME /usr/lib/jvm/java-11
+ENV PATH "${PATH}:${JAVA_HOME}/bin"
 
 # Install Maven - taken from official repo:
 # https://github.com/carlossg/docker-maven/blob/master/openjdk-11/Dockerfile)
