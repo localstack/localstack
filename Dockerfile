@@ -78,7 +78,7 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     ln -s `pwd` /tmp/localstack_install_dir
 
 # set library path
-ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11-openjdk/lib/server
+ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/

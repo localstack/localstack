@@ -29,10 +29,18 @@ RUN set -x \
 
 # create a custom, minimized JRE via jlink
 RUN /usr/lib/jvm/java-11-openjdk/bin/jlink --add-modules \
-    java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.security.jgss,java.sql,java.xml,jdk.compiler \
+# include required modules
+java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
+# jdk.unsupported contains sun.misc.Unsafe which is required by certain dependencies
+jdk.unsupported,\
+# Elasticsearch 7+ crashes without Thai Segmentation support
+jdk.localedata --include-locales en,th \
     --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
   cp /usr/lib/jvm/java-11-openjdk/bin/javac /usr/lib/jvm/java-11/bin/javac && \
   cp -r /usr/lib/jvm/java-11-openjdk/include /usr/lib/jvm/java-11/include && \
+  mv /usr/lib/jvm/java-11/lib/modules /usr/lib/jvm/java-11/lib/modules.bk; \
+  cp -r /usr/lib/jvm/java-11-openjdk/lib/* /usr/lib/jvm/java-11/lib/; \
+  mv /usr/lib/jvm/java-11/lib/modules.bk /usr/lib/jvm/java-11/lib/modules; \
   rm -rf /usr/bin/java /usr/lib/jvm/java-11-openjdk && ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
 ENV JAVA_HOME /usr/lib/jvm/java-11
 ENV PATH "${PATH}:${JAVA_HOME}/bin"
