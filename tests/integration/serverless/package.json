@@ -7,6 +7,6 @@
   },
   "devDependencies": {
     "serverless": "^1.67.1",
-    "serverless-localstack": "^0.4.24"
+    "serverless-localstack": "^0.4.28"
   }
 }

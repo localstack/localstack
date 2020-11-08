@@ -549,10 +549,10 @@ def dynamodb_get_item_raw(request):
     return new_item
 
 
-def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None):
-    """Utility method to create a DynamoDB table"""
+def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None, region_name=None):
+    """ Utility method to create a DynamoDB table """
 
-    dynamodb = connect_to_service('dynamodb', env=env, client=True)
+    dynamodb = connect_to_service('dynamodb', env=env, client=True, region_name=region_name)
     stream_spec = {'StreamEnabled': False}
     key_schema = [{
         'AttributeName': partition_key,
@@ -578,7 +578,7 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
     except Exception as e:
         if 'ResourceInUseException' in str(e):
             # Table already exists -> return table reference
-            return connect_to_resource('dynamodb', env=env).Table(table_name)
+            return connect_to_resource('dynamodb', env=env, region_name=region_name).Table(table_name)
     time.sleep(2)
     return table
 
