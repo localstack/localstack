@@ -31,7 +31,6 @@ class TestSTSIntegrations(unittest.TestCase):
             assume_role_id_parts = response['AssumedRoleUser']['AssumedRoleId'].split(':')
             self.assertEqual(assume_role_id_parts[1], test_role_session_name)
 
-
     def test_get_federation_token(self):
         token_name = 'TestName'
         response = self.sts_client.get_federation_token(Name=token_name)
