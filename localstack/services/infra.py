@@ -363,7 +363,14 @@ def start_infra(asynchronous=False, apis=None):
         load_plugins()
 
         # with plugins loaded, now start the infrastructure
-        do_start_infra(asynchronous, apis, is_in_docker)
+        thread = do_start_infra(asynchronous, apis, is_in_docker)
+
+        if not asynchronous and thread:
+            # this is a bit of an ugly hack, but we need to make sure that we
+            # stay in the execution context of the main thread, otherwise our
+            # signal handlers don't work
+            sleep_forever()
+        return thread
 
     except KeyboardInterrupt:
         print('Shutdown')
@@ -429,9 +436,4 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     print('Ready.')
     sys.stdout.flush()
 
-    if not asynchronous and thread:
-        # this is a bit of an ugly hack, but we need to make sure that we
-        # stay in the execution context of the main thread, otherwise our
-        # signal handlers don't work
-        sleep_forever()
     return thread
