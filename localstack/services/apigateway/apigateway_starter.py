@@ -14,15 +14,16 @@ LOG = logging.getLogger(__name__)
 
 def apply_patches():
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
-    
+
     def apigateway_models_Stage_init(
-        self, name=None, deployment_id=None, variables=None, description="",
+        self, name=None, deployment_id=None, variables=None, description='',
         cacheClusterEnabled=False, cacheClusterSize=None
-        ):
-        apigateway_models_Stage_init_orig(self, name=None, deployment_id=None, variables=None, description="",
-        cacheClusterEnabled=False, cacheClusterSize=None)
+    ):
+        apigateway_models_Stage_init_orig(self, name=None, deployment_id=None, variables=None, description='',
+            cacheClusterEnabled=False, cacheClusterSize=None)
+
         if cacheClusterSize or cacheClusterEnabled:
-            self['cacheClusterStatus'] = "AVAILABLE"
+            self['cacheClusterStatus'] = 'AVAILABLE'
 
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
 

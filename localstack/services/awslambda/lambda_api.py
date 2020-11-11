@@ -169,10 +169,12 @@ def cleanup():
 def func_arn(function_name):
     return aws_stack.lambda_function_arn(function_name)
 
+
 def func_qualifier(function_name, qualifier=None):
     arn = aws_stack.lambda_function_arn(function_name)
     if ARN_TO_LAMBDA.get(arn).qualifier_exists(qualifier):
         return '{}:{}'.format(arn, qualifier)
+
 
 def check_batch_size_range(source_arn, batch_size=None):
     batch_size_entry = BATCH_SIZE_RANGES.get(source_arn.split(':')[2].lower())
@@ -1199,6 +1201,7 @@ def add_permission(function):
     qualifier = request.args.get('Qualifier')
     arn = func_arn(function)
     previous_policy = get_lambda_policy(function)
+
     if arn not in ARN_TO_LAMBDA:
         return not_found_error(func_arn(function))
 
@@ -1210,17 +1213,21 @@ def add_permission(function):
 
     q_arn = func_qualifier(function, qualifier)
     new_policy = generate_policy(sid, action, q_arn, sourcearn, principal)
+
     if previous_policy:
         statment_with_sid = next((statement for statement in previous_policy['Statement'] if statement['Sid'] == sid),
             None)
         if statment_with_sid:
             return error_response('The statement id (%s) provided already exists. Please provide a new statement id,'
                         ' or remove the existing statement.' % sid, 400, error_type='ResourceConflictException')
+
         new_policy['Statement'].extend(previous_policy['Statement'])
         iam_client.delete_policy(PolicyArn=previous_policy['PolicyArn'])
+
     iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % function,
                             PolicyDocument=json.dumps(new_policy),
                             Description='Policy for Lambda function "%s"' % function)
+
     result = {'Statement': json.dumps(new_policy['Statement'][0])}
     return jsonify(result)
 
