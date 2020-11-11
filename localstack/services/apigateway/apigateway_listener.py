@@ -430,7 +430,7 @@ def get_lambda_event_request_context(method, path, data, headers, integration_ur
         'identity': {
             'accountId': account_id,
             'sourceIp': source_ip,
-            'userAgent': headers['User-Agent'],
+            'userAgent': headers.get('User-Agent'),
         },
         'httpMethod': method,
         'protocol': 'HTTP/1.1',
