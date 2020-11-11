@@ -174,6 +174,7 @@ def func_qualifier(function_name, qualifier=None):
     arn = aws_stack.lambda_function_arn(function_name)
     if ARN_TO_LAMBDA.get(arn).qualifier_exists(qualifier):
         return '{}:{}'.format(arn, qualifier)
+    return arn
 
 
 def check_batch_size_range(source_arn, batch_size=None):

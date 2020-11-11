@@ -22,7 +22,7 @@ def apply_patches():
         apigateway_models_Stage_init_orig(self, name=None, deployment_id=None, variables=None, description='',
             cacheClusterEnabled=False, cacheClusterSize=None)
 
-        if cacheClusterSize or cacheClusterEnabled:
+        if (cacheClusterSize or cacheClusterEnabled) and not self.get('cacheClusterStatus'):
             self['cacheClusterStatus'] = 'AVAILABLE'
 
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
