@@ -1,8 +1,11 @@
 import unittest
-from localstack.services.s3 import s3_listener, multipart_content
+from moto.s3 import models as s3_models
+from localstack.services.s3 import s3_listener, s3_starter, multipart_content
 from requests.models import CaseInsensitiveDict, Response
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+
+s3_starter.apply_patches()
 
 
 class S3ListenerTest (unittest.TestCase):
@@ -247,3 +250,48 @@ class S3ListenerTest (unittest.TestCase):
         ]
         for example_header, expected_result in headers:
             assert expected_result == s3_listener.uses_path_addressing(example_header)
+
+
+class S3BackendTest (unittest.TestCase):
+
+    def test_no_key_instances_after_removed(self):
+        s3_backend = s3_models.S3Backend()
+
+        bucket_name = 'test'
+        region = 'us-east-1'
+
+        file1_name = 'file.txt'
+        file_value = b'content'
+        s3_backend.create_bucket(bucket_name, region)
+        s3_backend.set_object(bucket_name, file1_name, file_value)
+        s3_backend.delete_object(bucket_name, file1_name)
+
+        s3_backend.set_object(bucket_name, file1_name, file_value)
+        self.assertEqual(len(s3_backend.get_object(bucket_name, file1_name).instances), 0)
+
+    def test_key_instances_before_removing(self):
+        s3_backend = s3_models.S3Backend()
+
+        bucket_name = 'test'
+        region = 'us-east-1'
+
+        file1_name = 'file.txt'
+        file2_name = 'file2.txt'
+        file_value = b'content'
+
+        s3_backend.create_bucket(bucket_name, region)
+        s3_backend.set_object(bucket_name, file1_name, file_value)
+        s3_backend.set_object(bucket_name, file2_name, file_value)
+
+        self.assertEqual(len(s3_backend.get_object(bucket_name, file2_name).instances), 0)
+
+    def test_no_bucket_instances_after_removed(self):
+        s3_backend = s3_models.S3Backend()
+
+        bucket_name = 'test'
+        region = 'us-east-1'
+
+        s3_backend.create_bucket(bucket_name, region)
+        s3_backend.delete_bucket(bucket_name)
+        s3_backend.create_bucket(bucket_name, region)
+        self.assertEqual(len(s3_backend.get_bucket(bucket_name).instances), 0)
