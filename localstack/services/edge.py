@@ -155,7 +155,7 @@ def get_api_from_headers(headers, path=None):
         result = 'stepfunctions', config.PORT_STEPFUNCTIONS
     elif result[0] == 'monitoring':
         result = 'cloudwatch', config.PORT_CLOUDWATCH
-    elif '.execute-api.' in host:
+    elif result[0] == 'execute-api' or '.execute-api.' in host:
         result = 'apigateway', config.PORT_APIGATEWAY
     elif target.startswith('Firehose_'):
         result = 'firehose', config.PORT_FIREHOSE

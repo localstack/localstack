@@ -329,8 +329,8 @@ def check_aws_credentials():
         pass
     if not credentials:
         # set temporary dummy credentials
-        os.environ['AWS_ACCESS_KEY_ID'] = 'LocalStackDummyAccessKey'
-        os.environ['AWS_SECRET_ACCESS_KEY'] = 'LocalStackDummySecretKey'
+        os.environ['AWS_ACCESS_KEY_ID'] = constants.TEST_AWS_ACCESS_KEY_ID
+        os.environ['AWS_SECRET_ACCESS_KEY'] = constants.TEST_AWS_SECRET_ACCESS_KEY
     session = boto3.Session()
     credentials = session.get_credentials()
     assert credentials
@@ -363,7 +363,14 @@ def start_infra(asynchronous=False, apis=None):
         load_plugins()
 
         # with plugins loaded, now start the infrastructure
-        do_start_infra(asynchronous, apis, is_in_docker)
+        thread = do_start_infra(asynchronous, apis, is_in_docker)
+
+        if not asynchronous and thread:
+            # this is a bit of an ugly hack, but we need to make sure that we
+            # stay in the execution context of the main thread, otherwise our
+            # signal handlers don't work
+            sleep_forever()
+        return thread
 
     except KeyboardInterrupt:
         print('Shutdown')
@@ -429,9 +436,4 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     print('Ready.')
     sys.stdout.flush()
 
-    if not asynchronous and thread:
-        # this is a bit of an ugly hack, but we need to make sure that we
-        # stay in the execution context of the main thread, otherwise our
-        # signal handlers don't work
-        sleep_forever()
     return thread

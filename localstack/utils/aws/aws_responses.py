@@ -32,8 +32,8 @@ def flask_error_response_json(msg, code=500, error_type='InternalFailure'):
     return Response(json.dumps(result), status=code, headers=headers)
 
 
-def requests_error_response_json(msg, code=500, error_type='InternalFailure'):
-    response = flask_error_response_json(msg, code=code, error_type=error_type)
+def requests_error_response_json(message, code=500, error_type='InternalFailure'):
+    response = flask_error_response_json(message, code=code, error_type=error_type)
     return flask_to_requests_response(response)
 
 
@@ -104,7 +104,7 @@ def requests_error_response(req_headers, message, code=500, error_type='Internal
     accept = req_headers.get('Accept', '')
     is_json = 'json' in ctype or 'json' in accept
     if is_json:
-        return requests_error_response_json(msg=message, code=code, error_type=error_type)
+        return requests_error_response_json(message=message, code=code, error_type=error_type)
     return requests_error_response_xml(message, code=code, code_string=error_type, service=service, xmlns=xmlns)
 
 

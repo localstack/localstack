@@ -170,6 +170,13 @@ def func_arn(function_name):
     return aws_stack.lambda_function_arn(function_name)
 
 
+def func_qualifier(function_name, qualifier=None):
+    arn = aws_stack.lambda_function_arn(function_name)
+    if ARN_TO_LAMBDA.get(arn).qualifier_exists(qualifier):
+        return '{}:{}'.format(arn, qualifier)
+    return arn
+
+
 def check_batch_size_range(source_arn, batch_size=None):
     batch_size_entry = BATCH_SIZE_RANGES.get(source_arn.split(':')[2].lower())
     if not batch_size_entry:
@@ -890,7 +897,7 @@ def forward_to_fallback_url(func_arn, data):
     raise ClientError('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
 
 
-def get_lambda_policy(function):
+def get_lambda_policy(function, qualifier=None):
     iam_client = aws_stack.connect_to_service('iam')
     policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
     docs = []
@@ -908,7 +915,7 @@ def get_lambda_policy(function):
         doc['PolicyArn'] = p['Arn']
         doc['Id'] = 'default'
         docs.append(doc)
-    policy = [d for d in docs if d['Statement'][0]['Resource'] == func_arn(function)]
+    policy = [d for d in docs if d['Statement'][0]['Resource'] == func_qualifier(function, qualifier)]
     return (policy or [None])[0]
 
 
@@ -1192,6 +1199,7 @@ def add_permission(function):
     action = data.get('Action')
     principal = data.get('Principal')
     sourcearn = data.get('SourceArn')
+    qualifier = request.args.get('Qualifier')
     arn = func_arn(function)
     previous_policy = get_lambda_policy(function)
 
@@ -1204,13 +1212,16 @@ def add_permission(function):
                               '(lambda:[*]|lambda:[a-zA-Z]+|[*])' % action,
                               400, error_type='ValidationException')
 
-    new_policy = generate_policy(sid, action, arn, sourcearn, principal)
+    q_arn = func_qualifier(function, qualifier)
+    new_policy = generate_policy(sid, action, q_arn, sourcearn, principal)
+
     if previous_policy:
         statment_with_sid = next((statement for statement in previous_policy['Statement'] if statement['Sid'] == sid),
             None)
         if statment_with_sid:
             return error_response('The statement id (%s) provided already exists. Please provide a new statement id,'
                         ' or remove the existing statement.' % sid, 400, error_type='ResourceConflictException')
+
         new_policy['Statement'].extend(previous_policy['Statement'])
         iam_client.delete_policy(PolicyArn=previous_policy['PolicyArn'])
 
@@ -1241,7 +1252,8 @@ def remove_permission(function, statement):
 
 @app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['GET'])
 def get_policy(function):
-    policy = get_lambda_policy(function)
+    qualifier = request.args.get('Qualifier')
+    policy = get_lambda_policy(function, qualifier)
     if not policy:
         return error_response('The resource you requested does not exist.',
             404, error_type='ResourceNotFoundException')

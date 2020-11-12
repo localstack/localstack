@@ -21,7 +21,7 @@ XMLNS_SQS = 'http://queue.amazonaws.com/doc/%s/' % API_VERSION
 
 # Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
-MSG_CONTENT_REGEX = '^[\u0009\u000A\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$'
+MSG_CONTENT_REGEX = '^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$'
 
 UNSUPPORTED_ATTRIBUTE_NAMES = [
     # elasticmq store 'FifoQueue', 'ContentBasedDeduplication' as queue's properties

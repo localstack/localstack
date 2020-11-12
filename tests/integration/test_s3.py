@@ -594,20 +594,28 @@ class S3ListenerTest(unittest.TestCase):
         client = self._get_test_client()
         client.create_bucket(Bucket=bucket_name)
 
-        # put object
-        object_key = 'key-by-hostname'
-        client.put_object(Bucket=bucket_name,
-            Key=object_key,
-            Body='something',
-            ContentType='text/html; charset=utf-8')
-        url = client.generate_presigned_url(
-            'delete_object', Params={'Bucket': bucket_name, 'Key': object_key}
-        )
+        for encoding in None, 'gzip':
+            # put object
+            object_key = 'key-by-hostname'
+            client.put_object(Bucket=bucket_name,
+                Key=object_key,
+                Body='something',
+                ContentType='text/html; charset=utf-8')
+            url = client.generate_presigned_url(
+                'delete_object',
+                Params={'Bucket': bucket_name, 'Key': object_key}
+            )
 
-        # get object and assert headers
-        response = requests.delete(url, verify=False)
+            # get object and assert headers
+            headers = {}
+            if encoding:
+                headers['Accept-Encoding'] = encoding
+            response = requests.delete(url, headers=headers, verify=False)
 
-        self.assertEqual(response.headers['content-length'], '0')
+            self.assertEqual(response.headers['content-length'],
+                '0',
+                f'Unexpected response Content-Length for encoding {encoding}')
+
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -1387,6 +1395,61 @@ class S3ListenerTest(unittest.TestCase):
 
         client.delete_object(Bucket=bucket, Key='foo')
         client.delete_bucket(Bucket=bucket)
+
+    def test_cors_configurtaions(self):
+        client = self._get_test_client()
+        bucket = 'test-cors'
+        object_key = 'index.html'
+        url = '{}/{}/{}'.format(config.get_edge_url(), bucket, object_key)
+
+        BUCKET_CORS_CONFIG = {
+            'CORSRules': [{
+                'AllowedOrigins': [config.get_edge_url()],
+                'AllowedMethods': ['GET', 'PUT'],
+                'MaxAgeSeconds': 3000,
+                'AllowedHeaders': ['x-amz-tagging'],
+            }]
+        }
+
+        client.create_bucket(Bucket=bucket)
+        client.put_bucket_cors(Bucket=bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
+
+        client.put_object(Bucket=bucket, Key=object_key, Body='<h1>Index</html>')
+
+        response = requests.get(url,
+                              headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Access-Control-Allow-Origin'.lower(), response.headers)
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'], config.get_edge_url())
+        self.assertIn('Access-Control-Allow-Methods'.lower(), response.headers)
+        self.assertIn('GET', response.headers['Access-Control-Allow-Methods'])
+        self.assertIn('Access-Control-Allow-Headers', response.headers)
+        self.assertEqual(response.headers['Access-Control-Allow-Headers'], 'x-amz-tagging')
+        self.assertIn('Access-Control-Max-Age'.lower(), response.headers)
+        self.assertEqual(response.headers['Access-Control-Max-Age'], '3000')
+
+        BUCKET_CORS_CONFIG = {
+            'CORSRules': [{
+                'AllowedOrigins': ['https://anydomain.com'],
+                'AllowedMethods': ['GET', 'PUT'],
+                'MaxAgeSeconds': 3000,
+                'AllowedHeaders': ['x-amz-tagging'],
+            }]
+        }
+
+        client.put_bucket_cors(Bucket=bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
+        response = requests.get(url,
+                              headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('Access-Control-Allow-Origin'.lower(), response.headers)
+        self.assertNotIn('Access-Control-Allow-Methods'.lower(), response.headers)
+        self.assertNotIn('Access-Control-Allow-Headers', response.headers)
+        self.assertNotIn('Access-Control-MaxAge', response.headers)
+
+        # cleaning
+        client.delete_object(Bucket=bucket, Key=object_key)
+        client.delete_bucket(Bucket=bucket)
+
     # ---------------
     # HELPER METHODS
     # ---------------

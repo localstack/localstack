@@ -79,14 +79,9 @@ class ProxyListenerDynamoDB(ProxyListener):
             return False
 
     def forward_request(self, method, path, data, headers):
-        if path.startswith('/shell') or method == 'GET':
-            if path == '/shell':
-                headers = {'Refresh': '0; url=%s/shell/' % config.TEST_DYNAMODB_URL}
-                return aws_responses.requests_response('', headers=headers)
-            return True
-
-        if method == 'OPTIONS':
-            return 200
+        result = handle_special_request(method, path, data, headers)
+        if result is not None:
+            return result
 
         if not data:
             data = '{}'
@@ -491,6 +486,17 @@ class ProxyListenerDynamoDB(ProxyListener):
             return getattr(ProxyListenerDynamoDB.thread_local, name)
         except AttributeError:
             return default
+
+
+def handle_special_request(method, path, data, headers):
+    if path.startswith('/shell') or method == 'GET':
+        if path == '/shell':
+            headers = {'Refresh': '0; url=%s/shell/' % config.TEST_DYNAMODB_URL}
+            return aws_responses.requests_response('', headers=headers)
+        return True
+
+    if method == 'OPTIONS':
+        return 200
 
 
 def create_global_table(data):
