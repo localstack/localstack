@@ -98,7 +98,7 @@ POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 IGNORED_HEADERS_LOWER = [
     'remote-addr', 'host', 'user-agent', 'accept-encoding',
     'accept', 'connection', 'origin',
-    'x-forwarded-for', 'x-localstack-edge', 'authorization'
+    'x-forwarded-for', 'x-localstack-edge', 'authorization', 'date'
 ]
 
 # params are required in presigned url
@@ -326,6 +326,17 @@ def convert_origins_into_list(allowed_origins):
     return [allowed_origins]
 
 
+def get_origin_host(headers):
+    origin = headers.get('Origin') or get_forwarded_for_host(headers)
+    return origin
+
+
+def get_forwarded_for_host(headers):
+    x_forwarded_header = re.split(r',\s?', headers.get('X-Forwarded-For', ''))
+    host = x_forwarded_header[len(x_forwarded_header) - 1]
+    return host
+
+
 def append_cors_headers(bucket_name, request_method, request_headers, response):
     bucket_name = normalize_bucket_name(bucket_name)
 
@@ -340,11 +351,7 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
             del response.headers[header]
 
     # Fetching origin of the request
-    origin = request_headers.get('Origin')
-
-    if not origin:
-        x_forwarded_header = re.split(r',\s?', request_headers.get('X-Forwarded-For'))
-        origin = x_forwarded_header[len(x_forwarded_header) - 1]
+    origin = get_origin_host(request_headers)
 
     rules = cors['CORSConfiguration']['CORSRule']
     if not isinstance(rules, list):
@@ -1392,9 +1399,9 @@ def authenticate_presign_url(method, path, headers, data=None):
         if key.lower() not in IGNORED_HEADERS_LOWER:
             sign_headers.append(header)
 
-    # Request's headers are more essentials than the query parameters in the requets.
-    # Different values of header in the header of the request and in the query paramter of the requets url
-    # will fail the signature calulation. As per the AWS behaviour
+    # Request's headers are more essentials than the query parameters in the request.
+    # Different values of header in the header of the request and in the query parameter of the
+    # request URL will fail the signature calulation. As per the AWS behaviour
     presign_params_lower = [p.lower() for p in PRESIGN_QUERY_PARAMS]
     if len(query_params) > 2:
         for key in query_params:
@@ -1403,13 +1410,17 @@ def authenticate_presign_url(method, path, headers, data=None):
                     sign_headers.append((key, query_params[key][0]))
 
     # Preparnig dictionary of request to build AWSRequest's object of the botocore
+    request_url = url.split('?')[0]
+    forwarded_for = get_forwarded_for_host(headers)
+    if forwarded_for:
+        request_url = re.sub('://[^/]+', '://%s' % forwarded_for, request_url)
     request_dict = {
         'url_path': path.split('?')[0],
         'query_string': {},
         'method': method,
         'headers': dict(sign_headers),
         'body': b'',
-        'url': url.split('?')[0],
+        'url': request_url,
         'context': {
             'is_presign_request': True,
             'use_global_endpoint': True,
@@ -1428,7 +1439,8 @@ def authenticate_presign_url(method, path, headers, data=None):
     signature = auth.get_signature(string_to_sign=string_to_sign)
 
     # Comparing the signature in url with signature we calculated
-    if query_params['Signature'][0] != signature:
+    query_sig = urlparse.unquote(query_params['Signature'][0])
+    if query_sig != signature:
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',
