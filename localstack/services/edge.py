@@ -140,7 +140,6 @@ def get_api_from_headers(headers, path=None):
     result_before = result
 
     # Fallback rules and route customizations applied below
-
     if host.endswith('cloudfront.net'):
         path = path or '/'
         result = 'cloudfront', config.PORT_CLOUDFRONT
