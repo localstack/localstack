@@ -56,9 +56,9 @@ class ProxyListenerSSM(PersistingProxyListener):
 
                     if len(details) > 4:
                         service = details[3]
-                        resource_name = details[4]
 
                         if service == 'secretsmanager':
+                            resource_name = '/'.join(details[4:])
                             return get_secrets_information(name, resource_name)
 
             data = json.dumps(data)
