@@ -21,6 +21,9 @@ S3_MAX_FILE_SIZE_MB = 2048
 # temporary state
 TMP_STATE = {}
 
+# Key for tracking patch applience
+PATCHES_APPLIED = 'S3_PATCHED'
+
 
 def check_s3(expect_shutdown=False, print_error=False):
     out = None
@@ -56,6 +59,11 @@ def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=No
 
 
 def apply_patches():
+    if TMP_STATE.get(PATCHES_APPLIED, False):
+        return
+
+    TMP_STATE[PATCHES_APPLIED] = True
+
     s3_models.DEFAULT_KEY_BUFFER_SIZE = S3_MAX_FILE_SIZE_MB * 1024 * 1024
 
     def init(self, name, value, storage='STANDARD', etag=None,
