@@ -60,8 +60,10 @@ def apply_patches():
 
     def init(self, name, value, storage='STANDARD', etag=None,
             is_versioned=False, version_id=0, max_buffer_size=None, *args, **kwargs):
-        if self.instances:
-            self.instances.remove(self)
+        try:
+            (self.instances or []).remove(self)
+        except Exception:
+            pass
         return original_init(self, name, value, storage=storage, etag=etag, is_versioned=is_versioned,
             version_id=version_id, max_buffer_size=s3_models.DEFAULT_KEY_BUFFER_SIZE, *args, **kwargs)
 
@@ -69,8 +71,10 @@ def apply_patches():
     s3_models.FakeKey.__init__ = init
 
     def bucket_init(self, name, region_name, *args, **kwargs):
-        if self.instances:
-            self.instances.remove(self)
+        try:
+            (self.instances or []).remove(self)
+        except Exception:
+            pass
         return original_bucket_init(self, name, region_name, *args, **kwargs)
 
     original_bucket_init = s3_models.FakeBucket.__init__
