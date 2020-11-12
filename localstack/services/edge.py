@@ -140,7 +140,6 @@ def get_api_from_headers(headers, path=None):
     result_before = result
 
     # Fallback rules and route customizations applied below
-
     if host.endswith('cloudfront.net'):
         path = path or '/'
         result = 'cloudfront', config.PORT_CLOUDFRONT
@@ -222,6 +221,8 @@ def get_api_from_custom_rules(method, path, data, headers):
     if path.startswith('/2015-03-31/functions/'):
         return 'lambda', config.PORT_LAMBDA
 
+    if b'Action=AssumeRoleWithWebIdentity' in data_bytes or 'Action=AssumeRoleWithWebIdentity' in path:
+        return 'sts', config.PORT_STS
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip('/')
     if method in ['GET', 'HEAD'] and '/' in stripped:
