@@ -256,21 +256,6 @@ class S3BackendTest (unittest.TestCase):
     def setUpClass(cls):
         s3_starter.apply_patches()
 
-    def test_no_key_instances_after_removed(self):
-        s3_backend = s3_models.S3Backend()
-
-        bucket_name = 'test'
-        region = 'us-east-1'
-
-        file1_name = 'file.txt'
-        file_value = b'content'
-        s3_backend.create_bucket(bucket_name, region)
-        s3_backend.set_object(bucket_name, file1_name, file_value)
-        s3_backend.delete_object(bucket_name, file1_name)
-
-        s3_backend.set_object(bucket_name, file1_name, file_value)
-        self.assertEqual(len(s3_backend.get_object(bucket_name, file1_name).instances), 0)
-
     def test_key_instances_before_removing(self):
         s3_backend = s3_models.S3Backend()
 
@@ -283,23 +268,21 @@ class S3BackendTest (unittest.TestCase):
 
         s3_backend.create_bucket(bucket_name, region)
         s3_backend.set_object(bucket_name, file1_name, file_value)
-        first_instances = len(s3_backend.get_object(bucket_name, file1_name).instances)
         s3_backend.set_object(bucket_name, file2_name, file_value)
-        second_instances = len(s3_backend.get_object(bucket_name, file2_name).instances)
 
-        self.assertGreaterEqual(second_instances, first_instances)
+        key = s3_backend.get_object(bucket_name, file2_name)
 
-    def test_no_bucket_instances_after_removed(self):
+        self.assertEqual(key in (key.instances or []), False)
+
+    def test_no_bucket_in_instances_(self):
         s3_backend = s3_models.S3Backend()
 
         bucket_name = 'test'
         region = 'us-east-1'
 
         s3_backend.create_bucket(bucket_name, region)
-        bucket_instances = len(s3_backend.get_bucket(bucket_name).instances)
 
         s3_backend.delete_bucket(bucket_name)
-        s3_backend.create_bucket(bucket_name, region)
+        bucket = s3_backend.create_bucket(bucket_name, region)
 
-        bucket_instances2 = len(s3_backend.get_bucket(bucket_name).instances)
-        self.assertGreaterEqual(bucket_instances2, bucket_instances)
+        self.assertGreaterEqual(bucket in (bucket.instances or []), False)
