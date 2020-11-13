@@ -285,7 +285,7 @@ class S3BackendTest (unittest.TestCase):
         s3_backend.set_object(bucket_name, file1_name, file_value)
         s3_backend.set_object(bucket_name, file2_name, file_value)
 
-        self.assertEqual(len(s3_backend.get_object(bucket_name, file2_name).instances), 0)
+        self.assertEqual(len(s3_backend.get_object(bucket_name, file2_name).instances), 1)
 
     def test_no_bucket_instances_after_removed(self):
         s3_backend = s3_models.S3Backend()
@@ -296,4 +296,4 @@ class S3BackendTest (unittest.TestCase):
         s3_backend.create_bucket(bucket_name, region)
         s3_backend.delete_bucket(bucket_name)
         s3_backend.create_bucket(bucket_name, region)
-        self.assertEqual(len(s3_backend.get_bucket(bucket_name).instances), 0)
+        self.assertEqual(len(s3_backend.get_bucket(bucket_name).instances), 1)
