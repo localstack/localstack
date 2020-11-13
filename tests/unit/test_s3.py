@@ -283,9 +283,11 @@ class S3BackendTest (unittest.TestCase):
 
         s3_backend.create_bucket(bucket_name, region)
         s3_backend.set_object(bucket_name, file1_name, file_value)
+        first_instances = len(s3_backend.get_object(bucket_name, file1_name).instances)
         s3_backend.set_object(bucket_name, file2_name, file_value)
+        second_instances = len(s3_backend.get_object(bucket_name, file2_name).instances)
 
-        self.assertEqual(len(s3_backend.get_object(bucket_name, file2_name).instances), 1)
+        self.assertGreaterEqual(second_instances, first_instances)
 
     def test_no_bucket_instances_after_removed(self):
         s3_backend = s3_models.S3Backend()
@@ -294,6 +296,10 @@ class S3BackendTest (unittest.TestCase):
         region = 'us-east-1'
 
         s3_backend.create_bucket(bucket_name, region)
+        bucket_instances = len(s3_backend.get_bucket(bucket_name).instances)
+
         s3_backend.delete_bucket(bucket_name)
         s3_backend.create_bucket(bucket_name, region)
-        self.assertEqual(len(s3_backend.get_bucket(bucket_name).instances), 1)
+
+        bucket_instances2 = len(s3_backend.get_bucket(bucket_name).instances)
+        self.assertGreaterEqual(bucket_instances2, bucket_instances)
