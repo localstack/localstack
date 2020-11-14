@@ -421,7 +421,6 @@ def apply_patches():
                 all_satisfied = template_deployer.all_resource_dependencies_satisfied(
                     logical_id, resource_map_new, stack_name
                 )
-                # TODO enable?
                 if not all_satisfied:
                     register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
                 else:
