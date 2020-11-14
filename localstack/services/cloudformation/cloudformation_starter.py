@@ -71,6 +71,11 @@ MODEL_MAP = {
 }
 
 
+class DependencyNotYetSatisfied(Exception):
+    """ Exception indicating that a resource dependency is not (yet) deployed/available. """
+    pass
+
+
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
     port = port or config.PORT_CLOUDFORMATION
     print('Starting mock CloudFormation service on %s ...' % edge_ports_info())
@@ -229,7 +234,7 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
         props['QueueName'] = 'queue-%s' % short_uid()
 
     if res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
-        props['Name'] = resource_name
+        props['Name'] = _generate_res_name()
 
     if res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
@@ -272,13 +277,16 @@ def apply_patches():
         if isinstance(resource_json, dict):
             attr_ref = resource_json.get('Fn::GetAtt')
             if isinstance(attr_ref, list) and result == resource_json:
-                # If the attribute cannot be resolved (i.e., result == resource_json), then return
+                # If the attribute cannot be resolved (i.e., result == resource_json), and if indeed
+                # the resource has not been deployed yet (entry in resources_map is None) then we raise
+                # an exception here, which should cause the deployment loop to do another iteration
+                map_keys = list(resources_map.keys())
+                LOG.debug('Unable to resolve attribute reference %s in resource map keys %s' % (attr_ref, map_keys))
+                if attr_ref[0] in map_keys and not resources_map[attr_ref[0]]:
+                    raise DependencyNotYetSatisfied('Unable to resolve attribute ref %s' % (attr_ref))
+                # If the attribute cannot be resolved for some other reason, then return
                 # an empty value, to avoid returning the original JSON struct (which otherwise
                 # results in downstream issues, e.g., when concatenating template values).
-                # TODO: Note that this workaround could point towards a general issue with
-                # dependency resolution - in fact, this case should never be happening (but it does).
-                LOG.debug('Unable to resolve attribute reference %s in resource map keys %s' %
-                    (attr_ref, list(resources_map.keys())))
                 return None
             if 'Ref' in resource_json and isinstance(result, BaseModel):
                 entity_id = get_entity_id(result, resource_json)
@@ -307,6 +315,9 @@ def apply_patches():
                 logical_id, resource_json, resources_map, region_name, force_create=force_create
             )
             return result
+        except DependencyNotYetSatisfied:
+            register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
+            raise
         except Exception as e:
             LOG.error('Unable to parse and create resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
             raise
@@ -314,6 +325,9 @@ def apply_patches():
     def parse_and_update_resource(logical_id, resource_json, resources_map, region_name):
         try:
             return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=True)
+        except DependencyNotYetSatisfied:
+            register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
+            raise
         except Exception as e:
             LOG.error('Unable to parse and update resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
             raise
@@ -334,7 +348,7 @@ def apply_patches():
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
-        if logical_id in resources_map._parsed_resources and not update and not force_create:
+        if resource and not update and not force_create:
             return resource
 
         # add some fixes and default props which otherwise cause deployments to fail
@@ -530,9 +544,18 @@ def apply_patches():
         else:
             LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
 
-    def parse_and_delete_resource(*args, **kwargs):
+    def parse_and_delete_resource(resource_name, resource_json, resources_map, region_name, *args, **kwargs):
         try:
-            return parse_and_delete_resource_orig(*args, **kwargs)
+            return parse_and_delete_resource_orig(resource_name, resource_json,
+                resources_map, region_name, *args, **kwargs)
+        except DependencyNotYetSatisfied:
+            res_type = resource_json['Type']
+            resource_class = parsing.resource_class_from_type(res_type)
+            if resource_class:
+                try:
+                    resource_class.delete_from_cloudformation_json(resource_name, resource_json, region_name)
+                except Exception as e:
+                    LOG.info('Unable to delete resource "%s" (type %s): %s' % (resource_name, res_type, e))
         except AttributeError:
             # looks like a "delete" method is not yet implemented for a resource type -> ignore
             pass
@@ -1016,9 +1039,23 @@ def apply_patches():
         stack.status = status
 
     # patch FakeStack.initialize_resources
-    def run_dependencies_deployment_loop(stack, action):
+    def run_dependencies_deployment_loop(stack, action, initialize=False):
 
         def run_loop(*args):
+            result = {}
+            try:
+                result = do_run_loop()
+                if isinstance(result, parsing.ResourceMap):
+                    if initialize:
+                        stack.output_map.create()
+                    return
+            except Exception as e:
+                LOG.info('Error running stack deployment loop: %s' % e)
+            set_stack_status(stack, '%s_FAILED' % action)
+            raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
+                'dependency tree (maximum depth %s): %s' % (MAX_DEPENDENCY_DEPTH, list(result.keys())))
+
+        def do_run_loop():
             # NOTE: We're adding this additional loop, as it seems that in some cases moto
             #   does not consider resource dependencies (e.g., if a "DependsOn" resource property
             #   is defined). This loop allows us to incrementally resolve such dependencies.
@@ -1026,6 +1063,11 @@ def apply_patches():
             unresolved = {}
             for i in range(MAX_DEPENDENCY_DEPTH):
                 LOG.debug('Running CloudFormation stack deployment loop iteration %s' % (i + 1))
+                try:
+                    # try iterating all resources in the map, catch any errors that may happen
+                    resource_map.values()
+                except Exception:
+                    pass
                 unresolved = getattr(resource_map, '_unresolved_resources', {})
                 CURRENTLY_UPDATING_RESOURCES.clear()
                 if not unresolved:
@@ -1040,27 +1082,38 @@ def apply_patches():
                     # looks like no more resources can be resolved -> bail
                     LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
                     break
-            set_stack_status(stack, '%s_FAILED' % action)
-            raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
-                'dependency tree (maximum depth %s): %s' % (MAX_DEPENDENCY_DEPTH, list(unresolved.keys())))
+            return unresolved
 
         # NOTE: We're running the loop in the background, as it might take some time to complete
         FuncThread(run_loop).start()
 
     def initialize_resources(self):
         self.resource_map._template = self.resource_map._template or self.template_dict
-        self.resource_map.load()
-        self.resource_map.create(self.template_dict)
-        self.output_map.create()
-        run_dependencies_deployment_loop(self, 'CREATE')
+        try:
+            self.resource_map.load()
+            self.resource_map.create(self.resource_map._template)
+        except Exception:
+            # looks like a dependency issue in the first iteration of creating resource_map - should
+            # be fixed by run_dependencies_deployment_loop(..) below
+            pass
+        run_dependencies_deployment_loop(self, 'CREATE', initialize=True)
 
-    def update(self, *args, **kwargs):
+    def stack_update(self, *args, **kwargs):
         stack_update_orig(self, *args, **kwargs)
         run_dependencies_deployment_loop(self, 'UPDATE')
 
+    @property
+    def stack_outputs(self):
+        if self.status.endswith('_IN_PROGRESS'):
+            # avoid iterating the resource_map if stack creation is still in progress
+            return []
+        return stack_outputs_orig.__get__(self)
+
     FakeStack.initialize_resources = initialize_resources
     stack_update_orig = FakeStack.update
-    FakeStack.update = update
+    FakeStack.update = stack_update
+    stack_outputs_orig = FakeStack.stack_outputs
+    FakeStack.stack_outputs = stack_outputs
 
     # patch Kinesis Stream get_cfn_attribute(..) method in moto
     def Kinesis_Stream_get_cfn_attribute(self, attribute_name):

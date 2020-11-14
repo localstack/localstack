@@ -816,7 +816,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
         elif resource_type == 'ApiGateway::RestApi':
             apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
-            api_name = resource_props['Name'] if resource else resource_id
+            api_name = resource_props.get('Name') or resource_id
             api_name = resolve_refs_recursively(stack_name, api_name, resources)
             result = list(filter(lambda api: api['name'] == api_name, apis))
             return result[0] if result else None

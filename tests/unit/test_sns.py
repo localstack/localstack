@@ -28,7 +28,6 @@ class SNSTests(unittest.TestCase):
         topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
-        sns_listener.do_create_topic(topic_arn)
         self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
         sns_listener.do_subscribe(
             topic_arn,
@@ -212,7 +211,6 @@ class SNSTests(unittest.TestCase):
         topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
         self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
-        sns_listener.do_create_topic(topic_arn)
         self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
         for i in [1, 2]:
             sns_listener.do_subscribe(

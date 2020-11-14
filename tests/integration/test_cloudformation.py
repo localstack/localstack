@@ -1457,11 +1457,7 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
-        rs = cloudformation.create_stack(
-            StackName=stack_name,
-            TemplateBody=TEST_TEMPLATE_22,
-        )
-        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_22)
 
         res = cloudformation.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
         rest_api_ids = [r['PhysicalResourceId'] for r in res if r['ResourceType'] == 'AWS::ApiGateway::RestApi']
