@@ -1,8 +1,10 @@
+import re
 import json
 import random
 import cbor2
 from requests.models import Response
 from localstack import config
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
@@ -26,9 +28,9 @@ class ProxyListenerKinesis(ProxyListener):
     def forward_request(self, method, path, data, headers):
         global STREAM_CONSUMERS
         data = self.decode_content(data or '{}')
-        action = headers.get('X-Amz-Target')
+        action = headers.get('X-Amz-Target', '').split('.')[-1]
 
-        if action == '%s.RegisterStreamConsumer' % ACTION_PREFIX:
+        if action == 'RegisterStreamConsumer':
             consumer = clone(data)
             consumer['ConsumerStatus'] = 'ACTIVE'
             consumer['ConsumerARN'] = '%s/consumer/%s' % (data['StreamARN'], data['ConsumerName'])
@@ -36,7 +38,7 @@ class ProxyListenerKinesis(ProxyListener):
             consumer = json_safe(consumer)
             STREAM_CONSUMERS.append(consumer)
             return {'Consumer': consumer}
-        elif action == '%s.DeregisterStreamConsumer' % ACTION_PREFIX:
+        elif action == 'DeregisterStreamConsumer':
             def consumer_matches(c):
                 stream_arn = data.get('StreamARN')
                 cons_name = data.get('ConsumerName')
@@ -45,12 +47,12 @@ class ProxyListenerKinesis(ProxyListener):
                     (c.get('StreamARN') == stream_arn and c.get('ConsumerName') == cons_name))
             STREAM_CONSUMERS = [c for c in STREAM_CONSUMERS if not consumer_matches(c)]
             return {}
-        elif action == '%s.ListStreamConsumers' % ACTION_PREFIX:
+        elif action == 'ListStreamConsumers':
             result = {
                 'Consumers': [c for c in STREAM_CONSUMERS if c.get('StreamARN') == data.get('StreamARN')]
             }
             return result
-        elif action == '%s.DescribeStreamConsumer' % ACTION_PREFIX:
+        elif action == 'DescribeStreamConsumer':
             consumer_arn = data.get('ConsumerARN') or data['ConsumerName']
             consumer_name = data.get('ConsumerName') or data['ConsumerARN']
             creation_timestamp = data.get('ConsumerCreationTimestamp')
@@ -74,6 +76,9 @@ class ProxyListenerKinesis(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target')
         data = self.decode_content(data or '{}')
+
+        response._content = re.sub(r'arn:aws:kinesis:[^:]+:', 'arn:aws:kinesis:%s:' % aws_stack.get_region(),
+            to_str(response.content or ''))
 
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):

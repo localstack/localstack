@@ -212,6 +212,17 @@ def update_dynamodb_index_resource(resource):
                 glob_index['ProvisionedThroughput'] = {'ReadCapacityUnits': 99, 'WriteCapacityUnits': 99}
 
 
+def apply_attributes_from_existing_resource_on_update(resource_props, stack_name, existing_resource):
+    if not existing_resource:
+        return
+    res_type = resource_props['Type']
+    props = resource_props.get('Properties', {})
+    if res_type == 'AWS::S3::Bucket':
+        existing_name = getattr(existing_resource, 'name', None)
+        if existing_name:
+            props['BucketName'] = existing_name
+
+
 def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None):
     """ Apply some fixes to resource props which otherwise cause deployments to fail """
 
@@ -219,7 +230,7 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
     props = resource_props.get('Properties', {})
 
     def _generate_res_name():
-        return '%s-%s-%s' % (stack_name, resource_name, short_uid())
+        return '%s-%s-%s' % (stack_name, resource_name or resource_id, short_uid())
 
     if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
         props['StartingPosition'] = 'LATEST'
@@ -299,9 +310,10 @@ def apply_patches():
     clean_json_orig = parsing.clean_json
     parsing.clean_json = clean_json
 
-    def register_unresolved_refs(logical_id, resource_json, resources_map, region_name):
-        LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s' % (
-            logical_id, resource_json))
+    def register_unresolved_refs(logical_id, resource_json, resources_map, region_name, details=None):
+        existing = {k for k, v in resources_map._parsed_resources.items() if v is not None}
+        LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s - %s (existing: %s)' % (
+            logical_id, details, resource_json, existing))
         details = [logical_id, resource_json, resources_map, region_name]
         resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', {})
         resources_map._unresolved_resources[logical_id] = details
@@ -315,8 +327,8 @@ def apply_patches():
                 logical_id, resource_json, resources_map, region_name, force_create=force_create
             )
             return result
-        except DependencyNotYetSatisfied:
-            register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
+        except DependencyNotYetSatisfied as e:
+            register_unresolved_refs(logical_id, resource_json, resources_map, region_name, details=e)
             raise
         except Exception as e:
             LOG.error('Unable to parse and create resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
@@ -324,9 +336,10 @@ def apply_patches():
 
     def parse_and_update_resource(logical_id, resource_json, resources_map, region_name):
         try:
-            return _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=True)
-        except DependencyNotYetSatisfied:
-            register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
+            result = _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=True)
+            return result
+        except DependencyNotYetSatisfied as e:
+            register_unresolved_refs(logical_id, resource_json, resources_map, region_name, details=e)
             raise
         except Exception as e:
             LOG.error('Unable to parse and update resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
@@ -340,7 +353,7 @@ def apply_patches():
 
         # If the current stack is being updated, avoid infinite recursion
         updating = CURRENTLY_UPDATING_RESOURCES.get(resource_hash_key)
-        LOG.debug('Currently processing stack resource %s/%s: %s' % (stack_name, logical_id, updating))
+        LOG.debug('Currently processing (update=%s) resource %s/%s: %s' % (update, stack_name, logical_id, updating))
         if updating:
             return None
         # set updating flag for this resource
@@ -352,16 +365,19 @@ def apply_patches():
             return resource
 
         # add some fixes and default props which otherwise cause deployments to fail
+        if update:
+            apply_attributes_from_existing_resource_on_update(resource_json, stack_name, resource)
         for res_id, res_details in resources_map._resource_json_map.items():
             add_default_resource_props(res_details, stack_name, resource_id=res_id)
 
         # check if all dependencies are satisfied
         resource_map_copy = dict(resources_map._resource_json_map)
-        all_satisfied = template_deployer.all_resource_dependencies_satisfied(
+        unsatisfied_deps = template_deployer.get_unsatisfied_dependencies(
             logical_id, resource_map_copy, stack_name
         )
-        if not all_satisfied:
-            register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
+        if unsatisfied_deps:
+            dep_keys = list(unsatisfied_deps.keys())
+            register_unresolved_refs(logical_id, resource_json, resources_map, region_name, details=dep_keys)
             return None
 
         # parse and get final resource JSON
@@ -381,7 +397,8 @@ def apply_patches():
         # create resource definition and store CloudFormation metadata in moto
         moto_create_error = None
         if (resource or update) and not force_create:
-            parse_and_update_resource_orig(logical_id, resource_json_arns_fixed, resources_map, region_name)
+            _tmp = parse_and_update_resource_orig(logical_id, resource_json_arns_fixed, resources_map, region_name)
+            resource = _tmp or resource
         elif not resource:
             try:
                 resource = parse_and_create_resource_orig(
@@ -693,6 +710,17 @@ def apply_patches():
 
     S3_Bucket_get_cfn_attribute_orig = s3_models.FakeBucket.get_cfn_attribute
     s3_models.FakeBucket.get_cfn_attribute = S3_Bucket_get_cfn_attribute
+
+    @classmethod
+    def Bucket_update_from_cloudformation_json(cls,
+            original_resource, new_resource_name, cloudformation_json, region_name):
+        if cloudformation_json.get('BucketName') in [None, original_resource.name]:
+            # TODO: apply other resource updates
+            return original_resource
+        return Bucket_update_from_cf_json_orig(original_resource, new_resource_name, cloudformation_json, region_name)
+
+    Bucket_update_from_cf_json_orig = s3_models.FakeBucket.update_from_cloudformation_json
+    s3_models.FakeBucket.update_from_cloudformation_json = Bucket_update_from_cloudformation_json
 
     # Patch SQS physical_resource_id(..) method in moto
     @property
@@ -1061,6 +1089,7 @@ def apply_patches():
             resource_map = stack.resource_map
             unresolved = {}
             for i in range(MAX_DEPENDENCY_DEPTH):
+                CURRENTLY_UPDATING_RESOURCES.clear()
                 LOG.debug('Running CloudFormation stack deployment loop iteration %s' % (i + 1))
                 try:
                     # try iterating all resources in the map, catch any errors that may happen
@@ -1068,12 +1097,11 @@ def apply_patches():
                 except Exception:
                     pass
                 unresolved = getattr(resource_map, '_unresolved_resources', {})
-                CURRENTLY_UPDATING_RESOURCES.clear()
                 if not unresolved:
                     set_stack_status(stack, '%s_COMPLETE' % action)
                     return resource_map
                 resource_map._unresolved_resources = {}
-                for resource_id, resource_details in unresolved.items():
+                for resource_id, _ in unresolved.items():
                     # Re-trigger the resource creation
                     # simply access the key in the map, which will cause the resource creation internally
                     resource_map[resource_id]

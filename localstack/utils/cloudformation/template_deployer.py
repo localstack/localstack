@@ -1435,18 +1435,27 @@ def is_updateable(resource_id, resources, stack_name):
 
 
 def all_resource_dependencies_satisfied(resource_id, resources, stack_name):
+    unsatisfied = get_unsatisfied_dependencies(resource_id, resources, stack_name)
+    return not unsatisfied
+
+
+def get_unsatisfied_dependencies(resource_id, resources, stack_name):
     resource = resources[resource_id]
     res_deps = get_resource_dependencies(resource_id, resource, resources)
-    return all_dependencies_satisfied(res_deps, stack_name, resources, resource_id)
+    return get_unsatisfied_dependencies_for_resources(res_deps, stack_name, resources, resource_id)
 
 
-def all_dependencies_satisfied(resources, stack_name, all_resources, depending_resource=None):
+def get_unsatisfied_dependencies_for_resources(
+        resources, stack_name, all_resources, depending_resource=None, return_first=True):
+    result = {}
     for resource_id, resource in iteritems(resources):
         if is_deployable_resource(resource):
             if not is_deployed(resource_id, all_resources, stack_name):
                 LOG.debug('Dependency for resource %s not yet deployed: %s' % (depending_resource, resource_id))
-                return False
-    return True
+                result[resource_id] = resource
+                if return_first:
+                    break
+    return result
 
 
 def resources_to_deploy_next(resources, stack_name):

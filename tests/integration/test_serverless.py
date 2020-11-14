@@ -74,9 +74,7 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(len(events), 1)
         event_source_arn = events[0]['EventSourceArn']
 
-        resp = kinesis_client.describe_stream(
-            StreamName=stream_name
-        )
+        resp = kinesis_client.describe_stream(StreamName=stream_name)
         self.assertEqual(resp['StreamDescription']['StreamARN'], event_source_arn)
 
     def test_queue_handler_deployed(self):
