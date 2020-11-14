@@ -177,7 +177,9 @@ def apply_patches():
             method_type = url_path_parts[6]
             status_code = url_path_parts[9]
 
-            integration_response = self.backend.get_integration_response(function_id, resource_id, method_type, status_code)
+            integration_response = self.backend.get_integration_response(
+                function_id, resource_id, method_type, status_code
+            )
 
             integration_response['responseParameters'] = response_parameters
 
