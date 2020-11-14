@@ -394,12 +394,16 @@ class TestAPIGateway(unittest.TestCase):
             integrationHttpMethod='POST',
             type='AWS',
             uri=target_uri,
+            timeoutInMillis=3000,
+            contentHandling='CONVERT_TO_BINARY',
             requestTemplates={
                 'application/json': '{"param1": "$input.params(\'param1\')"}'
             }
         )
+        integration_keys = ['httpMethod', 'type', 'passthroughBehavior', 'cacheKeyParameters', 'uri', 'cacheNamespace',
+            'timeoutInMillis', 'contentHandling', 'requestParameters']
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        for key in ['httpMethod', 'type', 'passthroughBehavior', 'cacheKeyParameters', 'uri', 'cacheNamespace']:
+        for key in integration_keys:
             self.assertIn(key, rs)
         self.assertNotIn('responseTemplates', rs)
 
