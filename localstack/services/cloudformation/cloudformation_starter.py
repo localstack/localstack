@@ -213,6 +213,9 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
     res_type = resource_props['Type']
     props = resource_props.get('Properties', {})
 
+    def _generate_res_name():
+        return '%s-%s-%s' % (stack_name, resource_name, short_uid())
+
     if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
         props['StartingPosition'] = 'LATEST'
 
@@ -232,7 +235,10 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
         update_dynamodb_index_resource(resource_props)
 
     if res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
-        props['BucketName'] = s3_listener.normalize_bucket_name('%s-%s-%s' % (stack_name, resource_name, short_uid()))
+        props['BucketName'] = s3_listener.normalize_bucket_name(_generate_res_name())
+
+    if res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
+        props['StateMachineName'] = _generate_res_name()
 
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
@@ -759,8 +765,10 @@ def apply_patches():
         properties = cloudformation_json['Properties']
         if properties.get('Subscription'):
             properties['Subscription'] = [subscription for subscription in properties['Subscription'] if subscription]
-
-        return SNS_Topic_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+        result = SNS_Topic_create_from_cloudformation_json_orig(resource_name, cloudformation_json, region_name)
+        # remove topic from backend, as it will be created by our mechanism with additional attributes (like tags)
+        sns_models.sns_backends[region_name].topics.pop(result.arn)
+        return result
 
     sns_models.Topic.create_from_cloudformation_json = SNS_Topic_create_from_cloudformation_json
 

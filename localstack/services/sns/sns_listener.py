@@ -228,7 +228,6 @@ class ProxyListenerSNS(PersistingProxyListener):
             if req_action == 'CreateTopic' and response.status_code < 400:
                 response_data = xmltodict.parse(response.content)
                 topic_arn = response_data['CreateTopicResponse']['CreateTopicResult']['TopicArn']
-                do_create_topic(topic_arn)
                 # publish event
                 event_publisher.fire_event(
                     event_publisher.EVENT_SNS_CREATE_TOPIC,
@@ -381,11 +380,6 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
     return message_id
 
 
-def do_create_topic(topic_arn):
-    if topic_arn not in SNS_SUBSCRIPTIONS:
-        SNS_SUBSCRIPTIONS[topic_arn] = []
-
-
 def do_delete_topic(topic_arn):
     SNS_SUBSCRIPTIONS.pop(topic_arn, None)
 
@@ -412,6 +406,7 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
         'FilterPolicy': filter_policy
     }
     subscription.update(attributes)
+    SNS_SUBSCRIPTIONS[topic_arn] = SNS_SUBSCRIPTIONS.get(topic_arn) or []
     SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
 
     if subscription_arn not in SUBSCRIPTION_STATUS.keys():
@@ -440,8 +435,9 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
 
 def do_unsubscribe(subscription_arn):
     for topic_arn in SNS_SUBSCRIPTIONS:
+        existing_subs = SNS_SUBSCRIPTIONS.get(topic_arn) or []
         SNS_SUBSCRIPTIONS[topic_arn] = [
-            sub for sub in SNS_SUBSCRIPTIONS[topic_arn]
+            sub for sub in existing_subs
             if sub['SubscriptionArn'] != subscription_arn
         ]
 

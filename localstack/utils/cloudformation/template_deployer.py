@@ -497,7 +497,6 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'Name': 'PhysicalResourceId'
             }
-
         }
     },
     'IAM::Role': {
@@ -872,19 +871,21 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = client.get_gateway_response(restApiId=api_id, responseType=resource_props['ResponseType'])
             return result if 'responseType' in result else None
         elif resource_type == 'SQS::Queue':
+            queue_name = resolve_refs_recursively(stack_name, resource_props['QueueName'], resources)
             sqs_client = aws_stack.connect_to_service('sqs')
             queues = sqs_client.list_queues()
             result = list(filter(lambda item:
                 # TODO possibly find a better way to compare resource_id with queue URLs
-                item.endswith('/%s' % resource_id), queues.get('QueueUrls', [])))
+                item.endswith('/%s' % queue_name), queues.get('QueueUrls', [])))
             if not result:
                 return None
             result = sqs_client.get_queue_attributes(QueueUrl=result[0], AttributeNames=['All'])['Attributes']
             result['Arn'] = result['QueueArn']
             return result
         elif resource_type == 'SNS::Topic':
+            topic_name = resolve_refs_recursively(stack_name, resource_props['TopicName'], resources)
             topics = aws_stack.connect_to_service('sns').list_topics()
-            result = list(filter(lambda item: item['TopicArn'] == resource_id, topics.get('Topics', [])))
+            result = list(filter(lambda item: item['TopicArn'].split(':')[-1] == topic_name, topics.get('Topics', [])))
             return result[0] if result else None
         elif resource_type == 'SNS::Subscription':
             topic_arn = resource_props.get('TopicArn')
