@@ -26,6 +26,7 @@ from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTem
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
+from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json,
     get_free_tcp_port, Mock, start_thread, edge_ports_info)
@@ -109,7 +110,6 @@ def get_entity_id(entity, resource_json=None):
         if hasattr(entity, attr):
             if attr in ['id', 'name'] and not isinstance(entity, types_with_ref_as_id_or_name):
                 LOG.warning('Unable to find ARN, using "%s" instead: %s - %s', attr, resource_json, entity)
-
             return getattr(entity, attr)
         if hasattr(entity, 'get_cfn_attribute'):
             try:
@@ -118,6 +118,9 @@ def get_entity_id(entity, resource_json=None):
                     return result
             except Exception:
                 pass
+        if isinstance(entity, dict):
+            if attr in entity:
+                return entity.get(attr)
     # fall back to classes that use params as the dict of entity parameters
     if hasattr(entity, 'params'):
         for key, value in (entity.params or {}).items():
@@ -140,48 +143,53 @@ def convert_objs_to_ids(resource_json):
 
 def update_physical_resource_id(resource):
     phys_res_id = getattr(resource, 'physical_resource_id', None)
-    if not phys_res_id:
-        if isinstance(resource, lambda_models.LambdaFunction):
-            func_arn = aws_stack.lambda_function_arn(resource.function_name)
-            resource.function_arn = resource.physical_resource_id = func_arn
+    if phys_res_id:
+        return
 
-        elif isinstance(resource, sfn_models.StateMachine):
-            sm_arn = aws_stack.state_machine_arn(resource.name)
-            resource.physical_resource_id = sm_arn
+    if isinstance(resource, lambda_models.LambdaFunction):
+        func_arn = aws_stack.lambda_function_arn(resource.function_name)
+        resource.function_arn = resource.physical_resource_id = func_arn
 
-        elif isinstance(resource, service_models.StepFunctionsActivity):
-            act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
-            resource.physical_resource_id = act_arn
+    elif isinstance(resource, sfn_models.StateMachine):
+        sm_arn = aws_stack.state_machine_arn(resource.name)
+        resource.physical_resource_id = sm_arn
 
-        elif isinstance(resource, kinesis_models.Stream):
-            resource.physical_resource_id = resource.stream_name
+    elif isinstance(resource, service_models.StepFunctionsActivity):
+        act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
+        resource.physical_resource_id = act_arn
 
-        elif isinstance(resource, service_models.LogsLogGroup):
-            resource.physical_resource_id = resource.params.get('LogGroupName')
+    elif isinstance(resource, kinesis_models.Stream):
+        resource.physical_resource_id = resource.stream_name
 
-        elif isinstance(resource, service_models.FirehoseDeliveryStream):
-            resource.physical_resource_id = resource.params.get('DeliveryStreamName')
+    elif isinstance(resource, service_models.LogsLogGroup):
+        resource.physical_resource_id = resource.params.get('LogGroupName')
 
-        elif isinstance(resource, service_models.SecretsManagerSecret):
-            resource.physical_resource_id = resource.params.get('Name')
+    elif isinstance(resource, service_models.FirehoseDeliveryStream):
+        resource.physical_resource_id = resource.params.get('DeliveryStreamName')
 
-        elif isinstance(resource, service_models.EventsRule):
-            resource.physical_resource_id = resource.params.get('Name')
+    elif isinstance(resource, service_models.SecretsManagerSecret):
+        resource.physical_resource_id = resource.params.get('Name')
 
-        elif isinstance(resource, service_models.ElasticsearchDomain):
-            resource.physical_resource_id = resource.params.get('DomainName')
+    elif isinstance(resource, service_models.EventsRule):
+        resource.physical_resource_id = resource.params.get('Name')
 
-        elif isinstance(resource, dynamodb_models.Table):
-            resource.physical_resource_id = resource.name
+    elif isinstance(resource, service_models.ElasticsearchDomain):
+        resource.physical_resource_id = resource.params.get('DomainName')
 
-        elif isinstance(resource, dynamodb2_models.Table):
-            resource.physical_resource_id = resource.name
+    elif isinstance(resource, dynamodb_models.Table):
+        resource.physical_resource_id = resource.name
 
-        elif isinstance(resource, apigw_models.RestAPI):
-            resource.physical_resource_id = resource.id
+    elif isinstance(resource, dynamodb2_models.Table):
+        resource.physical_resource_id = resource.name
 
-        else:
-            LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
+    elif isinstance(resource, apigw_models.RestAPI):
+        resource.physical_resource_id = resource.id
+
+    elif isinstance(resource, apigw_models.Stage):
+        resource.physical_resource_id = resource.get('stageName')
+
+    else:
+        LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
 
 def update_resource_name(resource, resource_json):
@@ -223,8 +231,8 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
     if res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
 
-    if res_type == 'AWS::S3::Bucket':
-        props['BucketName'] = props.get('BucketName') or resource_name
+    if res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
+        props['BucketName'] = s3_listener.normalize_bucket_name('%s-%s-%s' % (stack_name, resource_name, short_uid()))
 
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
@@ -277,6 +285,13 @@ def apply_patches():
     clean_json_orig = parsing.clean_json
     parsing.clean_json = clean_json
 
+    def register_unresolved_refs(logical_id, resource_json, resources_map, region_name):
+        LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s' % (
+            logical_id, resource_json))
+        details = [logical_id, resource_json, resources_map, region_name]
+        resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', {})
+        resources_map._unresolved_resources[logical_id] = details
+
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
     def parse_and_create_resource(logical_id, resource_json, resources_map, region_name, force_create=False):
         try:
@@ -308,7 +323,26 @@ def apply_patches():
         LOG.debug('Currently processing stack resource %s/%s: %s' % (stack_name, logical_id, updating))
         if updating:
             return None
+        # set updating flag for this resource
         CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
+
+        # check if this resource already exists in the resource map
+        resource = resources_map._parsed_resources.get(logical_id)
+        if logical_id in resources_map._parsed_resources and not update and not force_create:
+            return resource
+
+        # add some fixes and default props which otherwise cause deployments to fail
+        for res_id, res_details in resources_map._resource_json_map.items():
+            add_default_resource_props(res_details, stack_name, resource_id=res_id)
+
+        # check if all dependencies are satisfied
+        resource_map_copy = dict(resources_map._resource_json_map)
+        all_satisfied = template_deployer.all_resource_dependencies_satisfied(
+            logical_id, resource_map_copy, stack_name
+        )
+        if not all_satisfied:
+            register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
+            return None
 
         # parse and get final resource JSON
         resource_tuple = parsing.parse_resource_and_generate_name(logical_id, resource_json, resources_map)
@@ -318,13 +352,6 @@ def apply_patches():
 
         # add some fixes and default props which otherwise cause deployments to fail
         add_default_resource_props(resource_json, stack_name, resource_name=resource_name, resource_id=logical_id)
-        for res_id, resource in resources_map._resource_json_map.items():
-            add_default_resource_props(resource, stack_name, resource_id=res_id)
-
-        # check if this resource already exists in the resource map
-        resource = resources_map._parsed_resources.get(logical_id)
-        if resource and not update and not force_create:
-            return resource
 
         # fix resource ARNs, make sure to convert account IDs 000000000000 to 123456789012
         resource_json_arns_fixed = clone(json_safe(convert_objs_to_ids(resource_json)))
@@ -357,8 +384,8 @@ def apply_patches():
             if should_be_created:
                 raise moto_create_error
             else:
-                LOG.info('Error on moto CF resource creation. Ignoring, as should_be_created=%s: %s' %
-                         (should_be_created, moto_create_error))
+                LOG.info('Error on moto CF resource creation for %s. Ignoring, as should_be_created=%s: %s' %
+                         (logical_id, should_be_created, moto_create_error))
 
         # Fix for moto which sometimes hard-codes region name as 'us-east-1'
         if hasattr(resource, 'region_name') and resource.region_name != region_name:
@@ -374,12 +401,9 @@ def apply_patches():
                 all_satisfied = template_deployer.all_resource_dependencies_satisfied(
                     logical_id, resource_map_new, stack_name
                 )
+                # TODO enable?
                 if not all_satisfied:
-                    LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s' % (
-                        logical_id, resource_json))
-                    details = [logical_id, resource_json, resources_map, region_name]
-                    resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', {})
-                    resources_map._unresolved_resources[logical_id] = details
+                    register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
                 else:
                     LOG.debug('Resource %s need not be deployed (is_updateable=%s): %s %s' % (
                         logical_id, is_updateable, resource_json, bool(resource)))
@@ -835,6 +859,19 @@ def apply_patches():
     if not hasattr(apigw_models.Deployment, 'delete_from_cloudformation_json'):
         apigw_models.Deployment.delete_from_cloudformation_json = depl_delete_from_cloudformation_json
 
+    # patch/create ApiGateway Stage creation
+    @staticmethod
+    def stage_create_from_cloudformation_json(resource_name, resource_json, region_name):
+        props = resource_json['Properties']
+        name = props.get('StageName')
+        description = props.get('Description') or ''
+        deployment_id = props.get('DeploymentId')
+        variables = props.get('Variables')
+        return apigw_models.Stage(name=name, deployment_id=deployment_id, variables=variables, description=description)
+
+    if not hasattr(apigw_models.Stage, 'create_from_cloudformation_json'):
+        apigw_models.Stage.create_from_cloudformation_json = stage_create_from_cloudformation_json
+
     # patch Lambda Version deletion
     @staticmethod
     def vers_delete_from_cloudformation_json(resource_name, resource_json, region_name):
@@ -870,11 +907,16 @@ def apply_patches():
             return None
         raise UnformattedGetAttTemplateException()
 
+    def Stage_get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'Ref':
+            return self.get('stageName')
+        raise super(apigw_models.Stage, self).get_cfn_attribute(attribute_name)
+
     @classmethod
     def Deployment_create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
         props = cloudformation_json['Properties']
-        stage_name = props.get('StageName')
-        deployment_id = props.get('Id') or short_uid()
+        deployment_id = short_uid()
+        stage_name = props.get('StageName')  # fix upstream issue if StageName not present
         description = props.get('Description') or ''
         return apigw_models.Deployment(deployment_id, stage_name, description)
 
@@ -895,8 +937,17 @@ def apply_patches():
         authorization_type = props.get('AuthorizationType')
         return apigw_models.Method(method_type, authorization_type)
 
+    def RestAPI_create_deployment(self, name, description='', stage_variables=None, **kwargs):
+        name = name or '__tmp_stage__'
+        result = RestAPI_create_deployment_orig(self, name, description='', stage_variables=None, **kwargs)
+        self.stages.pop('__tmp_stage__', None)
+        return result
+
     apigw_models.RestAPI.create_from_cloudformation_json = RestAPI_create_from_cloudformation_json
     apigw_models.RestAPI.get_cfn_attribute = RestAPI_get_cfn_attribute
+    RestAPI_create_deployment_orig = apigw_models.RestAPI.create_deployment
+    apigw_models.RestAPI.create_deployment = RestAPI_create_deployment
+    apigw_models.Stage.get_cfn_attribute = Stage_get_cfn_attribute
     apigw_models.Deployment.create_from_cloudformation_json = Deployment_create_from_cloudformation_json
     apigw_models.Resource.create_from_cloudformation_json = Resource_create_from_cloudformation_json
     apigw_models.Method.create_from_cloudformation_json = Method_create_from_cloudformation_json
@@ -968,20 +1019,22 @@ def apply_patches():
             for i in range(MAX_DEPENDENCY_DEPTH):
                 LOG.debug('Running CloudFormation stack deployment loop iteration %s' % (i + 1))
                 unresolved = getattr(resource_map, '_unresolved_resources', {})
+                CURRENTLY_UPDATING_RESOURCES.clear()
                 if not unresolved:
                     set_stack_status(stack, '%s_COMPLETE' % action)
                     return resource_map
                 resource_map._unresolved_resources = {}
                 for resource_id, resource_details in unresolved.items():
                     # Re-trigger the resource creation
-                    parse_and_create_resource(*resource_details, force_create=True)
+                    # simply access the key in the map, which will cause the resource creation internally
+                    resource_map[resource_id]
                 if unresolved.keys() == resource_map._unresolved_resources.keys():
                     # looks like no more resources can be resolved -> bail
                     LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
                     break
             set_stack_status(stack, '%s_FAILED' % action)
             raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
-                'dependency tree (maximum depth %s reached): %s' % (MAX_DEPENDENCY_DEPTH, list(unresolved.keys())))
+                'dependency tree (maximum depth %s): %s' % (MAX_DEPENDENCY_DEPTH, list(unresolved.keys())))
 
         # NOTE: We're running the loop in the background, as it might take some time to complete
         FuncThread(run_loop).start()

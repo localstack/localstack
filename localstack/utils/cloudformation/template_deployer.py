@@ -60,6 +60,10 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
+def lambda_keys_to_lower(key=None):
+    return lambda params, **kwargs: common.keys_to_lower(params.get(key) if key else params)
+
+
 def rename_params(func, rename_map):
     def do_rename(params, **kwargs):
         values = func(params, **kwargs) if func else params
@@ -558,6 +562,12 @@ RESOURCE_TO_FUNCTION = {
     },
     'ApiGateway::Account': {
     },
+    'ApiGateway::Stage': {
+        'create': {
+            'function': 'create_stage',
+            'parameters': lambda_keys_to_lower()
+        }
+    },
     'ApiGateway::Deployment': {
         'create': {
             'function': 'create_deployment',
@@ -834,6 +844,14 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
             # TODO possibly filter results by stage name or other criteria
             return result[0] if result else None
+        elif resource_type == 'ApiGateway::Stage':
+            api_id = resource_props['RestApiId'] if resource else resource_id
+            api_id = resolve_refs_recursively(stack_name, api_id, resources)
+            if not api_id:
+                return None
+            result = aws_stack.connect_to_service('apigateway').get_stage(restApiId=api_id,
+                stageName=resource_props['StageName'])
+            return result
         elif resource_type == 'ApiGateway::Method':
             api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
             res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
@@ -947,7 +965,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
 def check_not_found_exception(e, resource_type, resource, resource_status):
     # we expect this to be a "not found" exception
-    markers = ['NoSuchBucket', 'ResourceNotFound', '404', 'not found']
+    markers = ['NoSuchBucket', 'ResourceNotFound', 'NotFoundException', '404', 'not found']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
             (resource_type, e, traceback.format_exc(), resource, resource_status))
@@ -995,15 +1013,18 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
     # second, resolve resource references
     resource_status = {}
-    if stack_name:
-        resource_status = describe_stack_resource(stack_name, ref)
-        if not resource_status:
-            return
-        attr_value = resource_status.get(attribute)
-        if attr_value not in [None, '']:
-            return attr_value
-    elif ref in resources:
-        resource_status = resources[ref]['__details__']
+
+    # !!TODO!! - disabling for now, as calling "describe" is problematic if currently deploying
+    # if False and stack_name:
+    #     resource_status = describe_stack_resource(stack_name, ref)
+    #     if not resource_status:
+    #         return
+    #     attr_value = resource_status.get(attribute)
+    #     if attr_value not in [None, '']:
+    #         return attr_value
+
+    if not resource_status and ref in resources:
+        resource_status = resources[ref].get('__details__', {})
     # fetch resource details
     resource_new = retrieve_resource_details(ref, resource_status, resources, stack_name)
     if not resource_new:
@@ -1021,8 +1042,9 @@ def resolve_refs_recursively(stack_name, value, resources):
         keys_list = list(value.keys())
         # process special operators
         if keys_list == ['Ref']:
-            return resolve_ref(stack_name, value['Ref'],
+            result = resolve_ref(stack_name, value['Ref'],
                 resources, attribute='PhysicalResourceId')
+            return result
         if keys_list and keys_list[0].lower() == 'fn::getatt':
             return resolve_ref(stack_name, value[keys_list[0]][0],
                 resources, attribute=value[keys_list[0]][1])
