@@ -624,11 +624,7 @@ def apply_patches():
         resources_diff = resource_map_diff_orig(self, template, parameters)
         if resources_diff['Add'] or resources_diff['Remove'] or resources_diff['Modify']:
             return resources_diff
-
-        raise ValidationError(
-            name_or_id='',
-            message='No updates are to be performed.'
-        )
+        raise ValidationError(name_or_id='', message='No updates are to be performed.')
 
     parsing.ResourceMap.diff = resource_map_diff
 
@@ -1032,7 +1028,8 @@ def apply_patches():
                 resource = stack_resource
                 break
         else:
-            raise ValidationError(logical_resource_id)
+            raise ValidationError(stack_name,
+                message='Unable to find resource "%s" in stack "%s"' % (logical_resource_id, stack_name))
 
         template = self.response_template(
             responses.DESCRIBE_STACK_RESOURCE_RESPONSE_TEMPLATE)

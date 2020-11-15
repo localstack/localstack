@@ -1018,14 +1018,14 @@ def resolve_ref(stack_name, ref, resources, attribute):
     # second, resolve resource references
     resource_status = {}
 
-    # TODO: check if the logic below (calling describe_stack_resource during deployment) is still required
-    if stack_name:
-        resource_status = describe_stack_resource(stack_name, ref)
-        if not resource_status:
-            return
-        attr_value = resource_status.get(attribute)
-        if attr_value not in [None, '']:
-            return attr_value
+    # TODO: check if the logic below (calling describe_stack_resource during deployment) is still required!
+    # if stack_name:
+    #     resource_status = describe_stack_resource(stack_name, ref)
+    #     if not resource_status:
+    #         return
+    #     attr_value = resource_status.get(attribute)
+    #     if attr_value not in [None, '']:
+    #         return attr_value
 
     if not resource_status and ref in resources:
         resource_status = resources[ref].get('__details__', {})
