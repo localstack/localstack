@@ -120,7 +120,7 @@ class ProxyListenerSNS(PersistingProxyListener):
                 # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well
                 if 'PhoneNumber' not in req_data and 'TargetArn' not in req_data:
-                    if topic_arn not in SNS_SUBSCRIPTIONS.keys():
+                    if topic_arn not in SNS_SUBSCRIPTIONS:
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
 
                 message_id = publish_message(topic_arn, req_data)
@@ -144,6 +144,7 @@ class ProxyListenerSNS(PersistingProxyListener):
             elif req_action == 'CreateTopic':
                 topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
                 tag_resource_success = self._extract_tags(topic_arn, req_data, True)
+                SNS_SUBSCRIPTIONS[topic_arn] = SNS_SUBSCRIPTIONS.get(topic_arn) or []
                 # in case if there is an error it returns an error , other wise it will continue as expected.
                 if not tag_resource_success:
                     return make_error(code=400, code_string='InvalidParameter',
@@ -228,7 +229,6 @@ class ProxyListenerSNS(PersistingProxyListener):
             if req_action == 'CreateTopic' and response.status_code < 400:
                 response_data = xmltodict.parse(response.content)
                 topic_arn = response_data['CreateTopicResponse']['CreateTopicResult']['TopicArn']
-                do_create_topic(topic_arn)
                 # publish event
                 event_publisher.fire_event(
                     event_publisher.EVENT_SNS_CREATE_TOPIC,
@@ -381,11 +381,6 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
     return message_id
 
 
-def do_create_topic(topic_arn):
-    if topic_arn not in SNS_SUBSCRIPTIONS:
-        SNS_SUBSCRIPTIONS[topic_arn] = []
-
-
 def do_delete_topic(topic_arn):
     SNS_SUBSCRIPTIONS.pop(topic_arn, None)
 
@@ -397,9 +392,11 @@ def do_confirm_subscription(topic_arn, token):
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
+    topic_subs = SNS_SUBSCRIPTIONS[topic_arn] = SNS_SUBSCRIPTIONS.get(topic_arn) or []
+
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
-    for existing_topic_subscription in SNS_SUBSCRIPTIONS.get(topic_arn, []):
+    for existing_topic_subscription in topic_subs:
         if existing_topic_subscription.get('Endpoint') == endpoint:
             return
 
@@ -412,9 +409,9 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
         'FilterPolicy': filter_policy
     }
     subscription.update(attributes)
-    SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+    topic_subs.append(subscription)
 
-    if subscription_arn not in SUBSCRIPTION_STATUS.keys():
+    if subscription_arn not in SUBSCRIPTION_STATUS:
         SUBSCRIPTION_STATUS[subscription_arn] = {}
 
     SUBSCRIPTION_STATUS[subscription_arn].update(
@@ -439,9 +436,9 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
 
 
 def do_unsubscribe(subscription_arn):
-    for topic_arn in SNS_SUBSCRIPTIONS:
+    for topic_arn, existing_subs in SNS_SUBSCRIPTIONS.items():
         SNS_SUBSCRIPTIONS[topic_arn] = [
-            sub for sub in SNS_SUBSCRIPTIONS[topic_arn]
+            sub for sub in existing_subs
             if sub['SubscriptionArn'] != subscription_arn
         ]
 
@@ -487,10 +484,6 @@ def do_untag_resource(topic_arn, tag_keys):
 # ---------------
 # HELPER METHODS
 # ---------------
-
-
-def get_topic_by_arn(topic_arn):
-    return SNS_SUBSCRIPTIONS.get(topic_arn)
 
 
 def get_subscription_by_arn(sub_arn):

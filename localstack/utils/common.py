@@ -554,6 +554,18 @@ def recurse_object(obj, func, path=''):
     return obj
 
 
+def keys_to_lower(obj):
+    """ Recursively changes all dict keys to first character lowercase. """
+    def fix_keys(o, **kwargs):
+        if isinstance(o, dict):
+            for k, v in dict(o).items():
+                o.pop(k)
+                o[first_char_to_lower(k)] = v
+        return o
+    result = recurse_object(obj, fix_keys)
+    return result
+
+
 def base64_to_hex(b64_string):
     return binascii.hexlify(base64.b64decode(b64_string))
 

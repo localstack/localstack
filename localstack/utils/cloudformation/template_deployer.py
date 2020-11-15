@@ -60,6 +60,10 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
+def lambda_keys_to_lower(key=None):
+    return lambda params, **kwargs: common.keys_to_lower(params.get(key) if key else params)
+
+
 def rename_params(func, rename_map):
     def do_rename(params, **kwargs):
         values = func(params, **kwargs) if func else params
@@ -493,7 +497,6 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'Name': 'PhysicalResourceId'
             }
-
         }
     },
     'IAM::Role': {
@@ -557,6 +560,12 @@ RESOURCE_TO_FUNCTION = {
     'ApiGateway::Method::Integration': {
     },
     'ApiGateway::Account': {
+    },
+    'ApiGateway::Stage': {
+        'create': {
+            'function': 'create_stage',
+            'parameters': lambda_keys_to_lower()
+        }
     },
     'ApiGateway::Deployment': {
         'create': {
@@ -793,9 +802,12 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             if not mapping:
                 raise Exception('ResourceNotFound')
             return mapping[0]
+        elif resource_type == 'Events::Rule':
+            rule_name = resolve_refs_recursively(stack_name, resource_props.get('Name'), resources)
+            result = aws_stack.connect_to_service('events').describe_rule(Name=rule_name) or {}
+            return result if result.get('Name') else None
         elif resource_type == 'IAM::Role':
-            role_name = resource_props.get('RoleName')
-            role_name = resolve_refs_recursively(stack_name, role_name, resources)
+            role_name = resolve_refs_recursively(stack_name, resource_props.get('RoleName'), resources)
             return aws_stack.connect_to_service('iam').get_role(RoleName=role_name)['Role']
         elif resource_type == 'SSM::Parameter':
             param_name = resource_props.get('Name') or resource_id
@@ -807,7 +819,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
         elif resource_type == 'ApiGateway::RestApi':
             apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
-            api_name = resource_props['Name'] if resource else resource_id
+            api_name = resource_props.get('Name') or resource_id
             api_name = resolve_refs_recursively(stack_name, api_name, resources)
             result = list(filter(lambda api: api['name'] == api_name, apis))
             return result[0] if result else None
@@ -834,6 +846,14 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
             # TODO possibly filter results by stage name or other criteria
             return result[0] if result else None
+        elif resource_type == 'ApiGateway::Stage':
+            api_id = resource_props['RestApiId'] if resource else resource_id
+            api_id = resolve_refs_recursively(stack_name, api_id, resources)
+            if not api_id:
+                return None
+            result = aws_stack.connect_to_service('apigateway').get_stage(restApiId=api_id,
+                stageName=resource_props['StageName'])
+            return result
         elif resource_type == 'ApiGateway::Method':
             api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
             res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
@@ -854,19 +874,21 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             result = client.get_gateway_response(restApiId=api_id, responseType=resource_props['ResponseType'])
             return result if 'responseType' in result else None
         elif resource_type == 'SQS::Queue':
+            queue_name = resolve_refs_recursively(stack_name, resource_props['QueueName'], resources)
             sqs_client = aws_stack.connect_to_service('sqs')
             queues = sqs_client.list_queues()
             result = list(filter(lambda item:
                 # TODO possibly find a better way to compare resource_id with queue URLs
-                item.endswith('/%s' % resource_id), queues.get('QueueUrls', [])))
+                item.endswith('/%s' % queue_name), queues.get('QueueUrls', [])))
             if not result:
                 return None
             result = sqs_client.get_queue_attributes(QueueUrl=result[0], AttributeNames=['All'])['Attributes']
             result['Arn'] = result['QueueArn']
             return result
         elif resource_type == 'SNS::Topic':
+            topic_name = resolve_refs_recursively(stack_name, resource_props['TopicName'], resources)
             topics = aws_stack.connect_to_service('sns').list_topics()
-            result = list(filter(lambda item: item['TopicArn'] == resource_id, topics.get('Topics', [])))
+            result = list(filter(lambda item: item['TopicArn'].split(':')[-1] == topic_name, topics.get('Topics', [])))
             return result[0] if result else None
         elif resource_type == 'SNS::Subscription':
             topic_arn = resource_props.get('TopicArn')
@@ -947,7 +969,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
 def check_not_found_exception(e, resource_type, resource, resource_status):
     # we expect this to be a "not found" exception
-    markers = ['NoSuchBucket', 'ResourceNotFound', '404', 'not found']
+    markers = ['NoSuchBucket', 'ResourceNotFound', 'NotFoundException', '404', 'not found']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
             (resource_type, e, traceback.format_exc(), resource, resource_status))
@@ -995,15 +1017,18 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
     # second, resolve resource references
     resource_status = {}
-    if stack_name:
-        resource_status = describe_stack_resource(stack_name, ref)
-        if not resource_status:
-            return
-        attr_value = resource_status.get(attribute)
-        if attr_value not in [None, '']:
-            return attr_value
-    elif ref in resources:
-        resource_status = resources[ref]['__details__']
+
+    # TODO: check if the logic below (calling describe_stack_resource during deployment) is still required!
+    # if stack_name:
+    #     resource_status = describe_stack_resource(stack_name, ref)
+    #     if not resource_status:
+    #         return
+    #     attr_value = resource_status.get(attribute)
+    #     if attr_value not in [None, '']:
+    #         return attr_value
+
+    if not resource_status and ref in resources:
+        resource_status = resources[ref].get('__details__', {})
     # fetch resource details
     resource_new = retrieve_resource_details(ref, resource_status, resources, stack_name)
     if not resource_new:
@@ -1021,8 +1046,9 @@ def resolve_refs_recursively(stack_name, value, resources):
         keys_list = list(value.keys())
         # process special operators
         if keys_list == ['Ref']:
-            return resolve_ref(stack_name, value['Ref'],
+            result = resolve_ref(stack_name, value['Ref'],
                 resources, attribute='PhysicalResourceId')
+            return result
         if keys_list and keys_list[0].lower() == 'fn::getatt':
             return resolve_ref(stack_name, value[keys_list[0]][0],
                 resources, attribute=value[keys_list[0]][1])
@@ -1412,18 +1438,28 @@ def is_updateable(resource_id, resources, stack_name):
 
 
 def all_resource_dependencies_satisfied(resource_id, resources, stack_name):
+    unsatisfied = get_unsatisfied_dependencies(resource_id, resources, stack_name)
+    return not unsatisfied
+
+
+def get_unsatisfied_dependencies(resource_id, resources, stack_name):
     resource = resources[resource_id]
     res_deps = get_resource_dependencies(resource_id, resource, resources)
-    return all_dependencies_satisfied(res_deps, stack_name, resources, resource_id)
+    return get_unsatisfied_dependencies_for_resources(res_deps, stack_name, resources, resource_id)
 
 
-def all_dependencies_satisfied(resources, stack_name, all_resources, depending_resource=None):
+def get_unsatisfied_dependencies_for_resources(
+        resources, stack_name, all_resources, depending_resource=None, return_first=True):
+    result = {}
     for resource_id, resource in iteritems(resources):
         if is_deployable_resource(resource):
             if not is_deployed(resource_id, all_resources, stack_name):
-                LOG.debug('Dependency for resource %s not yet deployed: %s' % (depending_resource, resource_id))
-                return False
-    return True
+                LOG.debug('Dependency for resource %s not yet deployed: %s %s' %
+                    (depending_resource, resource_id, resource))
+                result[resource_id] = resource
+                if return_first:
+                    break
+    return result
 
 
 def resources_to_deploy_next(resources, stack_name):

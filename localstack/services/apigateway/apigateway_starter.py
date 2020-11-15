@@ -13,18 +13,15 @@ LOG = logging.getLogger(__name__)
 
 
 def apply_patches():
-    apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
 
-    def apigateway_models_Stage_init(
-        self, name=None, deployment_id=None, variables=None, description='',
-        cacheClusterEnabled=False, cacheClusterSize=None
-    ):
-        apigateway_models_Stage_init_orig(self, name=None, deployment_id=None, variables=None, description='',
-            cacheClusterEnabled=False, cacheClusterSize=None)
+    def apigateway_models_Stage_init(self, cacheClusterEnabled=False, cacheClusterSize=None, **kwargs):
+        apigateway_models_Stage_init_orig(self, cacheClusterEnabled=cacheClusterEnabled,
+            cacheClusterSize=cacheClusterSize, **kwargs)
 
         if (cacheClusterSize or cacheClusterEnabled) and not self.get('cacheClusterStatus'):
             self['cacheClusterStatus'] = 'AVAILABLE'
 
+    apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
 
     def apigateway_models_backend_delete_method(self, function_id, resource_id, method_type):
@@ -159,6 +156,8 @@ def apply_patches():
             method_type = url_path_parts[6]
 
             resource = self.backend.get_resource(function_id, resource_id)
+            resource.resource_methods[method_type]['methodIntegration'] = (
+                resource.resource_methods[method_type].get('methodIntegration') or {})
             resource.resource_methods[method_type]['methodIntegration']['timeoutInMillis'] = timeout_milliseconds
 
             return result[0], result[1], json.dumps(resource.resource_methods[method_type]['methodIntegration'])
