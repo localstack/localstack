@@ -82,7 +82,7 @@ ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN LAMBDA_EXECUTOR=local make test
+RUN LAMBDA_EXECUTOR=local DEBUG=1 make test
 # clean up temporary files created during test execution
 RUN apk del --purge git;
 RUN rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform
