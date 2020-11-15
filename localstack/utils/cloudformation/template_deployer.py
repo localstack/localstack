@@ -1454,7 +1454,8 @@ def get_unsatisfied_dependencies_for_resources(
     for resource_id, resource in iteritems(resources):
         if is_deployable_resource(resource):
             if not is_deployed(resource_id, all_resources, stack_name):
-                LOG.debug('Dependency for resource %s not yet deployed: %s' % (depending_resource, resource_id))
+                LOG.debug('Dependency for resource %s not yet deployed: %s %s' %
+                    (depending_resource, resource_id, resource))
                 result[resource_id] = resource
                 if return_first:
                     break

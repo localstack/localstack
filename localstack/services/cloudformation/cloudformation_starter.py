@@ -212,14 +212,15 @@ def update_dynamodb_index_resource(resource):
                 glob_index['ProvisionedThroughput'] = {'ReadCapacityUnits': 99, 'WriteCapacityUnits': 99}
 
 
-def apply_attributes_from_existing_resource_on_update(resource_props, stack_name, existing_resource):
-    if not existing_resource:
+def apply_attributes_from_existing_resource_on_update(resource_props, stack_name, existing_resource, resource_id):
+    if not existing_resource or not resource_props:
         return
     res_type = resource_props['Type']
     props = resource_props.get('Properties', {})
     if res_type == 'AWS::S3::Bucket':
         existing_name = getattr(existing_resource, 'name', None)
         if existing_name:
+            LOG.debug('Applying existing bucket name "%s" when updating resource %s' % (existing_name, resource_id))
             props['BucketName'] = existing_name
 
 
@@ -366,7 +367,10 @@ def apply_patches():
 
         # add some fixes and default props which otherwise cause deployments to fail
         if update:
-            apply_attributes_from_existing_resource_on_update(resource_json, stack_name, resource)
+            apply_attributes_from_existing_resource_on_update(
+                resource_json, stack_name, resource, resource_id=logical_id)
+            apply_attributes_from_existing_resource_on_update(
+                resources_map._resource_json_map.get(logical_id), stack_name, resource, resource_id=logical_id)
         for res_id, res_details in resources_map._resource_json_map.items():
             add_default_resource_props(res_details, stack_name, resource_id=res_id)
 

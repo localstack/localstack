@@ -633,8 +633,7 @@ def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME)
     # TODO: support Java Lambdas in the future
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return handler_name.split(':')[-1]
-    else:
-        return handler_name.split('.')[-1]
+    return handler_name.split('.')[-1]
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
