@@ -369,15 +369,18 @@ def apply_patches():
 
         # check if this resource already exists in the resource map
         resource = resources_map._parsed_resources.get(logical_id)
-        if resource and not update and not force_create:
-            return resource
 
-        # add some fixes and default props which otherwise cause deployments to fail
-        if update:
+        # apply existing attributes to resource details if they are already deployed
+        if resource:
             apply_attributes_from_existing_resource_on_update(
                 resource_json, stack_name, resource, resource_id=logical_id)
             apply_attributes_from_existing_resource_on_update(
                 resources_map._resource_json_map.get(logical_id), stack_name, resource, resource_id=logical_id)
+
+        if resource and not update and not force_create:
+            return resource
+
+        # add some fixes and default props which otherwise cause deployments to fail
         for res_id, res_details in resources_map._resource_json_map.items():
             add_default_resource_props(res_details, stack_name, resource_id=res_id)
 
@@ -1102,9 +1105,10 @@ def apply_patches():
                 try:
                     # try iterating all resources in the map, catch any errors that may happen
                     resource_map.values()
-                except Exception:
-                    pass
+                except Exception as e:
+                    LOG.debug('Temporary error in loop iteration %s: %s' % (i + 1, e))
                 unresolved = getattr(resource_map, '_unresolved_resources', {})
+                LOG.debug('Found %s unresolved dependencies in loop iteration %s' % (len(unresolved), i + 1))
                 if not unresolved:
                     set_stack_status(stack, '%s_COMPLETE' % action)
                     return resource_map
@@ -1117,8 +1121,8 @@ def apply_patches():
                     resource_map[resource_id]
                 if unresolved.keys() == resource_map._unresolved_resources.keys():
                     # looks like no more resources can be resolved -> bail
-                    LOG.warning('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
                     break
+            LOG.info('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
             return unresolved
 
         # NOTE: We're running the loop in the background, as it might take some time to complete
@@ -1135,8 +1139,17 @@ def apply_patches():
             pass
         run_dependencies_deployment_loop(self, 'CREATE', initialize=True)
 
-    def stack_update(self, *args, **kwargs):
-        stack_update_orig(self, *args, **kwargs)
+    def stack_update(self, template, role_arn=None, parameters=None, tags=None, **kwargs):
+        # Note: code is copied in here, we want to prevent calling the original method (as it fires state events)
+        self._add_stack_event('UPDATE_IN_PROGRESS', resource_status_reason='User Initiated')
+        self.template = template
+        self._parse_template()
+        self.resource_map.update(self.template_dict, parameters)
+        self.output_map = self._create_output_map()
+        self.role_arn = role_arn
+        if tags is not None:
+            self.tags = tags
+        # now run our deployment loop
         run_dependencies_deployment_loop(self, 'UPDATE')
 
     @property
@@ -1147,7 +1160,6 @@ def apply_patches():
         return stack_outputs_orig.__get__(self)
 
     FakeStack.initialize_resources = initialize_resources
-    stack_update_orig = FakeStack.update
     FakeStack.update = stack_update
     stack_outputs_orig = FakeStack.stack_outputs
     FakeStack.stack_outputs = stack_outputs
