@@ -73,7 +73,11 @@ MODEL_MAP = {
 
 class DependencyNotYetSatisfied(Exception):
     """ Exception indicating that a resource dependency is not (yet) deployed/available. """
-    pass
+    def __init__(self, resource_ids, message=None):
+        message = message or 'Unresolved dependencies: %s' % resource_ids
+        super(DependencyNotYetSatisfied, self).__init__(message)
+        resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
+        self.resource_ids = resource_ids
 
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
@@ -295,7 +299,8 @@ def apply_patches():
                 map_keys = list(resources_map.keys())
                 LOG.debug('Unable to resolve attribute reference %s in resource map keys %s' % (attr_ref, map_keys))
                 if attr_ref[0] in map_keys and not resources_map[attr_ref[0]]:
-                    raise DependencyNotYetSatisfied('Unable to resolve attribute ref %s' % (attr_ref))
+                    raise DependencyNotYetSatisfied(resource_ids=attr_ref[0],
+                        message='Unable to resolve attribute ref %s' % (attr_ref))
                 # If the attribute cannot be resolved for some other reason, then return
                 # an empty value, to avoid returning the original JSON struct (which otherwise
                 # results in downstream issues, e.g., when concatenating template values).
@@ -311,13 +316,15 @@ def apply_patches():
     clean_json_orig = parsing.clean_json
     parsing.clean_json = clean_json
 
-    def register_unresolved_refs(logical_id, resource_json, resources_map, region_name, details=None):
+    def register_unresolved_refs(logical_id, resource_json, resources_map, required_resources, details=None):
+        required_resources = required_resources or []
         existing = {k for k, v in resources_map._parsed_resources.items() if v is not None}
         LOG.info('Resource %s cannot be deployed, found unsatisfied dependencies. %s - %s (existing: %s)' % (
             logical_id, details, resource_json, existing))
-        details = [logical_id, resource_json, resources_map, region_name]
-        resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', {})
-        resources_map._unresolved_resources[logical_id] = details
+        # details = [logical_id, resource_json, resources_map, region_name]
+        unres_deps = resources_map._unresolved_resources = getattr(resources_map, '_unresolved_resources', {})
+        unres_deps[logical_id] = unres_deps.get(logical_id) or []
+        unres_deps[logical_id].extend(required_resources)
 
     # Patch parse_and_create_resource method in moto to deploy resources in LocalStack
     def parse_and_create_resource(logical_id, resource_json, resources_map, region_name, force_create=False):
@@ -329,7 +336,7 @@ def apply_patches():
             )
             return result
         except DependencyNotYetSatisfied as e:
-            register_unresolved_refs(logical_id, resource_json, resources_map, region_name, details=e)
+            register_unresolved_refs(logical_id, resource_json, resources_map, e.resource_ids, details=e)
             raise
         except Exception as e:
             LOG.error('Unable to parse and create resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
@@ -340,7 +347,7 @@ def apply_patches():
             result = _parse_and_create_resource(logical_id, resource_json, resources_map, region_name, update=True)
             return result
         except DependencyNotYetSatisfied as e:
-            register_unresolved_refs(logical_id, resource_json, resources_map, region_name, details=e)
+            register_unresolved_refs(logical_id, resource_json, resources_map, e.resource_ids, details=e)
             raise
         except Exception as e:
             LOG.error('Unable to parse and update resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
@@ -381,7 +388,7 @@ def apply_patches():
         )
         if unsatisfied_deps:
             dep_keys = list(unsatisfied_deps.keys())
-            register_unresolved_refs(logical_id, resource_json, resources_map, region_name, details=dep_keys)
+            register_unresolved_refs(logical_id, resource_json, resources_map, dep_keys, details=dep_keys)
             return None
 
         # parse and get final resource JSON
@@ -439,11 +446,11 @@ def apply_patches():
             # This resource is either not deployable or already exists. Check if it can be updated
             is_updateable = template_deployer.is_updateable(logical_id, resource_map_new, stack_name)
             if not update or not is_updateable:
-                all_satisfied = template_deployer.all_resource_dependencies_satisfied(
+                unsatisfied_deps = template_deployer.get_unsatisfied_dependencies(
                     logical_id, resource_map_new, stack_name
                 )
-                if not all_satisfied:
-                    register_unresolved_refs(logical_id, resource_json, resources_map, region_name)
+                if unsatisfied_deps:
+                    register_unresolved_refs(logical_id, resource_json, resources_map, list(unsatisfied_deps.keys()))
                 else:
                     LOG.debug('Resource %s need not be deployed (is_updateable=%s): %s %s' % (
                         logical_id, is_updateable, resource_json, bool(resource)))
@@ -1102,9 +1109,11 @@ def apply_patches():
                     set_stack_status(stack, '%s_COMPLETE' % action)
                     return resource_map
                 resource_map._unresolved_resources = {}
-                for resource_id, _ in unresolved.items():
-                    # Re-trigger the resource creation
-                    # simply access the key in the map, which will cause the resource creation internally
+                for resource_id, dependencies in unresolved.items():
+                    # Re-trigger the resource creation: simply access the key in the
+                    # map, which will cause the resource creation internally
+                    for dep_resource_id in dependencies:
+                        resource_map[dep_resource_id]
                     resource_map[resource_id]
                 if unresolved.keys() == resource_map._unresolved_resources.keys():
                     # looks like no more resources can be resolved -> bail

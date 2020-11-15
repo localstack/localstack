@@ -156,6 +156,8 @@ def apply_patches():
             method_type = url_path_parts[6]
 
             resource = self.backend.get_resource(function_id, resource_id)
+            resource.resource_methods[method_type]['methodIntegration'] = (
+                resource.resource_methods[method_type].get('methodIntegration') or {})
             resource.resource_methods[method_type]['methodIntegration']['timeoutInMillis'] = timeout_milliseconds
 
             return result[0], result[1], json.dumps(resource.resource_methods[method_type]['methodIntegration'])
