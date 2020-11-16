@@ -522,13 +522,8 @@ RESOURCE_TO_FUNCTION = {
             'function': 'create_policy',
             # TODO: associate policies with users, groups, roles
             'parameters': iam_create_policy_params
-        },
-        'delete': {
-            'function': 'delete_policy',
-            'parameters': {
-                'PolicyArn': lambda params, **kwargs: aws_stack.policy_arn(params.get('LogicalResourceId'))
-            }
         }
+        # InlinePolicy in cloudformation will be deleted on deleting Role
     },
     'ApiGateway::RestApi': {
         'create': {
@@ -991,9 +986,21 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
         elif resource_type == 'IAM::Policy':
             client = aws_stack.connect_to_service('iam')
-            ref = resource['Properties']['Roles'][0]['Ref']
-            role_name = resources[ref]['Properties']['RoleName']
-            return client.get_role_policy(RoleName=role_name, PolicyName=resource_id)
+            policy_name = resource_props.get('PolicyName') or resource_id
+
+            # The policy in cloudformation is InlinePolicy, so we must specify at least one of [Roles, Users, Groups]
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
+            roles = resource['Properties'].get('Roles', [])
+            if roles:
+                if isinstance(roles[0], str):
+                    role_name = roles[0]
+                else:
+                    role_name = resources[roles[0]['Ref']]['Properties']['RoleName']
+
+                role_policy = client.get_role_policy(RoleName=role_name, PolicyName=policy_name)
+                return role_policy
+
+            # TODO The InlinePolicy can be embedded in specified User, or Group
 
         if is_deployable_resource(resource):
             LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
