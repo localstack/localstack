@@ -13,18 +13,15 @@ LOG = logging.getLogger(__name__)
 
 
 def apply_patches():
-    apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
 
-    def apigateway_models_Stage_init(
-        self, name=None, deployment_id=None, variables=None, description='',
-        cacheClusterEnabled=False, cacheClusterSize=None
-    ):
-        apigateway_models_Stage_init_orig(self, name=None, deployment_id=None, variables=None, description='',
-            cacheClusterEnabled=False, cacheClusterSize=None)
+    def apigateway_models_Stage_init(self, cacheClusterEnabled=False, cacheClusterSize=None, **kwargs):
+        apigateway_models_Stage_init_orig(self, cacheClusterEnabled=cacheClusterEnabled,
+            cacheClusterSize=cacheClusterSize, **kwargs)
 
         if (cacheClusterSize or cacheClusterEnabled) and not self.get('cacheClusterStatus'):
             self['cacheClusterStatus'] = 'AVAILABLE'
 
+    apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
 
     def apigateway_models_backend_delete_method(self, function_id, resource_id, method_type):
@@ -159,8 +156,12 @@ def apply_patches():
             resource_id = url_path_parts[4]
             method_type = url_path_parts[6]
 
-            integration_response = self.backend.get_integration(function_id, resource_id, method_type)
+            resource = self.backend.get_resource(function_id, resource_id)
+            resource.resource_methods[method_type]['methodIntegration'] = (
+                resource.resource_methods[method_type].get('methodIntegration') or {})
+            resource.resource_methods[method_type]['methodIntegration']['timeoutInMillis'] = timeout_milliseconds
 
+            integration_response = self.backend.get_integration(function_id, resource_id, method_type)
             integration_response['timeoutInMillis'] = timeout_milliseconds
             integration_response['requestParameters'] = request_parameters
             integration_response['cacheKeyParameters'] = cache_key_parameters
@@ -183,7 +184,6 @@ def apply_patches():
             integration_response = self.backend.get_integration_response(
                 function_id, resource_id, method_type, status_code
             )
-
             integration_response['responseParameters'] = response_parameters
 
             return 200, {}, json.dumps(integration_response)

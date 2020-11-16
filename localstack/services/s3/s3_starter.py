@@ -21,6 +21,9 @@ S3_MAX_FILE_SIZE_MB = 2048
 # temporary state
 TMP_STATE = {}
 
+# Key for tracking patch applience
+PATCHES_APPLIED = 'S3_PATCHED'
+
 
 def check_s3(expect_shutdown=False, print_error=False):
     out = None
@@ -56,15 +59,34 @@ def start_s3(port=None, backend_port=None, asynchronous=None, update_listener=No
 
 
 def apply_patches():
+    if TMP_STATE.get(PATCHES_APPLIED, False):
+        return
+
+    TMP_STATE[PATCHES_APPLIED] = True
+
     s3_models.DEFAULT_KEY_BUFFER_SIZE = S3_MAX_FILE_SIZE_MB * 1024 * 1024
 
     def init(self, name, value, storage='STANDARD', etag=None,
             is_versioned=False, version_id=0, max_buffer_size=None, *args, **kwargs):
-        return original_init(self, name, value, storage=storage, etag=etag, is_versioned=is_versioned,
+        original_init(self, name, value, storage=storage, etag=etag, is_versioned=is_versioned,
             version_id=version_id, max_buffer_size=s3_models.DEFAULT_KEY_BUFFER_SIZE, *args, **kwargs)
+        try:
+            (self.instances or []).remove(self)
+        except Exception:
+            pass
 
     original_init = s3_models.FakeKey.__init__
     s3_models.FakeKey.__init__ = init
+
+    def bucket_init(self, name, region_name, *args, **kwargs):
+        original_bucket_init(self, name, region_name, *args, **kwargs)
+        try:
+            (self.instances or []).remove(self)
+        except Exception:
+            pass
+
+    original_bucket_init = s3_models.FakeBucket.__init__
+    s3_models.FakeBucket.__init__ = bucket_init
 
     def s3_update_acls(self, request, query, bucket_name, key_name):
         # fix for - https://github.com/localstack/localstack/issues/1733
