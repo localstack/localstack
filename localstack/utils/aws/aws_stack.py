@@ -338,6 +338,10 @@ def role_arn(role_name, account_id=None, env=None):
     return 'arn:aws:iam::%s:role/%s' % (account_id, role_name)
 
 
+def policy_arn(policy_name, account_id=TEST_AWS_ACCOUNT_ID):
+    return 'arn:aws:iam::{}:policy/{}'.format(account_id, policy_name)
+
+
 def iam_resource_arn(resource, role=None, env=None):
     env = get_environment(env)
     if not role:
