@@ -180,10 +180,6 @@ def apply_patches():
             integration_response = self.backend.get_integration_response(
                 function_id, resource_id, method_type, status_code
             )
-<<<<<<< HEAD
-
-=======
->>>>>>> b55316ee1724465d66bf0c8e4eaab0da4bce0581
             integration_response['responseParameters'] = response_parameters
 
             return 200, {}, json.dumps(integration_response)
