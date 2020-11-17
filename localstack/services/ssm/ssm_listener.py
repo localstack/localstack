@@ -31,21 +31,19 @@ def get_secrets_information(name, resource_name):
 
 
 def has_secrets(names):
-    hasSecrets = False
     for name in names:
-        if name[0:29] == '/aws/reference/secretsmanager':
-            hasSecrets = True
-            break
-    return hasSecrets
+        if name.startswith('/aws/reference/secretsmanager'):
+            return True
 
 
 def get_params_and_secrets(names):
-    ssmClient = aws_stack.connect_to_service('ssm')
+    ssm_client = aws_stack.connect_to_service('ssm')
     result = {'Parameters': [], 'InvalidParameters': []}
+    secrets_prefix = '/aws/reference/secretsmanager'
 
     for name in names:
-        if name[0:29] == '/aws/reference/secretsmanager':
-            secret = get_secrets_information(name, name[30:])
+        if name.startswith(secrets_prefix):
+            secret = get_secrets_information(name, name[len(secrets_prefix) + 1:])
             if secret is not None:
                 secret = secret['Parameter']
                 result['Parameters'].append(secret)
@@ -53,9 +51,9 @@ def get_params_and_secrets(names):
                 result['InvalidParameters'].append(name)
         else:
             try:
-                param = ssmClient.get_parameter(Name=name)
+                param = ssm_client.get_parameter(Name=name)
                 result['Parameters'].append(param['Parameter'])
-            except ssmClient.exceptions.ParameterNotFound:
+            except ssm_client.exceptions.ParameterNotFound:
                 result['InvalidParameters'].append(name)
 
     return result

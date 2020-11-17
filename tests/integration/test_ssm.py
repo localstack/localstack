@@ -82,12 +82,12 @@ class SSMTest(unittest.TestCase):
         response = ssm_client.get_parameters(Names=[param_name, complete_secret,
             'inexistent_param', secret_path + 'inexistent_secret'])
         found = response.get('Parameters')
-        notFound = response.get('InvalidParameters')
+        not_found = response.get('InvalidParameters')
 
         for param in found:
-            self.assertTrue(param['Name'] in [param_name, complete_secret])
-        for param in notFound:
-            self.assertTrue(param in ['inexistent_param', secret_path + 'inexistent_secret'])
+            self.assertIn(param['Name'], [param_name, complete_secret])
+        for param in not_found:
+            self.assertIn(param, ['inexistent_param', secret_path + 'inexistent_secret'])
 
     def _assert(self, search_name, param_name):
         ssm_client = aws_stack.connect_to_service('ssm')
