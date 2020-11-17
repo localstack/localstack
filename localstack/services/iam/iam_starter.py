@@ -7,7 +7,8 @@ from urllib.parse import quote
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
 from moto.iam.models import (
-    iam_backend as moto_iam_backend, aws_managed_policies, AWSManagedPolicy, IAMNotFoundException, Policy, User
+    iam_backend as moto_iam_backend, aws_managed_policies,
+    AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy, User
 )
 from localstack import config
 from localstack.services.infra import start_moto_server
@@ -236,6 +237,17 @@ def apply_patches():
         return template.render(roles=items)
 
     IamResponse.list_roles = iam_response_list_roles
+
+    inline_policy_unapply_policy_orig = InlinePolicy.unapply_policy
+
+    def inline_policy_unapply_policy(self, backend):
+        try:
+            inline_policy_unapply_policy_orig(self, backend)
+        except Exception:
+            # Actually role can be deleted before policy being deleted in cloudformation
+            pass
+
+    InlinePolicy.unapply_policy = inline_policy_unapply_policy
 
 
 def start_iam(port=None, asynchronous=False, update_listener=None):
