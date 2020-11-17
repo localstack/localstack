@@ -67,16 +67,12 @@ class TestServerless(unittest.TestCase):
         function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
         self.assertEqual(function['Handler'], 'handler.processKinesis')
 
-        resp = lambda_client.list_event_source_mappings(
-            FunctionName=function_name,
-        )
-        events = resp['EventSourceMappings']
-        self.assertEqual(len(events), 1)
-        event_source_arn = events[0]['EventSourceArn']
+        resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
+        mappings = resp['EventSourceMappings']
+        self.assertEqual(len(mappings), 1)
+        event_source_arn = mappings[0]['EventSourceArn']
 
-        resp = kinesis_client.describe_stream(
-            StreamName=stream_name
-        )
+        resp = kinesis_client.describe_stream(StreamName=stream_name)
         self.assertEqual(resp['StreamDescription']['StreamARN'], event_source_arn)
 
     def test_queue_handler_deployed(self):

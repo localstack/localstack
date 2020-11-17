@@ -13,18 +13,15 @@ LOG = logging.getLogger(__name__)
 
 
 def apply_patches():
-    apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
 
-    def apigateway_models_Stage_init(
-        self, name=None, deployment_id=None, variables=None, description='',
-        cacheClusterEnabled=False, cacheClusterSize=None
-    ):
-        apigateway_models_Stage_init_orig(self, name=None, deployment_id=None, variables=None, description='',
-            cacheClusterEnabled=False, cacheClusterSize=None)
+    def apigateway_models_Stage_init(self, cacheClusterEnabled=False, cacheClusterSize=None, **kwargs):
+        apigateway_models_Stage_init_orig(self, cacheClusterEnabled=cacheClusterEnabled,
+            cacheClusterSize=cacheClusterSize, **kwargs)
 
         if (cacheClusterSize or cacheClusterEnabled) and not self.get('cacheClusterStatus'):
             self['cacheClusterStatus'] = 'AVAILABLE'
 
+    apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
 
     def apigateway_models_backend_delete_method(self, function_id, resource_id, method_type):
@@ -66,6 +63,7 @@ def apply_patches():
         self['passthroughBehavior'] = pass_through_behavior
         self['cacheKeyParameters'] = cache_key_parameters
         self['cacheNamespace'] = short_uid()
+        self['timeoutInMillis'] = None
         self['integrationResponses'] = {'200': apigateway_models.IntegrationResponse(200)}
         if request_templates:
             self['requestTemplates'] = request_templates
@@ -145,6 +143,27 @@ def apply_patches():
                     result = result[0], result[1], json.dumps(data)
         return result
 
+    apigateway_response_integrations_orig = APIGatewayResponse.integrations
+
+    def apigateway_response_integrations(self, request, full_url, headers):
+        result = apigateway_response_integrations_orig(self, request, full_url, headers)
+        timeout_milliseconds = self._get_param('timeoutInMillis')
+
+        if self.method == 'PUT' and timeout_milliseconds:
+            url_path_parts = self.path.split('/')
+            function_id = url_path_parts[2]
+            resource_id = url_path_parts[4]
+            method_type = url_path_parts[6]
+
+            resource = self.backend.get_resource(function_id, resource_id)
+            resource.resource_methods[method_type]['methodIntegration'] = (
+                resource.resource_methods[method_type].get('methodIntegration') or {})
+            resource.resource_methods[method_type]['methodIntegration']['timeoutInMillis'] = timeout_milliseconds
+
+            return result[0], result[1], json.dumps(resource.resource_methods[method_type]['methodIntegration'])
+
+        return result
+
     if not hasattr(apigateway_models.APIGatewayBackend, 'put_rest_api'):
         apigateway_response_restapis_individual_orig = APIGatewayResponse.restapis_individual
         APIGatewayResponse.restapis_individual = apigateway_response_restapis_individual
@@ -158,6 +177,7 @@ def apply_patches():
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
     apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
     APIGatewayResponse.resource_methods = apigateway_response_resource_methods
+    APIGatewayResponse.integrations = apigateway_response_integrations
 
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):

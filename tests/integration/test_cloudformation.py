@@ -1457,11 +1457,7 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
-        rs = cloudformation.create_stack(
-            StackName=stack_name,
-            TemplateBody=TEST_TEMPLATE_22,
-        )
-        self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
+        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_22)
 
         res = cloudformation.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
         rest_api_ids = [r['PhysicalResourceId'] for r in res if r['ResourceType'] == 'AWS::ApiGateway::RestApi']
@@ -1673,6 +1669,48 @@ class CloudFormationTest(unittest.TestCase):
         error_message = str(ctx.exception)
         self.assertIn('UpdateStack', error_message)
         self.assertIn('No updates are to be performed.', error_message)
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_cdk_template(self):
+        stack_name = 'stack-%s' % short_uid()
+        bucket = 'bucket-%s' % short_uid()
+        key = 'key-%s' % short_uid()
+        path = os.path.join(THIS_FOLDER, 'templates', 'asset')
+
+        s3_client = aws_stack.connect_to_service('s3')
+        s3_client.create_bucket(Bucket=bucket)
+        s3_client.put_object(Bucket=bucket, Key=key, Body=create_zip_file(path, True))
+
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'cdktemplate.json'))
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'AssetParameters1S3BucketEE4ED9A8',
+                    'ParameterValue': bucket
+                },
+                {
+                    'ParameterKey': 'AssetParameters1S3VersionKeyE160C88A',
+                    'ParameterValue': key
+                }
+            ]
+        )
+
+        time.sleep(3)
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        resp = lambda_client.list_functions()
+        functions = [func for func in resp['Functions'] if stack_name in func['FunctionName']]
+
+        self.assertEqual(len(functions), 2)
+        self.assertEqual(len([func for func in functions if func['Handler'] == 'index.createUserHandler']), 1)
+        self.assertEqual(len([func for func in functions if func['Handler'] == 'index.authenticateUserHandler']), 1)
 
         # clean up
         cloudformation.delete_stack(StackName=stack_name)
