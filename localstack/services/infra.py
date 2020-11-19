@@ -170,6 +170,26 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
         pass
 
 
+def patch_instance_tracker_meta():
+    """
+    Avoid instance collection for moto dashboard
+    """
+    def new_intance(meta, name, bases, dct):
+        cls = super(moto_core.models.InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
+        if name == 'BaseModel':
+            return cls
+        cls.instances = []
+        return cls
+
+    moto_core.models.InstanceTrackerMeta.__new__ = new_intance
+
+    def new_basemodel(cls, *args, **kwargs):
+        instance = super(moto_core.models.BaseModel, cls).__new__(cls)
+        return instance
+
+    moto_core.models.BaseModel.__new__ = new_basemodel
+
+
 def set_service_status(data):
     command = data.get('command')
     service = data.get('service')
@@ -359,6 +379,7 @@ def start_infra(asynchronous=False, apis=None):
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
+        patch_instance_tracker_meta()
 
         # load plugins
         load_plugins()
