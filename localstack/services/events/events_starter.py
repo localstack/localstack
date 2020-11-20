@@ -60,7 +60,7 @@ def filter_event_with_target_input_path(target, event):
 def filter_event_based_on_event_format(self, rule, event):
     def filter_event(event_pattern, event):
         for key, value in event_pattern.items():
-            event_value = event.get(key.lower())
+            event_value = event.get(key)
             if not event_value:
                 return False
 
