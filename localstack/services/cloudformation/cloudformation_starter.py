@@ -232,7 +232,7 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
     """ Apply some fixes to resource props which otherwise cause deployments to fail """
 
     res_type = resource_props['Type']
-    props = resource_props.get('Properties', {})
+    props = resource_props['Properties'] = resource_props.get('Properties', {})
 
     def _generate_res_name():
         return '%s-%s-%s' % (stack_name, resource_name or resource_id, short_uid())
