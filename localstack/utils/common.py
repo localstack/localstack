@@ -31,9 +31,9 @@ from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse, parse_qs
 from multiprocessing.dummy import Pool
 from localstack import config
+from localstack.utils import bootstrap
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
-from localstack.utils import bootstrap
 from localstack.utils.bootstrap import FuncThread
 
 # arrays for temporary files and resources

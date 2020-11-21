@@ -121,7 +121,8 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                     response.headers.pop('Content-Length', None)
                 result.headers.pop('Server', None)
                 result.headers.pop('Date', None)
-                response.headers.update(dict(result.headers))
+                headers = {k: str(v).replace('\n', r'\n') for k, v in result.headers.items()}
+                response.headers.update(headers)
                 # set multi-value headers
                 multi_value_headers = getattr(result, 'multi_value_headers', {})
                 for key, values in multi_value_headers.items():
