@@ -228,7 +228,7 @@ def apply_attributes_from_existing_resource_on_update(resource_props, stack_name
             props['BucketName'] = existing_name
 
 
-def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None):
+def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None, update=False):
     """ Apply some fixes to resource props which otherwise cause deployments to fail """
 
     res_type = resource_props['Type']
@@ -255,7 +255,7 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
     if res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
 
-    if res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
+    if res_type == 'AWS::S3::Bucket' and not props.get('BucketName') and not update:
         props['BucketName'] = s3_listener.normalize_bucket_name(_generate_res_name())
 
     if res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
@@ -379,10 +379,6 @@ def apply_patches():
 
         if resource and not update and not force_create:
             return resource
-
-        # add some fixes and default props which otherwise cause deployments to fail
-        for res_id, res_details in resources_map._resource_json_map.items():
-            add_default_resource_props(res_details, stack_name, resource_id=res_id)
 
         # check if all dependencies are satisfied
         resource_map_copy = dict(resources_map._resource_json_map)
@@ -627,8 +623,31 @@ def apply_patches():
     resource_map_delete_orig = parsing.ResourceMap.delete
     parsing.ResourceMap.delete = resource_map_delete
 
-    # patch ResourceMap set_resource_json()
+    def resource_map_create(self, template, *args, **kwargs):
+        stack_name = self._parsed_resources['AWS::StackName']
+        resources_json_map = template.get('Resources') or {}
+        for res_id, res_details in resources_json_map.items():
+            # add some fixes and default props which otherwise cause deployments to fail
+            add_default_resource_props(res_details, stack_name, resource_id=res_id)
+        result = resource_map_create_orig(self, template, *args, **kwargs)
+        return result
 
+    resource_map_create_orig = parsing.ResourceMap.create
+    parsing.ResourceMap.create = resource_map_create
+
+    def resource_map_update(self, template, *args, **kwargs):
+        stack_name = self._parsed_resources['AWS::StackName']
+        resources_json_map = template.get('Resources') or {}
+        for res_id, res_details in resources_json_map.items():
+            # add some fixes and default props which otherwise cause deployments to fail
+            add_default_resource_props(res_details, stack_name, resource_id=res_id, update=True)
+        result = resource_map_update_orig(self, template, *args, **kwargs)
+        return result
+
+    resource_map_update_orig = parsing.ResourceMap.update
+    parsing.ResourceMap.update = resource_map_update
+
+    # patch ResourceMap set_resource_json()
     def set_resource_json(self, resources):
         self._resource_json_map = resources or {}
         self._resource_json_map_orig = clone_safe(self._resource_json_map)
@@ -756,6 +775,7 @@ def apply_patches():
             original_resource, new_resource_name, cloudformation_json, region_name):
         if cloudformation_json.get('BucketName') in [None, original_resource.name]:
             # TODO: apply other resource updates
+            cloudformation_json['BucketName'] = original_resource.name
             return original_resource
         return Bucket_update_from_cf_json_orig(original_resource, new_resource_name, cloudformation_json, region_name)
 

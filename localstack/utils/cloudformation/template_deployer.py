@@ -1058,6 +1058,9 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
     elif resource_type == 'ApiGateway::Resource':
         if attribute == 'PhysicalResourceId':
             return resource_json['id']
+    elif resource_type == 'S3::Bucket':
+        if attribute == 'PhysicalResourceId' and isinstance(resource, dict):
+            return resource.get('Properties', {}).get('BucketName')
     attribute_lower = common.first_char_to_lower(attribute)
     result = resource_json.get(attribute) or resource_json.get(attribute_lower)
     if result is None and isinstance(resource, dict):
