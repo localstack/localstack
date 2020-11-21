@@ -29,7 +29,7 @@ from localstack.utils.aws import aws_stack, aws_responses
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json,
-    get_free_tcp_port, Mock, start_thread, edge_ports_info)
+    get_free_tcp_port, Mock, start_thread, edge_ports_info, clone_safe)
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import start_proxy_for_service, do_run, canonicalize_api_names
 from localstack.utils.bootstrap import setup_logging
@@ -626,6 +626,14 @@ def apply_patches():
 
     resource_map_delete_orig = parsing.ResourceMap.delete
     parsing.ResourceMap.delete = resource_map_delete
+
+    # patch ResourceMap set_resource_json()
+
+    def set_resource_json(self, resources):
+        self._resource_json_map = resources or {}
+        self._resource_json_map_orig = clone_safe(self._resource_json_map)
+
+    parsing.ResourceMap.set_resource_json = set_resource_json
 
     # patch CloudFormation parse_output(..) method to fix a bug in moto
     def parse_output(output_logical_id, output_json, resources_map):

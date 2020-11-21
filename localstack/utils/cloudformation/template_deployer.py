@@ -1076,8 +1076,8 @@ def get_attr_from_model_instance(resource, attribute, resource_type, resource_id
     if not model_clazz:
         LOG.info('Unable to find model class for resource type "%s"' % resource_type)
         return
-    inst = model_clazz(resource_name=resource_id, resource_json=resource)
     try:
+        inst = model_clazz(resource_name=resource_id, resource_json=resource)
         return inst.get_cfn_attribute(attribute)
     except Exception:
         pass
