@@ -768,6 +768,17 @@ def describe_stack_resource(stack_name, logical_resource_id):
                     (logical_resource_id, stack_name, e))
 
 
+def retrieve_and_update_resource_details(resource_id, resource_status, resources, stack_name):
+    resource = resources.get(resource_id) or {}
+    resource_props = resource.get('Properties') or {}
+    result = retrieve_resource_details(resource_id, resource_status, resources, stack_name)
+    if result:
+        # Note: for now, we're only setting non-existing props (we may set changed props in the future as well)
+        update_attrs = {k: v for k, v in result.items() if k not in resource_props}
+        resource_props.update(update_attrs)
+    return result
+
+
 def retrieve_resource_details(resource_id, resource_status, resources, stack_name):
     resource = resources.get(resource_id)
     resource_id = resource_status.get('PhysicalResourceId') or resource_id
@@ -781,7 +792,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             resource_id = func_name if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
         elif resource_type == 'Lambda::Version':
-            name = resource_props.get('FunctionName')
+            name = resolve_refs_recursively(stack_name, resource_props.get('FunctionName'), resources)
             if not name:
                 return None
             func_name = aws_stack.lambda_function_name(name)
@@ -1020,29 +1031,35 @@ def check_not_found_exception(e, resource_type, resource, resource_status):
             (resource_type, e, traceback.format_exc(), resource, resource_status))
 
 
-def extract_resource_attribute(resource_type, resource, attribute):
+def extract_resource_attribute(resource_type, resource_json, attribute, resource=None):
     LOG.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
     # extract resource specific attributes
     if resource_type == 'Lambda::Function':
         actual_attribute = 'FunctionArn' if attribute == 'Arn' else attribute
-        return resource['Configuration'][actual_attribute]
+        value = resource_json['Configuration'].get(actual_attribute)
+        if value is not None:
+            return value
     elif resource_type == 'DynamoDB::Table':
         actual_attribute = 'LatestStreamArn' if attribute == 'StreamArn' else attribute
-        value = resource['Table'].get(actual_attribute)
+        value = resource_json['Table'].get(actual_attribute)
         return value
     elif resource_type == 'ApiGateway::RestApi':
         if attribute == 'PhysicalResourceId':
-            return resource['id']
+            return resource_json['id']
         if attribute == 'RootResourceId':
-            resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=resource['id'])['items']
+            resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=resource_json['id'])['items']
             for res in resources:
                 if res['path'] == '/' and not res.get('parentId'):
                     return res['id']
     elif resource_type == 'ApiGateway::Resource':
         if attribute == 'PhysicalResourceId':
-            return resource['id']
+            return resource_json['id']
     attribute_lower = common.first_char_to_lower(attribute)
-    return resource.get(attribute) or resource.get(attribute_lower)
+    result = resource_json.get(attribute) or resource_json.get(attribute_lower)
+    if not result and isinstance(resource, dict):
+        res_json1 = resource.get('Properties', {})
+        result = res_json1.get(attribute) or res_json1.get(attribute_lower)
+    return result
 
 
 def resolve_ref(stack_name, ref, resources, attribute):
@@ -1072,17 +1089,21 @@ def resolve_ref(stack_name, ref, resources, attribute):
     #     if attr_value not in [None, '']:
     #         return attr_value
 
-    if not resource_status and ref in resources:
+    if not resource_status and resources.get(ref):
         resource_status = resources[ref].get('__details__', {})
+    if not resource_status and resources.get(ref):
+        if isinstance(resources[ref].get(attribute), (str, int, float, bool, dict)):
+            return resources[ref][attribute]
     # fetch resource details
     resource_new = retrieve_resource_details(ref, resource_status, resources, stack_name)
     if not resource_new:
         return
     resource = resources.get(ref)
     resource_type = get_resource_type(resource)
-    result = extract_resource_attribute(resource_type, resource_new, attribute)
+    result = extract_resource_attribute(resource_type, resource_new, attribute, resource=resource)
     if not result:
-        LOG.warning('Unable to extract reference attribute %s from resource: %s' % (attribute, resource_new))
+        LOG.warning('Unable to extract reference attribute %s from resource: %s %s' %
+            (attribute, resource_new, resource))
     return result
 
 
@@ -1113,6 +1134,12 @@ def resolve_refs_recursively(stack_name, value, resources):
             for key, val in item_to_sub[1].items():
                 val = resolve_refs_recursively(stack_name, val, resources)
                 result = result.replace('${%s}' % key, val)
+            return result
+        if keys_list and keys_list[0].lower() == 'fn::findinmap':
+            result = resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=value[keys_list[0]][1])
+            if not result:
+                raise Exception('Cannot resolve fn::FindInMap: %s %s' % (value[keys_list[0]], list(resources.keys())))
+            result = result.get(value[keys_list[0]][2])
             return result
         else:
             for key, val in iteritems(value):
@@ -1449,6 +1476,7 @@ def delete_stack(stack_name, stack_resources):
 # --------
 # Util methods for analyzing resource dependencies
 # --------
+
 def is_deployable_resource(resource):
     resource_type = get_resource_type(resource)
     entry = RESOURCE_TO_FUNCTION.get(resource_type)
@@ -1457,18 +1485,27 @@ def is_deployable_resource(resource):
     return bool(entry and entry.get(ACTION_CREATE))
 
 
+def get_deployment_state(resource_id, resources, stack_name):
+    res_details = resources[resource_id]
+    resource_status = res_details.get('__details__') or {}
+    details = retrieve_and_update_resource_details(resource_id, resource_status, resources, stack_name)
+    return details
+
+
 def is_deployed(resource_id, resources, stack_name):
-    resource = resources[resource_id]
-    resource_status = resource.get('__details__') or {}
-    details = retrieve_resource_details(resource_id, resource_status, resources, stack_name)
+    details = get_deployment_state(resource_id, resources, stack_name)
     return bool(details)
 
 
-def should_be_deployed(resource_id, resources, stack_name):
+def should_be_deployed(resource_id, resources, stack_name, deploy_state=None):
     """ Return whether the given resource is all of: (1) deployable, (2) not yet deployed,
         and (3) has no unresolved dependencies. """
-    resource = resources[resource_id]
-    if not is_deployable_resource(resource) or is_deployed(resource_id, resources, stack_name):
+    res_details = resources[resource_id]
+    if not is_deployable_resource(res_details):
+        return False
+    if deploy_state is None:
+        deploy_state = is_deployed(resource_id, resources, stack_name)
+    if deploy_state:
         return False
     return all_resource_dependencies_satisfied(resource_id, resources, stack_name)
 
@@ -1507,6 +1544,7 @@ def get_unsatisfied_dependencies_for_resources(
     return result
 
 
+# TODO: check if still needed
 def resources_to_deploy_next(resources, stack_name):
     result = {}
     for resource_id, resource in resources.items():

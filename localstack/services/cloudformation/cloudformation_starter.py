@@ -386,6 +386,7 @@ def apply_patches():
 
         # check if all dependencies are satisfied
         resource_map_copy = dict(resources_map._resource_json_map)
+        resource_map_copy.update(resources_map._template.get('Mappings', {}))
         unsatisfied_deps = template_deployer.get_unsatisfied_dependencies(
             logical_id, resource_map_copy, stack_name
         )
@@ -425,10 +426,15 @@ def apply_patches():
             except Exception as e:
                 moto_create_error = e
 
+        # get deployment state
+        res_state = get_and_update_deployment_state(logical_id, resources_map._resource_json_map, stack_name, resource)
+
         # check whether this resource needs to be deployed
         resource_map_new = dict(resources_map._resource_json_map)
+        resource_map_new.update(resources_map._template.get('Mappings', {}))
         resource_map_new[logical_id] = resource_json
-        should_be_created = template_deployer.should_be_deployed(logical_id, resource_map_new, stack_name)
+        should_be_created = template_deployer.should_be_deployed(
+            logical_id, resource_map_new, stack_name, deploy_state=res_state)
 
         # check for moto creation errors and raise an exception if needed
         if moto_create_error:
@@ -503,6 +509,22 @@ def apply_patches():
         update_physical_resource_id(resource)
 
         return resource
+
+    def get_and_update_deployment_state(resource_id, resources, stack_name, resource):
+        """ Fetch and update the deployment state of the given stack resource. """
+        res_details = resources[resource_id]
+        details = template_deployer.get_deployment_state(resource_id, resources, stack_name)
+        if details:
+            if hasattr(resource, 'update_state'):
+                resource.update_state(details)
+            resource_props = res_details['Properties']
+            if hasattr(resource, 'get_cfn_attribute') and not resource_props.get('PhysicalResourceId'):
+                try:
+                    resource_props['PhysicalResourceId'] = resource.get_cfn_attribute('Ref')
+                except Exception:
+                    # ignore this error here if the "Ref" attribute is not (yet) available
+                    pass
+        return details
 
     def update_resource_id(resource, new_id, props, region_name, stack_name, resource_map, resource_props={}):
         """ Update and fix the ID(s) of the given resource. """
