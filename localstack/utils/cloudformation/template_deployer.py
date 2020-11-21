@@ -5,8 +5,9 @@ import yaml
 import logging
 import traceback
 import moto.cloudformation.utils
-from six import iteritems
 from urllib.parse import urlparse
+from six import iteritems
+from moto.cloudformation import parsing
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import AWS_REGION_US_EAST_1
@@ -772,7 +773,8 @@ def retrieve_and_update_resource_details(resource_id, resource_status, resources
     resource = resources.get(resource_id) or {}
     resource_props = resource.get('Properties') or {}
     result = retrieve_resource_details(resource_id, resource_status, resources, stack_name)
-    if result:
+    if isinstance(result, dict):
+        result.pop('ResponseMetadata', None)
         # Note: for now, we're only setting non-existing props (we may set changed props in the future as well)
         update_attrs = {k: v for k, v in result.items() if k not in resource_props}
         resource_props.update(update_attrs)
@@ -1031,14 +1033,16 @@ def check_not_found_exception(e, resource_type, resource, resource_status):
             (resource_type, e, traceback.format_exc(), resource, resource_status))
 
 
-def extract_resource_attribute(resource_type, resource_json, attribute, resource=None):
+def extract_resource_attribute(resource_type, resource_json, attribute, resource_id=None, resource=None):
     LOG.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
     # extract resource specific attributes
     if resource_type == 'Lambda::Function':
-        actual_attribute = 'FunctionArn' if attribute == 'Arn' else attribute
-        value = resource_json['Configuration'].get(actual_attribute)
-        if value is not None:
-            return value
+        func_configs = resource_json.get('Configuration')
+        if attribute in ['Arn', 'PhysicalResourceId']:
+            if isinstance(resource, dict):
+                func_configs = resource.get('Properties', {})
+            return func_configs.get('FunctionArn') or aws_stack.lambda_function_arn(func_configs.get('FunctionName'))
+        return func_configs.get(attribute)
     elif resource_type == 'DynamoDB::Table':
         actual_attribute = 'LatestStreamArn' if attribute == 'StreamArn' else attribute
         value = resource_json['Table'].get(actual_attribute)
@@ -1056,10 +1060,27 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
             return resource_json['id']
     attribute_lower = common.first_char_to_lower(attribute)
     result = resource_json.get(attribute) or resource_json.get(attribute_lower)
-    if not result and isinstance(resource, dict):
+    if result is None and isinstance(resource, dict):
         res_json1 = resource.get('Properties', {})
         result = res_json1.get(attribute) or res_json1.get(attribute_lower)
+        if result is None:
+            result = get_attr_from_model_instance(resource, attribute,
+                resource_type=resource_type, resource_id=resource_id)
     return result
+
+
+def get_attr_from_model_instance(resource, attribute, resource_type, resource_id=None):
+    if not resource_type.startswith('AWS::'):
+        resource_type = 'AWS::%s' % resource_type
+    model_clazz = parsing.MODEL_MAP.get(resource_type)
+    if not model_clazz:
+        LOG.info('Unable to find model class for resource type "%s"' % resource_type)
+        return
+    inst = model_clazz(resource_name=resource_id, resource_json=resource)
+    try:
+        return inst.get_cfn_attribute(attribute)
+    except Exception:
+        pass
 
 
 def resolve_ref(stack_name, ref, resources, attribute):
@@ -1100,7 +1121,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
         return
     resource = resources.get(ref)
     resource_type = get_resource_type(resource)
-    result = extract_resource_attribute(resource_type, resource_new, attribute, resource=resource)
+    result = extract_resource_attribute(resource_type, resource_new, attribute, resource_id=ref, resource=resource)
     if not result:
         LOG.warning('Unable to extract reference attribute %s from resource: %s %s' %
             (attribute, resource_new, resource))
