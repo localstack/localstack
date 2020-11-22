@@ -243,7 +243,7 @@ defined in [`config.py`](https://github.com/localstack/localstack/blob/master/lo
 
 For example, to dynamically set `KINESIS_ERROR_PROBABILITY=1` at runtime, use the following command:
 ```
-curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhost:4568/?_config_'
+curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhost:4566/?_config_'
 ```
 
 ### Service health checks
@@ -284,7 +284,7 @@ The local directory `/ls_tmp` must contains the three files (server.test.pem, se
 You can point your `aws` CLI to use the local infrastructure, for example:
 
 ```
-aws --endpoint-url=http://localhost:4568 kinesis list-streams
+aws --endpoint-url=http://localhost:4566 kinesis list-streams
 {
     "StreamNames": []
 }
