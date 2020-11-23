@@ -687,13 +687,18 @@ def download(url, path, verify_ssl=True):
             os.makedirs(os.path.dirname(path))
         LOG.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
         with open(path, 'wb') as f:
+            iter_length = 0
+            iter_limit = 1000000  # print a log line for every 1MB chunk
             for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
                 total += len(chunk)
+                iter_length += len(chunk)
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
-                    LOG.debug('Writing %s bytes (total %s) to %s' % (len(chunk), total, path))
                 else:
                     LOG.debug('Empty chunk %s (total %s) from %s' % (chunk, total, url))
+                if iter_length >= iter_limit:
+                    LOG.debug('Written %s bytes (total %s) to %s' % (iter_length, total, path))
+                    iter_length = 0
             f.flush()
             os.fsync(f)
         if os.path.getsize(path) == 0:
