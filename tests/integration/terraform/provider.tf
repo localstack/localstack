@@ -13,5 +13,6 @@ provider "aws" {
     lambda = "http://localhost:4566"
     iam    = "http://localhost:4566"
     apigateway = "http://localhost:4566"
+    route53 = "http://localhost:4566"
   }
 }
