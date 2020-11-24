@@ -88,4 +88,4 @@ RUN apk del --purge git;
 RUN rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform
 
 # Fix for Centos host OS
-echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
+RUN echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
