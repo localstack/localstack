@@ -506,7 +506,7 @@ class TestLambdaAPI(unittest.TestCase):
             result = json.loads(response.get_data())
             self.assertDictEqual(concurrency_data, result)
 
-            response = self.client.get('/2017-10-31/functions/{0}/concurrency'.format(self.FUNCTION_NAME))
+            response = self.client.get('/2019-09-30/functions/{0}/concurrency'.format(self.FUNCTION_NAME))
             self.assertDictEqual(concurrency_data, result)
 
             response = self.client.delete('/2017-10-31/functions/{0}/concurrency'.format(self.FUNCTION_NAME))
