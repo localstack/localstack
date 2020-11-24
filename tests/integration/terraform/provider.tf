@@ -1,4 +1,5 @@
 provider "aws" {
+  version = "~> 3.16.0"
   region                      = "us-east-1"
   access_key                  = "aws_mock_key"
   secret_key                  = "aws_mock_key"
@@ -12,6 +13,5 @@ provider "aws" {
     lambda = "http://localhost:4566"
     iam    = "http://localhost:4566"
     apigateway = "http://localhost:4566"
-    route53 = "http://localhost:4566"
   }
 }
