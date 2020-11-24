@@ -113,7 +113,6 @@ vagrant-start:
 		vagrant reload --provision;\
 	fi
 
-
 vagrant-stop:
 	vagrant halt
 
