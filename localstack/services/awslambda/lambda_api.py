@@ -1522,17 +1522,23 @@ def list_aliases(function):
                                       key=lambda x: x['Name'])})
 
 
-@app.route('/<version>/functions/<function>/concurrency', methods=['PUT'])
-def put_concurrency(version, function):
+@app.route('/<version>/functions/<function>/concurrency', methods=['GET', 'PUT', 'DELETE'])
+def function_concurrency(version, function):
     # the version for put_concurrency != PATH_ROOT, at the time of this
     # writing it's: /2017-10-31 for this endpoint
     # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
     arn = func_arn(function)
-    data = json.loads(request.data)
     lambda_details = ARN_TO_LAMBDA.get(arn)
     if not lambda_details:
         return not_found_error(arn)
-    lambda_details.concurrency = data
+    if request.method == 'GET':
+        data = lambda_details.concurrency
+    if request.method == 'PUT':
+        data = json.loads(request.data)
+        lambda_details.concurrency = data
+    if request.method == 'DELETE':
+        lambda_details.concurrency = None
+        return Response('', status=204)
     return jsonify(data)
 
 

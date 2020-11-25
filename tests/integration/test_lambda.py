@@ -624,6 +624,28 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertIn('awsRegion', events[0]['Records'][0])
         self.assertIn('kinesis', events[0]['Records'][0])
 
+    def test_function_concurrency(self):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        function_name = 'lambda_func-{}'.format(short_uid())
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        response = lambda_client.put_function_concurrency(
+            FunctionName=function_name,
+            ReservedConcurrentExecutions=123
+        )
+        self.assertIn('ReservedConcurrentExecutions', response)
+        response = lambda_client.get_function_concurrency(FunctionName=function_name)
+        self.assertIn('ReservedConcurrentExecutions', response)
+        response = lambda_client.delete_function_concurrency(FunctionName=function_name)
+        self.assertNotIn('ReservedConcurrentExecutions', response)
+
+        testutil.delete_lambda_function(name=function_name)
+
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
