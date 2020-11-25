@@ -101,12 +101,6 @@ def start_redshift(port=None, asynchronous=False):
     return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
 
 
-def start_route53(port=None, asynchronous=False, update_listener=None):
-    port = port or config.PORT_ROUTE53
-    return start_moto_server('route53', port, name='Route53', asynchronous=asynchronous,
-        update_listener=update_listener)
-
-
 def start_acm(port=None, asynchronous=False):
     port = port or config.PORT_ACM
     return start_moto_server('acm', port, name='ACM', asynchronous=asynchronous)
