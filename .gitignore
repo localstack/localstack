@@ -20,6 +20,7 @@ package-lock.json
 .DS_Store
 *.egg-info/
 .eggs/
+.vagrant/
 *.sw*
 ~*
 *~
