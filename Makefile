@@ -105,6 +105,17 @@ docker-mount-run:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
 		ENTRYPOINT="-v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/" make docker-run
 
+vagrant-start:
+	@vagrant up || EXIT_CODE=$$? ;\
+ 	if [ "$EXIT_CODE" != "0" ]; then\
+ 		echo "Predicted error. Ignoring...";\
+		vagrant ssh -c "sudo yum install -y epel-release && sudo yum update -y && sudo yum -y install wget perl gcc gcc-c++ dkms kernel-devel kernel-headers make bzip2";\
+		vagrant reload --provision;\
+	fi
+
+vagrant-stop:
+	vagrant halt
+
 docker-build-light:
 	@img_name=$(IMAGE_NAME_LIGHT); \
 		docker build -t $$img_name -f bin/Dockerfile.light .; \

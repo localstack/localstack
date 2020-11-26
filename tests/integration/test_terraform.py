@@ -90,3 +90,12 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual(len(res2[0]['resourceMethods']), 2)
         self.assertEqual(res2[0]['resourceMethods']['GET']['methodIntegration']['type'], 'AWS_PROXY')
         self.assertTrue(res2[0]['resourceMethods']['GET']['methodIntegration']['uri'])
+
+    def test_route53(self):
+        route53 = aws_stack.connect_to_service('route53')
+
+        response = route53.create_hosted_zone(Name='zone123', CallerReference='ref123')
+        self.assertEqual(201, response['ResponseMetadata']['HTTPStatusCode'])
+
+        response = route53.get_change(Id='string')
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
