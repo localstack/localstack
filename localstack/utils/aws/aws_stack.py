@@ -457,6 +457,11 @@ def es_domain_arn(domain_name, account_id=None, region_name=None):
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def code_signing_arn(code_signing_id, account_id=None, region_name=None):
+    pattern = 'arn:aws:lambda:%s:%s:code-signing-config:%s'
+    return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)
+
+
 def s3_bucket_arn(bucket_name, account_id=None):
     return 'arn:aws:s3:::%s' % (bucket_name)
 
