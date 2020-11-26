@@ -60,7 +60,7 @@ def filter_event_with_target_input_path(target, event):
 def filter_event_based_on_event_format(self, rule, event):
     def filter_event(event_pattern, event):
         for key, value in event_pattern.items():
-            event_value = event.get(key)
+            event_value = event.get(key.lower())
             if not event_value:
                 return False
 
@@ -69,7 +69,7 @@ def filter_event_based_on_event_format(self, rule, event):
                    get_two_lists_intersection(value, event_value) == []:
                     return False
                 elif not isinstance(event_value, list) and \
-                        (isinstance(event_value, str) or isinstance(event_value, int)) and \
+                        isinstance(event_value, (str, int)) and \
                         event_value not in value:
                     return False
 
@@ -77,7 +77,7 @@ def filter_event_based_on_event_format(self, rule, event):
                 if not filter_event_with_content_base_parameter(value, event_value):
                     return False
 
-            elif isinstance(value, str) or isinstance(value, int):
+            elif isinstance(value, (str, int)):
                 try:
                     if isinstance(json.loads(value), dict) and \
                        not filter_event(json.loads(value), event_value):
@@ -89,7 +89,6 @@ def filter_event_based_on_event_format(self, rule, event):
     rule_information = self.events_backend.describe_rule(rule)
     if rule_information.event_pattern:
         event_pattern = json.loads(rule_information.event_pattern)
-        event_pattern = {k.lower(): v for k, v in event_pattern.items()}
         if not filter_event(event_pattern, event):
             return False
     return True
@@ -250,82 +249,62 @@ def identify_content_base_parameter_in_pattern(parameters):
 
 
 def filter_event_with_content_base_parameter(pattern_value, event_value):
-    evaluated_result = []
     for element in pattern_value:
-        if (isinstance(element, str) or isinstance(element, int)) \
+        if (isinstance(element, (str, int))) \
            and (event_value == element or element in event_value):
-            evaluated_result.append(True)
+            return True
         elif isinstance(element, dict):
             element_key = list(element.keys())[0]
             element_value = element.get(element_key)
             if element_key.lower() == 'prefix':
-                if not re.match(r'^{}'.format(element_value), event_value):
-                    evaluated_result.append(False)
-                else:
-                    evaluated_result.append(True)
+                if re.match(r'^{}'.format(element_value), event_value):
+                    return True
             elif element_key.lower() == 'exists':
-                if element_value and not event_value:
-                    evaluated_result.append(False)
-                elif not element_value and event_value:
-                    evaluated_result.append(False)
-                else:
-                    evaluated_result.append(True)
+                if element_value and event_value:
+                    return True
+                elif not element_value and not event_value:
+                    return True
             elif element_key.lower() == 'cidr':
                 ips = [str(ip) for ip in ipaddress.IPv4Network(element_value)]
-                if event_value not in ips:
-                    evaluated_result.append(False)
-                else:
-                    evaluated_result.append(True)
+                if event_value in ips:
+                    return True
             elif element_key.lower() == 'numeric':
-                list_of_operators = element_value
-                check_valid_numeric_content_base_rule(list_of_operators)
-                for index in range(len(list_of_operators)):
-
-                    if list_of_operators[index] == '>' and \
-                       isinstance(list_of_operators[index + 1], int) and \
-                       event_value <= list_of_operators[index + 1]:
-                        evaluated_result.append(False)
-
-                    elif list_of_operators[index] == '>=' and \
-                        isinstance(list_of_operators[index + 1], int) and \
-                            event_value < list_of_operators[index + 1]:
-                        evaluated_result.append(False)
-
-                    elif list_of_operators[index] == '<' and \
-                        isinstance(list_of_operators[index + 1], int) and \
-                            event_value >= list_of_operators[index + 1]:
-                        evaluated_result.append(False)
-
-                    elif list_of_operators[index] == '<=' and \
-                        isinstance(list_of_operators[index + 1], int) and \
-                            event_value > list_of_operators[index + 1]:
-                        evaluated_result.append(False)
-
+                if check_valid_numeric_content_base_rule(element_value):
+                    for index in range(len(element_value)):
+                        if isinstance(element_value[index], int):
+                            continue
+                        if element_value[index] == '>' and \
+                            isinstance(element_value[index + 1], int) and \
+                                event_value <= element_value[index + 1]:
+                            break
+                        elif element_value[index] == '>=' and \
+                            isinstance(element_value[index + 1], int) and \
+                                event_value < element_value[index + 1]:
+                            break
+                        elif element_value[index] == '<' and \
+                            isinstance(element_value[index + 1], int) and \
+                                event_value >= element_value[index + 1]:
+                            break
+                        elif element_value[index] == '<=' and \
+                            isinstance(element_value[index + 1], int) and \
+                                event_value > element_value[index + 1]:
+                            break
                     else:
-                        evaluated_result.append(True)
-                    index = index + 1
+                        return True
 
             elif element_key.lower() == 'anything-but':
                 if isinstance(element_value, list) and \
-                   event_value in element_value:
-                    evaluated_result.append(False)
-                elif (isinstance(element_value, str) or isinstance(element_value, int)) and \
-                        event_value == element_value:
-                    evaluated_result.append(False)
+                        event_value not in element_value:
+                    return True
+                elif (isinstance(element_value, (str, int))) and \
+                        event_value != element_value:
+                    return True
                 elif isinstance(element_value, dict):
                     nested_key = list(element_value)[0]
-                    if nested_key == 'prefix' and re.match(r'^{}'.format(element_value.get(nested_key)), event_value):
-                        evaluated_result.append(False)
-                    else:
-                        evaluated_result.append(True)
-                else:
-                    evaluated_result.append(True)
-            else:
-                evaluated_result.append(True)
-    if any(evaluated_result) or evaluated_result == []:
-        return True
-    elif not all(evaluated_result):
-        return False
+                    if nested_key == 'prefix' and \
+                            not re.match(r'^{}'.format(element_value.get(nested_key)), event_value):
+                        return True
+    return False
 
 
 def check_valid_numeric_content_base_rule(list_of_operators):
@@ -348,3 +327,4 @@ def check_valid_numeric_content_base_rule(list_of_operators):
             if upper_limit and lower_limit and upper_limit < lower_limit:
                 return False
             index = index + 1
+    return True
