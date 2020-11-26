@@ -19,12 +19,42 @@ def normalize_name(param_name):
 
 def get_secrets_information(name, resource_name):
     client = aws_stack.connect_to_service('secretsmanager')
-    secret_info = client.get_secret_value(SecretId=resource_name)
-    del secret_info['ResponseMetadata']
-
-    result = {'Parameter': {'SourceResult': secret_info, 'Name': name, 'Value':
-              secret_info.get('SecretString'), 'Type': 'SecureString',
+    try:
+        secret_info = client.get_secret_value(SecretId=resource_name)
+        del secret_info['ResponseMetadata']
+        result = {'Parameter': {'SourceResult': secret_info, 'Name': name, 'Value':
+                secret_info.get('SecretString'), 'Type': 'SecureString',
                             'LastModifiedDate': secret_info.get('CreatedDate')}}
+        return result
+    except client.exceptions.ResourceNotFoundException:
+        return None
+
+
+def has_secrets(names):
+    for name in names:
+        if name.startswith('/aws/reference/secretsmanager'):
+            return True
+
+
+def get_params_and_secrets(names):
+    ssm_client = aws_stack.connect_to_service('ssm')
+    result = {'Parameters': [], 'InvalidParameters': []}
+    secrets_prefix = '/aws/reference/secretsmanager'
+
+    for name in names:
+        if name.startswith(secrets_prefix):
+            secret = get_secrets_information(name, name[len(secrets_prefix) + 1:])
+            if secret is not None:
+                secret = secret['Parameter']
+                result['Parameters'].append(secret)
+            else:
+                result['InvalidParameters'].append(name)
+        else:
+            try:
+                param = ssm_client.get_parameter(Name=name)
+                result['Parameters'].append(param['Parameter'])
+            except ssm_client.exceptions.ParameterNotFound:
+                result['InvalidParameters'].append(name)
 
     return result
 
@@ -45,8 +75,11 @@ class ProxyListenerSSM(PersistingProxyListener):
 
             if target == ACTION_GET_PARAMS:
                 names = data['Names'] = data.get('Names') or []
-                for i in range(len(names)):
-                    names[i] = normalize_name(names[i])
+                if has_secrets(names):
+                    return get_params_and_secrets(names)
+                else:
+                    for i in range(len(names)):
+                        names[i] = normalize_name(names[i])
             elif target in [ACTION_PUT_PARAM, ACTION_GET_PARAM]:
                 name = data.get('Name') or ''
                 data['Name'] = normalize_name(name)
@@ -59,7 +92,9 @@ class ProxyListenerSSM(PersistingProxyListener):
 
                         if service == 'secretsmanager':
                             resource_name = '/'.join(details[4:])
-                            return get_secrets_information(name, resource_name)
+                            secret = get_secrets_information(name, resource_name)
+                            if secret is not None:
+                                return secret
 
             data = json.dumps(data)
             if data != data_orig:

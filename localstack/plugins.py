@@ -37,13 +37,13 @@ def do_register_localstack_plugins():
         from localstack.services.sns import sns_listener
         from localstack.services.sqs import sqs_listener, sqs_starter
         from localstack.services.iam import iam_listener, iam_starter
-        from localstack.services.route53 import route53_listener
+        from localstack.services.route53 import route53_listener, route53_starter
         from localstack.services.sts import sts_starter, sts_listener
         from localstack.services.ses import ses_starter
         from localstack.services.ssm import ssm_listener
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.infra import (
-            start_sns, start_route53, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
+            start_sns, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
             start_redshift, start_firehose, start_dynamodbstreams, start_acm
         )
         from localstack.services.events import events_listener, events_starter
@@ -140,7 +140,7 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'route53',
-            start=start_route53,
+            start=route53_starter.start_route53,
             listener=route53_listener.UPDATE_ROUTE53))
 
         register_plugin(Plugin(

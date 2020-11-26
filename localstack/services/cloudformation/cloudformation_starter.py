@@ -29,7 +29,7 @@ from localstack.utils.aws import aws_stack, aws_responses
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json,
-    get_free_tcp_port, Mock, start_thread, edge_ports_info)
+    get_free_tcp_port, Mock, start_thread, edge_ports_info, clone_safe)
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import start_proxy_for_service, do_run, canonicalize_api_names
 from localstack.utils.bootstrap import setup_logging
@@ -228,11 +228,11 @@ def apply_attributes_from_existing_resource_on_update(resource_props, stack_name
             props['BucketName'] = existing_name
 
 
-def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None):
+def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None, update=False):
     """ Apply some fixes to resource props which otherwise cause deployments to fail """
 
     res_type = resource_props['Type']
-    props = resource_props.get('Properties', {})
+    props = resource_props['Properties'] = resource_props.get('Properties', {})
 
     def _generate_res_name():
         return '%s-%s-%s' % (stack_name, resource_name or resource_id, short_uid())
@@ -255,7 +255,7 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
     if res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
 
-    if res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
+    if res_type == 'AWS::S3::Bucket' and not props.get('BucketName') and not update:
         props['BucketName'] = s3_listener.normalize_bucket_name(_generate_res_name())
 
     if res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
@@ -380,12 +380,9 @@ def apply_patches():
         if resource and not update and not force_create:
             return resource
 
-        # add some fixes and default props which otherwise cause deployments to fail
-        for res_id, res_details in resources_map._resource_json_map.items():
-            add_default_resource_props(res_details, stack_name, resource_id=res_id)
-
         # check if all dependencies are satisfied
         resource_map_copy = dict(resources_map._resource_json_map)
+        resource_map_copy.update(resources_map._template.get('Mappings', {}))
         unsatisfied_deps = template_deployer.get_unsatisfied_dependencies(
             logical_id, resource_map_copy, stack_name
         )
@@ -425,10 +422,15 @@ def apply_patches():
             except Exception as e:
                 moto_create_error = e
 
+        # get deployment state
+        res_state = get_and_update_deployment_state(logical_id, resources_map._resource_json_map, stack_name, resource)
+
         # check whether this resource needs to be deployed
         resource_map_new = dict(resources_map._resource_json_map)
+        resource_map_new.update(resources_map._template.get('Mappings', {}))
         resource_map_new[logical_id] = resource_json
-        should_be_created = template_deployer.should_be_deployed(logical_id, resource_map_new, stack_name)
+        should_be_created = template_deployer.should_be_deployed(
+            logical_id, resource_map_new, stack_name, deploy_state=res_state)
 
         # check for moto creation errors and raise an exception if needed
         if moto_create_error:
@@ -503,6 +505,22 @@ def apply_patches():
         update_physical_resource_id(resource)
 
         return resource
+
+    def get_and_update_deployment_state(resource_id, resources, stack_name, resource):
+        """ Fetch and update the deployment state of the given stack resource. """
+        res_details = resources[resource_id]
+        details = template_deployer.get_deployment_state(resource_id, resources, stack_name)
+        if details:
+            if hasattr(resource, 'update_state'):
+                resource.update_state(details)
+            resource_props = res_details['Properties']
+            if hasattr(resource, 'get_cfn_attribute') and not resource_props.get('PhysicalResourceId'):
+                try:
+                    resource_props['PhysicalResourceId'] = resource.get_cfn_attribute('Ref')
+                except Exception:
+                    # ignore this error here if the "Ref" attribute is not (yet) available
+                    pass
+        return details
 
     def update_resource_id(resource, new_id, props, region_name, stack_name, resource_map, resource_props={}):
         """ Update and fix the ID(s) of the given resource. """
@@ -604,6 +622,37 @@ def apply_patches():
 
     resource_map_delete_orig = parsing.ResourceMap.delete
     parsing.ResourceMap.delete = resource_map_delete
+
+    def resource_map_create(self, template, *args, **kwargs):
+        stack_name = self._parsed_resources['AWS::StackName']
+        resources_json_map = template.get('Resources') or {}
+        for res_id, res_details in resources_json_map.items():
+            # add some fixes and default props which otherwise cause deployments to fail
+            add_default_resource_props(res_details, stack_name, resource_id=res_id)
+        result = resource_map_create_orig(self, template, *args, **kwargs)
+        return result
+
+    resource_map_create_orig = parsing.ResourceMap.create
+    parsing.ResourceMap.create = resource_map_create
+
+    def resource_map_update(self, template, *args, **kwargs):
+        stack_name = self._parsed_resources['AWS::StackName']
+        resources_json_map = template.get('Resources') or {}
+        for res_id, res_details in resources_json_map.items():
+            # add some fixes and default props which otherwise cause deployments to fail
+            add_default_resource_props(res_details, stack_name, resource_id=res_id, update=True)
+        result = resource_map_update_orig(self, template, *args, **kwargs)
+        return result
+
+    resource_map_update_orig = parsing.ResourceMap.update
+    parsing.ResourceMap.update = resource_map_update
+
+    # patch ResourceMap set_resource_json()
+    def set_resource_json(self, resources):
+        self._resource_json_map = resources or {}
+        self._resource_json_map_orig = clone_safe(self._resource_json_map)
+
+    parsing.ResourceMap.set_resource_json = set_resource_json
 
     # patch CloudFormation parse_output(..) method to fix a bug in moto
     def parse_output(output_logical_id, output_json, resources_map):
@@ -726,6 +775,7 @@ def apply_patches():
             original_resource, new_resource_name, cloudformation_json, region_name):
         if cloudformation_json.get('BucketName') in [None, original_resource.name]:
             # TODO: apply other resource updates
+            cloudformation_json['BucketName'] = original_resource.name
             return original_resource
         return Bucket_update_from_cf_json_orig(original_resource, new_resource_name, cloudformation_json, region_name)
 

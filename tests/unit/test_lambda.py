@@ -493,7 +493,7 @@ class TestLambdaAPI(unittest.TestCase):
         name = executor.get_container_name('arn:aws:lambda:us-east-1:00000000:function:my_function_name')
         self.assertEqual(name, 'localstack_lambda_arn_aws_lambda_us-east-1_00000000_function_my_function_name')
 
-    def test_put_concurrency(self):
+    def test_concurrency(self):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)
             # note: PutFunctionConcurrency is mounted at: /2017-10-31
@@ -505,6 +505,12 @@ class TestLambdaAPI(unittest.TestCase):
 
             result = json.loads(response.get_data())
             self.assertDictEqual(concurrency_data, result)
+
+            response = self.client.get('/2019-09-30/functions/{0}/concurrency'.format(self.FUNCTION_NAME))
+            self.assertDictEqual(concurrency_data, result)
+
+            response = self.client.delete('/2017-10-31/functions/{0}/concurrency'.format(self.FUNCTION_NAME))
+            self.assertIsNotNone('ReservedConcurrentExecutions', result)
 
     def test_concurrency_get_function(self):
         with self.app.test_request_context():
