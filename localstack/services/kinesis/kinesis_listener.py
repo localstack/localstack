@@ -2,11 +2,12 @@ import re
 import json
 import random
 import cbor2
+import base64
 from requests.models import Response
 from localstack import config
 from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc
+from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc, timestamp_to_milliseconds
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -19,6 +20,7 @@ ACTION_LIST_STREAMS = '%s.ListStreams' % ACTION_PREFIX
 ACTION_CREATE_STREAM = '%s.CreateStream' % ACTION_PREFIX
 ACTION_DELETE_STREAM = '%s.DeleteStream' % ACTION_PREFIX
 ACTION_UPDATE_SHARD_COUNT = '%s.UpdateShardCount' % ACTION_PREFIX
+ACTION_GET_RECORDS = '%s.GetRecords' % ACTION_PREFIX
 
 # list of stream consumer details
 STREAM_CONSUMERS = []
@@ -77,7 +79,6 @@ class ProxyListenerKinesis(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target')
         data = self.decode_content(data or '{}')
-
         response._content = self.replace_in_encoded(response.content or '')
 
         records = []
@@ -138,6 +139,18 @@ class ProxyListenerKinesis(ProxyListener):
             }
             response.encoding = 'UTF-8'
             response._content = json.dumps(content)
+            return response
+        elif action == ACTION_GET_RECORDS:
+            results, encoding_type = self.decode_content(response.content, True)
+            for record in results['Records']:
+                record['ApproximateArrivalTimestamp'] = timestamp_to_milliseconds(record['ApproximateArrivalTimestamp'])
+                record['Data'] = base64.encodebytes(bytearray(record['Data']['data']))
+
+            if encoding_type == APPLICATION_CBOR:
+                response._content = cbor2.dumps(results)
+            else:
+                response._content = json.dumps(results)
+
             return response
 
     def replace_in_encoded(self, data):

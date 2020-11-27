@@ -1288,6 +1288,13 @@ def isoformat_milliseconds(t):
         return t.isoformat()[:-3]
 
 
+def timestamp_to_milliseconds(t):
+    intSeconds = int(t)
+    if (intSeconds >= 9999999999999):
+        return t
+    return intSeconds * 1000
+
+
 def _replace(response, pattern, replacement):
     content = to_str(response.content)
     response._content = re.sub(pattern, replacement, content)
