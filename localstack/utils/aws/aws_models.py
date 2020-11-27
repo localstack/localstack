@@ -156,6 +156,16 @@ class FirehoseStream(KinesisStream):
         return self.id.split(':deliverystream/')[-1]
 
 
+class CodeSigningConfig():
+    def __init__(self, arn, id, signing_profile_version_arns):
+        self.arn = arn
+        self.id = id
+        self.signing_profile_version_arns = signing_profile_version_arns
+        self.description = ''
+        self.untrusted_artifact_on_deployment = 'Warn'
+        self.last_modified = None
+
+
 class LambdaFunction(Component):
     def __init__(self, arn):
         super(LambdaFunction, self).__init__(arn)
@@ -181,6 +191,7 @@ class LambdaFunction(Component):
         self.max_retry_attempts = None
         self.max_event_age = None
         self.description = ''
+        self.code_signing_config_arn = None
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')
