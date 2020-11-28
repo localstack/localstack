@@ -676,7 +676,9 @@ def download(url, path, verify_ssl=True):
     # make sure we're creating a new session here to
     # enable parallel file downloads during installation!
     s = requests.Session()
-    r = s.get(url, stream=True, verify=verify_ssl)
+    # Use REQUESTS_CA_BUNDLE path. If it doesn't exist, use the method provided settings.
+    # Note that a value that is not False, will result to True and will get the bundle file.
+    r = s.get(url, stream=True, verify=os.getenv('REQUESTS_CA_BUNDLE', verify_ssl))
     # check status code before attempting to read body
     if r.status_code >= 400:
         raise Exception('Failed to download %s, response code %s' % (url, r.status_code))
