@@ -412,6 +412,8 @@ Resources:
             return {'body': 'Hello World!', 'statusCode': 200}
 """
 
+TEST_TEMPLATE_23 = os.path.join(THIS_FOLDER, 'templates', 'template23.yaml')
+
 TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'update_lambda_template.json')
 
 SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
@@ -1710,6 +1712,30 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(functions), 2)
         self.assertEqual(len([func for func in functions if func['Handler'] == 'index.createUserHandler']), 1)
         self.assertEqual(len([func for func in functions if func['Handler'] == 'index.authenticateUserHandler']), 1)
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_cfn_template_with_short_form_fn_sub(self):
+        stack_name = 'stack-%s' % short_uid()
+        environment = 'env-%s' % short_uid()
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=load_file(TEST_TEMPLATE_23),
+            Parameters=[
+                {
+                    'ParameterKey': 'Environment',
+                    'ParameterValue': environment
+                }
+            ]
+        )
+        iam_client = aws_stack.connect_to_service('iam')
+        rs = iam_client.list_roles()
+
+        # Role created successfully
+        self.assertEqual(len([role for role in rs['Roles'] if role['RoleName'] == 'cf-{}-Role'.format(stack_name)]), 1)
 
         # clean up
         cloudformation.delete_stack(StackName=stack_name)

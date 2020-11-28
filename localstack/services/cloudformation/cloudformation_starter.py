@@ -197,6 +197,9 @@ def update_physical_resource_id(resource):
     elif isinstance(resource, apigw_models.Stage):
         resource.physical_resource_id = resource.get('stageName')
 
+    elif isinstance(resource, apigw_models.Resource):
+        resource.physical_resource_id = resource.id
+
     else:
         LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
 
@@ -284,34 +287,53 @@ def apply_patches():
     # Patch clean_json in moto
     def clean_json(resource_json, resources_map):
         try:
-            result = clean_json_orig(resource_json, resources_map)
+            rs = clean_json_orig(resource_json, resources_map)
         except RecursionError:
             if isinstance(resource_json, dict) and 'Ref' in resource_json:
                 LOG.info('Potential circular dependency detected when resolving Ref "%s"' % resource_json['Ref'])
                 return resource_json['Ref']
             raise
+
         if isinstance(resource_json, dict):
             attr_ref = resource_json.get('Fn::GetAtt')
-            if isinstance(attr_ref, list) and result == resource_json:
+            if isinstance(attr_ref, list) and rs == resource_json:
                 # If the attribute cannot be resolved (i.e., result == resource_json), and if indeed
                 # the resource has not been deployed yet (entry in resources_map is None) then we raise
                 # an exception here, which should cause the deployment loop to do another iteration
                 map_keys = list(resources_map.keys())
                 LOG.debug('Unable to resolve attribute reference %s in resource map keys %s' % (attr_ref, map_keys))
                 if attr_ref[0] in map_keys and not resources_map[attr_ref[0]]:
-                    raise DependencyNotYetSatisfied(resource_ids=attr_ref[0],
-                        message='Unable to resolve attribute ref %s' % (attr_ref))
+                    raise DependencyNotYetSatisfied(
+                        resource_ids=attr_ref[0],
+                        message='Unable to resolve attribute ref %s' % attr_ref
+                    )
+
                 # If the attribute cannot be resolved for some other reason, then return
                 # an empty value, to avoid returning the original JSON struct (which otherwise
                 # results in downstream issues, e.g., when concatenating template values).
                 return None
-            if 'Ref' in resource_json and isinstance(result, BaseModel):
-                entity_id = get_entity_id(result, resource_json)
+
+            if 'Ref' in resource_json and isinstance(rs, BaseModel):
+                entity_id = get_entity_id(rs, resource_json)
                 if entity_id:
                     return entity_id
-                LOG.warning('Unable to resolve "Ref" attribute for: %s - %s - %s',
-                            resource_json, result, type(result))
-        return result
+
+                LOG.warning('Unable to resolve "Ref" attribute for: %s - %s - %s', resource_json, rs, type(rs))
+
+            if 'Fn::Sub' in resource_json:
+                if isinstance(resource_json['Fn::Sub'], list):
+                    for key, val in resources_map._parsed_resources.items():
+                        if not val:
+                            continue
+
+                        if not isinstance(val, str):
+                            continue
+
+                        resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % key, val)
+
+                    return resource_json['Fn::Sub'][0]
+
+        return rs
 
     clean_json_orig = parsing.clean_json
     parsing.clean_json = clean_json
@@ -331,6 +353,7 @@ def apply_patches():
         try:
             if hasattr(resources_map, '_deleted'):
                 return
+
             result = _parse_and_create_resource(
                 logical_id, resource_json, resources_map, region_name, force_create=force_create
             )
@@ -353,8 +376,9 @@ def apply_patches():
             LOG.error('Unable to parse and update resource "%s": %s %s' % (logical_id, e, traceback.format_exc()))
             raise
 
-    def _parse_and_create_resource(logical_id, resource_json, resources_map, region_name,
-            update=False, force_create=False):
+    def _parse_and_create_resource(
+            logical_id, resource_json, resources_map, region_name, update=False, force_create=False
+    ):
         stack_name = resources_map.get('AWS::StackName')
         resource_hash_key = (stack_name, logical_id)
         props = resource_json['Properties'] = resource_json.get('Properties') or {}
@@ -364,6 +388,7 @@ def apply_patches():
         LOG.debug('Currently processing (update=%s) resource %s/%s: %s' % (update, stack_name, logical_id, updating))
         if updating:
             return None
+
         # set updating flag for this resource
         CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = True
 
@@ -374,6 +399,7 @@ def apply_patches():
         if resource:
             apply_attributes_from_existing_resource_on_update(
                 resource_json, stack_name, resource, resource_id=logical_id)
+
             apply_attributes_from_existing_resource_on_update(
                 resources_map._resource_json_map.get(logical_id), stack_name, resource, resource_id=logical_id)
 
@@ -395,6 +421,7 @@ def apply_patches():
         resource_tuple = parsing.parse_resource_and_generate_name(logical_id, resource_json, resources_map)
         if not resource_tuple:
             return None
+
         _, resource_json, resource_name = resource_tuple
 
         # add some fixes and default props which otherwise cause deployments to fail
@@ -410,6 +437,7 @@ def apply_patches():
         if (resource or update) and not force_create:
             _tmp = parse_and_update_resource_orig(logical_id, resource_json_arns_fixed, resources_map, region_name)
             resource = _tmp or resource
+
         elif not resource:
             try:
                 resource = parse_and_create_resource_orig(
@@ -472,6 +500,7 @@ def apply_patches():
         try:
             deploy_func = template_deployer.update_resource if update else template_deployer.deploy_resource
             result = deploy_func(logical_id, resource_map_new, stack_name=stack_name)
+
         finally:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = False
 
@@ -649,6 +678,15 @@ def apply_patches():
 
     # patch ResourceMap set_resource_json()
     def set_resource_json(self, resources):
+        resources = resources or {}
+        for res_id, resource in resources.items():
+            props = resource.get('Properties', {})
+            for property in props:
+                if isinstance(props[property], dict):
+                    if isinstance(props[property].get('Fn::Sub', None), str):
+                        props[property]['Fn::Sub'] = [props[property]['Fn::Sub'], {}]
+
+        self._resource_json_map = resources
         self._resource_json_map = resources or {}
         self._resource_json_map_orig = clone_safe(self._resource_json_map)
 
@@ -687,6 +725,7 @@ def apply_patches():
         resources_diff = resource_map_diff_orig(self, template, parameters)
         if resources_diff['Add'] or resources_diff['Remove'] or resources_diff['Modify']:
             return resources_diff
+
         raise ValidationError(name_or_id='', message='No updates are to be performed.')
 
     parsing.ResourceMap.diff = resource_map_diff
@@ -701,7 +740,9 @@ def apply_patches():
             self._validate_export_uniqueness(stack)
             for export in stack.exports:
                 self.exports[export.name] = export
+
             return stack
+
         return types.MethodType(cf_update_stack, cf_backend)
 
     for region, cf_backend in cloudformation_backends.items():
@@ -1128,7 +1169,6 @@ def apply_patches():
 
     # patch FakeStack.initialize_resources
     def run_dependencies_deployment_loop(stack, action, initialize=False):
-
         def run_loop(*args):
             result = {}
             try:
