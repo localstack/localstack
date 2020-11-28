@@ -7,7 +7,7 @@ from requests.models import Response
 from localstack import config
 from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc, timestamp_to_milliseconds
+from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
@@ -141,10 +141,14 @@ class ProxyListenerKinesis(ProxyListener):
             response._content = json.dumps(content)
             return response
         elif action == ACTION_GET_RECORDS:
+            sdk_v2 = self.sdk_is_v2(headers.get('User-Agent', '').split(' ')[0])
             results, encoding_type = self.decode_content(response.content, True)
+
             for record in results['Records']:
-                record['ApproximateArrivalTimestamp'] = timestamp_to_milliseconds(record['ApproximateArrivalTimestamp'])
-                record['Data'] = base64.encodebytes(bytearray(record['Data']['data']))
+                if sdk_v2:
+                    record['ApproximateArrivalTimestamp'] = int(record['ApproximateArrivalTimestamp'] * 1000)
+                if not isinstance(record['Data'], str):
+                    record['Data'] = base64.encodebytes(bytearray(record['Data']['data']))
 
             if encoding_type == APPLICATION_CBOR:
                 response._content = cbor2.dumps(results)
@@ -152,6 +156,11 @@ class ProxyListenerKinesis(ProxyListener):
                 response._content = json.dumps(results)
 
             return response
+
+    def sdk_is_v2(self, user_agent):
+        if re.search(r'\/2.\d+.\d+', user_agent):
+            return True
+        return False
 
     def replace_in_encoded(self, data):
         if not data:
