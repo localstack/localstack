@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template which showcases dependency resolution failure with shorthand Sub
+Parameters:
+  Environment:
+    Type: String
+    Description: Environment name
+    Default: 'Test'
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      # This does not work
+      LogGroupName: !Sub "aws/lambda/${Environment}-function"
+      # This also does not work
+#      LogGroupName:
+#        Fn::Sub: "aws/lambda/${Environment}-function"
+      # This does work
+#      LogGroupName:
+#        Fn::Sub:
+#          - "aws/lambda/${Environment}-function"
+#          - {}
+      # This works too
+#      LogGroupName:
+#        Fn::Join:
+#        - ''
+#        - - aws/lambda/
+#          - !Ref Environment
+#          - -function
+
+  Role:
+    Type: AWS::IAM::Role
+    DependsOn:
+    - LogGroup
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:PutLogEvents
+            Resource: '*'
+      Path: "/"

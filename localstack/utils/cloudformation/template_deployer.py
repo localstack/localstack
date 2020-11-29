@@ -5,8 +5,10 @@ import yaml
 import logging
 import traceback
 import moto.cloudformation.utils
+
 from urllib.parse import urlparse
 from six import iteritems
+from moto.cloudformation.models import cloudformation_backends
 from moto.cloudformation import parsing
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
@@ -1134,43 +1136,58 @@ def resolve_ref(stack_name, ref, resources, attribute):
 def resolve_refs_recursively(stack_name, value, resources):
     if isinstance(value, dict):
         keys_list = list(value.keys())
+
         # process special operators
         if keys_list == ['Ref']:
-            result = resolve_ref(stack_name, value['Ref'],
-                resources, attribute='PhysicalResourceId')
-            return result
+            return resolve_ref(stack_name, value['Ref'], resources, attribute='PhysicalResourceId')
+
         if keys_list and keys_list[0].lower() == 'fn::getatt':
-            return resolve_ref(stack_name, value[keys_list[0]][0],
-                resources, attribute=value[keys_list[0]][1])
+            return resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=value[keys_list[0]][1])
+
         if keys_list and keys_list[0].lower() == 'fn::join':
             join_values = value[keys_list[0]][1]
             join_values = [resolve_refs_recursively(stack_name, v, resources) for v in join_values]
             none_values = [v for v in join_values if v is None]
             if none_values:
                 raise Exception('Cannot resolve CF fn::Join %s due to null values: %s' % (value, join_values))
+
             return value[keys_list[0]][0].join(join_values)
+
         if keys_list and keys_list[0].lower() == 'fn::sub':
             item_to_sub = value[keys_list[0]]
+
             if not isinstance(item_to_sub, list):
                 attr_refs = dict([(r, {'Ref': r}) for r in STATIC_REFS])
                 item_to_sub = [item_to_sub, attr_refs]
             result = item_to_sub[0]
+
             for key, val in item_to_sub[1].items():
                 val = resolve_refs_recursively(stack_name, val, resources)
                 result = result.replace('${%s}' % key, val)
+
             return result
+
         if keys_list and keys_list[0].lower() == 'fn::findinmap':
             result = resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=value[keys_list[0]][1])
             if not result:
                 raise Exception('Cannot resolve fn::FindInMap: %s %s' % (value[keys_list[0]], list(resources.keys())))
+
             result = result.get(value[keys_list[0]][2])
             return result
+
+        if keys_list and keys_list[0].lower() == 'fn::importvalue':
+            exports = cloudformation_backends[aws_stack.get_region()].exports
+            export = exports[value[keys_list[0]]]
+            return export.value
+
         else:
             for key, val in iteritems(value):
                 value[key] = resolve_refs_recursively(stack_name, val, resources)
+
     if isinstance(value, list):
         for i in range(0, len(value)):
             value[i] = resolve_refs_recursively(stack_name, value[i], resources)
+
     return value
 
 
@@ -1591,4 +1608,5 @@ def get_resource_dependencies(resource_id, resource, resources):
                 result[other_id] = other
             if other_id in dependencies:
                 result[other_id] = other
+
     return result
