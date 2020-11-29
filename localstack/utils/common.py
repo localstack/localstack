@@ -231,6 +231,16 @@ class JsonObject(object):
         return self.__str__()
 
 
+class DelSafeDict(dict):
+    """Useful when applying jsonpatch. Use it as follows:
+
+        obj.__dict__ = DelSafeDict(obj.__dict__)
+        apply_patch(obj.__dict__, patch)
+    """
+    def __delitem__(self, key, *args, **kwargs):
+        self[key] = None
+
+
 class CaptureOutput(object):
     """ A context manager that captures stdout/stderr of the current thread. Use it as follows:
 
