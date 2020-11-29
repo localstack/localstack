@@ -1,9 +1,7 @@
 import json
 import uuid
-
 from copy import deepcopy
 from urllib.parse import quote
-
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
 from moto.iam.models import (

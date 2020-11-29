@@ -77,6 +77,9 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     chown -R localstack:localstack . /tmp/localstack && \
     ln -s `pwd` /tmp/localstack_install_dir
 
+# Fix for Centos host OS
+RUN echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
+
 # set library path
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 
@@ -84,8 +87,5 @@ ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
 # clean up temporary files created during test execution
-RUN apk del --purge git;
-RUN rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform
 
-# Fix for Centos host OS
-RUN echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
+RUN apk del --purge git; rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform
