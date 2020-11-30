@@ -709,6 +709,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         )
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 204)
 
+        testutil.delete_lambda_function(name=function_name)
+
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
