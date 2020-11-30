@@ -1772,7 +1772,7 @@ def get_code_signing_config(arn):
         }
     }
 
-    return Response(json.dumps(result), status=201)
+    return Response(json.dumps(result), status=200)
 
 
 @app.route('/2020-04-22/code-signing-configs/<arn>', methods=['DELETE'])
