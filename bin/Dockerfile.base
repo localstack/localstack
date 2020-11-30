@@ -126,7 +126,7 @@ ADD localstack/dashboard/web/package.json localstack/dashboard/web/package.json
 RUN make install-web
 
 # install libs that require dependencies cleaned up below (e.g., gcc)
-RUN (virtualenv .venv && source .venv/bin/activate && pip install cryptography msrestazure)
+RUN (virtualenv .venv && source .venv/bin/activate && pip install cryptography)
 
 # clean up (layers are later squashed into a single one)
 RUN rm -rf localstack/infra/elasticsearch/jdk/

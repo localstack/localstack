@@ -681,12 +681,11 @@ def apply_patches():
         resources = resources or {}
         for res_id, resource in resources.items():
             props = resource.get('Properties', {})
-            for property in props:
-                if isinstance(props[property], dict):
-                    if isinstance(props[property].get('Fn::Sub', None), str):
-                        props[property]['Fn::Sub'] = [props[property]['Fn::Sub'], {}]
+            for prop_name, prop_value in props.items():
+                if isinstance(prop_value, dict):
+                    if isinstance(prop_value.get('Fn::Sub'), str):
+                        prop_value['Fn::Sub'] = [prop_value['Fn::Sub'], {}]
 
-        self._resource_json_map = resources
         self._resource_json_map = resources or {}
         self._resource_json_map_orig = clone_safe(self._resource_json_map)
 

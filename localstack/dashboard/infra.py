@@ -35,8 +35,8 @@ def run_cached(cmd, cache_duration_secs=None):
         cache_duration_secs = AWS_CACHE_TIMEOUT
     env_vars = os.environ.copy()
     env_vars.update({
-        'AWS_ACCESS_KEY_ID': os.environ.get('AWS_ACCESS_KEY_ID') or 'foobar',
-        'AWS_SECRET_ACCESS_KEY': os.environ.get('AWS_SECRET_ACCESS_KEY') or 'foobar',
+        'AWS_ACCESS_KEY_ID': os.environ.get('AWS_ACCESS_KEY_ID') or 'test',
+        'AWS_SECRET_ACCESS_KEY': os.environ.get('AWS_SECRET_ACCESS_KEY') or 'test',
         'AWS_DEFAULT_REGION': os.environ.get('AWS_DEFAULT_REGION') or DEFAULT_REGION,
         'PYTHONWARNINGS': 'ignore:Unverified HTTPS request'
     })

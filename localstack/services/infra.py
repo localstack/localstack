@@ -338,14 +338,13 @@ def stop_infra(debug=False):
 def check_aws_credentials():
     session = boto3.Session()
     credentials = None
+    # hardcode credentials here, to allow us to determine internal API calls made via boto3
+    os.environ['AWS_ACCESS_KEY_ID'] = constants.INTERNAL_AWS_ACCESS_KEY_ID
+    os.environ['AWS_SECRET_ACCESS_KEY'] = constants.INTERNAL_AWS_ACCESS_KEY_ID
     try:
         credentials = session.get_credentials()
     except Exception:
         pass
-    if not credentials:
-        # set temporary dummy credentials
-        os.environ['AWS_ACCESS_KEY_ID'] = constants.TEST_AWS_ACCESS_KEY_ID
-        os.environ['AWS_SECRET_ACCESS_KEY'] = constants.TEST_AWS_SECRET_ACCESS_KEY
     session = boto3.Session()
     credentials = session.get_credentials()
     assert credentials
