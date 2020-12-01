@@ -1152,6 +1152,17 @@ def update_function_configuration(function):
         lambda_details.envvars = env_vars
     if data.get('Timeout'):
         lambda_details.timeout = data['Timeout']
+    if data.get('Role'):
+        lambda_details.role = data['Role']
+    if data.get('MemorySize'):
+        lambda_details.memory_size = data['MemorySize']
+    if data.get('Description'):
+        lambda_details.description = data['Description']
+    if data.get('VpcConfig'):
+        lambda_details.vpc_config = data['VpcConfig']
+    if data.get('KMSKeyArn'):
+        lambda_details.kms_key_arn = data['KMSKeyArn']
+
     return jsonify(data)
 
 
