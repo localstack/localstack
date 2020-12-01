@@ -977,6 +977,7 @@ def create_function():
         func_details.role = data['Role']
         func_details.kms_key_arn = data.get('KMSKeyArn')
         func_details.memory_size = data.get('MemorySize')
+        func_details.code_signing_config_arn = data.get('CodeSigningConfigArn')
         func_details.code = data['Code']
         func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
