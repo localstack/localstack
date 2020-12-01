@@ -646,6 +646,71 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         testutil.delete_lambda_function(name=function_name)
 
+    def test_function_code_singing_config(self):
+        lambda_client = aws_stack.connect_to_service('lambda')
+        function_name = 'lambda_func-{}'.format(short_uid())
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        response = lambda_client.create_code_signing_config(
+            Description='Testing CodeSigning Config',
+            AllowedPublishers={
+                'SigningProfileVersionArns': [
+                    'arn:aws:signer:us-east-1:000000000000:/signing-profiles/test',
+                ]
+            },
+            CodeSigningPolicies={
+                'UntrustedArtifactOnDeployment': 'Enforce'
+            }
+        )
+
+        self.assertIn('Description', response['CodeSigningConfig'])
+        self.assertIn('SigningProfileVersionArns', response['CodeSigningConfig']['AllowedPublishers'])
+        self.assertIn('UntrustedArtifactOnDeployment', response['CodeSigningConfig']['CodeSigningPolicies'])
+
+        code_signing_arn = response['CodeSigningConfig']['CodeSigningConfigArn']
+        response = lambda_client.update_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn,
+            CodeSigningPolicies={
+                'UntrustedArtifactOnDeployment': 'Warn'
+            }
+        )
+
+        self.assertEqual(response['CodeSigningConfig']['CodeSigningPolicies']['UntrustedArtifactOnDeployment'], 'Warn')
+        response = lambda_client.get_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        response = lambda_client.put_function_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn,
+            FunctionName=function_name
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        response = lambda_client.get_function_code_signing_config(
+            FunctionName=function_name
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(response['CodeSigningConfigArn'], code_signing_arn)
+        self.assertEqual(response['FunctionName'], function_name)
+
+        response = lambda_client.delete_function_code_signing_config(
+            FunctionName=function_name
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 204)
+
+        response = lambda_client.delete_code_signing_config(
+            CodeSigningConfigArn=code_signing_arn
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 204)
+
+        testutil.delete_lambda_function(name=function_name)
+
 
 class TestPythonRuntimes(LambdaTestBase):
     @classmethod
