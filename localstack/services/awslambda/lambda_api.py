@@ -859,7 +859,8 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'TracingConfig': {'Mode': 'PassThrough'},
         'RevisionId': func_version.get('RevisionId'),
         'State': 'Active',
-        'LastUpdateStatus': 'Successful'
+        'LastUpdateStatus': 'Successful',
+        'PackageType': func_details.package_type
     }
     if func_details.dead_letter_config:
         result['DeadLetterConfig'] = func_details.dead_letter_config
@@ -979,6 +980,8 @@ def create_function():
         func_details.memory_size = data.get('MemorySize')
         func_details.code_signing_config_arn = data.get('CodeSigningConfigArn')
         func_details.code = data['Code']
+        # TODO: support package type 'Image'
+        func_details.package_type = 'Zip'
         func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
         if isinstance(result, Response):
