@@ -528,7 +528,7 @@ This is similar to `make docker-mount-run`, but instead of docker centos VM will
 - `vagrant plugin install vagrant-vbguest`
 
 ##### Starting Vagrant
-- `make vagant-start` (be ready to provide system password)
+- `make vagrant-start` (be ready to provide system password)
 
 ##### Using Vagrant
 - `vagrant ssh`
