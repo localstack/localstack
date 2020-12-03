@@ -33,6 +33,9 @@ from localstack.utils.analytics.profiler import log_duration
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
 
+# output string that indicates that the stack is ready
+READY_MARKER_OUTPUT = 'Ready.'
+
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
@@ -450,7 +453,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     prepare_environment()
     prepare_installation()
     thread = start_api_services()
-    print('Ready.')
+    print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
 
     return thread

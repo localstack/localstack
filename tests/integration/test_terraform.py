@@ -1,5 +1,5 @@
 import os
-import unittest
+# import unittest
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import run
 
@@ -13,7 +13,9 @@ LAMBDA_RUNTIME = 'dotnetcore2.0'
 LAMBDA_ROLE = 'arn:aws:iam::000000000000:role/iam_for_lambda'
 
 
-class TestTerraform(unittest.TestCase):
+# TODO: test temporarily disabled
+# class TestTerraform(unittest.TestCase):
+class TemporarilyDisabled:
 
     @classmethod
     def setUpClass(cls):
