@@ -31,10 +31,10 @@ class TestTerraform(unittest.TestCase):
     def init_async(cls):
         def _run(*args):
             with(INIT_LOCK):
-                base_dir = os.path.join(os.path.dirname(__file__), 'terraform')
+                base_dir = TestTerraform.get_base_dir()
                 if not os.path.exists(os.path.join(base_dir, '.terraform')):
-                    run('cd %s; terraform init -input=false' % (TestTerraform.get_base_dir()))
-                run('cd %s; terraform plan -out=tfplan -input=false' % (TestTerraform.get_base_dir()))
+                    run('cd %s; terraform init -input=false' % (base_dir))
+                run('cd %s; terraform plan -out=tfplan -input=false' % (base_dir))
         start_worker_thread(_run)
 
     @classmethod
