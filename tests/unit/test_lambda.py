@@ -291,6 +291,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Version'] = '1'
             expected_result['State'] = 'Active'
             expected_result['LastUpdateStatus'] = 'Successful'
+            expected_result['PackageType'] = None
             expected_result2 = dict(expected_result)
             expected_result2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
             expected_result2['Version'] = '2'
@@ -333,6 +334,7 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['Version'] = '$LATEST'
             latest_version['State'] = 'Active'
             latest_version['LastUpdateStatus'] = 'Successful'
+            latest_version['PackageType'] = None
             version1 = dict(latest_version)
             version1['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':1'
             version1['Version'] = '1'

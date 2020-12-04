@@ -6,6 +6,7 @@ from localstack.services import infra
 from localstack.constants import ENV_INTERNAL_TEST_RUN
 from localstack.utils.common import cleanup, safe_requests, FuncThread
 from localstack.utils.analytics.profiler import profiled
+from .test_terraform import TestTerraform
 
 mutex = threading.Semaphore(0)
 
@@ -19,6 +20,8 @@ def setup_package():
         FuncThread(start_profiling).start()
         # start infrastructure services
         infra.start_infra(asynchronous=True)
+        # initializing terraform
+        TestTerraform.init_async()
     except Exception as e:
         # make sure to tear down the infrastructure
         infra.stop_infra()

@@ -192,6 +192,7 @@ class LambdaFunction(Component):
         self.max_event_age = None
         self.description = ''
         self.code_signing_config_arn = None
+        self.package_type = None
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')
