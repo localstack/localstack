@@ -21,17 +21,17 @@ class TestTerraform(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with(INIT_LOCK):
-            run('cd %s; terraform apply -input=false tfplan' % (TestTerraform.get_base_dir()))
+            run('cd %s; terraform apply -input=false tfplan' % (cls.get_base_dir()))
 
     @classmethod
     def tearDownClass(cls):
-        run('cd %s; terraform destroy -auto-approve' % (TestTerraform.get_base_dir()))
+        run('cd %s; terraform destroy -auto-approve' % (cls.get_base_dir()))
 
     @classmethod
     def init_async(cls):
         def _run(*args):
             with(INIT_LOCK):
-                base_dir = TestTerraform.get_base_dir()
+                base_dir = cls.get_base_dir()
                 if not os.path.exists(os.path.join(base_dir, '.terraform')):
                     run('cd %s; terraform init -input=false' % (base_dir))
                 run('cd %s; terraform plan -out=tfplan -input=false' % (base_dir))

@@ -21,7 +21,6 @@ def setup_package():
         # start infrastructure services
         infra.start_infra(asynchronous=True)
         # initializing terraform
-        print('Initializing Terraform')
         TestTerraform.init_async()
     except Exception as e:
         # make sure to tear down the infrastructure
