@@ -45,7 +45,7 @@ To enable a fast release cycle of *LocalStack*, we're using forked versions of v
 
 ## Development Environment Setup Guide
 
-####Tools Required
+#### Tools Required
 
 * Python 3.7
 * Sasl
@@ -60,7 +60,7 @@ To enable a fast release cycle of *LocalStack*, we're using forked versions of v
 * Docker-Compose
 
 
-####Installation instructions
+#### Installation instructions
 
 __Python 3.7+__
 

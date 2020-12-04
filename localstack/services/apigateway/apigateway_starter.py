@@ -1,12 +1,14 @@
 import json
 import logging
+from jsonpatch import apply_patch
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.models import Resource, Integration
 from moto.apigateway.responses import APIGatewayResponse
 from moto.apigateway.exceptions import NoIntegrationDefined
 from moto.apigateway.utils import create_id
 from localstack import config
-from localstack.utils.common import short_uid, to_str
+from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.utils.common import short_uid, to_str, DelSafeDict
 from localstack.services.infra import start_moto_server
 
 LOG = logging.getLogger(__name__)
@@ -52,23 +54,22 @@ def apply_patches():
 
         return {}
 
-    def apigateway_models_Integration_init(
-            self, integration_type, uri, http_method,
-            request_templates=None, pass_through_behavior='WHEN_NO_MATCH', cache_key_parameters=[]
-    ):
-        super(apigateway_models.Integration, self).__init__()
-        self['type'] = integration_type
-        self['uri'] = uri
-        self['httpMethod'] = http_method
+    def apigateway_models_Integration_init(self, integration_type, uri, http_method,
+            request_templates=None, pass_through_behavior='WHEN_NO_MATCH', cache_key_parameters=[], *args, **kwargs):
+        apigateway_models_Integration_init_orig(
+            self, integration_type=integration_type, uri=uri, http_method=http_method,
+            request_templates=request_templates, *args, **kwargs
+        )
+
         self['passthroughBehavior'] = pass_through_behavior
         self['cacheKeyParameters'] = cache_key_parameters
         self['cacheNamespace'] = short_uid()
-        self['timeoutInMillis'] = None
-        self['integrationResponses'] = {'200': apigateway_models.IntegrationResponse(200)}
+
+        # httpMethod not present in response if integration_type is None, verified against AWS
+        if integration_type == 'MOCK':
+            self['httpMethod'] = None
         if request_templates:
             self['requestTemplates'] = request_templates
-
-    apigateway_models.Integration.__init__ = apigateway_models_Integration_init
 
     def apigateway_models_backend_put_rest_api(self, function_id, body):
         rest_api = self.get_rest_api(function_id)
@@ -118,6 +119,25 @@ def apply_patches():
         self.setup_class(request, full_url, headers)
         function_id = self.path.replace('/restapis/', '', 1).split('/')[0]
 
+        if self.method == 'PATCH':
+            not_supported_attributes = ['/id', '/region_name', '/create_date']
+
+            rest_api = self.backend.apis.get(function_id)
+            if not rest_api:
+                msg = 'Invalid API identifier specified %s:%s' % (TEST_AWS_ACCOUNT_ID, function_id)
+                return (404, {}, msg)
+
+            patch_operations = self._get_param('patchOperations')
+            for operation in patch_operations:
+                if operation['path'] in not_supported_attributes:
+                    msg = 'Invalid patch path %s' % (operation['path'])
+                    return (400, {}, msg)
+
+            rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
+            apply_patch(rest_api.__dict__, patch_operations, in_place=True)
+
+            return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
+
         # handle import rest_api via swagger file
         if self.method == 'PUT':
             body = json.loads(to_str(self.body))
@@ -131,6 +151,7 @@ def apply_patches():
 
     def apigateway_response_resource_methods(self, request, *args, **kwargs):
         result = apigateway_response_resource_methods_orig(self, request, *args, **kwargs)
+
         if len(result) != 3:
             return result
         authorization_type = self._get_param('authorizationType')
@@ -143,24 +164,65 @@ def apply_patches():
                     result = result[0], result[1], json.dumps(data)
         return result
 
-    apigateway_response_integrations_orig = APIGatewayResponse.integrations
-
-    def apigateway_response_integrations(self, request, full_url, headers):
-        result = apigateway_response_integrations_orig(self, request, full_url, headers)
+    def apigateway_response_integrations(self, request, *args, **kwargs):
+        result = apigateway_response_integrations_orig(self, request, *args, **kwargs)
         timeout_milliseconds = self._get_param('timeoutInMillis')
+        request_parameters = self._get_param('requestParameters') or {}
+        cache_key_parameters = self._get_param('cacheKeyParameters') or []
+        content_handling = self._get_param('contentHandling')
 
-        if self.method == 'PUT' and timeout_milliseconds:
+        if self.method == 'PUT':
             url_path_parts = self.path.split('/')
             function_id = url_path_parts[2]
             resource_id = url_path_parts[4]
             method_type = url_path_parts[6]
 
-            resource = self.backend.get_resource(function_id, resource_id)
-            resource.resource_methods[method_type]['methodIntegration'] = (
-                resource.resource_methods[method_type].get('methodIntegration') or {})
-            resource.resource_methods[method_type]['methodIntegration']['timeoutInMillis'] = timeout_milliseconds
+            integration_response = self.backend.get_integration(function_id, resource_id, method_type)
 
-            return result[0], result[1], json.dumps(resource.resource_methods[method_type]['methodIntegration'])
+            integration_response['timeoutInMillis'] = timeout_milliseconds
+            integration_response['requestParameters'] = request_parameters
+            integration_response['cacheKeyParameters'] = cache_key_parameters
+            integration_response['contentHandling'] = content_handling
+            return 200, {}, json.dumps(integration_response)
+
+        return result
+
+    def apigateway_response_integration_responses(self, request, *args, **kwargs):
+        result = apigateway_response_integration_responses_orig(self, request, *args, **kwargs)
+        response_parameters = self._get_param('responseParameters')
+
+        if self.method == 'PUT' and response_parameters:
+            url_path_parts = self.path.split('/')
+            function_id = url_path_parts[2]
+            resource_id = url_path_parts[4]
+            method_type = url_path_parts[6]
+            status_code = url_path_parts[9]
+
+            integration_response = self.backend.get_integration_response(
+                function_id, resource_id, method_type, status_code
+            )
+            integration_response['responseParameters'] = response_parameters
+
+            return 200, {}, json.dumps(integration_response)
+
+        return result
+
+    def apigateway_response_resource_method_responses(self, request, *args, **kwargs):
+        result = apigateway_response_resource_method_responses_orig(self, request, *args, **kwargs)
+        response_parameters = self._get_param('responseParameters')
+
+        if self.method == 'PUT' and response_parameters:
+            url_path_parts = self.path.split('/')
+            function_id = url_path_parts[2]
+            resource_id = url_path_parts[4]
+            method_type = url_path_parts[6]
+            response_code = url_path_parts[8]
+
+            method_response = self.backend.get_method_response(function_id, resource_id, method_type, response_code)
+
+            method_response['responseParameters'] = response_parameters
+
+            return 200, {}, json.dumps(method_response)
 
         return result
 
@@ -177,7 +239,14 @@ def apply_patches():
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
     apigateway_response_resource_methods_orig = APIGatewayResponse.resource_methods
     APIGatewayResponse.resource_methods = apigateway_response_resource_methods
+    apigateway_response_integrations_orig = APIGatewayResponse.integrations
     APIGatewayResponse.integrations = apigateway_response_integrations
+    apigateway_response_integration_responses_orig = APIGatewayResponse.integration_responses
+    APIGatewayResponse.integration_responses = apigateway_response_integration_responses
+    apigateway_response_resource_method_responses_orig = APIGatewayResponse.resource_method_responses
+    APIGatewayResponse.resource_method_responses = apigateway_response_resource_method_responses
+    apigateway_models_Integration_init_orig = apigateway_models.Integration.__init__
+    apigateway_models.Integration.__init__ = apigateway_models_Integration_init
 
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):

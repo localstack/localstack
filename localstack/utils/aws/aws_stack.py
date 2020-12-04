@@ -460,6 +460,11 @@ def es_domain_arn(domain_name, account_id=None, region_name=None):
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def code_signing_arn(code_signing_id, account_id=None, region_name=None):
+    pattern = 'arn:aws:lambda:%s:%s:code-signing-config:%s'
+    return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)
+
+
 def s3_bucket_arn(bucket_name, account_id=None):
     return 'arn:aws:s3:::%s' % (bucket_name)
 
@@ -556,10 +561,10 @@ def dynamodb_get_item_raw(request):
     return new_item
 
 
-def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None, region_name=None):
+def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None, region_name=None, client=None):
     """ Utility method to create a DynamoDB table """
 
-    dynamodb = connect_to_service('dynamodb', env=env, client=True, region_name=region_name)
+    dynamodb = client or connect_to_service('dynamodb', env=env, client=True, region_name=region_name)
     stream_spec = {'StreamEnabled': False}
     key_schema = [{
         'AttributeName': partition_key,
@@ -586,6 +591,8 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
         if 'ResourceInUseException' in str(e):
             # Table already exists -> return table reference
             return connect_to_resource('dynamodb', env=env, region_name=region_name).Table(table_name)
+        if 'AccessDeniedException' in str(e):
+            raise
     time.sleep(2)
     return table
 

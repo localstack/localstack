@@ -39,12 +39,12 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_PROVIDED)
 from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 from localstack.utils.common import (
-    to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, json_safe,
+    to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
     mkdir, unzip, is_zip_file, run, first_char_to_lower,
     timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
-from localstack.utils.aws.aws_models import LambdaFunction
+from localstack.utils.aws.aws_models import LambdaFunction, CodeSigningConfig
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -86,6 +86,9 @@ app = Flask(APP_NAME)
 
 # map ARN strings to lambda function objects
 ARN_TO_LAMBDA = {}
+
+# map ARN strigns to CodeSigningConfig object
+ARN_TO_CODE_SIGNING_CONFIG = {}
 
 # list of event source mappings for the API
 EVENT_SOURCE_MAPPINGS = []
@@ -856,7 +859,8 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'TracingConfig': {'Mode': 'PassThrough'},
         'RevisionId': func_version.get('RevisionId'),
         'State': 'Active',
-        'LastUpdateStatus': 'Successful'
+        'LastUpdateStatus': 'Successful',
+        'PackageType': func_details.package_type
     }
     if func_details.dead_letter_config:
         result['DeadLetterConfig'] = func_details.dead_letter_config
@@ -974,7 +978,10 @@ def create_function():
         func_details.role = data['Role']
         func_details.kms_key_arn = data.get('KMSKeyArn')
         func_details.memory_size = data.get('MemorySize')
+        func_details.code_signing_config_arn = data.get('CodeSigningConfigArn')
         func_details.code = data['Code']
+        # TODO: support package type 'Image'
+        func_details.package_type = 'Zip'
         func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
         if isinstance(result, Response):
@@ -1149,6 +1156,17 @@ def update_function_configuration(function):
         lambda_details.envvars = env_vars
     if data.get('Timeout'):
         lambda_details.timeout = data['Timeout']
+    if data.get('Role'):
+        lambda_details.role = data['Role']
+    if data.get('MemorySize'):
+        lambda_details.memory_size = data['MemorySize']
+    if data.get('Description'):
+        lambda_details.description = data['Description']
+    if data.get('VpcConfig'):
+        lambda_details.vpc_config = data['VpcConfig']
+    if data.get('KMSKeyArn'):
+        lambda_details.kms_key_arn = data['KMSKeyArn']
+
     return jsonify(data)
 
 
@@ -1522,17 +1540,23 @@ def list_aliases(function):
                                       key=lambda x: x['Name'])})
 
 
-@app.route('/<version>/functions/<function>/concurrency', methods=['PUT'])
-def put_concurrency(version, function):
+@app.route('/<version>/functions/<function>/concurrency', methods=['GET', 'PUT', 'DELETE'])
+def function_concurrency(version, function):
     # the version for put_concurrency != PATH_ROOT, at the time of this
     # writing it's: /2017-10-31 for this endpoint
     # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
     arn = func_arn(function)
-    data = json.loads(request.data)
     lambda_details = ARN_TO_LAMBDA.get(arn)
     if not lambda_details:
         return not_found_error(arn)
-    lambda_details.concurrency = data
+    if request.method == 'GET':
+        data = lambda_details.concurrency
+    if request.method == 'PUT':
+        data = json.loads(request.data)
+        lambda_details.concurrency = data
+    if request.method == 'DELETE':
+        lambda_details.concurrency = None
+        return Response('', status=204)
     return jsonify(data)
 
 
@@ -1640,6 +1664,182 @@ def delete_function_event_invoke_config(function):
 
     lambda_obj.clear_function_event_invoke_config()
     return Response('', status=204)
+
+
+@app.route('/2020-06-30/functions/<function>/code-signing-config', methods=['GET'])
+def get_function_code_signing_config(function):
+    function_arn = func_arn(function)
+    if function_arn not in ARN_TO_LAMBDA:
+        msg = 'Function not found: %s' % (function_arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+    lambda_obj = ARN_TO_LAMBDA[function_arn]
+
+    if not lambda_obj.code_signing_config_arn:
+        arn = None
+        function = None
+    else:
+        arn = lambda_obj.code_signing_config_arn
+
+    result = {
+        'CodeSigningConfigArn': arn,
+        'FunctionName': function
+    }
+    return Response(json.dumps(result), status=200)
+
+
+@app.route('/2020-06-30/functions/<function>/code-signing-config', methods=['PUT'])
+def put_function_code_signing_config(function):
+    data = json.loads(request.data)
+
+    arn = data.get('CodeSigningConfigArn')
+    if arn not in ARN_TO_CODE_SIGNING_CONFIG:
+        msg = """The code signing configuration cannot be found.
+        Check that the provided configuration is not deleted: %s.""" % (arn)
+        return error_response(msg, 404, error_type='CodeSigningConfigNotFoundException')
+
+    function_arn = func_arn(function)
+    if function_arn not in ARN_TO_LAMBDA:
+        msg = 'Function not found: %s' % (function_arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+    lambda_obj = ARN_TO_LAMBDA[function_arn]
+
+    if data.get('CodeSigningConfigArn'):
+        lambda_obj.code_signing_config_arn = arn
+
+    result = {
+        'CodeSigningConfigArn': arn,
+        'FunctionName': function
+    }
+
+    return Response(json.dumps(result), status=200)
+
+
+@app.route('/2020-06-30/functions/<function>/code-signing-config', methods=['DELETE'])
+def delete_function_code_signing_config(function):
+    function_arn = func_arn(function)
+    if function_arn not in ARN_TO_LAMBDA:
+        msg = 'Function not found: %s' % (function_arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+    lambda_obj = ARN_TO_LAMBDA[function_arn]
+
+    lambda_obj.code_signing_config_arn = None
+
+    return Response('', status=204)
+
+
+@app.route('/2020-04-22/code-signing-configs/', methods=['POST'])
+def create_code_signing_config():
+    data = json.loads(request.data)
+    signing_profile_version_arns = data.get('AllowedPublishers').get('SigningProfileVersionArns')
+
+    code_signing_id = 'csc-%s' % long_uid().replace('-', '')[0:17]
+    arn = aws_stack.code_signing_arn(code_signing_id)
+
+    ARN_TO_CODE_SIGNING_CONFIG[arn] = CodeSigningConfig(arn, code_signing_id, signing_profile_version_arns)
+
+    code_signing_obj = ARN_TO_CODE_SIGNING_CONFIG[arn]
+
+    if data.get('Description'):
+        code_signing_obj.description = data['Description']
+    if data.get('CodeSigningPolicies', {}).get('UntrustedArtifactOnDeployment'):
+        code_signing_obj.untrusted_artifact_on_deployment = data['CodeSigningPolicies']['UntrustedArtifactOnDeployment']
+    code_signing_obj.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+
+    result = {
+        'CodeSigningConfig': {
+            'AllowedPublishers': {
+                'SigningProfileVersionArns': code_signing_obj.signing_profile_version_arns
+            },
+            'CodeSigningConfigArn': code_signing_obj.arn,
+            'CodeSigningConfigId': code_signing_obj.id,
+            'CodeSigningPolicies': {
+                'UntrustedArtifactOnDeployment': code_signing_obj.untrusted_artifact_on_deployment
+            },
+            'Description': code_signing_obj.description,
+            'LastModified': code_signing_obj.last_modified
+        }
+    }
+
+    return Response(json.dumps(result), status=201)
+
+
+@app.route('/2020-04-22/code-signing-configs/<arn>', methods=['GET'])
+def get_code_signing_config(arn):
+    try:
+        code_signing_obj = ARN_TO_CODE_SIGNING_CONFIG[arn]
+    except KeyError:
+        msg = 'The Lambda code signing configuration %s can not be found.' % arn
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+    result = {
+        'CodeSigningConfig': {
+            'AllowedPublishers': {
+                'SigningProfileVersionArns': code_signing_obj.signing_profile_version_arns
+            },
+            'CodeSigningConfigArn': code_signing_obj.arn,
+            'CodeSigningConfigId': code_signing_obj.id,
+            'CodeSigningPolicies': {
+                'UntrustedArtifactOnDeployment': code_signing_obj.untrusted_artifact_on_deployment
+            },
+            'Description': code_signing_obj.description,
+            'LastModified': code_signing_obj.last_modified
+        }
+    }
+
+    return Response(json.dumps(result), status=200)
+
+
+@app.route('/2020-04-22/code-signing-configs/<arn>', methods=['DELETE'])
+def delete_code_signing_config(arn):
+    try:
+        ARN_TO_CODE_SIGNING_CONFIG.pop(arn)
+    except KeyError:
+        msg = 'The Lambda code signing configuration %s can not be found.' % (arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+    return Response('', status=204)
+
+
+@app.route('/2020-04-22/code-signing-configs/<arn>', methods=['PUT'])
+def update_code_signing_config(arn):
+    try:
+        code_signing_obj = ARN_TO_CODE_SIGNING_CONFIG[arn]
+    except KeyError:
+        msg = 'The Lambda code signing configuration %s can not be found.' % (arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+    data = json.loads(request.data)
+    is_updated = False
+    if data.get('Description'):
+        code_signing_obj.description = data['Description']
+        is_updated = True
+    if data.get('AllowedPublishers', {}).get('SigningProfileVersionArns'):
+        code_signing_obj.signing_profile_version_arns = data['AllowedPublishers']['SigningProfileVersionArns']
+        is_updated = True
+    if data.get('CodeSigningPolicies', {}).get('UntrustedArtifactOnDeployment'):
+        code_signing_obj.untrusted_artifact_on_deployment = data['CodeSigningPolicies']['UntrustedArtifactOnDeployment']
+        is_updated = True
+
+    if is_updated:
+        code_signing_obj.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+
+    result = {
+        'CodeSigningConfig': {
+            'AllowedPublishers': {
+                'SigningProfileVersionArns': code_signing_obj.signing_profile_version_arns
+            },
+            'CodeSigningConfigArn': code_signing_obj.arn,
+            'CodeSigningConfigId': code_signing_obj.id,
+            'CodeSigningPolicies': {
+                'UntrustedArtifactOnDeployment': code_signing_obj.untrusted_artifact_on_deployment
+            },
+            'Description': code_signing_obj.description,
+            'LastModified': code_signing_obj.last_modified
+        }
+    }
+
+    return Response(json.dumps(result), status=200)
 
 
 def serve(port, quiet=True):

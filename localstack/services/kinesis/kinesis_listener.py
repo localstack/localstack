@@ -2,8 +2,10 @@ import re
 import json
 import random
 import cbor2
+import base64
 from requests.models import Response
 from localstack import config
+from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc
 from localstack.utils.analytics import event_publisher
@@ -18,6 +20,7 @@ ACTION_LIST_STREAMS = '%s.ListStreams' % ACTION_PREFIX
 ACTION_CREATE_STREAM = '%s.CreateStream' % ACTION_PREFIX
 ACTION_DELETE_STREAM = '%s.DeleteStream' % ACTION_PREFIX
 ACTION_UPDATE_SHARD_COUNT = '%s.UpdateShardCount' % ACTION_PREFIX
+ACTION_GET_RECORDS = '%s.GetRecords' % ACTION_PREFIX
 
 # list of stream consumer details
 STREAM_CONSUMERS = []
@@ -76,9 +79,7 @@ class ProxyListenerKinesis(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         action = headers.get('X-Amz-Target')
         data = self.decode_content(data or '{}')
-
-        response._content = re.sub(r'arn:aws:kinesis:[^:]+:', 'arn:aws:kinesis:%s:' % aws_stack.get_region(),
-            to_str(response.content or ''))
+        response._content = self.replace_in_encoded(response.content or '')
 
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):
@@ -139,12 +140,56 @@ class ProxyListenerKinesis(ProxyListener):
             response.encoding = 'UTF-8'
             response._content = json.dumps(content)
             return response
+        elif action == ACTION_GET_RECORDS:
+            sdk_v2 = self.sdk_is_v2(headers.get('User-Agent', '').split(' ')[0])
+            results, encoding_type = self.decode_content(response.content, True)
 
-    def decode_content(self, data):
+            for record in results['Records']:
+                if sdk_v2:
+                    record['ApproximateArrivalTimestamp'] = int(record['ApproximateArrivalTimestamp'] * 1000)
+                if not isinstance(record['Data'], str):
+                    record['Data'] = base64.encodebytes(bytearray(record['Data']['data']))
+
+            if encoding_type == APPLICATION_CBOR:
+                response._content = cbor2.dumps(results)
+            else:
+                response._content = json.dumps(results)
+
+            return response
+
+    def sdk_is_v2(self, user_agent):
+        if re.search(r'\/2.\d+.\d+', user_agent):
+            return True
+        return False
+
+    def replace_in_encoded(self, data):
+        if not data:
+            return ''
+
+        decoded, type_encoding = self.decode_content(data, True)
+
+        if type_encoding == APPLICATION_JSON:
+            return re.sub(r'arn:aws:kinesis:[^:]+:', 'arn:aws:kinesis:%s:' % aws_stack.get_region(),
+            to_str(data))
+
+        if type_encoding == APPLICATION_CBOR:
+            replaced = re.sub(r'arn:aws:kinesis:[^:]+:', 'arn:aws:kinesis:%s:' % aws_stack.get_region(),
+            json.dumps(decoded))
+            return cbor2.dumps(json.loads(replaced))
+
+    def decode_content(self, data, describe=False):
+        content_type = ''
         try:
-            return json.loads(to_str(data))
+            decoded = json.loads(to_str(data))
+            content_type = APPLICATION_JSON
         except UnicodeDecodeError:
-            return cbor2.loads(data)
+            decoded = cbor2.loads(data)
+            content_type = APPLICATION_CBOR
+
+        if describe:
+            return decoded, content_type
+
+        return decoded
 
 
 # instantiate listener

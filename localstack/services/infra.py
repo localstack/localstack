@@ -33,6 +33,9 @@ from localstack.utils.analytics.profiler import log_duration
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
 
+# output string that indicates that the stack is ready
+READY_MARKER_OUTPUT = 'Ready.'
+
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
@@ -101,21 +104,18 @@ def start_redshift(port=None, asynchronous=False):
     return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
 
 
-def start_route53(port=None, asynchronous=False):
-    port = port or config.PORT_ROUTE53
-    return start_moto_server('route53', port, name='Route53', asynchronous=asynchronous)
-
-
 def start_acm(port=None, asynchronous=False):
     port = port or config.PORT_ACM
     return start_moto_server('acm', port, name='ACM', asynchronous=asynchronous)
 
 
+# TODO still needed?
 def start_ses(port=None, asynchronous=False):
     port = port or config.PORT_SES
     return start_moto_server('ses', port, name='SES', asynchronous=asynchronous)
 
 
+# TODO move to es_starter.py?
 def start_elasticsearch_service(port=None, asynchronous=False):
     port = port or config.PORT_ES
     return start_local_api('ES', port, api='es', method=es_api.serve, asynchronous=asynchronous)
@@ -167,6 +167,26 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
         poolmanager.pool_classes_by_scheme['http'] = MyHTTPConnectionPool
     except Exception:
         pass
+
+
+def patch_instance_tracker_meta():
+    """
+    Avoid instance collection for moto dashboard
+    """
+    def new_intance(meta, name, bases, dct):
+        cls = super(moto_core.models.InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
+        if name == 'BaseModel':
+            return cls
+        cls.instances = []
+        return cls
+
+    moto_core.models.InstanceTrackerMeta.__new__ = new_intance
+
+    def new_basemodel(cls, *args, **kwargs):
+        instance = super(moto_core.models.BaseModel, cls).__new__(cls)
+        return instance
+
+    moto_core.models.BaseModel.__new__ = new_basemodel
 
 
 def set_service_status(data):
@@ -323,14 +343,13 @@ def stop_infra(debug=False):
 def check_aws_credentials():
     session = boto3.Session()
     credentials = None
+    # hardcode credentials here, to allow us to determine internal API calls made via boto3
+    os.environ['AWS_ACCESS_KEY_ID'] = constants.INTERNAL_AWS_ACCESS_KEY_ID
+    os.environ['AWS_SECRET_ACCESS_KEY'] = constants.INTERNAL_AWS_ACCESS_KEY_ID
     try:
         credentials = session.get_credentials()
     except Exception:
         pass
-    if not credentials:
-        # set temporary dummy credentials
-        os.environ['AWS_ACCESS_KEY_ID'] = constants.TEST_AWS_ACCESS_KEY_ID
-        os.environ['AWS_SECRET_ACCESS_KEY'] = constants.TEST_AWS_SECRET_ACCESS_KEY
     session = boto3.Session()
     credentials = session.get_credentials()
     assert credentials
@@ -358,6 +377,7 @@ def start_infra(asynchronous=False, apis=None):
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
+        patch_instance_tracker_meta()
 
         # load plugins
         load_plugins()
@@ -433,7 +453,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
     prepare_environment()
     prepare_installation()
     thread = start_api_services()
-    print('Ready.')
+    print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
 
     return thread

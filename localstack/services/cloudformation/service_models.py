@@ -29,7 +29,6 @@ class EventsRule(BaseModel):
 
 
 class LogsLogGroup(BaseModel):
-
     def get_cfn_attribute(self, attribute_name):
         if attribute_name == 'Arn':
             return self.params.get('Arn') or aws_stack.log_group_arn(self.params.get('LogGroupName'))

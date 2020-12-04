@@ -66,28 +66,6 @@ def apply_patches():
 
     s3_models.DEFAULT_KEY_BUFFER_SIZE = S3_MAX_FILE_SIZE_MB * 1024 * 1024
 
-    def init(self, name, value, storage='STANDARD', etag=None,
-            is_versioned=False, version_id=0, max_buffer_size=None, *args, **kwargs):
-        original_init(self, name, value, storage=storage, etag=etag, is_versioned=is_versioned,
-            version_id=version_id, max_buffer_size=s3_models.DEFAULT_KEY_BUFFER_SIZE, *args, **kwargs)
-        try:
-            (self.instances or []).remove(self)
-        except Exception:
-            pass
-
-    original_init = s3_models.FakeKey.__init__
-    s3_models.FakeKey.__init__ = init
-
-    def bucket_init(self, name, region_name, *args, **kwargs):
-        original_bucket_init(self, name, region_name, *args, **kwargs)
-        try:
-            (self.instances or []).remove(self)
-        except Exception:
-            pass
-
-    original_bucket_init = s3_models.FakeBucket.__init__
-    s3_models.FakeBucket.__init__ = bucket_init
-
     def s3_update_acls(self, request, query, bucket_name, key_name):
         # fix for - https://github.com/localstack/localstack/issues/1733
         #         - https://github.com/localstack/localstack/issues/1170

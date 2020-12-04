@@ -201,7 +201,6 @@ class ProxyListenerCloudFormation(ProxyListener):
 
         req_data = None
         if method == 'POST' and path == '/':
-
             req_data = urlparse.parse_qs(to_str(data))
             req_data = dict([(k, v[0]) for k, v in req_data.items()])
             action = req_data.get('Action')

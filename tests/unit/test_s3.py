@@ -4,6 +4,7 @@ from localstack.services.s3 import s3_listener, s3_starter, multipart_content
 from requests.models import CaseInsensitiveDict, Response
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+from localstack.services.infra import patch_instance_tracker_meta
 
 
 class S3ListenerTest (unittest.TestCase):
@@ -255,6 +256,7 @@ class S3BackendTest (unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         s3_starter.apply_patches()
+        patch_instance_tracker_meta()
 
     def test_key_instances_before_removing(self):
         s3_backend = s3_models.S3Backend()

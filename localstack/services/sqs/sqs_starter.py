@@ -2,11 +2,10 @@ import os
 import types
 import logging
 import traceback
-
-from moto.core.utils import camelcase_to_underscores
 from moto.sqs import responses as sqs_responses
-from moto.sqs.exceptions import QueueDoesNotExist
 from moto.sqs.models import Queue
+from moto.core.utils import camelcase_to_underscores
+from moto.sqs.exceptions import QueueDoesNotExist
 from localstack import config
 from localstack.config import LOCALSTACK_HOSTNAME, TMP_FOLDER
 from localstack.utils.aws import aws_stack

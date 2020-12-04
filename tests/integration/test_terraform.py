@@ -1,7 +1,8 @@
 import os
 import unittest
+import threading
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import run
+from localstack.utils.common import run, start_worker_thread
 
 BUCKET_NAME = 'tf-bucket'
 QUEUE_NAME = 'tf-queue'
@@ -12,21 +13,33 @@ LAMBDA_HANDLER = 'DotNetCore2::DotNetCore2.Lambda.Function::SimpleFunctionHandle
 LAMBDA_RUNTIME = 'dotnetcore2.0'
 LAMBDA_ROLE = 'arn:aws:iam::000000000000:role/iam_for_lambda'
 
+INIT_LOCK = threading.RLock()
+
 
 class TestTerraform(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        base_dir = os.path.join(os.path.dirname(__file__), 'terraform')
-        if not os.path.exists(os.path.join(base_dir, '.terraform')):
-            run('cd %s; terraform init -input=false' % base_dir)
-        run('cd %s; terraform plan -out=tfplan -input=false' % (base_dir))
-        run('cd %s; terraform apply -input=false tfplan' % (base_dir))
+        with(INIT_LOCK):
+            run('cd %s; terraform apply -input=false tfplan' % (cls.get_base_dir()))
 
     @classmethod
     def tearDownClass(cls):
-        base_dir = os.path.join(os.path.dirname(__file__), 'terraform')
-        run('cd %s; terraform destroy -auto-approve' % (base_dir))
+        run('cd %s; terraform destroy -auto-approve' % (cls.get_base_dir()))
+
+    @classmethod
+    def init_async(cls):
+        def _run(*args):
+            with(INIT_LOCK):
+                base_dir = cls.get_base_dir()
+                if not os.path.exists(os.path.join(base_dir, '.terraform')):
+                    run('cd %s; terraform init -input=false' % (base_dir))
+                run('cd %s; terraform plan -out=tfplan -input=false' % (base_dir))
+        start_worker_thread(_run)
+
+    @classmethod
+    def get_base_dir(*args):
+        return os.path.join(os.path.dirname(__file__), 'terraform')
 
     def test_bucket_exists(self):
         s3_client = aws_stack.connect_to_service('s3')
@@ -90,3 +103,12 @@ class TestTerraform(unittest.TestCase):
         self.assertEqual(len(res2[0]['resourceMethods']), 2)
         self.assertEqual(res2[0]['resourceMethods']['GET']['methodIntegration']['type'], 'AWS_PROXY')
         self.assertTrue(res2[0]['resourceMethods']['GET']['methodIntegration']['uri'])
+
+    def test_route53(self):
+        route53 = aws_stack.connect_to_service('route53')
+
+        response = route53.create_hosted_zone(Name='zone123', CallerReference='ref123')
+        self.assertEqual(201, response['ResponseMetadata']['HTTPStatusCode'])
+
+        response = route53.get_change(Id='string')
+        self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])

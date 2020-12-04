@@ -140,7 +140,8 @@ def load_plugins(scope=None):
         return PLUGINS_LOADED[scope]
 
     t1 = now_utc()
-    log_level = logging.WARNING if scope == PLUGIN_SCOPE_COMMANDS else None
+    is_infra_process = os.environ.get(constants.LOCALSTACK_INFRA_PROCESS) in ['1', 'true'] or '--host' in sys.argv
+    log_level = logging.WARNING if scope == PLUGIN_SCOPE_COMMANDS and not is_infra_process else None
     setup_logging(log_level=log_level)
 
     loaded_files = []
@@ -253,10 +254,12 @@ def get_server_version():
 
 
 def setup_logging(log_level=None):
-    # determine and set log level
+    """ Determine and set log level """
+
     if PLUGINS_LOADED.get('_logging_'):
         return
     PLUGINS_LOADED['_logging_'] = True
+
     log_level = log_level or (logging.DEBUG if is_debug() else logging.INFO)
     logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
 

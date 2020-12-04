@@ -31,9 +31,9 @@ from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse, parse_qs
 from multiprocessing.dummy import Pool
 from localstack import config
+from localstack.utils import bootstrap
 from localstack.config import DEFAULT_ENCODING
 from localstack.constants import ENV_DEV
-from localstack.utils import bootstrap
 from localstack.utils.bootstrap import FuncThread
 
 # arrays for temporary files and resources
@@ -229,6 +229,16 @@ class JsonObject(object):
 
     def __repr__(self):
         return self.__str__()
+
+
+class DelSafeDict(dict):
+    """Useful when applying jsonpatch. Use it as follows:
+
+        obj.__dict__ = DelSafeDict(obj.__dict__)
+        apply_patch(obj.__dict__, patch)
+    """
+    def __delitem__(self, key, *args, **kwargs):
+        self[key] = None
 
 
 class CaptureOutput(object):
@@ -676,7 +686,9 @@ def download(url, path, verify_ssl=True):
     # make sure we're creating a new session here to
     # enable parallel file downloads during installation!
     s = requests.Session()
-    r = s.get(url, stream=True, verify=verify_ssl)
+    # Use REQUESTS_CA_BUNDLE path. If it doesn't exist, use the method provided settings.
+    # Note that a value that is not False, will result to True and will get the bundle file.
+    r = s.get(url, stream=True, verify=os.getenv('REQUESTS_CA_BUNDLE', verify_ssl))
     # check status code before attempting to read body
     if r.status_code >= 400:
         raise Exception('Failed to download %s, response code %s' % (url, r.status_code))
@@ -687,13 +699,18 @@ def download(url, path, verify_ssl=True):
             os.makedirs(os.path.dirname(path))
         LOG.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
         with open(path, 'wb') as f:
+            iter_length = 0
+            iter_limit = 1000000  # print a log line for every 1MB chunk
             for chunk in r.iter_content(DOWNLOAD_CHUNK_SIZE):
                 total += len(chunk)
+                iter_length += len(chunk)
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
-                    LOG.debug('Writing %s bytes (total %s) to %s' % (len(chunk), total, path))
                 else:
                     LOG.debug('Empty chunk %s (total %s) from %s' % (chunk, total, url))
+                if iter_length >= iter_limit:
+                    LOG.debug('Written %s bytes (total %s) to %s' % (iter_length, total, path))
+                    iter_length = 0
             f.flush()
             os.fsync(f)
         if os.path.getsize(path) == 0:

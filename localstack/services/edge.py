@@ -165,6 +165,8 @@ def get_api_from_headers(headers, path=None):
         result = result_before = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
     elif ls_target == 'web':
         result = 'web', config.PORT_WEB_UI
+    elif result[0] == 'EventBridge':
+        result = 'events', config.PORT_EVENTS
 
     return result[0], result_before[1] or result[1], path, host
 

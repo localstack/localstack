@@ -243,7 +243,7 @@ defined in [`config.py`](https://github.com/localstack/localstack/blob/master/lo
 
 For example, to dynamically set `KINESIS_ERROR_PROBABILITY=1` at runtime, use the following command:
 ```
-curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhost:4568/?_config_'
+curl -v -d '{"variable":"KINESIS_ERROR_PROBABILITY","value":1}' 'http://localhost:4566/?_config_'
 ```
 
 ### Service health checks
@@ -284,7 +284,7 @@ The local directory `/ls_tmp` must contains the three files (server.test.pem, se
 You can point your `aws` CLI to use the local infrastructure, for example:
 
 ```
-aws --endpoint-url=http://localhost:4568 kinesis list-streams
+aws --endpoint-url=http://localhost:4566 kinesis list-streams
 {
     "StreamNames": []
 }
@@ -519,6 +519,28 @@ The Makefile contains a target to conveniently run the local infrastructure for 
 ```
 make infra
 ```
+
+#### Starting LocalStack using Vagrant (Centos 8)
+This is similar to `make docker-mount-run`, but instead of docker centos VM will be started and source code will be mounted inside.
+
+##### Pre-requirements
+- Vagrant
+- `vagrant plugin install vagrant-vbguest`
+
+##### Starting Vagrant
+- `make vagrant-start` (be ready to provide system password)
+
+##### Using Vagrant
+- `vagrant ssh`
+- `sudo -s`
+- `cd /localstack`
+- `SERVICES=dynamodb DEBUG=1 make docker-mount-run`
+
+##### Stopping Vagrant
+- `make vagrant-stop` or `vagrant halt`
+
+##### Deleting Vagrant VM
+- `vagrant destroy`
 
 Check out the
 [developer guide](https://github.com/localstack/localstack/tree/master/doc/developer_guides) which

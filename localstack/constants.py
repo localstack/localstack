@@ -62,6 +62,7 @@ ENV_INTERNAL_TEST_RUN = 'LOCALSTACK_INTERNAL_TEST_RUN'
 APPLICATION_AMZ_JSON_1_0 = 'application/x-amz-json-1.0'
 APPLICATION_AMZ_JSON_1_1 = 'application/x-amz-json-1.1'
 APPLICATION_AMZ_CBOR_1_1 = 'application/x-amz-cbor-1.1'
+APPLICATION_CBOR = 'application/cbor'
 APPLICATION_JSON = 'application/json'
 APPLICATION_XML = 'application/xml'
 APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
@@ -117,6 +118,10 @@ try:
 except Exception:
     MAX_POOL_CONNECTIONS = 150
 
-# test credentials being used while generating signature for S3 presign url
+# test credentials used for generating signature for S3 presigned URLs (to be used by external clients)
 TEST_AWS_ACCESS_KEY_ID = 'test'
 TEST_AWS_SECRET_ACCESS_KEY = 'test'
+
+# credentials being used for internal calls
+INTERNAL_AWS_ACCESS_KEY_ID = '__internal_call__'
+INTERNAL_AWS_SECRET_ACCESS_KEY = '__internal_call__'
