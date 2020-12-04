@@ -1301,10 +1301,10 @@ def apply_patches():
     def change_set_diff(self, template, parameters=None, **kwargs):
         result = change_set_diff_orig(self, template, parameters=parameters, **kwargs)
         # Fixes an issue where conditions/parameters are unavailable in the changeset
-        self.resource_map._template['Conditions'] = self.template_dict.get('Conditions', {})
-        self.resource_map.load_conditions()
         self.resource_map._template['Parameters'] = self.template_dict.get('Parameters', {})
         self.resource_map.load_parameters()
+        self.resource_map._template['Conditions'] = self.template_dict.get('Conditions', {})
+        self.resource_map.load_conditions()
         return result
 
     change_set_diff_orig = FakeChangeSet.diff
