@@ -383,6 +383,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
 
 def do_delete_topic(topic_arn):
     SNS_SUBSCRIPTIONS.pop(topic_arn, None)
+    SNS_TAGS.pop(topic_arn, None)
 
 
 def do_confirm_subscription(topic_arn, token):
