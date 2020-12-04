@@ -334,7 +334,7 @@ Resources:
   MyBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: '%s'
+      BucketName: {'Fn::If': [IsProd, '_invalid_', '%s']}
 """
 
 TEST_DEPLOY_BODY_1 = os.path.join(THIS_FOLDER, 'templates', 'deploy_template_1.yaml')
@@ -755,25 +755,18 @@ class CloudFormationTest(unittest.TestCase):
         change_set_name = 'change-set-%s' % short_uid()
         bucket_name = 'bucket-%s' % short_uid()
 
-        try:
-            cloudformation.describe_stacks(
-                StackName=stack_name
-            )
-            self.fail('This call should not be successful as the stack does not exist')
-
-        except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'ValidationError')
+        with self.assertRaises(ClientError) as ctx:
+            cloudformation.describe_stacks(StackName=stack_name)
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'ValidationError')
 
         rs = cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=TEST_CHANGE_SET_BODY % bucket_name,
-            Parameters=[
-                {
-                    'ParameterKey': 'EnvironmentType',
-                    'ParameterValue': 'stage'
-                }
-            ],
+            Parameters=[{
+                'ParameterKey': 'EnvironmentType',
+                'ParameterValue': 'stage'
+            }],
             Capabilities=['CAPABILITY_IAM'],
         )
 
@@ -826,14 +819,9 @@ class CloudFormationTest(unittest.TestCase):
         iam_client = aws_stack.connect_to_service('iam')
         roles_before = iam_client.list_roles()['Roles']
 
-        try:
-            cloudformation.describe_stacks(
-                StackName=stack_name
-            )
-            self.fail('This call should not be successful as the stack does not exist')
-
-        except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'ValidationError')
+        with self.assertRaises(ClientError) as ctx:
+            cloudformation.describe_stacks(StackName=stack_name)
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'ValidationError')
 
         rs = cloudformation.create_change_set(
             StackName=stack_name,
@@ -1102,14 +1090,9 @@ class CloudFormationTest(unittest.TestCase):
 
         self.assertFalse(bucket_exists(bucket_name))
 
-        try:
-            s3.get_bucket_policy(
-                Bucket=bucket_name
-            )
-            self.fail('This call should not be successful as the bucket policy was deleted')
-
-        except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'NoSuchBucket')
+        with self.assertRaises(ClientError) as ctx:
+            s3.get_bucket_policy(Bucket=bucket_name)
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'NoSuchBucket')
 
         rs = cfn.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_8))
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -1336,12 +1319,9 @@ class CloudFormationTest(unittest.TestCase):
 
         cfn.delete_stack(StackName=stack_name)
 
-        try:
+        with self.assertRaises(ClientError) as ctx:
             sqs.get_queue_url(QueueName=fifo_queue)
-            self.fail('This call should not be successful as the queue was deleted')
-
-        except ClientError as e:
-            self.assertEqual(e.response['Error']['Code'], 'AWS.SimpleQueueService.NonExistentQueue')
+        self.assertEqual(ctx.exception.response['Error']['Code'], 'AWS.SimpleQueueService.NonExistentQueue')
 
     def test_cfn_handle_events_rule(self):
         stack_name = 'stack-%s' % short_uid()

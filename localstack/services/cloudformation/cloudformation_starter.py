@@ -21,7 +21,7 @@ from moto.cloudformation import parsing, responses
 from moto.cloudformation import utils as cloudformation_utils
 from moto.cloudformation import models as cloudformation_models
 from boto.cloudformation.stack import Output
-from moto.cloudformation.models import FakeStack, FakeChangeSet, CloudFormationBackend, cloudformation_backends
+from moto.cloudformation.models import FakeStack, CloudFormationBackend, cloudformation_backends
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
@@ -1295,20 +1295,6 @@ def apply_patches():
         return change_set_id, _
 
     CloudFormationBackend.create_change_set = cloudformation_backend_create_change_set
-
-    # patch FakeChangeSet.diff
-
-    def change_set_diff(self, template, parameters=None, **kwargs):
-        result = change_set_diff_orig(self, template, parameters=parameters, **kwargs)
-        # Fixes an issue where conditions/parameters are unavailable in the changeset
-        self.resource_map._template['Parameters'] = self.template_dict.get('Parameters', {})
-        self.resource_map.load_parameters()
-        self.resource_map._template['Conditions'] = self.template_dict.get('Conditions', {})
-        self.resource_map.load_conditions()
-        return result
-
-    change_set_diff_orig = FakeChangeSet.diff
-    FakeChangeSet.diff = change_set_diff
 
     # patch cloudformation backend change_set methods
     # #2240 - S3 bucket not created since 0.10.8
