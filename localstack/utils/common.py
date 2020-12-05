@@ -725,13 +725,12 @@ def download(url, path, verify_ssl=True):
 
 def parse_request_data(method, path, data):
     """ Extract request data either from query string (for GET) or request body (for POST). """
-    if method == 'POST':
-        result = parse_qs(to_str(data))
-    elif method == 'GET':
+    result = {}
+    if method in ['POST', 'PUT', 'PATCH']:
+        result = parse_qs(to_str(data or ''))
+    if not result:
         parsed_path = urlparse(path)
         result = parse_qs(parsed_path.query)
-    else:
-        return {}
     result = dict([(k, v[0]) for k, v in result.items()])
     return result
 
