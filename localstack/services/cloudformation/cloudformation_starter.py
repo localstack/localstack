@@ -21,7 +21,7 @@ from moto.cloudformation import parsing, responses
 from moto.cloudformation import utils as cloudformation_utils
 from moto.cloudformation import models as cloudformation_models
 from boto.cloudformation.stack import Output
-from moto.cloudformation.models import FakeStack, CloudFormationBackend, cloudformation_backends
+from moto.cloudformation.models import FakeStack, FakeChangeSet, CloudFormationBackend, cloudformation_backends
 from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTemplateException
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
@@ -1252,6 +1252,28 @@ def apply_patches():
     FakeStack.update = stack_update
     stack_outputs_orig = FakeStack.stack_outputs
     FakeStack.stack_outputs = stack_outputs
+
+    # patch FakeChangeSet constructor to pass parent stack parameters and resource map
+
+    def change_set_init(self, stack_id, stack_name, stack_template, change_set_id,
+            change_set_name, template, parameters, region_name, *args, **kwargs):
+        stack = [s for s in cloudformation_backends[region_name].stacks.values() if s.name == stack_name]
+        if stack:
+            stack = stack[0]
+            stack_params = stack.parameters or {}
+            stack_params.update(parameters or {})
+            parameters = stack_params
+
+        # call parent constructor
+        change_set_init_orig(self, stack_id, stack_name, stack_template, change_set_id,
+                change_set_name, template, parameters, region_name, *args, **kwargs)
+
+        # update resource map with resources from parent stack
+        if stack:
+            self.resource_map._parsed_resources.update(stack.resource_map._parsed_resources)
+
+    change_set_init_orig = FakeChangeSet.__init__
+    FakeChangeSet.__init__ = change_set_init
 
     # patch Kinesis Stream get_cfn_attribute(..) method in moto
     def Kinesis_Stream_get_cfn_attribute(self, attribute_name):

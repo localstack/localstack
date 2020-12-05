@@ -785,3 +785,14 @@ class SNSTest(unittest.TestCase):
             WaitTimeSeconds=2,
         )
         self.assertEqual(len(response['Messages']), 1)
+
+    def test_create_topic_after_delete_with_new_tags(self):
+        topic_name = 'test-%s' % short_uid()
+        topic = self.sns_client.create_topic(Name=topic_name, Tags=[{'Key': 'Name', 'Value': 'pqr'}])
+        self.sns_client.delete_topic(TopicArn=topic['TopicArn'])
+
+        topic1 = self.sns_client.create_topic(Name=topic_name, Tags=[{'Key': 'Name', 'Value': 'abc'}])
+        self.assertEqual(topic['TopicArn'], topic1['TopicArn'])
+
+        # cleanup
+        self.sns_client.delete_topic(TopicArn=topic1['TopicArn'])
