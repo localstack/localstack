@@ -1257,7 +1257,7 @@ def apply_patches():
 
     def change_set_init(self, stack_id, stack_name, stack_template, change_set_id,
             change_set_name, template, parameters, region_name, *args, **kwargs):
-        stack = [s for s in cloudformation_backends[region_name].stacks.values() if s.stack_name == stack_name]
+        stack = [s for s in cloudformation_backends[region_name].stacks.values() if s.name == stack_name]
         if stack:
             stack = stack[0]
             stack_params = stack.parameters or {}
