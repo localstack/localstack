@@ -146,8 +146,7 @@ class TestStateMachine(unittest.TestCase):
             name=CHOICE_STATE_MACHINE_NAME, definition=definition, roleArn=role_arn)
 
         # assert that the SM has been created
-        state_machines_after = self.sfn_client.list_state_machines()['stateMachines']
-        self.assertEqual(len(state_machines_after), len(state_machines_before) + 1)
+        self.assert_machine_created(state_machines_before)
 
         # run state machine
         state_machines = self.sfn_client.list_state_machines()['stateMachines']
@@ -184,8 +183,7 @@ class TestStateMachine(unittest.TestCase):
             name=MAP_STATE_MACHINE_NAME, definition=definition, roleArn=role_arn)
 
         # assert that the SM has been created
-        state_machines_after = self.sfn_client.list_state_machines()['stateMachines']
-        self.assertEqual(len(state_machines_after), len(state_machines_before) + 1)
+        state_machines_after = self.assert_machine_created(state_machines_before)
 
         # run state machine
         sm_arn = [m['stateMachineArn'] for m in state_machines_after if m['name'] == MAP_STATE_MACHINE_NAME][0]
@@ -219,8 +217,7 @@ class TestStateMachine(unittest.TestCase):
             name=STATE_MACHINE_NAME, definition=definition, roleArn=role_arn)
 
         # assert that the SM has been created
-        state_machines_after = self.sfn_client.list_state_machines()['stateMachines']
-        self.assertEqual(len(state_machines_after), len(state_machines_before) + 1)
+        self.assert_machine_created(state_machines_before)
 
         # run state machine
         state_machines = self.sfn_client.list_state_machines()['stateMachines']
@@ -240,6 +237,13 @@ class TestStateMachine(unittest.TestCase):
 
         # clean up
         self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+
+    def assert_machine_created(self, state_machines_before):
+        def check():
+            state_machines_after = self.sfn_client.list_state_machines()['stateMachines']
+            self.assertEqual(len(state_machines_after), len(state_machines_before) + 1)
+            return state_machines_after
+        return retry(check, sleep=1, retries=4)
 
     def _get_execution_results(self, sm_arn):
         response = self.sfn_client.list_executions(stateMachineArn=sm_arn)
