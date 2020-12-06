@@ -1427,6 +1427,8 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual(response.headers['Access-Control-Allow-Headers'], 'x-amz-tagging')
         self.assertIn('Access-Control-Max-Age'.lower(), response.headers)
         self.assertEqual(response.headers['Access-Control-Max-Age'], '3000')
+        self.assertIn('Access-Control-Allow-Credentials'.lower(), response.headers)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'].lower(), 'true')
 
         BUCKET_CORS_CONFIG = {
             'CORSRules': [{
