@@ -329,7 +329,15 @@ def apply_patches():
                         if not isinstance(val, str):
                             continue
 
+                        for k, v in resource_json['Fn::Sub'][1].items():
+                            if isinstance(v, dict) and 'Ref' in v:
+                                if v['Ref'] == key:
+                                    resource_json['Fn::Sub'][1][k] = val
+
                         resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % key, val)
+
+                    for k, v in resource_json['Fn::Sub'][1].items():
+                        resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, v)
 
                     return resource_json['Fn::Sub'][0]
 

@@ -7,7 +7,6 @@ from moto.core import BaseModel
 
 
 class StateMachine(BaseModel):
-
     def __init__(self, name, definition=None, role_arn=None):
         super(StateMachine, self).__init__()
         self.name = name
