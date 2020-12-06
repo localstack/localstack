@@ -20,7 +20,7 @@ def setup_package():
         FuncThread(start_profiling).start()
         # start infrastructure services
         infra.start_infra(asynchronous=True)
-        # initializing terraform
+        # initialize certain tests asynchronously to reduce overall test time
         TestTerraform.init_async()
     except Exception as e:
         # make sure to tear down the infrastructure

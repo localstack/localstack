@@ -2,7 +2,7 @@ import os
 import unittest
 import threading
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import run, start_worker_thread
+from localstack.utils.common import run, start_worker_thread, is_command_available
 
 BUCKET_NAME = 'tf-bucket'
 QUEUE_NAME = 'tf-queue'
@@ -29,12 +29,15 @@ class TestTerraform(unittest.TestCase):
 
     @classmethod
     def init_async(cls):
+        if not is_command_available('terraform'):
+            return
+
         def _run(*args):
             with(INIT_LOCK):
                 base_dir = cls.get_base_dir()
                 if not os.path.exists(os.path.join(base_dir, '.terraform')):
-                    run('cd %s; terraform init -input=false' % (base_dir))
-                run('cd %s; terraform plan -out=tfplan -input=false' % (base_dir))
+                    run('cd %s; terraform init -input=false' % base_dir)
+                run('cd %s; terraform plan -out=tfplan -input=false' % base_dir)
         start_worker_thread(_run)
 
     @classmethod

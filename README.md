@@ -79,6 +79,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **MediaStore**
 * **QLDB**
 * **RDS**
+* **Timestream**
 * **Transfer**
 * **XRay**
 * **Interactive UIs to manage resources**
@@ -136,6 +137,8 @@ localstack start
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
 
 **Note**: From 2020-07-11 onwards, the default image `localstack/localstack` in Docker Hub refers to the "light version", which has some large dependency files like Elasticsearch removed (and lazily downloads them, if required). (Note that the `localstack/localstack-light` image alias may get removed in the future). In case you need the full set of dependencies, the `localstack/localstack-full` image can be used instead. Please also refer to the `USE_LIGHT_IMAGE` configuration below.
+
+**Note**: By default, LocalStack uses the image tagged `latest` that is cached on your machine, and will **not** pull the latest image automatically from Docker Hub (i.e., the image needs to be pulled manually if needed).
 
 (**Note**: Although it is strongly recommended to use Docker, the infrastructure can also be spun up directly on the host machine using the `--host` startup flag. Note that this will require [additional dependencies](#Developing), and is not supported on some operating systems, including Windows.)
 
