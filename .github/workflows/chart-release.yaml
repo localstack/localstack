@@ -1,9 +1,9 @@
 name: Release Helm Chart
 
-on:
-  push:
-    paths:
-      - 'chart/*'
+on: [push]
+    # push:
+    #   paths:
+    #     - 'chart/*'
     # branches:
     #   - master
 
