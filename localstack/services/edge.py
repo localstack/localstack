@@ -61,8 +61,9 @@ class ProxyListenerEdge(ProxyListener):
 
             if api in ['', None, '_unknown_']:
                 truncated = truncate(data)
-                LOG.info(('Unable to find forwarding rule for host "%s", path "%s", '
-                    'target header "%s", auth header "%s", data "%s"') % (host, path, target, auth_header, truncated))
+                LOG.info(('Unable to find forwarding rule for host "%s", path "%s %s", '
+                    'target header "%s", auth header "%s", data "%s"') % (
+                        host, method, path, target, auth_header, truncated))
             else:
                 LOG.info(('Unable to determine forwarding port for API "%s" - please '
                     'make sure this API is enabled via the SERVICES configuration') % api)

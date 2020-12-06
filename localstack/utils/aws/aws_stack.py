@@ -10,7 +10,7 @@ from localstack import config
 from localstack.constants import (
     REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
-    MAX_POOL_CONNECTIONS)
+    MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
 from localstack.utils.aws import templating
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
@@ -152,10 +152,10 @@ def get_boto3_credentials():
         return boto3.session.Session().get_credentials()
 
 
-def get_boto3_session():
-    if CUSTOM_BOTO3_SESSION:
+def get_boto3_session(cache=True):
+    if cache and CUSTOM_BOTO3_SESSION:
         return CUSTOM_BOTO3_SESSION
-    if CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
+    if not cache or CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
         return boto3.session.Session()
     # return default session
     return boto3
@@ -205,7 +205,7 @@ def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=N
 
 
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None,
-        config=None, verify=False, *args, **kwargs):
+        config=None, verify=False, cache=True, *args, **kwargs):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
@@ -214,9 +214,9 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     region = env.region if env.region != REGION_LOCAL else region_name
     key_elements = [service_name, client, env, region, endpoint_url, config]
     cache_key = '/'.join([str(k) for k in key_elements])
-    if cache_key not in BOTO_CLIENTS_CACHE:
+    if not cache or cache_key not in BOTO_CLIENTS_CACHE:
         # Cache clients, as this is a relatively expensive operation
-        my_session = get_boto3_session()
+        my_session = get_boto3_session(cache=cache)
         method = my_session.client if client else my_session.resource
         if not endpoint_url:
             if is_local_env(env):
@@ -233,8 +233,11 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         config.max_pool_connections = MAX_POOL_CONNECTIONS
-        BOTO_CLIENTS_CACHE[cache_key] = method(service_name, region_name=region,
+        result = method(service_name, region_name=region,
             endpoint_url=endpoint_url, verify=verify, config=config)
+        if not cache:
+            return result
+        BOTO_CLIENTS_CACHE[cache_key] = result
 
     return BOTO_CLIENTS_CACHE[cache_key]
 
@@ -242,6 +245,22 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
 # TODO remove from here in the future
 def render_velocity_template(*args, **kwargs):
     return templating.render_velocity_template(*args, **kwargs)
+
+
+def generate_presigned_url(*args, **kwargs):
+    id_before = os.environ.get(ENV_ACCESS_KEY)
+    key_before = os.environ.get(ENV_SECRET_KEY)
+    try:
+        # Note: presigned URL needs to be created with test credentials
+        os.environ[ENV_ACCESS_KEY] = TEST_AWS_ACCESS_KEY_ID
+        os.environ[ENV_SECRET_KEY] = TEST_AWS_SECRET_ACCESS_KEY
+        s3_client = connect_to_service('s3', cache=False)
+        return s3_client.generate_presigned_url(*args, **kwargs)
+    finally:
+        if id_before:
+            os.environ[ENV_ACCESS_KEY] = id_before
+        if key_before:
+            os.environ[ENV_SECRET_KEY] = key_before
 
 
 def check_valid_region(headers):
