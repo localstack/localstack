@@ -5,6 +5,10 @@ Parameters:
     Type: String
     Description: Environment name
     Default: 'Test'
+  ApiKey:
+    Type: String
+    Description: API key
+
 Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -51,3 +55,54 @@ Resources:
             - logs:PutLogEvents
             Resource: '*'
       Path: "/"
+
+  # IAM role for running the step function
+  StateMachineExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: !Sub states.${AWS::Region}.amazonaws.com
+          Action: "sts:AssumeRole"
+      Policies:
+      - PolicyName: StatesExecutionPolicy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action: "lambda:InvokeFunction"
+            Resource: "*"
+
+  # Step function that executes the workflow
+  StateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      RoleArn: !GetAtt StateMachineExecutionRole.Arn
+      DefinitionString:
+        !Sub
+      - |-
+        {
+          "Comment": "",
+          "StartAt": "time-series-update",
+          "States": {
+            "time-series-update": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+              "HeartbeatSeconds": 3600,
+              "Parameters": {
+                "FunctionName": "some-lambda",
+                "Payload": {
+                  "key": "${apiKey}"
+                }
+              },
+              "ResultPath": "$.timeSeriesUpdateResult",
+              "End": true
+            }
+          }
+        }
+      - {
+        apiKey: !Ref ApiKey
+      }
