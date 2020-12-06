@@ -30,5 +30,6 @@ jobs:
         uses: helm/chart-releaser-action@v1.1.0
         with:
           charts_dir: chart
+          charts_repo_url: https://mforutan.github.io/localstack
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
