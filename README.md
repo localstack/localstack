@@ -154,7 +154,7 @@ To facilitate interoperability, configuration variables can be prefixed with `LO
 
 ### Using Helm
 
-You can use the helm to install localstack in kubernetes cluster by running these commands:
+You can use Helm to install localstack in kubernetes cluster by running these commands:
 
 ```
 helm repo add localstack-repo https://localstack.github.io/localstack
