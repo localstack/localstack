@@ -119,7 +119,7 @@ def apply_patches():
         try:
             return delete_bucket_orig(bucket_name, *args, **kwargs)
         except s3_exceptions.MissingBucket:
-            pass
+            raise s3_exceptions.MissingBucket
 
     delete_bucket_orig = s3_models.s3_backend.delete_bucket
     s3_models.s3_backend.delete_bucket = types.MethodType(delete_bucket, s3_models.s3_backend)
@@ -250,7 +250,7 @@ def apply_patches():
                 error_names.append(key_name)
 
         return (200, {},
-            template.render(deleted=deleted_names, delete_errors=error_names))
+                template.render(deleted=deleted_names, delete_errors=error_names))
 
     s3_responses.S3ResponseInstance._bucket_response_delete_keys = types.MethodType(
         s3_bucket_response_delete_keys, s3_responses.S3ResponseInstance)

@@ -1396,6 +1396,15 @@ class S3ListenerTest(unittest.TestCase):
         client.delete_object(Bucket=bucket, Key='foo')
         client.delete_bucket(Bucket=bucket)
 
+    def test_delete_invalid_bucket(self):
+        bucket = 'bucket-%s' % short_uid()
+        client = self._get_test_client()
+        try:
+            client.delete_bucket(Bucket=bucket)
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NoSuchBucket')
+            self.assertEqual(e.response['Error']['Message'], 'The specified bucket does not exist')
+
     def test_cors_configurtaions(self):
         client = self._get_test_client()
         bucket = 'test-cors'
