@@ -226,6 +226,10 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     if b'Action=AssumeRoleWithWebIdentity' in data_bytes or 'Action=AssumeRoleWithWebIdentity' in path:
         return 'sts', config.PORT_STS
+
+    if b'Action=AssumeRoleWithSAML' in data_bytes or 'Action=AssumeRoleWithSAML' in path:
+        return 'sts', config.PORT_STS
+
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip('/')
     if method in ['GET', 'HEAD'] and '/' in stripped:
