@@ -155,6 +155,16 @@ docker-compose up
 
 To facilitate interoperability, configuration variables can be prefixed with `LOCALSTACK_` in docker. For instance, setting `LOCALSTACK_SERVICES=s3` is equivalent to `SERVICES=s3`.
 
+### Using Helm
+
+You can use Helm to install localstack in kubernetes cluster by running these commands:
+
+```
+helm repo add localstack-repo https://localstack.github.io/localstack
+
+helm upgrade --install localstack localstack-repo/localstack
+```
+
 ## Configurations
 
 You can pass the following environment variables to LocalStack:
