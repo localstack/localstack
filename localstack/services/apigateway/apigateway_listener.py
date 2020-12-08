@@ -330,6 +330,24 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             # TODO apply response template..?
             return result
 
+        elif 'states:action/' in uri:
+            if uri.endswith('states:action/StartExecution'):
+                action = 'StartExecution'
+            decoded_data = data.decode()
+            if 'stateMachineArn' in decoded_data and 'input' in decoded_data:
+                payload = json.loads(decoded_data)
+            elif 'requestTemplates' in integration and APPLICATION_JSON in integration['requestTemplates']:
+                template = integration['requestTemplates'][APPLICATION_JSON]
+                payload = aws_stack.render_velocity_template(template, data, as_json=True)
+            client = aws_stack.connect_to_service('stepfunctions')
+            if 'name' not in payload:
+                response = client.start_execution(stateMachineArn=payload['stateMachineArn'],
+                            input=payload['input'])
+            elif 'name' in payload:
+                response = client.start_execution(stateMachineArn=payload['stateMachineArn'],
+                            input=payload['input'], name=payload['name'])
+            return response
+
         if method == 'POST':
             if uri.startswith('arn:aws:apigateway:') and ':sqs:path' in uri:
                 template = integration['requestTemplates'][APPLICATION_JSON]
