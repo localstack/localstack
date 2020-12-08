@@ -180,7 +180,7 @@ class MessageConversion(object):
     @staticmethod
     def fix_account_id(response):
         return aws_stack.fix_account_id_in_arns(
-            response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
+            response, replace=TEST_AWS_ACCOUNT_ID)
 
     @staticmethod
     def fix_error_codes(method, data, response):
