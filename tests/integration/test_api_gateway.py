@@ -879,6 +879,32 @@ class TestAPIGateway(unittest.TestCase):
         self.assertIn('executionArn', resp.content.decode())
         self.assertIn('startDate', resp.content.decode())
 
+        client.delete_integration(
+            restApiId=rest_api['id'],
+            resourceId=resources['items'][0]['id'],
+            httpMethod='POST',
+        )
+
+        client.put_integration(
+            restApiId=rest_api['id'],
+            resourceId=resources['items'][0]['id'],
+            httpMethod='POST',
+            integrationHttpMethod='POST',
+            type='AWS',
+            uri='arn:aws:apigateway:%s:states:action/StartExecution' % aws_stack.get_region(),
+        )
+
+        test_data = {
+            'input': json.dumps({'test': 'test-value'}),
+            'name': 'MyExecution',
+            'stateMachineArn': '{}'.format(sm_arn)
+        }
+
+        resp = requests.post(url, data=json.dumps(test_data))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('executionArn', resp.content.decode())
+        self.assertIn('startDate', resp.content.decode())
+
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
         sfn_client.delete_state_machine(stateMachineArn=sm_arn)
