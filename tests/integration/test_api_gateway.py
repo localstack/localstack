@@ -827,14 +827,15 @@ class TestAPIGateway(unittest.TestCase):
             runtime=LAMBDA_RUNTIME_PYTHON36
         )
 
+        resp = lambda_client.list_functions()
         role_arn = aws_stack.role_arn('sfn_role')
 
         definition = clone(state_machine_def)
         lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
         definition['States']['step1']['Resource'] = lambda_arn_1
         definition = json.dumps(definition)
-        sm_arn = 'arn:aws:states:us-east-1:%s:stateMachine:%s' \
-            % (TEST_AWS_ACCOUNT_ID, state_machine_name)
+        sm_arn = 'arn:aws:states:%s:%s:stateMachine:%s' \
+            % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, state_machine_name)
 
         sfn_client.create_state_machine(
             name=state_machine_name, definition=definition, roleArn=role_arn)
@@ -861,7 +862,7 @@ class TestAPIGateway(unittest.TestCase):
             httpMethod='POST',
             integrationHttpMethod='POST',
             type='AWS',
-            uri='arn:aws:apigateway:us-east-1:states:action/StartExecution',
+            uri='arn:aws:apigateway:%s:states:action/StartExecution' % aws_stack.get_region(),
             requestTemplates={
                 'application/json': """
                 #set($data = $util.escapeJavaScript($input.json('$')))
@@ -875,6 +876,8 @@ class TestAPIGateway(unittest.TestCase):
         test_data = {'test': 'test-value'}
         resp = requests.post(url, data=json.dumps(test_data))
         self.assertEqual(resp.status_code, 200)
+        self.assertIn('executionArn', resp.content.decode())
+        self.assertIn('startDate', resp.content.decode())
 
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)

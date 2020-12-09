@@ -336,16 +336,21 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             decoded_data = data.decode()
             if 'stateMachineArn' in decoded_data and 'input' in decoded_data:
                 payload = json.loads(decoded_data)
-            elif 'requestTemplates' in integration and APPLICATION_JSON in integration['requestTemplates']:
+            elif APPLICATION_JSON in integration.get('requestTemplates', {}):
                 template = integration['requestTemplates'][APPLICATION_JSON]
                 payload = aws_stack.render_velocity_template(template, data, as_json=True)
             client = aws_stack.connect_to_service('stepfunctions')
-            if 'name' not in payload:
-                response = client.start_execution(stateMachineArn=payload['stateMachineArn'],
-                            input=payload['input'])
-            elif 'name' in payload:
-                response = client.start_execution(stateMachineArn=payload['stateMachineArn'],
-                            input=payload['input'], name=payload['name'])
+
+            kwargs = {'name': payload['name']} if 'name' in payload else {}
+            result = client.start_execution(stateMachineArn=payload['stateMachineArn'],
+                            input=payload['input'], **kwargs)
+            response = requests_response(
+                content={
+                    'executionArn': result['executionArn'],
+                    'startDate': str(result['startDate'])
+                },
+                headers=aws_stack.mock_aws_request_headers()
+            )
             return response
 
         if method == 'POST':
