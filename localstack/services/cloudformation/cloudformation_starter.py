@@ -589,6 +589,7 @@ def apply_patches():
             api = resource
             backend.apis.pop(api.id, None)
             api.id = new_id
+            api.physical_resource_id = new_id
             backend.apis[new_id] = api
             # make sure no resources have been added in addition to the root /
             assert len(api.resources) == 1
@@ -621,6 +622,8 @@ def apply_patches():
             backend.apis[api_id].resources.pop(resource.id, None)
             backend.apis[api_id].resources[new_id] = resource
             resource.id = new_id
+            if hasattr(resource, 'physical_resource_id'):
+                resource.physical_resource_id = new_id
 
         elif isinstance(resource, apigw_models.Deployment):
             api_id = props['RestApiId']
@@ -631,6 +634,8 @@ def apply_patches():
             backend.apis[api_id].deployments.pop(resource['id'], None)
             backend.apis[api_id].deployments[new_id] = resource
             resource['id'] = new_id
+            if hasattr(resource, 'physical_resource_id'):
+                resource.physical_resource_id = new_id
 
         else:
             LOG.warning('Unexpected resource type when updating ID: %s' % type(resource))
@@ -1339,16 +1344,16 @@ def apply_patches():
 
     def make_validate_export_uniqueness(cf_backend):
         def _validate_export_uniqueness(self, stack, *args, **kwargs):
-            try:
-                return _validate_export_uniqueness_orig(stack, *args, **kwargs)
-            except DependencyNotYetSatisfied:
-                new_exports = [val.get('Export').get('Name')
-                    for val in stack.output_map._output_json_map.values()]
-                export_names = self.exports.keys()
-                if not set(export_names).isdisjoint(new_exports):
+            if not stack.output_map._output_json_map:
+                return
+            new_exports = [val.get('Export', {}).get('Name')
+                for val in stack.output_map._output_json_map.values() if val.get('Export')]
+            for export in self.exports.values():
+                if export.name in new_exports and export.exporting_stack_id != stack.stack_id:
+                    LOG.info('Conflicting export name "%s" (stack "%s") - already exported from stack "%s"' % (
+                        export.name, stack.name, export.exporting_stack_id))
                     raise ValidationError(stack.stack_id,
                         message='Export names must be unique across a given region')
-        _validate_export_uniqueness_orig = cf_backend._validate_export_uniqueness
         return types.MethodType(_validate_export_uniqueness, cf_backend)
 
     for region, cf_backend in cloudformation_backends.items():
