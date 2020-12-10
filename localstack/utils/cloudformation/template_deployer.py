@@ -25,7 +25,7 @@ PLACEHOLDER_AWS_NO_VALUE = '__aws_no_value__'
 LOG = logging.getLogger(__name__)
 
 # list of resource types that can be updated
-UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method']
+UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method', 'StepFunctions::StateMachine']
 
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName']
@@ -619,6 +619,12 @@ RESOURCE_TO_FUNCTION = {
                 'name': ['StateMachineName', PLACEHOLDER_RESOURCE_NAME],
                 'definition': 'DefinitionString',
                 'roleArn': lambda params, **kwargs: get_role_arn(params.get('RoleArn'), **kwargs)
+            }
+        },
+        'update': {
+            'function': 'update_state_machine',
+            'parameters': {
+                'definition': 'DefinitionString'
             }
         },
         'delete': {
@@ -1246,6 +1252,15 @@ def update_resource(resource_id, resources, stack_name):
         kwargs['authorizationType'] = props.get('AuthorizationType')
 
         return client.put_method(**kwargs)
+
+    if resource_type == 'StepFunctions::StateMachine':
+        client = aws_stack.connect_to_service('stepfunctions')
+        kwargs = {
+            'stateMachineArn': props['stateMachineArn'],
+            'definition': props['DefinitionString'],
+        }
+
+        return client.update_state_machine(**kwargs)
 
 
 def fix_account_id_in_arns(params):

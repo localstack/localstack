@@ -222,6 +222,7 @@ def update_dynamodb_index_resource(resource):
 def apply_attributes_from_existing_resource_on_update(resource_props, stack_name, existing_resource, resource_id):
     if not existing_resource or not resource_props:
         return
+
     res_type = resource_props['Type']
     props = resource_props.get('Properties', {})
     if res_type == 'AWS::S3::Bucket':
@@ -229,6 +230,11 @@ def apply_attributes_from_existing_resource_on_update(resource_props, stack_name
         if existing_name:
             LOG.debug('Applying existing bucket name "%s" when updating resource %s' % (existing_name, resource_id))
             props['BucketName'] = existing_name
+
+    if res_type == 'AWS::StepFunctions::StateMachine':
+        existing_name = getattr(existing_resource, 'name', None)
+        if existing_name:
+            props['StateMachineName'] = existing_name
 
 
 def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None, update=False):
