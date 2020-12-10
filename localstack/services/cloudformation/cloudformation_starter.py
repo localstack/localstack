@@ -243,25 +243,28 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
     if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
         props['StartingPosition'] = 'LATEST'
 
-    if res_type == 'AWS::Lambda::Function' and not props.get('FunctionName'):
+    elif res_type == 'AWS::Logs::LogGroup' and not props.get('LogGroupName') and resource_name:
+        props['LogGroupName'] = resource_name
+
+    elif res_type == 'AWS::Lambda::Function' and not props.get('FunctionName'):
         props['FunctionName'] = '{}-lambda-{}'.format(stack_name[:45], short_uid())
 
-    if res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
+    elif res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
         props['TopicName'] = 'topic-%s' % short_uid()
 
-    if res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
+    elif res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
         props['QueueName'] = 'queue-%s' % short_uid()
 
-    if res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
+    elif res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
         props['Name'] = _generate_res_name()
 
-    if res_type == 'AWS::DynamoDB::Table':
+    elif res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
 
-    if res_type == 'AWS::S3::Bucket' and not props.get('BucketName') and not update:
+    elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName') and not update:
         props['BucketName'] = s3_listener.normalize_bucket_name(_generate_res_name())
 
-    if res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
+    elif res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
         props['StateMachineName'] = _generate_res_name()
 
     # generate default names for certain resource types
@@ -476,6 +479,10 @@ def apply_patches():
                 LOG.info('Error on moto CF resource creation for %s. Ignoring, as should_be_created=%s: %s' %
                          (logical_id, should_be_created, moto_create_error))
 
+        # update physical_resource_id field
+        if resource and not update:
+            update_physical_resource_id(resource)
+
         # Fix for moto which sometimes hard-codes region name as 'us-east-1'
         if hasattr(resource, 'region_name') and resource.region_name != region_name:
             LOG.debug('Updating incorrect region from %s to %s' % (resource.region_name, region_name))
@@ -508,7 +515,6 @@ def apply_patches():
         try:
             deploy_func = template_deployer.update_resource if update else template_deployer.deploy_resource
             result = deploy_func(logical_id, resource_map_new, stack_name=stack_name)
-
         finally:
             CURRENTLY_UPDATING_RESOURCES[resource_hash_key] = False
 
@@ -1182,7 +1188,10 @@ def apply_patches():
                 result = do_run_loop()
                 if isinstance(result, parsing.ResourceMap):
                     if initialize:
+                        # create output map
                         stack.output_map.create()
+                        # set exported resources
+                        cloudformation_backends[stack.region_name].set_exports(stack)
                     return
             except Exception as e:
                 LOG.info('Error running stack deployment loop: %s' % e)
@@ -1325,6 +1334,25 @@ def apply_patches():
         return change_set_id, _
 
     CloudFormationBackend.create_change_set = cloudformation_backend_create_change_set
+
+    # patch _validate_export_uniqueness to avoid traversing resources before they are deployed
+
+    def make_validate_export_uniqueness(cf_backend):
+        def _validate_export_uniqueness(self, stack, *args, **kwargs):
+            try:
+                return _validate_export_uniqueness_orig(stack, *args, **kwargs)
+            except DependencyNotYetSatisfied:
+                new_exports = [val.get('Export').get('Name')
+                    for val in stack.output_map._output_json_map.values()]
+                export_names = self.exports.keys()
+                if not set(export_names).isdisjoint(new_exports):
+                    raise ValidationError(stack.stack_id,
+                        message='Export names must be unique across a given region')
+        _validate_export_uniqueness_orig = cf_backend._validate_export_uniqueness
+        return types.MethodType(_validate_export_uniqueness, cf_backend)
+
+    for region, cf_backend in cloudformation_backends.items():
+        cf_backend._validate_export_uniqueness = make_validate_export_uniqueness(cf_backend)
 
     # patch cloudformation backend change_set methods
     # #2240 - S3 bucket not created since 0.10.8

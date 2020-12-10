@@ -78,7 +78,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Managed Streaming for Kafka (MSK)**
 * **MediaStore**
 * **QLDB**
-* **RDS**
+* **RDS / Aurora Serverless**
 * **Timestream**
 * **Transfer**
 * **XRay**

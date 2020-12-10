@@ -1511,7 +1511,6 @@ def delete_stack(stack_name, stack_resources):
     resources = dict([(r['LogicalResourceId'], common.clone_safe(r)) for r in stack_resources])
     for key, resource in resources.items():
         resources[key]['Properties'] = common.clone_safe(resource)
-
     for resource_id in resources.keys():
         delete_resource(resource_id, resources, stack_name)
 

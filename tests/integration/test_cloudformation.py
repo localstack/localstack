@@ -414,6 +414,10 @@ Resources:
 
 TEST_TEMPLATE_23 = os.path.join(THIS_FOLDER, 'templates', 'template23.yaml')
 
+TEST_TEMPLATE_24 = os.path.join(THIS_FOLDER, 'templates', 'template24.yaml')
+
+TEST_TEMPLATE_25 = os.path.join(THIS_FOLDER, 'templates', 'template25.yaml')
+
 TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'update_lambda_template.json')
 
 SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
@@ -1754,7 +1758,7 @@ class CloudFormationTest(unittest.TestCase):
         s3.put_object(Bucket=bucket, Key=key, Body=create_zip_file(package_path, True))
         time.sleep(1)
 
-        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template24.yaml')) % (bucket, key)
+        template = load_file(TEST_TEMPLATE_24) % (bucket, key)
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
         cloudformation.create_stack(
@@ -1776,6 +1780,29 @@ class CloudFormationTest(unittest.TestCase):
         # lambda function created with expected name
         functions = [func for func in resp['Functions'] if func['FunctionName'] == func_name]
         self.assertEqual(len(functions), 1)
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_lambda_dependency(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        lambda_client = aws_stack.connect_to_service('lambda')
+        stack_name = 'stack-%s' % short_uid()
+
+        template = load_file(TEST_TEMPLATE_25)
+
+        details = _deploy_stack(stack_name, template_body=template)
+
+        # assert Lambda function created properly
+        resp = lambda_client.list_functions()
+        func_name = 'test-forward-sns'
+        functions = [func for func in resp['Functions'] if func['FunctionName'] == func_name]
+        self.assertEqual(len(functions), 1)
+
+        # assert that stack outputs are returned properly
+        outputs = details.get('Outputs', [])
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual(outputs[0]['ExportName'], 'FuncArnExportName123')
 
         # clean up
         cloudformation.delete_stack(StackName=stack_name)
