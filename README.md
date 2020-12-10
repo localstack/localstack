@@ -79,6 +79,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **MediaStore**
 * **QLDB**
 * **RDS**
+* **Timestream**
 * **Transfer**
 * **XRay**
 * **Interactive UIs to manage resources**
@@ -137,6 +138,8 @@ localstack start
 
 **Note**: From 2020-07-11 onwards, the default image `localstack/localstack` in Docker Hub refers to the "light version", which has some large dependency files like Elasticsearch removed (and lazily downloads them, if required). (Note that the `localstack/localstack-light` image alias may get removed in the future). In case you need the full set of dependencies, the `localstack/localstack-full` image can be used instead. Please also refer to the `USE_LIGHT_IMAGE` configuration below.
 
+**Note**: By default, LocalStack uses the image tagged `latest` that is cached on your machine, and will **not** pull the latest image automatically from Docker Hub (i.e., the image needs to be pulled manually if needed).
+
 (**Note**: Although it is strongly recommended to use Docker, the infrastructure can also be spun up directly on the host machine using the `--host` startup flag. Note that this will require [additional dependencies](#Developing), and is not supported on some operating systems, including Windows.)
 
 ### Using `docker-compose`
@@ -151,6 +154,17 @@ docker-compose up
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.)
 
 To facilitate interoperability, configuration variables can be prefixed with `LOCALSTACK_` in docker. For instance, setting `LOCALSTACK_SERVICES=s3` is equivalent to `SERVICES=s3`.
+
+### Using Helm
+
+You can use [Helm](https://helm.sh/) to install LocalStack in a Kubernetes cluster by running these commands
+(the Helm charts are maintained in [this repo](https://github.com/localstack/helm-charts)):
+
+```
+helm repo add localstack-repo http://helm.localstack.cloud
+
+helm upgrade --install localstack localstack-repo/localstack
+```
 
 ## Configurations
 
@@ -199,6 +213,8 @@ You can pass the following environment variables to LocalStack:
 * `LAMBDA_DOCKER_DNS`: Optional DNS server for the container running your lambda function.
 * `LAMBDA_CONTAINER_REGISTRY` Use an alternative docker registry to pull lambda execution containers (default: `lambci/lambda`).
 * `LAMBDA_REMOVE_CONTAINERS`: Whether to remove containers after Lambdas finished executing (default: `true`).
+* `TMPDIR`: Temporary folder inside the LocalStack container (default: `/tmp`).
+* `HOST_TMP_FOLDER`: Temporary folder on the host that gets mounted as `$TMPDIR/localstack` into the LocalStack container. Required only for Lambda volume mounts when using `LAMBDA_REMOTE_DOCKER=false`.
 * `DATA_DIR`: Local directory for saving persistent data (currently only supported for these services:
   Kinesis, DynamoDB, Elasticsearch, S3, Secretsmanager, SSM, SQS, SNS). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
@@ -426,6 +442,8 @@ awslocal lambda create-function --function-name myLambda \
     --role whatever
 ```
 
+**Note:** When using `LAMBDA_REMOTE_DOCKER=false`, make sure to properly set the `HOST_TMP_FOLDER` environment variable for the LocalStack container (see Configuration section above).
+
 ## Integration with Java/JUnit
 
 In order to use LocalStack with Java, the project ships with a simple JUnit runner, see sample below.
@@ -467,6 +485,8 @@ builder.withPathStyleAccessEnabled(true);
 * Mounting the temp. directory: Note that on MacOS you may have to run `TMPDIR=/private$TMPDIR docker-compose up` if
 `$TMPDIR` contains a symbolic link that cannot be mounted by Docker.
 (See details here: https://bitbucket.org/atlassian/localstack/issues/40/getting-mounts-failed-on-docker-compose-up)
+
+* If you're seeing Lambda errors like `Cannot find module ...` when using `LAMBDA_REMOTE_DOCKER=false`, make sure to properly set the `HOST_TMP_FOLDER` environment variable and mount the temporary folder from the host into the LocalStack container.
 
 * If you run into file permission issues on `pip install` under Mac OS (e.g., `Permission denied: '/Library/Python/2.7/site-packages/six.py'`), then you may have to re-install `pip` via Homebrew (see [this discussion thread](https://github.com/localstack/localstack/issues/260#issuecomment-334458631)). Alternatively, try installing
 with the `--user` flag: `pip install --user localstack`

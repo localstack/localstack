@@ -513,6 +513,7 @@ def _await_stack_status(stack_name, expected_status, retries=3, sleep=2):
         stack = get_stack_details(stack_name)
         assert stack['StackStatus'] == expected_status
         return stack
+
     return retry(check_stack, retries, sleep)
 
 
@@ -579,8 +580,8 @@ class CloudFormationTest(unittest.TestCase):
         # assert that subscription attributes are added properly
         attrs = sns.get_subscription_attributes(SubscriptionArn=subs[0]['SubscriptionArn'])['Attributes']
         self.assertEqual(attrs, {'Endpoint': subs[0]['Endpoint'], 'Protocol': 'sqs',
-            'SubscriptionArn': subs[0]['SubscriptionArn'], 'TopicArn': subs[0]['TopicArn'],
-            'FilterPolicy': json.dumps({'eventType': ['created']})})
+                                 'SubscriptionArn': subs[0]['SubscriptionArn'], 'TopicArn': subs[0]['TopicArn'],
+                                 'FilterPolicy': json.dumps({'eventType': ['created']})})
 
         # assert that Gateway responses have been created
         test_api_name = 'test-api'
@@ -1708,14 +1709,73 @@ class CloudFormationTest(unittest.TestCase):
                 {
                     'ParameterKey': 'Environment',
                     'ParameterValue': environment
+                },
+                {
+                    'ParameterKey': 'ApiKey',
+                    'ParameterValue': '12345'
                 }
             ]
         )
         iam_client = aws_stack.connect_to_service('iam')
         rs = iam_client.list_roles()
 
-        # Role created successfully
-        self.assertEqual(len([role for role in rs['Roles'] if role['RoleName'] == 'cf-{}-Role'.format(stack_name)]), 1)
+        # 2 roles created successfully
+        roles = [role for role in rs['Roles']
+                 if role['RoleName'] in ['cf-{}-Role'.format(stack_name),
+                                         'cf-{}-StateMachineExecutionRole'.format(stack_name)]]
+
+        self.assertEqual(len(roles), 2)
+
+        sfn_client = aws_stack.connect_to_service('stepfunctions')
+        state_machines_after = sfn_client.list_state_machines()['stateMachines']
+
+        state_machines = [sm for sm in state_machines_after if '{}-StateMachine-'.format(stack_name) in sm['name']]
+
+        self.assertEqual(len(state_machines), 1)
+        rs = sfn_client.describe_state_machine(stateMachineArn=state_machines[0]['stateMachineArn'])
+
+        definition = json.loads(rs['definition'].replace('\n', ''))
+        payload = definition['States']['time-series-update']['Parameters']['Payload']
+        self.assertEqual(payload, {'key': '12345'})
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_sub_in_lambda_function_name(self):
+        stack_name = 'stack-%s' % short_uid()
+        environment = 'env-%s' % short_uid()
+        bucket = 'bucket-%s' % short_uid()
+        key = 'key-%s' % short_uid()
+
+        package_path = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.js')
+
+        s3 = aws_stack.connect_to_service('s3')
+        s3.create_bucket(Bucket=bucket, ACL='public-read')
+        s3.put_object(Bucket=bucket, Key=key, Body=create_zip_file(package_path, True))
+        time.sleep(1)
+
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template24.yaml')) % (bucket, key)
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'Environment',
+                    'ParameterValue': environment
+                }
+            ]
+        )
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        func_name = 'localstack-websockets-{}-connectionHandler'.format(environment)
+
+        resp = lambda_client.list_functions()
+
+        # lambda function created with expected name
+        functions = [func for func in resp['Functions'] if func['FunctionName'] == func_name]
+        self.assertEqual(len(functions), 1)
 
         # clean up
         cloudformation.delete_stack(StackName=stack_name)

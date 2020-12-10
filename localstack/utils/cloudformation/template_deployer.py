@@ -1071,6 +1071,8 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
         if result is None:
             result = get_attr_from_model_instance(resource, attribute,
                 resource_type=resource_type, resource_id=resource_id)
+    if result is None and attribute == 'PhysicalResourceId':
+        result = resource_json.get('Id')
     return result
 
 

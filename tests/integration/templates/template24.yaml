@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  Environment:
+    Type: String
+    Description: Environment name
+    Default: 'Test'
+
+Resources:
+  ExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: "Allow"
+          Principal:
+            Service: "lambda.amazonaws.com"
+          Action: "sts:AssumeRole"
+      Policies:
+      - PolicyName: ExecutionPolicy
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: Allow
+            Action: "logs:PutLogEvents"
+            Resource: "*"
+
+  LambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: '%s'
+        S3Key: '%s'
+      FunctionName:
+        Fn::Sub: localstack-websockets-${Environment}-connectionHandler
+      Handler: lambda_echo.handler
+      MemorySize: 1024
+      Role:
+        Fn::GetAtt:
+        - ExecutionRole
+        - Arn
+      Runtime: nodejs12.x
+      Timeout: 30

@@ -53,7 +53,7 @@ class VelocityUtil(object):
         return unquote_plus(s)
 
     def escapeJavaScript(self, s):
-        return str(s).replace("'", r"\'")
+        return str(str(s).replace('"', r'\"')).replace("'", r"\'")
 
 
 def render_velocity_template(template, context, variables={}, as_json=False):

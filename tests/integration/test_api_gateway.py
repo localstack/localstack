@@ -19,10 +19,12 @@ from localstack.services.awslambda.lambda_api import add_event_source
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs, gateway_request_url)
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
+from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36
 
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, 'files', 'swagger.json')
+TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 
 
 class TestAPIGateway(unittest.TestCase):
@@ -797,6 +799,116 @@ class TestAPIGateway(unittest.TestCase):
 
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)
+
+    def test_step_function_integrations(self):
+        client = aws_stack.connect_to_service('apigateway')
+        sfn_client = aws_stack.connect_to_service('stepfunctions')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        state_machine_name = 'test'
+        state_machine_def = {
+            'Comment': 'Hello World example',
+            'StartAt': 'step1',
+            'States': {
+                'step1': {
+                    'Type': 'Task',
+                    'Resource': '__tbd__',
+                    'End': True
+                },
+            }
+        }
+
+        fn_name = 'test-stepfunctions-apigw'
+
+        # create state machine
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=fn_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        resp = lambda_client.list_functions()
+        role_arn = aws_stack.role_arn('sfn_role')
+
+        definition = clone(state_machine_def)
+        lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
+        definition['States']['step1']['Resource'] = lambda_arn_1
+        definition = json.dumps(definition)
+        sm_arn = 'arn:aws:states:%s:%s:stateMachine:%s' \
+            % (aws_stack.get_region(), TEST_AWS_ACCOUNT_ID, state_machine_name)
+
+        sfn_client.create_state_machine(
+            name=state_machine_name, definition=definition, roleArn=role_arn)
+
+        rest_api = client.create_rest_api(
+            name='test',
+            description='test'
+        )
+
+        resources = client.get_resources(
+            restApiId=rest_api['id']
+        )
+
+        client.put_method(
+            restApiId=rest_api['id'],
+            resourceId=resources['items'][0]['id'],
+            httpMethod='POST',
+            authorizationType='NONE'
+        )
+
+        client.put_integration(
+            restApiId=rest_api['id'],
+            resourceId=resources['items'][0]['id'],
+            httpMethod='POST',
+            integrationHttpMethod='POST',
+            type='AWS',
+            uri='arn:aws:apigateway:%s:states:action/StartExecution' % aws_stack.get_region(),
+            requestTemplates={
+                'application/json': """
+                #set($data = $util.escapeJavaScript($input.json('$')))
+                {"input": "$data","stateMachineArn": "%s"}
+                """ % sm_arn
+            },
+        )
+
+        client.create_deployment(restApiId=rest_api['id'], stageName='dev')
+        url = gateway_request_url(api_id=rest_api['id'], stage_name='dev', path='/')
+        test_data = {'test': 'test-value'}
+        resp = requests.post(url, data=json.dumps(test_data))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('executionArn', resp.content.decode())
+        self.assertIn('startDate', resp.content.decode())
+
+        client.delete_integration(
+            restApiId=rest_api['id'],
+            resourceId=resources['items'][0]['id'],
+            httpMethod='POST',
+        )
+
+        client.put_integration(
+            restApiId=rest_api['id'],
+            resourceId=resources['items'][0]['id'],
+            httpMethod='POST',
+            integrationHttpMethod='POST',
+            type='AWS',
+            uri='arn:aws:apigateway:%s:states:action/StartExecution' % aws_stack.get_region(),
+        )
+
+        test_data = {
+            'input': json.dumps({'test': 'test-value'}),
+            'name': 'MyExecution',
+            'stateMachineArn': '{}'.format(sm_arn)
+        }
+
+        resp = requests.post(url, data=json.dumps(test_data))
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('executionArn', resp.content.decode())
+        self.assertIn('startDate', resp.content.decode())
+
+        # Clean up
+        lambda_client.delete_function(FunctionName=fn_name)
+        sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+        client.delete_rest_api(restApiId=rest_api['id'])
 
     @staticmethod
     def start_http_backend(test_port):

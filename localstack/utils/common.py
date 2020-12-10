@@ -779,6 +779,14 @@ def get_arch():
     raise Exception('Unable to determine system architecture')
 
 
+def is_command_available(cmd):
+    try:
+        run('which %s' % cmd, print_error=False)
+        return True
+    except Exception:
+        return False
+
+
 def short_uid():
     return str(uuid.uuid4())[0:8]
 

@@ -88,4 +88,5 @@ ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
 # clean up temporary files created during test execution
 
-RUN apk del --purge git; rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform
+RUN apk del --purge git cmake gcc musl-dev libc-dev; \
+    rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform

@@ -391,6 +391,9 @@ def append_cors_headers(bucket_name, request_method, request_headers, response):
                         response.headers['Access-Control-Max-Age'] = maxage_header
                     break
 
+    if response.headers['Access-Control-Allow-Origin'] != '*':
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+
 
 def append_aws_request_troubleshooting_headers(response):
     gen_amz_request_id = ''.join(random.choice('0123456789ABCDEF') for i in range(16))

@@ -61,8 +61,9 @@ class ProxyListenerEdge(ProxyListener):
 
             if api in ['', None, '_unknown_']:
                 truncated = truncate(data)
-                LOG.info(('Unable to find forwarding rule for host "%s", path "%s", '
-                    'target header "%s", auth header "%s", data "%s"') % (host, path, target, auth_header, truncated))
+                LOG.info(('Unable to find forwarding rule for host "%s", path "%s %s", '
+                    'target header "%s", auth header "%s", data "%s"') % (
+                        host, method, path, target, auth_header, truncated))
             else:
                 LOG.info(('Unable to determine forwarding port for API "%s" - please '
                     'make sure this API is enabled via the SERVICES configuration') % api)
@@ -225,6 +226,10 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     if b'Action=AssumeRoleWithWebIdentity' in data_bytes or 'Action=AssumeRoleWithWebIdentity' in path:
         return 'sts', config.PORT_STS
+
+    if b'Action=AssumeRoleWithSAML' in data_bytes or 'Action=AssumeRoleWithSAML' in path:
+        return 'sts', config.PORT_STS
+
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip('/')
     if method in ['GET', 'HEAD'] and '/' in stripped:
