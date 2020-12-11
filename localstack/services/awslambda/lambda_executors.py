@@ -183,8 +183,21 @@ class LambdaExecutor(object):
         pass
 
     def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars={}):
-        process = run(cmd, asynchronous=True, stderr=subprocess.PIPE, outfile=subprocess.PIPE,
-                      env_vars=env_vars, stdin=True)
+        kwargs = {'stdin': True, 'inherit_env': True, 'asynchronous': True}
+
+        is_provided = func_details.runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
+        if func_details and is_provided and env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
+            # Note: certain "provided" runtimes (e.g., Rust programs) can block when we pass in
+            # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
+            env_vars = {
+                'PATH': env_vars.get('PATH') or os.environ.get('PATH', ''),
+                'AWS_LAMBDA_EVENT_BODY': to_str(event),
+                'DOCKER_LAMBDA_USE_STDIN': '1'
+            }
+            event = None
+            cmd = re.sub(r'(.*%s\s+(run|start))' % self._docker_cmd(), r'echo $AWS_LAMBDA_EVENT_BODY | \1', cmd)
+
+        process = run(cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs)
         result, log_output = process.communicate(input=event)
         try:
             result = to_str(result).strip()
@@ -487,9 +500,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             if status == 1:
                 LOG.debug('Stopping container: %s' % container_name)
-                cmd = (
-                    '%s stop -t0 %s'
-                ) % (docker_cmd, container_name)
+                cmd = '%s stop -t0 %s' % (docker_cmd, container_name)
 
                 LOG.debug(cmd)
                 run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
@@ -498,9 +509,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
             if status == -1:
                 LOG.debug('Removing container: %s' % container_name)
-                cmd = (
-                    '%s rm %s'
-                ) % (docker_cmd, container_name)
+                cmd = '%s rm %s' % (docker_cmd, container_name)
 
                 LOG.debug(cmd)
                 run(cmd, asynchronous=False, stderr=subprocess.PIPE, outfile=subprocess.PIPE)
