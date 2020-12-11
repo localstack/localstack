@@ -195,7 +195,7 @@ class LambdaExecutor(object):
                 'DOCKER_LAMBDA_USE_STDIN': '1'
             }
             event = None
-            cmd = re.sub(r'(.*%s\s+(run|start))' % self._docker_cmd(), r'echo $AWS_LAMBDA_EVENT_BODY | \1', cmd)
+            cmd = re.sub(r'(.*)(%s\s+(run|start))' % self._docker_cmd(), r'\1echo $AWS_LAMBDA_EVENT_BODY | \2', cmd)
 
         process = run(cmd, env_vars=env_vars, stderr=subprocess.PIPE, outfile=subprocess.PIPE, **kwargs)
         result, log_output = process.communicate(input=event)
