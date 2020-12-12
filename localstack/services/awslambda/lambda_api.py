@@ -506,14 +506,21 @@ def get_function_version(arn, version):
 def publish_new_function_version(arn):
     func_details = ARN_TO_LAMBDA.get(arn)
     versions = func_details.versions
-    last_version = func_details.max_version()
-    versions[str(last_version + 1)] = {
-        'CodeSize': versions.get(VERSION_LATEST).get('CodeSize'),
-        'CodeSha256': versions.get(VERSION_LATEST).get('CodeSha256'),
-        'Function': versions.get(VERSION_LATEST).get('Function'),
-        'RevisionId': str(uuid.uuid4())
-    }
-    return get_function_version(arn, str(last_version + 1))
+    max_version_number = func_details.max_version()
+    next_version_number = max_version_number + 1
+    latest_hash = versions.get(VERSION_LATEST).get('CodeSha256')
+    max_version = versions.get(str(max_version_number))
+    max_version_hash = max_version.get('CodeSha256') if max_version else ''
+
+    if latest_hash != max_version_hash:
+        versions[str(next_version_number)] = {
+            'CodeSize': versions.get(VERSION_LATEST).get('CodeSize'),
+            'CodeSha256': versions.get(VERSION_LATEST).get('CodeSha256'),
+            'Function': versions.get(VERSION_LATEST).get('Function'),
+            'RevisionId': str(uuid.uuid4())
+        }
+        max_version_number = next_version_number
+    return get_function_version(arn, str(max_version_number))
 
 
 def do_list_versions(arn):
