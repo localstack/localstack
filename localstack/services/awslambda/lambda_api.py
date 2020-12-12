@@ -1086,11 +1086,16 @@ def update_function_code(function):
             - name: 'request'
               in: body
     """
+    arn = func_arn(function)
+    if arn not in ARN_TO_LAMBDA:
+        return error_response('Function not found: %s' %
+                arn, 400, error_type='ResourceNotFoundException')
     data = json.loads(to_str(request.data))
     result = set_function_code(data, function)
-    arn = func_arn(function)
     func_details = ARN_TO_LAMBDA.get(arn)
     result.update(format_func_details(func_details))
+    if data.get('Publish'):
+        result['Version'] = publish_new_function_version(arn)['Version']
     if isinstance(result, Response):
         return result
     return jsonify(result or {})
