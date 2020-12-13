@@ -2,6 +2,7 @@ import re
 import os
 import sys
 import json
+import signal
 import logging
 from requests.models import Response
 from localstack import config
@@ -11,8 +12,9 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import (
     HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER,
     PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
-from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str, get_service_protocol
-from localstack.utils.common import safe_requests as requests
+from localstack.utils.common import (
+    run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
+    get_service_protocol, in_docker, safe_requests as requests)
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.utils.aws.aws_stack import Environment
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
@@ -185,9 +187,37 @@ def serve_health_endpoint(method, path, data):
         reload = 'reload' in path
         return plugins.get_services_health(reload=reload)
     if method == 'PUT':
-        data = json.loads(to_str(data))
+        data = json.loads(to_str(data or '{}'))
         plugins.set_services_health(data)
         return {'status': 'OK'}
+    if method == 'POST':
+        data = json.loads(to_str(data or '{}'))
+        # backdoor API to support restarting the instance
+        if data.get('action') in ['kill', 'restart']:
+            terminate_all_processes_in_docker()
+    return {}
+
+
+def terminate_all_processes_in_docker():
+    if not in_docker():
+        # make sure we only run this inside docker!
+        return
+    print('INFO: Received command to restart all processes ...')
+    cmd = ('ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "make infra" | '
+        "grep -v localstack_infra.log | awk '{print $1}' | grep -v PID")
+    pids = run(cmd).strip()
+    pids = re.split(r'\s+', pids)
+    pids = [int(pid) for pid in pids]
+    this_pid = os.getpid()
+    for pid in pids:
+        if pid != this_pid:
+            try:
+                # kill spawned process
+                os.kill(pid, signal.SIGKILL)
+            except Exception:
+                pass
+    # kill the process itself
+    os._exit(0)
 
 
 def serve_resource_graph(data):

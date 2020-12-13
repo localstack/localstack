@@ -38,6 +38,12 @@ def send_event_to_sqs(event, arn):
     sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
 
 
+def send_event_to_sns(event, arn):
+    region = arn.split(':')[3]
+    sns_client = aws_stack.connect_to_service('sns', region_name=region)
+    sns_client.publish(TopicArn=arn, Message=json.dumps(event))
+
+
 def send_event_to_lambda(event, arn):
     run_lambda(event=event, context={}, func_arn=arn, asynchronous=True)
 
@@ -102,6 +108,9 @@ def process_events(event, targets):
 
         if service == 'sqs':
             send_event_to_sqs(event, arn)
+
+        elif service == 'sns':
+            send_event_to_sns(event, arn)
 
         elif service == 'lambda':
             send_event_to_lambda(event, arn)
