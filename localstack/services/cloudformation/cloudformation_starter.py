@@ -1196,14 +1196,15 @@ def apply_patches():
         def run_loop(*args):
             result = {}
             try:
-                result = do_run_loop()
-                if isinstance(result, parsing.ResourceMap):
+                loop_result = do_run_loop()
+                if isinstance(loop_result, parsing.ResourceMap):
                     if initialize:
                         # create output map
                         stack.output_map.create()
                         # set exported resources
                         cloudformation_backends[stack.region_name].set_exports(stack)
                     return
+                result = loop_result
             except Exception as e:
                 LOG.info('Error running stack deployment loop: %s' % e)
             set_stack_status(stack, '%s_FAILED' % action)

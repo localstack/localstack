@@ -1188,7 +1188,8 @@ def resolve_refs_recursively(stack_name, value, resources):
 
         if keys_list and keys_list[0].lower() == 'fn::importvalue':
             exports = cloudformation_backends[aws_stack.get_region()].exports
-            export = exports[value[keys_list[0]]]
+            import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
+            export = exports[import_value_key]
             return export.value
 
         else:
@@ -1409,7 +1410,8 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                     params[param_key] = PLACEHOLDER_RESOURCE_NAME
                 else:
                     if callable(prop_key):
-                        prop_value = prop_key(resource_props, stack_name=stack_name, resources=resources)
+                        prop_value = prop_key(resource_props, stack_name=stack_name,
+                            resources=resources, resource_id=resource_id)
                     else:
                         prop_value = resource_props.get(prop_key)
                     if prop_value is not None:
@@ -1541,7 +1543,7 @@ def is_deployable_resource(resource):
     resource_type = get_resource_type(resource)
     entry = RESOURCE_TO_FUNCTION.get(resource_type)
     if entry is None:
-        LOG.warning('Unknown resource type "%s": %s' % (resource_type, resource))
+        LOG.warning('Unknown resource type "%s" in resource deployment map: %s' % (resource_type, resource))
     return bool(entry and entry.get(ACTION_CREATE))
 
 

@@ -47,7 +47,7 @@ class ProxyListenerEdge(ProxyListener):
         headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
 
         # extract API details
-        api, port, path, host = get_api_from_headers(headers, path)
+        api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
         set_default_region_in_headers(headers)
 
@@ -120,7 +120,7 @@ def do_forward_request_network(port, method, path, data, headers):
     return response
 
 
-def get_api_from_headers(headers, path=None):
+def get_api_from_headers(headers, method=None, path=None, data=None):
     """ Determine API and backend port based on Authorization headers. """
 
     target = headers.get('x-amz-target', '')
