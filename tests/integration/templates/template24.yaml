@@ -7,6 +7,21 @@ Parameters:
     Default: 'Test'
 
 Resources:
+  TestBucket1:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub test-${Environment}-connectionHandler1
+      Tags:
+        - Key: func-ref
+          Value: !Ref func1
+  TestBucket2:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub test-${Environment}-connectionHandler2
+      Tags:
+        - Key: func-ref
+          Value: !Ref func2
+
   ExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -18,22 +33,22 @@ Resources:
             Service: "lambda.amazonaws.com"
           Action: "sts:AssumeRole"
       Policies:
-      - PolicyName: ExecutionPolicy
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-          - Effect: Allow
-            Action: "logs:PutLogEvents"
-            Resource: "*"
+        - PolicyName: ExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Effect: Allow
+              Action: "logs:PutLogEvents"
+              Resource: "*"
 
-  LambdaFunction:
+  func1:
     Type: 'AWS::Lambda::Function'
     Properties:
       Code:
         S3Bucket: '%s'
         S3Key: '%s'
       FunctionName:
-        Fn::Sub: localstack-websockets-${Environment}-connectionHandler
+        Fn::Sub: test-${Environment}-connectionHandler1
       Handler: lambda_echo.handler
       MemorySize: 1024
       Role:
@@ -41,4 +56,22 @@ Resources:
         - ExecutionRole
         - Arn
       Runtime: nodejs12.x
-      Timeout: 30
+
+  func2:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: '%s'
+        S3Key: '%s'
+      FunctionName:
+        Fn::Join:
+        - '-'
+        - - test
+          - Ref: Environment
+          - connectionHandler2
+      Handler: lambda_echo.handler
+      Role:
+        Fn::GetAtt:
+        - ExecutionRole
+        - Arn
+      Runtime: nodejs12.x

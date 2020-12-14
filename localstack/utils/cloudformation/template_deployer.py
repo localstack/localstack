@@ -801,6 +801,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             func_name = resolve_refs_recursively(stack_name, resource_props['FunctionName'], resources)
             resource_id = func_name if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
+
         elif resource_type == 'Lambda::Version':
             name = resolve_refs_recursively(stack_name, resource_props.get('FunctionName'), resources)
             if not name:
@@ -1041,7 +1042,8 @@ def check_not_found_exception(e, resource_type, resource, resource_status):
             (resource_type, e, traceback.format_exc(), resource, resource_status))
 
 
-def extract_resource_attribute(resource_type, resource_json, attribute, resource_id=None, resource=None):
+def extract_resource_attribute(resource_type, resource_json, attribute, resource_id=None,
+        resource=None, resources=None, stack_name=None):
     LOG.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
     # extract resource specific attributes
     if resource_type == 'Lambda::Function':
@@ -1049,7 +1051,11 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
         if attribute in ['Arn', 'PhysicalResourceId']:
             if isinstance(resource, dict):
                 func_configs = resource.get('Properties', {})
-            return func_configs.get('FunctionArn') or aws_stack.lambda_function_arn(func_configs.get('FunctionName'))
+            func_arn = func_configs.get('FunctionArn')
+            if func_arn:
+                return resolve_refs_recursively(stack_name, func_arn, resources)
+            func_name = resolve_refs_recursively(stack_name, func_configs.get('FunctionName'), resources)
+            return aws_stack.lambda_function_arn(func_name)
         return func_configs.get(attribute)
     elif resource_type == 'DynamoDB::Table':
         actual_attribute = 'LatestStreamArn' if attribute == 'StreamArn' else attribute
@@ -1068,10 +1074,12 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
             return resource_json['id']
     elif resource_type == 'S3::Bucket':
         if attribute == 'PhysicalResourceId' and isinstance(resource, dict):
-            return resource.get('Properties', {}).get('BucketName')
+            bucket_name = resource.get('Properties', {}).get('BucketName')
+            return resolve_refs_recursively(stack_name, bucket_name, resources)
     elif resource_type == 'SNS::Topic':
         if attribute == 'PhysicalResourceId' and resource_json.get('TopicArn'):
-            return resource_json.get('TopicArn')
+            topic_arn = resource_json.get('TopicArn')
+            return resolve_refs_recursively(stack_name, topic_arn, resources)
     attribute_lower = common.first_char_to_lower(attribute)
     result = resource_json.get(attribute) or resource_json.get(attribute_lower)
     if result is None and isinstance(resource, dict):
@@ -1137,7 +1145,8 @@ def resolve_ref(stack_name, ref, resources, attribute):
         return
     resource = resources.get(ref)
     resource_type = get_resource_type(resource)
-    result = extract_resource_attribute(resource_type, resource_new, attribute, resource_id=ref, resource=resource)
+    result = extract_resource_attribute(resource_type, resource_new, attribute,
+        resource_id=ref, resource=resource, resources=resources, stack_name=stack_name)
     if not result:
         LOG.warning('Unable to extract reference attribute %s from resource: %s %s' %
             (attribute, resource_new, resource))
