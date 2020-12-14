@@ -1758,28 +1758,42 @@ class CloudFormationTest(unittest.TestCase):
         s3.put_object(Bucket=bucket, Key=key, Body=create_zip_file(package_path, True))
         time.sleep(1)
 
-        template = load_file(TEST_TEMPLATE_24) % (bucket, key)
+        template = load_file(TEST_TEMPLATE_24) % (bucket, key, bucket, key)
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
         cloudformation.create_stack(
             StackName=stack_name,
             TemplateBody=template,
-            Parameters=[
-                {
-                    'ParameterKey': 'Environment',
-                    'ParameterValue': environment
-                }
-            ]
+            Parameters=[{
+                'ParameterKey': 'Environment',
+                'ParameterValue': environment
+            }]
         )
+        _await_stack_completion(stack_name)
 
         lambda_client = aws_stack.connect_to_service('lambda')
-        func_name = 'localstack-websockets-{}-connectionHandler'.format(environment)
+        functions = lambda_client.list_functions()['Functions']
 
-        resp = lambda_client.list_functions()
+        # assert Lambda functions created with expected name and ARN
+        func_prefix = 'test-{}-connectionHandler'.format(environment)
+        functions = [func for func in functions if func['FunctionName'].startswith(func_prefix)]
+        self.assertEqual(len(functions), 2)
+        func1 = [f for f in functions if f['FunctionName'].endswith('connectionHandler1')][0]
+        func2 = [f for f in functions if f['FunctionName'].endswith('connectionHandler2')][0]
+        self.assertTrue(func1['FunctionArn'].endswith(func1['FunctionName']))
+        self.assertTrue(func2['FunctionArn'].endswith(func2['FunctionName']))
 
-        # lambda function created with expected name
-        functions = [func for func in resp['Functions'] if func['FunctionName'] == func_name]
-        self.assertEqual(len(functions), 1)
+        # assert buckets which reference Lambda names have been created
+        s3_client = aws_stack.connect_to_service('s3')
+        buckets = s3_client.list_buckets()['Buckets']
+        buckets = [b for b in buckets if b['Name'].startswith(func_prefix.lower())]
+        # assert buckets are created correctly
+        self.assertEqual(len(functions), 2)
+        tags1 = s3_client.get_bucket_tagging(Bucket=buckets[0]['Name'])
+        tags2 = s3_client.get_bucket_tagging(Bucket=buckets[1]['Name'])
+        # assert correct tags - they reference the function names and should equal the bucket names (lower case)
+        self.assertEqual(tags1['TagSet'][0]['Value'].lower(), buckets[0]['Name'])
+        self.assertEqual(tags2['TagSet'][0]['Value'].lower(), buckets[1]['Name'])
 
         # clean up
         cloudformation.delete_stack(StackName=stack_name)
