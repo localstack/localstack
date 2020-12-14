@@ -3,6 +3,7 @@ import json
 import time
 import unittest
 
+from localstack.utils.aws.aws_stack import _await_stack_completion, _deploy_stack
 from localstack.utils.testutil import create_zip_file
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -471,14 +472,6 @@ def ssm_param_exists(name):
     return param.get('Name') == name and param
 
 
-def get_stack_details(stack_name):
-    cloudformation = aws_stack.connect_to_service('cloudformation')
-    stacks = cloudformation.describe_stacks(StackName=stack_name)
-    for stack in stacks['Stacks']:
-        if stack['StackName'] == stack_name:
-            return stack
-
-
 def describe_stack_resource(stack_name, resource_logical_id):
     cloudformation = aws_stack.connect_to_service('cloudformation')
     response = cloudformation.describe_stack_resources(StackName=stack_name)
@@ -503,26 +496,6 @@ def get_topic_arns():
     sqs = aws_stack.connect_to_service('sns')
     response = sqs.list_topics()
     return [t['TopicArn'] for t in response['Topics']]
-
-
-def _deploy_stack(stack_name, template_body):
-    cfn = aws_stack.connect_to_service('cloudformation')
-    cfn.create_stack(StackName=stack_name, TemplateBody=template_body)
-    # wait for deployment to finish
-    return _await_stack_completion(stack_name)
-
-
-def _await_stack_status(stack_name, expected_status, retries=3, sleep=2):
-    def check_stack():
-        stack = get_stack_details(stack_name)
-        assert stack['StackStatus'] == expected_status
-        return stack
-
-    return retry(check_stack, retries, sleep)
-
-
-def _await_stack_completion(stack_name, retries=3, sleep=2):
-    return _await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
 
 
 class CloudFormationTest(unittest.TestCase):
@@ -1820,3 +1793,33 @@ class CloudFormationTest(unittest.TestCase):
 
         # clean up
         cloudformation.delete_stack(StackName=stack_name)
+
+    def test_functions_in_output_export_name(self):
+        stack_name = 'stack-%s' % short_uid()
+        environment = 'env-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template26.yaml'))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'Environment',
+                    'ParameterValue': environment
+                }
+            ]
+        )
+        _await_stack_completion(stack_name)
+
+        resp = cfn.describe_stacks(StackName=stack_name)
+        stack_outputs = [stack['Outputs'] for stack in resp['Stacks'] if stack['StackName'] == stack_name]
+        self.assertEqual(len(stack_outputs), 1)
+
+        outputs = {o['OutputKey']: {'value': o['OutputValue'], 'export': o['ExportName']} for o in stack_outputs[0]}
+
+        self.assertIn('VpcId', outputs)
+        self.assertEqual(outputs['VpcId'].get('export'), '{}-vpc-id'.format(environment))
+
+        # clean up
+        cfn.delete_stack(StackName=stack_name)

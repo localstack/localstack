@@ -331,6 +331,9 @@ def apply_patches():
 
             if 'Fn::Sub' in resource_json:
                 if isinstance(resource_json['Fn::Sub'], list):
+                    for k, v in resource_json['Fn::Sub'][1].items():
+                        resource_json['Fn::Sub'][1][k] = clean_json(v, resources_map)
+
                     for key, val in resources_map._parsed_resources.items():
                         if not val:
                             continue
@@ -346,7 +349,8 @@ def apply_patches():
                         resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % key, val)
 
                     for k, v in resource_json['Fn::Sub'][1].items():
-                        resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, v)
+                        if v:
+                            resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, str(v))
 
                     return resource_json['Fn::Sub'][0]
 
@@ -725,9 +729,13 @@ def apply_patches():
             result.key = output_logical_id
             result.value = None
             result.description = output_json.get('Description')
+
         # Make sure output includes export name
         if not hasattr(result, 'export_name'):
-            result.export_name = output_json.get('Export', {}).get('Name')
+            export_name = output_json.get('Export', {}).get('Name')
+            if export_name:
+                result.export_name = clean_json(export_name, resources_map)
+
         return result
 
     parse_output_orig = parsing.parse_output
