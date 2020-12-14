@@ -1796,7 +1796,7 @@ class CloudFormationTest(unittest.TestCase):
                 }
             ]
         )
-        time.sleep(3)
+        _await_stack_completion(stack_name)
 
         resp = cfn.describe_stacks(StackName=stack_name)
         stack_outputs = [stack['Outputs'] for stack in resp['Stacks'] if stack['StackName'] == stack_name]

@@ -348,9 +348,9 @@ def apply_patches():
 
                         resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % key, val)
 
-                        for k, v in resource_json['Fn::Sub'][1].items():
-                            if isinstance(v, str):
-                                resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, v)
+                    for k, v in resource_json['Fn::Sub'][1].items():
+                        if v:
+                            resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, str(v))
 
                     return resource_json['Fn::Sub'][0]
 
