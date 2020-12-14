@@ -13,7 +13,7 @@ from localstack.constants import (
     MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
 from localstack.utils.aws import templating
 from localstack.utils.common import (
-    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol, retry)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -830,3 +830,31 @@ def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
         while len(result) > count:
             result.pop(0)
     return result
+
+
+def get_stack_details(stack_name):
+    cloudformation = connect_to_service('cloudformation')
+    stacks = cloudformation.describe_stacks(StackName=stack_name)
+    for stack in stacks['Stacks']:
+        if stack['StackName'] == stack_name:
+            return stack
+
+
+def _deploy_stack(stack_name, template_body):
+    cfn = connect_to_service('cloudformation')
+    cfn.create_stack(StackName=stack_name, TemplateBody=template_body)
+    # wait for deployment to finish
+    return _await_stack_completion(stack_name)
+
+
+def _await_stack_status(stack_name, expected_status, retries=3, sleep=2):
+    def check_stack():
+        stack = get_stack_details(stack_name)
+        assert stack['StackStatus'] == expected_status
+        return stack
+
+    return retry(check_stack, retries, sleep)
+
+
+def _await_stack_completion(stack_name, retries=3, sleep=2):
+    return _await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
