@@ -3,7 +3,7 @@ import json
 import time
 import unittest
 
-from localstack.utils.aws.aws_stack import _await_stack_completion, _deploy_stack
+from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_stack
 from localstack.utils.testutil import create_zip_file
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -512,7 +512,7 @@ class CloudFormationTest(unittest.TestCase):
         stack_name = 'stack-%s' % short_uid()
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         # assert that resources have been created
         self.assertTrue(bucket_exists('cf-test-bucket-1'))
@@ -612,7 +612,7 @@ class CloudFormationTest(unittest.TestCase):
         stack_name = 'stack-%s' % short_uid()
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
-        details = _await_stack_completion(stack_name)
+        details = await_stack_completion(stack_name)
 
         stack_summaries = list_stack_resources(stack_name)
         queue_urls = get_queue_urls()
@@ -712,7 +712,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn('StackId', rs)
         self.assertIn(stack_name, rs['StackId'])
 
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         rs = lambda_client.list_functions()
 
@@ -767,7 +767,7 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         rs = cloudformation.describe_stacks(StackName=stack_name)
         stack = rs['Stacks'][0]
@@ -826,7 +826,7 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         rs = cloudformation.describe_stacks(StackName=stack_name)
         stack = rs['Stacks'][0]
@@ -890,7 +890,7 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         rs = cloudformation.describe_stacks(StackName=stack_name)
         stack = rs['Stacks'][0]
@@ -957,7 +957,7 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
         rs = cloudformation.describe_stacks(StackName=stack_name)
 
         stacks = [stack for stack in rs['Stacks'] if stack['StackName'] == stack_name]
@@ -1023,7 +1023,7 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         rs = iam_client.list_roles()
         # 1 role was created
@@ -1052,7 +1052,7 @@ class CloudFormationTest(unittest.TestCase):
         s3 = aws_stack.connect_to_service('s3')
         cfn = aws_stack.connect_to_service('cloudformation')
 
-        _deploy_stack(stack_name=stack_name, template_body=json.dumps(TEST_TEMPLATE_8))
+        deploy_cf_stack(stack_name=stack_name, template_body=json.dumps(TEST_TEMPLATE_8))
 
         self.assertTrue(bucket_exists(bucket_name))
 
@@ -1085,7 +1085,7 @@ class CloudFormationTest(unittest.TestCase):
         cfn = aws_stack.connect_to_service('cloudformation')
         logs_client = aws_stack.connect_to_service('logs')
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_9)
+        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_9)
 
         rs = logs_client.describe_log_groups(
             logGroupNamePrefix=log_group_prefix
@@ -1116,7 +1116,7 @@ class CloudFormationTest(unittest.TestCase):
             Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
         )
 
-        details = _await_stack_completion(stack_name)
+        details = await_stack_completion(stack_name)
         outputs = details.get('Outputs', [])
         self.assertEqual(len(outputs), 3)
 
@@ -1146,7 +1146,7 @@ class CloudFormationTest(unittest.TestCase):
         params = [{'ParameterKey': 'SecretName', 'ParameterValue': secret_name}]
         cloudformation.create_stack(StackName=stack_name, TemplateBody=TEST_TEMPLATE_11, Parameters=params)
 
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         secretsmanager_client = aws_stack.connect_to_service('secretsmanager')
 
@@ -1179,7 +1179,7 @@ class CloudFormationTest(unittest.TestCase):
             ]
         )
 
-        details = _await_stack_completion(stack_name)
+        details = await_stack_completion(stack_name)
 
         outputs = details.get('Outputs', [])
         self.assertEqual(len(outputs), 1)
@@ -1212,7 +1212,7 @@ class CloudFormationTest(unittest.TestCase):
         role_name = 'role-%s' % short_uid()
         role_path_prefix = '/role-prefix-%s/' % short_uid()
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_13 % (role_name, role_path_prefix))
+        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_13 % (role_name, role_path_prefix))
 
         cfn = aws_stack.connect_to_service('cloudformation')
         iam = aws_stack.connect_to_service('iam')
@@ -1242,7 +1242,7 @@ class CloudFormationTest(unittest.TestCase):
         stack_name = 'stack-%s' % short_uid()
         role_path_prefix = '/role-prefix-%s/' % short_uid()
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_14 % role_path_prefix)
+        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_14 % role_path_prefix)
 
         rs = iam.list_roles(PathPrefix=role_path_prefix)
         self.assertEqual(len(rs['Roles']), 1)
@@ -1258,7 +1258,7 @@ class CloudFormationTest(unittest.TestCase):
         bucket_id = short_uid()
         template = TEST_TEMPLATE_19.format(id=bucket_id)
         stack_name = 'stack-%s' % short_uid()
-        _deploy_stack(stack_name=stack_name, template_body=template)
+        deploy_cf_stack(stack_name=stack_name, template_body=template)
 
         buckets = s3.list_buckets()['Buckets']
         dev_bucket = 'cf-dev-%s' % bucket_id
@@ -1276,7 +1276,7 @@ class CloudFormationTest(unittest.TestCase):
         cfn = aws_stack.connect_to_service('cloudformation')
         sqs = aws_stack.connect_to_service('sqs')
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_15 % fifo_queue)
+        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_15 % fifo_queue)
 
         rs = sqs.get_queue_url(QueueName=fifo_queue)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -1310,7 +1310,7 @@ class CloudFormationTest(unittest.TestCase):
         cfn = aws_stack.connect_to_service('cloudformation')
         events = aws_stack.connect_to_service('events')
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_16 % (bucket_name, rule_name))
+        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_16 % (bucket_name, rule_name))
 
         rs = events.list_rules(
             NamePrefix=rule_prefix
@@ -1337,7 +1337,7 @@ class CloudFormationTest(unittest.TestCase):
         rule_names = [rule['Name'] for rule in rs['Rules']]
 
         stack_name = 'stack-%s' % short_uid()
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_18 % aws_stack.role_arn('sfn_role'))
+        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_18 % aws_stack.role_arn('sfn_role'))
 
         rs = events.list_rules()
         new_rules = [rule for rule in rs['Rules'] if rule['Name'] not in rule_names]
@@ -1362,10 +1362,8 @@ class CloudFormationTest(unittest.TestCase):
         cfn = aws_stack.connect_to_service('cloudformation')
         s3 = aws_stack.connect_to_service('s3')
 
-        _deploy_stack(
-            stack_name=stack_name,
-            template_body=TEST_TEMPLATE_17 % (queue_name, bucket_name, queue_arn)
-        )
+        deploy_cf_stack(
+            stack_name=stack_name, template_body=TEST_TEMPLATE_17 % (queue_name, bucket_name, queue_arn))
 
         rs = s3.get_bucket_notification_configuration(
             Bucket=bucket_name
@@ -1416,7 +1414,7 @@ class CloudFormationTest(unittest.TestCase):
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
-        _deploy_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_22)
+        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_22)
 
         res = cloudformation.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
         rest_api_ids = [r['PhysicalResourceId'] for r in res if r['ResourceType'] == 'AWS::ApiGateway::RestApi']
@@ -1742,7 +1740,7 @@ class CloudFormationTest(unittest.TestCase):
                 'ParameterValue': environment
             }]
         )
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         lambda_client = aws_stack.connect_to_service('lambda')
         functions = lambda_client.list_functions()['Functions']
@@ -1778,7 +1776,7 @@ class CloudFormationTest(unittest.TestCase):
 
         template = load_file(TEST_TEMPLATE_25)
 
-        details = _deploy_stack(stack_name, template_body=template)
+        details = deploy_cf_stack(stack_name, template_body=template)
 
         # assert Lambda function created properly
         resp = lambda_client.list_functions()
@@ -1810,7 +1808,7 @@ class CloudFormationTest(unittest.TestCase):
                 }
             ]
         )
-        _await_stack_completion(stack_name)
+        await_stack_completion(stack_name)
 
         resp = cfn.describe_stacks(StackName=stack_name)
         stack_outputs = [stack['Outputs'] for stack in resp['Stacks'] if stack['StackName'] == stack_name]
