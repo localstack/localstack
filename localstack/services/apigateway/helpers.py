@@ -211,6 +211,8 @@ def extract_query_string_params(path):
             query_string_params[query_param_name] = query_param_values
 
     # strip trailing slashes from path to fix downstream lookups
+    if path.endswith('None') and len(path.split('None')) > 0:
+        path = path.split('None')[0]
     path = path.rstrip('/') or '/'
     return [path, query_string_params]
 
@@ -248,7 +250,7 @@ def get_resource_for_path(path, path_map):
             matches.append((api_path, details))
     if not matches:
         return None
-    if len(matches) > 1:
+    if len(matches) >= 1:
         # check if we have an exact match
         for match in matches:
             if match[0] == path:

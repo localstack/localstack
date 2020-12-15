@@ -28,6 +28,8 @@ LOGGER = logging.getLogger(__name__)
 PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
+PATH_REGEX_TEST_INVOKE_API = \
+    r'^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?'
 
 # Maps API IDs to list of gateway responses
 GATEWAY_RESPONSES = {}
@@ -56,6 +58,21 @@ class ProxyListenerApiGateway(ProxyListener):
                 response_type = search_match.group(2).lstrip('/')
                 return put_gateway_response(api_id, response_type, data)
 
+        match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
+        if match:
+            if method == 'POST':
+                kwargs = {}
+
+                # if call is from test_invoke_api then use http_method to find the integration,
+                # as test_invoke_api make POST call to interect
+                method = match[3]
+                if data:
+                    orig_data = data
+                    path_with_query_string = orig_data.get('pathWithQueryString', None)
+                    data = data.get('body', None)
+                    headers = orig_data.get('headers', {})
+                    kwargs = {'path_with_query_string': path_with_query_string} if path_with_query_string else {}
+                return invoke_rest_api_from_request(method=method, path=path, data=data, headers=headers, **kwargs)
         return True
 
     def return_response(self, method, path, data, headers, response):
@@ -210,16 +227,25 @@ def apply_template(integration, req_res_type, data, path_params={}, query_params
     return data
 
 
-def get_api_id_stage_invocation_path(path):
+def get_api_id_invocation_path(path):
     search_match = re.search(PATH_REGEX_USER_REQUEST, path)
-    api_id = search_match.group(1)
-    stage = search_match.group(2)
-    relative_path_w_query_params = '/%s' % search_match.group(3)
+    if search_match:
+        api_id = search_match.group(1)
+        stage = search_match.group(2)
+        relative_path_w_query_params = '/%s' % search_match.group(3)
+
+    search_match = re.search(PATH_REGEX_TEST_INVOKE_API, path)
+    if search_match:
+        api_id = search_match.group(1)
+        relative_path_w_query_params = '/%s' % search_match.group(4)
+        stage = None
     return api_id, stage, relative_path_w_query_params
 
 
-def invoke_rest_api_from_request(method, path, data, headers, context={}):
-    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path)
+def invoke_rest_api_from_request(method, path, data, headers, context={}, path_with_query_string=None):
+    api_id, stage, relative_path_w_query_params = get_api_id_invocation_path(path)
+    if path_with_query_string:
+        relative_path_w_query_params = path_with_query_string
     try:
         return invoke_rest_api(api_id, stage, method, relative_path_w_query_params,
             data, headers, path=path, context=context)
@@ -235,6 +261,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
     authorize_invocation(api_id, headers)
     path_map = helpers.get_rest_api_paths(rest_api_id=api_id)
     try:
+        # print('path:', relative_path, 'path_map', path_map)
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
     except Exception:
         return make_error_response('Unable to find path %s' % path, 404)
@@ -438,18 +465,14 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
 
 
 def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
-    _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path)
-    relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
     source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
     integration_uri = integration_uri or ''
     account_id = integration_uri.split(':lambda:path')[-1].split(':function:')[0].split(':')[-1]
     request_context = {
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
-        'path': '/' + stage + relative_path,
         'accountId': account_id,
         'resourceId': resource_id,
-        'stage': stage,
         'identity': {
             'accountId': account_id,
             'sourceIp': source_ip,
@@ -460,6 +483,11 @@ def get_lambda_event_request_context(method, path, data, headers, integration_ur
         'requestTime': datetime.datetime.utcnow(),
         'requestTimeEpoch': int(time.time() * 1000),
     }
+    if not re.match(PATH_REGEX_TEST_INVOKE_API, path):
+        _, stage, relative_path_w_query_params = get_api_id_invocation_path(path)
+        relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
+        request_context['path'] = '/' + stage + relative_path
+        request_context['stage'] = stage
     return request_context
 
 

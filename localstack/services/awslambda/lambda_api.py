@@ -303,8 +303,9 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
             'queryStringParameters': query_string_params,
             'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params),
             'requestContext': request_context,
-            'stageVariables': get_stage_variables(api_id, stage),
         }
+        if stage:
+            event['stageVariables'] = get_stage_variables(api_id, stage)
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
         return run_lambda(event=event, context=event_context, func_arn=func_arn,
             asynchronous=not config.SYNCHRONOUS_API_GATEWAY_EVENTS)
