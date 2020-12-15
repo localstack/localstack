@@ -35,6 +35,7 @@ from localstack.services.infra import start_proxy_for_service, do_run, canonical
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.cloudformation import service_models
+from localstack.utils.cloudformation.template_deployer import DependencyNotYetSatisfied
 
 LOG = logging.getLogger(__name__)
 
@@ -69,15 +70,6 @@ MODEL_MAP = {
     'AWS::Events::Rule': service_models.EventsRule,
     'AWS::S3::BucketPolicy': service_models.S3BucketPolicy
 }
-
-
-class DependencyNotYetSatisfied(Exception):
-    """ Exception indicating that a resource dependency is not (yet) deployed/available. """
-    def __init__(self, resource_ids, message=None):
-        message = message or 'Unresolved dependencies: %s' % resource_ids
-        super(DependencyNotYetSatisfied, self).__init__(message)
-        resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
-        self.resource_ids = resource_ids
 
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
@@ -352,7 +344,12 @@ def apply_patches():
                         if v is not None:
                             resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, str(v))
 
-                    return resource_json['Fn::Sub'][0]
+                    result = resource_json['Fn::Sub'][0]
+
+                    stack_name = resources_map._parsed_resources['AWS::StackName']
+                    result = template_deployer.resolve_placeholders_in_string(result,
+                        stack_name=stack_name, resources=resources_map._resource_json_map)
+                    return result
 
         return rs
 

@@ -840,14 +840,14 @@ def get_stack_details(stack_name):
             return stack
 
 
-def _deploy_stack(stack_name, template_body):
+def deploy_cf_stack(stack_name, template_body):
     cfn = connect_to_service('cloudformation')
     cfn.create_stack(StackName=stack_name, TemplateBody=template_body)
     # wait for deployment to finish
-    return _await_stack_completion(stack_name)
+    return await_stack_completion(stack_name)
 
 
-def _await_stack_status(stack_name, expected_status, retries=3, sleep=2):
+def await_stack_status(stack_name, expected_status, retries=3, sleep=2):
     def check_stack():
         stack = get_stack_details(stack_name)
         assert stack['StackStatus'] == expected_status
@@ -856,5 +856,5 @@ def _await_stack_status(stack_name, expected_status, retries=3, sleep=2):
     return retry(check_stack, retries, sleep)
 
 
-def _await_stack_completion(stack_name, retries=3, sleep=2):
-    return _await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
+def await_stack_completion(stack_name, retries=3, sleep=2):
+    return await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
