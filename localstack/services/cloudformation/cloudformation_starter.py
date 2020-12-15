@@ -349,7 +349,7 @@ def apply_patches():
                         resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % key, val)
 
                     for k, v in resource_json['Fn::Sub'][1].items():
-                        if v:
+                        if v is not None:
                             resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, str(v))
 
                     return resource_json['Fn::Sub'][0]
