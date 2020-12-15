@@ -1,16 +1,15 @@
 import re
 import json
 import binascii
+import datetime
 import xmltodict
 from flask import Response
 from binascii import crc32
 from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
-from localstack.utils.common import to_str, to_bytes
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid
-import datetime
+from localstack.utils.common import short_uid, to_str, to_bytes, json_safe
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
@@ -48,6 +47,23 @@ def requests_error_response_xml(message, code=400, code_string='InvalidParameter
         </ErrorResponse>""".format(xmlns=xmlns, message=message, code_string=code_string, req_id=short_uid())
     response.status_code = code
     return response
+
+
+def requests_response_xml(action, response, xmlns=None, service=None):
+    xmlns = xmlns or 'http://%s.amazonaws.com/doc/2010-03-31/' % service
+    response = json_safe(response)
+    response = {'{action}Result'.format(action=action): response}
+    response = xmltodict.unparse(response)
+    if response.startswith('<?xml'):
+        response = re.sub(r'<\?xml [^\?]+\?>', '', response)
+    result = ("""
+        <{action}Response xmlns="{xmlns}">
+            {response}
+        </{action}Response>
+    """).strip()
+    result = result.format(action=action, xmlns=xmlns, response=response)
+    result = requests_response(result)
+    return result
 
 
 def requests_error_response_xml_signature_calculation(message, string_to_sign=None, signature=None, expires=None,

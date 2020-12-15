@@ -678,7 +678,7 @@ def cp_r(src, dst):
     """Recursively copies file/directory"""
     if os.path.isfile(src):
         return shutil.copy(src, dst)
-    return shutil.copytree(src, dst)
+    return shutil.copytree(src, dst, dirs_exist_ok=True)
 
 
 def download(url, path, verify_ssl=True):

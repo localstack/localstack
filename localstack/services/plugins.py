@@ -4,7 +4,7 @@ import logging
 import traceback
 import requests
 from localstack import config
-from localstack.utils.common import get_service_protocol, clone
+from localstack.utils.common import clone
 from localstack.utils.bootstrap import canonicalize_api_names
 
 # set up logger
@@ -123,7 +123,7 @@ def record_service_health(api, status):
     data = {
         api: status
     }
-    health_url = '%s://%s:%s/health' % (get_service_protocol(), config.LOCALHOST, config.EDGE_PORT)
+    health_url = '%s/health' % config.get_edge_url()
     try:
         requests.put(health_url, data=json.dumps(data), verify=False)
     except Exception:

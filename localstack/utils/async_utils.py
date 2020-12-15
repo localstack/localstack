@@ -82,9 +82,9 @@ async def run_sync(func, *args, thread_pool=None):
     return await loop.run_in_executor(thread_pool, copy_context().run, func, *args)
 
 
-def run_coroutine(coroutine):
+def run_coroutine(coroutine, loop=None):
     """ Run an async coroutine in a threadsafe way in the main event loop """
-    loop = get_main_event_loop()
+    loop = loop or get_main_event_loop()
     future = asyncio.run_coroutine_threadsafe(coroutine, loop)
     return future.result()
 

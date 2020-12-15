@@ -3,6 +3,7 @@ import json
 import time
 import unittest
 
+from localstack.utils.aws.aws_stack import _await_stack_completion, _deploy_stack
 from localstack.utils.testutil import create_zip_file
 
 from localstack.constants import TEST_AWS_ACCOUNT_ID
@@ -414,6 +415,10 @@ Resources:
 
 TEST_TEMPLATE_23 = os.path.join(THIS_FOLDER, 'templates', 'template23.yaml')
 
+TEST_TEMPLATE_24 = os.path.join(THIS_FOLDER, 'templates', 'template24.yaml')
+
+TEST_TEMPLATE_25 = os.path.join(THIS_FOLDER, 'templates', 'template25.yaml')
+
 TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'update_lambda_template.json')
 
 SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
@@ -467,14 +472,6 @@ def ssm_param_exists(name):
     return param.get('Name') == name and param
 
 
-def get_stack_details(stack_name):
-    cloudformation = aws_stack.connect_to_service('cloudformation')
-    stacks = cloudformation.describe_stacks(StackName=stack_name)
-    for stack in stacks['Stacks']:
-        if stack['StackName'] == stack_name:
-            return stack
-
-
 def describe_stack_resource(stack_name, resource_logical_id):
     cloudformation = aws_stack.connect_to_service('cloudformation')
     response = cloudformation.describe_stack_resources(StackName=stack_name)
@@ -499,26 +496,6 @@ def get_topic_arns():
     sqs = aws_stack.connect_to_service('sns')
     response = sqs.list_topics()
     return [t['TopicArn'] for t in response['Topics']]
-
-
-def _deploy_stack(stack_name, template_body):
-    cfn = aws_stack.connect_to_service('cloudformation')
-    cfn.create_stack(StackName=stack_name, TemplateBody=template_body)
-    # wait for deployment to finish
-    return _await_stack_completion(stack_name)
-
-
-def _await_stack_status(stack_name, expected_status, retries=3, sleep=2):
-    def check_stack():
-        stack = get_stack_details(stack_name)
-        assert stack['StackStatus'] == expected_status
-        return stack
-
-    return retry(check_stack, retries, sleep)
-
-
-def _await_stack_completion(stack_name, retries=3, sleep=2):
-    return _await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
 
 
 class CloudFormationTest(unittest.TestCase):
@@ -1754,10 +1731,76 @@ class CloudFormationTest(unittest.TestCase):
         s3.put_object(Bucket=bucket, Key=key, Body=create_zip_file(package_path, True))
         time.sleep(1)
 
-        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template24.yaml')) % (bucket, key)
+        template = load_file(TEST_TEMPLATE_24) % (bucket, key, bucket, key)
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
         cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[{
+                'ParameterKey': 'Environment',
+                'ParameterValue': environment
+            }]
+        )
+        _await_stack_completion(stack_name)
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        functions = lambda_client.list_functions()['Functions']
+
+        # assert Lambda functions created with expected name and ARN
+        func_prefix = 'test-{}-connectionHandler'.format(environment)
+        functions = [func for func in functions if func['FunctionName'].startswith(func_prefix)]
+        self.assertEqual(len(functions), 2)
+        func1 = [f for f in functions if f['FunctionName'].endswith('connectionHandler1')][0]
+        func2 = [f for f in functions if f['FunctionName'].endswith('connectionHandler2')][0]
+        self.assertTrue(func1['FunctionArn'].endswith(func1['FunctionName']))
+        self.assertTrue(func2['FunctionArn'].endswith(func2['FunctionName']))
+
+        # assert buckets which reference Lambda names have been created
+        s3_client = aws_stack.connect_to_service('s3')
+        buckets = s3_client.list_buckets()['Buckets']
+        buckets = [b for b in buckets if b['Name'].startswith(func_prefix.lower())]
+        # assert buckets are created correctly
+        self.assertEqual(len(functions), 2)
+        tags1 = s3_client.get_bucket_tagging(Bucket=buckets[0]['Name'])
+        tags2 = s3_client.get_bucket_tagging(Bucket=buckets[1]['Name'])
+        # assert correct tags - they reference the function names and should equal the bucket names (lower case)
+        self.assertEqual(tags1['TagSet'][0]['Value'].lower(), buckets[0]['Name'])
+        self.assertEqual(tags2['TagSet'][0]['Value'].lower(), buckets[1]['Name'])
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_lambda_dependency(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        lambda_client = aws_stack.connect_to_service('lambda')
+        stack_name = 'stack-%s' % short_uid()
+
+        template = load_file(TEST_TEMPLATE_25)
+
+        details = _deploy_stack(stack_name, template_body=template)
+
+        # assert Lambda function created properly
+        resp = lambda_client.list_functions()
+        func_name = 'test-forward-sns'
+        functions = [func for func in resp['Functions'] if func['FunctionName'] == func_name]
+        self.assertEqual(len(functions), 1)
+
+        # assert that stack outputs are returned properly
+        outputs = details.get('Outputs', [])
+        self.assertEqual(len(outputs), 1)
+        self.assertEqual(outputs[0]['ExportName'], 'FuncArnExportName123')
+
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def test_functions_in_output_export_name(self):
+        stack_name = 'stack-%s' % short_uid()
+        environment = 'env-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template26.yaml'))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.create_stack(
             StackName=stack_name,
             TemplateBody=template,
             Parameters=[
@@ -1767,15 +1810,16 @@ class CloudFormationTest(unittest.TestCase):
                 }
             ]
         )
+        _await_stack_completion(stack_name)
 
-        lambda_client = aws_stack.connect_to_service('lambda')
-        func_name = 'localstack-websockets-{}-connectionHandler'.format(environment)
+        resp = cfn.describe_stacks(StackName=stack_name)
+        stack_outputs = [stack['Outputs'] for stack in resp['Stacks'] if stack['StackName'] == stack_name]
+        self.assertEqual(len(stack_outputs), 1)
 
-        resp = lambda_client.list_functions()
+        outputs = {o['OutputKey']: {'value': o['OutputValue'], 'export': o['ExportName']} for o in stack_outputs[0]}
 
-        # lambda function created with expected name
-        functions = [func for func in resp['Functions'] if func['FunctionName'] == func_name]
-        self.assertEqual(len(functions), 1)
+        self.assertIn('VpcId', outputs)
+        self.assertEqual(outputs['VpcId'].get('export'), '{}-vpc-id'.format(environment))
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        cfn.delete_stack(StackName=stack_name)

@@ -21,7 +21,8 @@ def setup_package():
         # start infrastructure services
         infra.start_infra(asynchronous=True)
         # initialize certain tests asynchronously to reduce overall test time
-        TestTerraform.init_async()
+        if not os.environ.get('TEST_PATH'):
+            TestTerraform.init_async()
     except Exception as e:
         # make sure to tear down the infrastructure
         infra.stop_infra()

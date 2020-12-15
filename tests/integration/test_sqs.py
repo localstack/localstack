@@ -349,7 +349,7 @@ class SQSTest(unittest.TestCase):
         self.assertEqual(len(rs.get('Messages', [])), 0)
 
         # assert that message has been put on the DLQ
-        retry(lambda: self.receive_dlq(queue_url1, False), retries=8, sleep=2)
+        retry(lambda: self.receive_dlq(queue_url1, assert_receive_count=2), retries=8, sleep=2)
 
     def test_set_queue_attribute_at_creation(self):
         queue_name = 'queue-%s' % short_uid()
@@ -865,7 +865,7 @@ class SQSTest(unittest.TestCase):
     # HELPER METHODS
     # ---------------
 
-    def receive_dlq(self, queue_url, assert_error_details=True):
+    def receive_dlq(self, queue_url, assert_error_details=False, assert_receive_count=None):
         """ Assert that a message has been received on the given DLQ """
         result = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
         self.assertGreater(len(result['Messages']), 0)
@@ -876,4 +876,5 @@ class SQSTest(unittest.TestCase):
             self.assertIn('ErrorCode', msg_attrs)
             self.assertIn('ErrorMessage', msg_attrs)
         else:
-            self.assertEqual('2', msg_attrs.get('ApproximateReceiveCount'))
+            if assert_receive_count is not None:
+                self.assertEqual(str(assert_receive_count), msg_attrs.get('ApproximateReceiveCount'))
