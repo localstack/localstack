@@ -469,7 +469,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             LOG.debug('Getting the entrypoint for image: %s' % (docker_image))
             cmd = (
                 '%s image inspect'
-                ' --format="{{ .ContainerConfig.Entrypoint }}"'
+                ' --format="{{ .Config.Entrypoint }}"'
                 ' %s'
             ) % (docker_cmd, docker_image)
 
