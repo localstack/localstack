@@ -931,20 +931,26 @@ class TestAPIGateway(unittest.TestCase):
             description='test'
         )
 
-        resources = client.get_resources(
+        root_resource = client.get_resources(
             restApiId=rest_api['id']
+        )
+
+        resource = client.create_resource(
+            restApiId=rest_api['id'],
+            parentId=root_resource['items'][0]['id'],
+            pathPart='foo'
         )
 
         client.put_method(
             restApiId=rest_api['id'],
-            resourceId=resources['items'][0]['id'],
+            resourceId=resource['id'],
             httpMethod='GET',
             authorizationType='NONE'
         )
 
         client.put_integration(
             restApiId=rest_api['id'],
-            resourceId=resources['items'][0]['id'],
+            resourceId=resource['id'],
             httpMethod='GET',
             type='AWS',
             uri='arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations'.format(
@@ -954,15 +960,16 @@ class TestAPIGateway(unittest.TestCase):
 
         response = client.test_invoke_method(
             restApiId=rest_api['id'],
-            resourceId=resources['items'][0]['id'],
-            httpMethod='GET'
+            resourceId=resource['id'],
+            httpMethod='GET',
+            pathWithQueryString='/foo'
         )
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
         response = client.test_invoke_method(
             restApiId=rest_api['id'],
-            resourceId=resources['items'][0]['id'],
+            resourceId=resource['id'],
             httpMethod='GET',
-            pathWithQueryString='/',
+            pathWithQueryString='/foo',
             body='{"test": "val"}',
             headers={
                 'content-type': 'application/json'

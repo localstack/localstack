@@ -250,7 +250,7 @@ def get_resource_for_path(path, path_map):
             matches.append((api_path, details))
     if not matches:
         return None
-    if len(matches) >= 1:
+    if len(matches) > 1:
         # check if we have an exact match
         for match in matches:
             if match[0] == path:

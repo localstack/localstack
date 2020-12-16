@@ -260,7 +260,6 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
     authorize_invocation(api_id, headers)
     path_map = helpers.get_rest_api_paths(rest_api_id=api_id)
     try:
-        # print('path:', relative_path, 'path_map', path_map)
         extracted_path, resource = get_resource_for_path(path=relative_path, path_map=path_map)
     except Exception:
         return make_error_response('Unable to find path %s' % path, 404)
