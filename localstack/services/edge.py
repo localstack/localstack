@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import gzip
 import json
 import signal
 import logging
@@ -47,7 +48,7 @@ class ProxyListenerEdge(ProxyListener):
         headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
 
         # extract API details
-        api, port, path, host = get_api_from_headers(headers, path)
+        api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
         set_default_region_in_headers(headers)
 
@@ -82,6 +83,12 @@ class ProxyListenerEdge(ProxyListener):
             data = json.dumps(data)
 
         return do_forward_request(api, port, method, path, data, headers)
+
+    def return_response(self, method, path, data, headers, response, request_handler=None):
+        if headers.get('Accept-Encoding') == 'gzip' and response._content:
+            response._content = gzip.compress(to_bytes(response._content))
+            response.headers['Content-Length'] = str(len(response._content))
+            response.headers['Content-Encoding'] = 'gzip'
 
 
 def do_forward_request(api, port, method, path, data, headers):
@@ -120,7 +127,7 @@ def do_forward_request_network(port, method, path, data, headers):
     return response
 
 
-def get_api_from_headers(headers, path=None):
+def get_api_from_headers(headers, method=None, path=None, data=None):
     """ Determine API and backend port based on Authorization headers. """
 
     target = headers.get('x-amz-target', '')

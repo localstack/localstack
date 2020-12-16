@@ -35,6 +35,7 @@ from localstack.services.infra import start_proxy_for_service, do_run, canonical
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer
 from localstack.services.cloudformation import service_models
+from localstack.utils.cloudformation.template_deployer import DependencyNotYetSatisfied
 
 LOG = logging.getLogger(__name__)
 
@@ -69,15 +70,6 @@ MODEL_MAP = {
     'AWS::Events::Rule': service_models.EventsRule,
     'AWS::S3::BucketPolicy': service_models.S3BucketPolicy
 }
-
-
-class DependencyNotYetSatisfied(Exception):
-    """ Exception indicating that a resource dependency is not (yet) deployed/available. """
-    def __init__(self, resource_ids, message=None):
-        message = message or 'Unresolved dependencies: %s' % resource_ids
-        super(DependencyNotYetSatisfied, self).__init__(message)
-        resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
-        self.resource_ids = resource_ids
 
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
@@ -331,6 +323,9 @@ def apply_patches():
 
             if 'Fn::Sub' in resource_json:
                 if isinstance(resource_json['Fn::Sub'], list):
+                    for k, v in resource_json['Fn::Sub'][1].items():
+                        resource_json['Fn::Sub'][1][k] = clean_json(v, resources_map)
+
                     for key, val in resources_map._parsed_resources.items():
                         if not val:
                             continue
@@ -346,9 +341,15 @@ def apply_patches():
                         resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % key, val)
 
                     for k, v in resource_json['Fn::Sub'][1].items():
-                        resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, v)
+                        if v is not None:
+                            resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, str(v))
 
-                    return resource_json['Fn::Sub'][0]
+                    result = resource_json['Fn::Sub'][0]
+
+                    stack_name = resources_map._parsed_resources['AWS::StackName']
+                    result = template_deployer.resolve_placeholders_in_string(result,
+                        stack_name=stack_name, resources=resources_map._resource_json_map)
+                    return result
 
         return rs
 
@@ -725,9 +726,13 @@ def apply_patches():
             result.key = output_logical_id
             result.value = None
             result.description = output_json.get('Description')
+
         # Make sure output includes export name
         if not hasattr(result, 'export_name'):
-            result.export_name = output_json.get('Export', {}).get('Name')
+            export_name = output_json.get('Export', {}).get('Name')
+            if export_name:
+                result.export_name = clean_json(export_name, resources_map)
+
         return result
 
     parse_output_orig = parsing.parse_output
@@ -1196,14 +1201,15 @@ def apply_patches():
         def run_loop(*args):
             result = {}
             try:
-                result = do_run_loop()
-                if isinstance(result, parsing.ResourceMap):
+                loop_result = do_run_loop()
+                if isinstance(loop_result, parsing.ResourceMap):
                     if initialize:
                         # create output map
                         stack.output_map.create()
                         # set exported resources
                         cloudformation_backends[stack.region_name].set_exports(stack)
                     return
+                result = loop_result
             except Exception as e:
                 LOG.info('Error running stack deployment loop: %s' % e)
             set_stack_status(stack, '%s_FAILED' % action)

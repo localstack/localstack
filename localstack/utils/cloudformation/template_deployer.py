@@ -5,7 +5,6 @@ import yaml
 import logging
 import traceback
 import moto.cloudformation.utils
-
 from urllib.parse import urlparse
 from six import iteritems
 from moto.cloudformation.models import cloudformation_backends
@@ -36,6 +35,15 @@ NoDatesSafeLoader.yaml_implicit_resolvers = {
     k: [r for r in v if r[0] != 'tag:yaml.org,2002:timestamp'] for
     k, v in NoDatesSafeLoader.yaml_implicit_resolvers.items()
 }
+
+
+class DependencyNotYetSatisfied(Exception):
+    """ Exception indicating that a resource dependency is not (yet) deployed/available. """
+    def __init__(self, resource_ids, message=None):
+        message = message or 'Unresolved dependencies: %s' % resource_ids
+        super(DependencyNotYetSatisfied, self).__init__(message)
+        resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
+        self.resource_ids = resource_ids
 
 
 def str_or_none(o):
@@ -801,6 +809,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             func_name = resolve_refs_recursively(stack_name, resource_props['FunctionName'], resources)
             resource_id = func_name if resource else resource_id
             return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
+
         elif resource_type == 'Lambda::Version':
             name = resolve_refs_recursively(stack_name, resource_props.get('FunctionName'), resources)
             if not name:
@@ -1027,6 +1036,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
                         (resource_type, resource_id, resource))
 
+    except DependencyNotYetSatisfied:
+        return
     except Exception as e:
         check_not_found_exception(e, resource_type, resource, resource_status)
 
@@ -1041,7 +1052,8 @@ def check_not_found_exception(e, resource_type, resource, resource_status):
             (resource_type, e, traceback.format_exc(), resource, resource_status))
 
 
-def extract_resource_attribute(resource_type, resource_json, attribute, resource_id=None, resource=None):
+def extract_resource_attribute(resource_type, resource_json, attribute, resource_id=None,
+        resource=None, resources=None, stack_name=None):
     LOG.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
     # extract resource specific attributes
     if resource_type == 'Lambda::Function':
@@ -1049,7 +1061,11 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
         if attribute in ['Arn', 'PhysicalResourceId']:
             if isinstance(resource, dict):
                 func_configs = resource.get('Properties', {})
-            return func_configs.get('FunctionArn') or aws_stack.lambda_function_arn(func_configs.get('FunctionName'))
+            func_arn = func_configs.get('FunctionArn')
+            if func_arn:
+                return resolve_refs_recursively(stack_name, func_arn, resources)
+            func_name = resolve_refs_recursively(stack_name, func_configs.get('FunctionName'), resources)
+            return aws_stack.lambda_function_arn(func_name)
         return func_configs.get(attribute)
     elif resource_type == 'DynamoDB::Table':
         actual_attribute = 'LatestStreamArn' if attribute == 'StreamArn' else attribute
@@ -1068,10 +1084,12 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
             return resource_json['id']
     elif resource_type == 'S3::Bucket':
         if attribute == 'PhysicalResourceId' and isinstance(resource, dict):
-            return resource.get('Properties', {}).get('BucketName')
+            bucket_name = resource.get('Properties', {}).get('BucketName')
+            return resolve_refs_recursively(stack_name, bucket_name, resources)
     elif resource_type == 'SNS::Topic':
         if attribute == 'PhysicalResourceId' and resource_json.get('TopicArn'):
-            return resource_json.get('TopicArn')
+            topic_arn = resource_json.get('TopicArn')
+            return resolve_refs_recursively(stack_name, topic_arn, resources)
     attribute_lower = common.first_char_to_lower(attribute)
     result = resource_json.get(attribute) or resource_json.get(attribute_lower)
     if result is None and isinstance(resource, dict):
@@ -1117,15 +1135,6 @@ def resolve_ref(stack_name, ref, resources, attribute):
     # second, resolve resource references
     resource_status = {}
 
-    # TODO: check if the logic below (calling describe_stack_resource during deployment) is still required!
-    # if stack_name:
-    #     resource_status = describe_stack_resource(stack_name, ref)
-    #     if not resource_status:
-    #         return
-    #     attr_value = resource_status.get(attribute)
-    #     if attr_value not in [None, '']:
-    #         return attr_value
-
     if not resource_status and resources.get(ref):
         resource_status = resources[ref].get('__details__', {})
     if not resource_status and resources.get(ref):
@@ -1137,7 +1146,8 @@ def resolve_ref(stack_name, ref, resources, attribute):
         return
     resource = resources.get(ref)
     resource_type = get_resource_type(resource)
-    result = extract_resource_attribute(resource_type, resource_new, attribute, resource_id=ref, resource=resource)
+    result = extract_resource_attribute(resource_type, resource_new, attribute,
+        resource_id=ref, resource=resource, resources=resources, stack_name=stack_name)
     if not result:
         LOG.warning('Unable to extract reference attribute %s from resource: %s %s' %
             (attribute, resource_new, resource))
@@ -1147,24 +1157,24 @@ def resolve_ref(stack_name, ref, resources, attribute):
 def resolve_refs_recursively(stack_name, value, resources):
     if isinstance(value, dict):
         keys_list = list(value.keys())
+        stripped_fn_lower = keys_list[0].lower().split('::')[-1] if len(keys_list) == 1 else None
 
         # process special operators
         if keys_list == ['Ref']:
             return resolve_ref(stack_name, value['Ref'], resources, attribute='PhysicalResourceId')
 
-        if keys_list and keys_list[0].lower() == 'fn::getatt':
+        if stripped_fn_lower == 'getatt':
             return resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=value[keys_list[0]][1])
 
-        if keys_list and keys_list[0].lower() == 'fn::join':
+        if stripped_fn_lower == 'join':
             join_values = value[keys_list[0]][1]
             join_values = [resolve_refs_recursively(stack_name, v, resources) for v in join_values]
             none_values = [v for v in join_values if v is None]
             if none_values:
                 raise Exception('Cannot resolve CF fn::Join %s due to null values: %s' % (value, join_values))
-
             return value[keys_list[0]][0].join(join_values)
 
-        if keys_list and keys_list[0].lower() == 'fn::sub':
+        if stripped_fn_lower == 'sub':
             item_to_sub = value[keys_list[0]]
 
             if not isinstance(item_to_sub, list):
@@ -1176,9 +1186,11 @@ def resolve_refs_recursively(stack_name, value, resources):
                 val = resolve_refs_recursively(stack_name, val, resources)
                 result = result.replace('${%s}' % key, val)
 
+            # resolve placeholders
+            result = resolve_placeholders_in_string(result, stack_name=stack_name, resources=resources)
             return result
 
-        if keys_list and keys_list[0].lower() == 'fn::findinmap':
+        if stripped_fn_lower == 'findinmap':
             result = resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=value[keys_list[0]][1])
             if not result:
                 raise Exception('Cannot resolve fn::FindInMap: %s %s' % (value[keys_list[0]], list(resources.keys())))
@@ -1186,20 +1198,36 @@ def resolve_refs_recursively(stack_name, value, resources):
             result = result.get(value[keys_list[0]][2])
             return result
 
-        if keys_list and keys_list[0].lower() == 'fn::importvalue':
+        if stripped_fn_lower == 'importvalue':
             exports = cloudformation_backends[aws_stack.get_region()].exports
-            export = exports[value[keys_list[0]]]
+            import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
+            export = exports[import_value_key]
             return export.value
 
-        else:
-            for key, val in iteritems(value):
-                value[key] = resolve_refs_recursively(stack_name, val, resources)
+        for key, val in iteritems(value):
+            value[key] = resolve_refs_recursively(stack_name, val, resources)
 
     if isinstance(value, list):
         for i in range(0, len(value)):
             value[i] = resolve_refs_recursively(stack_name, value[i], resources)
 
     return value
+
+
+def resolve_placeholders_in_string(result, stack_name=None, resources=None):
+    def _replace(match):
+        parts = match.group(1).split('.')
+        if len(parts) == 2:
+            resolved = resolve_ref(stack_name, parts[0].strip(), resources, attribute=parts[1].strip())
+            if resolved is None:
+                raise DependencyNotYetSatisfied(resource_ids=parts[0],
+                    message='Unable to resolve attribute ref %s' % match.group(1))
+            return resolved
+        # TODO raise exception here?
+        return match.group(0)
+    regex = r'\$\{([^\}]+)\}'
+    result = re.sub(regex, _replace, result)
+    return result
 
 
 def get_stack_parameter(stack_name, parameter):
@@ -1409,7 +1437,8 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                     params[param_key] = PLACEHOLDER_RESOURCE_NAME
                 else:
                     if callable(prop_key):
-                        prop_value = prop_key(resource_props, stack_name=stack_name, resources=resources)
+                        prop_value = prop_key(resource_props, stack_name=stack_name,
+                            resources=resources, resource_id=resource_id)
                     else:
                         prop_value = resource_props.get(prop_key)
                     if prop_value is not None:
@@ -1541,7 +1570,7 @@ def is_deployable_resource(resource):
     resource_type = get_resource_type(resource)
     entry = RESOURCE_TO_FUNCTION.get(resource_type)
     if entry is None:
-        LOG.warning('Unknown resource type "%s": %s' % (resource_type, resource))
+        LOG.warning('Unknown resource type "%s" in resource deployment map: %s' % (resource_type, resource))
     return bool(entry and entry.get(ACTION_CREATE))
 
 
