@@ -345,6 +345,10 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
             env_vars['_LAMBDA_SERVER_PORT'] = str(self.next_port + self.port_offset)
             self.next_port = (self.next_port + 1) % self.max_port
 
+        port = get_free_tcp_port()
+        env_vars['DOCKER_LAMBDA_API_PORT'] = str(port)
+        env_vars['DOCKER_LAMBDA_RUNTIME_PORT'] = str(port)
+
         # create/verify the docker container is running.
         LOG.debug('Priming docker container with runtime "%s" and arn "%s".', runtime, func_arn)
         container_info = self.prime_docker_container(runtime, func_arn, env_vars.items(), lambda_cwd)
