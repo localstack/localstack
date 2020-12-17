@@ -889,7 +889,9 @@ def get_key_name(path, headers):
 
 
 def uses_path_addressing(headers):
-    host = headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1] or headers['host']
+    # we can assume that the host header we are receiving here is actually the header we originally recieved
+    # from the client (because the edge service is forwarding the request in memory)
+    host = headers.get('host') or headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1]
     return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL) or host.startswith(LOCALHOST_IP)
 
 

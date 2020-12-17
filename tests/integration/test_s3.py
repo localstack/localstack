@@ -34,6 +34,8 @@ TEST_GET_OBJECT_RANGE = 17
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_triggered_by_s3.py')
+TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3 = os.path.join(THIS_FOLDER, 'lambdas',
+                                                   'lambda_triggered_by_sqs_download_s3_file.py')
 
 BATCH_DELETE_BODY = """
 <Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
@@ -1451,6 +1453,35 @@ class S3ListenerTest(unittest.TestCase):
         # cleaning
         client.delete_object(Bucket=bucket, Key=object_key)
         client.delete_bucket(Bucket=bucket)
+
+    def test_s3_download_object_with_lambda(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        function_name = 'func-%s' % short_uid()
+        key = 'key-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body='something..')
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+            envvars=dict({
+                'BUCKET_NAME': bucket_name,
+                'OBJECT_NAME': key,
+                'LOCAL_FILE_NAME': '/tmp/' + key,
+            })
+        )
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.invoke(FunctionName=function_name, InvocationType='Event')
+
+        retry(testutil.check_expected_lambda_log_events_length, retries=10,
+              sleep=3, function_name=function_name, expected_length=1)
+
+        # clean up
+        self._delete_bucket(bucket_name, [key])
+        lambda_client.delete_function(FunctionName=function_name)
 
     # ---------------
     # HELPER METHODS
