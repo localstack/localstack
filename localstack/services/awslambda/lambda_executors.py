@@ -71,6 +71,9 @@ DOCKER_MAIN_CONTAINER_IP = None
 # TODO: deprecated, should be removed in the future
 USE_CUSTOM_JAVA_EXECUTOR = False
 
+# maps lambda arns to concurrency locks
+LAMBDA_CONCURRENCY_LOCK = {}
+
 
 def get_from_event(event, key):
     try:
@@ -374,6 +377,13 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         LOG.debug('Command for docker-reuse Lambda executor: %s' % cmd)
 
         return cmd
+
+    def _execute(self, func_arn, *args, **kwargs):
+        if not LAMBDA_CONCURRENCY_LOCK.get(func_arn):
+            concurrency_lock = threading.RLock()
+            LAMBDA_CONCURRENCY_LOCK[func_arn] = concurrency_lock
+        with LAMBDA_CONCURRENCY_LOCK[func_arn]:
+            return super(LambdaExecutorReuseContainers, self)._execute(func_arn, *args, **kwargs)
 
     def startup(self):
         self.cleanup()

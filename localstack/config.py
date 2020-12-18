@@ -319,6 +319,7 @@ def populate_configs(service_ports=None):
 
     SERVICE_PORTS = service_ports or parse_service_ports()
     globs = globals()
+    protocol = get_protocol()
 
     # define service ports and URLs as environment variables
     for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -328,9 +329,13 @@ def populate_configs(service_ports=None):
         port_var_name = 'PORT_%s' % key_upper
         port_number = service_port(key)
         globs[port_var_name] = port_number
-        url = '%s://%s:%s' % (get_protocol(), LOCALSTACK_HOSTNAME, port_number)
+        url = '%s://%s:%s' % (protocol, LOCALSTACK_HOSTNAME, port_number)
         # define TEST_*_URL variables with mock service endpoints
         url_key = 'TEST_%s_URL' % key_upper
+        # allow overwriting TEST_*_URL from user-defined environment variables
+        existing = os.environ.get(url_key)
+        url = existing or url
+        # set global variable
         globs[url_key] = url
         # expose HOST_*_URL variables as environment variables
         os.environ[url_key] = url
