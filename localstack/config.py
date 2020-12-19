@@ -56,8 +56,10 @@ DYNAMODB_WRITE_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_WRITE_ERROR_PR
 DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
 
 # expose services on a specific host internally
-# TODO: evaluate whether this should be hardcoded as HOSTNAME=LOCALHOST ..?
-HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
+# Note: This used to be os.environ['HOSTNAME'] but since this has caused several issues with hostnames
+# that could not be resolved, we're hardcoding this to 'localhost' (as its purpose is local invocations)
+# TODO: potentially remove this entirely in the future ?!
+HOSTNAME = LOCALHOST
 
 # expose services on a specific host externally
 HOSTNAME_EXTERNAL = os.environ.get('HOSTNAME_EXTERNAL', '').strip() or LOCALHOST
