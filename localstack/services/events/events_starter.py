@@ -43,6 +43,13 @@ def filter_event_based_on_event_format(self, rule, event):
             if not event_value:
                 return False
 
+            if event_value and isinstance(event_value, dict):
+                for key_a, value_a in event_value.items():
+                    if isinstance(value.get(key_a), (int, str)):
+                        return value_a == value.get(key_a)
+                    elif isinstance(value.get(key_a), list):
+                        return value_a in value.get(key_a)
+
             if isinstance(value, list) and not identify_content_base_parameter_in_pattern(value):
                 if isinstance(event_value, list) and \
                    get_two_lists_intersection(value, event_value) == []:
