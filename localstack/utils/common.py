@@ -830,6 +830,14 @@ def extract_jsonpath(value, path):
     return result
 
 
+def assign_to_path(target, path, value):
+    path = path.split('.')
+    for i in range(len(path) - 1):
+        target_new = target[path[i]] = target.get(path[i], {})
+        target = target_new
+    target[path[-1]] = value
+
+
 def save_file(file, content, append=False):
     mode = 'a' if append else 'w+'
     if not isinstance(content, six.string_types):

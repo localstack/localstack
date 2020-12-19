@@ -89,4 +89,5 @@ RUN LAMBDA_EXECUTOR=local make test
 # clean up temporary files created during test execution
 
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
-    rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform
+    rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform /root/.serverless; \
+    mkdir /root/.serverless; chmod -R 777 /root/.serverless

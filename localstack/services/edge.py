@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import gzip
 import json
 import signal
 import logging
@@ -82,6 +83,12 @@ class ProxyListenerEdge(ProxyListener):
             data = json.dumps(data)
 
         return do_forward_request(api, port, method, path, data, headers)
+
+    def return_response(self, method, path, data, headers, response, request_handler=None):
+        if headers.get('Accept-Encoding') == 'gzip' and response._content:
+            response._content = gzip.compress(to_bytes(response._content))
+            response.headers['Content-Length'] = str(len(response._content))
+            response.headers['Content-Encoding'] = 'gzip'
 
 
 def do_forward_request(api, port, method, path, data, headers):
