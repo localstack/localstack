@@ -984,6 +984,7 @@ def apply_patches():
             result.api = Mock()
             result.api.get_adapter = (lambda *args, **kwargs: None)
             return result
+
         # Temporarily set a mock client, to prevent moto from talking to the Docker daemon
         import docker
         _from_env_orig = docker.from_env
@@ -1370,6 +1371,20 @@ def apply_patches():
 
     for region, cf_backend in cloudformation_backends.items():
         cf_backend._validate_export_uniqueness = make_validate_export_uniqueness(cf_backend)
+
+    # patch cloudformation backend set_exports
+    # #3375 CloudFormation - All deployed stacks have StackStatus: CREATE_FAILED
+    # Actually this patch has provided in moto-ext 1.3.15.45
+    def make_set_exports(backend):
+        def cf_backend_set_exports(self, new_stack):
+            for export in new_stack.exports:
+                self.exports[export.name] = export
+
+        return types.MethodType(cf_backend_set_exports, backend)
+
+    if not hasattr(CloudFormationBackend, 'set_exports'):
+        for region, cf_backend in cloudformation_backends.items():
+            cf_backend.set_exports = make_set_exports(cf_backend)
 
     # patch cloudformation backend change_set methods
     # #2240 - S3 bucket not created since 0.10.8
