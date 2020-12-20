@@ -1055,10 +1055,11 @@ def check_not_found_exception(e, resource_type, resource, resource_status):
 def extract_resource_attribute(resource_type, resource_json, attribute, resource_id=None,
         resource=None, resources=None, stack_name=None):
     LOG.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
+    is_ref_attribute = attribute in ['PhysicalResourceId', 'Ref']
     # extract resource specific attributes
     if resource_type == 'Lambda::Function':
         func_configs = resource_json.get('Configuration')
-        if attribute in ['Arn', 'PhysicalResourceId']:
+        if is_ref_attribute or attribute == 'Arn':
             if isinstance(resource, dict):
                 func_configs = resource.get('Properties', {})
             func_arn = func_configs.get('FunctionArn')
@@ -1072,7 +1073,7 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
         value = resource_json['Table'].get(actual_attribute)
         return value
     elif resource_type == 'ApiGateway::RestApi':
-        if attribute == 'PhysicalResourceId':
+        if is_ref_attribute:
             return resource_json['id']
         if attribute == 'RootResourceId':
             resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=resource_json['id'])['items']
@@ -1080,14 +1081,14 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
                 if res['path'] == '/' and not res.get('parentId'):
                     return res['id']
     elif resource_type == 'ApiGateway::Resource':
-        if attribute == 'PhysicalResourceId':
+        if is_ref_attribute:
             return resource_json['id']
     elif resource_type == 'S3::Bucket':
-        if attribute == 'PhysicalResourceId' and isinstance(resource, dict):
+        if is_ref_attribute and isinstance(resource, dict):
             bucket_name = resource.get('Properties', {}).get('BucketName')
             return resolve_refs_recursively(stack_name, bucket_name, resources)
     elif resource_type == 'SNS::Topic':
-        if attribute == 'PhysicalResourceId' and resource_json.get('TopicArn'):
+        if is_ref_attribute and resource_json.get('TopicArn'):
             topic_arn = resource_json.get('TopicArn')
             return resolve_refs_recursively(stack_name, topic_arn, resources)
     attribute_lower = common.first_char_to_lower(attribute)
@@ -1098,7 +1099,7 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
         if result is None:
             result = get_attr_from_model_instance(resource, attribute,
                 resource_type=resource_type, resource_id=resource_id)
-    if result is None and attribute == 'PhysicalResourceId':
+    if result is None and is_ref_attribute:
         result = resource_json.get('Id')
     return result
 
@@ -1223,6 +1224,11 @@ def resolve_placeholders_in_string(result, stack_name=None, resources=None):
                 raise DependencyNotYetSatisfied(resource_ids=parts[0],
                     message='Unable to resolve attribute ref %s' % match.group(1))
             return resolved
+        if len(parts) == 1 and parts[0] in resources:
+            resource_json = resources[parts[0]]
+            result = extract_resource_attribute(resource_json.get('Type'), resource_json, 'Ref',
+                resources=resources, resource_id=parts[0])
+            return result
         # TODO raise exception here?
         return match.group(0)
     regex = r'\$\{([^\}]+)\}'
