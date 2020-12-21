@@ -4,7 +4,7 @@ MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="LocalStack Contributors"
 
 # install basic tools
-RUN pip install awscli awscli-local requests --upgrade
+RUN pip install awscli awscli-local[v1] requests --upgrade
 RUN apk add iputils
 
 # add files required to install virtualenv dependencies

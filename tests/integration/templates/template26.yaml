@@ -35,6 +35,11 @@ Resources:
             Action:
             - ec2:GetPasswordData
 
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub '${Environment}-slack-sns-topic'
+
 Outputs:
   VpcId:
     Value: !Ref VPC
@@ -45,4 +50,9 @@ Outputs:
     Value: !GetAtt InstanceRole.Arn
     Export:
       Name: RoleArn
+
+  TopicArn:
+    Value: !Ref SnsTopic
+    Export:
+      Name: !Ref SnsTopic
 

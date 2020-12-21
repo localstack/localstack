@@ -1819,5 +1819,9 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn('VpcId', outputs)
         self.assertEqual(outputs['VpcId'].get('export'), '{}-vpc-id'.format(environment))
 
+        topic_arn = aws_stack.sns_topic_arn('{}-slack-sns-topic'.format(environment))
+        self.assertIn('TopicArn', outputs)
+        self.assertEqual(outputs['TopicArn'].get('export'), topic_arn)
+
         # clean up
         cfn.delete_stack(StackName=stack_name)
