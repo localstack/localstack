@@ -27,6 +27,9 @@ CURRENTLY_REPLAYING = []
 # file paths by API
 API_FILE_PATHS = {}
 
+# flag to indicate if the restoration of api calls is complete
+API_CALLS_RESTORED = False
+
 # set up logger
 LOG = logging.getLogger(__name__)
 
@@ -173,11 +176,15 @@ def replay(api):
 
 
 def restore_persisted_data(apis):
+    global API_CALLS_RESTORED
+
     if USE_SINGLE_DUMP_FILE:
-        return replay('_all_')
-    apis = apis if isinstance(apis, list) else [apis]
-    for api in apis:
-        replay(api)
+        replay('_all_')
+    else:
+        apis = apis if isinstance(apis, list) else [apis]
+        for api in apis:
+            replay(api)
+    API_CALLS_RESTORED = True
 
 
 # ---------------
