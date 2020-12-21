@@ -404,6 +404,9 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
+    # import to avoid cyclic dependency
+    from localstack.services.edge import BOOTSTRAP_LOCK
+
     event_publisher.fire_event(event_publisher.EVENT_START_INFRA,
         {'d': is_in_docker and 1 or 0, 'c': in_ci() and 1 or 0})
 
@@ -431,6 +434,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     @log_duration()
     def start_api_services():
+
         # Some services take a bit to come up
         sleep_time = 5
         # start services
@@ -452,7 +456,8 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     prepare_environment()
     prepare_installation()
-    thread = start_api_services()
+    with BOOTSTRAP_LOCK:
+        thread = start_api_services()
     print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
 
