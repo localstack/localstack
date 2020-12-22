@@ -1,4 +1,5 @@
 import logging
+import os
 import traceback
 from localstack import config
 from localstack.services import install
@@ -38,7 +39,10 @@ def start_dynamodb(port=None, asynchronous=False, update_listener=None):
     if config.DATA_DIR:
         ddb_data_dir = '%s/dynamodb' % config.DATA_DIR
         mkdir(ddb_data_dir)
-        ddb_data_dir_param = '-dbPath %s' % ddb_data_dir
+        # as the service command cds into a different directory, the absolute
+        # path of the DATA_DIR is needed as the -dbPath
+        absolute_path = os.path.abspath(ddb_data_dir)
+        ddb_data_dir_param = '-dbPath %s' % absolute_path
     cmd = ('cd %s/infra/dynamodb/; java -Djava.library.path=./DynamoDBLocal_lib ' +
         '-Xmx%s -jar DynamoDBLocal.jar -sharedDb -port %s %s') % (
         ROOT_PATH, config.DYNAMODB_HEAP_SIZE, PORT_DYNAMODB_BACKEND, ddb_data_dir_param)
