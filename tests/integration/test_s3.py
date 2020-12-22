@@ -723,6 +723,7 @@ class S3ListenerTest(unittest.TestCase):
         client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
 
         # get object and assert headers
+        expiry_date = 'Wed, 21 Oct 2015 07:28:00 GMT'
         url = client.generate_presigned_url(
             'get_object', Params={
                 'Bucket': bucket_name,
@@ -732,7 +733,7 @@ class S3ListenerTest(unittest.TestCase):
                 'ResponseContentEncoding': 'identity',
                 'ResponseContentLanguage': 'de-DE',
                 'ResponseContentType': 'image/jpeg',
-                'ResponseExpires': 'Wed, 21 Oct 2015 07:28:00 GMT'}
+                'ResponseExpires': expiry_date}
         )
         response = requests.get(url, verify=False)
 
@@ -741,7 +742,9 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual(response.headers['content-encoding'], 'identity')
         self.assertEqual(response.headers['content-language'], 'de-DE')
         self.assertEqual(response.headers['content-type'], 'image/jpeg')
-        self.assertEqual(response.headers['expires'], '2015-10-21T07:28:00Z')
+        # Note: looks like depending on the environment/libraries, we can get different date formats...
+        possible_date_formats = ['2015-10-21T07:28:00Z', expiry_date]
+        self.assertIn(response.headers['expires'], possible_date_formats)
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
