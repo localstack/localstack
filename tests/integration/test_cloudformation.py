@@ -644,6 +644,7 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=TEST_TEMPLATE_3,
             ChangeSetName='nochanges'
         )
+        print('!!!response', response)
         self.assertIn(':%s:changeSet/nochanges/' % TEST_AWS_ACCOUNT_ID, response['Id'])
         self.assertIn(':%s:stack/' % TEST_AWS_ACCOUNT_ID, response['StackId'])
 

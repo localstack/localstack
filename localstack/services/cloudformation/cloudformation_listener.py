@@ -185,6 +185,21 @@ def fix_in_response(search, replace, response):
     response.headers['Content-Length'] = str(len(response._content))
 
 
+def prepare_template_body(req_data):
+    do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
+    if do_replace_url:
+        req_data['TemplateURL'] = convert_s3_to_local_url(req_data['TemplateURL'])
+    url = req_data.get('TemplateURL', '')
+    is_custom_local_endpoint = is_local_service_url(url) and '://localhost:' not in url
+    modified_template_body = transform_template(req_data)
+    if not modified_template_body and is_custom_local_endpoint:
+        modified_template_body = get_template_body(req_data)
+    if modified_template_body:
+        req_data.pop('TemplateURL', None)
+        req_data['TemplateBody'] = modified_template_body
+    return modified_template_body or do_replace_url
+
+
 class ProxyListenerCloudFormation(ProxyListener):
     def forward_request(self, method, path, data, headers):
         if method == 'OPTIONS':
@@ -213,10 +228,7 @@ class ProxyListenerCloudFormation(ProxyListener):
                 )
 
             if action == 'DeleteStack':
-                client = aws_stack.connect_to_service(
-                    'cloudformation',
-                    region_name=aws_stack.extract_region_from_auth_header(headers)
-                )
+                client = aws_stack.connect_to_service('cloudformation')
                 stack_resources = client.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
                 template_deployer.delete_stack(stack_name, stack_resources)
 
@@ -244,18 +256,8 @@ class ProxyListenerCloudFormation(ProxyListener):
                 return validate_template(req_data)
 
             if action in ['CreateStack', 'UpdateStack', 'CreateChangeSet']:
-                do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
-                if do_replace_url:
-                    req_data['TemplateURL'] = convert_s3_to_local_url(req_data['TemplateURL'])
-                url = req_data.get('TemplateURL', '')
-                is_custom_local_endpoint = is_local_service_url(url) and '://localhost:' not in url
-                modified_template_body = transform_template(req_data)
-                if not modified_template_body and is_custom_local_endpoint:
-                    modified_template_body = get_template_body(req_data)
-                if modified_template_body:
-                    req_data.pop('TemplateURL', None)
-                    req_data['TemplateBody'] = modified_template_body
-                if modified_template_body or do_replace_url:
+                modified = prepare_template_body(req_data)
+                if modified:
                     data = urlparse.urlencode(req_data, doseq=True)
                     return Request(data=data, headers=headers, method=method)
 

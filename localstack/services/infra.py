@@ -1,3 +1,4 @@
+# noqa
 import os
 import re
 import sys
@@ -10,10 +11,10 @@ import boto3
 import subprocess
 from moto import core as moto_core
 from requests.models import Response
-from localstack import constants, config
+from localstack import config, constants
+from localstack.utils import common, persistence
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
-from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux, start_thread,
     ShellCommandThread, in_docker, is_port_open, sleep_forever, print_debug, edge_ports_info)
 from localstack.utils.server import multiserver
@@ -27,6 +28,7 @@ from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, 
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
+from localstack.services.cloudformation import cloudformation_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.utils.analytics.profiler import log_duration
 
@@ -44,9 +46,6 @@ PROXY_LISTENERS = {}
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# fix moto account ID - note: keep this at the top level here
-moto_core.ACCOUNT_ID = constants.TEST_AWS_ACCOUNT_ID
 
 
 # -----------------------
@@ -135,6 +134,12 @@ def start_dynamodbstreams(port=None, asynchronous=False):
 def start_lambda(port=None, asynchronous=False):
     port = port or config.PORT_LAMBDA
     return start_local_api('Lambda', port, api='lambda', method=lambda_api.serve, asynchronous=asynchronous)
+
+
+def start_cloudformation(port=None, asynchronous=False):
+    port = port or config.PORT_CLOUDFORMATION
+    return start_local_api('CloudFormation', port, api='cloudformation',
+        method=cloudformation_api.serve, asynchronous=asynchronous)
 
 
 def start_ssm(port=None, asynchronous=False, update_listener=None):

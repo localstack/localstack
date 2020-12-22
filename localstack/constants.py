@@ -1,5 +1,7 @@
 import os
 import localstack_client.config
+from moto import core as moto_core
+from moto.core import models as moto_core_models
 
 # LocalStack version
 VERSION = '0.12.3'
@@ -105,6 +107,8 @@ LOCALSTACK_INFRA_PROCESS = 'LOCALSTACK_INFRA_PROCESS'
 
 # hardcoded AWS account ID used by moto
 MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
+# fix moto account ID - note: keep this at the top level here
+moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = MOTO_ACCOUNT_ID
 
 # default AWS region us-east-1
 AWS_REGION_US_EAST_1 = 'us-east-1'

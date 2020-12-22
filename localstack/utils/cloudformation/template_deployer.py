@@ -13,6 +13,7 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.services.s3 import s3_listener
+from localstack.utils.common import json_safe, md5, canonical_json, short_uid
 from localstack.utils.testutil import create_zip_file
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 
@@ -311,7 +312,7 @@ RESOURCE_TO_FUNCTION = {
         }, {
             'function': 'delete_bucket',
             'parameters': {
-                'Bucket': 'PhysicalResourceId'
+                'Bucket': 'BucketName'
             }
         }]
     },
@@ -616,7 +617,7 @@ RESOURCE_TO_FUNCTION = {
         'delete': {
             'function': 'delete_stream',
             'parameters': {
-                'StreamName': 'PhysicalResourceId'
+                'StreamName': 'Name'
             }
         }
     },
@@ -804,6 +805,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         resource = {}
     resource_type = get_resource_type(resource)
     resource_props = resource.get('Properties')
+    if resource_props is None:
+        raise Exception('Unable to find resource properties: %s' % resource)
     try:
         if resource_type == 'Lambda::Function':
             func_name = resolve_refs_recursively(stack_name, resource_props['FunctionName'], resources)
@@ -912,6 +915,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
         elif resource_type == 'ApiGateway::GatewayResponse':
             api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
+            if not api_id:
+                return
             client = aws_stack.connect_to_service('apigateway')
             result = client.get_gateway_response(restApiId=api_id, responseType=resource_props['ResponseType'])
             return result if 'responseType' in result else None
@@ -938,6 +943,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         elif resource_type == 'SNS::Subscription':
             topic_arn = resource_props.get('TopicArn')
             topic_arn = resolve_refs_recursively(stack_name, topic_arn, resources)
+            if topic_arn is None:
+                return
             subs = aws_stack.connect_to_service('sns').list_subscriptions_by_topic(TopicArn=topic_arn)
             result = [sub for sub in subs['Subscriptions'] if
                 resource_props.get('Protocol') == sub['Protocol'] and
@@ -1032,9 +1039,9 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
             # TODO The InlinePolicy can be embedded in specified User, or Group
 
-        if is_deployable_resource(resource):
-            LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
-                        (resource_type, resource_id, resource))
+        # if is_deployable_resource(resource):
+        LOG.warning('Unexpected resource type %s when resolving references of resource %s: %s' %
+                    (resource_type, resource_id, resource))
 
     except DependencyNotYetSatisfied:
         return
@@ -1056,12 +1063,14 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
         resource=None, resources=None, stack_name=None):
     LOG.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
     is_ref_attribute = attribute in ['PhysicalResourceId', 'Ref']
+    is_ref_attr_or_arn = is_ref_attribute or attribute == 'Arn'
+    resource_props = (resource or {}).get('Properties', {})
     # extract resource specific attributes
     if resource_type == 'Lambda::Function':
         func_configs = resource_json.get('Configuration')
-        if is_ref_attribute or attribute == 'Arn':
+        if is_ref_attr_or_arn:
             if isinstance(resource, dict):
-                func_configs = resource.get('Properties', {})
+                func_configs = resource_props
             func_arn = func_configs.get('FunctionArn')
             if func_arn:
                 return resolve_refs_recursively(stack_name, func_arn, resources)
@@ -1084,18 +1093,25 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
         if is_ref_attribute:
             return resource_json['id']
     elif resource_type == 'S3::Bucket':
-        if is_ref_attribute and isinstance(resource, dict):
-            bucket_name = resource.get('Properties', {}).get('BucketName')
-            return resolve_refs_recursively(stack_name, bucket_name, resources)
+        if is_ref_attr_or_arn:
+            bucket_name = resource_props.get('BucketName')
+            bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
+            if attribute == 'Arn':
+                return aws_stack.s3_bucket_arn(bucket_name)
+            return bucket_name
     elif resource_type == 'SNS::Topic':
         if is_ref_attribute and resource_json.get('TopicArn'):
             topic_arn = resource_json.get('TopicArn')
             return resolve_refs_recursively(stack_name, topic_arn, resources)
+    elif resource_type == 'SQS::Queue':
+        if is_ref_attr_or_arn:
+            if attribute == 'Arn' and resource_json.get('QueueArn'):
+                return resolve_refs_recursively(stack_name, resource_json.get('QueueArn'), resources)
+            return aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
     attribute_lower = common.first_char_to_lower(attribute)
     result = resource_json.get(attribute) or resource_json.get(attribute_lower)
     if result is None and isinstance(resource, dict):
-        res_json1 = resource.get('Properties', {})
-        result = res_json1.get(attribute) or res_json1.get(attribute_lower)
+        result = resource_props.get(attribute) or resource_props.get(attribute_lower)
         if result is None:
             result = get_attr_from_model_instance(resource, attribute,
                 resource_type=resource_type, resource_id=resource_id)
@@ -1150,7 +1166,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
     result = extract_resource_attribute(resource_type, resource_new, attribute,
         resource_id=ref, resource=resource, resources=resources, stack_name=stack_name)
     if not result:
-        LOG.warning('Unable to extract reference attribute %s from resource: %s %s' %
+        LOG.warning('Unable to extract reference attribute "%s" from resource: %s %s' %
             (attribute, resource_new, resource))
     return result
 
@@ -1162,7 +1178,11 @@ def resolve_refs_recursively(stack_name, value, resources):
 
         # process special operators
         if keys_list == ['Ref']:
-            return resolve_ref(stack_name, value['Ref'], resources, attribute='PhysicalResourceId')
+            ref = resolve_ref(stack_name, value['Ref'], resources, attribute='PhysicalResourceId')
+            if not ref:
+                raise DependencyNotYetSatisfied(resource_ids=value['Ref'],
+                    message='Unable to resolve Ref for resource %s' % value['Ref'])
+            return ref
 
         if stripped_fn_lower == 'getatt':
             return resolve_ref(stack_name, value[keys_list[0]][0], resources, attribute=value[keys_list[0]][1])
@@ -1397,7 +1417,7 @@ def execute_resource_action(resource_id, resources, stack_name, action_name):
             continue
         client = get_client(resource, func)
         if client:
-            result = configure_resource_via_sdk(resource_id, resources, resource_type, func, stack_name)
+            result = configure_resource_via_sdk(resource_id, resources, resource_type, func, stack_name, action_name)
             results.append(result)
     return (results or [None])[0]
 
@@ -1417,15 +1437,13 @@ def fix_resource_props_for_sdk_deployment(resource_type, resource_props):
             resource_props['ReceiveMessageWaitTimeSeconds'] = int(resource_props['ReceiveMessageWaitTimeSeconds'])
 
 
-def configure_resource_via_sdk(resource_id, resources, resource_type, func_details, stack_name):
+def configure_resource_via_sdk(resource_id, resources, resource_type, func_details, stack_name, action_name):
     resource = resources[resource_id]
     client = get_client(resource, func_details)
     function = getattr(client, func_details['function'])
     params = func_details.get('parameters') or lambda_get_params()
     defaults = func_details.get('defaults', {})
-    if 'Properties' not in resource:
-        resource['Properties'] = {}
-    resource_props = resource['Properties']
+    resource_props = resource['Properties'] = resource.get('Properties', {})
 
     # Validate props for each resource type
     fix_resource_props_for_sdk_deployment(resource_type, resource_props)
@@ -1446,7 +1464,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
                         prop_value = prop_key(resource_props, stack_name=stack_name,
                             resources=resources, resource_id=resource_id)
                     else:
-                        prop_value = resource_props.get(prop_key)
+                        prop_value = resource_props.get(prop_key, resource.get(prop_key))
                     if prop_value is not None:
                         params[param_key] = prop_value
                         break
@@ -1494,6 +1512,9 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     except Exception as e:
         LOG.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
         raise e
+
+    if action_name == ACTION_DELETE:
+        return result
 
     # some resources have attached/nested resources which we need to create recursively now
     if resource_type == 'ApiGateway::Method':
@@ -1563,104 +1584,225 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
 def delete_stack(stack_name, stack_resources):
     resources = dict([(r['LogicalResourceId'], common.clone_safe(r)) for r in stack_resources])
     for key, resource in resources.items():
-        resources[key]['Properties'] = common.clone_safe(resource)
+        resource['Properties'] = resource.get('Properties', common.clone_safe(resource))
+        resource['ResourceType'] = resource.get('ResourceType') or resource.get('Type')
     for resource_id in resources.keys():
         delete_resource(resource_id, resources, stack_name)
 
 
-# --------
-# Util methods for analyzing resource dependencies
-# --------
-
-def is_deployable_resource(resource):
-    resource_type = get_resource_type(resource)
-    entry = RESOURCE_TO_FUNCTION.get(resource_type)
-    if entry is None:
-        LOG.warning('Unknown resource type "%s" in resource deployment map: %s' % (resource_type, resource))
-    return bool(entry and entry.get(ACTION_CREATE))
-
-
-def get_deployment_state(resource_id, resources, stack_name):
-    res_details = resources[resource_id]
-    resource_status = res_details.get('__details__') or {}
-    details = retrieve_and_update_resource_details(resource_id, resource_status, resources, stack_name)
-    return details
-
-
-def is_deployed(resource_id, resources, stack_name):
-    details = get_deployment_state(resource_id, resources, stack_name)
-    return bool(details)
-
-
-def should_be_deployed(resource_id, resources, stack_name, deploy_state=None):
-    """ Return whether the given resource is all of: (1) deployable, (2) not yet deployed,
-        and (3) has no unresolved dependencies. """
-    res_details = resources[resource_id]
-    if not is_deployable_resource(res_details):
-        return False
-    if deploy_state is None:
-        deploy_state = is_deployed(resource_id, resources, stack_name)
-    if deploy_state:
-        return False
-    return all_resource_dependencies_satisfied(resource_id, resources, stack_name)
+def determine_resource_physical_id(stack, resource_id):
+    resource = stack.resources.get(resource_id, {})
+    if not resource:
+        return
+    res_id = resource.get('PhysicalResourceId')
+    if res_id:
+        return res_id
+    resource_type = resource.get('Type') or ''
+    resource_type = re.sub('^AWS::', '', resource_type)
+    resource_props = resource.get('Properties', {})
+    result = extract_resource_attribute(resource_type, resource_props,
+        'PhysicalResourceId', resource=resource)
+    if result:
+        return result
+    if resource_type == 'SQS::Queue':
+        return aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
+    if resource_type == 'SNS::Topic':
+        return aws_stack.sns_topic_arn(resource_props.get('TopicName'))
+    if resource_type == 'ApiGateway::RestApi':
+        return resource_props['id']
+    if resource_type == 'Kinesis::Stream':
+        return aws_stack.kinesis_stream_arn(resource_props.get('Name'))
+    if resource_type == 'S3::Bucket':
+        return aws_stack.s3_bucket_arn()
+    LOG.info('Unable to determine PhysicalResourceId for "%s" resource, ID "%s"' % (resource_type, resource_id))
 
 
-def is_updateable(resource_id, resources, stack_name):
-    """ Return whether the given resource can be updated or not """
-    resource = resources[resource_id]
-    if not is_deployable_resource(resource) or not is_deployed(resource_id, resources, stack_name):
-        return False
-    resource_type = get_resource_type(resource)
-    return resource_type in UPDATEABLE_RESOURCES
+def update_resource_details(stack, resource_id, details):
+    resource = stack.resources.get(resource_id, {})
+    if not resource:
+        return
+    resource_type = resource.get('Type') or ''
+    resource_type = re.sub('^AWS::', '', resource_type)
+    resource_props = resource.get('Properties', {})
+    if resource_type == 'ApiGateway::RestApi':
+        resource_props['id'] = details['id']
 
 
-def all_resource_dependencies_satisfied(resource_id, resources, stack_name):
-    unsatisfied = get_unsatisfied_dependencies(resource_id, resources, stack_name)
-    return not unsatisfied
+def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None, update=False):
+    """ Apply some fixes to resource props which otherwise cause deployments to fail """
+
+    res_type = resource_props['Type']
+    props = resource_props['Properties'] = resource_props.get('Properties', {})
+
+    def _generate_res_name():
+        return '%s-%s-%s' % (stack_name, resource_name or resource_id, short_uid())
+
+    if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
+        props['StartingPosition'] = 'LATEST'
+
+    elif res_type == 'AWS::Logs::LogGroup' and not props.get('LogGroupName') and resource_name:
+        props['LogGroupName'] = resource_name
+
+    elif res_type == 'AWS::Lambda::Function' and not props.get('FunctionName'):
+        props['FunctionName'] = '{}-lambda-{}'.format(stack_name[:45], short_uid())
+
+    elif res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
+        props['TopicName'] = 'topic-%s' % short_uid()
+
+    elif res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
+        props['QueueName'] = 'queue-%s' % short_uid()
+
+    elif res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
+        props['Name'] = _generate_res_name()
+
+    elif res_type == 'AWS::DynamoDB::Table':
+        update_dynamodb_index_resource(resource_props)
+
+    elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName') and not update:
+        props['BucketName'] = s3_listener.normalize_bucket_name(_generate_res_name())
+
+    elif res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
+        props['StateMachineName'] = _generate_res_name()
+
+    # generate default names for certain resource types
+    default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
+    for entry in default_attrs:
+        if res_type == entry[0] and not props.get(entry[1]):
+            if not resource_id:
+                resource_id = canonical_json(json_safe(props))
+                resource_id = md5(resource_id)
+            props[entry[1]] = 'cf-%s-%s' % (stack_name, resource_id)
 
 
-def get_unsatisfied_dependencies(resource_id, resources, stack_name):
-    resource = resources[resource_id]
-    res_deps = get_resource_dependencies(resource_id, resource, resources)
-    return get_unsatisfied_dependencies_for_resources(res_deps, stack_name, resources, resource_id)
+def update_dynamodb_index_resource(resource):
+    if resource.get('Properties').get('BillingMode') == 'PAY_PER_REQUEST':
+        for glob_index in resource.get('Properties', {}).get('GlobalSecondaryIndexes', []):
+            if not glob_index.get('ProvisionedThroughput'):
+                glob_index['ProvisionedThroughput'] = {'ReadCapacityUnits': 99, 'WriteCapacityUnits': 99}
 
 
-def get_unsatisfied_dependencies_for_resources(
-        resources, stack_name, all_resources, depending_resource=None, return_first=True):
-    result = {}
-    for resource_id, resource in iteritems(resources):
-        if is_deployable_resource(resource):
-            if not is_deployed(resource_id, all_resources, stack_name):
-                LOG.debug('Dependency for resource %s not yet deployed: %s %s' %
-                    (depending_resource, resource_id, resource))
+# -----------------------
+# MAIN TEMPLATE DEPLOYER
+# -----------------------
+
+class TemplateDeployer(object):
+    def __init__(self, stack):
+        self.stack = stack
+
+    @property
+    def resources(self):
+        return self.stack.resources
+
+    @property
+    def stack_name(self):
+        return self.stack.stack_name
+
+    def is_deployable_resource(self, resource):
+        resource_type = get_resource_type(resource)
+        entry = RESOURCE_TO_FUNCTION.get(resource_type)
+        if entry is None:
+            LOG.warning('Unknown resource type "%s": %s' % (resource_type, resource))
+        return bool(entry and entry.get(ACTION_CREATE))
+
+    def is_deployed(self, resource_id):
+        resource = self.resources[resource_id]
+        resource_status = resource.get('__details__') or {}
+        details = retrieve_resource_details(resource_id, resource_status, self.resources, self.stack_name)
+        return bool(details)
+
+    def should_be_deployed(self, resource_id):
+        """ Return whether the given resource is all of: (1) deployable, (2) not yet deployed,
+            and (3) has no unresolved dependencies. """
+        resource = self.resources[resource_id]
+        if not self.is_deployable_resource(resource) or self.is_deployed(resource_id):
+            return False
+        return self.all_resource_dependencies_satisfied(resource_id)
+
+    def is_updateable(self, resource_id):
+        """ Return whether the given resource can be updated or not. """
+        resource = self.resources[resource_id]
+        if not self.is_deployable_resource(resource) or not self.is_deployed(resource_id):
+            return False
+        resource_type = get_resource_type(resource)
+        return resource_type in UPDATEABLE_RESOURCES
+
+    def all_resource_dependencies_satisfied(self, resource_id):
+        unsatisfied = self.get_unsatisfied_dependencies(resource_id)
+        return not unsatisfied
+
+    def get_unsatisfied_dependencies(self, resource_id):
+        res_deps = self.get_resource_dependencies(resource_id)
+        return self.get_unsatisfied_dependencies_for_resources(res_deps, resource_id)
+
+    def get_unsatisfied_dependencies_for_resources(self, resources, depending_resource=None, return_first=True):
+        result = {}
+        for resource_id, resource in iteritems(resources):
+            if self.is_deployable_resource(resource):
+                if not self.is_deployed(resource_id):
+                    LOG.debug('Dependency for resource %s not yet deployed: %s %s' %
+                        (depending_resource, resource_id, resource))
+                    result[resource_id] = resource
+                    if return_first:
+                        break
+        return result
+
+    def resources_to_deploy_next(self):
+        result = {}
+        for resource_id, resource in iteritems(self.resources):
+            if self.should_be_deployed(resource_id):
                 result[resource_id] = resource
-                if return_first:
-                    break
-    return result
+        return result
 
+    def get_resource_dependencies(self, resource_id):
+        result = {}
+        resource = self.resources[resource_id]
+        dumped = json.dumps(common.json_safe(resource))
+        for other_id, other in iteritems(self.resources):
+            if resource != other:
+                # TODO: traverse dict instead of doing string search
+                search1 = '{"Ref": "%s"}' % other_id
+                search2 = '{"Fn::GetAtt": ["%s", ' % other_id
+                if search1 in dumped or search2 in dumped:
+                    result[other_id] = other
+                if other_id in resource.get('DependsOn', []):
+                    result[other_id] = other
+        return result
 
-# TODO: check if still needed
-def resources_to_deploy_next(resources, stack_name):
-    result = {}
-    for resource_id, resource in resources.items():
-        if should_be_deployed(resource_id, resources, stack_name):
-            result[resource_id] = resource
-    return result
+    def prepare_resources(self):
+        for resource_id, resource in self.resources.items():
+            add_default_resource_props(resource, self.stack_name, resource_id=resource_id)
+            self.stack.set_resource_status(resource_id, 'CREATE_IN_PROGRESS')
 
+    def resolve_refs_and_deploy(self, resource_id):
+        resource = self.resources[resource_id]
+        resolve_refs_recursively(self.stack_name, resource, self.resources)
+        result = deploy_resource(resource_id, self.resources, self.stack_name)
+        # update resource state
+        update_resource_details(self.stack, resource_id, result)
+        # update physical resource id
+        physical_id = determine_resource_physical_id(self.stack, resource_id)
+        # set resource status
+        self.stack.set_resource_status(resource_id, 'CREATE_COMPLETE', physical_res_id=physical_id)
+        return result
 
-def get_resource_dependencies(resource_id, resource, resources):
-    result = {}
-    dumped = json.dumps(common.json_safe(resource))
-    dependencies = resource.get('DependsOn', [])
-    dependencies = dependencies if isinstance(dependencies, list) else [dependencies]
-    for other_id, other in resources.items():
-        if resource != other:
-            # TODO: traverse dict instead of doing string search
-            search1 = '{"Ref": "%s"}' % other_id
-            search2 = '{"Fn::GetAtt": ["%s", ' % other_id
-            if search1 in dumped or search2 in dumped:
-                result[other_id] = other
-            if other_id in dependencies:
-                result[other_id] = other
+    def apply_change_set(self, change_set):
+        self.stack.change_sets.append(change_set)
+        # TODO
 
-    return result
+    def run_deploymeny_loop(self):
+        max_iters = 30
+        self.stack.set_stack_status('CREATE_IN_PROGRESS')
+        # prepare resources
+        self.prepare_resources()
+        # run deployment loop
+        for i in range(max_iters):
+            deploy_next = self.resources_to_deploy_next()
+            if not deploy_next:
+                self.stack.set_stack_status('CREATE_COMPLETE')
+                return
+            updated = False
+            for resource_id, resource in deploy_next.items():
+                result = self.resolve_refs_and_deploy(resource_id)
+                updated = updated or bool(result)
+            if not updated:
+                raise Exception('No updates')
