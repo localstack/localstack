@@ -28,7 +28,7 @@ def apply_patches():
 
         raw_data = to_str(base64.b64decode(self.querystring.get('RawMessage.Data')[0]))
 
-        LOGGER.error('Raw email:\n%s' % raw_data)
+        LOGGER.debug('Raw email:\n%s' % raw_data)
 
         source = get_source_from_raw(raw_data)
         if not source:
