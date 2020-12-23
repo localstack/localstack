@@ -1002,6 +1002,14 @@ class ProxyListenerS3(PersistingProxyListener):
         return 'x-amz-copy-source' in headers or 'x-amz-copy-source' in path
 
     @staticmethod
+    def is_create_multipart_request(query):
+        return query.startswith('uploads')
+
+    @staticmethod
+    def is_multipart_upload(query):
+        return query.startswith('uploadId')
+
+    @staticmethod
     def get_201_response(key, bucket_name):
         return """
                 <PostResponse>
@@ -1062,7 +1070,8 @@ class ProxyListenerS3(PersistingProxyListener):
             headers['host'] = 'localhost'
 
         # check content md5 hash integrity if not a copy request
-        if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path):
+        if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
+                and not self.is_create_multipart_request(parsed_path.query):
             response = check_content_md5(data, headers)
             if response is not None:
                 return response
