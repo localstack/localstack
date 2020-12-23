@@ -1,4 +1,4 @@
-from localstack.utils.persistence import API_CALLS_RESTORED
+from localstack.utils import persistence
 import re
 import os
 import sys
@@ -87,7 +87,7 @@ class ProxyListenerEdge(ProxyListener):
             data = json.dumps(data)
 
         lock_ctx = BOOTSTRAP_LOCK
-        if is_internal_call_context(headers) or API_CALLS_RESTORED:
+        if is_internal_call_context(headers) or persistence.API_CALLS_RESTORED:
             lock_ctx = empty_context_manager()
 
         with lock_ctx:
