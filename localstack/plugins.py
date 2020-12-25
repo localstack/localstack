@@ -31,6 +31,7 @@ def do_register_localstack_plugins():
     try:
         from localstack.services import edge
         from localstack.services.apigateway import apigateway_starter
+        from localstack.services.cloudformation import cloudformation_starter, cloudformation_listener
         from localstack.services.s3 import s3_listener, s3_starter
         from localstack.services.ec2 import ec2_starter, ec2_listener
         from localstack.services.kms import kms_starter
@@ -70,10 +71,18 @@ def do_register_localstack_plugins():
             start=apigateway_starter.start_apigateway,
             listener=apigateway_listener.UPDATE_APIGATEWAY))
 
-        register_plugin(Plugin(
-            'cloudformation',
-            start=start_cloudformation
-        ))
+        if config.USE_MOTO_CF:
+            # TODO: deprecated - remove in a future iteration
+            register_plugin(Plugin(
+                'cloudformation',
+                start=cloudformation_starter.start_cloudformation,
+                listener=cloudformation_listener.UPDATE_CLOUDFORMATION
+            ))
+        else:
+            register_plugin(Plugin(
+                'cloudformation',
+                start=start_cloudformation
+            ))
 
         register_plugin(Plugin(
             'cloudwatch',

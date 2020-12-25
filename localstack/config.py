@@ -210,7 +210,8 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
-                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS']
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS',
+                   'USE_MOTO_CF']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -388,3 +389,6 @@ BUNDLE_API_PROCESSES = True
 
 # whether to use a CPU/memory profiler when running the integration tests
 USE_PROFILER = is_env_true('USE_PROFILER')
+
+# whether to use the legacy CF deployment based on moto (TODO: remove in a future release)
+USE_MOTO_CF = is_env_true('USE_MOTO_CF')

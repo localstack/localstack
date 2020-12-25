@@ -7,6 +7,6 @@ Resources:
   NestedStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: http://localhost:4572/%s/%s
+      TemplateURL: http://localhost:4566/%s/%s
       Parameters:
         LocalParam: !Ref GlobalParam

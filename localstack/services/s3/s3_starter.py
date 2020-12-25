@@ -117,6 +117,7 @@ def apply_patches():
     def delete_bucket(self, bucket_name, *args, **kwargs):
         bucket_name = s3_listener.normalize_bucket_name(bucket_name)
         try:
+            s3_listener.remove_bucket_notification(bucket_name)
             return delete_bucket_orig(bucket_name, *args, **kwargs)
         except s3_exceptions.MissingBucket:
             pass

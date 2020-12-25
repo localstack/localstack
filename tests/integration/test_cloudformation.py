@@ -2,16 +2,15 @@ import os
 import json
 import time
 import unittest
-
-from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_stack
-from localstack.utils.testutil import create_zip_file
-
+from botocore.exceptions import ClientError
+from botocore.parsers import ResponseParserError
+from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry, short_uid, to_str
+from localstack.utils.testutil import create_zip_file
+from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_stack
 from localstack.utils.cloudformation import template_deployer
-from botocore.exceptions import ClientError
-from botocore.parsers import ResponseParserError
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -644,7 +643,6 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=TEST_TEMPLATE_3,
             ChangeSetName='nochanges'
         )
-        print('!!!response', response)
         self.assertIn(':%s:changeSet/nochanges/' % TEST_AWS_ACCOUNT_ID, response['Id'])
         self.assertIn(':%s:stack/' % TEST_AWS_ACCOUNT_ID, response['StackId'])
 
@@ -708,7 +706,6 @@ class CloudFormationTest(unittest.TestCase):
         template = json.loads(load_file(TEST_TEMPLATE_7))
         template['Resources']['LambdaExecutionRole']['Properties']['RoleName'] = lambda_role_name
         rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template))
-
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('StackId', rs)
         self.assertIn(stack_name, rs['StackId'])
@@ -760,7 +757,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetName'], change_set_name)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], 'CREATE_COMPLETE')
+        self.assertEqual(rs['Status'], self.expected_change_set_status())
 
         rs = cloudformation.execute_change_set(
             StackName=stack_name,
@@ -781,13 +778,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertTrue(bucket_exists(bucket_name))
 
         # clean up
-        cloudformation.delete_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
-        cloudformation.delete_stack(
-            StackName=stack_name
-        )
+        self.cleanup(stack_name, change_set_name)
 
     def test_deploy_stack_with_iam_role(self):
         stack_name = 'stack-%s' % short_uid()
@@ -809,22 +800,15 @@ class CloudFormationTest(unittest.TestCase):
         )
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-
         change_set_id = rs['Id']
 
-        rs = cloudformation.describe_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_id
-        )
+        rs = cloudformation.describe_change_set(StackName=stack_name, ChangeSetName=change_set_id)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetName'], change_set_name)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], 'CREATE_COMPLETE')
+        self.assertEqual(rs['Status'], self.expected_change_set_status())
 
-        rs = cloudformation.execute_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
+        rs = cloudformation.execute_change_set(StackName=stack_name, ChangeSetName=change_set_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         await_stack_completion(stack_name)
@@ -834,31 +818,15 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(stack['StackName'], stack_name)
 
         rs = iam_client.list_roles()
-
         self.assertEqual(len(rs['Roles']), len(roles_before) + 1)
         self.assertEqual(rs['Roles'][-1]['RoleName'], role_name)
 
-        rs = iam_client.list_role_policies(
-            RoleName=role_name
-        )
-
-        iam_client.delete_role_policy(
-            RoleName=role_name,
-            PolicyName=rs['PolicyNames'][0]
-        )
+        rs = iam_client.list_role_policies(RoleName=role_name)
+        iam_client.delete_role_policy(RoleName=role_name, PolicyName=rs['PolicyNames'][0])
 
         # clean up
-        cloudformation.delete_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
-        cloudformation.delete_stack(
-            StackName=stack_name
-        )
-
-        rs = iam_client.list_roles(
-            PathPrefix=role_name
-        )
+        self.cleanup(stack_name, change_set_name)
+        rs = iam_client.list_roles(PathPrefix=role_name)
         self.assertEqual(len(rs['Roles']), 0)
 
     def test_deploy_stack_with_sns_topic(self):
@@ -882,13 +850,9 @@ class CloudFormationTest(unittest.TestCase):
                 }
             ]
         )
-
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        rs = cloudformation.execute_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
+        rs = cloudformation.execute_change_set(StackName=stack_name, ChangeSetName=change_set_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         await_stack_completion(stack_name)
@@ -912,15 +876,8 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(topics), 1)
 
         # clean up
-        cloudformation.delete_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
-        cloudformation.delete_stack(
-            StackName=stack_name
-        )
-
-        # Topic resource removed
+        self.cleanup(stack_name, change_set_name)
+        # assert topic resource removed
         rs = sns_client.list_topics()
         topics = [tp for tp in rs['Topics'] if tp['TopicArn'] == topic_arn]
         self.assertEqual(len(topics), 0)
@@ -952,10 +909,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         change_set_id = rs['Id']
 
-        rs = cloudformation.execute_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
+        rs = cloudformation.execute_change_set(StackName=stack_name, ChangeSetName=change_set_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         await_stack_completion(stack_name)
@@ -981,13 +935,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn(ddb_table_name, rs['TableNames'])
 
         # clean up
-        cloudformation.delete_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
-        cloudformation.delete_stack(
-            StackName=stack_name
-        )
+        self.cleanup(stack_name, change_set_name)
         rs = ddb_client.list_tables()
         self.assertNotIn(ddb_table_name, rs['TableNames'])
 
@@ -1006,22 +954,16 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         change_set_id = rs['Id']
 
-        rs = cloudformation.describe_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_id
-        )
+        rs = cloudformation.describe_change_set(StackName=stack_name, ChangeSetName=change_set_id)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], 'CREATE_COMPLETE')
+        self.assertEqual(rs['Status'], self.expected_change_set_status())
 
         iam_client = aws_stack.connect_to_service('iam')
         rs = iam_client.list_roles()
         number_of_roles = len(rs['Roles'])
 
-        rs = cloudformation.execute_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
+        rs = cloudformation.execute_change_set(StackName=stack_name, ChangeSetName=change_set_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         await_stack_completion(stack_name)
@@ -1031,15 +973,9 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(number_of_roles + 1, len(rs['Roles']))
 
         # clean up
-        cloudformation.delete_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name
-        )
-        cloudformation.delete_stack(
-            StackName=stack_name
-        )
+        self.cleanup(stack_name, change_set_name)
+        # assert role was removed
         rs = iam_client.list_roles()
-        # role was removed
         self.assertEqual(number_of_roles, len(rs['Roles']))
 
     def test_cfn_handle_s3_bucket_resources(self):
@@ -1056,38 +992,33 @@ class CloudFormationTest(unittest.TestCase):
         deploy_cf_stack(stack_name=stack_name, template_body=json.dumps(TEST_TEMPLATE_8))
 
         self.assertTrue(bucket_exists(bucket_name))
-
-        rs = s3.get_bucket_policy(
-            Bucket=bucket_name
-        )
-
+        rs = s3.get_bucket_policy(Bucket=bucket_name)
         self.assertIn('Policy', rs)
-        self.assertEqual(json.loads(rs['Policy']),
-                         TEST_TEMPLATE_8['Resources']['S3BucketPolicy']['Properties']['PolicyDocument'])
+        policy_doc = TEST_TEMPLATE_8['Resources']['S3BucketPolicy']['Properties']['PolicyDocument']
+        self.assertEqual(json.loads(rs['Policy']), policy_doc)
 
-        cfn.delete_stack(StackName=stack_name)
+        # clean up, assert resources deleted
+        self.cleanup(stack_name,)
 
         self.assertFalse(bucket_exists(bucket_name))
-
         with self.assertRaises(ClientError) as ctx:
             s3.get_bucket_policy(Bucket=bucket_name)
         self.assertEqual(ctx.exception.response['Error']['Code'], 'NoSuchBucket')
 
+        # recreate stack
         rs = cfn.create_stack(StackName=stack_name, TemplateBody=json.dumps(TEST_TEMPLATE_8))
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         # clean up
-        cfn.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_cfn_handle_log_group_resource(self):
         stack_name = 'stack-%s' % short_uid()
         log_group_prefix = '/aws/lambda/AWS_DUB_LAM_10000000'
 
-        cfn = aws_stack.connect_to_service('cloudformation')
-        logs_client = aws_stack.connect_to_service('logs')
-
         deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_9)
 
+        logs_client = aws_stack.connect_to_service('logs')
         rs = logs_client.describe_log_groups(
             logGroupNamePrefix=log_group_prefix
         )
@@ -1096,12 +1027,9 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['logGroups'][0]['logGroupName'],
                          '/aws/lambda/AWS_DUB_LAM_10000000_dev_MessageFooHandler_dev')
 
-        cfn.delete_stack(StackName=stack_name)
-
-        rs = logs_client.describe_log_groups(
-            logGroupNamePrefix=log_group_prefix
-        )
-
+        # clean up and assert deletion
+        self.cleanup(stack_name)
+        rs = logs_client.describe_log_groups(logGroupNamePrefix=log_group_prefix)
         self.assertEqual(len(rs['logGroups']), 0)
 
     def test_cfn_handle_elasticsearch_domain(self):
@@ -1121,9 +1049,7 @@ class CloudFormationTest(unittest.TestCase):
         outputs = details.get('Outputs', [])
         self.assertEqual(len(outputs), 3)
 
-        rs = es_client.describe_elasticsearch_domain(
-            DomainName=domain_name
-        )
+        rs = es_client.describe_elasticsearch_domain(DomainName=domain_name)
         status = rs['DomainStatus']
         self.assertEqual(domain_name, status['DomainName'])
 
@@ -1137,7 +1063,9 @@ class CloudFormationTest(unittest.TestCase):
                 self.assertEqual(o['OutputValue'], status['Endpoint'])
             else:
                 self.fail('Unexpected output: %s' % o)
-        cloudformation.delete_stack(StackName=stack_name)
+
+        # clean up
+        self.cleanup(stack_name)
 
     def test_cfn_handle_secretsmanager_secret(self):
         stack_name = 'stack-%s' % short_uid()
@@ -1151,17 +1079,13 @@ class CloudFormationTest(unittest.TestCase):
 
         secretsmanager_client = aws_stack.connect_to_service('secretsmanager')
 
-        rs = secretsmanager_client.describe_secret(
-            SecretId=secret_name
-        )
-
+        rs = secretsmanager_client.describe_secret(SecretId=secret_name)
         self.assertEqual(secret_name, rs['Name'])
         self.assertNotIn('DeletedDate', rs)
-        cloudformation.delete_stack(StackName=stack_name)
 
-        rs = secretsmanager_client.describe_secret(
-            SecretId=secret_name
-        )
+        # clean up
+        self.cleanup(stack_name)
+        rs = secretsmanager_client.describe_secret(SecretId=secret_name)
         self.assertIn('DeletedDate', rs)
 
     def test_cfn_handle_kinesis_firehose_resources(self):
@@ -1194,17 +1118,14 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(outputs[0]['OutputValue'], rs['DeliveryStreamDescription']['DeliveryStreamARN'])
         self.assertEqual(firehose_stream_name, rs['DeliveryStreamDescription']['DeliveryStreamName'])
 
-        rs = kinesis_client.describe_stream(
-            StreamName=kinesis_stream_name
-        )
+        rs = kinesis_client.describe_stream(StreamName=kinesis_stream_name)
         self.assertEqual(rs['StreamDescription']['StreamName'], kinesis_stream_name)
 
-        cloudformation.delete_stack(StackName=stack_name)
-        time.sleep(2)
-
+        # clean up
+        self.cleanup(stack_name)
+        time.sleep(1)
         rs = kinesis_client.list_streams()
         self.assertNotIn(kinesis_stream_name, rs['StreamNames'])
-
         rs = firehose_client.list_delivery_streams()
         self.assertNotIn(firehose_stream_name, rs['DeliveryStreamNames'])
 
@@ -1215,29 +1136,19 @@ class CloudFormationTest(unittest.TestCase):
 
         deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_13 % (role_name, role_path_prefix))
 
-        cfn = aws_stack.connect_to_service('cloudformation')
         iam = aws_stack.connect_to_service('iam')
-
-        rs = iam.list_roles(
-            PathPrefix=role_path_prefix
-        )
+        rs = iam.list_roles(PathPrefix=role_path_prefix)
 
         self.assertEqual(len(rs['Roles']), 1)
-
         role = rs['Roles'][0]
-
         self.assertEqual(role['RoleName'], role_name)
 
-        cfn.delete_stack(StackName=stack_name)
-
-        rs = iam.list_roles(
-            PathPrefix=role_path_prefix
-        )
-
+        # clean up
+        self.cleanup(stack_name)
+        rs = iam.list_roles(PathPrefix=role_path_prefix)
         self.assertEqual(len(rs['Roles']), 0)
 
     def test_cfn_handle_iam_role_resource_no_role_name(self):
-        cfn = aws_stack.connect_to_service('cloudformation')
         iam = aws_stack.connect_to_service('iam')
 
         stack_name = 'stack-%s' % short_uid()
@@ -1248,8 +1159,8 @@ class CloudFormationTest(unittest.TestCase):
         rs = iam.list_roles(PathPrefix=role_path_prefix)
         self.assertEqual(len(rs['Roles']), 1)
 
-        cfn.delete_stack(StackName=stack_name)
-
+        # clean up
+        self.cleanup(stack_name)
         rs = iam.list_roles(PathPrefix=role_path_prefix)
         self.assertEqual(len(rs['Roles']), 0)
 
@@ -1270,11 +1181,13 @@ class CloudFormationTest(unittest.TestCase):
         self.assertFalse(prd_bucket)
         self.assertTrue(dev_bucket)
 
+        # clean up
+        self.cleanup(stack_name)
+
     def test_cfn_handle_sqs_resource(self):
         stack_name = 'stack-%s' % short_uid()
         fifo_queue = 'queue-%s.fifo' % short_uid()
 
-        cfn = aws_stack.connect_to_service('cloudformation')
         sqs = aws_stack.connect_to_service('sqs')
 
         deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_15 % fifo_queue)
@@ -1284,20 +1197,15 @@ class CloudFormationTest(unittest.TestCase):
 
         queue_url = rs['QueueUrl']
 
-        rs = sqs.get_queue_attributes(
-            QueueUrl=queue_url,
-            AttributeNames=['All']
-        )
-
+        rs = sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
         attributes = rs['Attributes']
-
         self.assertIn('ContentBasedDeduplication', attributes)
         self.assertIn('FifoQueue', attributes)
         self.assertEqual(attributes['ContentBasedDeduplication'], 'false')
         self.assertEqual(attributes['FifoQueue'], 'true')
 
-        cfn.delete_stack(StackName=stack_name)
-
+        # clean up
+        self.cleanup(stack_name)
         with self.assertRaises(ClientError) as ctx:
             sqs.get_queue_url(QueueName=fifo_queue)
         self.assertEqual(ctx.exception.response['Error']['Code'], 'AWS.SimpleQueueService.NonExistentQueue')
@@ -1308,27 +1216,20 @@ class CloudFormationTest(unittest.TestCase):
         rule_prefix = 's3-rule-%s' % short_uid()
         rule_name = '%s-%s' % (rule_prefix, short_uid())
 
-        cfn = aws_stack.connect_to_service('cloudformation')
         events = aws_stack.connect_to_service('events')
 
         deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_16 % (bucket_name, rule_name))
 
-        rs = events.list_rules(
-            NamePrefix=rule_prefix
-        )
+        rs = events.list_rules(NamePrefix=rule_prefix)
         self.assertIn(rule_name, [rule['Name'] for rule in rs['Rules']])
 
         target_arn = aws_stack.s3_bucket_arn(bucket_name)
-        rs = events.list_targets_by_rule(
-            Rule=rule_name
-        )
+        rs = events.list_targets_by_rule(Rule=rule_name)
         self.assertIn(target_arn, [target['Arn'] for target in rs['Targets']])
 
-        cfn.delete_stack(StackName=stack_name)
-
-        rs = events.list_rules(
-            NamePrefix=rule_prefix
-        )
+        # clean up
+        self.cleanup(stack_name)
+        rs = events.list_rules(NamePrefix=rule_prefix)
         self.assertNotIn(rule_name, [rule['Name'] for rule in rs['Rules']])
 
     def test_cfn_handle_events_rule_without_name(self):
@@ -1347,10 +1248,9 @@ class CloudFormationTest(unittest.TestCase):
 
         self.assertEqual(rule['ScheduleExpression'], 'cron(0/1 * * * ? *)')
 
-        cfn = aws_stack.connect_to_service('cloudformation')
-        cfn.delete_stack(StackName=stack_name)
+        # clean up
+        self.cleanup(stack_name)
         time.sleep(1)
-
         rs = events.list_rules()
         self.assertNotIn(rule['Name'], [r['Name'] for r in rs['Rules']])
 
@@ -1360,24 +1260,19 @@ class CloudFormationTest(unittest.TestCase):
         queue_name = 'queue-%s' % short_uid()
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
-        cfn = aws_stack.connect_to_service('cloudformation')
         s3 = aws_stack.connect_to_service('s3')
 
         deploy_cf_stack(
             stack_name=stack_name, template_body=TEST_TEMPLATE_17 % (queue_name, bucket_name, queue_arn))
 
-        rs = s3.get_bucket_notification_configuration(
-            Bucket=bucket_name
-        )
+        rs = s3.get_bucket_notification_configuration(Bucket=bucket_name)
         self.assertIn('QueueConfigurations', rs)
         self.assertEqual(len(rs['QueueConfigurations']), 1)
         self.assertEqual(rs['QueueConfigurations'][0]['QueueArn'], queue_arn)
 
-        cfn.delete_stack(StackName=stack_name)
-
-        rs = s3.get_bucket_notification_configuration(
-            Bucket=bucket_name
-        )
+        # clean up
+        self.cleanup(stack_name)
+        rs = s3.get_bucket_notification_configuration(Bucket=bucket_name)
         self.assertNotIn('QueueConfigurations', rs)
 
     def test_cfn_lambda_function_with_iam_role(self):
@@ -1394,9 +1289,7 @@ class CloudFormationTest(unittest.TestCase):
         )
         self.assertEqual(role_name, response['Role']['RoleName'])
 
-        response = iam.get_role(
-            RoleName=role_name
-        )
+        response = iam.get_role(RoleName=role_name)
         self.assertEqual(role_name, response['Role']['RoleName'])
 
         role_arn = response['Role']['Arn']
@@ -1407,7 +1300,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
         iam.delete_role(RoleName=role_name)
 
     def test_cfn_handle_serverless_api_resource(self):
@@ -1436,39 +1329,39 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn(lambda_arn, uri)
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_delete_stack(self):
         domain_name = 'es-%s' % short_uid()
+        stack_name1 = 's1-%s' % short_uid()
+        stack_name2 = 's2-%s' % short_uid()
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
-
         cloudformation.create_stack(
-            StackName='myteststack',
-            TemplateBody=TEST_TEMPLATE_3,
+            StackName=stack_name1, TemplateBody=TEST_TEMPLATE_3,
             Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
         )
 
         cloudformation.create_stack(
-            StackName='myteststack2',
-            TemplateBody=TEST_TEMPLATE_3,
+            StackName=stack_name2, TemplateBody=TEST_TEMPLATE_3,
             Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
         )
 
-        cloudformation.delete_stack(StackName='myteststack2')
-        cloudformation.delete_stack(StackName='myteststack')
+        # clean up
+        cloudformation.delete_stack(StackName=stack_name1)
+        cloudformation.delete_stack(StackName=stack_name2)
 
     def test_cfn_with_on_demand_dynamodb_resource(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
-        response = cloudformation.create_stack(
-            StackName='myteststack',
-            TemplateBody=load_file(TEST_TEMPLATE_21))
+        stack_name = 'test-%s' % short_uid()
+        response = cloudformation.create_stack(StackName=stack_name, TemplateBody=load_file(TEST_TEMPLATE_21))
 
         self.assertIn('StackId', response)
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
 
-        cloudformation.delete_stack(StackName='myteststack')
+        # clean up
+        self.cleanup(stack_name)
 
     def test_update_lambda_function(self):
         bucket_name = 'bucket-{}'.format(short_uid())
@@ -1479,11 +1372,9 @@ class CloudFormationTest(unittest.TestCase):
         package_path = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.js')
 
         stack_name = 'stack-{}'.format(short_uid())
-
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
         template = json.loads(load_file(TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE))
-
         template['Resources']['PullMarketsRole']['Properties']['RoleName'] = role_name
 
         props = template['Resources']['SomeNameFunction']['Properties']
@@ -1496,35 +1387,23 @@ class CloudFormationTest(unittest.TestCase):
         s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, True))
         time.sleep(1)
 
-        rs = cloudformation.create_stack(
-            StackName=stack_name,
-            TemplateBody=json.dumps(template),
-        )
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         props.update({
-            'Environment': {
-                'Variables': {
-                    'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1
-                }
-            }
+            'Environment': {'Variables': {'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1}}
         })
 
-        rs = cloudformation.update_stack(
-            StackName=stack_name,
-            TemplateBody=json.dumps(template),
-        )
+        rs = cloudformation.update_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
         lambda_client = aws_stack.connect_to_service('lambda')
 
-        rs = lambda_client.get_function(
-            FunctionName=function_name
-        )
+        rs = lambda_client.get_function(FunctionName=function_name)
         self.assertEqual(rs['Configuration']['FunctionName'], function_name)
         self.assertIn('AWS_NODEJS_CONNECTION_REUSE_ENABLED', rs['Configuration']['Environment']['Variables'])
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_cfn_deploy_apigateway_integration(self):
         stack_name = 'stack-%s' % short_uid()
@@ -1537,7 +1416,6 @@ class CloudFormationTest(unittest.TestCase):
         s3 = aws_stack.connect_to_service('s3')
         s3.create_bucket(Bucket=bucket_name, ACL='public-read')
         s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, True))
-        time.sleep(1)
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
         apigw_client = aws_stack.connect_to_service('apigateway')
@@ -1552,7 +1430,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['name'], 'ApiGatewayRestApi')
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_globalindex_read_write_provisioned_throughput_dynamodb_table(self):
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -1562,21 +1440,16 @@ class CloudFormationTest(unittest.TestCase):
         response = cf_client.create_stack(
             StackName=stack_name,
             TemplateBody=load_file(TEST_DEPLOY_BODY_3),
-            Parameters=[
-                {
-                    'ParameterKey': 'tableName',
-                    'ParameterValue': 'dynamodb'
-                },
-                {
-                    'ParameterKey': 'env',
-                    'ParameterValue': 'test'
-                }
-            ]
+            Parameters=[{
+                'ParameterKey': 'tableName',
+                'ParameterValue': 'dynamodb'
+            }, {
+                'ParameterKey': 'env',
+                'ParameterValue': 'test'
+            }]
         )
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
-        response = ddb_client.describe_table(
-            TableName='dynamodb-test'
-        )
+        response = ddb_client.describe_table(TableName='dynamodb-test')
 
         if response['Table']['ProvisionedThroughput']:
             throughput = response['Table']['ProvisionedThroughput']
@@ -1587,11 +1460,11 @@ class CloudFormationTest(unittest.TestCase):
             index_provisioned = global_index['ProvisionedThroughput']
             test_read_capacity = index_provisioned['ReadCapacityUnits']
             test_write_capacity = index_provisioned['WriteCapacityUnits']
-
             self.assertTrue(isinstance(test_read_capacity, int))
             self.assertTrue(isinstance(test_write_capacity, int))
 
-        cf_client.delete_stack(StackName=stack_name)
+        # clean up
+        self.cleanup(stack_name)
 
     def test_delete_stack_across_regions(self):
         domain_name = 'es-%s' % short_uid()
@@ -1629,7 +1502,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn('No updates are to be performed.', error_message)
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_cdk_template(self):
         stack_name = 'stack-%s' % short_uid()
@@ -1647,19 +1520,15 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.create_stack(
             StackName=stack_name,
             TemplateBody=template,
-            Parameters=[
-                {
-                    'ParameterKey': 'AssetParameters1S3BucketEE4ED9A8',
-                    'ParameterValue': bucket
-                },
-                {
-                    'ParameterKey': 'AssetParameters1S3VersionKeyE160C88A',
-                    'ParameterValue': key
-                }
-            ]
+            Parameters=[{
+                'ParameterKey': 'AssetParameters1S3BucketEE4ED9A8',
+                'ParameterValue': bucket
+            }, {
+                'ParameterKey': 'AssetParameters1S3VersionKeyE160C88A',
+                'ParameterValue': key
+            }]
         )
-
-        time.sleep(3)
+        await_stack_completion(stack_name)
 
         lambda_client = aws_stack.connect_to_service('lambda')
 
@@ -1671,7 +1540,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len([func for func in functions if func['Handler'] == 'index.authenticateUserHandler']), 1)
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_cfn_template_with_short_form_fn_sub(self):
         stack_name = 'stack-%s' % short_uid()
@@ -1681,16 +1550,13 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation.create_stack(
             StackName=stack_name,
             TemplateBody=load_file(TEST_TEMPLATE_23),
-            Parameters=[
-                {
-                    'ParameterKey': 'Environment',
-                    'ParameterValue': environment
-                },
-                {
-                    'ParameterKey': 'ApiKey',
-                    'ParameterValue': '12345'
-                }
-            ]
+            Parameters=[{
+                'ParameterKey': 'Environment',
+                'ParameterValue': environment
+            }, {
+                'ParameterKey': 'ApiKey',
+                'ParameterValue': '12345'
+            }]
         )
         iam_client = aws_stack.connect_to_service('iam')
         rs = iam_client.list_roles()
@@ -1715,7 +1581,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(payload, {'key': '12345'})
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_sub_in_lambda_function_name(self):
         stack_name = 'stack-%s' % short_uid()
@@ -1768,10 +1634,9 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(tags2['TagSet'][0]['Value'].lower(), buckets[1]['Name'])
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_lambda_dependency(self):
-        cloudformation = aws_stack.connect_to_service('cloudformation')
         lambda_client = aws_stack.connect_to_service('lambda')
         stack_name = 'stack-%s' % short_uid()
 
@@ -1791,7 +1656,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(outputs[0]['ExportName'], 'FuncArnExportName123')
 
         # clean up
-        cloudformation.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
 
     def test_functions_in_output_export_name(self):
         stack_name = 'stack-%s' % short_uid()
@@ -1825,4 +1690,13 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(outputs['TopicArn'].get('export'), topic_arn)
 
         # clean up
-        cfn.delete_stack(StackName=stack_name)
+        self.cleanup(stack_name)
+
+    def cleanup(self, stack_name, change_set_name=None):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        if change_set_name:
+            cloudformation.delete_change_set(StackName=stack_name, ChangeSetName=change_set_name)
+        cloudformation.delete_stack(StackName=stack_name)
+
+    def expected_change_set_status(self):
+        return 'CREATE_COMPLETE' if config.USE_MOTO_CF else 'CREATE_PENDING'

@@ -32,9 +32,10 @@ from localstack.utils.common import (
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import start_proxy_for_service, do_run, canonicalize_api_names
 from localstack.utils.bootstrap import setup_logging
-from localstack.utils.cloudformation import template_deployer
+from localstack.utils.cloudformation import template_deployer_old as template_deployer
 from localstack.services.cloudformation import service_models
-from localstack.utils.cloudformation.template_deployer import DependencyNotYetSatisfied, add_default_resource_props
+from localstack.utils.cloudformation.template_deployer import (
+    DependencyNotYetSatisfied, add_default_resource_props)
 
 LOG = logging.getLogger(__name__)
 
