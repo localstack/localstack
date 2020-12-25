@@ -1855,9 +1855,9 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
     elif resource_type == 'StepFunctions::StateMachine':
         return aws_stack.state_machine_arn(resource_props.get('StateMachineName'))  # returns ARN in AWS
     elif resource_type == 'S3::Bucket':
-        if attribute == 'Ref':
-            return resource_props.get('BucketName')  # Note: "Ref" returns bucket name in AWS
-        return aws_stack.s3_bucket_arn(resource_props.get('BucketName'))
+        if attribute == 'Arn':
+            return aws_stack.s3_bucket_arn(resource_props.get('BucketName'))
+        return resource_props.get('BucketName')  # Note: "Ref" returns bucket name in AWS
     elif resource_type == 'IAM::Role':
         if attribute == 'Arn':
             return aws_stack.role_arn(resource_props.get('RoleName'))

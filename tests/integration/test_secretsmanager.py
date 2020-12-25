@@ -1,7 +1,7 @@
 import unittest
 import json
-
 from datetime import datetime
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 
 TEST_SECRET_NAME_1 = 'test_secret_put'
@@ -12,7 +12,7 @@ RESOURCE_POLICY = {
     'Statement': [{
         'Effect': 'Allow',
         'Principal': {
-            'AWS': 'arn:aws:iam::123456789012:root'
+            'AWS': 'arn:aws:iam::%s:root' % TEST_AWS_ACCOUNT_ID
         },
         'Action': 'secretsmanager:GetSecretValue',
         'Resource': '*'

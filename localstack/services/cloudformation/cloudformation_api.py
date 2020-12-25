@@ -1,7 +1,8 @@
 import requests.models
 from flask import Flask, request
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import parse_request_data, short_uid, clone, select_attributes, timestamp_millis
+from localstack.utils.common import (
+    parse_request_data, short_uid, long_uid, clone, select_attributes, timestamp_millis)
 from localstack.utils.cloudformation import template_deployer
 from localstack.utils.aws.aws_responses import (
     requests_response_xml, requests_to_flask_response, flask_error_response_xml)
@@ -76,7 +77,8 @@ class Stack(object):
     def set_stack_status(self, status):
         self.metadata['StackStatus'] = status
         event = {
-            'EventId': short_uid(),
+            'EventId': long_uid(),
+            'Timestamp': timestamp_millis(),
             'StackId': self.stack_id,
             'StackName': self.stack_name,
             'LogicalResourceId': self.stack_name,
@@ -84,7 +86,7 @@ class Stack(object):
             'ResourceStatus': status,
             'ResourceType': 'AWS::CloudFormation::Stack'
         }
-        self.events.append(event)
+        self.events.insert(0, event)
 
     def set_resource_status(self, resource_id, status, physical_res_id=None):
         resource = self.resources[resource_id]
@@ -226,7 +228,7 @@ def update_stack(req_params):
     stack_name = req_params.get('StackName')
     stack = find_stack(stack_name)
     if not stack:
-        return flask_error_response_xml('Unable to update non-existing stack "%s"' % stack_name,
+        return error_response('Unable to update non-existing stack "%s"' % stack_name,
             code=404, code_string='ValidationError')
     cloudformation_listener.prepare_template_body(req_params)
     template = template_deployer.parse_template(req_params['TemplateBody'])
@@ -236,7 +238,7 @@ def update_stack(req_params):
         deployer.update_stack(new_stack)
     except template_deployer.NoStackUpdates as e:
         stack.set_stack_status('UPDATE_FAILED')
-        return flask_error_response_xml('Unable to update stack "%s": %s' % (stack_name, e),
+        return error_response('Unable to update stack "%s": %s' % (stack_name, e),
             code=400, code_string='ValidationError')
     result = {'StackId': stack.stack_id}
     return result
@@ -247,8 +249,8 @@ def describe_stacks(req_params):
     stack_name = req_params.get('StackName')
     stacks = [s.describe_details() for s in state.stacks.values() if stack_name in [None, s.stack_name]]
     if stack_name and not stacks:
-        return flask_error_response_xml('Unable to find stack named "%s"' % stack_name,
-            code=404, code_string='ValidationError')
+        return error_response('Stack with id %s does not exist' % stack_name,
+            code=400, code_string='ValidationError')
     result = {'Stacks': {'member': stacks}}
     return result
 
@@ -258,7 +260,7 @@ def describe_stack_resource(req_params):
     resource_id = req_params.get('LogicalResourceId')
     stack = find_stack(stack_name)
     if not stack:
-        return flask_error_response_xml('Unable to find stack named "%s"' % stack_name,
+        return error_response('Unable to find stack named "%s"' % stack_name,
             code=404, code_string='ResourceNotFoundException')
     details = stack.resource_status(resource_id)
     result = {'StackResourceDetail': details}
@@ -270,7 +272,7 @@ def describe_stack_resources(req_params):
     resource_id = req_params.get('LogicalResourceId')
     phys_resource_id = req_params.get('PhysicalResourceId')
     if phys_resource_id and stack_name:
-        return flask_error_response_xml('Cannot specify both StackName and PhysicalResourceId')
+        return error_response('Cannot specify both StackName and PhysicalResourceId')
     # TODO: filter stack by PhysicalResourceId!
     stack = find_stack(stack_name)
     statuses = [stack.resource_status(res_id) for res_id, _ in stack.resource_states.items() if
@@ -280,7 +282,7 @@ def describe_stack_resources(req_params):
 
 def list_stack_resources(req_params):
     result = describe_stack_resources(req_params)
-    result = {'StackResourceSummaries': result.pop('StackResources')}
+    result = {'StackResourceSummaries': {'member': result.pop('StackResources')}}
     return result
 
 
@@ -308,7 +310,7 @@ def execute_change_set(req_params):
     cs_name = req_params.get('ChangeSetName')
     change_set = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
-        return flask_error_response_xml('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
+        return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
     change_set.stack.metadata['ChangeSetId'] = change_set.change_set_id
@@ -320,7 +322,7 @@ def describe_change_set(req_params):
     cs_name = req_params.get('ChangeSetName')
     change_set = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
-        return flask_error_response_xml('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
+        return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
     return change_set.metadata
 
 
@@ -334,9 +336,9 @@ def describe_stack_events(req_params):
     state = RegionState.get()
     events = []
     for stack_id, stack in state.stacks.items():
-        if stack_name in [None, stack.stack_name]:
+        if stack_name in [None, stack.stack_name, stack.stack_id]:
             events.extend(stack.events)
-    return {'StackEvents': events}
+    return {'StackEvents': {'member': events}}
 
 
 def delete_change_set(req_params):
@@ -344,7 +346,7 @@ def delete_change_set(req_params):
     cs_name = req_params.get('ChangeSetName')
     change_set = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
-        return flask_error_response_xml('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
+        return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
     change_set.stack.change_sets = [cs for cs in change_set.stack.change_sets if cs.change_set_name != cs_name]
     return {}
 
@@ -388,6 +390,11 @@ ENDPOINTS = {
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
+
+def error_response(*args, **kwargs):
+    kwargs['xmlns'] = kwargs.get('xmlns') or XMLNS_CF
+    return flask_error_response_xml(*args, **kwargs)
+
 
 def find_stack(stack_name):
     state = RegionState.get()
