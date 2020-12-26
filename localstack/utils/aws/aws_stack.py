@@ -528,6 +528,7 @@ def create_sqs_queue(queue_name, env=None):
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
+    queue_name = queue_name.split('/')[-1]
     return ('arn:aws:sqs:%s:%s:%s' % (region_name, account_id, queue_name))
 
 

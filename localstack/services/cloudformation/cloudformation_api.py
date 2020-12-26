@@ -1,3 +1,5 @@
+import logging
+import traceback
 import requests.models
 from flask import Flask, request
 from localstack.utils.aws import aws_stack
@@ -10,6 +12,8 @@ from localstack.services.cloudformation import cloudformation_listener  # , clou
 
 APP_NAME = 'cloudformation_api'
 app = Flask(APP_NAME)
+
+LOG = logging.getLogger(__name__)
 
 XMLNS_CF = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
 
@@ -214,7 +218,13 @@ def create_stack(req_params):
     stack = Stack(req_params, template)
     state.stacks[stack.stack_id] = stack
     deployer = template_deployer.TemplateDeployer(stack)
-    deployer.deploy_stack()
+    try:
+        deployer.deploy_stack()
+    except Exception as e:
+        stack.set_stack_status('CREATE_FAILED')
+        msg = 'Unable to create stack "%s": %s' % (stack.stack_name, e)
+        LOG.debug('%s %s' % (msg, traceback.format_exc()))
+        return error_response(msg, code=400, code_string='ValidationError')
     result = {'StackId': stack.stack_id}
     return result
 
@@ -241,10 +251,11 @@ def update_stack(req_params):
     deployer = template_deployer.TemplateDeployer(stack)
     try:
         deployer.update_stack(new_stack)
-    except template_deployer.NoStackUpdates as e:
+    except Exception as e:
         stack.set_stack_status('UPDATE_FAILED')
-        return error_response('Unable to update stack "%s": %s' % (stack_name, e),
-            code=400, code_string='ValidationError')
+        msg = 'Unable to update stack "%s": %s' % (stack_name, e)
+        LOG.debug('%s %s' % (msg, traceback.format_exc()))
+        return error_response(msg, code=400, code_string='ValidationError')
     result = {'StackId': stack.stack_id}
     return result
 

@@ -1208,8 +1208,8 @@ def get_attr_from_model_instance(resource, attribute, resource_type, resource_id
     resource_type = canonical_resource_type(resource_type)
     model_clazz = parsing.MODEL_MAP.get(resource_type)
     if not model_clazz:
-        if resource_type != 'AWS::Parameter':
-            LOG.info('Unable to find model class for resource type "%s"' % resource_type)
+        if resource_type not in ['AWS::Parameter', 'Parameter']:
+            LOG.debug('Unable to find model class for resource type "%s"' % resource_type)
         return
     try:
         inst = model_clazz(resource_name=resource_id, resource_json=resource)
@@ -1238,24 +1238,21 @@ def resolve_ref(stack_name, ref, resources, attribute):
     if ref == 'AWS::URLSuffix':
         return AWS_URL_SUFFIX
 
-    # second, resolve resource references
-    resource_status = {}
-
     is_ref_attribute = attribute in ['Ref', 'PhysicalResourceId', 'Arn']
     if is_ref_attribute:
         resolve_refs_recursively(stack_name, resources[ref], resources)
         return determine_resource_physical_id(resource_id=ref,
             resources=resources, attribute=attribute, stack_name=stack_name)
 
-    if not resource_status and resources.get(ref):
-        resource_status = resources[ref].get('__details__', {})
-    if not resource_status and resources.get(ref):
+    if resources.get(ref):
         if isinstance(resources[ref].get(attribute), (str, int, float, bool, dict)):
             return resources[ref][attribute]
+
     # fetch resource details
-    resource_new = retrieve_resource_details(ref, resource_status, resources, stack_name)
+    resource_new = retrieve_resource_details(ref, {}, resources, stack_name)
     if not resource_new:
-        return
+        raise DependencyNotYetSatisfied(resource_ids=ref,
+            message='Unable to fetch details for resource "%s" (resolving attribute "%s")' % (ref, attribute))
 
     resource = resources.get(ref)
     resource_type = get_resource_type(resource)
@@ -1778,6 +1775,8 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
             doc = dict(policy['PolicyDocument'])
             doc['Version'] = doc.get('Version') or IAM_POLICY_VERSION
             doc = json.dumps(doc)
+            LOG.debug('Running put_role_policy(...) for IAM::Role policy: %s %s %s' %
+                (resource_props['RoleName'], pol_name, doc))
             iam.put_role_policy(RoleName=resource_props['RoleName'], PolicyName=pol_name, PolicyDocument=doc)
 
     elif resource_type == 'IAM::Policy':
@@ -1811,11 +1810,15 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
 
     # TODO: put logic into resource-specific model classes
     if resource_type == 'SQS::Queue':
+        queue_url = None
         try:
-            return aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
+            queue_url = aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
         except Exception as e:
             if 'NonExistentQueue' in str(e):
                 raise DependencyNotYetSatisfied(resource_ids=resource_id, message='Unable to get queue: %s' % e)
+        if attribute == 'Arn':
+            return aws_stack.sqs_queue_arn(resource_props.get('QueueName'))
+        return queue_url
     elif resource_type == 'SNS::Topic':
         return aws_stack.sns_topic_arn(resource_props.get('TopicName'))
     elif resource_type == 'ApiGateway::RestApi':
@@ -1857,6 +1860,8 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
         if attribute == 'Ref':
             return resource_props.get('TableName')  # Note: "Ref" returns table name in AWS
         return aws_stack.dynamodb_table_arn(resource_props.get('TableName'))
+    elif resource_type == 'Logs::LogGroup':
+        return resource_props.get('LogGroupName')
 
     res_id = resource.get('PhysicalResourceId')
     if res_id:
@@ -2169,17 +2174,20 @@ class TemplateDeployer(object):
             updated = False
             while j < len(changes):
                 change = changes[j]
-                action = change['ResourceChange']['Action']
+                res_change = change['ResourceChange']
+                action = res_change['Action']
                 is_add_or_modify = action in ['Add', 'Modify']
-                resource_id = change['ResourceChange']['LogicalResourceId']
+                resource_id = res_change['LogicalResourceId']
                 try:
                     if is_add_or_modify:
-                        resource = new_resources[resource_id]
                         should_deploy = self.prepare_should_deploy_change(
-                            resource_id, action, stack, new_resources)
+                            resource_id, change, stack, new_resources)
+                        LOG.debug('Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s' % (
+                            action, resource_id, j + 1, len(changes), res_change['ResourceType'], i + 1))
                         if not should_deploy:
                             del changes[j]
                             continue
+                        resource = new_resources[resource_id]
                         if not self.all_resource_dependencies_satisfied(resource):
                             j += 1
                             continue
@@ -2197,19 +2205,26 @@ class TemplateDeployer(object):
 
         return changes_done
 
-    def prepare_should_deploy_change(self, resource_id, action, stack, new_resources):
+    def prepare_should_deploy_change(self, resource_id, change, stack, new_resources):
         resource = new_resources[resource_id]
+        res_change = change['ResourceChange']
+        action = res_change['Action']
 
         # resolve refs in resource details
         add_default_resource_props(resource, stack.stack_name, resource_id=resource_id,
             existing_resources=stack.resources)
         resolve_refs_recursively(stack.stack_name, resource, new_resources)
 
-        if action == 'Add':
-            if not self.is_deployable_resource(resource) or self.is_deployed(resource):
+        if action in ['Add', 'Modify']:
+            is_deployed = self.is_deployed(resource)
+            if action == 'Modify' and not is_deployed:
+                action = res_change['Action'] = 'Add'
+            if action == 'Add':
+                if not self.is_deployable_resource(resource) or is_deployed:
+                    return False
+            if action == 'Modify' and not self.is_updateable(resource):
+                LOG.debug('Action "update" not yet implemented for CF resource type %s' % resource.get('Type'))
                 return False
-        if action == 'Modify' and not self.is_updateable(resource):
-            return False
         return True
 
     def apply_change(self, change, old_stack, new_resources, stack_name):
