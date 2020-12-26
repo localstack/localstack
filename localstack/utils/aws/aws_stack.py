@@ -409,6 +409,7 @@ def cf_change_set_arn(change_set_name, change_set_id=None, account_id=None, regi
 
 
 def dynamodb_table_arn(table_name, account_id=None, region_name=None):
+    table_name = table_name.split(':table/')[-1]
     pattern = 'arn:aws:dynamodb:%s:%s:table/%s'
     return _resource_arn(table_name, pattern, account_id=account_id, region_name=region_name)
 
