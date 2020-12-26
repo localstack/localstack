@@ -33,7 +33,12 @@ class Stack(object):
     def __init__(self, metadata=None, template={}):
         self.metadata = metadata or {}
         self.template = template or {}
+        self._template_raw = clone(self.template)
         self.template_original = clone(self.template)
+        # initialize resources
+        for resource_id, resource in self.template_resources.items():
+            resource['LogicalResourceId'] = self.template_original['Resources'][resource_id]['LogicalResourceId'] = (
+                resource.get('LogicalResourceId') or resource_id)
         # initialize stack template attributes
         self.template['StackId'] = self.metadata['StackId'] = (self.metadata.get('StackId') or
             aws_stack.cloudformation_stack_arn(self.stack_name, short_uid()))
@@ -59,9 +64,6 @@ class Stack(object):
             if not key:
                 break
             self.metadata['Parameters'].append({'ParameterKey': key, 'ParameterValue': value})
-        # initialize resources
-        for resource_id, resource in self.template_resources.items():
-            resource['LogicalResourceId'] = resource.get('LogicalResourceId') or resource_id
 
     def describe_details(self):
         attrs = ['StackId', 'StackName', 'Description', 'Parameters', 'StackStatusReason',
@@ -176,6 +178,9 @@ class Stack(object):
             raise Exception('Unable to find details for resource "%s" in stack "%s"' % (resource_id, self.stack_name))
         return resource
 
+    def copy(self):
+        return Stack(metadata=dict(self.metadata), template=dict(self.template))
+
 
 class StackChangeSet(Stack):
 
@@ -209,7 +214,7 @@ def create_stack(req_params):
     stack = Stack(req_params, template)
     state.stacks[stack.stack_id] = stack
     deployer = template_deployer.TemplateDeployer(stack)
-    deployer.run_deploymeny_loop()
+    deployer.deploy_stack()
     result = {'StackId': stack.stack_id}
     return result
 
@@ -218,8 +223,8 @@ def delete_stack(req_params):
     state = RegionState.get()
     stack_name = req_params.get('StackName')
     stack = find_stack(stack_name)
-    stack_resources = list(stack.resources.values())
-    template_deployer.delete_stack(stack_name, stack_resources)
+    deployer = template_deployer.TemplateDeployer(stack)
+    deployer.delete_stack()
     state.stacks.pop(stack.stack_id)
     return {}
 
@@ -282,7 +287,9 @@ def describe_stack_resources(req_params):
 
 def list_stack_resources(req_params):
     result = describe_stack_resources(req_params)
-    result = {'StackResourceSummaries': {'member': result.pop('StackResources')}}
+    if not isinstance(result, dict):
+        return result
+    result = {'StackResourceSummaries': result.pop('StackResources')}
     return result
 
 

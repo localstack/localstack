@@ -1470,6 +1470,7 @@ class CloudFormationTest(unittest.TestCase):
         domain_name = 'es-%s' % short_uid()
         stack_name = 'stack-%s' % short_uid()
 
+        s3 = aws_stack.connect_to_service('s3', region_name='eu-central-1')
         cloudformation = aws_stack.connect_to_service('cloudformation', region_name='eu-central-1')
 
         cloudformation.create_stack(
@@ -1477,9 +1478,15 @@ class CloudFormationTest(unittest.TestCase):
             TemplateBody=TEST_TEMPLATE_3,
             Parameters=[{'ParameterKey': 'DomainName', 'ParameterValue': domain_name}]
         )
+        await_stack_completion(stack_name)
+        bucket_name = TEST_TEMPLATE_3.split('BucketName:')[1].split('\n')[0].strip()
+        response = s3.head_bucket(Bucket=bucket_name)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
-        resp = cloudformation.delete_stack(StackName=stack_name)
-        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+        # clean up
+        self.cleanup(stack_name)
+        with self.assertRaises(Exception):
+            s3.head_bucket(Bucket=bucket_name)
 
     def test_update_stack_with_same_template(self):
         stack_name = 'stack-%s' % short_uid()
@@ -1696,7 +1703,8 @@ class CloudFormationTest(unittest.TestCase):
         cloudformation = aws_stack.connect_to_service('cloudformation')
         if change_set_name:
             cloudformation.delete_change_set(StackName=stack_name, ChangeSetName=change_set_name)
-        cloudformation.delete_stack(StackName=stack_name)
+        resp = cloudformation.delete_stack(StackName=stack_name)
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def expected_change_set_status(self):
         return 'CREATE_COMPLETE' if config.USE_MOTO_CF else 'CREATE_PENDING'

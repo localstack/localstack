@@ -800,18 +800,6 @@ def describe_stack_resource(stack_name, logical_resource_id):
                     (logical_resource_id, stack_name, e))
 
 
-def retrieve_and_update_resource_details(resource_id, resource_status, resources, stack_name):
-    resource = resources.get(resource_id) or {}
-    resource_props = resource.get('Properties') or {}
-    result = retrieve_resource_details(resource_id, resource_status, resources, stack_name)
-    if isinstance(result, dict):
-        result.pop('ResponseMetadata', None)
-        # Note: for now, we're only setting non-existing props (we may set changed props in the future as well)
-        update_attrs = {k: v for k, v in result.items() if k not in resource_props}
-        resource_props.update(update_attrs)
-    return result
-
-
 def retrieve_resource_details(resource_id, resource_status, resources, stack_name):
     resource = resources.get(resource_id)
     resource_id = resource_status.get('PhysicalResourceId') or resource_id
@@ -1106,7 +1094,7 @@ def check_not_found_exception(e, resource_type, resource, resource_status):
     markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException', '404', 'not found']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
-            (resource_type, e, traceback.format_exc(), resource, resource_status))
+            (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
 
 
 def extract_resource_attribute(resource_type, resource_json, attribute, resource_id=None,
@@ -1255,6 +1243,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
     is_ref_attribute = attribute in ['Ref', 'PhysicalResourceId', 'Arn']
     if is_ref_attribute:
+        resolve_refs_recursively(stack_name, resources[ref], resources)
         return determine_resource_physical_id(resource_id=ref,
             resources=resources, attribute=attribute, stack_name=stack_name)
 
@@ -1288,8 +1277,9 @@ def resolve_refs_recursively(stack_name, value, resources):
             ref = resolve_ref(stack_name, value['Ref'], resources, attribute='Ref')
             if ref is None:
                 msg = 'Unable to resolve Ref for resource %s' % value['Ref']
-                LOG.info('%s - existing: %s' % (msg, set(resources.keys())))
+                LOG.info('%s - existing: %s %s' % (msg, set(resources.keys()), resources.get(value['Ref'])))
                 raise DependencyNotYetSatisfied(resource_ids=value['Ref'], message=msg)
+            ref = resolve_refs_recursively(stack_name, ref, resources)
             return ref
 
         if stripped_fn_lower == 'getatt':
@@ -1350,11 +1340,11 @@ def resolve_refs_recursively(stack_name, value, resources):
             operand2 = resolve_refs_recursively(stack_name, operand2, resources)
             return str(operand1) == str(operand2)
 
-        for key, val in iteritems(value):
+        for key, val in value.items():
             value[key] = resolve_refs_recursively(stack_name, val, resources)
 
     if isinstance(value, list):
-        for i in range(0, len(value)):
+        for i in range(len(value)):
             value[i] = resolve_refs_recursively(stack_name, value[i], resources)
 
     return value
@@ -1805,18 +1795,6 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
             iam.attach_user_policy(UserName=user, PolicyArn=policy_arn)
 
 
-# TODO: move to TemplateDeployer class
-def delete_stack(stack_name, stack_resources):
-    resources = dict([(r['LogicalResourceId'], common.clone_safe(r)) for r in stack_resources])
-    for key, resource in resources.items():
-        resource['Properties'] = resource.get('Properties', common.clone_safe(resource))
-        resource['ResourceType'] = resource.get('ResourceType') or resource.get('Type')
-    for resource_id, resource in resources.items():
-        # TODO: cache condition value in resource details on deployment and use cached value here
-        if evaluate_resource_condition(resource, stack_name, resources):
-            delete_resource(resource_id, resources, stack_name)
-
-
 def is_none_or_empty_value(value):
     return not value or value == PLACEHOLDER_AWS_NO_VALUE
 
@@ -1833,7 +1811,11 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
 
     # TODO: put logic into resource-specific model classes
     if resource_type == 'SQS::Queue':
-        return aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
+        try:
+            return aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
+        except Exception as e:
+            if 'NonExistentQueue' in str(e):
+                raise DependencyNotYetSatisfied(resource_ids=resource_id, message='Unable to get queue: %s' % e)
     elif resource_type == 'SNS::Topic':
         return aws_stack.sns_topic_arn(resource_props.get('TopicName'))
     elif resource_type == 'ApiGateway::RestApi':
@@ -1901,11 +1883,13 @@ def update_resource_details(stack, resource_id, details):
         stack.moto_resource_statuses[resource_id] = details
 
 
-def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None, update=False):
+def add_default_resource_props(resource_props, stack_name, resource_name=None,
+        resource_id=None, update=False, existing_resources=None):
     """ Apply some fixes to resource props which otherwise cause deployments to fail """
 
     res_type = resource_props['Type']
     props = resource_props['Properties'] = resource_props.get('Properties', {})
+    existing_resources = existing_resources or {}
 
     def _generate_res_name():
         return '%s-%s-%s' % (stack_name, resource_name or resource_id, short_uid())
@@ -1931,8 +1915,10 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None, r
     elif res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource_props)
 
-    elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName') and not update:
-        props['BucketName'] = s3_listener.normalize_bucket_name(_generate_res_name())
+    elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
+        existing_bucket = existing_resources.get(resource_id) or {}
+        bucket_name = existing_bucket.get('Properties', {}).get('BucketName') or _generate_res_name()
+        props['BucketName'] = s3_listener.normalize_bucket_name(bucket_name)
 
     elif res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
         props['StateMachineName'] = _generate_res_name()
@@ -1970,124 +1956,18 @@ class TemplateDeployer(object):
     def stack_name(self):
         return self.stack.stack_name
 
-    def is_deployable_resource(self, resource):
-        resource_type = get_resource_type(resource)
-        entry = RESOURCE_TO_FUNCTION.get(resource_type)
-        if entry is None and resource_type not in ['Parameter', None]:
-            # fall back to moto resource creation (TODO: remove in the future)
-            long_res_type = canonical_resource_type(resource_type)
-            if long_res_type in parsing.MODEL_MAP:
-                return True
-            LOG.warning('Unable to deploy resource type "%s": %s' % (resource_type, resource))
-        return bool(entry and entry.get(ACTION_CREATE))
+    # ------------------
+    # MAIN ENTRY POINTS
+    # ------------------
 
-    def is_deployed(self, resource_id):
-        resource = self.resources[resource_id]
-        resource_status = resource.get('__details__') or {}
-        details = retrieve_resource_details(resource_id, resource_status, self.resources, self.stack_name)
-        return bool(details)
-
-    def should_be_deployed(self, resource_id):
-        """ Return whether the given resource is all of: (1) deployable, (2) not yet deployed,
-            and (3) has no unresolved dependencies. """
-        resources = self.resources
-        resource = resources[resource_id]
-        if not self.is_deployable_resource(resource) or self.is_deployed(resource_id):
-            return False
-        if not evaluate_resource_condition(resource, self.stack_name, resources):
-            return False
-        return self.all_resource_dependencies_satisfied(resource_id)
-
-    def is_updateable(self, resource_id):
-        """ Return whether the given resource can be updated or not. """
-        resource = self.resources[resource_id]
-        if not self.is_deployable_resource(resource) or not self.is_deployed(resource_id):
-            return False
-        resource_type = get_resource_type(resource)
-        return resource_type in UPDATEABLE_RESOURCES
-
-    def all_resource_dependencies_satisfied(self, resource_id):
-        unsatisfied = self.get_unsatisfied_dependencies(resource_id)
-        return not unsatisfied
-
-    def get_unsatisfied_dependencies(self, resource_id):
-        res_deps = self.get_resource_dependencies(resource_id)
-        return self.get_unsatisfied_dependencies_for_resources(res_deps, resource_id)
-
-    def get_unsatisfied_dependencies_for_resources(self, resources, depending_resource=None, return_first=True):
-        result = {}
-        for resource_id, resource in iteritems(resources):
-            if self.is_deployable_resource(resource):
-                if not self.is_deployed(resource_id):
-                    LOG.debug('Dependency for resource %s not yet deployed: %s %s' %
-                        (depending_resource, resource_id, resource))
-                    result[resource_id] = resource
-                    if return_first:
-                        break
-        return result
-
-    def resources_to_deploy_next(self):
-        result = {}
-        for resource_id, resource in iteritems(self.resources):
-            if self.should_be_deployed(resource_id):
-                result[resource_id] = resource
-        return result
-
-    def get_resource_dependencies(self, resource_id):
-        result = {}
-        resource = self.resources[resource_id]
-        dumped = json.dumps(common.json_safe(resource))
-        for other_id, other in iteritems(self.resources):
-            if resource != other:
-                # TODO: traverse dict instead of doing string search
-                search1 = '{"Ref": "%s"}' % other_id
-                search2 = '{"Fn::GetAtt": ["%s", ' % other_id
-                if search1 in dumped or search2 in dumped:
-                    result[other_id] = other
-                if other_id in resource.get('DependsOn', []):
-                    result[other_id] = other
-        return result
-
-    def prepare_resources(self, resources=None, action='CREATE'):
-        self.add_default_resource_props(resources=resources)
-        self.init_resource_status(resources=resources, action=action)
-
-    def add_default_resource_props(self, resources=None):
-        resources = resources or self.resources
-        for resource_id, resource in resources.items():
-            add_default_resource_props(resource, self.stack_name, resource_id=resource_id)
-
-    def init_resource_status(self, resources=None, stack=None, action='CREATE'):
-        resources = resources or self.resources
-        stack = stack or self.stack
-        for resource_id, resource in resources.items():
-            stack.set_resource_status(resource_id, '%s_IN_PROGRESS' % action)
-
-    # TODO merge with apply_change below
-    def resolve_refs_and_deploy(self, resource_id):
-        resources = self.resources
-        resource = resources[resource_id]
-        resolve_refs_recursively(self.stack_name, resource, resources)
-        if not evaluate_resource_condition(resource, self.stack_name, resources):
-            return
-        result = deploy_resource(resource_id, resources, self.stack_name)
-        # update resource status and physical resource id
-        self.update_resource_details(resource_id, result)
-        return result
-
-    def update_resource_details(self, resource_id, result, stack=None, action='CREATE'):
-        stack = stack or self.stack
-        # update resource state
-        update_resource_details(stack, resource_id, result)
-        # update physical resource id
-        resource = stack.resources[resource_id]
-        physical_id = resource.get('PhysicalResourceId')
-        physical_id = physical_id or determine_resource_physical_id(resource_id, stack=stack)
-        if not resource.get('PhysicalResourceId') or action == 'UPDATE':
-            resource['PhysicalResourceId'] = physical_id
-        # set resource status
-        stack.set_resource_status(resource_id, '%s_COMPLETE' % action, physical_res_id=physical_id)
-        return physical_id
+    def deploy_stack(self):
+        self.stack.set_stack_status('CREATE_IN_PROGRESS')
+        # create new copy of stack
+        new_stack = self.stack.copy()
+        # apply changes
+        self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name, initialize=True)
+        # update status
+        self.stack.set_stack_status('CREATE_COMPLETE')
 
     def apply_change_set(self, change_set):
         change_set.stack.set_stack_status('UPDATE_IN_PROGRESS')
@@ -2103,6 +1983,115 @@ class TemplateDeployer(object):
         self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name)
         # update status
         self.stack.set_stack_status('UPDATE_COMPLETE')
+
+    def delete_stack(self):
+        self.stack.set_stack_status('DELETE_IN_PROGRESS')
+        stack_resources = list(self.stack.resources.values())
+        stack_name = self.stack.stack_name
+        resources = dict([(r['LogicalResourceId'], common.clone_safe(r)) for r in stack_resources])
+        for key, resource in resources.items():
+            resource['Properties'] = resource.get('Properties', common.clone_safe(resource))
+            resource['ResourceType'] = resource.get('ResourceType') or resource.get('Type')
+        for resource_id, resource in resources.items():
+            # TODO: cache condition value in resource details on deployment and use cached value here
+            if evaluate_resource_condition(resource, stack_name, resources):
+                delete_resource(resource_id, resources, stack_name)
+        # update status
+        self.stack.set_stack_status('DELETE_COMPLETE')
+
+    # ----------------------------
+    # DEPENDENCY RESOLUTION UTILS
+    # ----------------------------
+
+    def is_deployable_resource(self, resource):
+        resource_type = get_resource_type(resource)
+        entry = RESOURCE_TO_FUNCTION.get(resource_type)
+        if entry is None and resource_type not in ['Parameter', None]:
+            # fall back to moto resource creation (TODO: remove in the future)
+            long_res_type = canonical_resource_type(resource_type)
+            if long_res_type in parsing.MODEL_MAP:
+                return True
+            LOG.warning('Unable to deploy resource type "%s": %s' % (resource_type, resource))
+        return bool(entry and entry.get(ACTION_CREATE))
+
+    def is_deployed(self, resource):
+        resource_status = {}
+        resource_id = resource['LogicalResourceId']
+        details = retrieve_resource_details(resource_id, resource_status, self.resources, self.stack_name)
+        return bool(details)
+
+    def is_updateable(self, resource):
+        """ Return whether the given resource can be updated or not. """
+        if not self.is_deployable_resource(resource) or not self.is_deployed(resource):
+            return False
+        resource_type = get_resource_type(resource)
+        return resource_type in UPDATEABLE_RESOURCES
+
+    def all_resource_dependencies_satisfied(self, resource):
+        unsatisfied = self.get_unsatisfied_dependencies(resource)
+        return not unsatisfied
+
+    def get_unsatisfied_dependencies(self, resource):
+        res_deps = self.get_resource_dependencies(resource)
+        return self.get_unsatisfied_dependencies_for_resources(res_deps, resource)
+
+    def get_unsatisfied_dependencies_for_resources(self, resources, depending_resource=None, return_first=True):
+        result = {}
+        for resource_id, resource in iteritems(resources):
+            if self.is_deployable_resource(resource):
+                if not self.is_deployed(resource):
+                    LOG.debug('Dependency for resource %s not yet deployed: %s %s' %
+                        (depending_resource, resource_id, resource))
+                    result[resource_id] = resource
+                    if return_first:
+                        break
+        return result
+
+    def get_resource_dependencies(self, resource):
+        result = {}
+        # Note: using the original, unmodified template here to preserve Ref's ...
+        raw_resources = self.stack.template_original['Resources']
+        raw_resource = raw_resources[resource['LogicalResourceId']]
+        dumped = json.dumps(common.json_safe(raw_resource))
+        for other_id, other in raw_resources.items():
+            if resource != other:
+                # TODO: traverse dict instead of doing string search!
+                search1 = '{"Ref": "%s"}' % other_id
+                search2 = '{"Fn::GetAtt": ["%s", ' % other_id
+                if search1 in dumped or search2 in dumped:
+                    result[other_id] = other
+                if other_id in resource.get('DependsOn', []):
+                    result[other_id] = other
+        return result
+
+    # -----------------
+    # DEPLOYMENT UTILS
+    # -----------------
+
+    def add_default_resource_props(self, resources=None):
+        resources = resources or self.resources
+        for resource_id, resource in resources.items():
+            add_default_resource_props(resource, self.stack_name, resource_id=resource_id)
+
+    def init_resource_status(self, resources=None, stack=None, action='CREATE'):
+        resources = resources or self.resources
+        stack = stack or self.stack
+        for resource_id, resource in resources.items():
+            stack.set_resource_status(resource_id, '%s_IN_PROGRESS' % action)
+
+    def update_resource_details(self, resource_id, result, stack=None, action='CREATE'):
+        stack = stack or self.stack
+        # update resource state
+        update_resource_details(stack, resource_id, result)
+        # update physical resource id
+        resource = stack.resources[resource_id]
+        physical_id = resource.get('PhysicalResourceId')
+        physical_id = physical_id or determine_resource_physical_id(resource_id, stack=stack)
+        if not resource.get('PhysicalResourceId') or action == 'UPDATE':
+            resource['PhysicalResourceId'] = physical_id
+        # set resource status
+        stack.set_resource_status(resource_id, '%s_COMPLETE' % action, physical_res_id=physical_id)
+        return physical_id
 
     def get_change_config(self, action, resource, change_set_id=None):
         return {
@@ -2131,26 +2120,97 @@ class TemplateDeployer(object):
             if props_old[key] != props_new[key]:
                 return True
 
-    def apply_changes(self, old_stack, new_stack, stack_name, change_set_id=None):
+    def merge_properties(self, resource_id, old_stack, new_stack):
+        old_resources = old_stack.template['Resources']
+        new_resources = new_stack.template['Resources']
+        new_resource = new_resources[resource_id]
+        old_resource = old_resources[resource_id] = old_resources.get(resource_id) or {}
+        for key, value in new_resource.items():
+            if key == 'Properties':
+                continue
+            old_resource[key] = old_resource.get(key, value)
+        old_res_props = old_resource['Properties'] = old_resource.get('Properties', {})
+        for key, value in new_resource['Properties'].items():
+            old_res_props[key] = old_res_props.get(key, value)
+        # overwrite original template entirely
+        old_stack.template_original['Resources'][resource_id] = new_stack.template_original['Resources'][resource_id]
+
+    def apply_changes(self, old_stack, new_stack, stack_name, change_set_id=None, initialize=False):
         old_resources = old_stack.template['Resources']
         new_resources = new_stack.template['Resources']
         self.init_resource_status(old_resources, action='UPDATE')
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
-        adds = [val for key, val in new_resources.items() if key not in old_resources]
+        adds = [val for key, val in new_resources.items() if initialize or key not in old_resources]
         modifies = [val for key, val in new_resources.items() if key in old_resources]
+
         # construct changes
         changes = []
         for action, items in (('Remove', deletes), ('Add', adds), ('Modify', modifies)):
             for item in items:
+                item['Properties'] = item.get('Properties', {})
                 if action != 'Modify' or self.resource_config_differs(item):
                     change = self.get_change_config(action, item, change_set_id=change_set_id)
                     changes.append(change)
+                if action in ['Modify', 'Add']:
+                    self.merge_properties(item['LogicalResourceId'], old_stack, new_stack)
         if not changes:
             raise NoStackUpdates('No updates are to be performed.')
-        # apply changes
-        for change in changes:
-            self.apply_change(change, old_stack, new_stack.resources, stack_name=stack_name)
-        return changes
+
+        # start deployment loop
+        return self.apply_changes_in_loop(changes, old_stack, stack_name)
+
+    def apply_changes_in_loop(self, changes, stack, stack_name):
+        # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
+        changes_done = []
+        max_iters = 30
+        new_resources = stack.resources
+        for i in range(max_iters):
+            j = 0
+            updated = False
+            while j < len(changes):
+                change = changes[j]
+                action = change['ResourceChange']['Action']
+                is_add_or_modify = action in ['Add', 'Modify']
+                resource_id = change['ResourceChange']['LogicalResourceId']
+                try:
+                    if is_add_or_modify:
+                        resource = new_resources[resource_id]
+                        should_deploy = self.prepare_should_deploy_change(
+                            resource_id, action, stack, new_resources)
+                        if not should_deploy:
+                            del changes[j]
+                            continue
+                        if not self.all_resource_dependencies_satisfied(resource):
+                            j += 1
+                            continue
+                    self.apply_change(change, stack, new_resources, stack_name=stack_name)
+                    changes_done.append(change)
+                    del changes[j]
+                    updated = True
+                except DependencyNotYetSatisfied as e:
+                    LOG.debug('Dependencies for "%s" not yet satisfied, retrying in next loop: %s' % (resource_id, e))
+                    j += 1
+            if not changes:
+                break
+            if not updated:
+                raise Exception('Resource deployment loop completed, pending resource changes: %s' % changes)
+
+        return changes_done
+
+    def prepare_should_deploy_change(self, resource_id, action, stack, new_resources):
+        resource = new_resources[resource_id]
+
+        # resolve refs in resource details
+        add_default_resource_props(resource, stack.stack_name, resource_id=resource_id,
+            existing_resources=stack.resources)
+        resolve_refs_recursively(stack.stack_name, resource, new_resources)
+
+        if action == 'Add':
+            if not self.is_deployable_resource(resource) or self.is_deployed(resource):
+                return False
+        if action == 'Modify' and not self.is_updateable(resource):
+            return False
+        return True
 
     def apply_change(self, change, old_stack, new_resources, stack_name):
         change_details = change['ResourceChange']
@@ -2159,11 +2219,6 @@ class TemplateDeployer(object):
         resource = new_resources[resource_id]
         if not evaluate_resource_condition(resource, stack_name, new_resources):
             return
-
-        # resolve refs in resource details
-        add_default_resource_props(resource, old_stack.stack_name, resource_id=resource_id)
-        resolve_refs_recursively(old_stack.stack_name, resource, new_resources)
-
         # execute resource action
         if action == 'Add':
             result = deploy_resource(resource_id, new_resources, stack_name)
@@ -2172,30 +2227,6 @@ class TemplateDeployer(object):
             result = delete_resource(resource_id, old_stack.resources, stack_name)
         elif action == 'Modify':
             result = update_resource(resource_id, new_resources, stack_name)
-        # update resources in resource map
-        if action in ['Add', 'Modify']:
-            old_stack.template['Resources'][resource_id] = resource
         # update resource status and physical resource id
         self.update_resource_details(resource_id, result, stack=old_stack, action='UPDATE')
         return result
-
-    def run_deploymeny_loop(self):
-        max_iters = 30
-        self.stack.set_stack_status('CREATE_IN_PROGRESS')
-        # prepare resources
-        self.prepare_resources()
-        # run deployment loop
-        for i in range(max_iters):
-            deploy_next = self.resources_to_deploy_next()
-            if not deploy_next:
-                self.stack.set_stack_status('CREATE_COMPLETE')
-                return
-            updated = False
-            for resource_id, resource in deploy_next.items():
-                try:
-                    result = self.resolve_refs_and_deploy(resource_id)
-                    updated = updated or bool(result)
-                except DependencyNotYetSatisfied as e:
-                    LOG.debug('Dependencies for "%s" not yet satisfied, retrying in next loop: %s' % (resource_id, e))
-            if not updated:
-                raise Exception('No updates in last deployment loop iteration, not all resources deployed yet')

@@ -642,7 +642,8 @@ def apply_patches():
         resources_json_map = template.get('Resources') or {}
         for res_id, res_details in resources_json_map.items():
             # add some fixes and default props which otherwise cause deployments to fail
-            add_default_resource_props(res_details, stack_name, resource_id=res_id, update=True)
+            add_default_resource_props(res_details, stack_name, resource_id=res_id,
+                existing_resources=self._resource_json_map)
         result = resource_map_update_orig(self, template, *args, **kwargs)
         return result
 
