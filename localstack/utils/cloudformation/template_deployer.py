@@ -1097,30 +1097,30 @@ def check_not_found_exception(e, resource_type, resource, resource_status):
             (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
 
 
-def extract_resource_attribute(resource_type, resource_json, attribute, resource_id=None,
+def extract_resource_attribute(resource_type, resource_state, attribute, resource_id=None,
         resource=None, resources=None, stack_name=None):
     LOG.debug('Extract resource attribute: %s %s' % (resource_type, attribute))
     is_ref_attribute = attribute in ['PhysicalResourceId', 'Ref']
     is_ref_attr_or_arn = is_ref_attribute or attribute == 'Arn'
     resource = resource or {}
+    if not resource and resources:
+        resource = resources[resource_id]
 
-    if not resource:
-        resource = retrieve_resource_details(resource_id, {}, resources, stack_name)
-        if not resource:
-            return
-    if isinstance(resource, MotoCloudFormationModel):
+    if not resource_state:
+        resource_state = retrieve_resource_details(resource_id, {}, resources, stack_name) or {}
+    if isinstance(resource_state, MotoCloudFormationModel):
         if is_ref_attribute:
-            return getattr(resource, 'physical_resource_id', None)
-        if hasattr(resource, 'get_cfn_attribute'):
-            return resource.get_cfn_attribute(attribute)
-        raise Exception('Unable to extract attribute "%s" from model class %s' % (attribute, type(resource)))
+            return getattr(resource_state, 'physical_resource_id', None)
+        if hasattr(resource_state, 'get_cfn_attribute'):
+            return resource_state.get_cfn_attribute(attribute)
+        raise Exception('Unable to extract attribute "%s" from model class %s' % (attribute, type(resource_state)))
 
-    resource_props = resource.get('Properties', {})
     # extract resource specific attributes
+    resource_props = resource.get('Properties', {})
     if resource_type == 'Parameter':
         result = None
-        param_value = resource_props.get('Value', resource_json.get('Value',
-            resource_json.get('Properties', {}).get('Value')))
+        param_value = resource_props.get('Value', resource.get('Value',
+            resource_props.get('Properties', {}).get('Value')))
         if is_ref_attr_or_arn:
             result = param_value
         elif isinstance(param_value, dict):
@@ -1128,7 +1128,7 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
         if result is not None:
             return result
     elif resource_type == 'Lambda::Function':
-        func_configs = resource_json.get('Configuration') or resource.get('Configuration') or {}
+        func_configs = resource_state.get('Configuration') or {}
         if is_ref_attr_or_arn:
             func_arn = func_configs.get('FunctionArn')
             if func_arn:
@@ -1139,25 +1139,26 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
             return func_configs.get(attribute)
     elif resource_type == 'DynamoDB::Table':
         actual_attribute = 'LatestStreamArn' if attribute == 'StreamArn' else attribute
-        value = resource_json.get('Table', {}).get(actual_attribute)
+        value = resource_state.get('Table', {}).get(actual_attribute)
         if value:
             return value
     elif resource_type == 'ApiGateway::RestApi':
         if is_ref_attribute:
-            result = resource_json.get('id')
+            result = resource_state.get('id')
             if result:
                 return result
         if attribute == 'RootResourceId':
-            resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=resource_json['id'])['items']
+            api_id = resource_state['id']
+            resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=api_id)['items']
             for res in resources:
                 if res['path'] == '/' and not res.get('parentId'):
                     return res['id']
     elif resource_type == 'ApiGateway::Resource':
         if is_ref_attribute:
-            return resource.get('id')
+            return resource_state.get('id')
     elif resource_type == 'ApiGateway::Deployment':
         if is_ref_attribute:
-            return resource.get('id')
+            return resource_state.get('id')
     elif resource_type == 'S3::Bucket':
         if is_ref_attr_or_arn:
             bucket_name = resource_props.get('BucketName')
@@ -1167,24 +1168,24 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
             return bucket_name
     elif resource_type == 'Elasticsearch::Domain':
         if attribute == 'DomainEndpoint':
-            domain_status = resource_props.get('DomainStatus') or resource_json.get('DomainStatus', {})
+            domain_status = resource_state.get('DomainStatus', {})
             result = domain_status.get('Endpoint')
             if result:
                 return result
         if attribute in ['Arn', 'DomainArn']:
-            domain_name = resource_props.get('DomainName') or resource_json.get('DomainName')
+            domain_name = resource_props.get('DomainName') or resource_state.get('DomainName')
             return aws_stack.es_domain_arn(domain_name)
     elif resource_type == 'SNS::Topic':
-        if is_ref_attribute and resource_json.get('TopicArn'):
-            topic_arn = resource_json.get('TopicArn')
+        if is_ref_attribute and resource_state.get('TopicArn'):
+            topic_arn = resource_state.get('TopicArn')
             return resolve_refs_recursively(stack_name, topic_arn, resources)
     elif resource_type == 'SQS::Queue':
         if is_ref_attr_or_arn:
-            if attribute == 'Arn' and resource_json.get('QueueArn'):
-                return resolve_refs_recursively(stack_name, resource_json.get('QueueArn'), resources)
+            if attribute == 'Arn' and resource_state.get('QueueArn'):
+                return resolve_refs_recursively(stack_name, resource_state.get('QueueArn'), resources)
             return aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
     attribute_lower = common.first_char_to_lower(attribute)
-    result = resource_json.get(attribute) or resource_json.get(attribute_lower)
+    result = resource_state.get(attribute) or resource_state.get(attribute_lower)
     if result is None and isinstance(resource, dict):
         result = resource_props.get(attribute) or resource_props.get(attribute_lower)
         if result is None:
@@ -1193,7 +1194,7 @@ def extract_resource_attribute(resource_type, resource_json, attribute, resource
     if is_ref_attribute:
         for attr in ['Id', 'PhysicalResourceId', 'Ref']:
             if result is None:
-                for obj in [resource_json, resource]:
+                for obj in [resource_state, resource]:
                     result = result or obj.get(attr)
     return result
 
@@ -1358,7 +1359,7 @@ def resolve_placeholders_in_string(result, stack_name=None, resources=None):
             return resolved
         if len(parts) == 1 and parts[0] in resources:
             resource_json = resources[parts[0]]
-            result = extract_resource_attribute(resource_json.get('Type'), resource_json, 'Ref',
+            result = extract_resource_attribute(resource_json.get('Type'), {}, 'Ref',
                 resources=resources, resource_id=parts[0], stack_name=stack_name)
             if result is None:
                 raise DependencyNotYetSatisfied(resource_ids=parts[0],
@@ -1866,8 +1867,8 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
     res_id = resource.get('PhysicalResourceId')
     if res_id:
         return res_id
-    result = extract_resource_attribute(resource_type, resource_props, attribute or 'PhysicalResourceId',
-        stack_name=stack_name, resource_id=resource_id, resources=resources)
+    result = extract_resource_attribute(resource_type, {}, attribute or 'PhysicalResourceId',
+        stack_name=stack_name, resource_id=resource_id, resource=resource, resources=resources)
     if result is not None:
         # note that value could be an empty string here (in case of Parameter values)
         return result
