@@ -8,7 +8,7 @@ import six
 import botocore
 from localstack import config
 from localstack.constants import (
-    REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
+    INTERNAL_AWS_ACCESS_KEY_ID, REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
     MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
 from localstack.utils.aws import templating
@@ -172,6 +172,21 @@ def get_local_region():
         session = boto3.session.Session()
         LOCAL_REGION = session.region_name or ''
     return LOCAL_REGION or config.DEFAULT_REGION
+
+
+def is_internal_call_context(headers):
+    """ Return whether we are executing in the context of an internal API call, i.e.,
+        the case where one API uses a boto3 client to call another API internally. """
+    auth_header = headers.get('Authorization') or ''
+    header_value = 'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID
+    return header_value in auth_header
+
+
+def set_internal_auth(headers):
+    authorization = headers.get('Authorization') or ''
+    authorization = re.sub(r'Credential=[^/]+/', 'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID, authorization)
+    headers['Authorization'] = authorization
+    return headers
 
 
 def get_local_service_url(service_name_or_port):

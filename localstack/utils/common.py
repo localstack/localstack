@@ -338,6 +338,11 @@ def start_worker_thread(method, *args, **kwargs):
     return start_thread(method, *args, _shutdown_hook=False, **kwargs)
 
 
+def empty_context_manager():
+    import contextlib
+    return contextlib.nullcontext()
+
+
 def synchronized(lock=None):
     """
     Synchronization decorator as described in

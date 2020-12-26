@@ -1,3 +1,4 @@
+from localstack.utils import persistence
 import re
 import os
 import sys
@@ -5,6 +6,7 @@ import gzip
 import json
 import signal
 import logging
+import threading
 from requests.models import Response
 from localstack import config
 from localstack.services import plugins
@@ -14,10 +16,10 @@ from localstack.constants import (
     HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER,
     PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
 from localstack.utils.common import (
-    run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
+    empty_context_manager, run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
     get_service_protocol, in_docker, safe_requests as requests)
 from localstack.services.infra import PROXY_LISTENERS
-from localstack.utils.aws.aws_stack import Environment
+from localstack.utils.aws.aws_stack import Environment, is_internal_call_context
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils.server.http2_server import HTTPErrorResponse
@@ -28,6 +30,8 @@ LOG = logging.getLogger(__name__)
 # Header to indicate that the process should kill itself. This is required because if
 # this process is started as root, then we cannot kill it from a non-root process
 HEADER_KILL_SIGNAL = 'x-localstack-kill'
+
+BOOTSTRAP_LOCK = threading.RLock()
 
 
 class ProxyListenerEdge(ProxyListener):
@@ -82,7 +86,12 @@ class ProxyListenerEdge(ProxyListener):
         if isinstance(data, dict):
             data = json.dumps(data)
 
-        return do_forward_request(api, port, method, path, data, headers)
+        lock_ctx = BOOTSTRAP_LOCK
+        if is_internal_call_context(headers) or persistence.API_CALLS_RESTORED:
+            lock_ctx = empty_context_manager()
+
+        with lock_ctx:
+            return do_forward_request(api, method, path, data, headers, port=port)
 
     def return_response(self, method, path, data, headers, response, request_handler=None):
         if headers.get('Accept-Encoding') == 'gzip' and response._content:
@@ -91,9 +100,9 @@ class ProxyListenerEdge(ProxyListener):
             response.headers['Content-Encoding'] = 'gzip'
 
 
-def do_forward_request(api, port, method, path, data, headers):
+def do_forward_request(api, method, path, data, headers, port=None):
     if config.FORWARD_EDGE_INMEM:
-        result = do_forward_request_inmem(api, port, method, path, data, headers)
+        result = do_forward_request_inmem(api, method, path, data, headers, port=port)
     else:
         result = do_forward_request_network(port, method, path, data, headers)
     if hasattr(result, 'status_code') and result.status_code >= 400 and method == 'OPTIONS':
@@ -102,7 +111,7 @@ def do_forward_request(api, port, method, path, data, headers):
     return result
 
 
-def do_forward_request_inmem(api, port, method, path, data, headers):
+def do_forward_request_inmem(api, method, path, data, headers, port=None):
     listener_details = PROXY_LISTENERS.get(api)
     if not listener_details:
         message = 'Unable to find listener for service "%s" - please make sure to include it in $SERVICES' % api
