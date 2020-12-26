@@ -1137,6 +1137,9 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
             return aws_stack.lambda_function_arn(func_name)
         else:
             return func_configs.get(attribute)
+    elif resource_type == 'Lambda::Version':
+        if resource_state.get('Version'):
+            return '%s:%s' % (resource_state.get('FunctionArn'), resource_state.get('Version').split(':')[-1])
     elif resource_type == 'DynamoDB::Table':
         actual_attribute = 'LatestStreamArn' if attribute == 'StreamArn' else attribute
         value = resource_state.get('Table', {}).get(actual_attribute)
