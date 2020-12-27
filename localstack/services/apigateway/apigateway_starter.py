@@ -238,8 +238,11 @@ def apply_patches():
 
     def apigateway_models_RestAPI_to_dict(self):
         resp = apigateway_models_RestAPI_to_dict_orig(self)
-        # Currently still not found any document about apigateway policy escaped format, just a workaround
-        resp['policy'] = json.dumps(json.dumps(json.loads(self.policy)))[1:-1]
+        if self.policy:
+            # Currently still not found any document about apigateway policy escaped format, just a workaround
+            resp['policy'] = json.dumps(json.dumps(json.loads(self.policy)))[1:-1]
+        else:
+            resp['policy'] = None
 
         return resp
 
