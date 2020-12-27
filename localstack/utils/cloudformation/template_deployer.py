@@ -813,8 +813,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     try:
         if resource_type == 'Lambda::Function':
             func_name = resolve_refs_recursively(stack_name, resource_props['FunctionName'], resources)
-            resource_id = func_name if resource else resource_id
-            return aws_stack.connect_to_service('lambda').get_function(FunctionName=resource_id)
+            return aws_stack.connect_to_service('lambda').get_function(FunctionName=func_name)
 
         elif resource_type == 'Lambda::Version':
             name = resolve_refs_recursively(stack_name, resource_props.get('FunctionName'), resources)

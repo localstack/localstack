@@ -40,7 +40,7 @@ from localstack.services.awslambda.lambda_executors import (
 from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 from localstack.utils.common import (
     to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
-    mkdir, unzip, is_zip_file, run, first_char_to_lower,
+    mkdir, unzip, is_zip_file, run, first_char_to_lower, run_for_max_seconds,
     timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
@@ -738,6 +738,12 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
 
 
 def set_function_code(code, lambda_name, lambda_cwd=None):
+    # unzipping can take some time - limit the execution time to avoid client/network timeout issues
+    run_for_max_seconds(25, do_set_function_code, code, lambda_name, lambda_cwd=lambda_cwd)
+    return {'FunctionName': lambda_name}
+
+
+def do_set_function_code(code, lambda_name, lambda_cwd=None):
     def generic_handler(event, context):
         raise ClientError(('Unable to find executor for Lambda function "%s". Note that ' +
             'Node.js, Golang, and .Net Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)

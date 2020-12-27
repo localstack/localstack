@@ -28,6 +28,7 @@ from datetime import datetime, date
 from contextlib import closing
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
+from six.moves.queue import Queue
 from six.moves.urllib.parse import urlparse, parse_qs
 from multiprocessing.dummy import Pool
 from localstack import config
@@ -987,6 +988,7 @@ def unzip(path, target_dir, overwrite=True):
     if is_alpine():
         # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
         flags = '-o' if overwrite else ''
+        flags += ' -q'
         return run('cd %s; unzip %s %s' % (target_dir, flags, path))
     try:
         zip_ref = zipfile.ZipFile(path, 'r')
@@ -1185,6 +1187,36 @@ def run_safe(_python_lambda, *args, **kwargs):
 
 def run_cmd_safe(**kwargs):
     return run_safe(run, print_error=False, **kwargs)
+
+
+def run_for_max_seconds(max_secs, _function, *args, **kwargs):
+    """ Run the given function for a maximum of `max_secs` seconds - continue running
+        in a background thread if the function does not finish in time. """
+    def _worker(*_args):
+        result = None
+        try:
+            result = _function(*args, **kwargs)
+        except Exception as e:
+            result = e
+        result = True if result is None else result
+        q.put(result)
+        return result
+    start = now()
+    q = Queue()
+    start_worker_thread(_worker)
+    for i in range(max_secs * 2):
+        result = None
+        try:
+            result = q.get_nowait()
+        except Exception:
+            pass
+        if result is not None:
+            if isinstance(result, Exception):
+                raise result
+            return result
+        if now() - start >= max_secs:
+            return
+        time.sleep(0.5)
 
 
 def run(cmd, cache_duration_secs=0, **kwargs):
