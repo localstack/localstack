@@ -1069,7 +1069,7 @@ class ProxyListenerS3(PersistingProxyListener):
         if 's3.amazonaws.com' not in headers.get('host', ''):
             headers['host'] = 'localhost'
 
-        # check content md5 hash integrity if not a copy request or multipart initialization
+        # check content md5 hash integrity if not a copy request
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
                 and not self.is_create_multipart_request(parsed_path.query):
             response = check_content_md5(data, headers)
