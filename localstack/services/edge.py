@@ -31,6 +31,7 @@ LOG = logging.getLogger(__name__)
 # this process is started as root, then we cannot kill it from a non-root process
 HEADER_KILL_SIGNAL = 'x-localstack-kill'
 
+# lock obtained during boostrapping (persistence restoration) to avoid concurrency issues
 BOOTSTRAP_LOCK = threading.RLock()
 
 
@@ -87,7 +88,7 @@ class ProxyListenerEdge(ProxyListener):
             data = json.dumps(data)
 
         lock_ctx = BOOTSTRAP_LOCK
-        if is_internal_call_context(headers) or persistence.API_CALLS_RESTORED:
+        if persistence.API_CALLS_RESTORED or is_internal_call_context(headers):
             lock_ctx = empty_context_manager()
 
         with lock_ctx:

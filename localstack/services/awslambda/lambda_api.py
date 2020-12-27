@@ -175,7 +175,10 @@ def func_arn(function_name):
 
 def func_qualifier(function_name, qualifier=None):
     arn = aws_stack.lambda_function_arn(function_name)
-    if ARN_TO_LAMBDA.get(arn).qualifier_exists(qualifier):
+    details = ARN_TO_LAMBDA.get(arn)
+    if not details:
+        return details
+    if details.qualifier_exists(qualifier):
         return '{}:{}'.format(arn, qualifier)
     return arn
 
@@ -925,7 +928,8 @@ def get_lambda_policy(function, qualifier=None):
         doc['PolicyArn'] = p['Arn']
         doc['Id'] = 'default'
         docs.append(doc)
-    policy = [d for d in docs if d['Statement'][0]['Resource'] == func_qualifier(function, qualifier)]
+    res_qualifier = func_qualifier(function, qualifier)
+    policy = [d for d in docs if d['Statement'][0]['Resource'] == res_qualifier]
     return (policy or [None])[0]
 
 
