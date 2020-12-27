@@ -85,9 +85,9 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, (datetime, date)):
             return timestamp_millis(o)
-        if isinstance(o, six.binary_type):
-            return to_str(o)
         try:
+            if isinstance(o, six.binary_type):
+                return to_str(o)
             return super(CustomEncoder, self).default(o)
         except Exception:
             return None
@@ -336,6 +336,11 @@ def start_thread(method, *args, **kwargs):
 
 def start_worker_thread(method, *args, **kwargs):
     return start_thread(method, *args, _shutdown_hook=False, **kwargs)
+
+
+def empty_context_manager():
+    import contextlib
+    return contextlib.nullcontext()
 
 
 def synchronized(lock=None):

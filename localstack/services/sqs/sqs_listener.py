@@ -100,6 +100,18 @@ def _set_queue_attributes(queue_url, req_data):
     return forward_attrs
 
 
+def _fix_dlq_arn_in_attributes(req_data):
+    """ Convert queue URL to ARN for DLQ in redrive policy config. """
+    attrs = _format_attributes(req_data)
+    policy = json.loads(attrs.get('RedrivePolicy') or '{}')
+    dlq_arn = policy.get('deadLetterTargetArn', '')
+    if '://' in dlq_arn:
+        # convert queue URL to queue ARN
+        policy['deadLetterTargetArn'] = aws_stack.sqs_queue_arn(dlq_arn)
+        attrs['RedrivePolicy'] = json.dumps(policy)
+        return attrs
+
+
 def _add_queue_attributes(path, req_data, content_str, headers):
     # TODO remove this function if we stop using ElasticMQ entirely
     if SQS_BACKEND_IMPL != 'elasticmq':
@@ -245,6 +257,11 @@ class ProxyListenerSQS(PersistingProxyListener):
                     if len(req_data) != len(forward_attrs):
                         # make sure we only forward the supported attributes to the backend
                         return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
+
+            elif action == 'CreateQueue':
+                changed_attrs = _fix_dlq_arn_in_attributes(req_data)
+                if changed_attrs:
+                    return _get_attributes_forward_request(method, path, headers, req_data, changed_attrs)
 
             elif action == 'DeleteQueue':
                 queue_url = _queue_url(path, req_data, headers)

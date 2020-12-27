@@ -278,6 +278,16 @@ def list_all_s3_objects():
     return map_all_s3_objects().values()
 
 
+def delete_all_s3_objects(buckets):
+    s3_client = aws_stack.connect_to_service('s3')
+    buckets = buckets if isinstance(buckets, list) else [buckets]
+    for bucket in buckets:
+        keys = all_s3_object_keys(bucket)
+        deletes = [{'Key': key} for key in keys]
+        if deletes:
+            s3_client.delete_objects(Bucket=bucket, Delete={'Objects': deletes})
+
+
 def download_s3_object(s3, bucket, path):
     with tempfile.SpooledTemporaryFile() as tmpfile:
         s3.Bucket(bucket).download_fileobj(path, tmpfile)
@@ -290,9 +300,17 @@ def download_s3_object(s3, bucket, path):
         return result
 
 
+def all_s3_object_keys(bucket):
+    s3_client = aws_stack.connect_to_resource('s3')
+    bucket = s3_client.Bucket(bucket) if isinstance(bucket, str) else bucket
+    keys = [key for key in bucket.objects.all()]
+    return keys
+
+
 def map_all_s3_objects(to_json=True, buckets=None):
     s3_client = aws_stack.connect_to_resource('s3')
     result = {}
+    buckets = buckets if not buckets or isinstance(buckets, list) else [buckets]
     buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
     for bucket in buckets:
         for key in bucket.objects.all():

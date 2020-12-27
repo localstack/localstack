@@ -8,7 +8,7 @@ import six
 import botocore
 from localstack import config
 from localstack.constants import (
-    REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
+    INTERNAL_AWS_ACCESS_KEY_ID, REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
     MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
 from localstack.utils.aws import templating
@@ -174,6 +174,21 @@ def get_local_region():
     return LOCAL_REGION or config.DEFAULT_REGION
 
 
+def is_internal_call_context(headers):
+    """ Return whether we are executing in the context of an internal API call, i.e.,
+        the case where one API uses a boto3 client to call another API internally. """
+    auth_header = headers.get('Authorization') or ''
+    header_value = 'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID
+    return header_value in auth_header
+
+
+def set_internal_auth(headers):
+    authorization = headers.get('Authorization') or ''
+    authorization = re.sub(r'Credential=[^/]+/', 'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID, authorization)
+    headers['Authorization'] = authorization
+    return headers
+
+
 def get_local_service_url(service_name_or_port):
     """ Return the local service URL for the given service name or port. """
     if isinstance(service_name_or_port, int):
@@ -289,7 +304,7 @@ def set_default_region_in_headers(headers):
 
 def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace=None):
     """ Fix the account ID in the ARNs returned in the given Flask response or string """
-    existing = existing or ['123456789', '1234567890', MOTO_ACCOUNT_ID]
+    existing = existing or ['123456789', '1234567890', '123456789012', MOTO_ACCOUNT_ID]
     existing = existing if isinstance(existing, list) else [existing]
     replace = replace or TEST_AWS_ACCOUNT_ID
     is_str_obj = is_string_or_bytes(response)
@@ -357,7 +372,10 @@ def role_arn(role_name, account_id=None, env=None):
     return 'arn:aws:iam::%s:role/%s' % (account_id, role_name)
 
 
-def policy_arn(policy_name, account_id=TEST_AWS_ACCOUNT_ID):
+def policy_arn(policy_name, account_id=None):
+    if ':policy/' in policy_name:
+        return policy_name
+    account_id = account_id or TEST_AWS_ACCOUNT_ID
     return 'arn:aws:iam::{}:policy/{}'.format(account_id, policy_name)
 
 
@@ -378,12 +396,20 @@ def secretsmanager_secret_arn(secret_name, account_id=None, region_name=None):
     return _resource_arn(secret_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def cloudformation_stack_arn(stack_name, account_id=None, region_name=None):
-    pattern = 'arn:aws:cloudformation:%s:%s:stack/%s/id-1234'
+def cloudformation_stack_arn(stack_name, stack_id=None, account_id=None, region_name=None):
+    stack_id = stack_id or 'id-123'
+    pattern = 'arn:aws:cloudformation:%s:%s:stack/%s/{stack_id}'.format(stack_id=stack_id)
     return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def cf_change_set_arn(change_set_name, change_set_id=None, account_id=None, region_name=None):
+    change_set_id = change_set_id or 'id-456'
+    pattern = 'arn:aws:cloudformation:%s:%s:changeSet/%s/{cs_id}'.format(cs_id=change_set_id)
+    return _resource_arn(change_set_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def dynamodb_table_arn(table_name, account_id=None, region_name=None):
+    table_name = table_name.split(':table/')[-1]
     pattern = 'arn:aws:dynamodb:%s:%s:table/%s'
     return _resource_arn(table_name, pattern, account_id=account_id, region_name=region_name)
 
@@ -503,6 +529,7 @@ def create_sqs_queue(queue_name, env=None):
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
+    queue_name = queue_name.split('/')[-1]
     return ('arn:aws:sqs:%s:%s:%s' % (region_name, account_id, queue_name))
 
 
