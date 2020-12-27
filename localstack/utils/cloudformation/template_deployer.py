@@ -1111,7 +1111,9 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
         resource_state = retrieve_resource_details(resource_id, {}, resources, stack_name) or {}
     if isinstance(resource_state, MotoCloudFormationModel):
         if is_ref_attribute:
-            return getattr(resource_state, 'physical_resource_id', None)
+            res_phys_id = getattr(resource_state, 'physical_resource_id', None)
+            if res_phys_id:
+                return res_phys_id
         if hasattr(resource_state, 'get_cfn_attribute'):
             return resource_state.get_cfn_attribute(attribute)
         raise Exception('Unable to extract attribute "%s" from model class %s' % (attribute, type(resource_state)))
