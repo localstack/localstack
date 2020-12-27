@@ -31,6 +31,28 @@ class RegionState(object):
         state = cls.STATES[region] = cls.STATES.get(region) or RegionState()
         return state
 
+    @property
+    def exports(self):
+        exports = []
+        output_keys = {}
+        for stack_id, stack in self.stacks.items():
+            for output in stack.outputs:
+                if 'ExportName' not in output:
+                    continue
+                export_name = output['ExportName']
+                if export_name in output_keys:
+                    # TODO: raise exception on stack creation in case of duplicate exports
+                    LOG.warning('Found duplicate export name %s in stacks: %s %s' % (
+                        export_name, output_keys[export_name], stack.stack_id))
+                entry = {
+                    'ExportingStackId': stack.stack_id,
+                    'Name': export_name,
+                    'Value': output['OutputValue']
+                }
+                exports.append(entry)
+                output_keys[export_name] = stack.stack_id
+        return exports
+
 
 class Stack(object):
 
@@ -172,6 +194,13 @@ class Stack(object):
     @property
     def mappings(self):
         return self.template.get('Mappings', {})
+
+    @property
+    def exports_map(self):
+        result = {}
+        for export in RegionState.get().exports:
+            result[export['Name']] = export
+        return result
 
     def resource(self, resource_id):
         return self._lookup(self.resources, resource_id)
@@ -344,6 +373,12 @@ def describe_change_set(req_params):
     return change_set.metadata
 
 
+def list_exports(req_params):
+    state = RegionState.get()
+    result = {'Exports': state.exports}
+    return result
+
+
 def validate_template(req_params):
     result = cloudformation_listener.validate_template(req_params)
     return result
@@ -399,6 +434,7 @@ ENDPOINTS = {
     'DescribeStackResources': describe_stack_resources,
     'DescribeStacks': describe_stacks,
     'ExecuteChangeSet': execute_change_set,
+    'ListExports': list_exports,
     'ListStackResources': list_stack_resources,
     'UpdateStack': update_stack,
     'ValidateTemplate': validate_template

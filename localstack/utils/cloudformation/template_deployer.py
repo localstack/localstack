@@ -10,6 +10,7 @@ from six import iteritems
 from moto.core import CloudFormationModel as MotoCloudFormationModel
 from moto.cloudformation import parsing
 from moto.cloudformation.models import cloudformation_backends
+from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import AWS_REGION_US_EAST_1, TEST_AWS_ACCOUNT_ID
@@ -193,11 +194,11 @@ def s3_bucket_notification_config(params, **kwargs):
 
     # prepare lambda/queue/topic notification configs
     for attrs in attr_tuples:
-        for config in notif_config.get(attrs[0]) or []:
-            filter_rules = config.get('Filter', {}).get('S3Key', {}).get('Rules')
+        for notif_cfg in notif_config.get(attrs[0]) or []:
+            filter_rules = notif_cfg.get('Filter', {}).get('S3Key', {}).get('Rules')
             entry = {
-                attrs[2]: config[attrs[3]],
-                'Events': [config['Event']]
+                attrs[2]: notif_cfg[attrs[3]],
+                'Events': [notif_cfg['Event']]
             }
             if filter_rules:
                 entry['Filter'] = {'Key': {'FilterRules': filter_rules}}
@@ -1320,10 +1321,13 @@ def resolve_refs_recursively(stack_name, value, resources):
             return result
 
         if stripped_fn_lower == 'importvalue':
-            exports = cloudformation_backends[aws_stack.get_region()].exports
             import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
-            export = exports[import_value_key]
-            return export.value
+            if config.USE_MOTO_CF:
+                exports = cloudformation_backends[aws_stack.get_region()].exports
+                export = exports[import_value_key]
+                return export.value
+            stack = find_stack(stack_name)
+            return stack.exports_map[import_value_key]['Value']
 
         if stripped_fn_lower == 'if':
             condition, option1, option2 = value[keys_list[0]]
