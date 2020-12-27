@@ -202,6 +202,10 @@ class Stack(object):
             result[export['Name']] = export
         return result
 
+    @property
+    def status(self):
+        return self.metadata['StackStatus']
+
     def resource(self, resource_id):
         return self._lookup(self.resources, resource_id)
 
@@ -297,6 +301,17 @@ def describe_stacks(req_params):
         return error_response('Stack with id %s does not exist' % stack_name,
             code=400, code_string='ValidationError')
     result = {'Stacks': {'member': stacks}}
+    return result
+
+
+def list_stacks(req_params):
+    state = RegionState.get()
+    filter = req_params.get('StackStatusFilter')
+    stacks = [s.describe_details() for s in state.stacks.values() if filter in [None, s.status]]
+    attrs = ['StackId', 'StackName', 'TemplateDescription', 'CreationTime', 'LastUpdatedTime', 'DeletionTime',
+        'StackStatus', 'StackStatusReason', 'ParentId', 'RootId', 'DriftInformation']
+    stacks = [select_attributes(stack, attrs) for stack in stacks]
+    result = {'StackSummaries': {'member': stacks}}
     return result
 
 
@@ -435,6 +450,7 @@ ENDPOINTS = {
     'DescribeStacks': describe_stacks,
     'ExecuteChangeSet': execute_change_set,
     'ListExports': list_exports,
+    'ListStacks': list_stacks,
     'ListStackResources': list_stack_resources,
     'UpdateStack': update_stack,
     'ValidateTemplate': validate_template

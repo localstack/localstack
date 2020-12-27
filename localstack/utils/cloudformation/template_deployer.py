@@ -1247,7 +1247,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
 
     is_ref_attribute = attribute in ['Ref', 'PhysicalResourceId', 'Arn']
     if is_ref_attribute:
-        resolve_refs_recursively(stack_name, resources[ref], resources)
+        resolve_refs_recursively(stack_name, resources.get(ref, {}), resources)
         return determine_resource_physical_id(resource_id=ref,
             resources=resources, attribute=attribute, stack_name=stack_name)
 
@@ -1898,12 +1898,12 @@ def update_resource_details(stack, resource_id, details):
         stack.moto_resource_statuses[resource_id] = details
 
 
-def add_default_resource_props(resource_props, stack_name, resource_name=None,
+def add_default_resource_props(resource, stack_name, resource_name=None,
         resource_id=None, update=False, existing_resources=None):
     """ Apply some fixes to resource props which otherwise cause deployments to fail """
 
-    res_type = resource_props['Type']
-    props = resource_props['Properties'] = resource_props.get('Properties', {})
+    res_type = resource['Type']
+    props = resource['Properties'] = resource.get('Properties', {})
     existing_resources = existing_resources or {}
 
     def _generate_res_name():
@@ -1928,7 +1928,7 @@ def add_default_resource_props(resource_props, stack_name, resource_name=None,
         props['Name'] = _generate_res_name()
 
     elif res_type == 'AWS::DynamoDB::Table':
-        update_dynamodb_index_resource(resource_props)
+        update_dynamodb_index_resource(resource)
 
     elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
         existing_bucket = existing_resources.get(resource_id) or {}
@@ -1977,10 +1977,8 @@ class TemplateDeployer(object):
 
     def deploy_stack(self):
         self.stack.set_stack_status('CREATE_IN_PROGRESS')
-        # create new copy of stack
-        new_stack = self.stack.copy()
         # apply changes
-        self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name, initialize=True)
+        self.apply_changes(self.stack, self.stack, stack_name=self.stack.stack_name, initialize=True)
         # update status
         self.stack.set_stack_status('CREATE_COMPLETE')
 
@@ -2179,6 +2177,13 @@ class TemplateDeployer(object):
         changes_done = []
         max_iters = 30
         new_resources = stack.resources
+
+        # apply default props before running the loop
+        for resource_id, resource in new_resources.items():
+            add_default_resource_props(resource, stack.stack_name,
+                resource_id=resource_id, existing_resources=new_resources)
+
+        # start deployment loop
         for i in range(max_iters):
             j = 0
             updated = False
@@ -2190,6 +2195,7 @@ class TemplateDeployer(object):
                 resource_id = res_change['LogicalResourceId']
                 try:
                     if is_add_or_modify:
+                        resource = new_resources[resource_id]
                         should_deploy = self.prepare_should_deploy_change(
                             resource_id, change, stack, new_resources)
                         LOG.debug('Handling "%s" for resource "%s" (%s/%s) type "%s" in loop iteration %s' % (
@@ -2197,7 +2203,6 @@ class TemplateDeployer(object):
                         if not should_deploy:
                             del changes[j]
                             continue
-                        resource = new_resources[resource_id]
                         if not self.all_resource_dependencies_satisfied(resource):
                             j += 1
                             continue
@@ -2221,8 +2226,6 @@ class TemplateDeployer(object):
         action = res_change['Action']
 
         # resolve refs in resource details
-        add_default_resource_props(resource, stack.stack_name, resource_id=resource_id,
-            existing_resources=stack.resources)
         resolve_refs_recursively(stack.stack_name, resource, new_resources)
 
         if action in ['Add', 'Modify']:
@@ -2253,5 +2256,6 @@ class TemplateDeployer(object):
         elif action == 'Modify':
             result = update_resource(resource_id, new_resources, stack_name)
         # update resource status and physical resource id
-        self.update_resource_details(resource_id, result, stack=old_stack, action='UPDATE')
+        stack_action = {'Add': 'CREATE', 'Remove': 'DELETE', 'Modify': 'UPDATE'}.get(action)
+        self.update_resource_details(resource_id, result, stack=old_stack, action=stack_action)
         return result
