@@ -1384,7 +1384,7 @@ class CloudFormationTest(unittest.TestCase):
 
         s3 = aws_stack.connect_to_service('s3')
         s3.create_bucket(Bucket=bucket_name, ACL='public-read')
-        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, True))
+        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, get_content=True))
         time.sleep(1)
 
         rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
@@ -1415,7 +1415,7 @@ class CloudFormationTest(unittest.TestCase):
 
         s3 = aws_stack.connect_to_service('s3')
         s3.create_bucket(Bucket=bucket_name, ACL='public-read')
-        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, True))
+        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, get_content=True))
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
         apigw_client = aws_stack.connect_to_service('apigateway')
@@ -1519,7 +1519,7 @@ class CloudFormationTest(unittest.TestCase):
 
         s3_client = aws_stack.connect_to_service('s3')
         s3_client.create_bucket(Bucket=bucket)
-        s3_client.put_object(Bucket=bucket, Key=key, Body=create_zip_file(path, True))
+        s3_client.put_object(Bucket=bucket, Key=key, Body=create_zip_file(path, get_content=True))
 
         template = load_file(os.path.join(THIS_FOLDER, 'templates', 'cdktemplate.json'))
 
@@ -1600,7 +1600,7 @@ class CloudFormationTest(unittest.TestCase):
 
         s3 = aws_stack.connect_to_service('s3')
         s3.create_bucket(Bucket=bucket, ACL='public-read')
-        s3.put_object(Bucket=bucket, Key=key, Body=create_zip_file(package_path, True))
+        s3.put_object(Bucket=bucket, Key=key, Body=create_zip_file(package_path, get_content=True))
         time.sleep(1)
 
         template = load_file(TEST_TEMPLATE_24) % (bucket, key, bucket, key)
