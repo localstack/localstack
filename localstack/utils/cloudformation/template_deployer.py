@@ -1180,6 +1180,9 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
         if attribute in ['Arn', 'DomainArn']:
             domain_name = resource_props.get('DomainName') or resource_state.get('DomainName')
             return aws_stack.es_domain_arn(domain_name)
+    elif resource_type == 'StepFunctions::StateMachine':
+        if is_ref_attr_or_arn:
+            return resource_state['stateMachineArn']
     elif resource_type == 'SNS::Topic':
         if is_ref_attribute and resource_state.get('TopicArn'):
             topic_arn = resource_state.get('TopicArn')
@@ -1452,8 +1455,10 @@ def update_resource(resource_id, resources, stack_name):
 
     if resource_type == 'StepFunctions::StateMachine':
         client = aws_stack.connect_to_service('stepfunctions')
+        sm_arn = extract_resource_attribute(resource_type, {}, 'Arn', stack_name=stack_name,
+            resource_id=resource_id, resource=resource, resources=resources)
         kwargs = {
-            'stateMachineArn': props['stateMachineArn'],
+            'stateMachineArn': sm_arn,
             'definition': props['DefinitionString'],
         }
 
