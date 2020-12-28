@@ -15,6 +15,7 @@ Currently, the focus is primarily on supporting the AWS cloud stack.
 
 # Announcements
 
+* **2020-12-28**: Check out the LocalStack Pro **feature roadmap** here: https://roadmap.localstack.cloud - please help us prioritize our backlog by creating and upvoting feature requests. Looking forward to getting your feedback!
 * **2020-09-15**: A major (breaking) change has been merged in PR #2905 - starting with releases after `v0.11.5`, all services are now exposed via the edge service (port 4566) only! Please update your client configurations to use this new endpoint.
 * **2019-10-09**: **LocalStack Pro is out!** We're incredibly excited to announce the launch of LocalStack Pro - the enterprise version of LocalStack with additional APIs and advanced features. Check out the free trial at https://localstack.cloud
 * **2018-01-10**: **Help wanted!** Please [fill out this survey](https://lambdastudy.typeform.com/to/kDUvvy?source=localstack-github) to support a research study on the usage of Serverless and Function-as-a-Service (FaaS) services, conducted at the Chalmers University of Technology. The survey only takes 5-10 minutes of your time. Many thanks for your participation!!
@@ -84,7 +85,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **XRay**
 * **Interactive UIs to manage resources**
 * **Test report dashboards**
-* ...and much, much more to come!
+* ...and much, much more to come! (Check out our **feature roadmap** here: https://roadmap.localstack.cloud)
 
 ## Why LocalStack?
 
