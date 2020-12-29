@@ -1,4 +1,5 @@
 import json
+import time
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
@@ -53,6 +54,20 @@ def forward_events(records):
             table_name = table_name_from_stream_arn(stream['StreamArn'])
             stream_name = get_kinesis_stream_name(table_name)
             kinesis.put_record(StreamName=stream_name, Data=json.dumps(record), PartitionKey='TODO')
+
+
+def delete_streams(table_arn):
+    table_arn = aws_stack.dynamodb_table_arn(table_arn)
+    stream = DDB_STREAMS.pop(table_arn, None)
+    if stream:
+        table_name = table_arn.split('/')[-1]
+        stream_name = get_kinesis_stream_name(table_name)
+        try:
+            aws_stack.connect_to_service('kinesis').delete_stream(StreamName=stream_name)
+            # sleep a bit, as stream deletion can take some time ...
+            time.sleep(1)
+        except Exception:
+            pass  # ignore "stream not found" errors
 
 
 @app.route('/', methods=['POST'])

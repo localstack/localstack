@@ -339,8 +339,8 @@ class ProxyListenerDynamoDB(ProxyListener):
                 payload={'n': event_publisher.get_hash(data['TableName'])}
             )
             self.delete_all_event_source_mappings(table_arn)
+            dynamodbstreams_api.delete_streams(table_arn)
             TABLE_TAGS.pop(table_arn, None)
-
             return
 
         elif action == '%s.UpdateTable' % ACTION_PREFIX:

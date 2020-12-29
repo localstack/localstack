@@ -187,16 +187,20 @@ class LambdaExecutor(object):
 
     def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars={}):
         kwargs = {'stdin': True, 'inherit_env': True, 'asynchronous': True}
+        env_vars = env_vars or {}
 
         is_provided = func_details.runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
         if func_details and is_provided and env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
             # Note: certain "provided" runtimes (e.g., Rust programs) can block when we pass in
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
-            env_vars = {
+            env_updates = {
                 'PATH': env_vars.get('PATH') or os.environ.get('PATH', ''),
                 'AWS_LAMBDA_EVENT_BODY': to_str(event),
                 'DOCKER_LAMBDA_USE_STDIN': '1'
             }
+            env_vars.update(env_updates)
+            # Note: $AWS_LAMBDA_COGNITO_IDENTITY='{}' causes Rust Lambdas to hang
+            env_vars.pop('AWS_LAMBDA_COGNITO_IDENTITY', None)
             event = None
             cmd = re.sub(r'(.*)(%s\s+(run|start))' % self._docker_cmd(), r'\1echo $AWS_LAMBDA_EVENT_BODY | \2', cmd)
 

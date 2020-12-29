@@ -115,3 +115,15 @@ class TestTerraform(unittest.TestCase):
 
         response = route53.get_change(Id='string')
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+    def test_apigateway_escaped_policy(self):
+        apigateway_client = aws_stack.connect_to_service('apigateway')
+        rest_apis = apigateway_client.get_rest_apis()
+
+        service_apis = []
+
+        for rest_api in rest_apis['items']:
+            if rest_api['name'] == 'service_api':
+                service_apis.append(rest_api)
+
+        self.assertEqual(len(service_apis), 1)

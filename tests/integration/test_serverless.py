@@ -43,18 +43,13 @@ class TestServerless(unittest.TestCase):
         function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
         self.assertEqual(function['Handler'], 'handler.processItem')
 
-        resp = lambda_client.list_event_source_mappings(
-            FunctionName=function_name,
-        )
+        resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
         events = resp['EventSourceMappings']
         self.assertEqual(len(events), 1)
         event_source_arn = events[0]['EventSourceArn']
 
-        resp = dynamodb_client.describe_table(
-            TableName=table_name
-        )
-        latest_stream_arn = resp['Table']['LatestStreamArn'].replace(resp['Table']['LatestStreamLabel'], 'latest')
-        self.assertEqual(latest_stream_arn, event_source_arn)
+        resp = dynamodb_client.describe_table(TableName=table_name)
+        self.assertEqual(resp['Table']['LatestStreamArn'], event_source_arn)
 
     def test_kinesis_stream_handler_deployed(self):
         function_name = 'sls-test-local-kinesisStreamHandler'

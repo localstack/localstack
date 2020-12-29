@@ -3,7 +3,7 @@ import uuid
 from copy import deepcopy
 from urllib.parse import quote
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE
-from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS
+from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.models import (
     iam_backend as moto_iam_backend, aws_managed_policies,
     AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy, User
@@ -108,6 +108,14 @@ def apply_patches():
 
     if 'Principal' not in VALID_STATEMENT_ELEMENTS:
         VALID_STATEMENT_ELEMENTS.append('Principal')
+
+    def _validate_resource_syntax(statement, *args, **kwargs):
+        # Note: Serverless generates policies without "Resource" section (only "Effect"/"Principal"/"Action"),
+        # which causes several policy validators in moto to fail
+        if statement.get('Resource') in [None, [None]]:
+            statement['Resource'] = ['*']
+
+    IAMPolicyDocumentValidator._validate_resource_syntax = _validate_resource_syntax
 
     def iam_response_create_user(self):
         user = moto_iam_backend.create_user(
