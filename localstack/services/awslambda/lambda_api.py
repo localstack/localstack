@@ -310,10 +310,8 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
         }
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
         asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
-        result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
-        if not asynchronous:
-            result, log_output = result
-        return result
+        inv_result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
+        return inv_result.result
     except Exception as e:
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
@@ -342,7 +340,8 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message, mes
             }
         }]
     }
-    return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
+    inv_result = run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
+    return inv_result.result
 
 
 def process_kinesis_records(records, stream_name):
@@ -557,10 +556,10 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         func_arn = aws_stack.fix_arn(func_arn)
         func_details = ARN_TO_LAMBDA.get(func_arn)
         if not func_details:
-            return not_found_error(msg='The resource specified in the request does not exist.')
+            result = not_found_error(msg='The resource specified in the request does not exist.')
+            return lambda_executors.InvocationResult(result)
 
         context = LambdaContext(func_details, version, context)
-
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
             version=version, asynchronous=asynchronous, callback=callback)
 
@@ -1336,11 +1335,12 @@ def invoke_function(function):
     invocation_type = request.headers.get('X-Amz-Invocation-Type', 'RequestResponse')
     log_type = request.headers.get('X-Amz-Log-Type')
 
-    def _create_response(result, status_code=200, headers={}):
+    def _create_response(invocation_result, status_code=200, headers={}):
         """ Create the final response for the given invocation result. """
-        log_output = ''
-        if isinstance(result, tuple):
-            result, log_output = result
+        if not isinstance(invocation_result, lambda_executors.InvocationResult):
+            invocation_result = lambda_executors.InvocationResult(invocation_result)
+        result = invocation_result.result
+        log_output = invocation_result.log_output
         details = {
             'StatusCode': status_code,
             'Payload': result,

@@ -646,7 +646,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         testutil.delete_lambda_function(name=function_name)
 
-    def test_function_code_singing_config(self):
+    def test_function_code_signing_config(self):
         lambda_client = aws_stack.connect_to_service('lambda')
         function_name = 'lambda_func-{}'.format(short_uid())
 
