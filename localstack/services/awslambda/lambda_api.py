@@ -623,7 +623,6 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
 
 
 def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
-    # TODO: support Java Lambdas in the future
     if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
         return 'bootstrap'
     delimiter = '.'
@@ -643,7 +642,6 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
 
 
 def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
-    # TODO: support Java Lambdas in the future
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return handler_name.split(':')[-1]
     return handler_name.split('.')[-1]
@@ -1332,10 +1330,14 @@ def invoke_function(function):
                                       error_type='UnsupportedMediaTypeException')
 
     # Default invocation type is RequestResponse
-    invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
+    invocation_type = request.headers.get('X-Amz-Invocation-Type', 'RequestResponse')
+    log_type = request.headers.get('X-Amz-Log-Type')
 
     def _create_response(result, status_code=200, headers={}):
         """ Create the final response for the given invocation result. """
+        log_output = ''
+        if isinstance(result, tuple):
+            result, log_output = result
         details = {
             'StatusCode': status_code,
             'Payload': result,
@@ -1361,7 +1363,9 @@ def invoke_function(function):
         # Set error headers
         if details.get('FunctionError'):
             details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
-        details['Headers']['X-Amz-Log-Result'] = base64.b64encode(to_bytes(''))  # TODO add logs!
+        # LogResult contains the last 4KB (~4k characters) of log outputs
+        logs = log_output[-4000:] if log_type == 'Tail' else ''
+        details['Headers']['X-Amz-Log-Result'] = base64.b64encode(to_bytes(logs))
         details['Headers']['X-Amz-Executed-Version'] = str(qualifier or VERSION_LATEST)
         # Construct response object
         response_obj = details['Payload']

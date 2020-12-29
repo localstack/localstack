@@ -727,12 +727,20 @@ class TestPythonRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_PY)
 
     def test_invocation_type_not_set(self):
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}')
+        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', LogType='Tail')
         result_data = json.loads(result['Payload'].read())
 
+        # assert response details
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(result_data['event'], {})
+
+        # assert that logs are contained in response
+        logs = result.get('LogResult', '')
+        logs = to_str(base64.b64decode(to_str(logs)))
+        self.assertIn('START', logs)
+        self.assertIn('Lambda log message', logs)
+        self.assertIn('END', logs)
+        self.assertIn('REPORT', logs)
 
     def test_invocation_type_request_response(self):
         result = self.lambda_client.invoke(

@@ -144,9 +144,10 @@ class LambdaExecutor(object):
                 # start the execution
                 raised_error = None
                 result = None
+                log_output = None
                 dlq_sent = None
                 try:
-                    result = self._execute(func_arn, func_details, event, context, version)
+                    result, log_output = self._execute(func_arn, func_details, event, context, version)
                 except Exception as e:
                     raised_error = e
                     if asynchronous:
@@ -163,7 +164,9 @@ class LambdaExecutor(object):
                     self.function_invoke_times[func_arn] = invocation_time
                     callback and callback(result, func_arn, event, error=raised_error, dlq_sent=dlq_sent)
                 # return final result
-                return result
+                if asynchronous:
+                    return result
+                return result, log_output
 
             return _run(func_arn=func_arn)
 
@@ -230,7 +233,7 @@ class LambdaExecutor(object):
             raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
                 (return_code, result, log_output))
 
-        return result
+        return result, log_output
 
 
 class ContainerInfo:
