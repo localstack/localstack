@@ -18,8 +18,8 @@ from localstack import config
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
-    to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker, long_uid,
+    now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
@@ -118,6 +118,14 @@ def get_main_endpoint_from_container():
     return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
 
 
+class InvocationResult(object):
+    def __init__(self, result, log_output=''):
+        if isinstance(result, InvocationResult):
+            raise Exception('Unexpected invocation result type: %s' % result)
+        self.result = result
+        self.log_output = log_output or ''
+
+
 class LambdaExecutor(object):
     """ Base class for Lambda executors. Subclasses must overwrite the _execute method """
     def __init__(self):
@@ -171,7 +179,7 @@ class LambdaExecutor(object):
         if asynchronous:
             LOG.debug('Lambda executed in Event (asynchronous) mode, no response will be returned to caller')
             FuncThread(do_execute).start()
-            return None, 'Lambda executed asynchronously.'
+            return InvocationResult(None, log_output='Lambda executed asynchronously.')
 
         return do_execute()
 
@@ -230,7 +238,8 @@ class LambdaExecutor(object):
             raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
                 (return_code, result, log_output))
 
-        return result
+        invocation_result = InvocationResult(result, log_output=log_output)
+        return invocation_result
 
 
 class ContainerInfo:
@@ -751,21 +760,28 @@ class LambdaExecutorLocal(LambdaExecutor):
                 sys.path = path_before
 
         process = Process(target=do_execute)
+        start_time = now(millis=True)
         with CaptureOutput() as c:
             process.run()
         result = queue.get()
+        end_time = now(millis=True)
 
         # Make sure to keep the log line below, to ensure the log stream gets created
-        log_output = 'START: Lambda %s started via "local" executor ...' % func_arn
+        request_id = long_uid()
+        log_output = 'START %s: Lambda %s started via "local" executor ...' % (request_id, func_arn)
         # TODO: Interweaving stdout/stderr currently not supported
         for stream in (c.stdout(), c.stderr()):
             if stream:
                 log_output += ('\n' if log_output else '') + stream
+        log_output += '\nEND RequestId: %s' % request_id
+        log_output += '\nREPORT RequestId: %s Duration: %s ms' % (request_id, int((end_time - start_time) * 1000))
 
         # store logs to CloudWatch
         _store_logs(func_details, log_output)
 
-        return result
+        result = result.result if isinstance(result, InvocationResult) else result
+        invocation_result = InvocationResult(result, log_output=log_output)
+        return invocation_result
 
     def execute_java_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler

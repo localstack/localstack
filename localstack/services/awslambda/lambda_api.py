@@ -309,8 +309,9 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
             'stageVariables': get_stage_variables(api_id, stage),
         }
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
-        return run_lambda(event=event, context=event_context, func_arn=func_arn,
-            asynchronous=not config.SYNCHRONOUS_API_GATEWAY_EVENTS)
+        asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
+        inv_result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
+        return inv_result.result
     except Exception as e:
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
@@ -339,7 +340,8 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message, mes
             }
         }]
     }
-    return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
+    inv_result = run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
+    return inv_result.result
 
 
 def process_kinesis_records(records, stream_name):
@@ -554,10 +556,10 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         func_arn = aws_stack.fix_arn(func_arn)
         func_details = ARN_TO_LAMBDA.get(func_arn)
         if not func_details:
-            return not_found_error(msg='The resource specified in the request does not exist.')
+            result = not_found_error(msg='The resource specified in the request does not exist.')
+            return lambda_executors.InvocationResult(result)
 
         context = LambdaContext(func_details, version, context)
-
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
             version=version, asynchronous=asynchronous, callback=callback)
 
@@ -623,7 +625,6 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
 
 
 def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
-    # TODO: support Java Lambdas in the future
     if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
         return 'bootstrap'
     delimiter = '.'
@@ -643,7 +644,6 @@ def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
 
 
 def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
-    # TODO: support Java Lambdas in the future
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return handler_name.split(':')[-1]
     return handler_name.split('.')[-1]
@@ -1332,10 +1332,15 @@ def invoke_function(function):
                                       error_type='UnsupportedMediaTypeException')
 
     # Default invocation type is RequestResponse
-    invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
+    invocation_type = request.headers.get('X-Amz-Invocation-Type', 'RequestResponse')
+    log_type = request.headers.get('X-Amz-Log-Type')
 
-    def _create_response(result, status_code=200, headers={}):
+    def _create_response(invocation_result, status_code=200, headers={}):
         """ Create the final response for the given invocation result. """
+        if not isinstance(invocation_result, lambda_executors.InvocationResult):
+            invocation_result = lambda_executors.InvocationResult(invocation_result)
+        result = invocation_result.result
+        log_output = invocation_result.log_output
         details = {
             'StatusCode': status_code,
             'Payload': result,
@@ -1361,7 +1366,9 @@ def invoke_function(function):
         # Set error headers
         if details.get('FunctionError'):
             details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
-        details['Headers']['X-Amz-Log-Result'] = base64.b64encode(to_bytes(''))  # TODO add logs!
+        # LogResult contains the last 4KB (~4k characters) of log outputs
+        logs = log_output[-4000:] if log_type == 'Tail' else ''
+        details['Headers']['X-Amz-Log-Result'] = base64.b64encode(to_bytes(logs))
         details['Headers']['X-Amz-Executed-Version'] = str(qualifier or VERSION_LATEST)
         # Construct response object
         response_obj = details['Payload']
