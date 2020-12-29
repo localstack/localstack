@@ -309,8 +309,11 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
             'stageVariables': get_stage_variables(api_id, stage),
         }
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
-        return run_lambda(event=event, context=event_context, func_arn=func_arn,
-            asynchronous=not config.SYNCHRONOUS_API_GATEWAY_EVENTS)
+        asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
+        result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
+        if not asynchronous:
+            result, log_output = result
+        return result
     except Exception as e:
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 

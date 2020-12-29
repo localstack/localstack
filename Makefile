@@ -39,7 +39,8 @@ install-basic:     ## Install basic dependencies for CLI usage in virtualenv
 		($(VENV_RUN); cat requirements.txt | grep -ve '^#' | grep '#\(basic\|extended\)' | sed 's/ #.*//' \
 			| xargs $(PIP_CMD) install)
 
-install-web:       ## Install npm dependencies for dashboard Web UI
+# deprecated - TODO remove
+install-web:
 	(cd localstack/dashboard/web && (test ! -e package.json || npm install --silent > /dev/null))
 
 publish:           ## Publish the library to the central PyPi repository
@@ -128,17 +129,18 @@ docker-cp-coverage:
 		docker cp $$id:/opt/code/localstack/.coverage .coverage; \
 		docker rm -v $$id
 
-web:               ## Start web application (dashboard)
+# deprecated - TODO remove
+web:
 	($(VENV_RUN); bin/localstack web)
 
 test:              ## Run automated tests
 	make lint && \
 		($(VENV_RUN); DEBUG=$(DEBUG) PYTHONPATH=`pwd` nosetests $(NOSE_ARGS) --with-timer --with-coverage --logging-level=WARNING --nocapture --no-skip --exe --cover-erase --cover-tests --cover-inclusive --cover-package=localstack --with-xunit --exclude='$(VENV_DIR).*' --ignore-files='lambda_python3.py' $(TEST_PATH))
 
-test-docker:       ## Run automated tests in Docker
+test-docker:
 	ENTRYPOINT="--entrypoint=" CMD="make test" make docker-run
 
-test-docker-mount:
+test-docker-mount: ## Run automated tests in Docker (mounting local code)
 	ENTRYPOINT="-v `pwd`/tests:/opt/code/localstack/tests" make test-docker-mount-code
 
 test-docker-mount-code:
