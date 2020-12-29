@@ -166,7 +166,7 @@ class TestStateMachine(unittest.TestCase):
         retry(check_result, sleep=2, retries=10)
 
         # clean up
-        self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+        self.cleanup(sm_arn, state_machines_before)
 
     def test_create_run_map_state_machine(self):
         names = ['Bob', 'Meg', 'Joe']
@@ -200,7 +200,7 @@ class TestStateMachine(unittest.TestCase):
         retry(check_invocations, sleep=1, retries=10)
 
         # clean up
-        self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+        self.cleanup(sm_arn, state_machines_before)
 
     def test_create_run_state_machine(self):
         state_machines_before = self.sfn_client.list_state_machines()['stateMachines']
@@ -236,12 +236,21 @@ class TestStateMachine(unittest.TestCase):
         retry(check_invocations, sleep=0.7, retries=25)
 
         # clean up
-        self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+        self.cleanup(sm_arn, state_machines_before)
 
     def assert_machine_created(self, state_machines_before):
+        return self._assert_machine_instances(len(state_machines_before) + 1)
+
+    def assert_machine_deleted(self, state_machines_before):
+        return self._assert_machine_instances(len(state_machines_before))
+
+    def cleanup(self, sm_arn, state_machines_before):
+        self.sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+
+    def _assert_machine_instances(self, expected_instances):
         def check():
             state_machines_after = self.sfn_client.list_state_machines()['stateMachines']
-            self.assertEqual(len(state_machines_after), len(state_machines_before) + 1)
+            self.assertEqual(len(state_machines_after), expected_instances)
             return state_machines_after
         return retry(check, sleep=1, retries=4)
 
