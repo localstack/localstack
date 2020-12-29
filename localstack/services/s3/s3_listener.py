@@ -15,6 +15,7 @@ import six
 import botocore.config
 from pytz import timezone
 from urllib.parse import parse_qs
+from urllib.parse import urlencode
 from botocore.compat import urlsplit
 from botocore.client import ClientError
 from botocore.credentials import Credentials
@@ -1054,6 +1055,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
+        # print('LOGGG', path, method, data, headers)
 
         # Detecting pre-sign url and checking signature
         if any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
@@ -1389,6 +1391,7 @@ class ProxyListenerS3(PersistingProxyListener):
 def authenticate_presign_url(method, path, headers, data=None):
 
     sign_headers = []
+    sign_query = []
     url = '{}{}'.format(config.get_edge_url(), path)
     parsed = urlparse.urlparse(url)
     query_params = parse_qs(parsed.query)
@@ -1415,10 +1418,21 @@ def authenticate_presign_url(method, path, headers, data=None):
         for key in query_params:
             if key.lower() not in presign_params_lower:
                 if key.lower() not in (header[0].lower() for header in headers):
-                    sign_headers.append((key, query_params[key][0]))
+                    # signature must be calculated on the query parameters so maintain the list
+                    # of params
+                    sign_query.append((key, query_params[key][0]))
 
     # Preparnig dictionary of request to build AWSRequest's object of the botocore
     request_url = url.split('?')[0]
+
+    # if query parameters are present then it should be added to the url so that they
+    # can be used in signature calculation
+    if len(sign_query) > 0:
+        encoded = urlencode(dict(sign_query))
+        # replace + wiht %20 as the encoder converts spaces into +
+        # but it should rather be %20 so replacing it
+        encoded = encoded.replace('+', '%20', -1)
+        request_url = request_url + '?' + encoded
     forwarded_for = get_forwarded_for_host(headers)
     if forwarded_for:
         request_url = re.sub('://[^/]+', '://%s' % forwarded_for, request_url)
