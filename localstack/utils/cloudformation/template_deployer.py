@@ -1841,6 +1841,8 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
             return result
     elif resource_type == 'ApiGateway::Stage':
         return resource_props.get('StageName')
+    elif resource_type == 'AppSync::DataSource':
+        return resource_props.get('DataSourceArn')
     elif resource_type == 'Kinesis::Stream':
         return aws_stack.kinesis_stream_arn(resource_props.get('Name'))
     elif resource_type == 'KinesisFirehose::DeliveryStream':
