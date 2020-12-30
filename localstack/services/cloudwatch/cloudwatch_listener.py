@@ -1,8 +1,21 @@
+import gzip
+from requests.models import Request
 from localstack.utils.common import _replace
 from localstack.services.generic_proxy import ProxyListener
 
+GZIP_ENCODING = 'GZIP'
+IDENTITY_ENCODING = 'IDENTITY'
+
 
 class ProxyListenerCloudWatch(ProxyListener):
+    def forward_request(self, method, path, data, headers):
+        encoding_type = headers.get('content-encoding') or ''
+        if encoding_type.upper() == GZIP_ENCODING:
+            headers.set('content-encoding', IDENTITY_ENCODING)
+            data = gzip.decompress(data)
+            return Request(data=data, headers=headers, method=method)
+
+        return True
 
     def return_response(self, method, path, data, headers, response):
         # Fix Incorrect date format to iso 8601
