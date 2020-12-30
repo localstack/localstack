@@ -1013,18 +1013,29 @@ class ProxyListenerS3(PersistingProxyListener):
     def get_201_response(key, bucket_name):
         return """
                 <PostResponse>
-                    <Location>{protocol}://{host}/{encoded_key}</Location>
+                    <Location>{location}</Location>
                     <Bucket>{bucket}</Bucket>
                     <Key>{key}</Key>
                     <ETag>{etag}</ETag>
                 </PostResponse>
                 """.format(
-            protocol=get_service_protocol(),
-            host=config.HOSTNAME_EXTERNAL,
-            encoded_key=urlparse.quote(key, safe=''),
+            location=ProxyListenerS3.get_response_location(key, bucket_name),
             key=key,
             bucket=bucket_name,
             etag='d41d8cd98f00b204e9800998ecf8427f',
+        )
+
+    @staticmethod
+    def get_response_location(key, bucket_name):
+        bucket_name = normalize_bucket_name(bucket_name)
+        host = config.HOSTNAME_EXTERNAL
+        if ':' not in host:
+            host = '%s:%s' % (host, config.PORT_S3)
+        return '{protocol}://{host}/{bucket}/{encoded_key}'.format(
+            protocol=get_service_protocol(),
+            host=host,
+            bucket=bucket_name,
+            encoded_key=urlparse.quote(key, safe=''),
         )
 
     @staticmethod
@@ -1238,6 +1249,9 @@ class ProxyListenerS3(PersistingProxyListener):
                 response.headers['Content-Length'] = str(len(response._content))
                 response.headers['Content-Type'] = 'application/xml; charset=utf-8'
                 return response
+
+            if response.status_code == 204 and key:
+                response.headers['Location'] = self.get_response_location(key, bucket_name)
         if method == 'GET' and response.status_code == 416:
             return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
 

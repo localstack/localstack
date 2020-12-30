@@ -555,7 +555,7 @@ class S3ListenerTest(unittest.TestCase):
                     <ETag>{etag}</ETag>
                 </PostResponse>
                 """.format(
-            location='http://localhost/key-my-file',
+            location='http://localhost:4566/' + bucket_name + '/key-my-file',
             bucket=bucket_name,
             key='key-my-file',
             etag='d41d8cd98f00b204e9800998ecf8427f'
