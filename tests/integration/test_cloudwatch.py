@@ -1,8 +1,13 @@
 import unittest
+import gzip
+import hmac
+import hashlib
 from localstack.utils.aws import aws_stack
 from datetime import datetime, timedelta
 from dateutil.tz import tzutc
-from localstack.utils.common import short_uid
+from localstack.utils.common import short_uid, to_str
+from localstack import config
+from six.moves.urllib.request import Request, urlopen
 
 
 class CloudWatchTest(unittest.TestCase):
@@ -52,6 +57,24 @@ class CloudWatchTest(unittest.TestCase):
         )
         self.assertEqual(len(rs['Metrics']), 1)
         self.assertEqual(rs['Metrics'][0]['Namespace'], namespace)
+
+    def test_put_metric_data_gzip(self):
+        data = 'Action=PutMetricData&MetricData.member.1.MetricName=test-metric&MetricData.member.1.Value=1&Namespace=test_namespace&Version=2010-08-01'
+        bytes_data = bytes(data, encoding='utf-8')
+        encoded_data = gzip.compress(bytes_data)
+
+        url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers('cloudwatch')
+
+        headers.update({
+            'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+            'Content-Length': len(encoded_data),
+            'Content-Encoding': 'GZIP',
+            'User-Agent': 'aws-sdk-nodejs/2.819.0 linux/v12.18.2 callback',
+            'Authorization': 'AWS4-HMAC-SHA256 Credential=test/20201230/us-east-1/monitoring/aws4_request, SignedHeaders=content-encoding;host;x-amz-content-sha256;x-amz-date, Signature=bb31fc5f4e58040ede9ed751133fe839668b27290bc1406b6ffadc4945c705dc',
+            })
+        request = Request(url, encoded_data, headers, method='POST')
+        urlopen(request)
 
     def test_get_metric_data(self):
 
