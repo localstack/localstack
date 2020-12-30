@@ -19,6 +19,10 @@ from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
+from localstack.utils.common import (
+    to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
+    mkdir, unzip, is_zip_file, run, first_char_to_lower, run_for_max_seconds,
+    timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.services.awslambda import lambda_executors
 from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_PYTHON27,
@@ -37,14 +41,11 @@ from localstack.services.awslambda.lambda_executors import (
     LAMBDA_RUNTIME_RUBY,
     LAMBDA_RUNTIME_RUBY25,
     LAMBDA_RUNTIME_PROVIDED)
-from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
-from localstack.utils.common import (
-    to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
-    mkdir, unzip, is_zip_file, run, first_char_to_lower, run_for_max_seconds,
-    timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
 from localstack.utils.aws.aws_models import LambdaFunction, CodeSigningConfig
+from localstack.services.cloudformation.service_models import LAMBDA_POLICY_NAME_PATTERN
+from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 
 # logger
 LOG = logging.getLogger(__name__)
@@ -124,7 +125,6 @@ LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTO
 
 # IAM policy constants
 IAM_POLICY_VERSION = '2012-10-17'
-POLICY_NAME_PATTERN = 'lambda_policy_%s'
 
 # Whether to check if the handler function exists while creating lambda function
 CHECK_HANDLER_ON_CREATION = False
@@ -1264,9 +1264,8 @@ def add_permission(function):
         new_policy['Statement'].extend(previous_policy['Statement'])
         iam_client.delete_policy(PolicyArn=previous_policy['PolicyArn'])
 
-    iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % function,
-                            PolicyDocument=json.dumps(new_policy),
-                            Description='Policy for Lambda function "%s"' % function)
+    iam_client.create_policy(PolicyName=LAMBDA_POLICY_NAME_PATTERN % function,
+        PolicyDocument=json.dumps(new_policy), Description='Policy for Lambda function "%s"' % function)
 
     result = {'Statement': json.dumps(new_policy['Statement'][0])}
     return jsonify(result)
