@@ -59,26 +59,29 @@ class CloudWatchTest(unittest.TestCase):
     def test_put_metric_data_gzip(self):
         metric_name = 'test-metric'
         namespace = 'namespace'
-        data = 'Action=PutMetricData&MetricData.member.1.MetricName=%s&\
-            MetricData.member.1.Value=1&Namespace=%s&Version=2010-08-01'\
-             % (metric_name, namespace)
+        data = 'Action=PutMetricData&MetricData.member.1.' \
+            'MetricName=%s&MetricData.member.1.Value=1&' \
+            'Namespace=%s&Version=2010-08-01' \
+            % (metric_name, namespace)
         bytes_data = bytes(data, encoding='utf-8')
         encoded_data = gzip.compress(bytes_data)
 
         url = config.get_edge_url()
         headers = aws_stack.mock_aws_request_headers('cloudwatch')
 
+        authorization = 'AWS4-HMAC-SHA256 Credential=test/20201230/' \
+            'us-east-1/monitoring/aws4_request, ' \
+            'SignedHeaders=content-encoding;host;' \
+            'x-amz-content-sha256;x-amz-date, Signature='\
+            'bb31fc5f4e58040ede9ed751133fe'\
+            '839668b27290bc1406b6ffadc4945c705dc'
+
         headers.update({
             'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
             'Content-Length': len(encoded_data),
             'Content-Encoding': 'GZIP',
             'User-Agent': 'aws-sdk-nodejs/2.819.0 linux/v12.18.2 callback',
-            'Authorization': 'AWS4-HMAC-SHA256 Credential=test/20201230/\
-                us-east-1/monitoring/aws4_request, \
-                SignedHeaders=content-encoding;host;x-amz-content-sha256;\
-                x-amz-date, \
-                Signature=bb31fc5f4e58040ede9ed751133fe83\
-                9668b27290bc1406b6ffadc4945c705dc',
+            'Authorization': authorization,
         })
         request = Request(url, encoded_data, headers, method='POST')
         urlopen(request)
