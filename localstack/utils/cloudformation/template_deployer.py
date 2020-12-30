@@ -810,22 +810,6 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             if state is not None:
                 return state
 
-        elif resource_type == 'ApiGateway::Deployment':
-            api_id = resource_props['RestApiId'] if resource else resource_id
-            api_id = resolve_refs_recursively(stack_name, api_id, resources)
-            if not api_id:
-                return None
-            result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
-            # TODO possibly filter results by stage name or other criteria
-            return result[0] if result else None
-
-        elif resource_type == 'CloudFormation::Stack':
-            client = aws_stack.connect_to_service('cloudformation')
-            child_stack_name = resource_props.get('StackName') or resource_id
-            child_stack_name = resolve_refs_recursively(stack_name, child_stack_name, resources)
-            result = client.describe_stacks(StackName=child_stack_name)
-            return (result.get('Stacks') or [None])[0]
-
         elif resource_type == 'Parameter':
             return resource_props
 

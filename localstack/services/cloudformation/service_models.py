@@ -159,6 +159,13 @@ class CloudFormationStack(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::CloudFormation::Stack'
 
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('cloudformation')
+        child_stack_name = self.props.get('StackName') or self.resource_id
+        child_stack_name = self.resolve_refs_recursively(stack_name, child_stack_name, resources)
+        result = client.describe_stacks(StackName=child_stack_name)
+        return (result.get('Stacks') or [None])[0]
+
 
 class LambdaFunction(GenericBaseModel):
 
@@ -373,6 +380,21 @@ class GatewayRestAPI(GenericBaseModel):
         api_name = self.props.get('Name') or self.resource_id
         api_name = self.resolve_refs_recursively(stack_name, api_name, resources)
         result = list(filter(lambda api: api['name'] == api_name, apis))
+        return result[0] if result else None
+
+
+class GatewayDeployment(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::Deployment'
+
+    def fetch_state(self, stack_name, resources):
+        api_id = self.props['RestApiId'] or self.resource_id
+        api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
+        if not api_id:
+            return None
+        result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
+        # TODO possibly filter results by stage name or other criteria
         return result[0] if result else None
 
 
