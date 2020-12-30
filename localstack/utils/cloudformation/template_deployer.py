@@ -802,13 +802,15 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     try:
 
         # try to look up resource class
-        canonical_type = canonical_resource_type
+        canonical_type = canonical_resource_type(resource_type)
         resource_class = RESOURCE_MODELS.get(canonical_type)
         if resource_class:
             instance = resource_class(resource)
-            return instance.fetch_state(stack_name=stack_name, resources=resources)
+            state = instance.fetch_state(stack_name=stack_name, resources=resources)
+            if state is not None:
+                return state
 
-        elif resource_type == 'Lambda::EventSourceMapping':
+        if resource_type == 'Lambda::EventSourceMapping':
             resource_id = resource_props['FunctionName'] if resource else resource_id
             source_arn = resource_props.get('EventSourceArn')
             resource_id = resolve_refs_recursively(stack_name, resource_id, resources)

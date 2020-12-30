@@ -53,8 +53,6 @@ class GenericBaseModel(CloudFormationModel):
         self.properties = resource_json.get('Properties') or {}
         # state, as determined from the deployed resource
         self.state = {}
-        # TODO remove physical_resource_id attribute from all subclasses entirely?
-        self.physical_resource_id = self.resource_json.get('PhysicalResourceId')
 
     def get_cfn_attribute(self, attribute_name):
         """ Retrieve the given CF attribute for this resource (inherited from moto's CloudFormationModel) """
@@ -87,8 +85,13 @@ class GenericBaseModel(CloudFormationModel):
         return None
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        """ Return the physical resource ID (Ref) of this resource (to be overwritten by subclasses) """
+        """ Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses) """
         return None
+
+    @property
+    def physical_resource_id(self):
+        """ Return the (cached) physical resource ID. """
+        return self.resource_json.get('PhysicalResourceId')
 
     # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
     def fetch_state(self, stack_name, resources):
@@ -125,7 +128,7 @@ class GenericBaseModel(CloudFormationModel):
     def create_from_cloudformation_json(cls, resource_name, resource_json, region_name):
         return cls(resource_name=resource_name, resource_json=resource_json, region_name=region_name)
 
-    def resolve_refs_recursively(stack_name, value, resources):
+    def resolve_refs_recursively(self, stack_name, value, resources):
         # TODO: restructure code to avoid circular import here
         from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
         return resolve_refs_recursively(stack_name, value, resources)
