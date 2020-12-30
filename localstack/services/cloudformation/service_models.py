@@ -16,25 +16,26 @@ class DependencyNotYetSatisfied(Exception):
         self.resource_ids = resource_ids
 
 
-class BaseModel(CloudFormationModel):
-    def __init__(self, **params):
-        self.params = params
+# TODO remove?
+# class BaseModel(CloudFormationModel):
+#     def __init__(self, **params):
+#         self.params = params
+#
+#     @classmethod
+#     def create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
+#         props = cloudformation_json['Properties']
+#         return cls(**props)
+#
+#     def get_cfn_attribute(self, attribute_name):
+#         attr = self.params.get(attribute_name)
+#         if attr is None:
+#             attr = getattr(self, attribute_name.lower(), None)
+#             if attr is None:
+#                 raise UnformattedGetAttTemplateException()
+#         return attr
 
-    @classmethod
-    def create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
-        props = cloudformation_json['Properties']
-        return cls(**props)
 
-    def get_cfn_attribute(self, attribute_name):
-        attr = self.params.get(attribute_name)
-        if attr is None:
-            attr = getattr(self, attribute_name.lower(), None)
-            if attr is None:
-                raise UnformattedGetAttTemplateException()
-        return attr
-
-
-class GenericBaseObject(BaseModel):
+class GenericBaseModel(CloudFormationModel):
     """ Abstract base class representing a resource model class in LocalStack.
         This class keeps references to a combination of (1) the CF resource
         properties (as defined in the template), and (2) the current deployment
@@ -44,9 +45,8 @@ class GenericBaseObject(BaseModel):
         e.g., fetching the latest deployment state, getting the resource name, etc.
     """
 
-    def __init__(self, resource_name, resource_json, region_name=None, **params):
+    def __init__(self, resource_json, region_name=None, **params):
         self.region_name = region_name or aws_stack.get_region()
-        self.resource_name = resource_name
         self.resource_json = resource_json
         self.resource_type = resource_json['Type']
         # properties, as defined in the template
@@ -131,7 +131,7 @@ class GenericBaseObject(BaseModel):
         return resolve_refs_recursively(stack_name, value, resources)
 
 
-class EventsRule(BaseModel):
+class EventsRule(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::Events::Rule'
@@ -141,8 +141,11 @@ class EventsRule(BaseModel):
             return self.params.get('Arn') or aws_stack.events_rule_arn(self.params.get('Name'))
         return super(EventsRule, self).get_cfn_attribute(attribute_name)
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('Name')
 
-class LogsLogGroup(BaseModel):
+
+class LogsLogGroup(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::Logs::LogGroup'
@@ -152,25 +155,38 @@ class LogsLogGroup(BaseModel):
             return self.params.get('Arn') or aws_stack.log_group_arn(self.params.get('LogGroupName'))
         return super(LogsLogGroup, self).get_cfn_attribute(attribute_name)
 
+    def fetch_state(self, stack_name, resources):
+        group_name = self.props.get('LogGroupName')
+        group_name = self.resolve_refs_recursively(stack_name, group_name, resources)
+        logs = aws_stack.connect_to_service('logs')
+        groups = logs.describe_log_groups(logGroupNamePrefix=group_name)['logGroups']
+        return ([g for g in groups if g['logGroupName'] == group_name] or [None])[0]
 
-class CloudFormationStack(BaseModel):
+
+class CloudFormationStack(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::CloudFormation::Stack'
 
 
-class LambdaFunction(BaseModel):
-
-    def fetch_state(self, stack_name, resources):
-        func_name = self.resolve_refs_recursively(stack_name, self.props['FunctionName'], resources)
-        return aws_stack.connect_to_service('lambda').get_function(FunctionName=func_name)
+class LambdaFunction(GenericBaseModel):
 
     @staticmethod
     def cloudformation_type():
         return 'AWS::Lambda::Function'
 
+    def fetch_state(self, stack_name, resources):
+        func_name = self.resolve_refs_recursively(stack_name, self.props['FunctionName'], resources)
+        return aws_stack.connect_to_service('lambda').get_function(FunctionName=func_name)
 
-class LambdaFunctionVersion(BaseModel):
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        func_name = self.props.get('FunctionName')
+        if attribute == 'Arn':
+            return aws_stack.lambda_function_arn(func_name)
+        return func_name
+
+
+class LambdaFunctionVersion(GenericBaseModel):
 
     def fetch_state(self, stack_name, resources):
         name = self.resolve_refs_recursively(stack_name, self.props.get('FunctionName'), resources)
@@ -186,28 +202,43 @@ class LambdaFunctionVersion(BaseModel):
         return 'AWS::Lambda::Version'
 
 
-class ElasticsearchDomain(BaseModel):
+class ElasticsearchDomain(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::Elasticsearch::Domain'
 
+    def fetch_state(self, stack_name, resources):
+        domain_name = self.props.get('DomainName') or self.resource_id
+        domain_name = self.resolve_refs_recursively(stack_name, domain_name, resources)
+        return aws_stack.connect_to_service('es').describe_elasticsearch_domain(DomainName=domain_name)
 
-class FirehoseDeliveryStream(BaseModel):
+
+class FirehoseDeliveryStream(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::KinesisFirehose::DeliveryStream'
 
+    def fetch_state(self, stack_name, resources):
+        stream_name = self.props.get('DeliveryStreamName') or self.resource_id
+        stream_name = self.resolve_refs_recursively(stack_name, stream_name, resources)
+        return aws_stack.connect_to_service('firehose').describe_delivery_stream(DeliveryStreamName=stream_name)
 
-class KinesisStream(BaseModel):
+
+class KinesisStream(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::Kinesis::Stream'
 
-    def get_physical_resource_id(self):
+    def get_physical_resource_id(self, attribute=None, **kwargs):
         return aws_stack.kinesis_stream_arn(self.props.get('Name'))
 
+    def fetch_state(self, stack_name, resources):
+        stream_name = self.resolve_refs_recursively(stack_name, self.props['Name'], resources)
+        result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
+        return result
 
-class SFNStateMachine(BaseModel):
+
+class SFNStateMachine(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::StepFunctions::StateMachine'
@@ -215,20 +246,75 @@ class SFNStateMachine(BaseModel):
     def get_resource_name(self):
         return self.props.get('StateMachineName')
 
+    def fetch_state(self, stack_name, resources):
+        sm_name = self.props.get('StateMachineName') or self.resource_id
+        sm_name = self.resolve_refs_recursively(stack_name, sm_name, resources)
+        sfn_client = aws_stack.connect_to_service('stepfunctions')
+        state_machines = sfn_client.list_state_machines()['stateMachines']
+        sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == sm_name]
+        if not sm_arn:
+            return None
+        result = sfn_client.describe_state_machine(stateMachineArn=sm_arn[0])
+        return result
 
-class IAMRole(BaseModel, MotoRole):
 
+class SFNActivity(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::StepFunctions::Activity'
+
+    def fetch_state(self, stack_name, resources):
+        act_name = self.props.get('Name') or self.resource_id
+        act_name = self.resolve_refs_recursively(stack_name, act_name, resources)
+        sfn_client = aws_stack.connect_to_service('stepfunctions')
+        activities = sfn_client.list_activities()['activities']
+        result = [a['activityArn'] for a in activities if a['name'] == act_name]
+        if not result:
+            return None
+        return result[0]
+
+
+class IAMRole(GenericBaseModel, MotoRole):
     def get_resource_name(self):
         return self.props.get('RoleName')
 
 
-class GatewayResponse(BaseModel):
+class IAMPolicy(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::IAM::Policy'
+
+    def fetch_state(self, stack_name, resources):
+        def _filter(pols):
+            return [p for p in pols['AttachedPolicies'] if p['PolicyName'] == policy_name]
+        iam = aws_stack.connect_to_service('iam')
+        props = self.props
+        policy_name = props['PolicyName']
+        # The policy in cloudformation is InlinePolicy, which can be attached to either of [Roles, Users, Groups]
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
+        result = {}
+        roles = props.get('Roles', [])
+        users = props.get('Users', [])
+        groups = props.get('Groups', [])
+        for role in roles:
+            role = self.resolve_refs_recursively(stack_name, role, resources)
+            result['role:%s' % role] = _filter(iam.list_attached_role_policies(RoleName=role))
+        for user in users:
+            user = self.resolve_refs_recursively(stack_name, user, resources)
+            result['user:%s' % user] = _filter(iam.list_attached_user_policies(UserName=user))
+        for group in groups:
+            group = self.resolve_refs_recursively(stack_name, group, resources)
+            result['group:%s' % group] = _filter(iam.list_attached_group_policies(GroupName=group))
+        return {k: v for k, v in result.items() if v}
+
+
+class GatewayResponse(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::ApiGateway::GatewayResponse'
 
 
-class S3Bucket(GenericBaseObject, FakeBucket):
+class S3Bucket(GenericBaseModel, FakeBucket):
     def get_resource_name(self):
         return self.normalize_bucket_name(self.props.get('BucketName'))
 
@@ -239,20 +325,42 @@ class S3Bucket(GenericBaseObject, FakeBucket):
         bucket_name = bucket_name.lower()
         return bucket_name
 
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        bucket_name = props.get('BucketName') or self.resource_id
+        bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
+        bucket_name = self.normalize_bucket_name(bucket_name)
+        s3_client = aws_stack.connect_to_service('s3')
+        response = s3_client.get_bucket_location(Bucket=bucket_name)
+        notifs = props.get('NotificationConfiguration')
+        if not response or not notifs:
+            return response
+        configs = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
+        has_notifs = (configs.get('TopicConfigurations') or configs.get('QueueConfigurations') or
+            configs.get('LambdaFunctionConfigurations'))
+        if notifs and not has_notifs:
+            return None
+        return response
 
-class S3BucketPolicy(BaseModel):
+
+class S3BucketPolicy(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::S3::BucketPolicy'
 
+    def fetch_state(self, stack_name, resources):
+        bucket_name = self.props.get('Bucket') or self.resource_id
+        bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
+        return aws_stack.connect_to_service('s3').get_bucket_policy(Bucket=bucket_name)
 
-class StepFunctionsActivity(BaseModel):
+
+class StepFunctionsActivity(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::StepFunctions::Activity'
 
 
-class SQSQueue(GenericBaseObject, MotoQueue):
+class SQSQueue(GenericBaseModel, MotoQueue):
     def get_resource_name(self):
         return self.props.get('QueueName')
 
@@ -268,29 +376,65 @@ class SQSQueue(GenericBaseObject, MotoQueue):
             return aws_stack.sqs_queue_arn(props.get('QueueName'))
         return queue_url
 
+    def fetch_state(self, stack_name, resources):
+        queue_name = self.resolve_refs_recursively(stack_name, self.props['QueueName'], resources)
+        sqs_client = aws_stack.connect_to_service('sqs')
+        queues = sqs_client.list_queues()
+        result = list(filter(lambda item:
+            # TODO possibly find a better way to compare resource_id with queue URLs
+            item.endswith('/%s' % queue_name), queues.get('QueueUrls', [])))
+        if not result:
+            return None
+        result = sqs_client.get_queue_attributes(QueueUrl=result[0], AttributeNames=['All'])['Attributes']
+        result['Arn'] = result['QueueArn']
+        return result
 
-class SNSTopic(GenericBaseObject):
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.sns_topic_arn(self.props.get('TopicName'))
 
+class SNSTopic(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::SNS::Topic'
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return aws_stack.sns_topic_arn(self.props.get('TopicName'))
 
-class SNSSubscription(GenericBaseObject):
+    def fetch_state(self, stack_name, resources):
+        topic_name = self.resolve_refs_recursively(stack_name, self.props['TopicName'], resources)
+        topics = aws_stack.connect_to_service('sns').list_topics()
+        result = list(filter(lambda item: item['TopicArn'].split(':')[-1] == topic_name, topics.get('Topics', [])))
+        return result[0] if result else None
+
+
+class SNSSubscription(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::SNS::Subscription'
 
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        topic_arn = props.get('TopicArn')
+        topic_arn = self.resolve_refs_recursively(stack_name, topic_arn, resources)
+        if topic_arn is None:
+            return
+        subs = aws_stack.connect_to_service('sns').list_subscriptions_by_topic(TopicArn=topic_arn)
+        result = [sub for sub in subs['Subscriptions'] if
+            props.get('Protocol') == sub['Protocol'] and props.get('Endpoint') == sub['Endpoint']]
+        # TODO: use get_subscription_attributes to compare FilterPolicy
+        return result[0] if result else None
 
-class SSMParameter(BaseModel):
+
+class SSMParameter(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::SSM::Parameter'
 
 
-class SecretsManagerSecret(BaseModel):
+class SecretsManagerSecret(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::SecretsManager::Secret'
+
+    def fetch_state(self, stack_name, resources):
+        secret_name = self.props.get('Name') or self.resource_id
+        secret_name = self.resolve_refs_recursively(stack_name, secret_name, resources)
+        return aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
