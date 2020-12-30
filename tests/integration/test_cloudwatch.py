@@ -78,6 +78,14 @@ class CloudWatchTest(unittest.TestCase):
         request = Request(url, encoded_data, headers, method='POST')
         urlopen(request)
 
+        client = aws_stack.connect_to_service('cloudwatch')
+        rs = client.list_metrics(
+            Namespace=namespace,
+            MetricName=metric_name
+        )
+        self.assertEqual(len(rs['Metrics']), 1)
+        self.assertEqual(rs['Metrics'][0]['Namespace'], namespace)
+
     def test_get_metric_data(self):
 
         conn = aws_stack.connect_to_service('cloudwatch')
