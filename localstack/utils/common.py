@@ -582,6 +582,10 @@ def keys_to_lower(obj):
     return result
 
 
+def camel_to_snake_case(string):
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', string).replace('__', '_').lower()
+
+
 def base64_to_hex(b64_string):
     return binascii.hexlify(base64.b64decode(b64_string))
 

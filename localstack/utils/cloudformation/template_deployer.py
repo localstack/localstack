@@ -18,6 +18,7 @@ from localstack.services.s3 import s3_listener
 from localstack.utils.common import json_safe, md5, canonical_json, short_uid
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name, POLICY_NAME_PATTERN
+from localstack.services.cloudformation.service_models import GenericBaseObject
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -40,6 +41,9 @@ NoDatesSafeLoader.yaml_implicit_resolvers = {
     k: [r for r in v if r[0] != 'tag:yaml.org,2002:timestamp'] for
     k, v in NoDatesSafeLoader.yaml_implicit_resolvers.items()
 }
+
+# maps resource type string to model class
+RESOURCE_MODELS = {model.cloudformation_type(): model for model in GenericBaseObject.__subclasses__()}
 
 
 class DependencyNotYetSatisfied(Exception):
@@ -753,26 +757,20 @@ def get_service_name(resource):
 
 
 def get_resource_name(resource):
-    res_type = get_resource_type(resource)
     properties = resource.get('Properties') or {}
     name = properties.get('Name')
     if name:
         return name
 
-    # try to extract name from attributes
-    if res_type == 'S3::Bucket':
-        name = s3_listener.normalize_bucket_name(properties.get('BucketName'))
-    elif res_type == 'SQS::Queue':
-        name = properties.get('QueueName')
-    elif res_type == 'Cognito::UserPool':
-        name = properties.get('PoolName')
-    elif res_type == 'StepFunctions::StateMachine':
-        name = properties.get('StateMachineName')
-    elif res_type == 'IAM::Role':
-        name = properties.get('RoleName')
-    else:
-        LOG.warning('Unable to extract name for resource type "%s"' % res_type)
+    # try to extract name via resource class
+    res_type = canonical_resource_type(get_resource_type(resource))
+    model_class = RESOURCE_MODELS.get(res_type)
+    if model_class:
+        instance = model_class(properties)
+        name = instance.get_resource_name()
 
+    if not name:
+        LOG.warning('Unable to extract name for resource type "%s"' % res_type)
     return name
 
 
