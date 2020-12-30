@@ -24,6 +24,7 @@ from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack import config, constants
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
 from localstack.utils.common import (
@@ -32,8 +33,8 @@ from localstack.utils.common import (
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.persistence import PersistingProxyListener
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws.aws_responses import requests_response, requests_error_response_xml_signature_calculation
+from localstack.services.cloudformation.service_models import S3Bucket
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
@@ -873,10 +874,7 @@ def is_object_specific_request(path, headers):
 
 
 def normalize_bucket_name(bucket_name):
-    bucket_name = bucket_name or ''
-    # AWS appears to automatically convert upper to lower case chars in bucket names
-    bucket_name = bucket_name.lower()
-    return bucket_name
+    return S3Bucket.normalize_bucket_name(bucket_name)
 
 
 def get_key_name(path, headers):

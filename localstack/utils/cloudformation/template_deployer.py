@@ -18,6 +18,7 @@ from localstack.services.s3 import s3_listener
 from localstack.utils.common import json_safe, md5, canonical_json, short_uid
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name, POLICY_NAME_PATTERN
+from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -41,14 +42,8 @@ NoDatesSafeLoader.yaml_implicit_resolvers = {
     k, v in NoDatesSafeLoader.yaml_implicit_resolvers.items()
 }
 
-
-class DependencyNotYetSatisfied(Exception):
-    """ Exception indicating that a resource dependency is not (yet) deployed/available. """
-    def __init__(self, resource_ids, message=None):
-        message = message or 'Unresolved dependencies: %s' % resource_ids
-        super(DependencyNotYetSatisfied, self).__init__(message)
-        resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
-        self.resource_ids = resource_ids
+# maps resource type string to model class
+RESOURCE_MODELS = {model.cloudformation_type(): model for model in GenericBaseModel.__subclasses__()}
 
 
 class NoStackUpdates(Exception):
@@ -753,26 +748,20 @@ def get_service_name(resource):
 
 
 def get_resource_name(resource):
-    res_type = get_resource_type(resource)
     properties = resource.get('Properties') or {}
     name = properties.get('Name')
     if name:
         return name
 
-    # try to extract name from attributes
-    if res_type == 'S3::Bucket':
-        name = s3_listener.normalize_bucket_name(properties.get('BucketName'))
-    elif res_type == 'SQS::Queue':
-        name = properties.get('QueueName')
-    elif res_type == 'Cognito::UserPool':
-        name = properties.get('PoolName')
-    elif res_type == 'StepFunctions::StateMachine':
-        name = properties.get('StateMachineName')
-    elif res_type == 'IAM::Role':
-        name = properties.get('RoleName')
-    else:
-        LOG.warning('Unable to extract name for resource type "%s"' % res_type)
+    # try to extract name via resource class
+    res_type = canonical_resource_type(get_resource_type(resource))
+    model_class = RESOURCE_MODELS.get(res_type)
+    if model_class:
+        instance = model_class(properties)
+        name = instance.get_resource_name()
 
+    if not name:
+        LOG.warning('Unable to extract name for resource type "%s"' % res_type)
     return name
 
 
@@ -811,20 +800,17 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     if resource_props is None:
         raise Exception('Unable to find properties for resource "%s": %s %s' % (resource_id, resource, resources))
     try:
-        if resource_type == 'Lambda::Function':
-            func_name = resolve_refs_recursively(stack_name, resource_props['FunctionName'], resources)
-            return aws_stack.connect_to_service('lambda').get_function(FunctionName=func_name)
 
-        elif resource_type == 'Lambda::Version':
-            name = resolve_refs_recursively(stack_name, resource_props.get('FunctionName'), resources)
-            if not name:
-                return None
-            func_name = aws_stack.lambda_function_name(name)
-            func_version = name.split(':')[7] if len(name.split(':')) > 7 else '$LATEST'
-            versions = aws_stack.connect_to_service('lambda').list_versions_by_function(FunctionName=func_name)
-            return ([v for v in versions['Versions'] if v['Version'] == func_version] or [None])[0]
+        # try to look up resource class
+        canonical_type = canonical_resource_type(resource_type)
+        resource_class = RESOURCE_MODELS.get(canonical_type)
+        if resource_class:
+            instance = resource_class(resource)
+            state = instance.fetch_state(stack_name=stack_name, resources=resources)
+            if state is not None:
+                return state
 
-        elif resource_type == 'Lambda::EventSourceMapping':
+        if resource_type == 'Lambda::EventSourceMapping':
             resource_id = resource_props['FunctionName'] if resource else resource_id
             source_arn = resource_props.get('EventSourceArn')
             resource_id = resolve_refs_recursively(stack_name, resource_id, resources)
@@ -938,128 +924,6 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             client = aws_stack.connect_to_service('apigateway')
             result = client.get_gateway_response(restApiId=api_id, responseType=resource_props['ResponseType'])
             return result if 'responseType' in result else None
-
-        elif resource_type == 'SQS::Queue':
-            queue_name = resolve_refs_recursively(stack_name, resource_props['QueueName'], resources)
-            sqs_client = aws_stack.connect_to_service('sqs')
-            queues = sqs_client.list_queues()
-            result = list(filter(lambda item:
-                # TODO possibly find a better way to compare resource_id with queue URLs
-                item.endswith('/%s' % queue_name), queues.get('QueueUrls', [])))
-            if not result:
-                return None
-            result = sqs_client.get_queue_attributes(QueueUrl=result[0], AttributeNames=['All'])['Attributes']
-            result['Arn'] = result['QueueArn']
-            return result
-
-        elif resource_type == 'SNS::Topic':
-            topic_name = resolve_refs_recursively(stack_name, resource_props['TopicName'], resources)
-            topics = aws_stack.connect_to_service('sns').list_topics()
-            result = list(filter(lambda item: item['TopicArn'].split(':')[-1] == topic_name, topics.get('Topics', [])))
-            return result[0] if result else None
-
-        elif resource_type == 'SNS::Subscription':
-            topic_arn = resource_props.get('TopicArn')
-            topic_arn = resolve_refs_recursively(stack_name, topic_arn, resources)
-            if topic_arn is None:
-                return
-            subs = aws_stack.connect_to_service('sns').list_subscriptions_by_topic(TopicArn=topic_arn)
-            result = [sub for sub in subs['Subscriptions'] if
-                resource_props.get('Protocol') == sub['Protocol'] and
-                resource_props.get('Endpoint') == sub['Endpoint']]
-            # TODO: use get_subscription_attributes to compare FilterPolicy
-            return result[0] if result else None
-
-        elif resource_type == 'S3::Bucket':
-            bucket_name = resource_props.get('BucketName') or resource_id
-            bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
-            bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-            s3_client = aws_stack.connect_to_service('s3')
-            response = s3_client.get_bucket_location(Bucket=bucket_name)
-            notifs = resource_props.get('NotificationConfiguration')
-            if not response or not notifs:
-                return response
-            configs = s3_client.get_bucket_notification_configuration(Bucket=bucket_name)
-            has_notifs = (configs.get('TopicConfigurations') or configs.get('QueueConfigurations') or
-                configs.get('LambdaFunctionConfigurations'))
-            if notifs and not has_notifs:
-                return None
-            return response
-
-        elif resource_type == 'S3::BucketPolicy':
-            bucket_name = resource_props.get('Bucket') or resource_id
-            bucket_name = resolve_refs_recursively(stack_name, bucket_name, resources)
-            return aws_stack.connect_to_service('s3').get_bucket_policy(Bucket=bucket_name)
-
-        elif resource_type == 'Logs::LogGroup':
-            group_name = resource_props.get('LogGroupName')
-            group_name = resolve_refs_recursively(stack_name, group_name, resources)
-            logs = aws_stack.connect_to_service('logs')
-            groups = logs.describe_log_groups(logGroupNamePrefix=group_name)['logGroups']
-            return ([g for g in groups if g['logGroupName'] == group_name] or [None])[0]
-
-        elif resource_type == 'Kinesis::Stream':
-            stream_name = resolve_refs_recursively(stack_name, resource_props['Name'], resources)
-            result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
-            return result
-
-        elif resource_type == 'StepFunctions::StateMachine':
-            sm_name = resource_props.get('StateMachineName') or resource_id
-            sm_name = resolve_refs_recursively(stack_name, sm_name, resources)
-            sfn_client = aws_stack.connect_to_service('stepfunctions')
-            state_machines = sfn_client.list_state_machines()['stateMachines']
-            sm_arn = [m['stateMachineArn'] for m in state_machines if m['name'] == sm_name]
-            if not sm_arn:
-                return None
-            result = sfn_client.describe_state_machine(stateMachineArn=sm_arn[0])
-            return result
-
-        elif resource_type == 'StepFunctions::Activity':
-            act_name = resource_props.get('Name') or resource_id
-            act_name = resolve_refs_recursively(stack_name, act_name, resources)
-            sfn_client = aws_stack.connect_to_service('stepfunctions')
-            activities = sfn_client.list_activities()['activities']
-            result = [a['activityArn'] for a in activities if a['name'] == act_name]
-            if not result:
-                return None
-            return result[0]
-
-        elif resource_type == 'SecretsManager::Secret':
-            secret_name = resource_props.get('Name') or resource_id
-            secret_name = resolve_refs_recursively(stack_name, secret_name, resources)
-            return aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
-
-        elif resource_type == 'Elasticsearch::Domain':
-            domain_name = resource_props.get('DomainName') or resource_id
-            domain_name = resolve_refs_recursively(stack_name, domain_name, resources)
-            return aws_stack.connect_to_service('es').describe_elasticsearch_domain(DomainName=domain_name)
-
-        elif resource_type == 'KinesisFirehose::DeliveryStream':
-            stream_name = resource_props.get('DeliveryStreamName') or resource_id
-            stream_name = resolve_refs_recursively(stack_name, stream_name, resources)
-            return aws_stack.connect_to_service('firehose').describe_delivery_stream(DeliveryStreamName=stream_name)
-
-        elif resource_type == 'IAM::Policy':
-            def _filter(pols):
-                return [p for p in pols['AttachedPolicies'] if p['PolicyName'] == policy_name]
-            iam = aws_stack.connect_to_service('iam')
-            policy_name = resource_props['PolicyName']
-            # The policy in cloudformation is InlinePolicy, which can be attached to either of [Roles, Users, Groups]
-            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
-            result = {}
-            roles = resource['Properties'].get('Roles', [])
-            users = resource['Properties'].get('Users', [])
-            groups = resource['Properties'].get('Groups', [])
-            for role in roles:
-                role = resolve_refs_recursively(stack_name, role, resources)
-                result['role:%s' % role] = _filter(iam.list_attached_role_policies(RoleName=role))
-            for user in users:
-                user = resolve_refs_recursively(stack_name, user, resources)
-                result['user:%s' % user] = _filter(iam.list_attached_user_policies(UserName=user))
-            for group in groups:
-                group = resolve_refs_recursively(stack_name, group, resources)
-                result['group:%s' % group] = _filter(iam.list_attached_group_policies(GroupName=group))
-            return {k: v for k, v in result.items() if v}
 
         elif resource_type == 'CloudFormation::Stack':
             client = aws_stack.connect_to_service('cloudformation')
@@ -1215,13 +1079,14 @@ def canonical_resource_type(resource_type):
 
 def get_attr_from_model_instance(resource, attribute, resource_type, resource_id=None):
     resource_type = canonical_resource_type(resource_type)
-    model_clazz = parsing.MODEL_MAP.get(resource_type)
-    if not model_clazz:
+    # TODO: look up class from RESOURCE_MODELS instead of moto.MODEL_MAP here!
+    model_class = parsing.MODEL_MAP.get(resource_type)
+    if not model_class:
         if resource_type not in ['AWS::Parameter', 'Parameter']:
             LOG.debug('Unable to find model class for resource type "%s"' % resource_type)
         return
     try:
-        inst = model_clazz(resource_name=resource_id, resource_json=resource)
+        inst = model_class(resource_name=resource_id, resource_json=resource)
         return inst.get_cfn_attribute(attribute)
     except Exception:
         pass
@@ -1822,20 +1687,16 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
     resource_type = re.sub('^AWS::', '', resource_type)
     resource_props = resource.get('Properties', {})
 
+    # determine result from resource class
+    canonical_type = canonical_resource_type(resource_type)
+    resource_class = RESOURCE_MODELS.get(canonical_type)
+    if resource_class:
+        result = resource_class(resource).get_physical_resource_id(attribute=attribute)
+        if result:
+            return result
+
     # TODO: put logic into resource-specific model classes
-    if resource_type == 'SQS::Queue':
-        queue_url = None
-        try:
-            queue_url = aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
-        except Exception as e:
-            if 'NonExistentQueue' in str(e):
-                raise DependencyNotYetSatisfied(resource_ids=resource_id, message='Unable to get queue: %s' % e)
-        if attribute == 'Arn':
-            return aws_stack.sqs_queue_arn(resource_props.get('QueueName'))
-        return queue_url
-    elif resource_type == 'SNS::Topic':
-        return aws_stack.sns_topic_arn(resource_props.get('TopicName'))
-    elif resource_type == 'ApiGateway::RestApi':
+    if resource_type == 'ApiGateway::RestApi':
         result = resource_props.get('id')
         if result:
             return result
@@ -1843,16 +1704,8 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
         return resource_props.get('StageName')
     elif resource_type == 'AppSync::DataSource':
         return resource_props.get('DataSourceArn')
-    elif resource_type == 'Kinesis::Stream':
-        return aws_stack.kinesis_stream_arn(resource_props.get('Name'))
     elif resource_type == 'KinesisFirehose::DeliveryStream':
         return aws_stack.firehose_stream_arn(resource_props.get('DeliveryStreamName'))
-    elif resource_type == 'Events::Rule':
-        return resource_props.get('Name')
-    elif resource_type == 'Lambda::Function':
-        if attribute == 'Arn':
-            return aws_stack.lambda_function_arn(resource_props.get('FunctionName'))
-        return resource_props.get('FunctionName')
     elif resource_type == 'StepFunctions::StateMachine':
         return aws_stack.state_machine_arn(resource_props.get('StateMachineName'))  # returns ARN in AWS
     elif resource_type == 'S3::Bucket':
