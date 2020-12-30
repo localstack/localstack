@@ -6,6 +6,9 @@ from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
 
+# name pattern of IAM policies associated with Lambda functions
+LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
+
 
 class DependencyNotYetSatisfied(Exception):
     """ Exception indicating that a resource dependency is not (yet) deployed/available. """
@@ -14,25 +17,6 @@ class DependencyNotYetSatisfied(Exception):
         super(DependencyNotYetSatisfied, self).__init__(message)
         resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
         self.resource_ids = resource_ids
-
-
-# TODO remove?
-# class BaseModel(CloudFormationModel):
-#     def __init__(self, **params):
-#         self.params = params
-#
-#     @classmethod
-#     def create_from_cloudformation_json(cls, resource_name, cloudformation_json, region_name):
-#         props = cloudformation_json['Properties']
-#         return cls(**props)
-#
-#     def get_cfn_attribute(self, attribute_name):
-#         attr = self.params.get(attribute_name)
-#         if attr is None:
-#             attr = getattr(self, attribute_name.lower(), None)
-#             if attr is None:
-#                 raise UnformattedGetAttTemplateException()
-#         return attr
 
 
 class GenericBaseModel(CloudFormationModel):
@@ -59,10 +43,9 @@ class GenericBaseModel(CloudFormationModel):
         if attribute_name in ['Arn', 'Ref'] and hasattr(self, 'arn'):
             return self.arn
         if attribute_name in ['PhysicalResourceId', 'Ref']:
-            if self.resource_json.get('PhysicalResourceId'):
-                self.physical_resource_id = self.resource_json.get('PhysicalResourceId')
-            if self.physical_resource_id:
-                return self.physical_resource_id
+            result = self.get_physical_resource_id(attribute=attribute_name)
+            if result:
+                return result
         props = self.props
         if attribute_name in props:
             return props.get(attribute_name)
@@ -147,6 +130,11 @@ class EventsRule(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get('Name')
 
+    def fetch_state(self, stack_name, resources):
+        rule_name = self.resolve_refs_recursively(stack_name, self.props.get('Name'), resources)
+        result = aws_stack.connect_to_service('events').describe_rule(Name=rule_name) or {}
+        return result if result.get('Name') else None
+
 
 class LogsLogGroup(GenericBaseModel):
     @staticmethod
@@ -171,6 +159,13 @@ class CloudFormationStack(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::CloudFormation::Stack'
 
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('cloudformation')
+        child_stack_name = self.props.get('StackName') or self.resource_id
+        child_stack_name = self.resolve_refs_recursively(stack_name, child_stack_name, resources)
+        result = client.describe_stacks(StackName=child_stack_name)
+        return (result.get('Stacks') or [None])[0]
+
 
 class LambdaFunction(GenericBaseModel):
 
@@ -190,6 +185,9 @@ class LambdaFunction(GenericBaseModel):
 
 
 class LambdaFunctionVersion(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Lambda::Version'
 
     def fetch_state(self, stack_name, resources):
         name = self.resolve_refs_recursively(stack_name, self.props.get('FunctionName'), resources)
@@ -200,9 +198,51 @@ class LambdaFunctionVersion(GenericBaseModel):
         versions = aws_stack.connect_to_service('lambda').list_versions_by_function(FunctionName=func_name)
         return ([v for v in versions['Versions'] if v['Version'] == func_version] or [None])[0]
 
+
+def LambdaEventSourceMapping():
     @staticmethod
     def cloudformation_type():
-        return 'AWS::Lambda::Version'
+        return 'AWS::Lambda::EventSourceMapping'
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        resource_id = props['FunctionName'] or self.resource_id
+        source_arn = props.get('EventSourceArn')
+        resource_id = self.resolve_refs_recursively(stack_name, resource_id, resources)
+        source_arn = self.resolve_refs_recursively(stack_name, source_arn, resources)
+        if not resource_id or not source_arn:
+            raise Exception('ResourceNotFound')
+        mappings = aws_stack.connect_to_service('lambda').list_event_source_mappings(
+            FunctionName=resource_id, EventSourceArn=source_arn)
+        mapping = list(filter(lambda m:
+            m['EventSourceArn'] == source_arn and m['FunctionArn'] == aws_stack.lambda_function_arn(resource_id),
+            mappings['EventSourceMappings']))
+        if not mapping:
+            raise Exception('ResourceNotFound')
+        return mapping[0]
+
+
+def LambdaPermission(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Lambda::Permission'
+
+    def fetch_state(self, stack_name, resources):
+        iam = aws_stack.connect_to_service('iam')
+        props = self.props
+        policy_name = LAMBDA_POLICY_NAME_PATTERN % props.get('FunctionName')
+        policy_arn = aws_stack.policy_arn(policy_name)
+        policy = iam.get_policy(PolicyArn=policy_arn)['Policy']
+        version = policy.get('DefaultVersionId')
+        policy = iam.get_policy_version(PolicyArn=policy_arn, VersionId=version)['PolicyVersion']
+        statements = policy['Document']['Statement']
+        statements = statements if isinstance(statements, list) else [statements]
+        func_arn = aws_stack.lambda_function_arn(props['FunctionName'])
+        principal = props.get('Principal')
+        existing = [s for s in statements if s['Action'] == props['Action'] and
+            s['Resource'] == func_arn and
+            (not principal or s['Principal'] in [{'Service': principal}, {'Service': [principal]}])]
+        return existing[0] if existing else None
 
 
 class ElasticsearchDomain(GenericBaseModel):
@@ -281,6 +321,10 @@ class IAMRole(GenericBaseModel, MotoRole):
     def get_resource_name(self):
         return self.props.get('RoleName')
 
+    def fetch_state(self, stack_name, resources):
+        role_name = self.resolve_refs_recursively(stack_name, self.props.get('RoleName'), resources)
+        return aws_stack.connect_to_service('iam').get_role(RoleName=role_name)['Role']
+
 
 class IAMPolicy(GenericBaseModel):
     @staticmethod
@@ -315,6 +359,103 @@ class GatewayResponse(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::ApiGateway::GatewayResponse'
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
+        if not api_id:
+            return
+        client = aws_stack.connect_to_service('apigateway')
+        result = client.get_gateway_response(restApiId=api_id, responseType=props['ResponseType'])
+        return result if 'responseType' in result else None
+
+
+class GatewayRestAPI(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::RestApi'
+
+    def fetch_state(self, stack_name, resources):
+        apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
+        api_name = self.props.get('Name') or self.resource_id
+        api_name = self.resolve_refs_recursively(stack_name, api_name, resources)
+        result = list(filter(lambda api: api['name'] == api_name, apis))
+        return result[0] if result else None
+
+
+class GatewayDeployment(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::Deployment'
+
+    def fetch_state(self, stack_name, resources):
+        api_id = self.props['RestApiId'] or self.resource_id
+        api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
+        if not api_id:
+            return None
+        result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
+        # TODO possibly filter results by stage name or other criteria
+        return result[0] if result else None
+
+
+class GatewayResource(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::Resource'
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        api_id = props.get('RestApiId') or self.resource_id
+        api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
+        parent_id = self.resolve_refs_recursively(stack_name, props.get('ParentId'), resources)
+        if not api_id or not parent_id:
+            return None
+        api_resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=api_id)['items']
+        target_resource = list(filter(lambda res:
+            res.get('parentId') == parent_id and res['pathPart'] == props['PathPart'], api_resources))
+        if not target_resource:
+            return None
+        path = aws_stack.get_apigateway_path_for_resource(api_id,
+            target_resource[0]['id'], resources=api_resources)
+        result = list(filter(lambda res: res['path'] == path, api_resources))
+        return result[0] if result else None
+
+
+class GatewayMethod(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::Method'
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        api_id = self.resolve_refs_recursively(stack_name, props['RestApiId'], resources)
+        res_id = self.resolve_refs_recursively(stack_name, props['ResourceId'], resources)
+        if not api_id or not res_id:
+            return None
+        res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
+        match = [v for (k, v) in res_obj.get('resourceMethods', {}).items()
+                 if props['HttpMethod'] in (v.get('httpMethod'), k)]
+        int_props = props.get('Integration') or {}
+        if int_props.get('Type') == 'AWS_PROXY':
+            match = [m for m in match if
+                m.get('methodIntegration', {}).get('type') == 'AWS_PROXY' and
+                m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
+        return match[0] if match else None
+
+
+class GatewayStage(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::Stage'
+
+    def fetch_state(self, stack_name, resources):
+        api_id = self.props.get('RestApiId') or self.resource_id
+        api_id = self.resolve_refs_recursively(stack_name, api_id, resources)
+        if not api_id:
+            return None
+        result = aws_stack.connect_to_service('apigateway').get_stage(restApiId=api_id,
+            stageName=self.props['StageName'])
+        return result
 
 
 class S3Bucket(GenericBaseModel, FakeBucket):
@@ -426,10 +567,26 @@ class SNSSubscription(GenericBaseModel):
         return result[0] if result else None
 
 
+class DynamoDBTable(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::DynamoDB::Table'
+
+    def fetch_state(self, stack_name, resources):
+        table_name = self.props.get('TableName') or self.resource_id
+        table_name = self.resolve_refs_recursively(stack_name, table_name, resources)
+        return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
+
+
 class SSMParameter(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::SSM::Parameter'
+
+    def fetch_state(self, stack_name, resources):
+        param_name = self.props.get('Name') or self.resource_id
+        param_name = self.resolve_refs_recursively(stack_name, param_name, resources)
+        return aws_stack.connect_to_service('ssm').get_parameter(Name=param_name)['Parameter']
 
 
 class SecretsManagerSecret(GenericBaseModel):

@@ -17,7 +17,7 @@ from localstack.constants import AWS_REGION_US_EAST_1, TEST_AWS_ACCOUNT_ID
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import json_safe, md5, canonical_json, short_uid
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
-from localstack.services.awslambda.lambda_api import get_handler_file_from_name, POLICY_NAME_PATTERN
+from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
 
 ACTION_CREATE = 'create'
@@ -809,128 +809,6 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
             state = instance.fetch_state(stack_name=stack_name, resources=resources)
             if state is not None:
                 return state
-
-        if resource_type == 'Lambda::EventSourceMapping':
-            resource_id = resource_props['FunctionName'] if resource else resource_id
-            source_arn = resource_props.get('EventSourceArn')
-            resource_id = resolve_refs_recursively(stack_name, resource_id, resources)
-            source_arn = resolve_refs_recursively(stack_name, source_arn, resources)
-            if not resource_id or not source_arn:
-                raise Exception('ResourceNotFound')
-            mappings = aws_stack.connect_to_service('lambda').list_event_source_mappings(
-                FunctionName=resource_id, EventSourceArn=source_arn)
-            mapping = list(filter(lambda m:
-                m['EventSourceArn'] == source_arn and m['FunctionArn'] == aws_stack.lambda_function_arn(resource_id),
-                mappings['EventSourceMappings']))
-            if not mapping:
-                raise Exception('ResourceNotFound')
-            return mapping[0]
-
-        elif resource_type == 'Lambda::Permission':
-            iam = aws_stack.connect_to_service('iam')
-            policy_name = POLICY_NAME_PATTERN % resource_props.get('FunctionName')
-            policy_arn = aws_stack.policy_arn(policy_name)
-            policy = iam.get_policy(PolicyArn=policy_arn)['Policy']
-            version = policy.get('DefaultVersionId')
-            policy = iam.get_policy_version(PolicyArn=policy_arn, VersionId=version)['PolicyVersion']
-            statements = policy['Document']['Statement']
-            statements = statements if isinstance(statements, list) else [statements]
-            func_arn = aws_stack.lambda_function_arn(resource_props['FunctionName'])
-            principal = resource_props.get('Principal')
-            existing = [s for s in statements if s['Action'] == resource_props['Action'] and
-                s['Resource'] == func_arn and
-                (not principal or s['Principal'] in [{'Service': principal}, {'Service': [principal]}])]
-            return existing[0] if existing else None
-
-        elif resource_type == 'Events::Rule':
-            rule_name = resolve_refs_recursively(stack_name, resource_props.get('Name'), resources)
-            result = aws_stack.connect_to_service('events').describe_rule(Name=rule_name) or {}
-            return result if result.get('Name') else None
-
-        elif resource_type == 'IAM::Role':
-            role_name = resolve_refs_recursively(stack_name, resource_props.get('RoleName'), resources)
-            return aws_stack.connect_to_service('iam').get_role(RoleName=role_name)['Role']
-
-        elif resource_type == 'SSM::Parameter':
-            param_name = resource_props.get('Name') or resource_id
-            param_name = resolve_refs_recursively(stack_name, param_name, resources)
-            return aws_stack.connect_to_service('ssm').get_parameter(Name=param_name)['Parameter']
-
-        elif resource_type == 'DynamoDB::Table':
-            table_name = resource_props.get('TableName') or resource_id
-            table_name = resolve_refs_recursively(stack_name, table_name, resources)
-            return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
-
-        elif resource_type == 'ApiGateway::RestApi':
-            apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
-            api_name = resource_props.get('Name') or resource_id
-            api_name = resolve_refs_recursively(stack_name, api_name, resources)
-            result = list(filter(lambda api: api['name'] == api_name, apis))
-            return result[0] if result else None
-
-        elif resource_type == 'ApiGateway::Resource':
-            api_id = resource_props['RestApiId'] if resource else resource_id
-            api_id = resolve_refs_recursively(stack_name, api_id, resources)
-            parent_id = resolve_refs_recursively(stack_name, resource_props.get('ParentId'), resources)
-            if not api_id or not parent_id:
-                return None
-            api_resources = aws_stack.connect_to_service('apigateway').get_resources(restApiId=api_id)['items']
-            target_resource = list(filter(lambda res:
-                res.get('parentId') == parent_id and res['pathPart'] == resource_props['PathPart'], api_resources))
-            if not target_resource:
-                return None
-            path = aws_stack.get_apigateway_path_for_resource(api_id,
-                target_resource[0]['id'], resources=api_resources)
-            result = list(filter(lambda res: res['path'] == path, api_resources))
-            return result[0] if result else None
-
-        elif resource_type == 'ApiGateway::Deployment':
-            api_id = resource_props['RestApiId'] if resource else resource_id
-            api_id = resolve_refs_recursively(stack_name, api_id, resources)
-            if not api_id:
-                return None
-            result = aws_stack.connect_to_service('apigateway').get_deployments(restApiId=api_id)['items']
-            # TODO possibly filter results by stage name or other criteria
-            return result[0] if result else None
-
-        elif resource_type == 'ApiGateway::Stage':
-            api_id = resource_props['RestApiId'] if resource else resource_id
-            api_id = resolve_refs_recursively(stack_name, api_id, resources)
-            if not api_id:
-                return None
-            result = aws_stack.connect_to_service('apigateway').get_stage(restApiId=api_id,
-                stageName=resource_props['StageName'])
-            return result
-
-        elif resource_type == 'ApiGateway::Method':
-            api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
-            res_id = resolve_refs_recursively(stack_name, resource_props['ResourceId'], resources)
-            if not api_id or not res_id:
-                return None
-            res_obj = aws_stack.connect_to_service('apigateway').get_resource(restApiId=api_id, resourceId=res_id)
-            match = [v for (k, v) in res_obj.get('resourceMethods', {}).items()
-                     if resource_props['HttpMethod'] in (v.get('httpMethod'), k)]
-            int_props = resource_props.get('Integration') or {}
-            if int_props.get('Type') == 'AWS_PROXY':
-                match = [m for m in match if
-                    m.get('methodIntegration', {}).get('type') == 'AWS_PROXY' and
-                    m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
-            return match[0] if match else None
-
-        elif resource_type == 'ApiGateway::GatewayResponse':
-            api_id = resolve_refs_recursively(stack_name, resource_props['RestApiId'], resources)
-            if not api_id:
-                return
-            client = aws_stack.connect_to_service('apigateway')
-            result = client.get_gateway_response(restApiId=api_id, responseType=resource_props['ResponseType'])
-            return result if 'responseType' in result else None
-
-        elif resource_type == 'CloudFormation::Stack':
-            client = aws_stack.connect_to_service('cloudformation')
-            child_stack_name = resource_props.get('StackName') or resource_id
-            child_stack_name = resolve_refs_recursively(stack_name, child_stack_name, resources)
-            result = client.describe_stacks(StackName=child_stack_name)
-            return (result.get('Stacks') or [None])[0]
 
         elif resource_type == 'Parameter':
             return resource_props
