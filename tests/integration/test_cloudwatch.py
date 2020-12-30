@@ -59,7 +59,9 @@ class CloudWatchTest(unittest.TestCase):
         self.assertEqual(rs['Metrics'][0]['Namespace'], namespace)
 
     def test_put_metric_data_gzip(self):
-        data = 'Action=PutMetricData&MetricData.member.1.MetricName=test-metric&MetricData.member.1.Value=1&Namespace=test_namespace&Version=2010-08-01'
+        metric_name = 'test-metric'
+        namespace = 'namespace'
+        data = 'Action=PutMetricData&MetricData.member.1.MetricName=%s&MetricData.member.1.Value=1&Namespace=%s&Version=2010-08-01' % (metric_name, namespace)
         bytes_data = bytes(data, encoding='utf-8')
         encoded_data = gzip.compress(bytes_data)
 
