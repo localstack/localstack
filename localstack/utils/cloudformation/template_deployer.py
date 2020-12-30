@@ -18,7 +18,7 @@ from localstack.services.s3 import s3_listener
 from localstack.utils.common import json_safe, md5, canonical_json, short_uid
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name, POLICY_NAME_PATTERN
-from localstack.services.cloudformation.service_models import GenericBaseObject
+from localstack.services.cloudformation.service_models import GenericBaseObject, DependencyNotYetSatisfied
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -44,15 +44,6 @@ NoDatesSafeLoader.yaml_implicit_resolvers = {
 
 # maps resource type string to model class
 RESOURCE_MODELS = {model.cloudformation_type(): model for model in GenericBaseObject.__subclasses__()}
-
-
-class DependencyNotYetSatisfied(Exception):
-    """ Exception indicating that a resource dependency is not (yet) deployed/available. """
-    def __init__(self, resource_ids, message=None):
-        message = message or 'Unresolved dependencies: %s' % resource_ids
-        super(DependencyNotYetSatisfied, self).__init__(message)
-        resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
-        self.resource_ids = resource_ids
 
 
 class NoStackUpdates(Exception):
@@ -809,18 +800,13 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     if resource_props is None:
         raise Exception('Unable to find properties for resource "%s": %s %s' % (resource_id, resource, resources))
     try:
-        if resource_type == 'Lambda::Function':
-            func_name = resolve_refs_recursively(stack_name, resource_props['FunctionName'], resources)
-            return aws_stack.connect_to_service('lambda').get_function(FunctionName=func_name)
 
-        elif resource_type == 'Lambda::Version':
-            name = resolve_refs_recursively(stack_name, resource_props.get('FunctionName'), resources)
-            if not name:
-                return None
-            func_name = aws_stack.lambda_function_name(name)
-            func_version = name.split(':')[7] if len(name.split(':')) > 7 else '$LATEST'
-            versions = aws_stack.connect_to_service('lambda').list_versions_by_function(FunctionName=func_name)
-            return ([v for v in versions['Versions'] if v['Version'] == func_version] or [None])[0]
+        # try to look up resource class
+        canonical_type = canonical_resource_type
+        resource_class = RESOURCE_MODELS.get(canonical_type)
+        if resource_class:
+            instance = resource_class(resource)
+            return instance.fetch_state(stack_name=stack_name, resources=resources)
 
         elif resource_type == 'Lambda::EventSourceMapping':
             resource_id = resource_props['FunctionName'] if resource else resource_id
@@ -1820,20 +1806,14 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
     resource_type = re.sub('^AWS::', '', resource_type)
     resource_props = resource.get('Properties', {})
 
+    # determine result from resource class
+    canonical_type = canonical_resource_type(resource_type)
+    resource_class = RESOURCE_MODELS.get(canonical_type)
+    if resource_class:
+        return resource_class(resource).get_physical_resource_id(attribute=attribute)
+
     # TODO: put logic into resource-specific model classes
-    if resource_type == 'SQS::Queue':
-        queue_url = None
-        try:
-            queue_url = aws_stack.get_sqs_queue_url(resource_props.get('QueueName'))
-        except Exception as e:
-            if 'NonExistentQueue' in str(e):
-                raise DependencyNotYetSatisfied(resource_ids=resource_id, message='Unable to get queue: %s' % e)
-        if attribute == 'Arn':
-            return aws_stack.sqs_queue_arn(resource_props.get('QueueName'))
-        return queue_url
-    elif resource_type == 'SNS::Topic':
-        return aws_stack.sns_topic_arn(resource_props.get('TopicName'))
-    elif resource_type == 'ApiGateway::RestApi':
+    if resource_type == 'ApiGateway::RestApi':
         result = resource_props.get('id')
         if result:
             return result
@@ -1841,8 +1821,6 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
         return resource_props.get('StageName')
     elif resource_type == 'AppSync::DataSource':
         return resource_props.get('DataSourceArn')
-    elif resource_type == 'Kinesis::Stream':
-        return aws_stack.kinesis_stream_arn(resource_props.get('Name'))
     elif resource_type == 'KinesisFirehose::DeliveryStream':
         return aws_stack.firehose_stream_arn(resource_props.get('DeliveryStreamName'))
     elif resource_type == 'Events::Rule':

@@ -7,6 +7,15 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
 
 
+class DependencyNotYetSatisfied(Exception):
+    """ Exception indicating that a resource dependency is not (yet) deployed/available. """
+    def __init__(self, resource_ids, message=None):
+        message = message or 'Unresolved dependencies: %s' % resource_ids
+        super(DependencyNotYetSatisfied, self).__init__(message)
+        resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
+        self.resource_ids = resource_ids
+
+
 class BaseModel(CloudFormationModel):
     def __init__(self, **params):
         self.params = params
@@ -74,7 +83,16 @@ class GenericBaseObject(BaseModel):
         self.state = state or {}
 
     def get_resource_name(self):
-        """ Return the name of this resource, based on its properties (to be overwritten by subclass) """
+        """ Return the name of this resource, based on its properties (to be overwritten by subclasses) """
+        return None
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        """ Return the physical resource ID (Ref) of this resource (to be overwritten by subclasses) """
+        return None
+
+    # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
+    def fetch_state(self, stack_name, resources):
+        """ Fetch the latest deployment state of this resource, or return None if not currently deployed. """
         return None
 
     @property
@@ -84,6 +102,11 @@ class GenericBaseObject(BaseModel):
         result = dict(self.properties)
         result.update(self.state or {})
         return result
+
+    @property
+    def resource_id(self):
+        """ Return the logical resource ID of this resource (i.e., the ref. name within the stack's resources). """
+        return self.resource_json['LogicalResourceId']
 
     @classmethod
     def update_from_cloudformation_json(cls,
@@ -101,6 +124,11 @@ class GenericBaseObject(BaseModel):
     @classmethod
     def create_from_cloudformation_json(cls, resource_name, resource_json, region_name):
         return cls(resource_name=resource_name, resource_json=resource_json, region_name=region_name)
+
+    def resolve_refs_recursively(stack_name, value, resources):
+        # TODO: restructure code to avoid circular import here
+        from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
+        return resolve_refs_recursively(stack_name, value, resources)
 
 
 class EventsRule(BaseModel):
@@ -131,6 +159,33 @@ class CloudFormationStack(BaseModel):
         return 'AWS::CloudFormation::Stack'
 
 
+class LambdaFunction(BaseModel):
+
+    def fetch_state(self, stack_name, resources):
+        func_name = self.resolve_refs_recursively(stack_name, self.props['FunctionName'], resources)
+        return aws_stack.connect_to_service('lambda').get_function(FunctionName=func_name)
+
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Lambda::Function'
+
+
+class LambdaFunctionVersion(BaseModel):
+
+    def fetch_state(self, stack_name, resources):
+        name = self.resolve_refs_recursively(stack_name, self.props.get('FunctionName'), resources)
+        if not name:
+            return None
+        func_name = aws_stack.lambda_function_name(name)
+        func_version = name.split(':')[7] if len(name.split(':')) > 7 else '$LATEST'
+        versions = aws_stack.connect_to_service('lambda').list_versions_by_function(FunctionName=func_name)
+        return ([v for v in versions['Versions'] if v['Version'] == func_version] or [None])[0]
+
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Lambda::Version'
+
+
 class ElasticsearchDomain(BaseModel):
     @staticmethod
     def cloudformation_type():
@@ -141,6 +196,15 @@ class FirehoseDeliveryStream(BaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::KinesisFirehose::DeliveryStream'
+
+
+class KinesisStream(BaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Kinesis::Stream'
+
+    def get_physical_resource_id(self):
+        return aws_stack.kinesis_stream_arn(self.props.get('Name'))
 
 
 class SFNStateMachine(BaseModel):
@@ -188,15 +252,36 @@ class StepFunctionsActivity(BaseModel):
         return 'AWS::StepFunctions::Activity'
 
 
+class SQSQueue(GenericBaseObject, MotoQueue):
+    def get_resource_name(self):
+        return self.props.get('QueueName')
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        queue_url = None
+        props = self.props
+        try:
+            queue_url = aws_stack.get_sqs_queue_url(props.get('QueueName'))
+        except Exception as e:
+            if 'NonExistentQueue' in str(e):
+                raise DependencyNotYetSatisfied(resource_ids=self.resource_id, message='Unable to get queue: %s' % e)
+        if attribute == 'Arn':
+            return aws_stack.sqs_queue_arn(props.get('QueueName'))
+        return queue_url
+
+
+class SNSTopic(GenericBaseObject):
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return aws_stack.sns_topic_arn(self.props.get('TopicName'))
+
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SNS::Topic'
+
+
 class SNSSubscription(GenericBaseObject):
     @staticmethod
     def cloudformation_type():
         return 'AWS::SNS::Subscription'
-
-
-class SQSQueue(GenericBaseObject, MotoQueue):
-    def get_resource_name(self):
-        return self.props.get('QueueName')
 
 
 class SSMParameter(BaseModel):
