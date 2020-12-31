@@ -13,17 +13,16 @@ from moto.cloudformation.models import cloudformation_backends
 from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.constants import AWS_REGION_US_EAST_1, TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import json_safe, md5, canonical_json, short_uid
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
-from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
+from localstack.services.cloudformation.service_models import (
+    GenericBaseModel, DependencyNotYetSatisfied, PLACEHOLDER_RESOURCE_NAME, PLACEHOLDER_AWS_NO_VALUE)
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
-PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
-PLACEHOLDER_AWS_NO_VALUE = '__aws_no_value__'
 AWS_URL_SUFFIX = 'localhost'  # value is "amazonaws.com" in real AWS
 IAM_POLICY_VERSION = '2012-10-17'
 
@@ -63,13 +62,6 @@ def params_select_attributes(*attrs):
                 result[attr] = str_or_none(params.get(attr))
         return result
     return do_select
-
-
-def get_bucket_location_config(**kwargs):
-    region = aws_stack.get_region()
-    if region == AWS_REGION_US_EAST_1:
-        return None
-    return {'LocationConstraint': region}
 
 
 def lambda_get_params():
@@ -172,45 +164,6 @@ def es_add_tags_params(params, **kwargs):
     return {'ARN': es_arn, 'TagList': tags}
 
 
-def s3_bucket_notification_config(params, **kwargs):
-    notif_config = params.get('NotificationConfiguration')
-    if not notif_config:
-        return None
-
-    lambda_configs = []
-    queue_configs = []
-    topic_configs = []
-
-    attr_tuples = (
-        ('LambdaConfigurations', lambda_configs, 'LambdaFunctionArn', 'Function'),
-        ('QueueConfigurations', queue_configs, 'QueueArn', 'Queue'),
-        ('TopicConfigurations', topic_configs, 'TopicArn', 'Topic')
-    )
-
-    # prepare lambda/queue/topic notification configs
-    for attrs in attr_tuples:
-        for notif_cfg in notif_config.get(attrs[0]) or []:
-            filter_rules = notif_cfg.get('Filter', {}).get('S3Key', {}).get('Rules')
-            entry = {
-                attrs[2]: notif_cfg[attrs[3]],
-                'Events': [notif_cfg['Event']]
-            }
-            if filter_rules:
-                entry['Filter'] = {'Key': {'FilterRules': filter_rules}}
-            attrs[1].append(entry)
-
-    # construct final result
-    result = {
-        'Bucket': params.get('BucketName') or PLACEHOLDER_RESOURCE_NAME,
-        'NotificationConfiguration': {
-            'LambdaFunctionConfigurations': lambda_configs,
-            'QueueConfigurations': queue_configs,
-            'TopicConfigurations': topic_configs
-        }
-    }
-    return result
-
-
 def select_parameters(*param_names):
     return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])
 
@@ -296,25 +249,6 @@ def get_apigw_resource_params(params, **kwargs):
 
 # maps resource types to functions and parameters for creation
 RESOURCE_TO_FUNCTION = {
-    'S3::Bucket': {
-        'create': [{
-            'function': 'create_bucket',
-            'parameters': {
-                'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
-                'ACL': lambda params, **kwargs: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead')),
-                'CreateBucketConfiguration': lambda params, **kwargs: get_bucket_location_config()
-            }
-        }, {
-            'function': 'put_bucket_notification_configuration',
-            'parameters': s3_bucket_notification_config
-        }],
-        'delete': [{
-            'function': 'delete_bucket',
-            'parameters': {
-                'Bucket': 'BucketName'
-            }
-        }]
-    },
     'S3::BucketPolicy': {
         'create': {
             'function': 'put_bucket_policy',
@@ -682,11 +616,6 @@ def get_secret_arn(secret_name, account_id=None):
     return storage.get(key) or storage.get(secret_name)
 
 
-def convert_acl_cf_to_s3(acl):
-    """ Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read') """
-    return re.sub('(?<!^)(?=[A-Z])', '-', acl).lower()
-
-
 def retrieve_topic_arn(topic_name):
     topics = aws_stack.connect_to_service('sns').list_topics()['Topics']
     topic_arns = [t['TopicArn'] for t in topics if t['TopicArn'].endswith(':%s' % topic_name)]
@@ -723,6 +652,16 @@ def template_to_json(template):
     return json.dumps(template)
 
 
+def get_deployment_config(res_type):
+    result = RESOURCE_TO_FUNCTION.get(res_type)
+    if result is not None:
+        return result
+    canonical_type = canonical_resource_type(res_type)
+    resource_class = RESOURCE_MODELS.get(canonical_type)
+    if resource_class:
+        return resource_class.get_deploy_templates()
+
+
 def get_resource_type(resource):
     res_type = resource.get('ResourceType') or resource.get('Type') or ''
     parts = res_type.split('::', 1)
@@ -757,7 +696,7 @@ def get_resource_name(resource):
     res_type = canonical_resource_type(get_resource_type(resource))
     model_class = RESOURCE_MODELS.get(res_type)
     if model_class:
-        instance = model_class(properties)
+        instance = model_class(resource)
         name = instance.get_resource_name()
 
     if not name:
@@ -768,7 +707,7 @@ def get_resource_name(resource):
 def get_client(resource, func_config):
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
-    resource_config = RESOURCE_TO_FUNCTION.get(resource_type)
+    resource_config = get_deployment_config(resource_type)
     if resource_config is None:
         raise Exception('CloudFormation deployment for resource type %s not yet implemented' % resource_type)
     try:
@@ -807,10 +746,10 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         if resource_class:
             instance = resource_class(resource)
             state = instance.fetch_state(stack_name=stack_name, resources=resources)
-            if state is not None:
-                return state
+            return state
 
-        elif resource_type == 'Parameter':
+        # special case for stack parameters
+        if resource_type == 'Parameter':
             return resource_props
 
         # fallback: try accessing stack.moto_resource_statuses
@@ -833,7 +772,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
 def check_not_found_exception(e, resource_type, resource, resource_status):
     # we expect this to be a "not found" exception
-    markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException', '404', 'not found']
+    markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException', '404', 'not found', 'not exist']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
             (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
@@ -1162,50 +1101,12 @@ def update_resource(resource_id, resources, stack_name):
         LOG.warning('Unable to update resource type "%s", id "%s"' % (resource_type, resource_id))
         return
     LOG.info('Updating resource %s of type %s' % (resource_id, resource_type))
-    props = resource['Properties']
 
-    if resource_type == 'Lambda::Function':
-        client = aws_stack.connect_to_service('lambda')
-        keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
-        update_props = dict([(k, props[k]) for k in keys if k in props])
-        update_props = resolve_refs_recursively(stack_name, update_props, resources)
-        if 'Code' in props:
-            client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
-        if 'Environment' in update_props:
-            environment_variables = update_props['Environment'].get('Variables', {})
-            update_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
-
-        return client.update_function_configuration(**update_props)
-
-    if resource_type == 'ApiGateway::Method':
-        client = aws_stack.connect_to_service('apigateway')
-        integration = props.get('Integration')
-        # TODO use RESOURCE_TO_FUNCTION mechanism for updates, instead of hardcoding here
-        kwargs = {
-            'restApiId': props['RestApiId'],
-            'resourceId': props['ResourceId'],
-            'httpMethod': props['HttpMethod'],
-            'requestParameters': props.get('RequestParameters')
-        }
-        if integration:
-            kwargs['type'] = integration['Type']
-            kwargs['integrationHttpMethod'] = integration.get('IntegrationHttpMethod')
-            kwargs['uri'] = integration.get('Uri')
-            return client.put_integration(**kwargs)
-        kwargs['authorizationType'] = props.get('AuthorizationType')
-
-        return client.put_method(**kwargs)
-
-    if resource_type == 'StepFunctions::StateMachine':
-        client = aws_stack.connect_to_service('stepfunctions')
-        sm_arn = extract_resource_attribute(resource_type, {}, 'Arn', stack_name=stack_name,
-            resource_id=resource_id, resource=resource, resources=resources)
-        kwargs = {
-            'stateMachineArn': sm_arn,
-            'definition': props['DefinitionString'],
-        }
-
-        return client.update_state_machine(**kwargs)
+    canonical_type = canonical_resource_type(resource_type)
+    resource_class = RESOURCE_MODELS.get(canonical_type)
+    if resource_class:
+        instance = resource_class(resource)
+        return instance.update_resource(resource, stack_name=stack_name, resources=resources)
 
 
 def fix_account_id_in_arns(params):
@@ -1302,7 +1203,7 @@ def execute_resource_action_fallback(action_name, resource_id, resources, stack_
 def execute_resource_action(resource_id, resources, stack_name, action_name):
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
-    func_details = RESOURCE_TO_FUNCTION.get(resource_type)
+    func_details = get_deployment_config(resource_type)
 
     if not func_details or action_name not in func_details:
         if resource_type in ['Parameter']:
@@ -1755,7 +1656,7 @@ class TemplateDeployer(object):
 
     def is_deployable_resource(self, resource):
         resource_type = get_resource_type(resource)
-        entry = RESOURCE_TO_FUNCTION.get(resource_type)
+        entry = get_deployment_config(resource_type)
         if entry is None and resource_type not in ['Parameter', None]:
             # fall back to moto resource creation (TODO: remove in the future)
             long_res_type = canonical_resource_type(resource_type)
