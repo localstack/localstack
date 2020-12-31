@@ -686,7 +686,7 @@ def get_resource_name(resource):
     res_type = canonical_resource_type(get_resource_type(resource))
     model_class = RESOURCE_MODELS.get(res_type)
     if model_class:
-        instance = model_class(properties)
+        instance = model_class(resource)
         name = instance.get_resource_name()
 
     if not name:
@@ -741,10 +741,10 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         if resource_class:
             instance = resource_class(resource)
             state = instance.fetch_state(stack_name=stack_name, resources=resources)
-            if state is not None:
-                return state
+            return state
 
-        elif resource_type == 'Parameter':
+        # special case for stack parameters
+        if resource_type == 'Parameter':
             return resource_props
 
         # fallback: try accessing stack.moto_resource_statuses
