@@ -652,6 +652,16 @@ def template_to_json(template):
     return json.dumps(template)
 
 
+def get_deployment_config(res_type):
+    result = RESOURCE_TO_FUNCTION.get(res_type)
+    if result is not None:
+        return result
+    canonical_type = canonical_resource_type(res_type)
+    resource_class = RESOURCE_MODELS.get(canonical_type)
+    if resource_class:
+        return resource_class.get_deploy_templates()
+
+
 def get_resource_type(resource):
     res_type = resource.get('ResourceType') or resource.get('Type') or ''
     parts = res_type.split('::', 1)
@@ -697,12 +707,7 @@ def get_resource_name(resource):
 def get_client(resource, func_config):
     resource_type = get_resource_type(resource)
     service = get_service_name(resource)
-    resource_config = RESOURCE_TO_FUNCTION.get(resource_type)
-    if resource_config is None:
-        canonical_type = canonical_resource_type(resource_type)
-        resource_class = RESOURCE_MODELS.get(canonical_type)
-        if resource_class:
-            resource_config = resource_class.get_deploy_templates()
+    resource_config = get_deployment_config(resource_type)
     if resource_config is None:
         raise Exception('CloudFormation deployment for resource type %s not yet implemented' % resource_type)
     try:
@@ -767,7 +772,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
 def check_not_found_exception(e, resource_type, resource, resource_status):
     # we expect this to be a "not found" exception
-    markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException', '404', 'not found']
+    markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException', '404', 'not found', 'not exist']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
             (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
@@ -1198,7 +1203,7 @@ def execute_resource_action_fallback(action_name, resource_id, resources, stack_
 def execute_resource_action(resource_id, resources, stack_name, action_name):
     resource = resources[resource_id]
     resource_type = get_resource_type(resource)
-    func_details = RESOURCE_TO_FUNCTION.get(resource_type)
+    func_details = get_deployment_config(resource_type)
 
     if not func_details or action_name not in func_details:
         if resource_type in ['Parameter']:
@@ -1651,7 +1656,7 @@ class TemplateDeployer(object):
 
     def is_deployable_resource(self, resource):
         resource_type = get_resource_type(resource)
-        entry = RESOURCE_TO_FUNCTION.get(resource_type)
+        entry = get_deployment_config(resource_type)
         if entry is None and resource_type not in ['Parameter', None]:
             # fall back to moto resource creation (TODO: remove in the future)
             long_res_type = canonical_resource_type(resource_type)
