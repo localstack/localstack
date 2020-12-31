@@ -36,16 +36,12 @@ BOOTSTRAP_LOCK = threading.RLock()
 
 GZIP_ENCODING = 'GZIP'
 IDENTITY_ENCODING = 'IDENTITY'
+S3 = 's3'
 
 
 class ProxyListenerEdge(ProxyListener):
 
     def forward_request(self, method, path, data, headers):
-
-        encoding_type = headers.get('content-encoding') or ''
-        if encoding_type.upper() == GZIP_ENCODING:
-            headers.set('content-encoding', IDENTITY_ENCODING)
-            data = gzip.decompress(data)
 
         if path.split('?')[0] == '/health':
             return serve_health_endpoint(method, path, data)
@@ -94,6 +90,11 @@ class ProxyListenerEdge(ProxyListener):
         headers['Host'] = host
         if isinstance(data, dict):
             data = json.dumps(data)
+
+        encoding_type = headers.get('content-encoding') or ''
+        if encoding_type.upper() == GZIP_ENCODING and api is not S3:
+            headers.set('content-encoding', IDENTITY_ENCODING)
+            data = gzip.decompress(data)
 
         lock_ctx = BOOTSTRAP_LOCK
         if persistence.API_CALLS_RESTORED or is_internal_call_context(headers):
