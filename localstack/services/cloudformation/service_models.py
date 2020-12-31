@@ -1,13 +1,18 @@
+import re
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
 from moto.iam.models import Role as MotoRole
 from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
+from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
 
 # name pattern of IAM policies associated with Lambda functions
 LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
+
+PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
+PLACEHOLDER_AWS_NO_VALUE = '__aws_no_value__'
 
 
 class DependencyNotYetSatisfied(Exception):
@@ -38,6 +43,41 @@ class GenericBaseModel(CloudFormationModel):
         # state, as determined from the deployed resource
         self.state = {}
 
+    # ----------------------
+    # ABSTRACT BASE METHODS
+    # ----------------------
+
+    def set_resource_state(self, state):
+        """ Return the deployment state of this resource. """
+        self.state = state or {}
+
+    def get_resource_name(self):
+        """ Return the name of this resource, based on its properties (to be overwritten by subclasses) """
+        return None
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        """ Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses) """
+        return None
+
+    # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
+    def fetch_state(self, stack_name, resources):
+        """ Fetch the latest deployment state of this resource, or return None if not currently deployed. """
+        return None
+
+    # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
+    def update_resource(self, new_resource, stack_name, resources):
+        """ Update the deployment of this resource, using the updated properties (implemented by subclasses). """
+        pass
+
+    @staticmethod
+    def get_deploy_templates():
+        """ Return template configurations used to create the final API requests (implemented by subclasses). """
+        pass
+
+    # ----------------------
+    # GENERIC BASE METHODS
+    # ----------------------
+
     def get_cfn_attribute(self, attribute_name):
         """ Retrieve the given CF attribute for this resource (inherited from moto's CloudFormationModel) """
         if attribute_name in ['Arn', 'Ref'] and hasattr(self, 'arn'):
@@ -52,6 +92,10 @@ class GenericBaseModel(CloudFormationModel):
 
         raise UnformattedGetAttTemplateException()
 
+    # ----------------------
+    # GENERIC UTIL METHODS
+    # ----------------------
+
     def update_state(self, details):
         """ Update the deployment state of this resource (existing attributes will be overwritten). """
         details = details or {}
@@ -59,27 +103,10 @@ class GenericBaseModel(CloudFormationModel):
         self.props.update(update_props)
         return self.props
 
-    def set_resource_state(self, state):
-        """ Return the deployment state of this resource. """
-        self.state = state or {}
-
-    def get_resource_name(self):
-        """ Return the name of this resource, based on its properties (to be overwritten by subclasses) """
-        return None
-
-    def get_physical_resource_id(self, attribute=None, **kwargs):
-        """ Determine the physical resource ID (Ref) of this resource (to be overwritten by subclasses) """
-        return None
-
     @property
     def physical_resource_id(self):
         """ Return the (cached) physical resource ID. """
         return self.resource_json.get('PhysicalResourceId')
-
-    # TODO: change the signature to pass in a Stack instance (instead of stack_name and resources)
-    def fetch_state(self, stack_name, resources):
-        """ Fetch the latest deployment state of this resource, or return None if not currently deployed. """
-        return None
 
     @property
     def props(self):
@@ -182,6 +209,19 @@ class LambdaFunction(GenericBaseModel):
         if attribute == 'Arn':
             return aws_stack.lambda_function_arn(func_name)
         return func_name
+
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource['Properties']
+        client = aws_stack.connect_to_service('lambda')
+        keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
+        update_props = dict([(k, props[k]) for k in keys if k in props])
+        update_props = self.resolve_refs_recursively(stack_name, update_props, resources)
+        if 'Code' in props:
+            client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
+        if 'Environment' in update_props:
+            environment_variables = update_props['Environment'].get('Variables', {})
+            update_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
+        return client.update_function_configuration(**update_props)
 
 
 class LambdaFunctionVersion(GenericBaseModel):
@@ -299,6 +339,19 @@ class SFNStateMachine(GenericBaseModel):
             return None
         result = sfn_client.describe_state_machine(stateMachineArn=sm_arn[0])
         return result
+
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource['Properties']
+        client = aws_stack.connect_to_service('stepfunctions')
+        sm_arn = self.props.get('Arn')
+        if not sm_arn:
+            state = self.fetch_state(stack_name=stack_name, resources=resources)
+            self.state['Arn'] = sm_arn = state['Arn']
+        kwargs = {
+            'stateMachineArn': sm_arn,
+            'definition': props['DefinitionString'],
+        }
+        return client.update_state_machine(**kwargs)
 
 
 class SFNActivity(GenericBaseModel):
@@ -442,6 +495,25 @@ class GatewayMethod(GenericBaseModel):
                 m.get('methodIntegration', {}).get('httpMethod') == int_props.get('IntegrationHttpMethod')]
         return match[0] if match else None
 
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource['Properties']
+        client = aws_stack.connect_to_service('apigateway')
+        integration = props.get('Integration')
+        kwargs = {
+            'restApiId': props['RestApiId'],
+            'resourceId': props['ResourceId'],
+            'httpMethod': props['HttpMethod'],
+            'requestParameters': props.get('RequestParameters')
+        }
+        if integration:
+            kwargs['type'] = integration['Type']
+            kwargs['integrationHttpMethod'] = integration.get('IntegrationHttpMethod')
+            kwargs['uri'] = integration.get('Uri')
+            return client.put_integration(**kwargs)
+        kwargs['authorizationType'] = props.get('AuthorizationType')
+
+        return client.put_method(**kwargs)
+
 
 class GatewayStage(GenericBaseModel):
     @staticmethod
@@ -468,6 +540,78 @@ class S3Bucket(GenericBaseModel, FakeBucket):
         # AWS automatically converts upper to lower case chars in bucket names
         bucket_name = bucket_name.lower()
         return bucket_name
+
+    @staticmethod
+    def get_deploy_templates():
+
+        def convert_acl_cf_to_s3(acl):
+            """ Convert a CloudFormation ACL string (e.g., 'PublicRead') to an S3 ACL string (e.g., 'public-read') """
+            return re.sub('(?<!^)(?=[A-Z])', '-', acl).lower()
+
+        def s3_bucket_notification_config(params, **kwargs):
+            notif_config = params.get('NotificationConfiguration')
+            if not notif_config:
+                return None
+
+            lambda_configs = []
+            queue_configs = []
+            topic_configs = []
+
+            attr_tuples = (
+                ('LambdaConfigurations', lambda_configs, 'LambdaFunctionArn', 'Function'),
+                ('QueueConfigurations', queue_configs, 'QueueArn', 'Queue'),
+                ('TopicConfigurations', topic_configs, 'TopicArn', 'Topic')
+            )
+
+            # prepare lambda/queue/topic notification configs
+            for attrs in attr_tuples:
+                for notif_cfg in notif_config.get(attrs[0]) or []:
+                    filter_rules = notif_cfg.get('Filter', {}).get('S3Key', {}).get('Rules')
+                    entry = {
+                        attrs[2]: notif_cfg[attrs[3]],
+                        'Events': [notif_cfg['Event']]
+                    }
+                    if filter_rules:
+                        entry['Filter'] = {'Key': {'FilterRules': filter_rules}}
+                    attrs[1].append(entry)
+
+            # construct final result
+            result = {
+                'Bucket': params.get('BucketName') or PLACEHOLDER_RESOURCE_NAME,
+                'NotificationConfiguration': {
+                    'LambdaFunctionConfigurations': lambda_configs,
+                    'QueueConfigurations': queue_configs,
+                    'TopicConfigurations': topic_configs
+                }
+            }
+            return result
+
+        def get_bucket_location_config(**kwargs):
+            region = aws_stack.get_region()
+            if region == AWS_REGION_US_EAST_1:
+                return None
+            return {'LocationConstraint': region}
+
+        result = {
+            'create': [{
+                'function': 'create_bucket',
+                'parameters': {
+                    'Bucket': ['BucketName', PLACEHOLDER_RESOURCE_NAME],
+                    'ACL': lambda params, **kwargs: convert_acl_cf_to_s3(params.get('AccessControl', 'PublicRead')),
+                    'CreateBucketConfiguration': lambda params, **kwargs: get_bucket_location_config()
+                }
+            }, {
+                'function': 'put_bucket_notification_configuration',
+                'parameters': s3_bucket_notification_config
+            }],
+            'delete': [{
+                'function': 'delete_bucket',
+                'parameters': {
+                    'Bucket': 'BucketName'
+                }
+            }]
+        }
+        return result
 
     def fetch_state(self, stack_name, resources):
         props = self.props
