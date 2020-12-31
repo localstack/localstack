@@ -1164,6 +1164,35 @@ class CloudFormationTest(unittest.TestCase):
         rs = iam.list_roles(PathPrefix=role_path_prefix)
         self.assertEqual(len(rs['Roles']), 0)
 
+    def test_describe_template(self):
+        s3 = aws_stack.connect_to_service('s3')
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        bucket_name = 'b-%s' % short_uid()
+        template_body = TEST_TEMPLATE_12 % 'test-firehose-role-name'
+        s3.create_bucket(Bucket=bucket_name, ACL='public-read')
+        s3.put_object(Bucket=bucket_name, Key='template.yml', Body=template_body)
+
+        template_url = '%s/%s/template.yml' % (config.get_edge_url(), bucket_name)
+
+        params = [{'ParameterKey': 'KinesisStreamName'}, {'ParameterKey': 'DeliveryStreamName'}]
+        # get summary by template URL
+        result = cloudformation.get_template_summary(TemplateURL=template_url)
+        self.assertEqual(result.get('Parameters'), params)
+        self.assertIn('AWS::S3::Bucket', result['ResourceTypes'])
+        self.assertTrue(result.get('ResourceIdentifierSummaries'))
+        # get summary by template body
+        result = cloudformation.get_template_summary(TemplateBody=template_body)
+        self.assertEqual(result.get('Parameters'), params)
+        self.assertIn('AWS::Kinesis::Stream', result['ResourceTypes'])
+        self.assertTrue(result.get('ResourceIdentifierSummaries'))
+
+    def test_list_imports(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        result = cloudformation.list_imports(ExportName='_unknown_')
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(result['Imports'], [])  # TODO: create test with actual import values!
+
     def test_cfn_conditional_deployment(self):
         s3 = aws_stack.connect_to_service('s3')
 
