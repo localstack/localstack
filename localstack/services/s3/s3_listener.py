@@ -90,7 +90,8 @@ ALLOWED_HEADER_OVERRIDES = {
 }
 
 # STS policy expiration date format
-POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%S.%IZ'
+POLICY_EXPIRATION_FORMAT1 = '%Y-%m-%dT%H:%M:%SZ'
+POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%IZ'
 
 # ignored_headers_lower conatins headers which don't get involved in signature calculations process
 # these headers are being sent by the localstack by default.
@@ -1046,6 +1047,13 @@ class ProxyListenerS3(PersistingProxyListener):
         if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
             return True
 
+    @staticmethod
+    def parse_policy_expiration_date(expiration_string):
+        try:
+            return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT1)
+        except Exception:
+            return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
+
     def forward_request(self, method, path, data, headers):
 
         # Create list of query parameteres from the url
@@ -1144,7 +1152,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 policy = json.loads(base64.b64decode(policy_value).decode('utf-8'))
                 expiration_string = policy.get('expiration', None)  # Example: 2020-06-05T13:37:12Z
                 if expiration_string:
-                    expiration_datetime = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT)
+                    expiration_datetime = self.parse_policy_expiration_date(expiration_string)
                     expiration_timestamp = expiration_datetime.timestamp()
                     if is_url_already_expired(expiration_timestamp):
                         return token_expired_error(path, headers.get('x-amz-request-id'), 400)
