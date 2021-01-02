@@ -1059,6 +1059,8 @@ class ProxyListenerS3(PersistingProxyListener):
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
+        path_orig = path
+        path = path.replace('#', '%23')  # support key names containing hashes (e.g., required by Amplify)
 
         # Detecting pre-sign url and checking signature
         if any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
@@ -1189,11 +1191,12 @@ class ProxyListenerS3(PersistingProxyListener):
             if method == 'PUT':
                 return set_object_lock(bucket, data)
 
-        if modified_data is not None or headers_changed:
+        path_orig_escaped = path_orig.replace('#', '%23')
+        if modified_data is not None or headers_changed or path_orig != path_orig_escaped:
             data_to_return = not_none_or(modified_data, data)
             if modified_data is not None:
                 headers['Content-Length'] = str(len(data_to_return or ''))
-            return Request(data=data_to_return, headers=headers, method=method)
+            return Request(url=path_orig_escaped, data=data_to_return, headers=headers, method=method)
         return True
 
     def get_forward_url(self, method, path, data, headers):
@@ -1212,6 +1215,8 @@ class ProxyListenerS3(PersistingProxyListener):
     def return_response(self, method, path, data, headers, response, request_handler=None):
         path = to_str(path)
         method = to_str(method)
+        path = path.replace('#', '%23')
+
         # persist this API call to disk
         super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
