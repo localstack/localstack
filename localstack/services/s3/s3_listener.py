@@ -89,9 +89,8 @@ ALLOWED_HEADER_OVERRIDES = {
     'response-content-encoding': 'Content-Encoding',
 }
 
-# From botocore's auth.py:
-# https://github.com/boto/botocore/blob/30206ab9e9081c80fa68e8b2cb56296b09be6337/botocore/auth.py#L47
-POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+# STS policy expiration date format
+POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%S.%IZ'
 
 # ignored_headers_lower conatins headers which don't get involved in signature calculations process
 # these headers are being sent by the localstack by default.

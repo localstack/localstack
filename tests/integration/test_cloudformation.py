@@ -1736,4 +1736,4 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def expected_change_set_status(self):
-        return 'CREATE_COMPLETE' if config.USE_MOTO_CF else 'CREATE_PENDING'
+        return 'CREATE_COMPLETE'
