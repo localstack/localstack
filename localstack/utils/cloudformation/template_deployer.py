@@ -2,6 +2,7 @@ import re
 import os
 import json
 import yaml
+import base64
 import logging
 import traceback
 import moto.cloudformation.utils
@@ -15,7 +16,7 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import json_safe, md5, canonical_json, short_uid
+from localstack.utils.common import json_safe, md5, canonical_json, short_uid, to_str, to_bytes
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import (
@@ -1031,6 +1032,23 @@ def resolve_refs_recursively(stack_name, value, resources):
             operand2 = resolve_refs_recursively(stack_name, operand2, resources)
             return str(operand1) == str(operand2)
 
+        if stripped_fn_lower == 'select':
+            index, values = value[keys_list[0]]
+            index = resolve_refs_recursively(stack_name, index, resources)
+            values = resolve_refs_recursively(stack_name, values, resources)
+            return values[index]
+
+        if stripped_fn_lower == 'split':
+            delimiter, string = value[keys_list[0]]
+            delimiter = resolve_refs_recursively(stack_name, delimiter, resources)
+            string = resolve_refs_recursively(stack_name, string, resources)
+            return string.split(delimiter)
+
+        if stripped_fn_lower == 'base64':
+            value_to_encode = value[keys_list[0]]
+            value_to_encode = resolve_refs_recursively(stack_name, value_to_encode, resources)
+            return to_str(base64.b64encode(to_bytes(value_to_encode)))
+
         for key, val in value.items():
             value[key] = resolve_refs_recursively(stack_name, val, resources)
 
@@ -1406,7 +1424,7 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
         if body:
             client = aws_stack.connect_to_service('apigateway')
             body = json.dumps(body) if isinstance(body, dict) else body
-            client.put_rest_api(restApiId=result['id'], body=common.to_bytes(body))
+            client.put_rest_api(restApiId=result['id'], body=to_bytes(body))
 
     elif resource_type == 'SNS::Topic':
         subscriptions = resource_props.get('Subscription', [])
@@ -1615,18 +1633,25 @@ class TemplateDeployer(object):
 
     def deploy_stack(self):
         self.stack.set_stack_status('CREATE_IN_PROGRESS')
-        # apply changes
-        self.apply_changes(self.stack, self.stack, stack_name=self.stack.stack_name, initialize=True)
-        # update status
-        self.stack.set_stack_status('CREATE_COMPLETE')
+        try:
+            self.apply_changes(self.stack, self.stack, stack_name=self.stack.stack_name, initialize=True)
+            self.stack.set_stack_status('CREATE_COMPLETE')
+        except Exception as e:
+            LOG.info('Unable to create stack %s: %s' % (self.stack.stage_name, e))
+            self.stack.set_stack_status('CREATE_FAILED')
+            raise
 
     def apply_change_set(self, change_set):
         change_set.stack.set_stack_status('UPDATE_IN_PROGRESS')
-        # apply changes
-        change_set.changes = self.apply_changes(change_set.stack, change_set, stack_name=change_set.stack_name)
-        # update status
-        change_set.metadata['Status'] = 'CREATE_COMPLETE'
-        change_set.stack.set_stack_status('CREATE_COMPLETE')
+        try:
+            change_set.changes = self.apply_changes(change_set.stack, change_set, stack_name=change_set.stack_name)
+            change_set.metadata['Status'] = 'UPDATE_COMPLETE'
+            self.stack.set_stack_status('UPDATE_COMPLETE')
+        except Exception as e:
+            LOG.info('Unable to apply change set %s: %s' % (change_set.metadata.get('ChangeSetName'), e))
+            change_set.metadata['Status'] = 'UPDATE_FAILED'
+            self.stack.set_stack_status('UPDATE_FAILED')
+            raise
 
     def update_stack(self, new_stack):
         self.stack.set_stack_status('UPDATE_IN_PROGRESS')
