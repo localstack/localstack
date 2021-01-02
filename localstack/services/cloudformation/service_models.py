@@ -4,15 +4,21 @@ from moto.sqs.models import Queue as MotoQueue
 from moto.iam.models import Role as MotoRole
 from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
-from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
 
 # name pattern of IAM policies associated with Lambda functions
 LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
 
+# placeholders
 PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
 PLACEHOLDER_AWS_NO_VALUE = '__aws_no_value__'
+
+# ref attribute definitions
+REF_ATTRS = ['PhysicalResourceId', 'Ref']
+REF_ID_ATTRS = REF_ATTRS + ['Id']
+REF_ARN_ATTRS = ['Ref', 'Arn']
 
 
 class DependencyNotYetSatisfied(Exception):
@@ -80,9 +86,9 @@ class GenericBaseModel(CloudFormationModel):
 
     def get_cfn_attribute(self, attribute_name):
         """ Retrieve the given CF attribute for this resource (inherited from moto's CloudFormationModel) """
-        if attribute_name in ['Arn', 'Ref'] and hasattr(self, 'arn'):
+        if attribute_name in REF_ARN_ATTRS and hasattr(self, 'arn'):
             return self.arn
-        if attribute_name in ['PhysicalResourceId', 'Ref']:
+        if attribute_name in REF_ATTRS:
             result = self.get_physical_resource_id(attribute=attribute_name)
             if result:
                 return result
@@ -195,7 +201,6 @@ class CloudFormationStack(GenericBaseModel):
 
 
 class LambdaFunction(GenericBaseModel):
-
     @staticmethod
     def cloudformation_type():
         return 'AWS::Lambda::Function'
@@ -239,7 +244,7 @@ class LambdaFunctionVersion(GenericBaseModel):
         return ([v for v in versions['Versions'] if v['Version'] == func_version] or [None])[0]
 
 
-def LambdaEventSourceMapping():
+class LambdaEventSourceMapping(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::Lambda::EventSourceMapping'
@@ -262,7 +267,7 @@ def LambdaEventSourceMapping():
         return mapping[0]
 
 
-def LambdaPermission(GenericBaseModel):
+class LambdaPermission(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
         return 'AWS::Lambda::Permission'
@@ -514,6 +519,11 @@ class GatewayMethod(GenericBaseModel):
 
         return client.put_method(**kwargs)
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        props = self.props
+        result = '%s-%s-%s' % (props.get('RestApiId'), props.get('ResourceId'), props.get('HttpMethod'))
+        return result
+
 
 class GatewayStage(GenericBaseModel):
     @staticmethod
@@ -629,6 +639,11 @@ class S3Bucket(GenericBaseModel, FakeBucket):
         if notifs and not has_notifs:
             return None
         return response
+
+    def get_cfn_attribute(self, attribute_name):
+        if attribute_name == 'RegionalDomainName':
+            return LOCALHOST
+        return super(S3Bucket, self).get_cfn_attribute(attribute_name)
 
 
 class S3BucketPolicy(GenericBaseModel):

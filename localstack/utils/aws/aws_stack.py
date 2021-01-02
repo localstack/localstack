@@ -874,14 +874,16 @@ def deploy_cf_stack(stack_name, template_body):
     return await_stack_completion(stack_name)
 
 
-def await_stack_status(stack_name, expected_status, retries=3, sleep=2):
+def await_stack_status(stack_name, expected_statuses, retries=3, sleep=2):
     def check_stack():
         stack = get_stack_details(stack_name)
-        assert stack['StackStatus'] == expected_status
+        assert stack['StackStatus'] in expected_statuses
         return stack
 
+    expected_statuses = expected_statuses if isinstance(expected_statuses, list) else [expected_statuses]
     return retry(check_stack, retries, sleep)
 
 
-def await_stack_completion(stack_name, retries=3, sleep=2):
-    return await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
+def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
+    statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
+    return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)

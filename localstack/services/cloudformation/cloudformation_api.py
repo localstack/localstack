@@ -185,7 +185,7 @@ class Stack(object):
             try:
                 template_deployer.resolve_refs_recursively(self.stack_name, details, self.resources)
                 value = details['Value']
-            except template_deployer.DependencyNotYetSatisfied as e:
+            except Exception as e:
                 LOG.debug('Unable to resolve references in stack outputs: %s - %s' % (details, e))
             export = details.get('Export', {}).get('Name')
             description = details.get('Description')
@@ -260,6 +260,12 @@ class StackChangeSet(Stack):
     def change_set_name(self):
         return self.metadata['ChangeSetName']
 
+    @property
+    def resources(self):
+        result = dict(self.stack.resources)
+        result.update(self.resources)
+        return result
+
 
 # --------------
 # API ENDPOINTS
@@ -272,6 +278,7 @@ def create_stack(req_params):
     template['StackName'] = req_params.get('StackName')
     stack = Stack(req_params, template)
     state.stacks[stack.stack_id] = stack
+    LOG.debug('Creating stack "%s" with %s resources ...' % (stack.stack_name, len(stack.template_resources)))
     deployer = template_deployer.TemplateDeployer(stack)
     try:
         deployer.deploy_stack()
@@ -381,10 +388,12 @@ def create_change_set(req_params):
         state = RegionState.get()
         empty_stack_template = dict(template)
         empty_stack_template['Resources'] = {}
-        stack = Stack(req_params, empty_stack_template)
+        stack = Stack(clone(req_params), empty_stack_template)
         state.stacks[stack.stack_id] = stack
+        stack.set_stack_status('CREATE_COMPLETE')
     change_set = StackChangeSet(req_params, template)
     stack.change_sets.append(change_set)
+    change_set.metadata['Status'] = 'CREATE_COMPLETE'
     return {'StackId': change_set.stack_id, 'Id': change_set.change_set_id}
 
 
@@ -394,6 +403,8 @@ def execute_change_set(req_params):
     change_set = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
         return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
+    LOG.debug('Executing change set "%s" for stack "%s" with %s resources ...' % (
+        cs_name, stack_name, len(change_set.template_resources)))
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
     change_set.stack.metadata['ChangeSetId'] = change_set.change_set_id
