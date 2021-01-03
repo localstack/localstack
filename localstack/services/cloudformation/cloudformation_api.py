@@ -455,7 +455,8 @@ def list_imports(req_params):
 def validate_template(req_params):
     try:
         result = template_preparer.validate_template(req_params)
-        result = xmltodict.parse(result)
+        result = '<tmp>%s</tmp>' % result
+        result = xmltodict.parse(result)['tmp']
         return result
     except Exception as err:
         return error_response('Template Validation Error: %s' % err)
