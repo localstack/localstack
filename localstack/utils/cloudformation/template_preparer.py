@@ -10,7 +10,7 @@ from samtranslator.translator.transform import transform as transform_sam
 from localstack import config
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import to_str, safe_requests, run_safe
+from localstack.utils.common import to_str, safe_requests, run_safe, clone_safe
 
 LOG = logging.getLogger(__name__)
 
@@ -135,9 +135,9 @@ def parse_template(template):
     except Exception:
         yaml.add_multi_constructor('', moto.cloudformation.utils.yaml_tag_constructor, Loader=NoDatesSafeLoader)
         try:
-            return yaml.safe_load(template)
+            return clone_safe(yaml.safe_load(template))
         except Exception:
-            return yaml.load(template, Loader=NoDatesSafeLoader)
+            return clone_safe(yaml.load(template, Loader=NoDatesSafeLoader))
 
 
 def template_to_json(template):

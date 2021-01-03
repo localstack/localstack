@@ -352,6 +352,10 @@ RESOURCE_TO_FUNCTION = {
             },
             'defaults': {
                 'Role': 'test_role'
+            },
+            'types': {
+                'Timeout': int,
+                'MemorySize': int
             }
         },
         'delete': {
