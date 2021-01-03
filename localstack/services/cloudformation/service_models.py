@@ -115,6 +115,11 @@ class GenericBaseModel(CloudFormationModel):
         return self.resource_json.get('PhysicalResourceId')
 
     @property
+    def logical_resource_id(self):
+        """ Return the logical resource ID. """
+        return self.resource_json.get('LogicalResourceId')
+
+    @property
     def props(self):
         """ Return a copy of (1) the resource properties (from the template), combined with
             (2) the current deployment state properties of the resource. """
@@ -192,12 +197,37 @@ class CloudFormationStack(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::CloudFormation::Stack'
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('StackId')
+
     def fetch_state(self, stack_name, resources):
         client = aws_stack.connect_to_service('cloudformation')
-        child_stack_name = self.props.get('StackName') or self.resource_id
+        child_stack_name = self.props['StackName']
         child_stack_name = self.resolve_refs_recursively(stack_name, child_stack_name, resources)
         result = client.describe_stacks(StackName=child_stack_name)
-        return (result.get('Stacks') or [None])[0]
+        result = (result.get('Stacks') or [None])[0]
+        return result
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def get_nested_stack_params(params, **kwargs):
+            nested_stack_name = params['StackName']
+            stack_params = params.get('Parameters', {})
+            stack_params = [{'ParameterKey': k, 'ParameterValue': str(v).lower() if isinstance(v, bool) else str(v)}
+                for k, v in stack_params.items()]
+            result = {
+                'StackName': nested_stack_name,
+                'TemplateURL': params.get('TemplateURL'),
+                'Parameters': stack_params
+            }
+            return result
+
+        return {
+            'create': {
+                'function': 'create_stack',
+                'parameters': get_nested_stack_params
+            }
+        }
 
 
 class LambdaFunction(GenericBaseModel):

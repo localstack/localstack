@@ -180,6 +180,10 @@ class Stack(object):
     @property
     def outputs(self):
         result = []
+        # first, fetch the outputs of nested child stacks
+        for stack in self.nested_stacks:
+            result.extend(stack.outputs)
+        # now, fetch the outputs of this stack
         for k, details in self.template.get('Outputs', {}).items():
             value = None
             try:
@@ -218,6 +222,14 @@ class Stack(object):
         result = {}
         for export in RegionState.get().exports:
             result[export['Name']] = export
+        return result
+
+    @property
+    def nested_stacks(self):
+        """ Return a list of nested stacks that have been deployed by this stack. """
+        result = [r for r in self.template_resources.values() if r['Type'] == 'AWS::CloudFormation::Stack']
+        result = [find_stack(r['Properties'].get('StackName')) for r in result]
+        result = [r for r in result if r]
         return result
 
     @property
@@ -363,6 +375,8 @@ def describe_stack_resources(req_params):
         return error_response('Cannot specify both StackName and PhysicalResourceId')
     # TODO: filter stack by PhysicalResourceId!
     stack = find_stack(stack_name)
+    if not stack:
+        return stack_not_found_error(stack_name)
     statuses = [stack.resource_status(res_id) for res_id, _ in stack.resource_states.items() if
         resource_id in [res_id, None]]
     return {'StackResources': {'member': statuses}}
