@@ -11,7 +11,6 @@ from localstack.utils.common import (
 from localstack.utils.cloudformation import template_deployer, template_preparer
 from localstack.utils.aws.aws_responses import (
     requests_response_xml, requests_to_flask_response, flask_error_response_xml)
-from localstack.services.cloudformation import cloudformation_listener
 
 APP_NAME = 'cloudformation_api'
 app = Flask(APP_NAME)
@@ -395,7 +394,7 @@ def list_stack_resources(req_params):
 def create_change_set(req_params):
     stack_name = req_params.get('StackName')
     template_deployer.prepare_template_body(req_params)
-    template = template_deployer.parse_template(req_params['TemplateBody'])
+    template = template_preparer.parse_template(req_params['TemplateBody'])
     template['StackName'] = stack_name
     template['ChangeSetName'] = req_params.get('ChangeSetName')
     stack = existing = find_stack(stack_name)
@@ -455,7 +454,7 @@ def list_imports(req_params):
 
 def validate_template(req_params):
     try:
-        result = cloudformation_listener.validate_template(req_params)
+        result = template_preparer.validate_template(req_params)
         result = xmltodict.parse(result)
         return result
     except Exception as err:
@@ -502,7 +501,7 @@ def get_template_summary(req_params):
         if not stack:
             return stack_not_found_error(stack_name)
     template_deployer.prepare_template_body(req_params)
-    template = template_deployer.parse_template(req_params['TemplateBody'])
+    template = template_preparer.parse_template(req_params['TemplateBody'])
     req_params['StackName'] = 'tmp-stack'
     stack = Stack(req_params, template)
     result = stack.describe_details()

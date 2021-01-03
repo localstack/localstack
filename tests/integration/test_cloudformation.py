@@ -10,7 +10,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry, short_uid, to_str
 from localstack.utils.testutil import create_zip_file
 from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_stack
-from localstack.utils.cloudformation import template_deployer
+from localstack.utils.cloudformation import template_preparer
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -505,7 +505,7 @@ class CloudFormationTest(unittest.TestCase):
         sns = aws_stack.connect_to_service('sns')
         sqs = aws_stack.connect_to_service('sqs')
         apigateway = aws_stack.connect_to_service('apigateway')
-        template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
+        template = template_preparer.template_to_json(load_file(TEST_TEMPLATE_1))
 
         # deploy template
         stack_name = 'stack-%s' % short_uid()
@@ -584,7 +584,7 @@ class CloudFormationTest(unittest.TestCase):
     def test_validate_template(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
-        template = template_deployer.template_to_json(load_file(TEST_VALID_TEMPLATE))
+        template = template_preparer.template_to_json(load_file(TEST_VALID_TEMPLATE))
         resp = cloudformation.validate_template(TemplateBody=template)
 
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -607,7 +607,7 @@ class CloudFormationTest(unittest.TestCase):
 
     def test_list_stack_resources_returns_queue_urls(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
-        template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_2))
+        template = template_preparer.template_to_json(load_file(TEST_TEMPLATE_2))
         stack_name = 'stack-%s' % short_uid()
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
@@ -1440,7 +1440,7 @@ class CloudFormationTest(unittest.TestCase):
         key_name = 'serverless/hofund/local/1599143878432/authorizer.zip'
         package_path = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.js')
 
-        template = template_deployer.template_to_json(load_file(APIGW_INTEGRATION_TEMPLATE))
+        template = template_preparer.template_to_json(load_file(APIGW_INTEGRATION_TEMPLATE))
 
         s3 = aws_stack.connect_to_service('s3')
         s3.create_bucket(Bucket=bucket_name, ACL='public-read')

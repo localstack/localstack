@@ -14,7 +14,8 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import json_safe, md5, canonical_json, short_uid, to_str, to_bytes
+from localstack.utils.common import (
+    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r)
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
@@ -36,6 +37,8 @@ STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName', 'AWS::AccountI
 
 # maps resource type string to model class
 RESOURCE_MODELS = {model.cloudformation_type(): model for model in GenericBaseModel.__subclasses__()}
+
+CFN_RESPONSE_MODULE_URL = 'https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js'
 
 
 class NoStackUpdates(Exception):
@@ -104,7 +107,18 @@ def get_lambda_code_param(params, **kwargs):
         handler_file = get_handler_file_from_name(params['Handler'], runtime=params['Runtime'])
         tmp_file = os.path.join(tmp_dir, handler_file)
         common.save_file(tmp_file, zip_file)
-        zip_file = create_zip_file(tmp_file, get_content=True)
+
+        # add 'cfn-response' module to archive - see:
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
+        cfn_response_tmp_file = os.path.join(config.TMP_FOLDER, 'lambda.cfn-response.js')
+        if not os.path.exists(cfn_response_tmp_file):
+            download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
+        cfn_response_mod_dir = os.path.join(tmp_dir, 'node_modules', 'cfn-response')
+        mkdir(cfn_response_mod_dir)
+        cp_r(cfn_response_tmp_file, os.path.join(cfn_response_mod_dir, 'index.js'))
+
+        # create zip file
+        zip_file = create_zip_file(tmp_dir, get_content=True)
         code['ZipFile'] = zip_file
         common.rm_rf(tmp_dir)
     return code
@@ -1498,7 +1512,7 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
         return resource_props.get('LogGroupName')
 
     res_id = resource.get('PhysicalResourceId')
-    if res_id:
+    if res_id and attribute in [None, 'Ref', 'PhysicalResourceId']:
         return res_id
     result = extract_resource_attribute(resource_type, {}, attribute or 'PhysicalResourceId',
         stack_name=stack_name, resource_id=resource_id, resource=resource, resources=resources)
