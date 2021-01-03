@@ -2,10 +2,11 @@ import io
 import os
 import re
 import sys
+import glob
 import json
 import uuid
 import time
-import glob
+import yaml
 import base64
 import socket
 import hashlib
@@ -86,6 +87,10 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, (datetime, date)):
             return timestamp_millis(o)
+        if isinstance(o, yaml.ScalarNode):
+            if o.tag == 'tag:yaml.org,2002:int':
+                return int(o.value)
+            return str(o.value)
         try:
             if isinstance(o, six.binary_type):
                 return to_str(o)

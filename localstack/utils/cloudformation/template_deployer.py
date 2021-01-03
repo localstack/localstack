@@ -1,11 +1,9 @@
 import re
 import os
 import json
-import yaml
 import base64
 import logging
 import traceback
-import moto.cloudformation.utils
 from urllib.parse import urlparse
 from six import iteritems
 from moto.core import CloudFormationModel as MotoCloudFormationModel
@@ -18,6 +16,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import json_safe, md5, canonical_json, short_uid, to_str, to_bytes
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
+from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import (
     GenericBaseModel, DependencyNotYetSatisfied, PLACEHOLDER_RESOURCE_NAME, PLACEHOLDER_AWS_NO_VALUE)
@@ -34,13 +33,6 @@ UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method', 'StepFunctions
 
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName', 'AWS::AccountId']
-
-# create safe yaml loader that parses date strings as string, not date objects
-NoDatesSafeLoader = yaml.SafeLoader
-NoDatesSafeLoader.yaml_implicit_resolvers = {
-    k: [r for r in v if r[0] != 'tag:yaml.org,2002:timestamp'] for
-    k, v in NoDatesSafeLoader.yaml_implicit_resolvers.items()
-}
 
 # maps resource type string to model class
 RESOURCE_MODELS = {model.cloudformation_type(): model for model in GenericBaseModel.__subclasses__()}
@@ -620,22 +612,6 @@ def find_stack(stack_name):
 # CF TEMPLATE HANDLING
 # ---------------------
 
-def parse_template(template):
-    try:
-        return json.loads(template)
-    except Exception:
-        yaml.add_multi_constructor('', moto.cloudformation.utils.yaml_tag_constructor, Loader=NoDatesSafeLoader)
-        try:
-            return yaml.safe_load(template)
-        except Exception:
-            return yaml.load(template, Loader=NoDatesSafeLoader)
-
-
-def template_to_json(template):
-    template = parse_template(template)
-    return json.dumps(template)
-
-
 def get_deployment_config(res_type):
     result = RESOURCE_TO_FUNCTION.get(res_type)
     if result is not None:
@@ -1161,6 +1137,11 @@ def remove_none_values(params):
         return o
     result = common.recurse_object(params, remove_nones)
     return result
+
+
+# TODO remove this method
+def prepare_template_body(req_data):
+    return template_preparer.prepare_template_body(req_data)
 
 
 def deploy_resource(resource_id, resources, stack_name):
