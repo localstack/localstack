@@ -2,10 +2,10 @@ import io
 import os
 import re
 import sys
+import glob
 import json
 import uuid
 import time
-import glob
 import base64
 import socket
 import hashlib
@@ -79,6 +79,7 @@ class CustomEncoder(json.JSONEncoder):
     """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
 
     def default(self, o):
+        import yaml  # leave import here, to avoid breaking our Lambda tests!
         if isinstance(o, decimal.Decimal):
             if o % 1 > 0:
                 return float(o)
@@ -86,6 +87,14 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, (datetime, date)):
             return timestamp_millis(o)
+        if isinstance(o, yaml.ScalarNode):
+            if o.tag == 'tag:yaml.org,2002:int':
+                return int(o.value)
+            if o.tag == 'tag:yaml.org,2002:float':
+                return float(o.value)
+            if o.tag == 'tag:yaml.org,2002:bool':
+                return bool(o.value)
+            return str(o.value)
         try:
             if isinstance(o, six.binary_type):
                 return to_str(o)

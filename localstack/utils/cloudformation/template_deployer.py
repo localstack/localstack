@@ -1,11 +1,9 @@
 import re
 import os
 import json
-import yaml
 import base64
 import logging
 import traceback
-import moto.cloudformation.utils
 from urllib.parse import urlparse
 from six import iteritems
 from moto.core import CloudFormationModel as MotoCloudFormationModel
@@ -16,8 +14,10 @@ from localstack.utils import common
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.s3 import s3_listener
-from localstack.utils.common import json_safe, md5, canonical_json, short_uid, to_str, to_bytes
+from localstack.utils.common import (
+    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r)
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
+from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import (
     GenericBaseModel, DependencyNotYetSatisfied, PLACEHOLDER_RESOURCE_NAME, PLACEHOLDER_AWS_NO_VALUE)
@@ -35,15 +35,10 @@ UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method', 'StepFunctions
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName', 'AWS::AccountId']
 
-# create safe yaml loader that parses date strings as string, not date objects
-NoDatesSafeLoader = yaml.SafeLoader
-NoDatesSafeLoader.yaml_implicit_resolvers = {
-    k: [r for r in v if r[0] != 'tag:yaml.org,2002:timestamp'] for
-    k, v in NoDatesSafeLoader.yaml_implicit_resolvers.items()
-}
-
 # maps resource type string to model class
 RESOURCE_MODELS = {model.cloudformation_type(): model for model in GenericBaseModel.__subclasses__()}
+
+CFN_RESPONSE_MODULE_URL = 'https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js'
 
 
 class NoStackUpdates(Exception):
@@ -112,7 +107,18 @@ def get_lambda_code_param(params, **kwargs):
         handler_file = get_handler_file_from_name(params['Handler'], runtime=params['Runtime'])
         tmp_file = os.path.join(tmp_dir, handler_file)
         common.save_file(tmp_file, zip_file)
-        zip_file = create_zip_file(tmp_file, get_content=True)
+
+        # add 'cfn-response' module to archive - see:
+        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-lambda-function-code-cfnresponsemodule.html
+        cfn_response_tmp_file = os.path.join(config.TMP_FOLDER, 'lambda.cfn-response.js')
+        if not os.path.exists(cfn_response_tmp_file):
+            download(CFN_RESPONSE_MODULE_URL, cfn_response_tmp_file)
+        cfn_response_mod_dir = os.path.join(tmp_dir, 'node_modules', 'cfn-response')
+        mkdir(cfn_response_mod_dir)
+        cp_r(cfn_response_tmp_file, os.path.join(cfn_response_mod_dir, 'index.js'))
+
+        # create zip file
+        zip_file = create_zip_file(tmp_dir, get_content=True)
         code['ZipFile'] = zip_file
         common.rm_rf(tmp_dir)
     return code
@@ -360,6 +366,10 @@ RESOURCE_TO_FUNCTION = {
             },
             'defaults': {
                 'Role': 'test_role'
+            },
+            'types': {
+                'Timeout': int,
+                'MemorySize': int
             }
         },
         'delete': {
@@ -619,22 +629,6 @@ def find_stack(stack_name):
 # ---------------------
 # CF TEMPLATE HANDLING
 # ---------------------
-
-def parse_template(template):
-    try:
-        return json.loads(template)
-    except Exception:
-        yaml.add_multi_constructor('', moto.cloudformation.utils.yaml_tag_constructor, Loader=NoDatesSafeLoader)
-        try:
-            return yaml.safe_load(template)
-        except Exception:
-            return yaml.load(template, Loader=NoDatesSafeLoader)
-
-
-def template_to_json(template):
-    template = parse_template(template)
-    return json.dumps(template)
-
 
 def get_deployment_config(res_type):
     result = RESOURCE_TO_FUNCTION.get(res_type)
@@ -1163,6 +1157,11 @@ def remove_none_values(params):
     return result
 
 
+# TODO remove this method
+def prepare_template_body(req_data):
+    return template_preparer.prepare_template_body(req_data)
+
+
 def deploy_resource(resource_id, resources, stack_name):
     return execute_resource_action(resource_id, resources, stack_name, ACTION_CREATE)
 
@@ -1513,7 +1512,7 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
         return resource_props.get('LogGroupName')
 
     res_id = resource.get('PhysicalResourceId')
-    if res_id:
+    if res_id and attribute in [None, 'Ref', 'PhysicalResourceId']:
         return res_id
     result = extract_resource_attribute(resource_type, {}, attribute or 'PhysicalResourceId',
         stack_name=stack_name, resource_id=resource_id, resource=resource, resources=resources)

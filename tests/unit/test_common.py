@@ -1,3 +1,4 @@
+import yaml
 import unittest
 from datetime import datetime, date
 from localstack.utils import common
@@ -68,6 +69,19 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(result, 123)
         result = common.extract_jsonpath(obj, '$.a.b[1]')
         self.assertEqual(result, 'foo')
+
+    def test_parse_yaml_nodes(self):
+        obj = {'test': yaml.ScalarNode('tag:yaml.org,2002:int', '123')}
+        result = common.clone_safe(obj)
+        self.assertEqual(result, {'test': 123})
+        obj = {'foo': [
+            yaml.ScalarNode('tag:yaml.org,2002:str', 'value'),
+            yaml.ScalarNode('tag:yaml.org,2002:int', '123'),
+            yaml.ScalarNode('tag:yaml.org,2002:float', '1.23'),
+            yaml.ScalarNode('tag:yaml.org,2002:bool', 'true')
+        ]}
+        result = common.clone_safe(obj)
+        self.assertEqual(result, {'foo': ['value', 123, 1.23, True]})
 
 
 class TestCommandLine(unittest.TestCase):

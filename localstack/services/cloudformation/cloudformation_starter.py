@@ -1,3 +1,5 @@
+# NOTE: This code is deprecated and will be removed in a future iteration!
+
 import sys
 import json
 import types
