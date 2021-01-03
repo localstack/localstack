@@ -104,19 +104,6 @@ def params_dict_to_list(param_name, key_attr_name='Key', value_attr_name='Value'
     return do_replace
 
 
-def get_nested_stack_params(params, **kwargs):
-    stack_name = kwargs.get('stack_name', 'stack')
-    nested_stack_name = '%s-%s' % (stack_name, common.short_uid())
-    stack_params = params.get('Parameters', {})
-    stack_params = [{'ParameterKey': k, 'ParameterValue': v} for k, v in stack_params.items()]
-    result = {
-        'StackName': nested_stack_name,
-        'TemplateURL': params.get('TemplateURL'),
-        'Parameters': stack_params
-    }
-    return result
-
-
 def get_lambda_code_param(params, **kwargs):
     code = params.get('Code', {})
     zip_file = code.get('ZipFile')
@@ -211,6 +198,8 @@ def lambda_permission_params(params, **kwargs):
 
 def get_ddb_provisioned_throughput(params, **kwargs):
     args = params.get('ProvisionedThroughput')
+    if args == PLACEHOLDER_AWS_NO_VALUE:
+        return {}
     if args:
         if isinstance(args['ReadCapacityUnits'], str):
             args['ReadCapacityUnits'] = int(args['ReadCapacityUnits'])
@@ -595,12 +584,6 @@ RESOURCE_TO_FUNCTION = {
                 'Attributes': sns_subscription_params
             }
         }
-    },
-    'CloudFormation::Stack': {
-        'create': {
-            'function': 'create_stack',
-            'parameters': get_nested_stack_params
-        }
     }
 }
 
@@ -701,7 +684,7 @@ def get_resource_name(resource):
         name = instance.get_resource_name()
 
     if not name:
-        LOG.warning('Unable to extract name for resource type "%s"' % res_type)
+        LOG.info('Unable to extract name for resource type "%s"' % res_type)
     return name
 
 
@@ -1273,7 +1256,7 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
     fix_resource_props_for_sdk_deployment(resource_type, resource_props)
 
     if callable(params):
-        params = params(resource_props, stack_name=stack_name, resources=resources)
+        params = params(resource_props, stack_name=stack_name, resources=resources, resource_id=resource_id)
     else:
         params = dict(params)
         for param_key, prop_keys in dict(params).items():
@@ -1594,6 +1577,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     elif res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
         props['StateMachineName'] = _generate_res_name()
 
+    elif res_type == 'AWS::CloudFormation::Stack' and not props.get('StackName'):
+        props['StackName'] = _generate_res_name()
+
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
     for entry in default_attrs:
@@ -1637,7 +1623,7 @@ class TemplateDeployer(object):
             self.apply_changes(self.stack, self.stack, stack_name=self.stack.stack_name, initialize=True)
             self.stack.set_stack_status('CREATE_COMPLETE')
         except Exception as e:
-            LOG.info('Unable to create stack %s: %s' % (self.stack.stage_name, e))
+            LOG.info('Unable to create stack %s: %s' % (self.stack.stack_name, e))
             self.stack.set_stack_status('CREATE_FAILED')
             raise
 

@@ -203,7 +203,12 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         key_name = '#key-with-hash-prefix'
-        self.s3_client.put_object(Bucket=bucket_name, Key=key_name, Body=b'test 123')
+        content = b'test 123'
+        self.s3_client.put_object(Bucket=bucket_name, Key=key_name, Body=content)
+
+        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=key_name)
+        downloaded_content = to_str(downloaded_object['Body'].read())
+        self.assertEqual(to_str(downloaded_content), to_str(content))
 
         # clean up
         self._delete_bucket(bucket_name, [key_name])
