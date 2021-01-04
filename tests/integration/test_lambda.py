@@ -229,14 +229,21 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         # update DLQ config
         lambda_client.update_function_configuration(FunctionName=lambda_name, DeadLetterConfig={})
         # invoke Lambda again, assert that status code is 200 and error details contained in the payload
-        result = lambda_client.invoke(FunctionName=lambda_name, Payload=json.dumps(payload))
+        result = lambda_client.invoke(FunctionName=lambda_name, Payload=json.dumps(payload), LogType='Tail')
         payload = json.loads(to_str(result['Payload'].read()))
         self.assertEqual(200, result['StatusCode'])
         self.assertEqual('Unhandled', result['FunctionError'])
         self.assertEqual('$LATEST', result['ExecutedVersion'])
         self.assertIn('Test exception', payload['errorMessage'])
-        self.assertEqual('Exception', payload['errorType'])
+        self.assertIn('Exception', payload['errorType'])
         self.assertEqual(list, type(payload['stackTrace']))
+        log_result = result.get('LogResult')
+        self.assertTrue(log_result)
+        logs = to_str(base64.b64decode(to_str(log_result)))
+        self.assertIn('START', logs)
+        self.assertIn('Test exception', logs)
+        self.assertIn('END', logs)
+        self.assertIn('REPORT', logs)
 
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url)
@@ -810,7 +817,6 @@ class TestPythonRuntimes(LambdaTestBase):
             },
             Publish=True
         )
-
         self.assertIn('Version', response)
 
         # invoke lambda function
@@ -855,10 +861,7 @@ class TestPythonRuntimes(LambdaTestBase):
         self.lambda_client.create_function(
             FunctionName=lambda_name, Handler='handler.handler',
             Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
-            Code={
-                'S3Bucket': bucket_name,
-                'S3Key': bucket_key
-            }
+            Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
 
         # invoke lambda function

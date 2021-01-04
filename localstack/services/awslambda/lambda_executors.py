@@ -6,6 +6,7 @@ import json
 import time
 import logging
 import threading
+import traceback
 import subprocess
 import six
 import base64
@@ -73,6 +74,12 @@ USE_CUSTOM_JAVA_EXECUTOR = False
 
 # maps lambda arns to concurrency locks
 LAMBDA_CONCURRENCY_LOCK = {}
+
+
+class InvocationException(Exception):
+    def __init__(self, message, log_output):
+        super(InvocationException, self).__init__(message)
+        self.log_output = log_output
 
 
 def get_from_event(event, key):
@@ -235,8 +242,8 @@ class LambdaExecutor(object):
         _store_logs(func_details, log_output)
 
         if return_code != 0:
-            raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
-                (return_code, result, log_output))
+            raise InvocationException('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
+                (return_code, result, log_output), log_output)
 
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
@@ -748,6 +755,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
             path_before = sys.path
+            result = None
             try:
                 if lambda_cwd:
                     os.chdir(lambda_cwd)
@@ -755,14 +763,22 @@ class LambdaExecutorLocal(LambdaExecutor):
                 if environment:
                     os.environ.update(environment)
                 result = lambda_function(event, context)
-                queue.put(result)
+            except Exception as e:
+                result = str(e)
+                sys.stderr.write('%s %s' % (e, traceback.format_exc()))
+                raise
             finally:
                 sys.path = path_before
+                queue.put(result)
 
         process = Process(target=do_execute)
         start_time = now(millis=True)
+        error = None
         with CaptureOutput() as c:
-            process.run()
+            try:
+                process.run()
+            except Exception as e:
+                error = e
         result = queue.get()
         end_time = now(millis=True)
 
@@ -780,6 +796,10 @@ class LambdaExecutorLocal(LambdaExecutor):
         _store_logs(func_details, log_output)
 
         result = result.result if isinstance(result, InvocationResult) else result
+
+        if error:
+            raise InvocationException(result, log_output)
+
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
 
