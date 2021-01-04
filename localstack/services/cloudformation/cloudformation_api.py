@@ -9,6 +9,7 @@ from localstack.utils.common import (
     parse_request_data, short_uid, long_uid, clone, clone_safe, select_attributes,
     timestamp_millis, recurse_object)
 from localstack.utils.cloudformation import template_deployer, template_preparer
+from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws.aws_responses import (
     requests_response_xml, requests_to_flask_response, flask_error_response_xml)
 
@@ -20,18 +21,11 @@ LOG = logging.getLogger(__name__)
 XMLNS_CF = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
 
 
-class RegionState(object):
-    STATES = {}
+class CloudFormationRegion(RegionBackend):
 
     def __init__(self):
         # maps stack ID to stack details
         self.stacks = {}
-
-    @classmethod
-    def get(cls):
-        region = aws_stack.get_region()
-        state = cls.STATES[region] = cls.STATES.get(region) or RegionState()
-        return state
 
     @property
     def exports(self):
@@ -221,7 +215,7 @@ class Stack(object):
     @property
     def exports_map(self):
         result = {}
-        for export in RegionState.get().exports:
+        for export in CloudFormationRegion.get().exports:
             result[export['Name']] = export
         return result
 
@@ -285,7 +279,7 @@ class StackChangeSet(Stack):
 # --------------
 
 def create_stack(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     template_deployer.prepare_template_body(req_params)
     template = template_preparer.parse_template(req_params['TemplateBody'])
     template['StackName'] = req_params.get('StackName')
@@ -305,7 +299,7 @@ def create_stack(req_params):
 
 
 def delete_stack(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     stack_name = req_params.get('StackName')
     stack = find_stack(stack_name)
     deployer = template_deployer.TemplateDeployer(stack)
@@ -336,7 +330,7 @@ def update_stack(req_params):
 
 
 def describe_stacks(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     stack_name = req_params.get('StackName')
     stacks = [s.describe_details() for s in state.stacks.values() if stack_name in [None, s.stack_name, s.stack_id]]
     if stack_name and not stacks:
@@ -347,7 +341,7 @@ def describe_stacks(req_params):
 
 
 def list_stacks(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     filter = req_params.get('StackStatusFilter')
     stacks = [s.describe_details() for s in state.stacks.values() if filter in [None, s.status]]
     attrs = ['StackId', 'StackName', 'TemplateDescription', 'CreationTime', 'LastUpdatedTime', 'DeletionTime',
@@ -400,7 +394,7 @@ def create_change_set(req_params):
     stack = existing = find_stack(stack_name)
     if not existing:
         # automatically create (empty) stack if none exists yet
-        state = RegionState.get()
+        state = CloudFormationRegion.get()
         empty_stack_template = dict(template)
         empty_stack_template['Resources'] = {}
         stack = Stack(clone(req_params), empty_stack_template)
@@ -436,13 +430,13 @@ def describe_change_set(req_params):
 
 
 def list_exports(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     result = {'Exports': state.exports}
     return result
 
 
 def list_imports(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     export_name = req_params.get('ExportName')
     importing_stack_names = []
     for stack in state.stacks.values():
@@ -464,7 +458,7 @@ def validate_template(req_params):
 
 def describe_stack_events(req_params):
     stack_name = req_params.get('StackName')
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     events = []
     for stack_id, stack in state.stacks.items():
         if stack_name in [None, stack.stack_name, stack.stack_id]:
@@ -573,12 +567,12 @@ def stack_not_found_error(stack_name):
 
 
 def find_stack(stack_name):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     return ([s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None])[0]
 
 
 def find_change_set(cs_name, stack_name=None):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     stack = find_stack(stack_name)
     stacks = [stack] if stack else state.stacks.values()
     result = [cs for s in stacks for cs in s.change_sets if cs_name in [cs.change_set_id, cs.change_set_name]]
