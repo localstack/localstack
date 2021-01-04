@@ -263,7 +263,9 @@ class ProxyListenerDynamoDB(ProxyListener):
         }
         records = [record]
 
-        event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(data.get('TableName'))
+        streams_enabled_cache = {}
+        table_name = data.get('TableName')
+        event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name, streams_enabled_cache)
 
         if action == '%s.UpdateItem' % ACTION_PREFIX:
             if response.status_code == 200 and event_sources_or_streams_enabled:
@@ -280,13 +282,19 @@ class ProxyListenerDynamoDB(ProxyListener):
                 record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             records = self.prepare_batch_write_item_records(record, data)
+            for record in records:
+                event_sources_or_streams_enabled = (event_sources_or_streams_enabled or
+                    has_event_sources_or_streams_enabled(record['eventSourceARN'], streams_enabled_cache))
 
         elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
             records = self.prepare_transact_write_item_records(record, data)
+            for record in records:
+                event_sources_or_streams_enabled = (event_sources_or_streams_enabled or
+                    has_event_sources_or_streams_enabled(record['eventSourceARN'], streams_enabled_cache))
 
         elif action == '%s.PutItem' % ACTION_PREFIX:
             if response.status_code == 200:
-                keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
+                keys = dynamodb_extract_keys(item=data['Item'], table_name=table_name)
                 if isinstance(keys, Response):
                     return keys
                 # fix response
@@ -310,7 +318,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                 # returned by dynalite, but not by AWS's DynamoDBLocal
                 if 'ConsumedCapacity' not in content and data.get('ReturnConsumedCapacity') in ['TOTAL', 'INDEXES']:
                     content['ConsumedCapacity'] = {
-                        'TableName': data['TableName'],
+                        'TableName': table_name,
                         'CapacityUnits': 5,             # TODO hardcoded
                         'ReadCapacityUnits': 2,
                         'WriteCapacityUnits': 3
@@ -332,7 +340,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     create_dynamodb_stream(data, content['TableDescription'].get('LatestStreamLabel'))
 
             event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
-                payload={'n': event_publisher.get_hash(data['TableName'])})
+                payload={'n': event_publisher.get_hash(table_name)})
 
             if data.get('Tags') and response.status_code == 200:
                 table_arn = json.loads(response._content)['TableDescription']['TableArn']
@@ -344,7 +352,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn')
             event_publisher.fire_event(
                 event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
-                payload={'n': event_publisher.get_hash(data['TableName'])}
+                payload={'n': event_publisher.get_hash(table_name)}
             )
             self.delete_all_event_source_mappings(table_arn)
             dynamodbstreams_api.delete_streams(table_arn)
@@ -377,7 +385,7 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         if event_sources_or_streams_enabled and records and 'eventName' in records[0]:
             if 'TableName' in data:
-                records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
+                records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
 
             forward_to_lambda(records)
             forward_to_ddb_stream(records)
@@ -566,15 +574,21 @@ def is_index_query_valid(table_name, index_query_type):
     return True
 
 
-def has_event_sources_or_streams_enabled(table_name):
+def has_event_sources_or_streams_enabled(table_name, cache={}):
     if not table_name:
         return
     table_arn = aws_stack.dynamodb_table_arn(table_name)
+    cached = cache.get(table_arn)
+    if isinstance(cached, bool):
+        return cached
     sources = lambda_api.get_event_sources(source_arn=table_arn)
+    result = False
     if sources:
-        return True
-    if dynamodbstreams_api.get_stream_for_table(table_arn):
-        return True
+        result = True
+    if not result and dynamodbstreams_api.get_stream_for_table(table_arn):
+        result = True
+    cache[table_arn] = result
+    return result
 
 
 def get_table_schema(table_name):
