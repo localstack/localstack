@@ -75,6 +75,12 @@ USE_CUSTOM_JAVA_EXECUTOR = False
 LAMBDA_CONCURRENCY_LOCK = {}
 
 
+class InvocationException(Exception):
+    def __init__(self, message, log_output):
+        super(InvocationException, self).__init__(message)
+        self.log_output = log_output
+
+
 def get_from_event(event, key):
     try:
         return event['Records'][0][key]
@@ -235,8 +241,8 @@ class LambdaExecutor(object):
         _store_logs(func_details, log_output)
 
         if return_code != 0:
-            raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
-                (return_code, result, log_output))
+            raise InvocationException('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
+                (return_code, result, log_output), log_output)
 
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
