@@ -284,7 +284,6 @@ class TestStateMachine(unittest.TestCase):
         definition = json.dumps(definition)
         sm_name = 'catch-%s' % short_uid()
         result = self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
-        print(result)
 
         # run state machine
         sm_arn = self.get_machine_arn(sm_name)
@@ -297,7 +296,7 @@ class TestStateMachine(unittest.TestCase):
             self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
             # assert that the result is correct
             result = self._get_execution_results(sm_arn)
-            print('!result', result)
+            self.assertEqual(result.get('handled'), {'Hello': TEST_RESULT_VALUE})
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)
