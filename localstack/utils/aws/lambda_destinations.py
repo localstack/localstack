@@ -41,5 +41,4 @@ def lambda_result_to_destination(func_details, event, result, is_async, error):
         send_event_to_target(func_details.on_failed_invocation, payload)
         return
 
-    print('success')
     send_event_to_target(func_details.on_successful_invocation, payload)
