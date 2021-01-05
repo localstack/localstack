@@ -249,6 +249,89 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         sqs_client.delete_queue(QueueUrl=queue_url)
         lambda_client.delete_function(FunctionName=lambda_name)
 
+    def test_failure_destination(self):
+        sqs_client = aws_stack.connect_to_service('sqs')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # create DLQ and Lambda function
+        queue_name = 'test-%s' % short_uid()
+        lambda_name = 'test-%s' % short_uid()
+        queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON, func_name=lambda_name, libs=TEST_LAMBDA_LIBS,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        lambda_client.put_function_event_invoke_config(
+            FunctionName=lambda_name,
+            DestinationConfig={
+                'OnSuccess': {
+                    'Destination': queue_arn
+                },
+                'OnFailure': {
+                    'Destination': queue_arn
+                }
+            }
+        )
+
+        # invoke Lambda, triggering an error
+        payload = {
+            lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1
+        }
+        lambda_client.invoke(FunctionName=lambda_name,
+                             Payload=json.dumps(payload), InvocationType='Event')
+
+        time.sleep(5)
+
+        rs = sqs_client.receive_message(QueueUrl=queue_url)
+        self.assertGreater(len(rs['Messages']), 0)
+
+        # clean up
+        sqs_client.delete_queue(QueueUrl=queue_url)
+        lambda_client.delete_function(FunctionName=lambda_name)
+
+    def test_success_destination(self):
+        sqs_client = aws_stack.connect_to_service('sqs')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        # create DLQ and Lambda function
+        queue_name = 'test-%s' % short_uid()
+        lambda_name = 'test-%s' % short_uid()
+        queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_ECHO_FILE,
+            func_name=lambda_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36
+        )
+
+        lambda_client.put_function_event_invoke_config(
+            FunctionName=lambda_name,
+            DestinationConfig={
+                'OnSuccess': {
+                    'Destination': queue_arn
+                },
+                'OnFailure': {
+                    'Destination': queue_arn
+                }
+            }
+        )
+
+        # invoke Lambda, triggering an error
+        payload = {
+            lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 0
+        }
+        lambda_client.invoke(FunctionName=lambda_name,
+                             Payload=json.dumps(payload), InvocationType='Event')
+        time.sleep(5)
+
+        rs = sqs_client.receive_message(QueueUrl=queue_url)
+        self.assertGreater(len(rs['Messages']), 0)
+        # clean up
+        sqs_client.delete_queue(QueueUrl=queue_url)
+        lambda_client.delete_function(FunctionName=lambda_name)
+
     def test_add_lambda_permission(self):
         function_name = 'lambda_func-{}'.format(short_uid())
         testutil.create_lambda_function(

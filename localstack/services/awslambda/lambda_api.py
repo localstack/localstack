@@ -1654,7 +1654,7 @@ def put_function_event_invoke_config(function):
                 'Destination': str(response.on_successful_invocation)
             },
             'OnFailure': {
-                'Destination': str(response.dead_letter_config)
+                'Destination': str(response.on_failed_invocation)
             }
         }
     })

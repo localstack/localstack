@@ -22,7 +22,9 @@ from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker, long_uid,
     now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
-from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
+from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
+from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
+from localstack.utils.aws.lambda_destinations import lambda_result_to_destination
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
 
 # constants
@@ -77,9 +79,10 @@ LAMBDA_CONCURRENCY_LOCK = {}
 
 
 class InvocationException(Exception):
-    def __init__(self, message, log_output):
+    def __init__(self, message, log_output, result=None):
         super(InvocationException, self).__init__(message)
         self.log_output = log_output
+        self.result = result
 
 
 def get_from_event(event, key):
@@ -177,6 +180,8 @@ class LambdaExecutor(object):
                 finally:
                     self.function_invoke_times[func_arn] = invocation_time
                     callback and callback(result, func_arn, event, error=raised_error, dlq_sent=dlq_sent)
+                    lambda_result_to_destination(func_details, event, result, asynchronous, raised_error)
+
                 # return final result
                 return result
 
@@ -243,7 +248,7 @@ class LambdaExecutor(object):
 
         if return_code != 0:
             raise InvocationException('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
-                (return_code, result, log_output), log_output)
+                (return_code, result, log_output), log_output, result)
 
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
