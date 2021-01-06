@@ -282,11 +282,11 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         lambda_client.invoke(FunctionName=lambda_name,
                              Payload=json.dumps(payload), InvocationType='Event')
 
-        time.sleep(5)
+        def receive_message():
+            rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+            self.assertGreater(len(rs['Messages']), 0)
 
-        rs = sqs_client.receive_message(QueueUrl=queue_url)
-        self.assertGreater(len(rs['Messages']), 0)
-
+        retry(receive_message, retries=3, sleep=2)
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url)
         lambda_client.delete_function(FunctionName=lambda_name)
@@ -324,10 +324,12 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         }
         lambda_client.invoke(FunctionName=lambda_name,
                              Payload=json.dumps(payload), InvocationType='Event')
-        time.sleep(5)
 
-        rs = sqs_client.receive_message(QueueUrl=queue_url)
-        self.assertGreater(len(rs['Messages']), 0)
+        def receive_message():
+            rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+            self.assertGreater(len(rs['Messages']), 0)
+
+        retry(receive_message, retries=3, sleep=2)
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url)
         lambda_client.delete_function(FunctionName=lambda_name)
