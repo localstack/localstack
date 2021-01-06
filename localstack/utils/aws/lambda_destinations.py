@@ -35,8 +35,9 @@ def lambda_result_to_destination(func_details, event, result, is_async, error):
 
     if error:
         payload['responseContext']['functionError'] = 'Unhandled'
-        # create a field in exception
-        payload['responsePayload'] = json.loads(error.result)
+        # add the result in the response payload
+        if error.result is not None:
+            payload['responsePayload'] = json.loads(error.result)
         send_event_to_target(func_details.on_failed_invocation, payload)
         return
 
