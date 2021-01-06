@@ -86,8 +86,8 @@ ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
-# clean up temporary files created during test execution
 
+# clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
     rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform /root/.serverless; \
     mkdir /root/.serverless; chmod -R 777 /root/.serverless
