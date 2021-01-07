@@ -291,11 +291,14 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, subscriptio
                     queue_url = aws_stack.get_sqs_queue_url(queue_name)
                     subscriber['sqs_queue_url'] = queue_url
 
+                message_group_id = req_data.get('MessageGroupId')[0] if req_data.get('MessageGroupId') else ''
+
                 sqs_client = aws_stack.connect_to_service('sqs')
                 sqs_client.send_message(
                     QueueUrl=queue_url,
                     MessageBody=create_sns_message_body(subscriber, req_data, message_id),
-                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
+                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
+                    MessageGroupId=message_group_id
                 )
             except Exception as exc:
                 LOG.warning('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))

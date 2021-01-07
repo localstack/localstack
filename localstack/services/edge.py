@@ -277,6 +277,9 @@ def get_api_from_custom_rules(method, path, data, headers):
     if path == '/' and b'QueueName=' in data_bytes:
         return 'sqs', config.PORT_SQS
 
+    if 'Action=ConfirmSubscription' in path:
+        return 'sns', config.PORT_SNS
+
     if path.startswith('/2015-03-31/functions/'):
         return 'lambda', config.PORT_LAMBDA
 
