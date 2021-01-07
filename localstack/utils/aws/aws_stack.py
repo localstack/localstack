@@ -539,7 +539,6 @@ def send_event_to_target(arn, event):
 
     else:
         LOG.info('Unsupported Events rule target ARN "%s"' % arn)
-    return
 
 
 def create_sqs_queue(queue_name, env=None):
