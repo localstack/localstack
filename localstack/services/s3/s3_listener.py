@@ -110,6 +110,8 @@ CORS_HEADERS = [
     'Access-Control-Request-Headers', 'Access-Control-Request-Method'
 ]
 
+SIGNATURE_V4_PARAMS = ['X-Amz-Algorithm']
+
 
 def event_type_matches(events, action, api_method):
     """ check whether any of the event types in `events` matches the
@@ -1459,6 +1461,13 @@ def authenticate_presign_url(method, path, headers, data=None):
     # Comparing the signature in url with signature we calculated
     query_sig = urlparse.unquote(query_params['Signature'][0])
     if query_sig != signature:
+
+        # older signature calculation methods are not supported
+        # so logging a warning to the user to use the v4 calculation method
+        for param in SIGNATURE_V4_PARAMS:
+            if param.lower() not in (query_param.lower() for query_param in query_params):
+                LOGGER.warning(
+                    'Older version of signature calculation method detected. Please use v4 calculation method')
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',

@@ -8,7 +8,6 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, save_file, TMP_FILES, mkdir
 from localstack.utils.tagging import TaggingService
-from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.events.scheduler import JobScheduler
 
@@ -61,25 +60,7 @@ def get_scheduled_rule_func(data):
         for target in targets:
             arn = target.get('Arn')
             event = json.loads(target.get('Input') or '{}')
-
-            if ':lambda:' in arn:
-                lambda_api.run_lambda(event=event, context={}, func_arn=arn)
-
-            elif ':sns:' in arn:
-                sns_client = aws_stack.connect_to_service('sns')
-                sns_client.publish(TopicArn=arn, Message=json.dumps(event))
-
-            elif ':sqs:' in arn:
-                sqs_client = aws_stack.connect_to_service('sqs')
-                queue_url = aws_stack.get_sqs_queue_url(arn)
-                sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
-
-            elif ':states' in arn:
-                stepfunctions_client = aws_stack.connect_to_service('stepfunctions')
-                stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
-
-            else:
-                LOG.info('Unsupported Events rule target ARN "%s"' % arn)
+            aws_stack.send_event_to_target(arn, event)
     return func
 
 
