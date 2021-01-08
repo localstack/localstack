@@ -10,6 +10,7 @@ import base64
 import socket
 import hashlib
 import decimal
+import inspect
 import logging
 import tarfile
 import zipfile
@@ -364,6 +365,39 @@ def synchronized(lock=None):
             with lock:
                 return wrapped(*args, **kwargs)
         return _wrapper
+    return _decorator
+
+
+def prevent_stack_overflow(match_parameters=False):
+    """ Function decorator to protect a function from stack overflows -
+        raises an exception if a (potential) infinite recursion is detected. """
+    def _decorator(wrapped):
+        @functools.wraps(wrapped)
+        def func(*args, **kwargs):
+            def _matches(frame):
+                if frame.function != wrapped.__name__:
+                    return False
+                frame = frame.frame
+
+                if not match_parameters:
+                    return False
+
+                # construct dict of arguments this stack frame has been called with
+                prev_call_args = {frame.f_code.co_varnames[i]: frame.f_locals[frame.f_code.co_varnames[i]]
+                                  for i in range(frame.f_code.co_argcount)}
+
+                # construct dict of arguments the original function has been called with
+                sig = inspect.signature(wrapped)
+                this_call_args = dict(zip(sig.parameters.keys(), args))
+                this_call_args.update(kwargs)
+
+                return prev_call_args == this_call_args
+
+            matching_frames = [frame[2] for frame in inspect.stack(context=1) if _matches(frame)]
+            if matching_frames:
+                raise RecursionError('(Potential) infinite recursion detected')
+            return wrapped(*args, **kwargs)
+        return func
     return _decorator
 
 

@@ -15,7 +15,7 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r)
+    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r, prevent_stack_overflow)
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
@@ -933,6 +933,10 @@ def resolve_ref(stack_name, ref, resources, attribute):
     return result
 
 
+# Using a @prevent_stack_overflow decorator here to avoid infinite recursion
+# in case we load stack exports that have circula dependencies (see issue 3438)
+# TODO: Potentially think about a better approach in the future
+@prevent_stack_overflow(match_parameters=True)
 def resolve_refs_recursively(stack_name, value, resources):
     if isinstance(value, dict):
         keys_list = list(value.keys())
