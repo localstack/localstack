@@ -1094,6 +1094,8 @@ class CloudFormationTest(unittest.TestCase):
                 self.assertEqual(o['OutputValue'], status['ARN'])
             elif o['OutputKey'] == 'MyElasticsearchDomainEndpoint':
                 self.assertEqual(o['OutputValue'], status['Endpoint'])
+            elif o['OutputKey'] == 'MyElasticsearchRef':
+                self.assertEqual(o['OutputValue'], status['DomainName'])
             else:
                 self.fail('Unexpected output: %s' % o)
 
@@ -1794,18 +1796,21 @@ class CloudFormationTest(unittest.TestCase):
         return 'CREATE_COMPLETE'
 
     def test_list_exports_correctly_returns_exports(self):
-        stack_name = 'stack-%s' % short_uid()
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        # fetch initial list of exports
+        exports_before = cloudformation.list_exports()['Exports']
 
         template = load_file(TEST_TEMPLATE_27)
-
+        stack_name = 'stack-%s' % short_uid()
         deploy_cf_stack(stack_name, template_body=template)
 
-        cloudformation = aws_stack.connect_to_service('cloudformation')
         response = cloudformation.list_exports()
 
         exports = response['Exports']
-        self.assertEqual(len(exports), 1)
-        self.assertEqual(exports[0]['Name'], 'T27SQSQueue1-URL')
+        self.assertEqual(len(exports), len(exports_before) + 1)
+        export_names = [e['Name'] for e in exports]
+        self.assertIn('T27SQSQueue1-URL', export_names)
 
         # clean up
         self.cleanup(stack_name)
