@@ -1080,7 +1080,7 @@ class CloudFormationTest(unittest.TestCase):
 
         details = await_stack_completion(stack_name)
         outputs = details.get('Outputs', [])
-        self.assertEqual(len(outputs), 3)
+        self.assertEqual(len(outputs), 4)
 
         rs = es_client.describe_elasticsearch_domain(DomainName=domain_name)
         status = rs['DomainStatus']
