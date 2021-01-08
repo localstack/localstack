@@ -155,7 +155,7 @@ DISABLE_EVENTS = is_env_true('DISABLE_EVENTS')
 SKIP_INFRA_DOWNLOADS = os.environ.get('SKIP_INFRA_DOWNLOADS', '').strip()
 
 # Adding Stepfunctions default port
-PORT_STEPFUNCTIONS = int(os.environ.get('PORT_STEPFUNCTIONS') or 8083)
+LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get('LOCAL_PORT_STEPFUNCTIONS') or 8083)
 # Stepfunctions lambda endpoint override
 STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get('STEPFUNCTIONS_LAMBDA_ENDPOINT', '').strip()
 

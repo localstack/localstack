@@ -10,7 +10,6 @@ LOG = logging.getLogger(__name__)
 # max heap size allocated for the Java process
 MAX_HEAP_SIZE = '256m'
 
-
 def get_command(backend_port):
     dynamodb_endpoint = aws_stack.get_local_service_url('dynamodb')
     sns_endpoint = aws_stack.get_local_service_url('sns')
@@ -26,10 +25,9 @@ def get_command(backend_port):
         cmd += (' --lambda-endpoint %s') % (lambda_endpoint)
     return cmd
 
-
 def start_stepfunctions(port=None, asynchronous=False, update_listener=None):
-    port = port
-    backend_port = config.PORT_STEPFUNCTIONS
+    port = port or config.PORT_STEPFUNCTIONS
+    backend_port = config.LOCAL_PORT_STEPFUNCTIONS
     install.install_stepfunctions_local()
     cmd = get_command(backend_port)
     print('Starting mock StepFunctions service on %s ...' % edge_ports_info())
