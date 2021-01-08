@@ -6,6 +6,7 @@ import json
 import time
 import logging
 import threading
+import traceback
 import subprocess
 import six
 import base64
@@ -21,7 +22,9 @@ from localstack.utils.common import (
     CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker, long_uid,
     now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
-from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
+from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
+from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
+from localstack.utils.aws.lambda_destinations import lambda_result_to_destination
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
 
 # constants
@@ -73,6 +76,13 @@ USE_CUSTOM_JAVA_EXECUTOR = False
 
 # maps lambda arns to concurrency locks
 LAMBDA_CONCURRENCY_LOCK = {}
+
+
+class InvocationException(Exception):
+    def __init__(self, message, log_output, result=None):
+        super(InvocationException, self).__init__(message)
+        self.log_output = log_output
+        self.result = result
 
 
 def get_from_event(event, key):
@@ -170,6 +180,8 @@ class LambdaExecutor(object):
                 finally:
                     self.function_invoke_times[func_arn] = invocation_time
                     callback and callback(result, func_arn, event, error=raised_error, dlq_sent=dlq_sent)
+                    lambda_result_to_destination(func_details, event, result, asynchronous, raised_error)
+
                 # return final result
                 return result
 
@@ -235,8 +247,8 @@ class LambdaExecutor(object):
         _store_logs(func_details, log_output)
 
         if return_code != 0:
-            raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
-                (return_code, result, log_output))
+            raise InvocationException('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
+                (return_code, result, log_output), log_output, result)
 
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
@@ -748,6 +760,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
             path_before = sys.path
+            result = None
             try:
                 if lambda_cwd:
                     os.chdir(lambda_cwd)
@@ -755,14 +768,22 @@ class LambdaExecutorLocal(LambdaExecutor):
                 if environment:
                     os.environ.update(environment)
                 result = lambda_function(event, context)
-                queue.put(result)
+            except Exception as e:
+                result = str(e)
+                sys.stderr.write('%s %s' % (e, traceback.format_exc()))
+                raise
             finally:
                 sys.path = path_before
+                queue.put(result)
 
         process = Process(target=do_execute)
         start_time = now(millis=True)
+        error = None
         with CaptureOutput() as c:
-            process.run()
+            try:
+                process.run()
+            except Exception as e:
+                error = e
         result = queue.get()
         end_time = now(millis=True)
 
@@ -780,6 +801,10 @@ class LambdaExecutorLocal(LambdaExecutor):
         _store_logs(func_details, log_output)
 
         result = result.result if isinstance(result, InvocationResult) else result
+
+        if error:
+            raise InvocationException(result, log_output)
+
         invocation_result = InvocationResult(result, log_output=log_output)
         return invocation_result
 

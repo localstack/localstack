@@ -418,6 +418,8 @@ TEST_TEMPLATE_24 = os.path.join(THIS_FOLDER, 'templates', 'template24.yaml')
 
 TEST_TEMPLATE_25 = os.path.join(THIS_FOLDER, 'templates', 'template25.yaml')
 
+TEST_TEMPLATE_27 = os.path.join(THIS_FOLDER, 'templates', 'template27.yaml')
+
 TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'update_lambda_template.json')
 
 SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
@@ -1737,3 +1739,20 @@ class CloudFormationTest(unittest.TestCase):
 
     def expected_change_set_status(self):
         return 'CREATE_COMPLETE'
+
+    def test_list_exports_correctly_returns_exports(self):
+        stack_name = 'stack-%s' % short_uid()
+
+        template = load_file(TEST_TEMPLATE_27)
+
+        deploy_cf_stack(stack_name, template_body=template)
+
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        response = cloudformation.list_exports()
+
+        exports = response['Exports']
+        self.assertEqual(len(exports), 1)
+        self.assertEqual(exports[0]['Name'], 'T27SQSQueue1-URL')
+
+        # clean up
+        self.cleanup(stack_name)

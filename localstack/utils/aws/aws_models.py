@@ -188,6 +188,7 @@ class LambdaFunction(Component):
         self.code = None
         self.dead_letter_config = None
         self.on_successful_invocation = None
+        self.on_failed_invocation = None
         self.max_retry_attempts = None
         self.max_event_age = None
         self.description = ''
@@ -215,7 +216,7 @@ class LambdaFunction(Component):
         if self.max_event_age:
             response.update({'MaximumEventAgeInSeconds': self.max_event_age})
 
-        if self.on_successful_invocation or self.dead_letter_config:
+        if self.on_successful_invocation or self.on_failed_invocation:
             response.update({'DestinationConfig': {}})
             if self.on_successful_invocation:
                 response['DestinationConfig'].update({
@@ -223,10 +224,10 @@ class LambdaFunction(Component):
                         'Destination': self.on_successful_invocation
                     }
                 })
-            if self.dead_letter_config:
+            if self.on_failed_invocation:
                 response['DestinationConfig'].update({
                     'OnFailure': {
-                        'Destination': self.dead_letter_config
+                        'Destination': self.on_failed_invocation
                     }
                 })
 
@@ -237,6 +238,8 @@ class LambdaFunction(Component):
             self.dead_letter_config = None
         if hasattr(self, 'on_successful_invocation'):
             self.on_successful_invocation = None
+        if hasattr(self, 'on_failed_invocation'):
+            self.on_failed_invocation = None
         if hasattr(self, 'max_retry_attempts'):
             self.max_retry_attempts = None
         if hasattr(self, 'max_event_age'):
@@ -250,7 +253,7 @@ class LambdaFunction(Component):
         if 'DestinationConfig' in data:
             if 'OnFailure' in data['DestinationConfig']:
                 dlq_arn = data['DestinationConfig']['OnFailure']['Destination']
-                self.dead_letter_config = dlq_arn
+                self.on_failed_invocation = dlq_arn
                 updated = True
 
             if 'OnSuccess' in data['DestinationConfig']:
@@ -280,6 +283,9 @@ class LambdaFunction(Component):
             self.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
 
         return self
+
+    def destination_enabled(self):
+        return self.on_successful_invocation is not None or self.on_failed_invocation is not None
 
     def get_version(self, version):
         return self.versions.get(version)

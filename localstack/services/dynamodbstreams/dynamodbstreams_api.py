@@ -41,6 +41,10 @@ def add_dynamodb_stream(table_name, latest_stream_label=None, view_type='NEW_AND
             payload={'n': event_publisher.get_hash(table_name)})
 
 
+def get_stream_for_table(table_arn):
+    return DDB_STREAMS.get(table_arn)
+
+
 def forward_events(records):
     global SEQUENCE_NUMBER_COUNTER
     kinesis = aws_stack.connect_to_service('kinesis')
@@ -49,7 +53,7 @@ def forward_events(records):
             record['dynamodb']['SequenceNumber'] = str(SEQUENCE_NUMBER_COUNTER)
             SEQUENCE_NUMBER_COUNTER += 1
         table_arn = record['eventSourceARN']
-        stream = DDB_STREAMS.get(table_arn)
+        stream = get_stream_for_table(table_arn)
         if stream:
             table_name = table_name_from_stream_arn(stream['StreamArn'])
             stream_name = get_kinesis_stream_name(table_name)

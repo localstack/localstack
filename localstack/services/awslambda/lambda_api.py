@@ -571,7 +571,8 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
             'stackTrace': traceback.format_tb(exc_traceback)
         }
         LOG.info('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
-        return Response(json.dumps(response), status=500)
+        log_output = e.log_output if isinstance(e, lambda_executors.InvocationException) else ''
+        return lambda_executors.InvocationResult(Response(json.dumps(response), status=500), log_output)
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -1653,7 +1654,7 @@ def put_function_event_invoke_config(function):
                 'Destination': str(response.on_successful_invocation)
             },
             'OnFailure': {
-                'Destination': str(response.dead_letter_config)
+                'Destination': str(response.on_failed_invocation)
             }
         }
     })
