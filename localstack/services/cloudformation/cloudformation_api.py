@@ -431,7 +431,7 @@ def describe_change_set(req_params):
 
 def list_exports(req_params):
     state = CloudFormationRegion.get()
-    result = {'Exports': state.exports}
+    result = {'Exports': {'member': state.exports}}
     return result
 
 

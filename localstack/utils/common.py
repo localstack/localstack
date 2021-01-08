@@ -471,6 +471,18 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
     return retry(check, sleep=sleep_time, retries=retries)
 
 
+def port_can_be_bound(port):
+    """ Return whether a local port can be bound to. Note that this is a stricter check
+        than is_port_open(...) above, as is_port_open() may return False if the port is
+        not accessible (i.e., does not respond), yet cannot be bound to. """
+    try:
+        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp.bind(('', port))
+        return True
+    except Exception:
+        return False
+
+
 def get_free_tcp_port(blacklist=None):
     blacklist = blacklist or []
     for i in range(10):

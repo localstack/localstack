@@ -31,7 +31,6 @@ from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
     FuncThread, short_uid, recurse_object, clone, json_safe, get_free_tcp_port,
     Mock, start_thread, edge_ports_info, clone_safe)
-from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import start_proxy_for_service, do_run, canonicalize_api_names
 from localstack.utils.bootstrap import setup_logging
 from localstack.utils.cloudformation import template_deployer_old as template_deployer
@@ -62,7 +61,6 @@ MODEL_MAP = {
     'AWS::ApiGateway::Resource': apigw_models.Resource,
     'AWS::ApiGateway::RestApi': apigw_models.RestAPI,
     'AWS::ApiGateway::Stage': apigw_models.Stage,
-    'AWS::StepFunctions::StateMachine': sfn_models.StateMachine,
     'AWS::CloudFormation::Stack': service_models.CloudFormationStack,
     'AWS::SSM::Parameter': service_models.SSMParameter,
     'AWS::Logs::LogGroup': service_models.LogsLogGroup,
@@ -153,10 +151,6 @@ def update_physical_resource_id(resource):
         func_arn = aws_stack.lambda_function_arn(resource.function_name)
         resource.function_arn = resource.physical_resource_id = func_arn
 
-    elif isinstance(resource, sfn_models.StateMachine):
-        sm_arn = aws_stack.state_machine_arn(resource.name)
-        resource.physical_resource_id = sm_arn
-
     elif isinstance(resource, service_models.StepFunctionsActivity):
         act_arn = aws_stack.stepfunctions_activity_arn(resource.params.get('Name'))
         resource.physical_resource_id = act_arn
@@ -196,14 +190,6 @@ def update_physical_resource_id(resource):
 
     else:
         LOG.warning('Unable to determine physical_resource_id for resource %s' % type(resource))
-
-
-def update_resource_name(resource, resource_json):
-    """ Some resources require minor fixes in their CF resource definition
-        before we can pass them on to deployment. """
-    props = resource_json['Properties'] = resource_json.get('Properties') or {}
-    if isinstance(resource, sfn_models.StateMachine) and not props.get('StateMachineName'):
-        props['StateMachineName'] = resource.name
 
 
 def apply_attributes_from_existing_resource_on_update(resource_props, stack_name, existing_resource, resource_id):
@@ -463,8 +449,7 @@ def apply_patches():
                 #       creation of resources in moto!
                 return resource
 
-        # Apply some fixes/patches to the resource names, then deploy resource in LocalStack
-        update_resource_name(resource, resource_json)
+        # Deploy resource in LocalStack
         LOG.debug('Deploying CloudFormation resource (update=%s, exists=%s, updateable=%s): %s' %
                   (update, not should_be_created, is_updateable, resource_json))
 
