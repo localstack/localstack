@@ -130,13 +130,16 @@ Resources:
           Value: v2
 Outputs:
   MyElasticsearchDomainEndpoint:
-    Value: !GetAtt "MyElasticsearchDomain.DomainEndpoint"
+    Value: !GetAtt MyElasticsearchDomain.DomainEndpoint
 
   MyElasticsearchArn:
-    Value: !GetAtt "MyElasticsearchDomain.Arn"
+    Value: !GetAtt MyElasticsearchDomain.Arn
 
   MyElasticsearchDomainArn:
-    Value: !GetAtt "MyElasticsearchDomain.DomainArn"
+    Value: !GetAtt MyElasticsearchDomain.DomainArn
+
+  MyElasticsearchRef:
+    Value: !Ref MyElasticsearchDomain
 """
 
 TEST_TEMPLATE_11 = """
@@ -418,9 +421,41 @@ TEST_TEMPLATE_24 = os.path.join(THIS_FOLDER, 'templates', 'template24.yaml')
 
 TEST_TEMPLATE_25 = os.path.join(THIS_FOLDER, 'templates', 'template25.yaml')
 
+TEST_TEMPLATE_27 = os.path.join(THIS_FOLDER, 'templates', 'template27.yaml')
+
 TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'update_lambda_template.json')
 
 SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
+
+TEST_TEMPLATE_26_1 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MyQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: %s
+Outputs:
+  TestOutput26:
+    Value: !GetAtt MyQueue.Arn
+    Export:
+      Name: TestQueueArn26
+"""
+TEST_TEMPLATE_26_2 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MessageQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: %s
+      RedrivePolicy:
+        deadLetterTargetArn: !ImportValue TestQueueArn26
+        maxReceiveCount: 3
+Outputs:
+  MessageQueueUrl1:
+    Value: !ImportValue TestQueueArn26
+  MessageQueueUrl2:
+    Value: !Ref MessageQueue
+"""
 
 
 def bucket_exists(name):
@@ -1019,9 +1054,7 @@ class CloudFormationTest(unittest.TestCase):
         deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_9)
 
         logs_client = aws_stack.connect_to_service('logs')
-        rs = logs_client.describe_log_groups(
-            logGroupNamePrefix=log_group_prefix
-        )
+        rs = logs_client.describe_log_groups(logGroupNamePrefix=log_group_prefix)
 
         self.assertEqual(len(rs['logGroups']), 1)
         self.assertEqual(rs['logGroups'][0]['logGroupName'],
@@ -1047,7 +1080,7 @@ class CloudFormationTest(unittest.TestCase):
 
         details = await_stack_completion(stack_name)
         outputs = details.get('Outputs', [])
-        self.assertEqual(len(outputs), 3)
+        self.assertEqual(len(outputs), 4)
 
         rs = es_client.describe_elasticsearch_domain(DomainName=domain_name)
         status = rs['DomainStatus']
@@ -1061,6 +1094,8 @@ class CloudFormationTest(unittest.TestCase):
                 self.assertEqual(o['OutputValue'], status['ARN'])
             elif o['OutputKey'] == 'MyElasticsearchDomainEndpoint':
                 self.assertEqual(o['OutputValue'], status['Endpoint'])
+            elif o['OutputKey'] == 'MyElasticsearchRef':
+                self.assertEqual(o['OutputValue'], status['DomainName'])
             else:
                 self.fail('Unexpected output: %s' % o)
 
@@ -1187,11 +1222,33 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn('AWS::Kinesis::Stream', result['ResourceTypes'])
         self.assertTrue(result.get('ResourceIdentifierSummaries'))
 
-    def test_list_imports(self):
+    def test_stack_imports(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
         result = cloudformation.list_imports(ExportName='_unknown_')
         self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(result['Imports'], [])  # TODO: create test with actual import values!
+
+        queue_name1 = 'q-%s' % short_uid()
+        queue_name2 = 'q-%s' % short_uid()
+        template1 = TEST_TEMPLATE_26_1 % queue_name1
+        template2 = TEST_TEMPLATE_26_2 % queue_name2
+        stack_name1 = 'stack-%s' % short_uid()
+        deploy_cf_stack(stack_name=stack_name1, template_body=template1)
+        stack_name2 = 'stack-%s' % short_uid()
+        deploy_cf_stack(stack_name=stack_name2, template_body=template2)
+
+        sqs = aws_stack.connect_to_service('sqs')
+        queue_url1 = sqs.get_queue_url(QueueName=queue_name1)['QueueUrl']
+        queue_url2 = sqs.get_queue_url(QueueName=queue_name2)['QueueUrl']
+        queues = sqs.list_queues().get('QueueUrls', [])
+        self.assertIn(queue_url1, queues)
+        self.assertIn(queue_url2, queues)
+
+        outputs = cloudformation.describe_stacks(StackName=stack_name2)['Stacks'][0]['Outputs']
+        output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl1'][0]
+        self.assertEqual(output, aws_stack.sqs_queue_arn(queue_url1))
+        output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl2'][0]
+        self.assertEqual(output, queue_url2)
 
     def test_cfn_conditional_deployment(self):
         s3 = aws_stack.connect_to_service('s3')
@@ -1416,14 +1473,14 @@ class CloudFormationTest(unittest.TestCase):
         s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, get_content=True))
         time.sleep(1)
 
-        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template))
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         props.update({
             'Environment': {'Variables': {'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1}}
         })
 
-        rs = cloudformation.update_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
+        rs = cloudformation.update_stack(StackName=stack_name, TemplateBody=json.dumps(template))
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
         lambda_client = aws_stack.connect_to_service('lambda')
 
@@ -1737,3 +1794,23 @@ class CloudFormationTest(unittest.TestCase):
 
     def expected_change_set_status(self):
         return 'CREATE_COMPLETE'
+
+    def test_list_exports_correctly_returns_exports(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        # fetch initial list of exports
+        exports_before = cloudformation.list_exports()['Exports']
+
+        template = load_file(TEST_TEMPLATE_27)
+        stack_name = 'stack-%s' % short_uid()
+        deploy_cf_stack(stack_name, template_body=template)
+
+        response = cloudformation.list_exports()
+
+        exports = response['Exports']
+        self.assertEqual(len(exports), len(exports_before) + 1)
+        export_names = [e['Name'] for e in exports]
+        self.assertIn('T27SQSQueue1-URL', export_names)
+
+        # clean up
+        self.cleanup(stack_name)

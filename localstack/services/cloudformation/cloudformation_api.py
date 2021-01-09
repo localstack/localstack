@@ -186,7 +186,8 @@ class Stack(object):
                 value = details['Value']
             except Exception as e:
                 LOG.debug('Unable to resolve references in stack outputs: %s - %s' % (details, e))
-            export = details.get('Export', {}).get('Name')
+            exports = details.get('Export') or {}
+            export = exports.get('Name')
             description = details.get('Description')
             entry = {'OutputKey': k, 'OutputValue': value, 'Description': description, 'ExportName': export}
             result.append(entry)
@@ -431,7 +432,7 @@ def describe_change_set(req_params):
 
 def list_exports(req_params):
     state = CloudFormationRegion.get()
-    result = {'Exports': state.exports}
+    result = {'Exports': {'member': state.exports}}
     return result
 
 

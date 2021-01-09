@@ -15,7 +15,7 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r)
+    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r, prevent_stack_overflow)
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
@@ -30,7 +30,10 @@ IAM_POLICY_VERSION = '2012-10-17'
 LOG = logging.getLogger(__name__)
 
 # list of resource types that can be updated
-UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method', 'StepFunctions::StateMachine']
+# TODO: make this a property of the model classes themselves
+UPDATEABLE_RESOURCES = [
+    'Lambda::Function', 'ApiGateway::Method', 'StepFunctions::StateMachine', 'IAM::Role'
+]
 
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName', 'AWS::AccountId']
@@ -933,6 +936,10 @@ def resolve_ref(stack_name, ref, resources, attribute):
     return result
 
 
+# Using a @prevent_stack_overflow decorator here to avoid infinite recursion
+# in case we load stack exports that have circula dependencies (see issue 3438)
+# TODO: Potentially think about a better approach in the future
+@prevent_stack_overflow(match_parameters=True)
 def resolve_refs_recursively(stack_name, value, resources):
     if isinstance(value, dict):
         keys_list = list(value.keys())
@@ -1432,6 +1439,11 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
             pol_name = policy['PolicyName']
             doc = dict(policy['PolicyDocument'])
             doc['Version'] = doc.get('Version') or IAM_POLICY_VERSION
+            statements = doc['Statement'] if isinstance(doc['Statement'], list) else [doc['Statement']]
+            for statement in statements:
+                if isinstance(statement.get('Resource'), list):
+                    # filter out empty resource strings
+                    statement['Resource'] = [r for r in statement['Resource'] if r]
             doc = json.dumps(doc)
             LOG.debug('Running put_role_policy(...) for IAM::Role policy: %s %s %s' %
                 (resource_props['RoleName'], pol_name, doc))
@@ -1806,15 +1818,17 @@ class TemplateDeployer(object):
 
         # construct changes
         changes = []
+        contains_changes = False
         for action, items in (('Remove', deletes), ('Add', adds), ('Modify', modifies)):
             for item in items:
                 item['Properties'] = item.get('Properties', {})
                 if action != 'Modify' or self.resource_config_differs(item):
-                    change = self.get_change_config(action, item, change_set_id=change_set_id)
-                    changes.append(change)
+                    contains_changes = True
+                change = self.get_change_config(action, item, change_set_id=change_set_id)
+                changes.append(change)
                 if action in ['Modify', 'Add']:
                     self.merge_properties(item['LogicalResourceId'], old_stack, new_stack)
-        if not changes:
+        if not contains_changes:
             raise NoStackUpdates('No updates are to be performed.')
 
         # start deployment loop
