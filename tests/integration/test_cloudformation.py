@@ -1473,14 +1473,14 @@ class CloudFormationTest(unittest.TestCase):
         s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, get_content=True))
         time.sleep(1)
 
-        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template))
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         props.update({
             'Environment': {'Variables': {'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1}}
         })
 
-        rs = cloudformation.update_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
+        rs = cloudformation.update_stack(StackName=stack_name, TemplateBody=json.dumps(template))
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
         lambda_client = aws_stack.connect_to_service('lambda')
 
