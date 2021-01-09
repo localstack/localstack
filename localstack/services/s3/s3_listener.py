@@ -579,9 +579,18 @@ def fix_delimiter(data, headers, response):
             response._content = re.compile(pattern).sub(delimiter, c)
 
 
-def fix_sorting_versions(method, response):
+def fix_sorting_versions(method, parsed, response):
 
     try:
+        if parsed is None:
+            return
+
+        if parsed.query is None:
+            return
+
+        if 'versions' not in parsed.query:
+            return
+
         try:
             content = to_str(response._content)
         except Exception:
@@ -1378,7 +1387,7 @@ class ProxyListenerS3(PersistingProxyListener):
             ret304_on_etag(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
             fix_delimiter(data, headers, response)
-            fix_sorting_versions(method, response)
+            fix_sorting_versions(method, parsed, response)
 
             if method == 'PUT':
                 set_object_expiry(path, headers)
