@@ -1175,10 +1175,12 @@ def deploy_resource(resource_id, resources, stack_name):
 
 def delete_resource(resource_id, resources, stack_name):
     res = resources[resource_id]
-    if res['ResourceType'] == 'AWS::S3::Bucket':
+    res_type = res.get('Type')
+
+    if res_type == 'AWS::S3::Bucket':
         s3_listener.remove_bucket_notification(res['PhysicalResourceId'])
 
-    if res['ResourceType'] == 'AWS::IAM::Role':
+    if res_type == 'AWS::IAM::Role':
         role_name = res.get('PhysicalResourceId') or res.get('Properties', {}).get('RoleName')
         try:
             iam_client = aws_stack.connect_to_service('iam')
@@ -1804,7 +1806,7 @@ class TemplateDeployer(object):
             old_resource[key] = old_resource.get(key, value)
         old_res_props = old_resource['Properties'] = old_resource.get('Properties', {})
         for key, value in new_resource['Properties'].items():
-            old_res_props[key] = old_res_props.get(key, value)
+            old_res_props[key] = value
         # overwrite original template entirely
         old_stack.template_original['Resources'][resource_id] = new_stack.template_original['Resources'][resource_id]
 
@@ -1880,6 +1882,11 @@ class TemplateDeployer(object):
             if not updated:
                 raise Exception('Resource deployment loop completed, pending resource changes: %s' % changes)
 
+        # clean up references to deleted resources in stack
+        deletes = [c for c in changes_done if c['ResourceChange']['Action'] == 'Remove']
+        for delete in deletes:
+            stack.template['Resources'].pop(delete['ResourceChange']['LogicalResourceId'], None)
+
         return changes_done
 
     def prepare_should_deploy_change(self, resource_id, change, stack, new_resources):
@@ -1913,7 +1920,6 @@ class TemplateDeployer(object):
         if action == 'Add':
             result = deploy_resource(resource_id, new_resources, stack_name)
         elif action == 'Remove':
-            old_stack.template['Resources'].pop(resource_id, None)
             result = delete_resource(resource_id, old_stack.resources, stack_name)
         elif action == 'Modify':
             result = update_resource(resource_id, new_resources, stack_name)
