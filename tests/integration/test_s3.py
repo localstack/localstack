@@ -1048,18 +1048,19 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual(result['Status'], 'Enabled')
 
     def test_get_bucket_versioning_order(self):
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_VERSIONING)
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING,
+        bucket_name = 'version-order-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name,
                                              VersioningConfiguration={'Status': 'Enabled'})
-        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_VERSIONING, Key='test', Body='body')
-        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_VERSIONING, Key='test', Body='body')
-        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_VERSIONING, Key='test2', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test2', Body='body')
         rs = self.s3_client.list_object_versions(
-            Bucket=TEST_BUCKET_WITH_VERSIONING,
+            Bucket=bucket_name,
         )
 
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
-        self.assertEqual(rs['Name'], TEST_BUCKET_WITH_VERSIONING)
+        self.assertEqual(rs['Name'], bucket_name)
         self.assertEqual(rs['Versions'][0]['IsLatest'], True)
         self.assertEqual(rs['Versions'][2]['IsLatest'], True)
 

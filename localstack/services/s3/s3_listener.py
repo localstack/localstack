@@ -582,44 +582,48 @@ def fix_delimiter(data, headers, response):
 def fix_sorting_versions(method, response):
 
     try:
-        content = to_str(response._content)
-    except Exception:
-        # return in case of conversion errors
-        return
+        try:
+            content = to_str(response._content)
+        except Exception:
+            return
 
-    if '<ListVersionsResult' not in content or method != 'GET':
-        return
+        if '<ListVersionsResult' not in content or method != 'GET':
+            return
 
-    parsed = xmltodict.parse(content).get('ListVersionsResult')
-    if not isinstance(parsed.get('Version'), list):
-        return
+        parsed = xmltodict.parse(content).get('ListVersionsResult')
+        if not isinstance(parsed.get('Version'), list):
+            return
 
-    result = list(parsed.get('Version'))
+        result = list(parsed.get('Version'))
 
-    def compare(item1, item2):
-        # sort based on key in ascending order
-        if item1['Key'] < item2['Key']:
-            return -1
-        elif item1['Key'] > item2['Key']:
-            return 1
-        else:
-            # sort based on last modified in descending order
-            t1 = time.mktime(datetime.datetime.strptime(item1['LastModified'], '%Y-%m-%dT%H:%M:%S.%fZ').timetuple())
-            t2 = time.mktime(datetime.datetime.strptime(item2['LastModified'], '%Y-%m-%dT%H:%M:%S.%fZ').timetuple())
-            if t1 > t2:
+        def compare(item1, item2):
+            # sort based on key in ascending order
+            if item1['Key'] < item2['Key']:
                 return -1
-            elif t1 < t2:
+            elif item1['Key'] > item2['Key']:
                 return 1
             else:
-                # sort based on latest
-                if item1['IsLatest'] == 'true':
+                # sort based on last modified in descending order
+                t1 = time.mktime(datetime.datetime.strptime(item1['LastModified'], '%Y-%m-%dT%H:%M:%S.%fZ').timetuple())
+                t2 = time.mktime(datetime.datetime.strptime(item2['LastModified'], '%Y-%m-%dT%H:%M:%S.%fZ').timetuple())
+                if t1 > t2:
                     return -1
-                elif item2['IsLatest'] == 'true':
+                elif t1 < t2:
                     return 1
-        return 0
+                else:
+                    # sort based on latest
+                    if item1['IsLatest'] == 'true':
+                        return -1
+                    elif item2['IsLatest'] == 'true':
+                        return 1
+            return 0
 
-    parsed['Version'] = sorted(result, key=functools.cmp_to_key(compare))
-    response._content = xmltodict.unparse({'ListVersionsResult': parsed})
+        parsed['Version'] = sorted(result, key=functools.cmp_to_key(compare))
+        response._content = xmltodict.unparse({'ListVersionsResult': parsed})
+    except Exception as e:
+        print('fix_sorting_versions: exception raised', e)
+        # return in case of conversion errors
+        return
 
 
 def convert_to_chunked_encoding(method, path, response):
