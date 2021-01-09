@@ -1880,6 +1880,11 @@ class TemplateDeployer(object):
             if not updated:
                 raise Exception('Resource deployment loop completed, pending resource changes: %s' % changes)
 
+        # clean up references to deleted resources in stack
+        deletes = [c for c in changes_done if c['ResourceChange']['Action'] == 'Remove']
+        for delete in deletes:
+            stack.template['Resources'].pop(delete['ResourceChange']['LogicalResourceId'], None)
+
         return changes_done
 
     def prepare_should_deploy_change(self, resource_id, change, stack, new_resources):
@@ -1913,7 +1918,6 @@ class TemplateDeployer(object):
         if action == 'Add':
             result = deploy_resource(resource_id, new_resources, stack_name)
         elif action == 'Remove':
-            old_stack.template['Resources'].pop(resource_id, None)
             result = delete_resource(resource_id, old_stack.resources, stack_name)
         elif action == 'Modify':
             result = update_resource(resource_id, new_resources, stack_name)
