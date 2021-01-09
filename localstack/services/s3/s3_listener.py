@@ -585,6 +585,10 @@ def fix_sorting_versions(method, response):
         try:
             content = to_str(response._content)
         except Exception:
+            # return in case of conversion errors
+            return
+
+        if content is None:
             return
 
         if '<ListVersionsResult' not in content or method != 'GET':
@@ -622,7 +626,6 @@ def fix_sorting_versions(method, response):
         response._content = xmltodict.unparse({'ListVersionsResult': parsed})
     except Exception as e:
         print('fix_sorting_versions: exception raised', e)
-        # return in case of conversion errors
         return
 
 
