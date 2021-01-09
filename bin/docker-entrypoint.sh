@@ -30,7 +30,9 @@ source <(
 )
 
 # Setup trap handler(s)
-trap 'kill ${!}; term_handler' SIGTERM
+if [ "$SET_TERM_HANDLER" != "" ]; then
+  trap 'kill ${!}; term_handler' SIGTERM
+fi
 
 cat /dev/null > /tmp/localstack_infra.log
 cat /dev/null > /tmp/localstack_infra.err
@@ -56,6 +58,10 @@ function run_startup_scripts {
 run_startup_scripts &
 
 # Run tail on the localstack log files forever until we are told to terminate
-while true; do
-  tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err & wait ${!}
-done
+if [ "$SET_TERM_HANDLER" != "" ]; then
+  while true; do
+    tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err & wait ${!}
+  done
+else
+  tail -qF /tmp/localstack_infra.log /tmp/localstack_infra.err
+fi

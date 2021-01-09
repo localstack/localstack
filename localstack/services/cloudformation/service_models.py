@@ -1,4 +1,5 @@
 import re
+import logging
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
 from moto.iam.models import Role as MotoRole
@@ -7,6 +8,8 @@ from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
+
+LOG = logging.getLogger(__name__)
 
 # name pattern of IAM policies associated with Lambda functions
 LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
@@ -252,6 +255,7 @@ class LambdaFunction(GenericBaseModel):
         update_props = dict([(k, props[k]) for k in keys if k in props])
         update_props = self.resolve_refs_recursively(stack_name, update_props, resources)
         if 'Code' in props:
+            LOG.debug('Updating code for Lambda "%s" from location: %s' % (props['FunctionName'], props['Code']))
             client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
         if 'Environment' in update_props:
             environment_variables = update_props['Environment'].get('Variables', {})
