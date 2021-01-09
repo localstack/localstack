@@ -61,6 +61,34 @@ def render_velocity_template(template, context, variables={}, as_json=False):
 
     # Apply a few fixes below, to properly prepare the template...
 
+    # TODO: remove once this PR is merged: https://github.com/purcell/airspeed/pull/48
+    def expr_parse(self):
+        try:
+            self.identity_match(self.DOT)
+            self.expression = self.next_element(airspeed.VariableExpression)
+        except airspeed.NoMatch:
+            self.expression = self.next_element(airspeed.ArrayIndex)
+            self.subexpression = None
+            try:
+                self.subexpression = self.next_element(airspeed.SubExpression)
+            except airspeed.NoMatch:
+                pass
+
+    airspeed.SubExpression.parse = expr_parse
+
+    # TODO: remove once this PR is merged: https://github.com/purcell/airspeed/pull/48
+    def expr_calculate(self, current_object, loader, global_namespace):
+        args = [current_object, loader]
+        if not isinstance(self.expression, airspeed.ArrayIndex):
+            return self.expression.calculate(*(args + [global_namespace]))
+        index = self.expression.calculate(*args)
+        result = current_object[index]
+        if self.subexpression:
+            result = self.subexpression.calculate(result, loader, global_namespace)
+        return result
+
+    airspeed.SubExpression.calculate = expr_calculate
+
     # fix "#set" commands
     template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)
 

@@ -34,6 +34,10 @@ HEADER_KILL_SIGNAL = 'x-localstack-kill'
 # lock obtained during boostrapping (persistence restoration) to avoid concurrency issues
 BOOTSTRAP_LOCK = threading.RLock()
 
+GZIP_ENCODING = 'GZIP'
+IDENTITY_ENCODING = 'IDENTITY'
+S3 = 's3'
+
 
 class ProxyListenerEdge(ProxyListener):
 
@@ -86,6 +90,11 @@ class ProxyListenerEdge(ProxyListener):
         headers['Host'] = host
         if isinstance(data, dict):
             data = json.dumps(data)
+
+        encoding_type = headers.get('content-encoding') or ''
+        if encoding_type.upper() == GZIP_ENCODING and api is not S3:
+            headers.set('content-encoding', IDENTITY_ENCODING)
+            data = gzip.decompress(data)
 
         lock_ctx = BOOTSTRAP_LOCK
         if persistence.API_CALLS_RESTORED or is_internal_call_context(headers):
@@ -267,6 +276,9 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     if path == '/' and b'QueueName=' in data_bytes:
         return 'sqs', config.PORT_SQS
+
+    if 'Action=ConfirmSubscription' in path:
+        return 'sns', config.PORT_SNS
 
     if path.startswith('/2015-03-31/functions/'):
         return 'lambda', config.PORT_LAMBDA

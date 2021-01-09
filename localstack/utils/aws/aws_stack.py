@@ -492,6 +492,11 @@ def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def elasticsearch_domain_arn(domain_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:es:%s:%s:domain/%s'
+    return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def firehose_stream_arn(stream_name, account_id=None, region_name=None):
     pattern = 'arn:aws:firehose:%s:%s:deliverystream/%s'
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
@@ -517,6 +522,28 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
     return pattern % (region_name, account_id, name)
+
+
+def send_event_to_target(arn, event):
+    if ':lambda:' in arn:
+        from localstack.services.awslambda import lambda_api
+        lambda_api.run_lambda(event=event, context={}, func_arn=arn)
+
+    elif ':sns:' in arn:
+        sns_client = connect_to_service('sns')
+        sns_client.publish(TopicArn=arn, Message=json.dumps(event))
+
+    elif ':sqs:' in arn:
+        sqs_client = connect_to_service('sqs')
+        queue_url = get_sqs_queue_url(arn)
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
+
+    elif ':states' in arn:
+        stepfunctions_client = connect_to_service('stepfunctions')
+        stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
+
+    else:
+        LOG.info('Unsupported Events rule target ARN "%s"' % arn)
 
 
 def create_sqs_queue(queue_name, env=None):
@@ -874,14 +901,16 @@ def deploy_cf_stack(stack_name, template_body):
     return await_stack_completion(stack_name)
 
 
-def await_stack_status(stack_name, expected_status, retries=3, sleep=2):
+def await_stack_status(stack_name, expected_statuses, retries=3, sleep=2):
     def check_stack():
         stack = get_stack_details(stack_name)
-        assert stack['StackStatus'] == expected_status
+        assert stack['StackStatus'] in expected_statuses
         return stack
 
+    expected_statuses = expected_statuses if isinstance(expected_statuses, list) else [expected_statuses]
     return retry(check_stack, retries, sleep)
 
 
-def await_stack_completion(stack_name, retries=3, sleep=2):
-    return await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
+def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
+    statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
+    return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)

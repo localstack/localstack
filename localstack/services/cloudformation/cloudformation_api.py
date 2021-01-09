@@ -1,14 +1,17 @@
+import json
 import logging
 import traceback
-import requests.models
+import xmltodict
 from flask import Flask, request
+from requests.models import Response
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    parse_request_data, short_uid, long_uid, clone, select_attributes, timestamp_millis)
-from localstack.utils.cloudformation import template_deployer
+    parse_request_data, short_uid, long_uid, clone, clone_safe, select_attributes,
+    timestamp_millis, recurse_object)
+from localstack.utils.cloudformation import template_deployer, template_preparer
+from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws.aws_responses import (
     requests_response_xml, requests_to_flask_response, flask_error_response_xml)
-from localstack.services.cloudformation import cloudformation_listener  # , cloudformation_starter
 
 APP_NAME = 'cloudformation_api'
 app = Flask(APP_NAME)
@@ -18,18 +21,11 @@ LOG = logging.getLogger(__name__)
 XMLNS_CF = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
 
 
-class RegionState(object):
-    STATES = {}
+class CloudFormationRegion(RegionBackend):
 
     def __init__(self):
         # maps stack ID to stack details
         self.stacks = {}
-
-    @classmethod
-    def get(cls):
-        region = aws_stack.get_region()
-        state = cls.STATES[region] = cls.STATES.get(region) or RegionState()
-        return state
 
     @property
     def exports(self):
@@ -59,8 +55,8 @@ class Stack(object):
     def __init__(self, metadata=None, template={}):
         self.metadata = metadata or {}
         self.template = template or {}
-        self._template_raw = clone(self.template)
-        self.template_original = clone(self.template)
+        self._template_raw = clone_safe(self.template)
+        self.template_original = clone_safe(self.template)
         # initialize resources
         for resource_id, resource in self.template_resources.items():
             resource['LogicalResourceId'] = self.template_original['Resources'][resource_id]['LogicalResourceId'] = (
@@ -165,13 +161,35 @@ class Stack(object):
         return self.template['Resources']
 
     @property
+    def imports(self):
+        def _collect(o, **kwargs):
+            if isinstance(o, dict):
+                import_val = o.get('Fn::ImportValue')
+                if import_val:
+                    result.add(import_val)
+            return o
+        result = set()
+        recurse_object(self.resources, _collect)
+        return result
+
+    @property
     def outputs(self):
         result = []
+        # first, fetch the outputs of nested child stacks
+        for stack in self.nested_stacks:
+            result.extend(stack.outputs)
+        # now, fetch the outputs of this stack
         for k, details in self.template.get('Outputs', {}).items():
-            template_deployer.resolve_refs_recursively(self.stack_name, details, self.resources)
-            export = details.get('Export', {}).get('Name')
+            value = None
+            try:
+                template_deployer.resolve_refs_recursively(self.stack_name, details, self.resources)
+                value = details['Value']
+            except Exception as e:
+                LOG.debug('Unable to resolve references in stack outputs: %s - %s' % (details, e))
+            exports = details.get('Export') or {}
+            export = exports.get('Name')
             description = details.get('Description')
-            entry = {'OutputKey': k, 'OutputValue': details['Value'], 'Description': description, 'ExportName': export}
+            entry = {'OutputKey': k, 'OutputValue': value, 'Description': description, 'ExportName': export}
             result.append(entry)
         return result
 
@@ -198,13 +216,25 @@ class Stack(object):
     @property
     def exports_map(self):
         result = {}
-        for export in RegionState.get().exports:
+        for export in CloudFormationRegion.get().exports:
             result[export['Name']] = export
+        return result
+
+    @property
+    def nested_stacks(self):
+        """ Return a list of nested stacks that have been deployed by this stack. """
+        result = [r for r in self.template_resources.values() if r['Type'] == 'AWS::CloudFormation::Stack']
+        result = [find_stack(r['Properties'].get('StackName')) for r in result]
+        result = [r for r in result if r]
         return result
 
     @property
     def status(self):
         return self.metadata['StackStatus']
+
+    @property
+    def resource_types(self):
+        return [r.get('Type') for r in self.template_resources.values()]
 
     def resource(self, resource_id):
         return self._lookup(self.resources, resource_id)
@@ -238,18 +268,25 @@ class StackChangeSet(Stack):
     def change_set_name(self):
         return self.metadata['ChangeSetName']
 
+    @property
+    def resources(self):
+        result = dict(self.stack.resources)
+        result.update(self.resources)
+        return result
+
 
 # --------------
 # API ENDPOINTS
 # --------------
 
 def create_stack(req_params):
-    state = RegionState.get()
-    cloudformation_listener.prepare_template_body(req_params)
-    template = template_deployer.parse_template(req_params['TemplateBody'])
+    state = CloudFormationRegion.get()
+    template_deployer.prepare_template_body(req_params)
+    template = template_preparer.parse_template(req_params['TemplateBody'])
     template['StackName'] = req_params.get('StackName')
     stack = Stack(req_params, template)
     state.stacks[stack.stack_id] = stack
+    LOG.debug('Creating stack "%s" with %s resources ...' % (stack.stack_name, len(stack.template_resources)))
     deployer = template_deployer.TemplateDeployer(stack)
     try:
         deployer.deploy_stack()
@@ -263,7 +300,7 @@ def create_stack(req_params):
 
 
 def delete_stack(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     stack_name = req_params.get('StackName')
     stack = find_stack(stack_name)
     deployer = template_deployer.TemplateDeployer(stack)
@@ -278,8 +315,8 @@ def update_stack(req_params):
     if not stack:
         return error_response('Unable to update non-existing stack "%s"' % stack_name,
             code=404, code_string='ValidationError')
-    cloudformation_listener.prepare_template_body(req_params)
-    template = template_deployer.parse_template(req_params['TemplateBody'])
+    template_preparer.prepare_template_body(req_params)
+    template = template_preparer.parse_template(req_params['TemplateBody'])
     new_stack = Stack(req_params, template)
     deployer = template_deployer.TemplateDeployer(stack)
     try:
@@ -294,9 +331,9 @@ def update_stack(req_params):
 
 
 def describe_stacks(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     stack_name = req_params.get('StackName')
-    stacks = [s.describe_details() for s in state.stacks.values() if stack_name in [None, s.stack_name]]
+    stacks = [s.describe_details() for s in state.stacks.values() if stack_name in [None, s.stack_name, s.stack_id]]
     if stack_name and not stacks:
         return error_response('Stack with id %s does not exist' % stack_name,
             code=400, code_string='ValidationError')
@@ -305,7 +342,7 @@ def describe_stacks(req_params):
 
 
 def list_stacks(req_params):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     filter = req_params.get('StackStatusFilter')
     stacks = [s.describe_details() for s in state.stacks.values() if filter in [None, s.status]]
     attrs = ['StackId', 'StackName', 'TemplateDescription', 'CreationTime', 'LastUpdatedTime', 'DeletionTime',
@@ -320,8 +357,7 @@ def describe_stack_resource(req_params):
     resource_id = req_params.get('LogicalResourceId')
     stack = find_stack(stack_name)
     if not stack:
-        return error_response('Unable to find stack named "%s"' % stack_name,
-            code=404, code_string='ResourceNotFoundException')
+        return stack_not_found_error(stack_name)
     details = stack.resource_status(resource_id)
     result = {'StackResourceDetail': details}
     return result
@@ -335,6 +371,8 @@ def describe_stack_resources(req_params):
         return error_response('Cannot specify both StackName and PhysicalResourceId')
     # TODO: filter stack by PhysicalResourceId!
     stack = find_stack(stack_name)
+    if not stack:
+        return stack_not_found_error(stack_name)
     statuses = [stack.resource_status(res_id) for res_id, _ in stack.resource_states.items() if
         resource_id in [res_id, None]]
     return {'StackResources': {'member': statuses}}
@@ -350,20 +388,22 @@ def list_stack_resources(req_params):
 
 def create_change_set(req_params):
     stack_name = req_params.get('StackName')
-    cloudformation_listener.prepare_template_body(req_params)
-    template = template_deployer.parse_template(req_params['TemplateBody'])
+    template_deployer.prepare_template_body(req_params)
+    template = template_preparer.parse_template(req_params['TemplateBody'])
     template['StackName'] = stack_name
     template['ChangeSetName'] = req_params.get('ChangeSetName')
     stack = existing = find_stack(stack_name)
     if not existing:
         # automatically create (empty) stack if none exists yet
-        state = RegionState.get()
+        state = CloudFormationRegion.get()
         empty_stack_template = dict(template)
         empty_stack_template['Resources'] = {}
-        stack = Stack(req_params, empty_stack_template)
+        stack = Stack(clone(req_params), empty_stack_template)
         state.stacks[stack.stack_id] = stack
+        stack.set_stack_status('CREATE_COMPLETE')
     change_set = StackChangeSet(req_params, template)
     stack.change_sets.append(change_set)
+    change_set.metadata['Status'] = 'CREATE_COMPLETE'
     return {'StackId': change_set.stack_id, 'Id': change_set.change_set_id}
 
 
@@ -373,6 +413,8 @@ def execute_change_set(req_params):
     change_set = find_change_set(cs_name, stack_name=stack_name)
     if not change_set:
         return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
+    LOG.debug('Executing change set "%s" for stack "%s" with %s resources ...' % (
+        cs_name, stack_name, len(change_set.template_resources)))
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
     change_set.stack.metadata['ChangeSetId'] = change_set.change_set_id
@@ -389,19 +431,35 @@ def describe_change_set(req_params):
 
 
 def list_exports(req_params):
-    state = RegionState.get()
-    result = {'Exports': state.exports}
+    state = CloudFormationRegion.get()
+    result = {'Exports': {'member': state.exports}}
+    return result
+
+
+def list_imports(req_params):
+    state = CloudFormationRegion.get()
+    export_name = req_params.get('ExportName')
+    importing_stack_names = []
+    for stack in state.stacks.values():
+        if export_name in stack.imports:
+            importing_stack_names.append(stack.stack_name)
+    result = {'Imports': {'member': importing_stack_names}}
     return result
 
 
 def validate_template(req_params):
-    result = cloudformation_listener.validate_template(req_params)
-    return result
+    try:
+        result = template_preparer.validate_template(req_params)
+        result = '<tmp>%s</tmp>' % result
+        result = xmltodict.parse(result)['tmp']
+        return result
+    except Exception as err:
+        return error_response('Template Validation Error: %s' % err)
 
 
 def describe_stack_events(req_params):
     stack_name = req_params.get('StackName')
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     events = []
     for stack_id, stack in state.stacks.items():
         if stack_name in [None, stack.stack_name, stack.stack_id]:
@@ -417,6 +475,41 @@ def delete_change_set(req_params):
         return error_response('Unable to find change set "%s" for stack "%s"' % (cs_name, stack_name))
     change_set.stack.change_sets = [cs for cs in change_set.stack.change_sets if cs.change_set_name != cs_name]
     return {}
+
+
+def get_template(req_params):
+    stack_name = req_params.get('StackName')
+    cs_name = req_params.get('ChangeSetName')
+    stack = find_stack(stack_name)
+    if cs_name:
+        stack = find_change_set(stack_name, cs_name)
+    if not stack:
+        return stack_not_found_error(stack_name)
+    result = {'TemplateBody': json.dumps(stack._template_raw)}
+    return result
+
+
+def get_template_summary(req_params):
+    stack_name = req_params.get('StackName')
+    stack = None
+    if stack_name:
+        stack = find_stack(stack_name)
+        if not stack:
+            return stack_not_found_error(stack_name)
+    template_deployer.prepare_template_body(req_params)
+    template = template_preparer.parse_template(req_params['TemplateBody'])
+    req_params['StackName'] = 'tmp-stack'
+    stack = Stack(req_params, template)
+    result = stack.describe_details()
+    id_summaries = {}
+    for resource_id, resource in stack.template_resources.items():
+        res_type = resource['Type']
+        id_summaries[res_type] = id_summaries.get(res_type) or []
+        id_summaries[res_type].append(resource_id)
+    result['ResourceTypes'] = list(id_summaries.keys())
+    result['ResourceIdentifierSummaries'] = [
+        {'ResourceType': key, 'LogicalResourceIds': {'member': values}} for key, values in id_summaries.items()]
+    return result
 
 
 # -----------------
@@ -449,7 +542,10 @@ ENDPOINTS = {
     'DescribeStackResources': describe_stack_resources,
     'DescribeStacks': describe_stacks,
     'ExecuteChangeSet': execute_change_set,
+    'GetTemplate': get_template,
+    'GetTemplateSummary': get_template_summary,
     'ListExports': list_exports,
+    'ListImports': list_imports,
     'ListStacks': list_stacks,
     'ListStackResources': list_stack_resources,
     'UpdateStack': update_stack,
@@ -466,13 +562,18 @@ def error_response(*args, **kwargs):
     return flask_error_response_xml(*args, **kwargs)
 
 
+def stack_not_found_error(stack_name):
+    return error_response('Unable to find stack named "%s"' % stack_name,
+        code=404, code_string='ResourceNotFoundException')
+
+
 def find_stack(stack_name):
-    state = RegionState.get()
-    return ([s for s in state.stacks.values() if stack_name == s.stack_name] or [None])[0]
+    state = CloudFormationRegion.get()
+    return ([s for s in state.stacks.values() if stack_name in [s.stack_name, s.stack_id]] or [None])[0]
 
 
 def find_change_set(cs_name, stack_name=None):
-    state = RegionState.get()
+    state = CloudFormationRegion.get()
     stack = find_stack(stack_name)
     stacks = [stack] if stack else state.stacks.values()
     result = [cs for s in stacks for cs in s.change_sets if cs_name in [cs.change_set_id, cs.change_set_name]]
@@ -482,7 +583,7 @@ def find_change_set(cs_name, stack_name=None):
 def _response(action, result):
     if isinstance(result, (dict, str)):
         result = requests_response_xml(action, result, xmlns=XMLNS_CF)
-    if isinstance(result, requests.models.Response):
+    if isinstance(result, Response):
         result = requests_to_flask_response(result)
     return result
 

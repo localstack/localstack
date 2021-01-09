@@ -20,6 +20,7 @@ from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack import config
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON
+from localstack.utils.aws import aws_stack
 from localstack.utils.server import http2_server
 from localstack.utils.common import (
     FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS, path_from_url, Mock)
@@ -98,6 +99,29 @@ class ProxyListener(object):
         return None
 
 
+# -------------------
+# BASE BACKEND UTILS
+# -------------------
+
+class RegionBackend(object):
+    """ Base class for region-specific backends for the different APIs. """
+
+    @classmethod
+    def get(cls, region=None):
+        if not hasattr(cls, 'REGIONS'):
+            # maps region name to region backend instance
+            cls.REGIONS = {}
+
+        region = region or aws_stack.get_region()
+        cls.REGIONS[region] = cls.REGIONS.get(region) or cls()
+        return cls.REGIONS[region]
+
+
+# ---------------------
+# PROXY LISTENER UTILS
+# ---------------------
+
+# TODO deprecated - should be removed
 class GenericProxyHandler(BaseHTTPRequestHandler):
 
     # List of `ProxyListener` instances that are enabled by default for all requests
@@ -486,6 +510,7 @@ if hasattr(BaseSelectorEventLoop, '_accept_connection2') and not hasattr(BaseSel
     BaseSelectorEventLoop._ls_patched = True
 
 
+# TODO: deprecated, as we're now using the HTTP2 server by default - remove!
 class GenericProxy(FuncThread):
     def __init__(self, port, forward_url=None, ssl=False, host=None, update_listener=None, quiet=False, params={}):
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
@@ -541,6 +566,7 @@ def get_cert_pem_file_path():
     return os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
 
 
+# TODO deprecated - remove
 def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
     if USE_HTTP2_SERVER:
         return start_proxy_server_http2(port=port, forward_url=forward_url,

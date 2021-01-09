@@ -2,14 +2,15 @@ import io
 import os
 import re
 import sys
+import glob
 import json
 import uuid
 import time
-import glob
 import base64
 import socket
 import hashlib
 import decimal
+import inspect
 import logging
 import tarfile
 import zipfile
@@ -79,6 +80,7 @@ class CustomEncoder(json.JSONEncoder):
     """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
 
     def default(self, o):
+        import yaml  # leave import here, to avoid breaking our Lambda tests!
         if isinstance(o, decimal.Decimal):
             if o % 1 > 0:
                 return float(o)
@@ -86,6 +88,14 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, (datetime, date)):
             return timestamp_millis(o)
+        if isinstance(o, yaml.ScalarNode):
+            if o.tag == 'tag:yaml.org,2002:int':
+                return int(o.value)
+            if o.tag == 'tag:yaml.org,2002:float':
+                return float(o.value)
+            if o.tag == 'tag:yaml.org,2002:bool':
+                return bool(o.value)
+            return str(o.value)
         try:
             if isinstance(o, six.binary_type):
                 return to_str(o)
@@ -358,6 +368,39 @@ def synchronized(lock=None):
     return _decorator
 
 
+def prevent_stack_overflow(match_parameters=False):
+    """ Function decorator to protect a function from stack overflows -
+        raises an exception if a (potential) infinite recursion is detected. """
+    def _decorator(wrapped):
+        @functools.wraps(wrapped)
+        def func(*args, **kwargs):
+            def _matches(frame):
+                if frame.function != wrapped.__name__:
+                    return False
+                frame = frame.frame
+
+                if not match_parameters:
+                    return False
+
+                # construct dict of arguments this stack frame has been called with
+                prev_call_args = {frame.f_code.co_varnames[i]: frame.f_locals[frame.f_code.co_varnames[i]]
+                                  for i in range(frame.f_code.co_argcount)}
+
+                # construct dict of arguments the original function has been called with
+                sig = inspect.signature(wrapped)
+                this_call_args = dict(zip(sig.parameters.keys(), args))
+                this_call_args.update(kwargs)
+
+                return prev_call_args == this_call_args
+
+            matching_frames = [frame[2] for frame in inspect.stack(context=1) if _matches(frame)]
+            if matching_frames:
+                raise RecursionError('(Potential) infinite recursion detected')
+            return wrapped(*args, **kwargs)
+        return func
+    return _decorator
+
+
 def is_string(s, include_unicode=True, exclude_binary=False):
     if isinstance(s, six.binary_type) and exclude_binary:
         return False
@@ -460,6 +503,18 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
             raise Exception()
 
     return retry(check, sleep=sleep_time, retries=retries)
+
+
+def port_can_be_bound(port):
+    """ Return whether a local port can be bound to. Note that this is a stricter check
+        than is_port_open(...) above, as is_port_open() may return False if the port is
+        not accessible (i.e., does not respond), yet cannot be bound to. """
+    try:
+        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp.bind(('', port))
+        return True
+    except Exception:
+        return False
 
 
 def get_free_tcp_port(blacklist=None):
@@ -580,6 +635,10 @@ def keys_to_lower(obj):
         return o
     result = recurse_object(obj, fix_keys)
     return result
+
+
+def camel_to_snake_case(string):
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', string).replace('__', '_').lower()
 
 
 def base64_to_hex(b64_string):
