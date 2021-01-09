@@ -387,10 +387,10 @@ class SFNStateMachine(GenericBaseModel):
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource['Properties']
         client = aws_stack.connect_to_service('stepfunctions')
-        sm_arn = self.props.get('Arn')
+        sm_arn = self.props.get('stateMachineArn')
         if not sm_arn:
-            state = self.fetch_state(stack_name=stack_name, resources=resources)
-            self.state['Arn'] = sm_arn = state['Arn']
+            self.state = self.fetch_state(stack_name=stack_name, resources=resources)
+            sm_arn = self.state['stateMachineArn']
         kwargs = {
             'stateMachineArn': sm_arn,
             'definition': props['DefinitionString'],
@@ -415,12 +415,21 @@ class SFNActivity(GenericBaseModel):
 
 
 class IAMRole(GenericBaseModel, MotoRole):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::IAM::Role'
+
     def get_resource_name(self):
         return self.props.get('RoleName')
 
     def fetch_state(self, stack_name, resources):
         role_name = self.resolve_refs_recursively(stack_name, self.props.get('RoleName'), resources)
         return aws_stack.connect_to_service('iam').get_role(RoleName=role_name)['Role']
+
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource['Properties']
+        client = aws_stack.connect_to_service('iam')
+        return client.update_role(RoleName=props.get('RoleName'), Description=props.get('Description') or '')
 
 
 class IAMPolicy(GenericBaseModel):
@@ -547,7 +556,7 @@ class GatewayMethod(GenericBaseModel):
             'restApiId': props['RestApiId'],
             'resourceId': props['ResourceId'],
             'httpMethod': props['HttpMethod'],
-            'requestParameters': props.get('RequestParameters')
+            'requestParameters': props.get('RequestParameters') or {}
         }
         if integration:
             kwargs['type'] = integration['Type']
@@ -799,4 +808,5 @@ class SecretsManagerSecret(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         secret_name = self.props.get('Name') or self.resource_id
         secret_name = self.resolve_refs_recursively(stack_name, secret_name, resources)
-        return aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
+        result = aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
+        return result
