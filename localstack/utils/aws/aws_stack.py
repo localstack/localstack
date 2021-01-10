@@ -524,7 +524,7 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
     return pattern % (region_name, account_id, name)
 
 
-def send_event_to_target(arn, event):
+def send_event_to_target(arn, event, target_attributes=None):
     if ':lambda:' in arn:
         from localstack.services.awslambda import lambda_api
         lambda_api.run_lambda(event=event, context={}, func_arn=arn)
@@ -536,7 +536,15 @@ def send_event_to_target(arn, event):
     elif ':sqs:' in arn:
         sqs_client = connect_to_service('sqs')
         queue_url = get_sqs_queue_url(arn)
-        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
+
+        msg_group_id = None
+        if target_attributes is not None:
+            msg_group_id = target_attributes.get('MessageGroupId')
+
+        if target_attributes is None:
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
+        else:
+            sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), MessageGroupId=msg_group_id)
 
     elif ':states' in arn:
         stepfunctions_client = connect_to_service('stepfunctions')
@@ -544,6 +552,12 @@ def send_event_to_target(arn, event):
 
     else:
         LOG.info('Unsupported Events rule target ARN "%s"' % arn)
+
+
+def get_events_target_attributes(target):
+    # added for sqs, if needed can be moved to an if else
+    # block for multiple targets
+    return target.get('SqsParameters')
 
 
 def create_sqs_queue(queue_name, env=None):
