@@ -582,6 +582,9 @@ def fix_delimiter(data, headers, response):
 def fix_sorting_versions(method, parsed, response):
 
     try:
+        if method != 'GET':
+            return
+
         if not parsed or not parsed.query or 'versions' not in parsed.query:
             return
         try:
@@ -590,10 +593,7 @@ def fix_sorting_versions(method, parsed, response):
             # return in case of conversion errors
             return
 
-        if content is None:
-            return
-
-        if '<ListVersionsResult' not in content or method != 'GET':
+        if not content or '<ListVersionsResult' not in content:
             return
 
         parsed = xmltodict.parse(content).get('ListVersionsResult')
