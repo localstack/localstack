@@ -633,8 +633,7 @@ def fix_sorting_versions(method, parsed, response):
 
         parsed['Version'] = sorted(result, key=functools.cmp_to_key(compare))
         response._content = xmltodict.unparse({'ListVersionsResult': parsed})
-    except Exception as e:
-        print('fix_sorting_versions: exception raised', e)
+    except Exception:
         return
 
 
