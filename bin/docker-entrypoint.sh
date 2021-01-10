@@ -13,9 +13,10 @@ suppid=0
 
 # Setup the SIGTERM-handler function
 term_handler() {
+  send_sig="-$1"
   if [ $suppid -ne 0 ]; then
-    echo "Killing off all processes"
-    kill -SIGTERM "$suppid"
+    echo "Sending $send_sig to supervisord"
+    kill ${send_sig} "$suppid"
     wait "$suppid"
   fi
   exit 143; # 128 + 15 -- SIGTERM
@@ -31,7 +32,12 @@ source <(
 
 # Setup trap handler(s)
 if [ "$SET_TERM_HANDLER" != "" ]; then
-  trap 'kill ${!}; term_handler' SIGTERM
+  # Catch all the main 
+  trap 'kill -1 ${!}; term_handler 1' SIGHUP
+  trap 'kill -2 ${!}; term_handler 2' SIGINT
+  trap 'kill -3 ${!}; term_handler 3' SIGQUIT
+  trap 'kill -15 ${!}; term_handler 15' SIGTERM
+  trap 'kill -31 ${!}; term_handler 31' SIGUSR2
 fi
 
 cat /dev/null > /tmp/localstack_infra.log
