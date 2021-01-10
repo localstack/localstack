@@ -582,15 +582,8 @@ def fix_delimiter(data, headers, response):
 def fix_sorting_versions(method, parsed, response):
 
     try:
-        if parsed is None:
+        if not parsed or not parsed.query or 'versions' not in parsed.query:
             return
-
-        if parsed.query is None:
-            return
-
-        if 'versions' not in parsed.query:
-            return
-
         try:
             content = to_str(response._content)
         except Exception:
