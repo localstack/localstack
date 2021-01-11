@@ -349,6 +349,7 @@ class EventsTest(unittest.TestCase):
 
         topic_name = 'topic-{}'.format(short_uid())
         queue_name = 'queue-{}'.format(short_uid())
+        fifo_queue_name = 'queue-{}.fifo'.format(short_uid())
         rule_name = 'rule-{}'.format(short_uid())
         endpoint = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, local_port)
         sm_role_arn = aws_stack.role_arn('sfn_role')
@@ -356,6 +357,7 @@ class EventsTest(unittest.TestCase):
         topic_target_id = 'target-{}'.format(short_uid())
         sm_target_id = 'target-{}'.format(short_uid())
         queue_target_id = 'target-{}'.format(short_uid())
+        fifo_queue_target_id = 'target-{}'.format(short_uid())
 
         events = []
         state_machine_definition = """
@@ -381,7 +383,10 @@ class EventsTest(unittest.TestCase):
         self.sns_client.subscribe(TopicArn=topic_arn, Protocol='http', Endpoint=endpoint)
 
         queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        fifo_queue_url = self.sqs_client.create_queue(
+            QueueName=fifo_queue_name, Attributes={'FifoQueue': 'true'})['QueueUrl']
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
+        fifo_queue_arn = aws_stack.sqs_queue_arn(fifo_queue_name)
 
         event = {
             'env': 'testing'
@@ -409,11 +414,20 @@ class EventsTest(unittest.TestCase):
                     'Id': queue_target_id,
                     'Arn': queue_arn,
                     'Input': json.dumps(event)
+                },
+                {
+                    'Id': fifo_queue_target_id,
+                    'Arn': fifo_queue_arn,
+                    'Input': json.dumps(event),
+                    'SqsParameters': {
+                        'MessageGroupId': '123'
+                    }
+
                 }
             ]
         )
 
-        def received(q_url):
+        def received(q_urls):
             # state machine got executed
             executions = self.sfn_client.list_executions(stateMachineArn=state_machine_arn)['executions']
             self.assertGreaterEqual(len(executions), 1)
@@ -427,16 +441,22 @@ class EventsTest(unittest.TestCase):
             execution_arn = executions[0]['executionArn']
             execution_input = self.sfn_client.describe_execution(executionArn=execution_arn)['input']
 
+            all_msgs = []
             # get message from queue
-            msgs = self.sqs_client.receive_message(QueueUrl=q_url).get('Messages', [])
-            self.assertGreaterEqual(len(msgs), 1)
+            for url in q_urls:
+                msgs = self.sqs_client.receive_message(QueueUrl=url).get('Messages', [])
+                self.assertGreaterEqual(len(msgs), 1)
+                all_msgs.append(msgs[0])
 
-            return execution_input, notifications[0], msgs[0]
+            return execution_input, notifications[0], all_msgs
 
-        execution_input, notification, msg_received = retry(received, retries=5, sleep=15, q_url=queue_url)
+        execution_input, notification, msgs_received = retry(
+            received, retries=5, sleep=15, q_urls=[queue_url, fifo_queue_url]
+        )
         self.assertEqual(json.loads(notification), event)
         self.assertEqual(json.loads(execution_input), event)
-        self.assertEqual(json.loads(msg_received['Body']), event)
+        for msg_received in msgs_received:
+            self.assertEqual(json.loads(msg_received['Body']), event)
 
         proxy.stop()
 
