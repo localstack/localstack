@@ -537,14 +537,9 @@ def send_event_to_target(arn, event, target_attributes=None):
         sqs_client = connect_to_service('sqs')
         queue_url = get_sqs_queue_url(arn)
 
-        msg_group_id = None
-        if target_attributes is not None:
-            msg_group_id = target_attributes.get('MessageGroupId')
-
-        if target_attributes is None:
-            sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
-        else:
-            sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), MessageGroupId=msg_group_id)
+        msg_group_id = (target_attributes or {}).get('MessageGroupId')
+        kwargs = {'MessageGroupId': msg_group_id} if msg_group_id else {}
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
     elif ':states' in arn:
         stepfunctions_client = connect_to_service('stepfunctions')
