@@ -1047,6 +1047,23 @@ class S3ListenerTest(unittest.TestCase):
         result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
         self.assertEqual(result['Status'], 'Enabled')
 
+    def test_get_bucket_versioning_order(self):
+        bucket_name = 'version-order-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test2', Body='body')
+        rs = self.s3_client.list_object_versions(
+            Bucket=bucket_name,
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['Name'], bucket_name)
+        self.assertEqual(rs['Versions'][0]['IsLatest'], True)
+        self.assertEqual(rs['Versions'][2]['IsLatest'], True)
+
     def test_upload_big_file(self):
         bucket_name = 'bucket-big-file-%s' % short_uid()
         key1 = 'test_key1'
