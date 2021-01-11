@@ -255,8 +255,10 @@ class LambdaFunction(GenericBaseModel):
         update_props = dict([(k, props[k]) for k in keys if k in props])
         update_props = self.resolve_refs_recursively(stack_name, update_props, resources)
         if 'Code' in props:
-            LOG.debug('Updating code for Lambda "%s" from location: %s' % (props['FunctionName'], props['Code']))
-            client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
+            code = props['Code'] or {}
+            if not code.get('ZipFile'):
+                LOG.debug('Updating code for Lambda "%s" from location: %s' % (props['FunctionName'], code))
+            client.update_function_code(FunctionName=props['FunctionName'], **code)
         if 'Environment' in update_props:
             environment_variables = update_props['Environment'].get('Variables', {})
             update_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
@@ -787,10 +789,22 @@ class DynamoDBTable(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::DynamoDB::Table'
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        table_name = self.props.get('TableName')
+        if attribute in REF_ID_ATTRS:
+            return table_name
+        return aws_stack.dynamodb_table_arn(table_name)
+
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get('TableName') or self.resource_id
         table_name = self.resolve_refs_recursively(stack_name, table_name, resources)
         return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
+
+
+class QueuePolicy(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SQS::QueuePolicy'
 
 
 class SSMParameter(GenericBaseModel):

@@ -776,8 +776,12 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
             if res_phys_id:
                 return res_phys_id
         if hasattr(resource_state, 'get_cfn_attribute'):
-            return resource_state.get_cfn_attribute(attribute)
-        raise Exception('Unable to extract attribute "%s" from model class %s' % (attribute, type(resource_state)))
+            try:
+                return resource_state.get_cfn_attribute(attribute)
+            except Exception:
+                pass
+        raise Exception('Unable to extract attribute "%s" from "%s" model class %s' % (
+            attribute, resource_type, type(resource_state)))
 
     # extract resource specific attributes
     resource_props = resource.get('Properties', {})
@@ -1519,9 +1523,11 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
             return aws_stack.policy_arn(resource_props.get('PolicyName'))
         return resource_props.get('PolicyName')
     elif resource_type == 'DynamoDB::Table':
-        if attribute == 'Ref':
-            return resource_props.get('TableName')  # Note: "Ref" returns table name in AWS
-        return aws_stack.dynamodb_table_arn(resource_props.get('TableName'))
+        table_name = resource_props.get('TableName')
+        if table_name:
+            if attribute == 'Ref':
+                return table_name  # Note: "Ref" returns table name in AWS
+            return table_name
     elif resource_type == 'Logs::LogGroup':
         return resource_props.get('LogGroupName')
 
@@ -1576,11 +1582,15 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     elif res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
         props['QueueName'] = 'queue-%s' % short_uid()
 
+    elif res_type == 'AWS::SQS::QueuePolicy' and not resource.get('PhysicalResourceId'):
+        resource['PhysicalResourceId'] = _generate_res_name()
+
     elif res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
         props['Name'] = _generate_res_name()
 
     elif res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource)
+        props['TableName'] = props.get('TableName') or _generate_res_name()
 
     elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
         existing_bucket = existing_resources.get(resource_id) or {}
