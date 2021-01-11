@@ -1,4 +1,5 @@
 import re
+import logging
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
 from moto.iam.models import Role as MotoRole
@@ -7,6 +8,8 @@ from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
+
+LOG = logging.getLogger(__name__)
 
 # name pattern of IAM policies associated with Lambda functions
 LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
@@ -252,7 +255,10 @@ class LambdaFunction(GenericBaseModel):
         update_props = dict([(k, props[k]) for k in keys if k in props])
         update_props = self.resolve_refs_recursively(stack_name, update_props, resources)
         if 'Code' in props:
-            client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
+            code = props['Code'] or {}
+            if not code.get('ZipFile'):
+                LOG.debug('Updating code for Lambda "%s" from location: %s' % (props['FunctionName'], code))
+            client.update_function_code(FunctionName=props['FunctionName'], **code)
         if 'Environment' in update_props:
             environment_variables = update_props['Environment'].get('Variables', {})
             update_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
@@ -387,10 +393,10 @@ class SFNStateMachine(GenericBaseModel):
     def update_resource(self, new_resource, stack_name, resources):
         props = new_resource['Properties']
         client = aws_stack.connect_to_service('stepfunctions')
-        sm_arn = self.props.get('Arn')
+        sm_arn = self.props.get('stateMachineArn')
         if not sm_arn:
-            state = self.fetch_state(stack_name=stack_name, resources=resources)
-            self.state['Arn'] = sm_arn = state['Arn']
+            self.state = self.fetch_state(stack_name=stack_name, resources=resources)
+            sm_arn = self.state['stateMachineArn']
         kwargs = {
             'stateMachineArn': sm_arn,
             'definition': props['DefinitionString'],
@@ -415,12 +421,21 @@ class SFNActivity(GenericBaseModel):
 
 
 class IAMRole(GenericBaseModel, MotoRole):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::IAM::Role'
+
     def get_resource_name(self):
         return self.props.get('RoleName')
 
     def fetch_state(self, stack_name, resources):
         role_name = self.resolve_refs_recursively(stack_name, self.props.get('RoleName'), resources)
         return aws_stack.connect_to_service('iam').get_role(RoleName=role_name)['Role']
+
+    def update_resource(self, new_resource, stack_name, resources):
+        props = new_resource['Properties']
+        client = aws_stack.connect_to_service('iam')
+        return client.update_role(RoleName=props.get('RoleName'), Description=props.get('Description') or '')
 
 
 class IAMPolicy(GenericBaseModel):
@@ -547,7 +562,7 @@ class GatewayMethod(GenericBaseModel):
             'restApiId': props['RestApiId'],
             'resourceId': props['ResourceId'],
             'httpMethod': props['HttpMethod'],
-            'requestParameters': props.get('RequestParameters')
+            'requestParameters': props.get('RequestParameters') or {}
         }
         if integration:
             kwargs['type'] = integration['Type']
@@ -774,10 +789,22 @@ class DynamoDBTable(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::DynamoDB::Table'
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        table_name = self.props.get('TableName')
+        if attribute in REF_ID_ATTRS:
+            return table_name
+        return aws_stack.dynamodb_table_arn(table_name)
+
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get('TableName') or self.resource_id
         table_name = self.resolve_refs_recursively(stack_name, table_name, resources)
         return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
+
+
+class QueuePolicy(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SQS::QueuePolicy'
 
 
 class SSMParameter(GenericBaseModel):
@@ -799,4 +826,5 @@ class SecretsManagerSecret(GenericBaseModel):
     def fetch_state(self, stack_name, resources):
         secret_name = self.props.get('Name') or self.resource_id
         secret_name = self.resolve_refs_recursively(stack_name, secret_name, resources)
-        return aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
+        result = aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
+        return result

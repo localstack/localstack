@@ -30,7 +30,10 @@ IAM_POLICY_VERSION = '2012-10-17'
 LOG = logging.getLogger(__name__)
 
 # list of resource types that can be updated
-UPDATEABLE_RESOURCES = ['Lambda::Function', 'ApiGateway::Method', 'StepFunctions::StateMachine']
+# TODO: make this a property of the model classes themselves
+UPDATEABLE_RESOURCES = [
+    'Lambda::Function', 'ApiGateway::Method', 'StepFunctions::StateMachine', 'IAM::Role'
+]
 
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
 STATIC_REFS = ['AWS::Region', 'AWS::Partition', 'AWS::StackName', 'AWS::AccountId']
@@ -773,8 +776,12 @@ def extract_resource_attribute(resource_type, resource_state, attribute, resourc
             if res_phys_id:
                 return res_phys_id
         if hasattr(resource_state, 'get_cfn_attribute'):
-            return resource_state.get_cfn_attribute(attribute)
-        raise Exception('Unable to extract attribute "%s" from model class %s' % (attribute, type(resource_state)))
+            try:
+                return resource_state.get_cfn_attribute(attribute)
+            except Exception:
+                pass
+        raise Exception('Unable to extract attribute "%s" from "%s" model class %s' % (
+            attribute, resource_type, type(resource_state)))
 
     # extract resource specific attributes
     resource_props = resource.get('Properties', {})
@@ -1172,10 +1179,12 @@ def deploy_resource(resource_id, resources, stack_name):
 
 def delete_resource(resource_id, resources, stack_name):
     res = resources[resource_id]
-    if res['ResourceType'] == 'AWS::S3::Bucket':
+    res_type = res.get('Type')
+
+    if res_type == 'AWS::S3::Bucket':
         s3_listener.remove_bucket_notification(res['PhysicalResourceId'])
 
-    if res['ResourceType'] == 'AWS::IAM::Role':
+    if res_type == 'AWS::IAM::Role':
         role_name = res.get('PhysicalResourceId') or res.get('Properties', {}).get('RoleName')
         try:
             iam_client = aws_stack.connect_to_service('iam')
@@ -1436,6 +1445,11 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
             pol_name = policy['PolicyName']
             doc = dict(policy['PolicyDocument'])
             doc['Version'] = doc.get('Version') or IAM_POLICY_VERSION
+            statements = doc['Statement'] if isinstance(doc['Statement'], list) else [doc['Statement']]
+            for statement in statements:
+                if isinstance(statement.get('Resource'), list):
+                    # filter out empty resource strings
+                    statement['Resource'] = [r for r in statement['Resource'] if r]
             doc = json.dumps(doc)
             LOG.debug('Running put_role_policy(...) for IAM::Role policy: %s %s %s' %
                 (resource_props['RoleName'], pol_name, doc))
@@ -1509,9 +1523,11 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
             return aws_stack.policy_arn(resource_props.get('PolicyName'))
         return resource_props.get('PolicyName')
     elif resource_type == 'DynamoDB::Table':
-        if attribute == 'Ref':
-            return resource_props.get('TableName')  # Note: "Ref" returns table name in AWS
-        return aws_stack.dynamodb_table_arn(resource_props.get('TableName'))
+        table_name = resource_props.get('TableName')
+        if table_name:
+            if attribute == 'Ref':
+                return table_name  # Note: "Ref" returns table name in AWS
+            return table_name
     elif resource_type == 'Logs::LogGroup':
         return resource_props.get('LogGroupName')
 
@@ -1566,11 +1582,15 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     elif res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
         props['QueueName'] = 'queue-%s' % short_uid()
 
+    elif res_type == 'AWS::SQS::QueuePolicy' and not resource.get('PhysicalResourceId'):
+        resource['PhysicalResourceId'] = _generate_res_name()
+
     elif res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
         props['Name'] = _generate_res_name()
 
     elif res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource)
+        props['TableName'] = props.get('TableName') or _generate_res_name()
 
     elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName'):
         existing_bucket = existing_resources.get(resource_id) or {}
@@ -1796,7 +1816,7 @@ class TemplateDeployer(object):
             old_resource[key] = old_resource.get(key, value)
         old_res_props = old_resource['Properties'] = old_resource.get('Properties', {})
         for key, value in new_resource['Properties'].items():
-            old_res_props[key] = old_res_props.get(key, value)
+            old_res_props[key] = value
         # overwrite original template entirely
         old_stack.template_original['Resources'][resource_id] = new_stack.template_original['Resources'][resource_id]
 
@@ -1810,15 +1830,17 @@ class TemplateDeployer(object):
 
         # construct changes
         changes = []
+        contains_changes = False
         for action, items in (('Remove', deletes), ('Add', adds), ('Modify', modifies)):
             for item in items:
                 item['Properties'] = item.get('Properties', {})
                 if action != 'Modify' or self.resource_config_differs(item):
-                    change = self.get_change_config(action, item, change_set_id=change_set_id)
-                    changes.append(change)
+                    contains_changes = True
+                change = self.get_change_config(action, item, change_set_id=change_set_id)
+                changes.append(change)
                 if action in ['Modify', 'Add']:
                     self.merge_properties(item['LogicalResourceId'], old_stack, new_stack)
-        if not changes:
+        if not contains_changes:
             raise NoStackUpdates('No updates are to be performed.')
 
         # start deployment loop
@@ -1870,6 +1892,11 @@ class TemplateDeployer(object):
             if not updated:
                 raise Exception('Resource deployment loop completed, pending resource changes: %s' % changes)
 
+        # clean up references to deleted resources in stack
+        deletes = [c for c in changes_done if c['ResourceChange']['Action'] == 'Remove']
+        for delete in deletes:
+            stack.template['Resources'].pop(delete['ResourceChange']['LogicalResourceId'], None)
+
         return changes_done
 
     def prepare_should_deploy_change(self, resource_id, change, stack, new_resources):
@@ -1903,7 +1930,6 @@ class TemplateDeployer(object):
         if action == 'Add':
             result = deploy_resource(resource_id, new_resources, stack_name)
         elif action == 'Remove':
-            old_stack.template['Resources'].pop(resource_id, None)
             result = delete_resource(resource_id, old_stack.resources, stack_name)
         elif action == 'Modify':
             result = update_resource(resource_id, new_resources, stack_name)
