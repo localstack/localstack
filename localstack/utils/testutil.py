@@ -12,7 +12,7 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, ENV_INTERNAL_TEST_RUN)
 from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
-from localstack.services.awslambda.lambda_api import (
+from localstack.services.awslambda.lambda_utils import (
     get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
