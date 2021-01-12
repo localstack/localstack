@@ -6,7 +6,6 @@ from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.responses import LIST_TEMPLATES, CREATE_TEMPLATE
 from moto.ses.models import SESBackend
 from moto.ses.exceptions import MessageRejectedError
-from localstack import config
 from localstack.utils.common import to_str
 from localstack.services.infra import start_moto_server
 
