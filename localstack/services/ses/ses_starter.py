@@ -1,13 +1,17 @@
 import base64
 
 import logging
+import datetime
 from moto.ses.responses import EmailResponse as email_responses
+from moto.ses.responses import LIST_TEMPLATES, CREATE_TEMPLATE
+from moto.ses.models import SESBackend
 from moto.ses.exceptions import MessageRejectedError
 from localstack import config
 from localstack.utils.common import to_str
 from localstack.services.infra import start_moto_server
 
 LOGGER = logging.getLogger(__name__)
+ses_backend = SESBackend()
 
 
 def apply_patches():
@@ -65,6 +69,30 @@ def apply_patches():
         return email_responses_send_email_orig(self)
 
     email_responses.send_email = email_responses_send_email
+
+    create_template_orig = email_responses.create_template
+
+    def create_template(self):
+        template_data = self._get_dict_param("Template")
+        template_info = {}
+        template_info["text_part"] = template_data["._text_part"]
+        template_info["html_part"] = template_data["._html_part"]
+        template_info["template_name"] = template_data["._name"]
+        template_info["subject_part"] = template_data["._subject_part"]
+        template_info["Timestamp"] = datetime.datetime.utcnow().isoformat()
+        ses_backend.add_template(template_info=template_info)
+        self.response_template(CREATE_TEMPLATE)
+        return create_template_orig(self)
+
+    email_responses.create_template = create_template
+
+    def email_responses_list_templates(self):
+        email_templates = ses_backend.list_templates()
+        print(email_templates)
+        template = self.response_template(LIST_TEMPLATES)
+        return template.render(templates=email_templates)
+
+    email_responses.list_templates = email_responses_list_templates
 
 
 def start_ses(port=None, backend_port=None, asynchronous=None):
