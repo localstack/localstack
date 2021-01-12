@@ -532,7 +532,19 @@ def get_topic_arns():
     return [t['TopicArn'] for t in response['Topics']]
 
 
+def expected_change_set_status():
+    return 'CREATE_COMPLETE'
+
+
 class CloudFormationTest(unittest.TestCase):
+    def cleanup(self, stack_name, change_set_name=None):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        if change_set_name:
+            cloudformation.delete_change_set(StackName=stack_name, ChangeSetName=change_set_name)
+
+        resp = cloudformation.delete_stack(StackName=stack_name)
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+
     def test_create_delete_stack(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -792,7 +804,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetName'], change_set_name)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], self.expected_change_set_status())
+        self.assertEqual(rs['Status'], expected_change_set_status())
 
         rs = cloudformation.execute_change_set(
             StackName=stack_name,
@@ -841,7 +853,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetName'], change_set_name)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], self.expected_change_set_status())
+        self.assertEqual(rs['Status'], expected_change_set_status())
 
         rs = cloudformation.execute_change_set(StackName=stack_name, ChangeSetName=change_set_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -992,7 +1004,7 @@ class CloudFormationTest(unittest.TestCase):
         rs = cloudformation.describe_change_set(StackName=stack_name, ChangeSetName=change_set_id)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], self.expected_change_set_status())
+        self.assertEqual(rs['Status'], expected_change_set_status())
 
         iam_client = aws_stack.connect_to_service('iam')
         rs = iam_client.list_roles()
@@ -1033,7 +1045,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(json.loads(rs['Policy']), policy_doc)
 
         # clean up, assert resources deleted
-        self.cleanup(stack_name,)
+        self.cleanup(stack_name)
 
         self.assertFalse(bucket_exists(bucket_name))
         with self.assertRaises(ClientError) as ctx:
@@ -1785,16 +1797,6 @@ class CloudFormationTest(unittest.TestCase):
         # clean up
         self.cleanup(stack_name)
 
-    def cleanup(self, stack_name, change_set_name=None):
-        cloudformation = aws_stack.connect_to_service('cloudformation')
-        if change_set_name:
-            cloudformation.delete_change_set(StackName=stack_name, ChangeSetName=change_set_name)
-        resp = cloudformation.delete_stack(StackName=stack_name)
-        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
-
-    def expected_change_set_status(self):
-        return 'CREATE_COMPLETE'
-
     def test_list_exports_correctly_returns_exports(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
@@ -1814,3 +1816,34 @@ class CloudFormationTest(unittest.TestCase):
 
         # clean up
         self.cleanup(stack_name)
+
+    def test_deploy_stack_with_kms(self):
+        stack_name = 'stack-%s' % short_uid()
+        environment = 'env-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'cdk_template_with_kms.json'))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'Environment',
+                    'ParameterValue': environment
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+
+        resources = cfn.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
+        kmskeys = [res for res in resources if res['ResourceType'] == 'AWS::KMS::Key']
+
+        self.assertEqual(len(kmskeys), 1)
+        self.assertEqual(kmskeys[0]['LogicalResourceId'], 'kmskeystack8A5DBE89')
+        key_id = kmskeys[0]['PhysicalResourceId']
+
+        self.cleanup(stack_name)
+
+        kms = aws_stack.connect_to_service('kms')
+        resp = kms.describe_key(KeyId=key_id)['KeyMetadata']
+        self.assertEqual(resp['KeyState'], 'PendingDeletion')
