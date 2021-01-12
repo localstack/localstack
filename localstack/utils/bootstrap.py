@@ -260,7 +260,7 @@ def setup_logging(log_level=None):
         return
     PLUGINS_LOADED['_logging_'] = True
 
-    log_level = log_level or (logging.DEBUG if is_debug() else logging.INFO)
+    log_level = log_level or (logging.DEBUG if config.DEBUG else logging.INFO)
     logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
 
     # set up werkzeug logger
@@ -272,7 +272,7 @@ def setup_logging(log_level=None):
     root_handlers = logging.getLogger().handlers
     if len(root_handlers) > 0:
         root_handlers[0].addFilter(WerkzeugLogFilter())
-        if is_debug():
+        if config.DEBUG:
             format = '%(asctime)s:API: %(message)s'
             handler = logging.StreamHandler()
             handler.setLevel(logging.INFO)
@@ -679,7 +679,3 @@ def mkdir(folder):
             # Ignore rare 'File exists' race conditions.
             if err.errno != 17:
                 raise
-
-
-def is_debug():
-    return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']
