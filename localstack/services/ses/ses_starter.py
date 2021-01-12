@@ -73,13 +73,13 @@ def apply_patches():
     create_template_orig = email_responses.create_template
 
     def create_template(self):
-        template_data = self._get_dict_param("Template")
+        template_data = self._get_dict_param('Template')
         template_info = {}
-        template_info["text_part"] = template_data["._text_part"]
-        template_info["html_part"] = template_data["._html_part"]
-        template_info["template_name"] = template_data["._name"]
-        template_info["subject_part"] = template_data["._subject_part"]
-        template_info["Timestamp"] = datetime.datetime.utcnow().isoformat()
+        template_info['text_part'] = template_data['._text_part']
+        template_info['html_part'] = template_data['._html_part']
+        template_info['template_name'] = template_data['._name']
+        template_info['subject_part'] = template_data['._subject_part']
+        template_info['Timestamp'] = datetime.datetime.utcnow().isoformat()
         ses_backend.add_template(template_info=template_info)
         self.response_template(CREATE_TEMPLATE)
         return create_template_orig(self)
