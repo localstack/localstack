@@ -88,7 +88,6 @@ def apply_patches():
 
     def email_responses_list_templates(self):
         email_templates = ses_backend.list_templates()
-        print(email_templates)
         template = self.response_template(LIST_TEMPLATES)
         return template.render(templates=email_templates)
 
