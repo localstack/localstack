@@ -944,8 +944,8 @@ def create_function():
     arn = 'n/a'
     try:
         if len(request.data) > FUNCTION_MAX_SIZE:
-            return error_response('Request must be smaller than %s bytes for the CreateFunction operation' %
-                FUNCTION_MAX_SIZE, 413, error_type='RequestEntityTooLargeException')
+            return error_response('Request size (%s) must be smaller than %s bytes for the CreateFunction operation' %
+                (len(request.data), FUNCTION_MAX_SIZE), 413, error_type='RequestEntityTooLargeException')
         data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
         event_publisher.fire_event(event_publisher.EVENT_LAMBDA_CREATE_FUNC,
