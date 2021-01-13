@@ -6,11 +6,11 @@ import json
 import uuid
 import time
 import base64
+import hashlib
 import logging
+import functools
 import threading
 import traceback
-import hashlib
-import functools
 from io import BytesIO
 from datetime import datetime
 from six.moves import cStringIO as StringIO
