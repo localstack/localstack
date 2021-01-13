@@ -4,16 +4,16 @@ import json
 import uuid
 import unittest
 from localstack import config
-from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36
-from localstack.services.events.events_listener import EVENTS_TMP_DIR
-from localstack.services.generic_proxy import ProxyListener
-from localstack.services.infra import start_proxy
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     load_file, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, get_service_protocol
 )
+from localstack.services.infra import start_proxy
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+from localstack.services.generic_proxy import ProxyListener
+from localstack.services.events.events_listener import EVENTS_TMP_DIR
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))

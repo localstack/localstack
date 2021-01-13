@@ -4,7 +4,8 @@ from localstack.constants import APPLICATION_AMZ_JSON_1_1
 from localstack.utils.aws import aws_stack
 from localstack.utils import testutil
 from localstack.utils.common import short_uid, retry
-from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36, func_arn
+from localstack.services.awslambda.lambda_api import func_arn
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from tests.integration.test_lambda import TEST_LAMBDA_PYTHON3, TEST_LAMBDA_NAME_PY3, TEST_LAMBDA_LIBS
 
 

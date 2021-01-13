@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
 from localstack.utils import testutil
 from localstack.utils.testutil import (
     get_lambda_log_events, check_expected_lambda_log_events_length, create_lambda_archive
@@ -26,10 +26,11 @@ from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
+    use_docker, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION, LAMBDA_DEFAULT_HANDLER)
+from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
-    use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11,
-    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION,
-    LAMBDA_DEFAULT_HANDLER)
+    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_NODEJS810,
+    LAMBDA_RUNTIME_PROVIDED)
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -859,7 +860,7 @@ class TestPythonRuntimes(LambdaTestBase):
         # create lambda function
         response = self.lambda_client.create_function(
             FunctionName=lambda_name, Handler='handler.handler',
-            Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1',
             Code={
                 'S3Bucket': bucket_name,
                 'S3Key': bucket_key
@@ -909,7 +910,7 @@ class TestPythonRuntimes(LambdaTestBase):
         # create lambda function
         self.lambda_client.create_function(
             FunctionName=lambda_name, Handler='handler.handler',
-            Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1',
             Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
 

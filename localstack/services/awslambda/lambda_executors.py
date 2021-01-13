@@ -26,31 +26,13 @@ from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_q
 from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
 from localstack.utils.aws.lambda_destinations import lambda_result_to_destination
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
+from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_PROVIDED)
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = 'cloud.localstack.LambdaExecutor'
 EVENT_FILE_PATTERN = '%s/lambda.event.*.json' % config.TMP_FOLDER
-
-LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
-LAMBDA_RUNTIME_PYTHON36 = 'python3.6'
-LAMBDA_RUNTIME_PYTHON37 = 'python3.7'
-LAMBDA_RUNTIME_PYTHON38 = 'python3.8'
-LAMBDA_RUNTIME_NODEJS = 'nodejs'
-LAMBDA_RUNTIME_NODEJS43 = 'nodejs4.3'
-LAMBDA_RUNTIME_NODEJS610 = 'nodejs6.10'
-LAMBDA_RUNTIME_NODEJS810 = 'nodejs8.10'
-LAMBDA_RUNTIME_NODEJS10X = 'nodejs10.x'
-LAMBDA_RUNTIME_NODEJS12X = 'nodejs12.x'
-LAMBDA_RUNTIME_JAVA8 = 'java8'
-LAMBDA_RUNTIME_JAVA11 = 'java11'
-LAMBDA_RUNTIME_DOTNETCORE2 = 'dotnetcore2.0'
-LAMBDA_RUNTIME_DOTNETCORE21 = 'dotnetcore2.1'
-LAMBDA_RUNTIME_DOTNETCORE31 = 'dotnetcore3.1'
-LAMBDA_RUNTIME_GOLANG = 'go1.x'
-LAMBDA_RUNTIME_RUBY = 'ruby'
-LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
-LAMBDA_RUNTIME_PROVIDED = 'provided'
 
 LAMBDA_SERVER_UNIQUE_PORTS = 500
 LAMBDA_SERVER_PORT_OFFSET = 5000
