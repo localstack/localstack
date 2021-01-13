@@ -1,9 +1,9 @@
 import base64
 
-import types
 import logging
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.responses import ses_backend, LIST_TEMPLATES
+from moto.ses.exceptions import MessageRejectedError
 from localstack.utils.common import to_str
 from localstack.services.infra import start_moto_server
 
@@ -79,6 +79,7 @@ def apply_patches():
         return email_responses_list_templates_orig(self)
 
     email_responses.list_templates = list_templates
+
 
 def start_ses(port=None, backend_port=None, asynchronous=None):
     apply_patches()
