@@ -1847,3 +1847,30 @@ class CloudFormationTest(unittest.TestCase):
         kms = aws_stack.connect_to_service('kms')
         resp = kms.describe_key(KeyId=key_id)['KeyMetadata']
         self.assertEqual(resp['KeyState'], 'PendingDeletion')
+
+    def test_deploy_stack_with_sub_select_and_sub_getaz(self):
+        stack_name = 'stack-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template28.yaml'))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template
+        )
+        await_stack_completion(stack_name)
+
+        exports = cfn.list_exports()['Exports']
+        self.assertEqual(exports[0]['Name'], 'public-sn-a')
+
+        subnet_id = exports[0]['Value']
+
+        ec2_client = aws_stack.connect_to_service('ec2')
+        subnets = ec2_client.describe_subnets(SubnetIds=[subnet_id])['Subnets']
+        self.assertEqual(len(subnets), 1)
+
+        sns_client = aws_stack.connect_to_service('sns')
+        resp = sns_client.list_topics()
+        topic_arns = [tp['TopicArn'] for tp in resp['Topics']]
+        self.assertIn(aws_stack.sns_topic_arn('companyname-slack-topic'), topic_arns)
+
+        self.cleanup(stack_name)

@@ -1046,6 +1046,14 @@ def resolve_refs_recursively(stack_name, value, resources):
             string = resolve_refs_recursively(stack_name, string, resources)
             return string.split(delimiter)
 
+        if stripped_fn_lower == 'getazs':
+            region = resolve_refs_recursively(stack_name, value['Fn::GetAZs'], resources) or aws_stack.get_region()
+            azs = []
+            for az in ('a', 'b', 'c', 'd'):
+                azs.append('%s%s' % (region, az))
+
+            return azs
+
         if stripped_fn_lower == 'base64':
             value_to_encode = value[keys_list[0]]
             value_to_encode = resolve_refs_recursively(stack_name, value_to_encode, resources)
