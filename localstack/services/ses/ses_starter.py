@@ -1,6 +1,7 @@
 import base64
 
 import logging
+import datetime
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.responses import ses_backend, LIST_TEMPLATES
 from moto.ses.exceptions import MessageRejectedError
@@ -73,9 +74,8 @@ def apply_patches():
     def list_templates(self):
         email_templates = ses_backend.list_templates()
         for template in email_templates:
-            template['Timestamp'] = template['Timestamp'].isoformat()
-        template = self.response_template(LIST_TEMPLATES)
-        template.render(templates=email_templates)
+            if isinstance(template['Timestamp'], (date, datetime)):
+                template['Timestamp'] = template['Timestamp'].isoformat()
         return email_responses_list_templates_orig(self)
 
     email_responses.list_templates = list_templates
