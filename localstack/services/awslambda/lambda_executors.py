@@ -785,6 +785,8 @@ class LambdaExecutorLocal(LambdaExecutor):
         result = result.result if isinstance(result, InvocationResult) else result
 
         if error:
+            LOG.info('Error executing Lambda "%s": %s %s' % (func_arn, error,
+                ''.join(traceback.format_tb(error.__traceback__))))
             raise InvocationException(result, log_output)
 
         invocation_result = InvocationResult(result, log_output=log_output)

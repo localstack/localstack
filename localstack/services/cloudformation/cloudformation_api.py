@@ -194,10 +194,16 @@ class Stack(object):
         return result
 
     def stack_parameters(self, defaults=True):
-        result = {p['ParameterKey']: p for p in self.metadata['Parameters']}
+        result = {}
+        # add default template parameter values
         if defaults:
             for key, value in self.template_parameters.items():
-                result[key] = result.get(key) or {'ParameterKey': key, 'ParameterValue': value.get('Default')}
+                result[key] = {'ParameterKey': key, 'ParameterValue': value.get('Default')}
+        # add stack parameters
+        result.update({p['ParameterKey']: p for p in self.metadata['Parameters']})
+        # add parameters of change sets
+        for change_set in self.change_sets:
+            result.update({p['ParameterKey']: p for p in change_set.metadata['Parameters']})
         result = list(result.values())
         return result
 
