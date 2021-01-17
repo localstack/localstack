@@ -1860,13 +1860,26 @@ class CloudFormationTest(unittest.TestCase):
         await_stack_completion(stack_name)
 
         exports = cfn.list_exports()['Exports']
-        self.assertEqual(exports[0]['Name'], 'public-sn-a')
 
-        subnet_id = exports[0]['Value']
+        subnets = [export for export in exports if export['Name'] == 'public-sn-a']
+        instances = [export for export in exports if export['Name'] == 'RegmonEc2InstanceId']
+
+        self.assertEqual(len(subnets), 1)
+        self.assertEqual(len(instances), 1)
+
+        subnet_id = subnets[0]['Value']
+        instance_id = instances[0]['Value']
 
         ec2_client = aws_stack.connect_to_service('ec2')
-        subnets = ec2_client.describe_subnets(SubnetIds=[subnet_id])['Subnets']
-        self.assertEqual(len(subnets), 1)
+        resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
+        self.assertEqual(len(resp['Subnets']), 1)
+
+        resp = ec2_client.describe_instances(
+            InstanceIds=[
+                instance_id
+            ]
+        )
+        self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
 
         sns_client = aws_stack.connect_to_service('sns')
         resp = sns_client.list_topics()
