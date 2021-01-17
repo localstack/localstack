@@ -112,9 +112,13 @@ class RegionBackend(object):
             # maps region name to region backend instance
             cls.REGIONS = {}
 
-        region = region or aws_stack.get_region()
+        region = region or cls.get_current_request_region()
         cls.REGIONS[region] = cls.REGIONS.get(region) or cls()
         return cls.REGIONS[region]
+
+    @classmethod
+    def get_current_request_region(cls):
+        return aws_stack.get_region()
 
 
 # ---------------------

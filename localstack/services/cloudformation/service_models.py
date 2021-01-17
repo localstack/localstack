@@ -56,10 +56,6 @@ class GenericBaseModel(CloudFormationModel):
     # ABSTRACT BASE METHODS
     # ----------------------
 
-    def set_resource_state(self, state):
-        """ Return the deployment state of this resource. """
-        self.state = state or {}
-
     def get_resource_name(self):
         """ Return the name of this resource, based on its properties (to be overwritten by subclasses) """
         return None
@@ -77,6 +73,11 @@ class GenericBaseModel(CloudFormationModel):
     def update_resource(self, new_resource, stack_name, resources):
         """ Update the deployment of this resource, using the updated properties (implemented by subclasses). """
         pass
+
+    @classmethod
+    def cloudformation_type(cls):
+        """ Return the CloudFormation resource type name, e.g., "AWS::S3::Bucket" (implemented by subclasses). """
+        return super(GenericBaseModel, cls).cloudformation_type()
 
     @staticmethod
     def get_deploy_templates():
@@ -104,6 +105,10 @@ class GenericBaseModel(CloudFormationModel):
     # ----------------------
     # GENERIC UTIL METHODS
     # ----------------------
+
+    def set_resource_state(self, state):
+        """ Set the deployment state of this resource. """
+        self.state = state or {}
 
     def update_state(self, details):
         """ Update the deployment state of this resource (existing attributes will be overwritten). """

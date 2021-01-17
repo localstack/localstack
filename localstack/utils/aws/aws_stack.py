@@ -294,11 +294,14 @@ def check_valid_region(headers):
         raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
 
 
-def set_default_region_in_headers(headers):
+def set_default_region_in_headers(headers, service=None, region=None):
     auth_header = headers.get('Authorization')
+    region = region or get_region()
     if not auth_header:
+        if service:
+            headers['Authorization'] = mock_aws_request_headers(service, region_name=region)['Authorization']
         return
-    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % get_region(), auth_header)
+    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % region, auth_header)
     headers['Authorization'] = replaced
 
 
