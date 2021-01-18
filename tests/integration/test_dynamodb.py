@@ -464,6 +464,11 @@ class TestDynamoDB(unittest.TestCase):
         table_list = dynamodb.list_tables()
         self.assertEqual(tables_before, len(table_list['TableNames']))
 
+        try:
+            dynamodb.delete_table(TableName=table_name)
+        except Exception as e:
+            self.assertEqual('ResourceNotFoundException' in str(e), True)
+
     def test_transaction_write_items(self):
         table_name = 'test-ddb-table-%s' % short_uid()
         dynamodb = aws_stack.connect_to_service('dynamodb')

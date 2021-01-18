@@ -349,14 +349,15 @@ class ProxyListenerDynamoDB(ProxyListener):
             return
 
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
-            table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn')
-            event_publisher.fire_event(
-                event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
-                payload={'n': event_publisher.get_hash(table_name)}
-            )
-            self.delete_all_event_source_mappings(table_arn)
-            dynamodbstreams_api.delete_streams(table_arn)
-            TABLE_TAGS.pop(table_arn, None)
+            if response.status_code == 200:
+                table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn')
+                event_publisher.fire_event(
+                    event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
+                    payload={'n': event_publisher.get_hash(table_name)}
+                )
+                self.delete_all_event_source_mappings(table_arn)
+                dynamodbstreams_api.delete_streams(table_arn)
+                TABLE_TAGS.pop(table_arn, None)
             return
 
         elif action == '%s.UpdateTable' % ACTION_PREFIX:
