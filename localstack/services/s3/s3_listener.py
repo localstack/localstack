@@ -12,6 +12,7 @@ import collections
 import dateutil.parser
 import urllib.parse
 import six
+import functools
 import botocore.config
 from pytz import timezone
 from urllib.parse import parse_qs
@@ -576,6 +577,57 @@ def fix_delimiter(data, headers, response):
             pattern = pattern.encode()
         if c.startswith(xml_prefix):
             response._content = re.compile(pattern).sub(delimiter, c)
+
+
+def fix_sorting_versions(method, parsed, response):
+
+    try:
+        if method != 'GET':
+            return
+
+        if not parsed or not parsed.query or 'versions' not in parsed.query:
+            return
+        try:
+            content = to_str(response._content)
+        except Exception:
+            # return in case of conversion errors
+            return
+
+        if not content or '<ListVersionsResult' not in content:
+            return
+
+        parsed = xmltodict.parse(content).get('ListVersionsResult')
+        if not isinstance(parsed.get('Version'), list):
+            return
+
+        result = list(parsed.get('Version'))
+
+        def compare(item1, item2):
+            # sort based on key in ascending order
+            if item1['Key'] < item2['Key']:
+                return -1
+            elif item1['Key'] > item2['Key']:
+                return 1
+            else:
+                # sort based on last modified in descending order
+                t1 = time.mktime(datetime.datetime.strptime(item1['LastModified'], '%Y-%m-%dT%H:%M:%S.%fZ').timetuple())
+                t2 = time.mktime(datetime.datetime.strptime(item2['LastModified'], '%Y-%m-%dT%H:%M:%S.%fZ').timetuple())
+                if t1 > t2:
+                    return -1
+                elif t1 < t2:
+                    return 1
+                else:
+                    # sort based on latest
+                    if item1['IsLatest'] == 'true':
+                        return -1
+                    elif item2['IsLatest'] == 'true':
+                        return 1
+            return 0
+
+        parsed['Version'] = sorted(result, key=functools.cmp_to_key(compare))
+        response._content = xmltodict.unparse({'ListVersionsResult': parsed})
+    except Exception:
+        return
 
 
 def convert_to_chunked_encoding(method, path, response):
@@ -1327,6 +1379,7 @@ class ProxyListenerS3(PersistingProxyListener):
             ret304_on_etag(data, headers, response)
             append_aws_request_troubleshooting_headers(response)
             fix_delimiter(data, headers, response)
+            fix_sorting_versions(method, parsed, response)
 
             if method == 'PUT':
                 set_object_expiry(path, headers)

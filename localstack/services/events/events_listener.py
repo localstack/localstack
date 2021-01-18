@@ -60,7 +60,8 @@ def get_scheduled_rule_func(data):
         for target in targets:
             arn = target.get('Arn')
             event = json.loads(target.get('Input') or '{}')
-            aws_stack.send_event_to_target(arn, event)
+            attr = aws_stack.get_events_target_attributes(target)
+            aws_stack.send_event_to_target(arn, event, target_attributes=attr)
     return func
 
 

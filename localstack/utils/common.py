@@ -746,6 +746,28 @@ def cp_r(src, dst):
     return shutil.copytree(src, dst, dirs_exist_ok=True)
 
 
+def disk_usage(path, include_hidden=False):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            # skip if it is symbolic link
+            if not os.path.islink(fp):
+                total_size += os.path.getsize(fp)
+    return total_size
+
+
+def format_bytes(count, default='n/a'):
+    if not is_number(count) or count < 0:
+        return default
+    cnt = float(count)
+    for unit in ('B', 'KB', 'MB', 'GB', 'TB'):
+        if cnt < 1000:
+            return '%s%s' % (format_number(cnt, decimals=3), unit)
+        cnt = cnt / 1000.0
+    return count
+
+
 def download(url, path, verify_ssl=True):
     """Downloads file at url to the given path"""
     # make sure we're creating a new session here to
@@ -802,6 +824,10 @@ def parse_request_data(method, path, data):
 
 def first_char_to_lower(s):
     return '%s%s' % (s[0].lower(), s[1:])
+
+
+def format_number(number, decimals=2):
+    return ('{0:.%sg}' % decimals).format(number)
 
 
 def is_number(s):

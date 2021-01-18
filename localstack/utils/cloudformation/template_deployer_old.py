@@ -835,11 +835,6 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
                 raise Exception('ResourceNotFound')
             return mapping[0]
 
-        elif resource_type == 'Events::Rule':
-            rule_name = resolve_refs_recursively(stack_name, resource_props.get('Name'), resources)
-            result = aws_stack.connect_to_service('events').describe_rule(Name=rule_name) or {}
-            return result if result.get('Name') else None
-
         elif resource_type == 'IAM::Role':
             role_name = resolve_refs_recursively(stack_name, resource_props.get('RoleName'), resources)
             return aws_stack.connect_to_service('iam').get_role(RoleName=role_name)['Role']

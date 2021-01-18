@@ -5,7 +5,7 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, clone, retry, short_uid
 from localstack.services.awslambda import lambda_api
-from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from .lambdas import lambda_environment
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))

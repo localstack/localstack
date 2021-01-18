@@ -194,10 +194,16 @@ class Stack(object):
         return result
 
     def stack_parameters(self, defaults=True):
-        result = {p['ParameterKey']: p for p in self.metadata['Parameters']}
+        result = {}
+        # add default template parameter values
         if defaults:
             for key, value in self.template_parameters.items():
-                result[key] = result.get(key) or {'ParameterKey': key, 'ParameterValue': value.get('Default')}
+                result[key] = {'ParameterKey': key, 'ParameterValue': value.get('Default')}
+        # add stack parameters
+        result.update({p['ParameterKey']: p for p in self.metadata['Parameters']})
+        # add parameters of change sets
+        for change_set in self.change_sets:
+            result.update({p['ParameterKey']: p for p in change_set.metadata['Parameters']})
         result = list(result.values())
         return result
 
@@ -389,7 +395,7 @@ def list_stack_resources(req_params):
 def create_change_set(req_params):
     stack_name = req_params.get('StackName')
     template_deployer.prepare_template_body(req_params)
-    template = template_preparer.parse_template(req_params['TemplateBody'])
+    template = template_preparer.parse_template(req_params.pop('TemplateBody'))
     template['StackName'] = stack_name
     template['ChangeSetName'] = req_params.get('ChangeSetName')
     stack = existing = find_stack(stack_name)
@@ -398,7 +404,8 @@ def create_change_set(req_params):
         state = CloudFormationRegion.get()
         empty_stack_template = dict(template)
         empty_stack_template['Resources'] = {}
-        stack = Stack(clone(req_params), empty_stack_template)
+        req_params_copy = clone_stack_params(req_params)
+        stack = Stack(req_params_copy, empty_stack_template)
         state.stacks[stack.stack_id] = stack
         stack.set_stack_status('CREATE_COMPLETE')
     change_set = StackChangeSet(req_params, template)
@@ -565,6 +572,14 @@ def error_response(*args, **kwargs):
 def stack_not_found_error(stack_name):
     return error_response('Unable to find stack named "%s"' % stack_name,
         code=404, code_string='ResourceNotFoundException')
+
+
+def clone_stack_params(stack_params):
+    try:
+        return clone(stack_params)
+    except Exception as e:
+        LOG.info('Unable to clone stack parameters: %s' % e)
+        return stack_params
 
 
 def find_stack(stack_name):

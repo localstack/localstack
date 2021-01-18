@@ -20,7 +20,7 @@ from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
@@ -1046,6 +1046,23 @@ class S3ListenerTest(unittest.TestCase):
 
         result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
         self.assertEqual(result['Status'], 'Enabled')
+
+    def test_get_bucket_versioning_order(self):
+        bucket_name = 'version-order-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test2', Body='body')
+        rs = self.s3_client.list_object_versions(
+            Bucket=bucket_name,
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['Name'], bucket_name)
+        self.assertEqual(rs['Versions'][0]['IsLatest'], True)
+        self.assertEqual(rs['Versions'][2]['IsLatest'], True)
 
     def test_upload_big_file(self):
         bucket_name = 'bucket-big-file-%s' % short_uid()

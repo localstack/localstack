@@ -112,6 +112,12 @@ def _fix_dlq_arn_in_attributes(req_data):
         return attrs
 
 
+def _fix_redrive_policy(match):
+    result = '<Attribute><Name>RedrivePolicy</Name><Value>{%s}</Value></Attribute>' % (
+        match.group(1).replace(' ', ''))
+    return result
+
+
 def _add_queue_attributes(path, req_data, content_str, headers):
     # TODO remove this function if we stop using ElasticMQ entirely
     if SQS_BACKEND_IMPL != 'elasticmq':
@@ -312,6 +318,11 @@ class ProxyListenerSQS(PersistingProxyListener):
         # patch the response and add missing attributes
         if action == 'GetQueueAttributes':
             content_str = _add_queue_attributes(path, req_data, content_str, headers)
+
+        name = r'<Name>\s*RedrivePolicy\s*<\/Name>'
+        value = r'<Value>\s*{(.*)}\s*<\/Value>'
+        for p1, p2 in ((name, value), (value, name)):
+            content_str = re.sub(r'<Attribute>\s*%s\s*%s\s*<\/Attribute>' % (p1, p2), _fix_redrive_policy, content_str)
 
         # patch the response and return the correct endpoint URLs / ARNs
         if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes', 'ListDeadLetterSourceQueues'):
