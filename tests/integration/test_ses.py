@@ -1,4 +1,3 @@
-import json
 import unittest
 
 from datetime import date, datetime
@@ -20,7 +19,7 @@ class SESTest(unittest.TestCase):
         client.create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
         # Should not fail after 2 consecutive tries
         client.list_templates()
-        templ_list = json.loads(client.list_templates())['TemplatesMetadata']
+        templ_list = client.list_templates()['TemplatesMetadata']
         self.assertEqual(1, len(templ_list))
 
         template = templ_list[0]
