@@ -75,7 +75,8 @@ def apply_patches():
         email_templates = ses_backend.list_templates()
         for template in email_templates:
             if isinstance(template['Timestamp'], (date, datetime)):
-                template['Timestamp'] = template['Timestamp'].isoformat()
+                # Hack to change the last digits to Java SDKv2 compatible format
+                template['Timestamp'] = template['Timestamp'].isoformat()[:-3]+'Z'
         return email_responses_list_templates_orig(self)
 
     email_responses.list_templates = list_templates

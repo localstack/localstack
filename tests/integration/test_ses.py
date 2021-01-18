@@ -17,7 +17,10 @@ class SESTest(unittest.TestCase):
 
         client = aws_stack.connect_to_service('ses')
         client.create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
-        templ_list = client.list_templates()
+        
+        # Should not fail after 2 consecutive tries
+        client.list_templates()['TemplatesMetadata']
+        templ_list = client.list_templates()['TemplatesMetadata']
         self.assertEqual(1, len(templ_list))
 
         template = templ_list[0]
@@ -26,20 +29,12 @@ class SESTest(unittest.TestCase):
         self.assertEqual(template['TextPart'], TEST_TEMPLATE_ATTRIBUTES['TextPart'])
         self.assertEqual(template['HtmlPart'], TEST_TEMPLATE_ATTRIBUTES['HtmlPart'])
 
-        self.assertTrue(type(template['Timestamp']) is not (date, datetime))
         self.assertTrue(type(template['Timestamp']) is str)
-        self.assertIn('T', template['Timestamp'])
+        self.assertFalse(type(template['Timestamp']) is (date, datetime))
 
-        # Fails after 2 consecutive calls to list_templates
-        templ_list = self.client.list_templates()
-        self.assertEqual(1, len(templ_list))
-
-        template = templ_list[0]
-        self.assertEqual(template['TemplateName'], TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
-        self.assertEqual(template['SubjectPart'], TEST_TEMPLATE_ATTRIBUTES['SubjectPart'])
-        self.assertEqual(template['TextPart'], TEST_TEMPLATE_ATTRIBUTES['TextPart'])
-        self.assertEqual(template['HtmlPart'], TEST_TEMPLATE_ATTRIBUTES['HtmlPart'])
-
-        self.assertTrue(type(template['Timestamp']) is not (date, datetime))
-        self.assertTrue(type(template['Timestamp']) is str)
-        self.assertIn('T', template['Timestamp'])
+        # Validate Java SDKv2 Timestamp
+        try:
+            strptime_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+            datetime.strptime(template['Timestamp'], strptime_format)
+        except ValueError:
+            return False
