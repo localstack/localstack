@@ -597,6 +597,21 @@ RESOURCE_TO_FUNCTION = {
                 'Attributes': sns_subscription_params
             }
         }
+    },
+    'KMS::Key': {
+        'create': {
+            'function': 'create_key',
+            'parameters': {
+                'Policy': 'KeyPolicy'
+            }
+        },
+        'delete': {
+            # TODO Key need to be deleted in KMS backend
+            'function': 'schedule_key_deletion',
+            'parameters': {
+                'KeyId': 'PhysicalResourceId'
+            }
+        }
     }
 }
 
@@ -720,7 +735,6 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     if resource_props is None:
         raise Exception('Unable to find properties for resource "%s": %s %s' % (resource_id, resource, resources))
     try:
-
         # try to look up resource class
         canonical_type = canonical_resource_type(resource_type)
         resource_class = RESOURCE_MODELS.get(canonical_type)
@@ -1032,6 +1046,14 @@ def resolve_refs_recursively(stack_name, value, resources):
             string = resolve_refs_recursively(stack_name, string, resources)
             return string.split(delimiter)
 
+        if stripped_fn_lower == 'getazs':
+            region = resolve_refs_recursively(stack_name, value['Fn::GetAZs'], resources) or aws_stack.get_region()
+            azs = []
+            for az in ('a', 'b', 'c', 'd'):
+                azs.append('%s%s' % (region, az))
+
+            return azs
+
         if stripped_fn_lower == 'base64':
             value_to_encode = value[keys_list[0]]
             value_to_encode = resolve_refs_recursively(stack_name, value_to_encode, resources)
@@ -1253,6 +1275,12 @@ def fix_resource_props_for_sdk_deployment(resource_type, resource_props):
         # https://github.com/localstack/localstack/issues/3004
         if 'ReceiveMessageWaitTimeSeconds' in resource_props:
             resource_props['ReceiveMessageWaitTimeSeconds'] = int(resource_props['ReceiveMessageWaitTimeSeconds'])
+
+    if resource_type == 'KMS::Key':
+        resource_props['KeyPolicy'] = json.dumps(resource_props.get('KeyPolicy', {}))
+        resource_props['Enabled'] = resource_props.get('Enabled', True)
+        resource_props['EnableKeyRotation'] = resource_props.get('EnableKeyRotation', False)
+        resource_props['Description'] = resource_props.get('Description', '')
 
 
 def configure_resource_via_sdk(resource_id, resources, resource_type, func_details, stack_name, action_name):
@@ -1539,6 +1567,7 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
     if result is not None:
         # note that value could be an empty string here (in case of Parameter values)
         return result
+
     LOG.info('Unable to determine PhysicalResourceId for "%s" resource, ID "%s"' % (resource_type, resource_id))
 
 
@@ -1551,6 +1580,10 @@ def update_resource_details(stack, resource_id, details):
     resource_props = resource.get('Properties', {})
     if resource_type == 'ApiGateway::RestApi':
         resource_props['id'] = details['id']
+
+    if resource_type == 'KMS::Key':
+        resource['PhysicalResourceId'] = details['KeyMetadata']['KeyId']
+
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
         stack.moto_resource_statuses[resource_id] = details
@@ -1770,6 +1803,7 @@ class TemplateDeployer(object):
         update_resource_details(stack, resource_id, result)
         # update physical resource id
         resource = stack.resources[resource_id]
+
         physical_id = resource.get('PhysicalResourceId')
         physical_id = physical_id or determine_resource_physical_id(resource_id, stack=stack)
         if not resource.get('PhysicalResourceId') or action == 'UPDATE':
@@ -1936,4 +1970,5 @@ class TemplateDeployer(object):
         # update resource status and physical resource id
         stack_action = {'Add': 'CREATE', 'Remove': 'DELETE', 'Modify': 'UPDATE'}.get(action)
         self.update_resource_details(resource_id, result, stack=old_stack, action=stack_action)
+
         return result

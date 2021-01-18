@@ -5,11 +5,10 @@ import unittest
 import mock
 import time
 import datetime
+from localstack.constants import LAMBDA_TEST_ROLE
 from localstack.utils.common import save_file, new_tmp_dir, mkdir
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.constants import LAMBDA_TEST_ROLE
-
 
 TEST_EVENT_SOURCE_ARN = 'arn:aws:sqs:eu-west-1:000000000000:testq'
 
@@ -54,14 +53,16 @@ class TestLambdaAPI(unittest.TestCase):
                 result['message'])
 
     def test_get_event_source_mapping(self):
+        region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
-            lambda_api.EVENT_SOURCE_MAPPINGS.append({'UUID': self.TEST_UUID})
+            region.event_source_mappings.append({'UUID': self.TEST_UUID})
             result = lambda_api.get_event_source_mapping(self.TEST_UUID)
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
 
     def test_get_event_sources(self):
+        region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
-            lambda_api.EVENT_SOURCE_MAPPINGS.append(
+            region.event_source_mappings.append(
                 {
                     'UUID': self.TEST_UUID,
                     'EventSourceArn': 'the_arn'
@@ -77,8 +78,9 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(len(result), 0)
 
     def test_get_event_sources_with_paths(self):
+        region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
-            lambda_api.EVENT_SOURCE_MAPPINGS.append(
+            region.event_source_mappings.append(
                 {
                     'UUID': self.TEST_UUID,
                     'EventSourceArn': 'the_arn/path/subpath'
@@ -91,11 +93,12 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(len(result), 1)
 
     def test_delete_event_source_mapping(self):
+        region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
-            lambda_api.EVENT_SOURCE_MAPPINGS.append({'UUID': self.TEST_UUID})
+            region.event_source_mappings.append({'UUID': self.TEST_UUID})
             result = lambda_api.delete_event_source_mapping(self.TEST_UUID)
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
-            self.assertEqual(0, len(lambda_api.EVENT_SOURCE_MAPPINGS))
+            self.assertEqual(0, len(region.event_source_mappings))
 
     def test_invoke_RETURNS_415_WHEN_not_json_input(self):
         with self.app.test_request_context() as context:
@@ -711,23 +714,25 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual(date_part, today)
 
     def _create_function(self, function_name, tags={}):
+        region = lambda_api.LambdaRegion.get()
         arn = lambda_api.func_arn(function_name)
-        lambda_api.ARN_TO_LAMBDA[arn] = LambdaFunction(arn)
-        lambda_api.ARN_TO_LAMBDA[arn].versions = {
+        region.lambdas[arn] = LambdaFunction(arn)
+        region.lambdas[arn].versions = {
             '$LATEST': {'CodeSize': self.CODE_SIZE, 'CodeSha256': self.CODE_SHA_256, 'RevisionId': self.REVISION_ID}
         }
-        lambda_api.ARN_TO_LAMBDA[arn].handler = self.HANDLER
-        lambda_api.ARN_TO_LAMBDA[arn].runtime = self.RUNTIME
-        lambda_api.ARN_TO_LAMBDA[arn].timeout = self.TIMEOUT
-        lambda_api.ARN_TO_LAMBDA[arn].tags = tags
-        lambda_api.ARN_TO_LAMBDA[arn].envvars = {}
-        lambda_api.ARN_TO_LAMBDA[arn].last_modified = self.LAST_MODIFIED
-        lambda_api.ARN_TO_LAMBDA[arn].role = self.ROLE
-        lambda_api.ARN_TO_LAMBDA[arn].memory_size = self.MEMORY_SIZE
+        region.lambdas[arn].handler = self.HANDLER
+        region.lambdas[arn].runtime = self.RUNTIME
+        region.lambdas[arn].timeout = self.TIMEOUT
+        region.lambdas[arn].tags = tags
+        region.lambdas[arn].envvars = {}
+        region.lambdas[arn].last_modified = self.LAST_MODIFIED
+        region.lambdas[arn].role = self.ROLE
+        region.lambdas[arn].memory_size = self.MEMORY_SIZE
 
     def _update_function_code(self, function_name, tags={}):
+        region = lambda_api.LambdaRegion.get()
         arn = lambda_api.func_arn(function_name)
-        lambda_api.ARN_TO_LAMBDA[arn].versions.update({
+        region.lambdas[arn].versions.update({
             '$LATEST': {'CodeSize': self.CODE_SIZE,
             'CodeSha256': self.UPDATED_CODE_SHA_256,
             'RevisionId': self.REVISION_ID}
