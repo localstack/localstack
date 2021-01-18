@@ -2,7 +2,6 @@ import time
 import json
 import six
 from datetime import datetime
-from localstack.utils.common import isoformat_milliseconds
 
 if six.PY3:
     long = int
@@ -206,7 +205,7 @@ class LambdaFunction(Component):
 
     def get_function_event_invoke_config(self):
         response = {
-            'LastModified': str(self.last_modified),
+            'LastModified': float(time.mktime(self.last_modified.timetuple())),
             'FunctionArn': str(self.id),
         }
 
@@ -280,7 +279,7 @@ class LambdaFunction(Component):
             updated = True
 
         if updated:
-            self.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+            self.last_modified = datetime.utcnow()
 
         return self
 
