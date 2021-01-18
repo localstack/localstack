@@ -20,7 +20,7 @@ from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'

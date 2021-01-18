@@ -73,6 +73,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **ElastiCache**
 * **EMR**
 * **Glacier** / **S3 Select**
+* **IAM Security Policy Enforcement**
 * **IoT**
 * **Kinesis Data Analytics**
 * **Lambda Layers**

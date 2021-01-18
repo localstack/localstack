@@ -20,7 +20,7 @@ from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_lin
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.bootstrap import (
-    setup_logging, is_debug, canonicalize_api_names, load_plugins, in_ci)
+    setup_logging, canonicalize_api_names, load_plugins, in_ci)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
@@ -261,7 +261,7 @@ def register_signal_handlers():
 def do_run(cmd, asynchronous, print_output=None, env_vars={}):
     sys.stdout.flush()
     if asynchronous:
-        if is_debug() and print_output is None:
+        if config.DEBUG and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
         t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)

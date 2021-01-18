@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
 from localstack.utils import testutil
 from localstack.utils.testutil import (
     get_lambda_log_events, check_expected_lambda_log_events_length, create_lambda_archive
@@ -26,10 +26,11 @@ from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
+    use_docker, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION, LAMBDA_DEFAULT_HANDLER)
+from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
-    use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11,
-    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION,
-    LAMBDA_DEFAULT_HANDLER)
+    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_NODEJS810,
+    LAMBDA_RUNTIME_PROVIDED)
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -251,7 +252,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
     def test_success_failure_destination(self):
 
-        def test_destination(lambda_error=0):
+        def test_destination(success=False):
 
             sqs_client = aws_stack.connect_to_service('sqs')
             lambda_client = aws_stack.connect_to_service('lambda')
@@ -262,8 +263,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
             queue_arn = aws_stack.sqs_queue_arn(queue_name)
             testutil.create_lambda_function(
-                handler_file=TEST_LAMBDA_ECHO_FILE,
+                handler_file=TEST_LAMBDA_PYTHON,
                 func_name=lambda_name,
+                libs=TEST_LAMBDA_LIBS,
                 runtime=LAMBDA_RUNTIME_PYTHON36
             )
 
@@ -281,22 +283,32 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
             # invoke Lambda, triggering an error
             payload = {
-                lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: lambda_error
+                lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1
             }
+
+            # expected condition
+            condition = 'RetriesExhausted'
+
+            if success:
+                condition = 'Success'
+                payload = {}
             lambda_client.invoke(FunctionName=lambda_name,
                                 Payload=json.dumps(payload), InvocationType='Event')
 
             def receive_message():
                 rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
                 self.assertGreater(len(rs['Messages']), 0)
+                msg = rs['Messages'][0]['Body']
+                msg = json.loads(msg)
+                self.assertEqual(msg['requestContext']['condition'], condition)
 
-            retry(receive_message, retries=3, sleep=2)
+            retry(receive_message, retries=5, sleep=2)
             # clean up
             sqs_client.delete_queue(QueueUrl=queue_url)
             lambda_client.delete_function(FunctionName=lambda_name)
 
-        test_destination(lambda_error=0)
-        test_destination(lambda_error=1)
+        test_destination(success=True)
+        test_destination(success=False)
 
     def test_add_lambda_permission(self):
         function_name = 'lambda_func-{}'.format(short_uid())
@@ -859,7 +871,7 @@ class TestPythonRuntimes(LambdaTestBase):
         # create lambda function
         response = self.lambda_client.create_function(
             FunctionName=lambda_name, Handler='handler.handler',
-            Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1',
             Code={
                 'S3Bucket': bucket_name,
                 'S3Key': bucket_key
@@ -909,7 +921,7 @@ class TestPythonRuntimes(LambdaTestBase):
         # create lambda function
         self.lambda_client.create_function(
             FunctionName=lambda_name, Handler='handler.handler',
-            Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1',
             Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
 

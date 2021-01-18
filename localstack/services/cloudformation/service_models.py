@@ -56,10 +56,6 @@ class GenericBaseModel(CloudFormationModel):
     # ABSTRACT BASE METHODS
     # ----------------------
 
-    def set_resource_state(self, state):
-        """ Return the deployment state of this resource. """
-        self.state = state or {}
-
     def get_resource_name(self):
         """ Return the name of this resource, based on its properties (to be overwritten by subclasses) """
         return None
@@ -77,6 +73,11 @@ class GenericBaseModel(CloudFormationModel):
     def update_resource(self, new_resource, stack_name, resources):
         """ Update the deployment of this resource, using the updated properties (implemented by subclasses). """
         pass
+
+    @classmethod
+    def cloudformation_type(cls):
+        """ Return the CloudFormation resource type name, e.g., "AWS::S3::Bucket" (implemented by subclasses). """
+        return super(GenericBaseModel, cls).cloudformation_type()
 
     @staticmethod
     def get_deploy_templates():
@@ -104,6 +105,10 @@ class GenericBaseModel(CloudFormationModel):
     # ----------------------
     # GENERIC UTIL METHODS
     # ----------------------
+
+    def set_resource_state(self, state):
+        """ Set the deployment state of this resource. """
+        self.state = state or {}
 
     def update_state(self, details):
         """ Update the deployment state of this resource (existing attributes will be overwritten). """
@@ -255,8 +260,10 @@ class LambdaFunction(GenericBaseModel):
         update_props = dict([(k, props[k]) for k in keys if k in props])
         update_props = self.resolve_refs_recursively(stack_name, update_props, resources)
         if 'Code' in props:
-            LOG.debug('Updating code for Lambda "%s" from location: %s' % (props['FunctionName'], props['Code']))
-            client.update_function_code(FunctionName=props['FunctionName'], **props['Code'])
+            code = props['Code'] or {}
+            if not code.get('ZipFile'):
+                LOG.debug('Updating code for Lambda "%s" from location: %s' % (props['FunctionName'], code))
+            client.update_function_code(FunctionName=props['FunctionName'], **code)
         if 'Environment' in update_props:
             environment_variables = update_props['Environment'].get('Variables', {})
             update_props['Environment']['Variables'] = {k: str(v) for k, v in environment_variables.items()}
@@ -787,10 +794,22 @@ class DynamoDBTable(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::DynamoDB::Table'
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        table_name = self.props.get('TableName')
+        if attribute in REF_ID_ATTRS:
+            return table_name
+        return aws_stack.dynamodb_table_arn(table_name)
+
     def fetch_state(self, stack_name, resources):
         table_name = self.props.get('TableName') or self.resource_id
         table_name = self.resolve_refs_recursively(stack_name, table_name, resources)
         return aws_stack.connect_to_service('dynamodb').describe_table(TableName=table_name)
+
+
+class QueuePolicy(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::SQS::QueuePolicy'
 
 
 class SSMParameter(GenericBaseModel):
@@ -814,3 +833,16 @@ class SecretsManagerSecret(GenericBaseModel):
         secret_name = self.resolve_refs_recursively(stack_name, secret_name, resources)
         result = aws_stack.connect_to_service('secretsmanager').describe_secret(SecretId=secret_name)
         return result
+
+
+class KMSKey(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::KMS::Key'
+
+    def fetch_state(self, stack_name, resources):
+        resource = resources[self.resource_id]
+        if not resource['PhysicalResourceId']:
+            return None
+
+        return aws_stack.connect_to_service('kms').describe_key(KeyId=resource['PhysicalResourceId'])
