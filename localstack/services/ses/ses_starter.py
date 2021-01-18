@@ -1,7 +1,7 @@
 import base64
 
 import logging
-import datetime
+from datetime import date, datetime
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.responses import ses_backend, LIST_TEMPLATES
 from moto.ses.exceptions import MessageRejectedError
