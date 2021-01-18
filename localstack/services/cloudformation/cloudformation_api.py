@@ -69,7 +69,6 @@ class Stack(object):
         self.metadata['Parameters'] = self.metadata.get('Parameters') or []
         self.metadata['StackStatus'] = 'CREATE_IN_PROGRESS'
         self.metadata['CreationTime'] = self.metadata.get('CreationTime') or timestamp_millis()
-        self.metadata['Tags'] = self.metadata.get('Tags') or []
         # maps resource id to resource state
         self.resource_states = {}
         # maps resource id to moto resource class instance (TODO: remove in the future)
