@@ -12,7 +12,6 @@ import collections
 import dateutil.parser
 import urllib.parse
 import six
-import functools
 import botocore.config
 from pytz import timezone
 from urllib.parse import parse_qs
