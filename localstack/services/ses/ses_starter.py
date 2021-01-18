@@ -3,7 +3,7 @@ import base64
 import logging
 from datetime import date, datetime
 from moto.ses.responses import EmailResponse as email_responses
-from moto.ses.responses import ses_backend, LIST_TEMPLATES
+from moto.ses.responses import ses_backend
 from moto.ses.exceptions import MessageRejectedError
 from localstack.utils.common import to_str
 from localstack.services.infra import start_moto_server

@@ -4,11 +4,12 @@ from datetime import date, datetime
 from localstack.utils.aws import aws_stack
 
 TEST_TEMPLATE_ATTRIBUTES = {
-    "TemplateName": "hello-world",
-    "SubjectPart": "Subject test",
-    "TextPart": "hello\nworld",
-    "HtmlPart": "hello<br/>world",
+    'TemplateName': 'hello-world',
+    'SubjectPart': 'Subject test',
+    'TextPart': 'hello\nworld',
+    'HtmlPart': 'hello<br/>world',
 }
+
 
 class SESTest(unittest.TestCase):
     @classmethod
@@ -44,5 +45,3 @@ class SESTest(unittest.TestCase):
         self.assertTrue(type(template['Timestamp']) is not (date, datetime))
         self.assertTrue(type(template['Timestamp']) is str)
         self.assertIn('T', template['Timestamp'])
-        
-        
