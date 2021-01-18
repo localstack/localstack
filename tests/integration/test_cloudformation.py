@@ -1874,3 +1874,57 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn(aws_stack.sns_topic_arn('companyname-slack-topic'), topic_arns)
 
         self.cleanup(stack_name)
+
+    def test_cfn_update_ec2_instance_type(self):
+        stack_name = 'stack-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml'))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'KeyName',
+                    'ParameterValue': 'testkey'
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+
+        resources = cfn.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
+
+        instances = [res for res in resources if res['ResourceType'] == 'AWS::EC2::Instance']
+        self.assertEqual(len(instances), 1)
+
+        ec2_client = aws_stack.connect_to_service('ec2')
+
+        resp = ec2_client.describe_instances(
+            InstanceIds=[
+                instances[0]['PhysicalResourceId']
+            ]
+        )
+
+        self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.nano')
+
+        cfn.update_stack(
+            StackName=stack_name,
+            TemplateBody=load_file(os.path.join(THIS_FOLDER, 'templates', 'template30_updated.yaml')),
+            Parameters=[
+                {
+                    'ParameterKey': 'InstanceType',
+                    'ParameterValue': 't2.medium'
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+
+        resp = ec2_client.describe_instances(
+            InstanceIds=[
+                instances[0]['PhysicalResourceId']
+            ]
+        )
+
+        self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.medium')
+
+        self.cleanup(stack_name)
