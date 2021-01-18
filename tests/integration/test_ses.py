@@ -17,7 +17,6 @@ class SESTest(unittest.TestCase):
 
         client = aws_stack.connect_to_service('ses')
         client.create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
-        
         # Should not fail after 2 consecutive tries
         client.list_templates()['TemplatesMetadata']
         templ_list = client.list_templates()['TemplatesMetadata']
