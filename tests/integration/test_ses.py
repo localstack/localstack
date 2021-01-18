@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from datetime import date, datetime
@@ -18,15 +19,19 @@ class SESTest(unittest.TestCase):
         client = aws_stack.connect_to_service('ses')
         client.create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
         # Should not fail after 2 consecutive tries
-        client.list_templates()['TemplatesMetadata']
-        templ_list = client.list_templates()['TemplatesMetadata']
+        client.list_templates()
+        templ_list = json.loads(client.list_templates())['TemplatesMetadata']
         self.assertEqual(1, len(templ_list))
 
         template = templ_list[0]
-        self.assertEqual(template['TemplateName'], TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
-        self.assertEqual(template['SubjectPart'], TEST_TEMPLATE_ATTRIBUTES['SubjectPart'])
-        self.assertEqual(template['TextPart'], TEST_TEMPLATE_ATTRIBUTES['TextPart'])
-        self.assertEqual(template['HtmlPart'], TEST_TEMPLATE_ATTRIBUTES['HtmlPart'])
+        self.assertEqual(template['TemplateName'],
+                         TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
+        self.assertEqual(template['SubjectPart'],
+                         TEST_TEMPLATE_ATTRIBUTES['SubjectPart'])
+        self.assertEqual(template['TextPart'],
+                         TEST_TEMPLATE_ATTRIBUTES['TextPart'])
+        self.assertEqual(template['HtmlPart'],
+                         TEST_TEMPLATE_ATTRIBUTES['HtmlPart'])
 
         self.assertTrue(type(template['Timestamp']) is str)
         self.assertFalse(type(template['Timestamp']) is (date, datetime))
