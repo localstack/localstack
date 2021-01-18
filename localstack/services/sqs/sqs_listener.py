@@ -358,7 +358,7 @@ class ProxyListenerSQS(PersistingProxyListener):
 
         if content_str_original != content_str:
             # if changes have been made, return patched response
-            response.headers['content-length'] = len(content_str)
+            response.headers['Content-Length'] = len(content_str)
             response.headers['x-amz-crc32'] = calculate_crc32(content_str)
             return requests_response(content_str, headers=response.headers, status_code=response.status_code)
 

@@ -784,7 +784,7 @@ def download(url, path, verify_ssl=True):
     try:
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
-        LOG.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
+        LOG.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('Content-Length')))
         with open(path, 'wb') as f:
             iter_length = 0
             iter_limit = 1000000  # print a log line for every 1MB chunk

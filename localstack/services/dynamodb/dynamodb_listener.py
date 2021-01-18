@@ -648,7 +648,7 @@ def get_table_not_found_error():
 
 
 def fix_headers_for_updated_response(response):
-    response.headers['content-length'] = len(to_bytes(response.content))
+    response.headers['Content-Length'] = len(to_bytes(response.content))
     response.headers['x-amz-crc32'] = calculate_crc32(response)
 
 

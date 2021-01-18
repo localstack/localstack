@@ -251,9 +251,9 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
         sns_client = aws_stack.connect_to_service('sns')
         try:
             sns_client.publish(TopicArn=notif['Topic'], Message=message, Subject='Amazon S3 Notification')
-        except Exception:
-            LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s".' %
-                (bucket_name, notif['Topic']))
+        except Exception as e:
+            LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s": %s' %
+                (bucket_name, notif['Topic'], e))
     # CloudFunction and LambdaFunction are semantically identical
     lambda_function_config = notif.get('CloudFunction') or notif.get('LambdaFunction')
     if lambda_function_config:
@@ -580,7 +580,6 @@ def fix_delimiter(data, headers, response):
 
 
 def fix_sorting_versions(method, parsed, response):
-
     try:
         if method != 'GET':
             return
@@ -1440,7 +1439,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
                 reset_content_length = True
 
-            # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
+            # update Content-Length headers (fix https://github.com/localstack/localstack/issues/541)
             if method == 'DELETE':
                 reset_content_length = True
 
