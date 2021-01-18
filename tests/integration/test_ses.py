@@ -12,14 +12,12 @@ TEST_TEMPLATE_ATTRIBUTES = {
 
 
 class SESTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.client = aws_stack.connect_to_service('ses')
-        cls.client.create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
 
-    def test_create_template(self):
+    def test_list_templates(self):
 
-        templ_list = self.client.list_templates()
+        client = aws_stack.connect_to_service('ses')
+        client.create_template(Template=TEST_TEMPLATE_ATTRIBUTES)
+        templ_list = client.list_templates()
         self.assertEqual(1, len(templ_list))
 
         template = templ_list[0]
