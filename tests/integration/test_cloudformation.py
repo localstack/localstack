@@ -1909,7 +1909,7 @@ class CloudFormationTest(unittest.TestCase):
 
         cfn.update_stack(
             StackName=stack_name,
-            TemplateBody=load_file(os.path.join(THIS_FOLDER, 'templates', 'template30_updated.yaml')),
+            TemplateBody=load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml')),
             Parameters=[
                 {
                     'ParameterKey': 'InstanceType',

@@ -1901,18 +1901,23 @@ class TemplateDeployer(object):
         old_stack.template_original['Resources'][resource_id] = new_stack.template_original['Resources'][resource_id]
 
     def apply_parameter_changes(self, old_stack, new_stack):
-        for logical_id, res in new_stack.resources.items():
-            if res['Type'] != 'Parameter':
-                continue
+        parameters = {p['ParameterKey']: p['ParameterValue'] for p in old_stack.metadata['Parameters']}
 
-            param_value = new_stack.resources[logical_id]['Properties'].get('Value')
-            if not param_value:
-                continue
+        for key, value in new_stack.template['Parameters'].items():
+            parameters[key] = value.get('Default', parameters.get(key))
 
-            param = old_stack.template['Parameters'].get(logical_id)
-            if param:
-                param['ParameterValue'] = param_value
-                old_stack.metadata['Parameters'].append({'ParameterKey': logical_id, 'ParameterValue': param_value})
+        parameters.update({p['ParameterKey']: p['ParameterValue'] for p in new_stack.metadata['Parameters']})
+
+        for change_set in new_stack.change_sets:
+            parameters.update({p['ParameterKey']: p for p in change_set.metadata['Parameters']})
+
+        old_stack.metadata['Parameters'] = [
+            {
+                'ParameterKey': k,
+                'ParameterValue': v
+            }
+            for k, v in parameters.items() if v
+        ]
 
     def apply_changes(self, old_stack, new_stack, stack_name, change_set_id=None, initialize=False):
         old_resources = old_stack.template['Resources']
