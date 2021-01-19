@@ -38,7 +38,7 @@ SERVER_CERT_PEM_FILE = 'server.test.pem'
 USE_HTTP2_SERVER = config.USE_HTTP2_SERVER
 
 # CORS constants
-CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-md5', 'cache-control',
+CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-length', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
     'x-amz-target', 'x-amz-acl', 'x-amz-version-id', 'x-localstack-target', 'x-amz-tagging']
 if EXTRA_CORS_ALLOWED_HEADERS:

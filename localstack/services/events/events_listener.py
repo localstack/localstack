@@ -146,8 +146,8 @@ class ProxyListenerEvents(ProxyListener):
             # fix dates returned from this API (fixes an issue with Terraform)
             fix_date_format(response)
 
-            # fix content-length header
-            response.headers['content-length'] = len(response._content)
+            # fix Content-Length header
+            response.headers['Content-Length'] = len(response._content)
 
 
 # instantiate listener

@@ -320,7 +320,7 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
 
     if not is_str_obj:
         response._content = content
-        response.headers['content-length'] = len(response._content)
+        response.headers['Content-Length'] = len(response._content)
         return response
     return content
 
