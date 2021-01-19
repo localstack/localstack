@@ -19,16 +19,12 @@ class SESTest(unittest.TestCase):
         templ_list = client.list_templates()['TemplatesMetadata']
         self.assertEqual(1, len(templ_list))
         created_template = templ_list[0]
-        self.assertEqual(
-            created_template['Name'], TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
-        self.assertTrue(
-            type(created_template['CreatedTimestamp']) is (date, datetime))
+        self.assertEqual(created_template['Name'], TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
+        self.assertIn(type(created_template['CreatedTimestamp']), (date, datetime))
 
         # Should not fail after 2 consecutive tries
         templ_list = client.list_templates()['TemplatesMetadata']
         self.assertEqual(1, len(templ_list))
         created_template = templ_list[0]
-        self.assertEqual(created_template['Name'],
-                         TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
-        self.assertTrue(
-            type(created_template['CreatedTimestamp']) is (date, datetime))
+        self.assertEqual(created_template['Name'], TEST_TEMPLATE_ATTRIBUTES['TemplateName'])
+        self.assertIn(type(created_template['CreatedTimestamp']), (date, datetime))

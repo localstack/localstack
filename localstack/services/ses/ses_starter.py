@@ -5,7 +5,7 @@ from datetime import date, datetime
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.responses import ses_backend
 from moto.ses.exceptions import MessageRejectedError
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, timestamp_millis
 from localstack.services.infra import start_moto_server
 
 LOGGER = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ def apply_patches():
         for template in email_templates:
             if isinstance(template['Timestamp'], (date, datetime)):
                 # Hack to change the last digits to Java SDKv2 compatible format
-                template['Timestamp'] = template['Timestamp'].isoformat()[:-3] + 'Z'
+                template['Timestamp'] = timestamp_millis(template['Timestamp'])
         return email_responses_list_templates_orig(self)
 
     email_responses.list_templates = list_templates
