@@ -20,7 +20,7 @@ class ProxyListenerSTS(ProxyListener):
             # fix returned error codes
             MessageConversion.fix_error_codes(method, data, response)
             # fix content-length header
-            response.headers['content-length'] = str(len(response._content))
+            response.headers['Content-Length'] = str(len(response._content))
 
 
 # instantiate listener

@@ -12,7 +12,7 @@ class ProxyListenerCloudWatch(ProxyListener):
         ]
         for tag in timestamp_tags:
             self.fix_date_format(response, tag)
-        response.headers['content-length'] = len(response.content)
+        response.headers['Content-Length'] = len(response.content)
         return response
 
     def fix_date_format(self, response, timestamp_tag):

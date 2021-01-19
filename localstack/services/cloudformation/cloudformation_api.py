@@ -88,14 +88,15 @@ class Stack(object):
             self.metadata['Parameters'].append({'ParameterKey': key, 'ParameterValue': value})
 
     def describe_details(self):
-        attrs = ['StackId', 'StackName', 'Description', 'Parameters', 'StackStatusReason',
-            'StackStatus', 'Capabilities', 'Outputs', 'Tags', 'ParentId', 'RootId', 'RoleARN',
+        attrs = ['StackId', 'StackName', 'Description', 'StackStatusReason',
+            'StackStatus', 'Capabilities', 'ParentId', 'RootId', 'RoleARN',
             'CreationTime', 'DeletionTime', 'LastUpdatedTime', 'ChangeSetId']
         result = select_attributes(self.metadata, attrs)
-        for attr in ['Capabilities']:
+        result['Tags'] = self.tags
+        result['Outputs'] = self.outputs
+        result['Parameters'] = self.stack_parameters()
+        for attr in ['Capabilities', 'Tags', 'Outputs', 'Parameters']:
             result[attr] = {'member': result.get(attr, [])}
-        result['Outputs'] = {'member': self.outputs}
-        result['Parameters'] = {'member': self.stack_parameters()}
         return result
 
     def set_stack_status(self, status):
@@ -159,6 +160,10 @@ class Stack(object):
     @property
     def template_resources(self):
         return self.template['Resources']
+
+    @property
+    def tags(self):
+        return aws_stack.extract_tags(self.metadata)
 
     @property
     def imports(self):
@@ -290,6 +295,7 @@ def create_stack(req_params):
     template_deployer.prepare_template_body(req_params)
     template = template_preparer.parse_template(req_params['TemplateBody'])
     template['StackName'] = req_params.get('StackName')
+    # print("##################333", req_params)
     stack = Stack(req_params, template)
     state.stacks[stack.stack_id] = stack
     LOG.debug('Creating stack "%s" with %s resources ...' % (stack.stack_name, len(stack.template_resources)))
