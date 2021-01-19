@@ -84,6 +84,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Timestream**
 * **Transfer**
 * **XRay**
+* **Advanced persistence support for most services**
 * **Interactive UIs to manage resources**
 * **Test report dashboards**
 * ...and much, much more to come! (Check out our **feature roadmap** here: https://roadmap.localstack.cloud)

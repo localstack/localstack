@@ -259,6 +259,8 @@ class LambdaFunction(GenericBaseModel):
         keys = ('FunctionName', 'Role', 'Handler', 'Description', 'Timeout', 'MemorySize', 'Environment', 'Runtime')
         update_props = dict([(k, props[k]) for k in keys if k in props])
         update_props = self.resolve_refs_recursively(stack_name, update_props, resources)
+        if 'Timeout' in update_props:
+            update_props['Timeout'] = int(update_props['Timeout'])
         if 'Code' in props:
             code = props['Code'] or {}
             if not code.get('ZipFile'):
