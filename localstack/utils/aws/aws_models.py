@@ -1,3 +1,4 @@
+from localstack.utils.common import timestamp_millis
 import time
 import json
 import six
@@ -205,7 +206,7 @@ class LambdaFunction(Component):
 
     def get_function_event_invoke_config(self):
         response = {
-            'LastModified': float(time.mktime(self.last_modified.timetuple())),
+            'LastModified': timestamp_millis(self.last_modified),
             'FunctionArn': str(self.id),
         }
 
