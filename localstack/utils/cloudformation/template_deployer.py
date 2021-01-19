@@ -1213,6 +1213,18 @@ def delete_resource(resource_id, resources, stack_name):
             rs = iam_client.list_role_policies(RoleName=role_name)
             for policy in rs['PolicyNames']:
                 iam_client.delete_role_policy(RoleName=role_name, PolicyName=policy)
+
+            rs = iam_client.list_instance_profiles_for_role(RoleName=role_name)
+            for instance_profile in rs['InstanceProfiles']:
+                ip_name = instance_profile['InstanceProfileName']
+                iam_client.remove_role_from_instance_profile(
+                    InstanceProfileName=ip_name,
+                    RoleName=role_name
+                )
+                iam_client.delete_instance_profile(
+                    InstanceProfileName=ip_name
+                )
+
         except Exception as e:
             if 'NoSuchEntity' not in str(e):
                 raise
