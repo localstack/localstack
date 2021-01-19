@@ -1,6 +1,6 @@
 import base64
-
 import logging
+import localstack.config as config
 from datetime import date, datetime
 from moto.ses.responses import EmailResponse as email_responses
 from moto.ses.responses import ses_backend
@@ -82,12 +82,14 @@ def apply_patches():
     email_responses.list_templates = list_templates
 
 
-def start_ses(port=None, backend_port=None, asynchronous=None):
+def start_ses(port=None, backend_port=None, asynchronous=None, update_listener=None):
+    port = port or config.PORT_SES
     apply_patches()
     return start_moto_server(
         key='ses',
         name='SES',
         port=port,
         backend_port=backend_port,
-        asynchronous=asynchronous
+        asynchronous=asynchronous,
+        update_listener=update_listener
     )

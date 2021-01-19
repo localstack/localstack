@@ -40,7 +40,7 @@ def do_register_localstack_plugins():
         from localstack.services.iam import iam_listener, iam_starter
         from localstack.services.route53 import route53_listener, route53_starter
         from localstack.services.sts import sts_starter, sts_listener
-        from localstack.services.ses import ses_starter
+        from localstack.services.ses import ses_starter, ses_listener
         from localstack.services.ssm import ssm_listener
         from localstack.services.logs import logs_listener, logs_starter
         from localstack.services.infra import (
@@ -165,7 +165,8 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'ses',
-            start=ses_starter.start_ses))
+            start=ses_starter.start_ses,
+            listener=ses_listener.UPDATE_SES))
 
         register_plugin(Plugin(
             'sns',
