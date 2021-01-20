@@ -842,7 +842,7 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'Timeout': func_details.timeout,
         'Description': func_details.description,
         'MemorySize': func_details.memory_size,
-        'LastModified': func_details.last_modified,
+        'LastModified': isoformat_milliseconds(func_details.last_modified) + '+0000',
         'TracingConfig': {'Mode': 'PassThrough'},
         'RevisionId': func_version.get('RevisionId'),
         'State': 'Active',
@@ -957,7 +957,7 @@ def create_function():
         region.lambdas[arn] = func_details = LambdaFunction(arn)
         func_details.versions = {VERSION_LATEST: {'RevisionId': str(uuid.uuid4())}}
         func_details.vpc_config = data.get('VpcConfig', {})
-        func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+        func_details.last_modified = datetime.utcnow()
         func_details.description = data.get('Description', '')
         func_details.handler = data['Handler']
         func_details.runtime = data['Runtime']
@@ -1638,7 +1638,7 @@ def put_function_event_invoke_config(function):
     response = lambda_obj.put_function_event_invoke_config(data)
 
     return jsonify({
-        'LastModified': response.last_modified,
+        'LastModified': timestamp_millis(response.last_modified),
         'FunctionArn': str(function_arn),
         'MaximumRetryAttempts': response.max_retry_attempts,
         'MaximumEventAgeInSeconds': response.max_event_age,

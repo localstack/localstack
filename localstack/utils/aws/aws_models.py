@@ -1,8 +1,8 @@
+from localstack.utils.common import timestamp_millis
 import time
 import json
 import six
 from datetime import datetime
-from localstack.utils.common import isoformat_milliseconds
 
 if six.PY3:
     long = int
@@ -206,7 +206,7 @@ class LambdaFunction(Component):
 
     def get_function_event_invoke_config(self):
         response = {
-            'LastModified': str(self.last_modified),
+            'LastModified': timestamp_millis(self.last_modified),
             'FunctionArn': str(self.id),
         }
 
@@ -280,7 +280,7 @@ class LambdaFunction(Component):
             updated = True
 
         if updated:
-            self.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+            self.last_modified = datetime.utcnow()
 
         return self
 
