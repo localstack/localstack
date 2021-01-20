@@ -294,11 +294,14 @@ def check_valid_region(headers):
         raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
 
 
-def set_default_region_in_headers(headers):
+def set_default_region_in_headers(headers, service=None, region=None):
     auth_header = headers.get('Authorization')
+    region = region or get_region()
     if not auth_header:
+        if service:
+            headers['Authorization'] = mock_aws_request_headers(service, region_name=region)['Authorization']
         return
-    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % get_region(), auth_header)
+    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % region, auth_header)
     headers['Authorization'] = replaced
 
 
@@ -317,7 +320,7 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
 
     if not is_str_obj:
         response._content = content
-        response.headers['content-length'] = len(response._content)
+        response.headers['Content-Length'] = len(response._content)
         return response
     return content
 
@@ -923,3 +926,13 @@ def await_stack_status(stack_name, expected_statuses, retries=3, sleep=2):
 def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
     statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
     return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
+
+
+def extract_tags(req_data):
+    tags = []
+    req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
+    for i in range(int(len(req_tags.keys()) / 2)):
+        key = req_tags['Tags.member.' + str(i + 1) + '.Key']
+        value = req_tags['Tags.member.' + str(i + 1) + '.Value']
+        tags.append({'Key': key, 'Value': value})
+    return tags

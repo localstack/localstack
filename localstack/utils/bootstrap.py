@@ -513,7 +513,7 @@ def start_infra_in_docker():
 
     mkdir(config.TMP_FOLDER)
     try:
-        run('chmod -R 777 "%s"' % config.TMP_FOLDER)
+        run('chmod -R 777 "%s"' % config.TMP_FOLDER, print_error=False)
     except Exception:
         pass
 

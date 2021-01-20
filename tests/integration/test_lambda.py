@@ -252,7 +252,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
     def test_success_failure_destination(self):
 
-        def test_destination(lambda_error=0):
+        def test_destination(success=False):
 
             sqs_client = aws_stack.connect_to_service('sqs')
             lambda_client = aws_stack.connect_to_service('lambda')
@@ -263,8 +263,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
             queue_arn = aws_stack.sqs_queue_arn(queue_name)
             testutil.create_lambda_function(
-                handler_file=TEST_LAMBDA_ECHO_FILE,
+                handler_file=TEST_LAMBDA_PYTHON,
                 func_name=lambda_name,
+                libs=TEST_LAMBDA_LIBS,
                 runtime=LAMBDA_RUNTIME_PYTHON36
             )
 
@@ -282,22 +283,32 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
             # invoke Lambda, triggering an error
             payload = {
-                lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: lambda_error
+                lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1
             }
+
+            # expected condition
+            condition = 'RetriesExhausted'
+
+            if success:
+                condition = 'Success'
+                payload = {}
             lambda_client.invoke(FunctionName=lambda_name,
                                 Payload=json.dumps(payload), InvocationType='Event')
 
             def receive_message():
                 rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
                 self.assertGreater(len(rs['Messages']), 0)
+                msg = rs['Messages'][0]['Body']
+                msg = json.loads(msg)
+                self.assertEqual(msg['requestContext']['condition'], condition)
 
-            retry(receive_message, retries=3, sleep=2)
+            retry(receive_message, retries=5, sleep=2)
             # clean up
             sqs_client.delete_queue(QueueUrl=queue_url)
             lambda_client.delete_function(FunctionName=lambda_name)
 
-        test_destination(lambda_error=0)
-        test_destination(lambda_error=1)
+        test_destination(success=True)
+        test_destination(success=False)
 
     def test_add_lambda_permission(self):
         function_name = 'lambda_func-{}'.format(short_uid())

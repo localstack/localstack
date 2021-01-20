@@ -1864,20 +1864,20 @@ class CloudFormationTest(unittest.TestCase):
             ]
         )
         await_stack_completion(stack_name)
-
         resources = cfn.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
 
         instances = [res for res in resources if res['ResourceType'] == 'AWS::EC2::Instance']
         self.assertEqual(len(instances), 1)
 
         ec2_client = aws_stack.connect_to_service('ec2')
-
+        
         resp = ec2_client.describe_instances(
             InstanceIds=[
                 instances[0]['PhysicalResourceId']
             ]
         )
-
+        self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
+        
         self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.nano')
 
         cfn.update_stack(

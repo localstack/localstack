@@ -25,13 +25,12 @@ def lambda_result_to_destination(func_details, event, result, is_async, error):
         'responsePayload': {}
     }
 
-    if is_async:
-        payload['responsePayload']['statusCode'] = 200
-        payload['responsePayload']['headers'] = None
-        payload['responsePayload']['multiValueHeaders'] = None
-        payload['responsePayload']['body'] = ''
-    else:
-        payload['responsePayload'] = result.result
+    if result and result.result:
+        try:
+            payload['requestContext']['condition'] = 'Success'
+            payload['responsePayload'] = json.loads(result.result)
+        except Exception:
+            payload['responsePayload'] = result.result
 
     if error:
         payload['responseContext']['functionError'] = 'Unhandled'
