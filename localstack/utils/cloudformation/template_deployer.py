@@ -32,7 +32,7 @@ LOG = logging.getLogger(__name__)
 # list of resource types that can be updated
 # TODO: make this a property of the model classes themselves
 UPDATEABLE_RESOURCES = [
-    'Lambda::Function', 'ApiGateway::Method', 'StepFunctions::StateMachine', 'IAM::Role'
+    'Lambda::Function', 'ApiGateway::Method', 'StepFunctions::StateMachine', 'IAM::Role', 'EC2::Instance'
 ]
 
 # list of static attribute references to be replaced in {'Fn::Sub': '...'} strings
@@ -612,6 +612,36 @@ RESOURCE_TO_FUNCTION = {
                 'KeyId': 'PhysicalResourceId'
             }
         }
+    },
+    'EC2::Instance': {
+        'create': {
+            'function': 'create_instances',
+            'parameters': {
+                'InstanceType': 'InstanceType',
+                'SecurityGroups': 'SecurityGroups',
+                'KeyName': 'KeyName',
+                'ImageId': 'ImageId'
+            },
+            'defaults': {
+                'MinCount': 1,
+                'MaxCount': 1
+            }
+        },
+        'update': {
+            'function': 'modify_instance_attribute',
+            'parameters': {
+                'InstanceType': 'InstanceType',
+                'SecurityGroups': 'SecurityGroups',
+                'KeyName': 'KeyName',
+                'ImageId': 'ImageId'
+            }
+        },
+        'delete': {
+            'function': 'terminate_instances',
+            'parameters': {
+                'InstanceIds': lambda params, **kw: [kw['resources'][kw['resource_id']]['PhysicalResourceId']]
+            }
+        }
     }
 }
 
@@ -1006,8 +1036,11 @@ def resolve_refs_recursively(stack_name, value, resources):
             if not result:
                 raise Exception('Cannot resolve fn::FindInMap: %s %s' % (value[keys_list[0]], list(resources.keys())))
 
-            result = result.get(value[keys_list[0]][2])
-            return result
+            key = value[keys_list[0]][2]
+            if not isinstance(key, str):
+                key = resolve_refs_recursively(stack_name, key, resources)
+
+            return result.get(key)
 
         if stripped_fn_lower == 'importvalue':
             import_value_key = resolve_refs_recursively(stack_name, value[keys_list[0]], resources)
@@ -1297,6 +1330,11 @@ def fix_resource_props_for_sdk_deployment(resource_type, resource_props):
 
 def configure_resource_via_sdk(resource_id, resources, resource_type, func_details, stack_name, action_name):
     resource = resources[resource_id]
+
+    if resource_type == 'EC2::Instance':
+        if action_name == 'create':
+            func_details['boto_client'] = 'resource'
+
     client = get_client(resource, func_details)
     function = getattr(client, func_details['function'])
     params = func_details.get('parameters') or lambda_get_params()
@@ -1583,7 +1621,7 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
     LOG.info('Unable to determine PhysicalResourceId for "%s" resource, ID "%s"' % (resource_type, resource_id))
 
 
-def update_resource_details(stack, resource_id, details):
+def update_resource_details(stack, resource_id, details, action=None):
     resource = stack.resources.get(resource_id, {})
     if not resource:
         return
@@ -1595,6 +1633,10 @@ def update_resource_details(stack, resource_id, details):
 
     if resource_type == 'KMS::Key':
         resource['PhysicalResourceId'] = details['KeyMetadata']['KeyId']
+
+    if resource_type == 'EC2::Instance':
+        if action == 'CREATE':
+            stack.resources[resource_id]['PhysicalResourceId'] = details[0].id
 
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
@@ -1812,16 +1854,19 @@ class TemplateDeployer(object):
     def update_resource_details(self, resource_id, result, stack=None, action='CREATE'):
         stack = stack or self.stack
         # update resource state
-        update_resource_details(stack, resource_id, result)
+        update_resource_details(stack, resource_id, result, action)
         # update physical resource id
         resource = stack.resources[resource_id]
 
         physical_id = resource.get('PhysicalResourceId')
+
         physical_id = physical_id or determine_resource_physical_id(resource_id, stack=stack)
         if not resource.get('PhysicalResourceId') or action == 'UPDATE':
             resource['PhysicalResourceId'] = physical_id
+
         # set resource status
         stack.set_resource_status(resource_id, '%s_COMPLETE' % action, physical_res_id=physical_id)
+
         return physical_id
 
     def get_change_config(self, action, resource, change_set_id=None):
@@ -1863,8 +1908,28 @@ class TemplateDeployer(object):
         old_res_props = old_resource['Properties'] = old_resource.get('Properties', {})
         for key, value in new_resource['Properties'].items():
             old_res_props[key] = value
+
         # overwrite original template entirely
         old_stack.template_original['Resources'][resource_id] = new_stack.template_original['Resources'][resource_id]
+
+    def apply_parameter_changes(self, old_stack, new_stack):
+        parameters = {p['ParameterKey']: p['ParameterValue'] for p in old_stack.metadata['Parameters']}
+
+        for key, value in new_stack.template['Parameters'].items():
+            parameters[key] = value.get('Default', parameters.get(key))
+
+        parameters.update({p['ParameterKey']: p['ParameterValue'] for p in new_stack.metadata['Parameters']})
+
+        for change_set in new_stack.change_sets:
+            parameters.update({p['ParameterKey']: p for p in change_set.metadata['Parameters']})
+
+        old_stack.metadata['Parameters'] = [
+            {
+                'ParameterKey': k,
+                'ParameterValue': v
+            }
+            for k, v in parameters.items() if v
+        ]
 
     def apply_changes(self, old_stack, new_stack, stack_name, change_set_id=None, initialize=False):
         old_resources = old_stack.template['Resources']
@@ -1873,6 +1938,8 @@ class TemplateDeployer(object):
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
         adds = [val for key, val in new_resources.items() if initialize or key not in old_resources]
         modifies = [val for key, val in new_resources.items() if key in old_resources]
+
+        self.apply_parameter_changes(old_stack, new_stack)
 
         # construct changes
         changes = []

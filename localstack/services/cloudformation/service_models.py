@@ -848,3 +848,44 @@ class KMSKey(GenericBaseModel):
             return None
 
         return aws_stack.connect_to_service('kms').describe_key(KeyId=resource['PhysicalResourceId'])
+
+
+class EC2Instance(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::Instance'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('ec2')
+        instance_id = resources[self.resource_id].get('PhysicalResourceId')
+        if not instance_id:
+            return None
+
+        resp = client.describe_instances(
+            InstanceIds=[
+                instance_id
+            ]
+        )
+
+        return resp['Reservations'][0]['Instances'][0]
+
+    def update_resource(self, new_resource, stack_name, resources):
+        instance_id = new_resource['PhysicalResourceId']
+        props = new_resource['Properties']
+
+        client = aws_stack.connect_to_service('ec2')
+        client.modify_instance_attribute(
+            Attribute='instanceType',
+            Groups=props['SecurityGroups'],
+            InstanceId=instance_id,
+            InstanceType={
+                'Value': props['InstanceType']
+            }
+        )
+        resp = client.describe_instances(
+            InstanceIds=[
+                instance_id
+            ]
+        )
+
+        return resp['Reservations'][0]['Instances'][0]
