@@ -73,7 +73,7 @@ class ProxyListenerEdge(ProxyListener):
 
             if api in ['', None, '_unknown_']:
                 truncated = truncate(data)
-                if auth_header or target or data or path != '/':
+                if auth_header or target or data or path not in ['/', '/favicon.ico']:
                     LOG.info(('Unable to find forwarding rule for host "%s", path "%s %s", '
                         'target header "%s", auth header "%s", data "%s"') % (
                             host, method, path, target, auth_header, truncated))

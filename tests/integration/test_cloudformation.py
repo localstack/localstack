@@ -1870,14 +1870,14 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(instances), 1)
 
         ec2_client = aws_stack.connect_to_service('ec2')
-        
+
         resp = ec2_client.describe_instances(
             InstanceIds=[
                 instances[0]['PhysicalResourceId']
             ]
         )
         self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
-        
+
         self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.nano')
 
         cfn.update_stack(

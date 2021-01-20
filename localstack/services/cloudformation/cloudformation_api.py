@@ -303,7 +303,6 @@ def create_stack(req_params):
     template_deployer.prepare_template_body(req_params)
     template = template_preparer.parse_template(req_params['TemplateBody'])
     template['StackName'] = req_params.get('StackName')
-    # print("##################333", req_params)
     stack = Stack(req_params, template)
     state.stacks[stack.stack_id] = stack
     LOG.debug('Creating stack "%s" with %s resources ...' % (stack.stack_name, len(stack.template_resources)))
