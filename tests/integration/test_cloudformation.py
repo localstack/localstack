@@ -1848,7 +1848,7 @@ class CloudFormationTest(unittest.TestCase):
         resp = kms.describe_key(KeyId=key_id)['KeyMetadata']
         self.assertEqual(resp['KeyState'], 'PendingDeletion')
 
-    def test_cfn_export_with_sub_select(self):
+    def test_cfn_export_value_with_sub_select(self):
         stack_name = 'stack-%s' % short_uid()
         template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template29.yaml'))
 
