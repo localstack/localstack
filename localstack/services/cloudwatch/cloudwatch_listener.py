@@ -1,6 +1,5 @@
 from localstack.utils.common import _replace
 from localstack.services.generic_proxy import ProxyListener
-# import xmltodict
 
 
 class ProxyListenerCloudWatch(ProxyListener):
