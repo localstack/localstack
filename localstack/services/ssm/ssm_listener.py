@@ -24,7 +24,7 @@ def get_secrets_information(name, resource_name):
         secret_info = client.get_secret_value(SecretId=resource_name)
         if secret_info:
             secret_info = json.dumps(secret_info)
-        
+
         del secret_info['ResponseMetadata']
         created_date_timestamp = time.mktime(secret_info['CreatedDate'].timetuple())
         secret_info['CreatedDate'] = created_date_timestamp
