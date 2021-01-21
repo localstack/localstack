@@ -85,9 +85,9 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, (datetime, date)):
             return timestamp_millis(o)
-        if isinstance(o, six.binary_type):
-            return to_str(o)
         try:
+            if isinstance(o, six.binary_type):
+                return to_str(o)
             return super(CustomEncoder, self).default(o)
         except Exception:
             return None
@@ -336,6 +336,11 @@ def start_thread(method, *args, **kwargs):
 
 def start_worker_thread(method, *args, **kwargs):
     return start_thread(method, *args, _shutdown_hook=False, **kwargs)
+
+
+def empty_context_manager():
+    import contextlib
+    return contextlib.nullcontext()
 
 
 def synchronized(lock=None):
@@ -678,7 +683,7 @@ def cp_r(src, dst):
     """Recursively copies file/directory"""
     if os.path.isfile(src):
         return shutil.copy(src, dst)
-    return shutil.copytree(src, dst)
+    return shutil.copytree(src, dst, dirs_exist_ok=True)
 
 
 def download(url, path, verify_ssl=True):
@@ -828,6 +833,14 @@ def extract_jsonpath(value, path):
     result = [match.value for match in jsonpath_expr.find(value)]
     result = result[0] if len(result) == 1 else result
     return result
+
+
+def assign_to_path(target, path, value):
+    path = path.split('.')
+    for i in range(len(path) - 1):
+        target_new = target[path[i]] = target.get(path[i], {})
+        target = target_new
+    target[path[-1]] = value
 
 
 def save_file(file, content, append=False):

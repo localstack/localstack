@@ -27,6 +27,9 @@ CURRENTLY_REPLAYING = []
 # file paths by API
 API_FILE_PATHS = {}
 
+# flag to indicate if the restoration of api calls is complete
+API_CALLS_RESTORED = False
+
 # set up logger
 LOG = logging.getLogger(__name__)
 
@@ -142,13 +145,14 @@ def replay_command(command):
     data = prepare_replay_data(command)
     endpoint = aws_stack.get_local_service_url(api)
     full_url = (endpoint[:-1] if endpoint.endswith('/') else endpoint) + command['p']
+    headers = aws_stack.set_internal_auth(command['h'])
     try:
         # fix an error when calling requests with invalid payload encoding
         data and hasattr(data, 'encode') and data.encode('latin-1')
     except UnicodeEncodeError:
         if hasattr(data, 'encode'):
             data = data.encode('utf-8')
-    response = function(full_url, data=data, headers=command['h'], verify=False)
+    response = function(full_url, data=data, headers=headers, verify=False)
     return response
 
 
@@ -172,11 +176,15 @@ def replay(api):
 
 
 def restore_persisted_data(apis):
+    global API_CALLS_RESTORED
+
     if USE_SINGLE_DUMP_FILE:
-        return replay('_all_')
-    apis = apis if isinstance(apis, list) else [apis]
-    for api in apis:
-        replay(api)
+        replay('_all_')
+    else:
+        apis = apis if isinstance(apis, list) else [apis]
+        for api in apis:
+            replay(api)
+    API_CALLS_RESTORED = True
 
 
 # ---------------

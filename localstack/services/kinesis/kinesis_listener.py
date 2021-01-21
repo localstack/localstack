@@ -144,7 +144,11 @@ class ProxyListenerKinesis(ProxyListener):
             sdk_v2 = self.sdk_is_v2(headers.get('User-Agent', '').split(' ')[0])
             results, encoding_type = self.decode_content(response.content, True)
 
-            for record in results['Records']:
+            records = results.get('Records', [])
+            if not records:
+                return response
+
+            for record in records:
                 if sdk_v2:
                     record['ApproximateArrivalTimestamp'] = int(record['ApproximateArrivalTimestamp'] * 1000)
                 if not isinstance(record['Data'], str):

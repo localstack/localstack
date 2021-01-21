@@ -234,6 +234,18 @@ def apply_patches():
     if not hasattr(apigateway_models.APIGatewayBackend, 'delete_method'):
         apigateway_models.APIGatewayBackend.delete_method = apigateway_models_backend_delete_method
 
+    apigateway_models_RestAPI_to_dict_orig = apigateway_models.RestAPI.to_dict
+
+    def apigateway_models_RestAPI_to_dict(self):
+        resp = apigateway_models_RestAPI_to_dict_orig(self)
+        if self.policy:
+            # Currently still not found any document about apigateway policy escaped format, just a workaround
+            resp['policy'] = json.dumps(json.dumps(json.loads(self.policy)))[1:-1]
+        else:
+            resp['policy'] = None
+
+        return resp
+
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
@@ -247,6 +259,7 @@ def apply_patches():
     APIGatewayResponse.resource_method_responses = apigateway_response_resource_method_responses
     apigateway_models_Integration_init_orig = apigateway_models.Integration.__init__
     apigateway_models.Integration.__init__ = apigateway_models_Integration_init
+    apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
 
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):

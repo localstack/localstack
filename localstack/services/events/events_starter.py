@@ -104,19 +104,18 @@ def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
         service = arn.split(':')[2]
-        event = filter_event_with_target_input_path(target, event)
-
+        changed_event = filter_event_with_target_input_path(target, event)
         if service == 'sqs':
-            send_event_to_sqs(event, arn)
+            send_event_to_sqs(changed_event, arn)
 
         elif service == 'sns':
-            send_event_to_sns(event, arn)
+            send_event_to_sns(changed_event, arn)
 
         elif service == 'lambda':
-            send_event_to_lambda(event, arn)
+            send_event_to_lambda(changed_event, arn)
 
         elif service == 'firehose':
-            send_event_to_firehose(event, arn)
+            send_event_to_firehose(changed_event, arn)
 
         else:
             LOG.warning('Unsupported Events target service type "%s"' % service)

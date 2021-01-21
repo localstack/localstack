@@ -1,5 +1,4 @@
 import time
-import gzip
 import re
 import json
 import uuid
@@ -890,7 +889,9 @@ def get_key_name(path, headers):
 
 
 def uses_path_addressing(headers):
-    host = headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1] or headers['host']
+    # we can assume that the host header we are receiving here is actually the header we originally recieved
+    # from the client (because the edge service is forwarding the request in memory)
+    host = headers.get('host') or headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1]
     return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL) or host.startswith(LOCALHOST_IP)
 
 
@@ -1001,6 +1002,14 @@ class ProxyListenerS3(PersistingProxyListener):
         return 'x-amz-copy-source' in headers or 'x-amz-copy-source' in path
 
     @staticmethod
+    def is_create_multipart_request(query):
+        return query.startswith('uploads')
+
+    @staticmethod
+    def is_multipart_upload(query):
+        return query.startswith('uploadId')
+
+    @staticmethod
     def get_201_response(key, bucket_name):
         return """
                 <PostResponse>
@@ -1060,8 +1069,9 @@ class ProxyListenerS3(PersistingProxyListener):
         if 's3.amazonaws.com' not in headers.get('host', ''):
             headers['host'] = 'localhost'
 
-        # check content md5 hash integrity if not a copy request
-        if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path):
+        # check content md5 hash integrity if not a copy request or multipart initialization
+        if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
+                and not self.is_create_multipart_request(parsed_path.query):
             response = check_content_md5(data, headers)
             if response is not None:
                 return response
@@ -1374,11 +1384,6 @@ class ProxyListenerS3(PersistingProxyListener):
 
             # convert to chunked encoding, for compatibility with certain SDKs (e.g., AWS PHP SDK)
             convert_to_chunked_encoding(method, path, response)
-
-            if headers.get('Accept-Encoding') == 'gzip' and response._content:
-                response._content = gzip.compress(to_bytes(response._content))
-                response.headers['Content-Length'] = str(len(response._content))
-                response.headers['Content-Encoding'] = 'gzip'
 
 
 def authenticate_presign_url(method, path, headers, data=None):

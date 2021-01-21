@@ -56,8 +56,10 @@ DYNAMODB_WRITE_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_WRITE_ERROR_PR
 DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
 
 # expose services on a specific host internally
-# TODO: evaluate whether this should be hardcoded as HOSTNAME=LOCALHOST ..?
-HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
+# Note: This used to be os.environ['HOSTNAME'] but since this has caused several issues with hostnames
+# that could not be resolved, we're hardcoding this to 'localhost' (as its purpose is local invocations)
+# TODO: potentially remove this entirely in the future ?!
+HOSTNAME = LOCALHOST
 
 # expose services on a specific host externally
 HOSTNAME_EXTERNAL = os.environ.get('HOSTNAME_EXTERNAL', '').strip() or LOCALHOST
@@ -208,7 +210,8 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
-                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS']
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS',
+                   'USE_MOTO_CF']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -319,6 +322,7 @@ def populate_configs(service_ports=None):
 
     SERVICE_PORTS = service_ports or parse_service_ports()
     globs = globals()
+    protocol = get_protocol()
 
     # define service ports and URLs as environment variables
     for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
@@ -328,9 +332,13 @@ def populate_configs(service_ports=None):
         port_var_name = 'PORT_%s' % key_upper
         port_number = service_port(key)
         globs[port_var_name] = port_number
-        url = '%s://%s:%s' % (get_protocol(), LOCALSTACK_HOSTNAME, port_number)
+        url = '%s://%s:%s' % (protocol, LOCALSTACK_HOSTNAME, port_number)
         # define TEST_*_URL variables with mock service endpoints
         url_key = 'TEST_%s_URL' % key_upper
+        # allow overwriting TEST_*_URL from user-defined environment variables
+        existing = os.environ.get(url_key)
+        url = existing or url
+        # set global variable
         globs[url_key] = url
         # expose HOST_*_URL variables as environment variables
         os.environ[url_key] = url
@@ -381,3 +389,6 @@ BUNDLE_API_PROCESSES = True
 
 # whether to use a CPU/memory profiler when running the integration tests
 USE_PROFILER = is_env_true('USE_PROFILER')
+
+# whether to use the legacy CF deployment based on moto (TODO: remove in a future release)
+USE_MOTO_CF = is_env_true('USE_MOTO_CF')

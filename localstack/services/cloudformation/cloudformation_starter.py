@@ -26,15 +26,16 @@ from moto.cloudformation.exceptions import ValidationError, UnformattedGetAttTem
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
-from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    FuncThread, short_uid, recurse_object, clone, json_safe, md5, canonical_json,
-    get_free_tcp_port, Mock, start_thread, edge_ports_info, clone_safe)
+    FuncThread, short_uid, recurse_object, clone, json_safe, get_free_tcp_port,
+    Mock, start_thread, edge_ports_info, clone_safe)
 from localstack.stepfunctions import models as sfn_models
 from localstack.services.infra import start_proxy_for_service, do_run, canonicalize_api_names
 from localstack.utils.bootstrap import setup_logging
-from localstack.utils.cloudformation import template_deployer
+from localstack.utils.cloudformation import template_deployer_old as template_deployer
 from localstack.services.cloudformation import service_models
+from localstack.utils.cloudformation.template_deployer import (
+    DependencyNotYetSatisfied, add_default_resource_props)
 
 LOG = logging.getLogger(__name__)
 
@@ -69,15 +70,6 @@ MODEL_MAP = {
     'AWS::Events::Rule': service_models.EventsRule,
     'AWS::S3::BucketPolicy': service_models.S3BucketPolicy
 }
-
-
-class DependencyNotYetSatisfied(Exception):
-    """ Exception indicating that a resource dependency is not (yet) deployed/available. """
-    def __init__(self, resource_ids, message=None):
-        message = message or 'Unresolved dependencies: %s' % resource_ids
-        super(DependencyNotYetSatisfied, self).__init__(message)
-        resource_ids = resource_ids if isinstance(resource_ids, list) else [resource_ids]
-        self.resource_ids = resource_ids
 
 
 def start_cloudformation(port=None, asynchronous=False, update_listener=None):
@@ -212,13 +204,6 @@ def update_resource_name(resource, resource_json):
         props['StateMachineName'] = resource.name
 
 
-def update_dynamodb_index_resource(resource):
-    if resource.get('Properties').get('BillingMode') == 'PAY_PER_REQUEST':
-        for glob_index in resource.get('Properties', {}).get('GlobalSecondaryIndexes', []):
-            if not glob_index.get('ProvisionedThroughput'):
-                glob_index['ProvisionedThroughput'] = {'ReadCapacityUnits': 99, 'WriteCapacityUnits': 99}
-
-
 def apply_attributes_from_existing_resource_on_update(resource_props, stack_name, existing_resource, resource_id):
     if not existing_resource or not resource_props:
         return
@@ -235,52 +220,6 @@ def apply_attributes_from_existing_resource_on_update(resource_props, stack_name
         existing_name = getattr(existing_resource, 'name', None)
         if existing_name:
             props['StateMachineName'] = existing_name
-
-
-def add_default_resource_props(resource_props, stack_name, resource_name=None, resource_id=None, update=False):
-    """ Apply some fixes to resource props which otherwise cause deployments to fail """
-
-    res_type = resource_props['Type']
-    props = resource_props['Properties'] = resource_props.get('Properties', {})
-
-    def _generate_res_name():
-        return '%s-%s-%s' % (stack_name, resource_name or resource_id, short_uid())
-
-    if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
-        props['StartingPosition'] = 'LATEST'
-
-    elif res_type == 'AWS::Logs::LogGroup' and not props.get('LogGroupName') and resource_name:
-        props['LogGroupName'] = resource_name
-
-    elif res_type == 'AWS::Lambda::Function' and not props.get('FunctionName'):
-        props['FunctionName'] = '{}-lambda-{}'.format(stack_name[:45], short_uid())
-
-    elif res_type == 'AWS::SNS::Topic' and not props.get('TopicName'):
-        props['TopicName'] = 'topic-%s' % short_uid()
-
-    elif res_type == 'AWS::SQS::Queue' and not props.get('QueueName'):
-        props['QueueName'] = 'queue-%s' % short_uid()
-
-    elif res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
-        props['Name'] = _generate_res_name()
-
-    elif res_type == 'AWS::DynamoDB::Table':
-        update_dynamodb_index_resource(resource_props)
-
-    elif res_type == 'AWS::S3::Bucket' and not props.get('BucketName') and not update:
-        props['BucketName'] = s3_listener.normalize_bucket_name(_generate_res_name())
-
-    elif res_type == 'AWS::StepFunctions::StateMachine' and not props.get('StateMachineName'):
-        props['StateMachineName'] = _generate_res_name()
-
-    # generate default names for certain resource types
-    default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
-    for entry in default_attrs:
-        if res_type == entry[0] and not props.get(entry[1]):
-            if not resource_id:
-                resource_id = canonical_json(json_safe(props))
-                resource_id = md5(resource_id)
-            props[entry[1]] = 'cf-%s-%s' % (stack_name, resource_id)
 
 
 def apply_patches():
@@ -331,6 +270,9 @@ def apply_patches():
 
             if 'Fn::Sub' in resource_json:
                 if isinstance(resource_json['Fn::Sub'], list):
+                    for k, v in resource_json['Fn::Sub'][1].items():
+                        resource_json['Fn::Sub'][1][k] = clean_json(v, resources_map)
+
                     for key, val in resources_map._parsed_resources.items():
                         if not val:
                             continue
@@ -346,9 +288,15 @@ def apply_patches():
                         resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % key, val)
 
                     for k, v in resource_json['Fn::Sub'][1].items():
-                        resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, v)
+                        if v is not None:
+                            resource_json['Fn::Sub'][0] = resource_json['Fn::Sub'][0].replace('${%s}' % k, str(v))
 
-                    return resource_json['Fn::Sub'][0]
+                    result = resource_json['Fn::Sub'][0]
+
+                    stack_name = resources_map._parsed_resources['AWS::StackName']
+                    result = template_deployer.resolve_placeholders_in_string(result,
+                        stack_name=stack_name, resources=resources_map._resource_json_map)
+                    return result
 
         return rs
 
@@ -694,7 +642,8 @@ def apply_patches():
         resources_json_map = template.get('Resources') or {}
         for res_id, res_details in resources_json_map.items():
             # add some fixes and default props which otherwise cause deployments to fail
-            add_default_resource_props(res_details, stack_name, resource_id=res_id, update=True)
+            add_default_resource_props(res_details, stack_name, resource_id=res_id,
+                existing_resources=self._resource_json_map)
         result = resource_map_update_orig(self, template, *args, **kwargs)
         return result
 
@@ -725,9 +674,13 @@ def apply_patches():
             result.key = output_logical_id
             result.value = None
             result.description = output_json.get('Description')
+
         # Make sure output includes export name
         if not hasattr(result, 'export_name'):
-            result.export_name = output_json.get('Export', {}).get('Name')
+            export_name = output_json.get('Export', {}).get('Name')
+            if export_name:
+                result.export_name = clean_json(export_name, resources_map)
+
         return result
 
     parse_output_orig = parsing.parse_output
@@ -979,6 +932,7 @@ def apply_patches():
             result.api = Mock()
             result.api.get_adapter = (lambda *args, **kwargs: None)
             return result
+
         # Temporarily set a mock client, to prevent moto from talking to the Docker daemon
         import docker
         _from_env_orig = docker.from_env
@@ -1187,64 +1141,6 @@ def apply_patches():
         if region not in lambda_models.lambda_backends:
             lambda_models.lambda_backends[region] = lambda_models.LambdaBackend(region)
 
-    def set_stack_status(stack, status):
-        stack._add_stack_event(status)
-        stack.status = status
-
-    # patch FakeStack.initialize_resources
-    def run_dependencies_deployment_loop(stack, action, initialize=False):
-        def run_loop(*args):
-            result = {}
-            try:
-                result = do_run_loop()
-                if isinstance(result, parsing.ResourceMap):
-                    if initialize:
-                        # create output map
-                        stack.output_map.create()
-                        # set exported resources
-                        cloudformation_backends[stack.region_name].set_exports(stack)
-                    return
-            except Exception as e:
-                LOG.info('Error running stack deployment loop: %s' % e)
-            set_stack_status(stack, '%s_FAILED' % action)
-            raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
-                'dependency tree (maximum depth %s): %s' % (MAX_DEPENDENCY_DEPTH, list(result.keys())))
-
-        def do_run_loop():
-            # NOTE: We're adding this additional loop, as it seems that in some cases moto
-            #   does not consider resource dependencies (e.g., if a "DependsOn" resource property
-            #   is defined). This loop allows us to incrementally resolve such dependencies.
-            resource_map = stack.resource_map
-            unresolved = {}
-            for i in range(MAX_DEPENDENCY_DEPTH):
-                CURRENTLY_UPDATING_RESOURCES.clear()
-                LOG.debug('Running CloudFormation stack deployment loop iteration %s' % (i + 1))
-                try:
-                    # try iterating all resources in the map, catch any errors that may happen
-                    resource_map.values()
-                except Exception as e:
-                    LOG.debug('Temporary error in loop iteration %s: %s' % (i + 1, e))
-                unresolved = getattr(resource_map, '_unresolved_resources', {})
-                LOG.debug('Found %s unresolved dependencies in loop iteration %s' % (len(unresolved), i + 1))
-                if not unresolved:
-                    set_stack_status(stack, '%s_COMPLETE' % action)
-                    return resource_map
-                resource_map._unresolved_resources = {}
-                for resource_id, dependencies in unresolved.items():
-                    # Re-trigger the resource creation: simply access the key in the
-                    # map, which will cause the resource creation internally
-                    for dep_resource_id in dependencies:
-                        resource_map[dep_resource_id]
-                    resource_map[resource_id]
-                if unresolved.keys() == resource_map._unresolved_resources.keys():
-                    # looks like no more resources can be resolved -> bail
-                    break
-            LOG.info('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
-            return unresolved
-
-        # NOTE: We're running the loop in the background, as it might take some time to complete
-        FuncThread(run_loop).start()
-
     def initialize_resources(self):
         self.resource_map._template = self.resource_map._template or self.template_dict
         try:
@@ -1365,6 +1261,20 @@ def apply_patches():
     for region, cf_backend in cloudformation_backends.items():
         cf_backend._validate_export_uniqueness = make_validate_export_uniqueness(cf_backend)
 
+    # patch cloudformation backend set_exports
+    # #3375 CloudFormation - All deployed stacks have StackStatus: CREATE_FAILED
+    # Actually this patch has provided in moto-ext 1.3.15.45
+    def make_set_exports(backend):
+        def cf_backend_set_exports(self, new_stack):
+            for export in new_stack.exports:
+                self.exports[export.name] = export
+
+        return types.MethodType(cf_backend_set_exports, backend)
+
+    if not hasattr(CloudFormationBackend, 'set_exports'):
+        for region, cf_backend in cloudformation_backends.items():
+            cf_backend.set_exports = make_set_exports(cf_backend)
+
     # patch cloudformation backend change_set methods
     # #2240 - S3 bucket not created since 0.10.8
     # #2568 - Cloudformation create-stack for SNS with yaml causes TypeError
@@ -1402,6 +1312,67 @@ def apply_patches():
 
     CloudFormationBackend.describe_change_set = cloudformation_backend_describe_change_set
     CloudFormationBackend.execute_change_set = cloudformation_backend_execute_change_set
+
+
+def set_stack_status(stack, status):
+    stack._add_stack_event(status)
+    stack.status = status
+
+
+# patch FakeStack.initialize_resources
+def run_dependencies_deployment_loop(stack, action, initialize=False):
+    def run_loop(*args):
+        result = {}
+        try:
+            loop_result = do_run_loop()
+            if isinstance(loop_result, parsing.ResourceMap):
+                if initialize:
+                    # create output map
+                    stack.output_map.create()
+                    # set exported resources
+                    cloudformation_backends[stack.region_name].set_exports(stack)
+                return
+            result = loop_result
+        except Exception as e:
+            LOG.info('Error running stack deployment loop: %s' % e)
+        set_stack_status(stack, '%s_FAILED' % action)
+        raise Exception('Unable to resolve all CloudFormation resources after traversing ' +
+            'dependency tree (maximum depth %s): %s' % (MAX_DEPENDENCY_DEPTH, list(result.keys())))
+
+    def do_run_loop():
+        # NOTE: We're adding this additional loop, as it seems that in some cases moto
+        #   does not consider resource dependencies (e.g., if a "DependsOn" resource property
+        #   is defined). This loop allows us to incrementally resolve such dependencies.
+        resource_map = stack.resource_map
+        unresolved = {}
+        for i in range(MAX_DEPENDENCY_DEPTH):
+            CURRENTLY_UPDATING_RESOURCES.clear()
+            LOG.debug('Running CloudFormation stack deployment loop iteration %s' % (i + 1))
+            try:
+                # try iterating all resources in the map, catch any errors that may happen
+                resource_map.values()
+            except Exception as e:
+                LOG.debug('Temporary error in loop iteration %s: %s' % (i + 1, e))
+            unresolved = getattr(resource_map, '_unresolved_resources', {})
+            LOG.debug('Found %s unresolved dependencies in loop iteration %s' % (len(unresolved), i + 1))
+            if not unresolved:
+                set_stack_status(stack, '%s_COMPLETE' % action)
+                return resource_map
+            resource_map._unresolved_resources = {}
+            for resource_id, dependencies in unresolved.items():
+                # Re-trigger the resource creation: simply access the key in the
+                # map, which will cause the resource creation internally
+                for dep_resource_id in dependencies:
+                    resource_map[dep_resource_id]
+                resource_map[resource_id]
+            if unresolved.keys() == resource_map._unresolved_resources.keys():
+                # looks like no more resources can be resolved -> bail
+                break
+        LOG.info('Unresolvable dependencies, there may be undeployed stack resources: %s' % unresolved)
+        return unresolved
+
+    # NOTE: We're running the loop in the background, as it might take some time to complete
+    FuncThread(run_loop).start()
 
 
 def inject_stats_endpoint():

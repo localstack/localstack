@@ -1,8 +1,12 @@
+from localstack.utils import persistence
 import re
 import os
 import sys
+import gzip
 import json
+import signal
 import logging
+import threading
 from requests.models import Response
 from localstack import config
 from localstack.services import plugins
@@ -11,10 +15,11 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import (
     HEADER_LOCALSTACK_TARGET, HEADER_LOCALSTACK_EDGE_URL, LOCALSTACK_ROOT_FOLDER,
     PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
-from localstack.utils.common import run, is_root, TMP_THREADS, to_bytes, truncate, to_str, get_service_protocol
-from localstack.utils.common import safe_requests as requests
+from localstack.utils.common import (
+    empty_context_manager, run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
+    get_service_protocol, in_docker, safe_requests as requests)
 from localstack.services.infra import PROXY_LISTENERS
-from localstack.utils.aws.aws_stack import Environment
+from localstack.utils.aws.aws_stack import Environment, is_internal_call_context
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils.server.http2_server import HTTPErrorResponse
@@ -25,6 +30,9 @@ LOG = logging.getLogger(__name__)
 # Header to indicate that the process should kill itself. This is required because if
 # this process is started as root, then we cannot kill it from a non-root process
 HEADER_KILL_SIGNAL = 'x-localstack-kill'
+
+# lock obtained during boostrapping (persistence restoration) to avoid concurrency issues
+BOOTSTRAP_LOCK = threading.RLock()
 
 
 class ProxyListenerEdge(ProxyListener):
@@ -45,7 +53,7 @@ class ProxyListenerEdge(ProxyListener):
         headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
 
         # extract API details
-        api, port, path, host = get_api_from_headers(headers, path)
+        api, port, path, host = get_api_from_headers(headers, method=method, path=path, data=data)
 
         set_default_region_in_headers(headers)
 
@@ -79,12 +87,23 @@ class ProxyListenerEdge(ProxyListener):
         if isinstance(data, dict):
             data = json.dumps(data)
 
-        return do_forward_request(api, port, method, path, data, headers)
+        lock_ctx = BOOTSTRAP_LOCK
+        if persistence.API_CALLS_RESTORED or is_internal_call_context(headers):
+            lock_ctx = empty_context_manager()
+
+        with lock_ctx:
+            return do_forward_request(api, method, path, data, headers, port=port)
+
+    def return_response(self, method, path, data, headers, response, request_handler=None):
+        if headers.get('Accept-Encoding') == 'gzip' and response._content:
+            response._content = gzip.compress(to_bytes(response._content))
+            response.headers['Content-Length'] = str(len(response._content))
+            response.headers['Content-Encoding'] = 'gzip'
 
 
-def do_forward_request(api, port, method, path, data, headers):
+def do_forward_request(api, method, path, data, headers, port=None):
     if config.FORWARD_EDGE_INMEM:
-        result = do_forward_request_inmem(api, port, method, path, data, headers)
+        result = do_forward_request_inmem(api, method, path, data, headers, port=port)
     else:
         result = do_forward_request_network(port, method, path, data, headers)
     if hasattr(result, 'status_code') and result.status_code >= 400 and method == 'OPTIONS':
@@ -93,7 +112,7 @@ def do_forward_request(api, port, method, path, data, headers):
     return result
 
 
-def do_forward_request_inmem(api, port, method, path, data, headers):
+def do_forward_request_inmem(api, method, path, data, headers, port=None):
     listener_details = PROXY_LISTENERS.get(api)
     if not listener_details:
         message = 'Unable to find listener for service "%s" - please make sure to include it in $SERVICES' % api
@@ -118,7 +137,7 @@ def do_forward_request_network(port, method, path, data, headers):
     return response
 
 
-def get_api_from_headers(headers, path=None):
+def get_api_from_headers(headers, method=None, path=None, data=None):
     """ Determine API and backend port based on Authorization headers. """
 
     target = headers.get('x-amz-target', '')
@@ -185,9 +204,37 @@ def serve_health_endpoint(method, path, data):
         reload = 'reload' in path
         return plugins.get_services_health(reload=reload)
     if method == 'PUT':
-        data = json.loads(to_str(data))
+        data = json.loads(to_str(data or '{}'))
         plugins.set_services_health(data)
         return {'status': 'OK'}
+    if method == 'POST':
+        data = json.loads(to_str(data or '{}'))
+        # backdoor API to support restarting the instance
+        if data.get('action') in ['kill', 'restart']:
+            terminate_all_processes_in_docker()
+    return {}
+
+
+def terminate_all_processes_in_docker():
+    if not in_docker():
+        # make sure we only run this inside docker!
+        return
+    print('INFO: Received command to restart all processes ...')
+    cmd = ('ps aux | grep -v supervisor | grep -v docker-entrypoint.sh | grep -v "make infra" | '
+        "grep -v localstack_infra.log | awk '{print $1}' | grep -v PID")
+    pids = run(cmd).strip()
+    pids = re.split(r'\s+', pids)
+    pids = [int(pid) for pid in pids]
+    this_pid = os.getpid()
+    for pid in pids:
+        if pid != this_pid:
+            try:
+                # kill spawned process
+                os.kill(pid, signal.SIGKILL)
+            except Exception:
+                pass
+    # kill the process itself
+    os._exit(0)
 
 
 def serve_resource_graph(data):

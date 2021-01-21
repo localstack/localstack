@@ -175,7 +175,10 @@ def func_arn(function_name):
 
 def func_qualifier(function_name, qualifier=None):
     arn = aws_stack.lambda_function_arn(function_name)
-    if ARN_TO_LAMBDA.get(arn).qualifier_exists(qualifier):
+    details = ARN_TO_LAMBDA.get(arn)
+    if not details:
+        return details
+    if details.qualifier_exists(qualifier):
         return '{}:{}'.format(arn, qualifier)
     return arn
 
@@ -506,14 +509,21 @@ def get_function_version(arn, version):
 def publish_new_function_version(arn):
     func_details = ARN_TO_LAMBDA.get(arn)
     versions = func_details.versions
-    last_version = func_details.max_version()
-    versions[str(last_version + 1)] = {
-        'CodeSize': versions.get(VERSION_LATEST).get('CodeSize'),
-        'CodeSha256': versions.get(VERSION_LATEST).get('CodeSha256'),
-        'Function': versions.get(VERSION_LATEST).get('Function'),
-        'RevisionId': str(uuid.uuid4())
-    }
-    return get_function_version(arn, str(last_version + 1))
+    max_version_number = func_details.max_version()
+    next_version_number = max_version_number + 1
+    latest_hash = versions.get(VERSION_LATEST).get('CodeSha256')
+    max_version = versions.get(str(max_version_number))
+    max_version_hash = max_version.get('CodeSha256') if max_version else ''
+
+    if latest_hash != max_version_hash:
+        versions[str(next_version_number)] = {
+            'CodeSize': versions.get(VERSION_LATEST).get('CodeSize'),
+            'CodeSha256': versions.get(VERSION_LATEST).get('CodeSha256'),
+            'Function': versions.get(VERSION_LATEST).get('Function'),
+            'RevisionId': str(uuid.uuid4())
+        }
+        max_version_number = next_version_number
+    return get_function_version(arn, str(max_version_number))
 
 
 def do_list_versions(arn):
@@ -918,7 +928,8 @@ def get_lambda_policy(function, qualifier=None):
         doc['PolicyArn'] = p['Arn']
         doc['Id'] = 'default'
         docs.append(doc)
-    policy = [d for d in docs if d['Statement'][0]['Resource'] == func_qualifier(function, qualifier)]
+    res_qualifier = func_qualifier(function, qualifier)
+    policy = [d for d in docs if d['Statement'][0]['Resource'] == res_qualifier]
     return (policy or [None])[0]
 
 
@@ -1086,11 +1097,16 @@ def update_function_code(function):
             - name: 'request'
               in: body
     """
+    arn = func_arn(function)
+    if arn not in ARN_TO_LAMBDA:
+        return error_response('Function not found: %s' %
+                arn, 400, error_type='ResourceNotFoundException')
     data = json.loads(to_str(request.data))
     result = set_function_code(data, function)
-    arn = func_arn(function)
     func_details = ARN_TO_LAMBDA.get(arn)
     result.update(format_func_details(func_details))
+    if data.get('Publish'):
+        result['Version'] = publish_new_function_version(arn)['Version']
     if isinstance(result, Response):
         return result
     return jsonify(result or {})

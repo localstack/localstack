@@ -17,6 +17,7 @@ TEST_EVENT_SOURCE_ARN = 'arn:aws:sqs:eu-west-1:000000000000:testq'
 class TestLambdaAPI(unittest.TestCase):
     CODE_SIZE = 50
     CODE_SHA_256 = '/u60ZpAA9bzZPVwb8d4390i5oqP1YAObUwV03CZvsWA='
+    UPDATED_CODE_SHA_256 = '/u6A='
     MEMORY_SIZE = 128
     ROLE = 'arn:aws:iam::123456:role/role-name'
     LAST_MODIFIED = '2019-05-25T17:00:48.260+0000'
@@ -269,9 +270,7 @@ class TestLambdaAPI(unittest.TestCase):
             self._create_function(self.FUNCTION_NAME)
 
             result = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
-            result2 = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
             result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
-            result2.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
 
             expected_result = dict()
             expected_result['CodeSize'] = self.CODE_SIZE
@@ -292,11 +291,38 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['State'] = 'Active'
             expected_result['LastUpdateStatus'] = 'Successful'
             expected_result['PackageType'] = None
-            expected_result2 = dict(expected_result)
-            expected_result2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
-            expected_result2['Version'] = '2'
             self.assertDictEqual(expected_result, result)
-            self.assertDictEqual(expected_result2, result2)
+
+    def test_publish_update_version_increment(self):
+        with self.app.test_request_context():
+            self._create_function(self.FUNCTION_NAME)
+            lambda_api.publish_version(self.FUNCTION_NAME)
+
+            self._update_function_code(self.FUNCTION_NAME)
+            result = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
+
+            result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
+
+            expected_result = dict()
+            expected_result['CodeSize'] = self.CODE_SIZE
+            expected_result['CodeSha256'] = self.UPDATED_CODE_SHA_256
+            expected_result['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
+            expected_result['FunctionName'] = str(self.FUNCTION_NAME)
+            expected_result['Handler'] = str(self.HANDLER)
+            expected_result['Runtime'] = str(self.RUNTIME)
+            expected_result['Timeout'] = self.TIMEOUT
+            expected_result['Description'] = ''
+            expected_result['MemorySize'] = self.MEMORY_SIZE
+            expected_result['Role'] = self.ROLE
+            expected_result['KMSKeyArn'] = None
+            expected_result['VpcConfig'] = None
+            expected_result['LastModified'] = self.LAST_MODIFIED
+            expected_result['TracingConfig'] = self.TRACING_CONFIG
+            expected_result['Version'] = '2'
+            expected_result['State'] = 'Active'
+            expected_result['LastUpdateStatus'] = 'Successful'
+            expected_result['PackageType'] = None
+            self.assertDictEqual(expected_result, result)
 
     def test_publish_non_existant_function_version_returns_error(self):
         with self.app.test_request_context():
@@ -338,10 +364,7 @@ class TestLambdaAPI(unittest.TestCase):
             version1 = dict(latest_version)
             version1['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':1'
             version1['Version'] = '1'
-            version2 = dict(latest_version)
-            version2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
-            version2['Version'] = '2'
-            expected_result = {'Versions': sorted([latest_version, version1, version2],
+            expected_result = {'Versions': sorted([latest_version, version],
                                                   key=lambda k: str(k.get('Version')))}
             self.assertDictEqual(expected_result, result)
 
@@ -701,6 +724,14 @@ class TestLambdaAPI(unittest.TestCase):
         lambda_api.ARN_TO_LAMBDA[arn].last_modified = self.LAST_MODIFIED
         lambda_api.ARN_TO_LAMBDA[arn].role = self.ROLE
         lambda_api.ARN_TO_LAMBDA[arn].memory_size = self.MEMORY_SIZE
+
+    def _update_function_code(self, function_name, tags={}):
+        arn = lambda_api.func_arn(function_name)
+        lambda_api.ARN_TO_LAMBDA[arn].versions.update({
+            '$LATEST': {'CodeSize': self.CODE_SIZE,
+            'CodeSha256': self.UPDATED_CODE_SHA_256,
+            'RevisionId': self.REVISION_ID}
+        })
 
     def _assert_contained(self, child, parent):
         self.assertTrue(set(child.items()).issubset(set(parent.items())))

@@ -50,10 +50,12 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_RESPONSES, path):
             search_match = re.search(PATH_REGEX_RESPONSES, path)
             api_id = search_match.group(1)
+            response_type = (search_match.group(2) or '').lstrip('/')
             if method == 'GET':
+                if response_type:
+                    return get_gateway_response(api_id, response_type)
                 return get_gateway_responses(api_id)
             if method == 'PUT':
-                response_type = search_match.group(2).lstrip('/')
                 return put_gateway_response(api_id, response_type, data)
 
         return True
@@ -125,6 +127,12 @@ def get_gateway_responses(api_id):
         'item': [item(i) for i in result]
     }
     return result
+
+
+def get_gateway_response(api_id, response_type):
+    responses = GATEWAY_RESPONSES.get(api_id, [])
+    result = [r for r in responses if r['responseType'] == response_type]
+    return result[0] if result else 404
 
 
 def put_gateway_response(api_id, response_type, data):
