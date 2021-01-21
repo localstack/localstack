@@ -5,20 +5,29 @@ from localstack.services.generic_proxy import ProxyListener
 class ProxyListenerCloudWatch(ProxyListener):
 
     def return_response(self, method, path, data, headers, response):
-        # Fix Incorrect date format to iso 8601
-        timestamp_tags = [
-            'AlarmConfigurationUpdatedTimestamp',
-            'StateUpdatedTimestamp'
-        ]
-        for tag in timestamp_tags:
-            self.fix_date_format(response, tag)
+        # Fix Incorrect date format to the correct format
+        # the dictionary contains the tag as the key and the value is a
+        # tuple (pattern, replacement)
+        timestamp_tags = {
+            'AlarmConfigurationUpdatedTimestamp':
+            (r'<{}>([^<]+) ([^<+]+)(\+[^<]*)?</{}>', r'<{}>\1T\2Z</{}>'),
+            'StateUpdatedTimestamp':
+            (r'<{}>([^<]+) ([^<+]+)(\+[^<]*)?</{}>', r'<{}>\1T\2Z</{}>'),
+            'member':
+            (r'<{}>([^<]+) ([^<+.]+)(\.[^<]*)?</{}>', r'<{}>\1T\2Z</{}>')
+
+        }
+
+        for tag, value in timestamp_tags.items():
+            pattern, replacement = value
+            self.fix_date_format(response, tag, pattern, replacement)
         response.headers['Content-Length'] = len(response.content)
         return response
 
-    def fix_date_format(self, response, timestamp_tag):
-        """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
-        pattern = r'<{}>([^<]+) ([^<+]+)(\+[^<]*)?</{}>'.format(timestamp_tag, timestamp_tag)
-        replacement = r'<{}>\1T\2Z</{}>'.format(timestamp_tag, timestamp_tag)
+    def fix_date_format(self, response, timestamp_tag, pattern, replacement):
+        """ Normalize date to correct format"""
+        pattern = pattern.format(timestamp_tag, timestamp_tag)
+        replacement = replacement.format(timestamp_tag, timestamp_tag)
         _replace(response, pattern, replacement)
 
 
