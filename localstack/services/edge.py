@@ -321,7 +321,7 @@ def get_api_from_custom_rules(method, path, data, headers):
         return 'sqs', config.PORT_SQS
 
     # Put Object API can have multiple keys
-    if stripped.count('/') == 1 and method == 'PUT':
+    if stripped.count('/') >= 1 and method == 'PUT':
         # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
         # or `/<bucket>/object/object1/+`
         return 's3', config.PORT_S3
