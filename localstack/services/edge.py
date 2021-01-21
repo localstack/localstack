@@ -308,10 +308,6 @@ def get_api_from_custom_rules(method, path, data, headers):
             # assume that this is an S3 POST request with form parameters or multipart form in the body
             return 's3', config.PORT_S3
 
-    if stripped.count('/') == 1 and method == 'PUT':
-        # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
-        return 's3', config.PORT_S3
-
     # detect S3 requests sent from aws-cli using --no-sign-request option
     if 'aws-cli/' in headers.get('User-Agent', ''):
         return 's3', config.PORT_S3
@@ -323,6 +319,12 @@ def get_api_from_custom_rules(method, path, data, headers):
     # SQS queue requests
     if ('QueueUrl=' in path and 'Action=' in path) or (b'QueueUrl=' in data_bytes and b'Action=' in data_bytes):
         return 'sqs', config.PORT_SQS
+
+    # Put Object API can have multiple keys
+    if stripped.count('/') >= 1 and method == 'PUT':
+        # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
+        # or `/<bucket>/object/object1/+`
+        return 's3', config.PORT_S3
 
 
 def get_service_port_for_account(service, headers):
