@@ -10,19 +10,17 @@ import unittest
 import datetime
 import requests
 from io import BytesIO
-
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON36
-
-from localstack.utils import testutil
 from pytz import timezone
+from botocore.exceptions import ClientError
 from six.moves.urllib.request import Request, urlopen
 from localstack import config
-from botocore.exceptions import ClientError
+from localstack.utils import testutil
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
@@ -196,6 +194,26 @@ class S3ListenerTest(unittest.TestCase):
             self.s3_client.get_object(Bucket=bucket_name, Key='steve', Range='bytes=1024-4096')
         except ClientError as e:
             self.assertEqual(e.response['Error']['Code'], 'InvalidRange')
+
+        # clean up
+        self._delete_bucket(bucket_name, ['steve'])
+
+    def test_upload_key_with_hash_prefix(self):
+        bucket_name = 'hash-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        key_name = '#key-with-hash-prefix'
+        content = b'test 123'
+        self.s3_client.put_object(Bucket=bucket_name, Key=key_name, Body=content)
+
+        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=key_name)
+        downloaded_content = to_str(downloaded_object['Body'].read())
+        self.assertEqual(to_str(downloaded_content), to_str(content))
+
+        # clean up
+        self._delete_bucket(bucket_name, [key_name])
+        with self.assertRaises(Exception):
+            self.s3_client.head_object(Bucket=bucket_name, Key=key_name)
 
     def test_s3_multipart_upload_acls(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -1028,6 +1046,23 @@ class S3ListenerTest(unittest.TestCase):
 
         result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
         self.assertEqual(result['Status'], 'Enabled')
+
+    def test_get_bucket_versioning_order(self):
+        bucket_name = 'version-order-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test2', Body='body')
+        rs = self.s3_client.list_object_versions(
+            Bucket=bucket_name,
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['Name'], bucket_name)
+        self.assertEqual(rs['Versions'][0]['IsLatest'], True)
+        self.assertEqual(rs['Versions'][2]['IsLatest'], True)
 
     def test_upload_big_file(self):
         bucket_name = 'bucket-big-file-%s' % short_uid()

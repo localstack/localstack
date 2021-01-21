@@ -20,6 +20,7 @@ from six.moves.BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from localstack import config
 from localstack.config import EXTRA_CORS_ALLOWED_HEADERS, EXTRA_CORS_EXPOSE_HEADERS
 from localstack.constants import APPLICATION_JSON
+from localstack.utils.aws import aws_stack
 from localstack.utils.server import http2_server
 from localstack.utils.common import (
     FuncThread, generate_ssl_cert, to_bytes, json_safe, TMP_THREADS, path_from_url, Mock)
@@ -37,7 +38,7 @@ SERVER_CERT_PEM_FILE = 'server.test.pem'
 USE_HTTP2_SERVER = config.USE_HTTP2_SERVER
 
 # CORS constants
-CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-md5', 'cache-control',
+CORS_ALLOWED_HEADERS = ['authorization', 'content-type', 'content-length', 'content-md5', 'cache-control',
     'x-amz-content-sha256', 'x-amz-date', 'x-amz-security-token', 'x-amz-user-agent',
     'x-amz-target', 'x-amz-acl', 'x-amz-version-id', 'x-localstack-target', 'x-amz-tagging']
 if EXTRA_CORS_ALLOWED_HEADERS:
@@ -98,6 +99,37 @@ class ProxyListener(object):
         return None
 
 
+# -------------------
+# BASE BACKEND UTILS
+# -------------------
+
+class RegionBackend(object):
+    """ Base class for region-specific backends for the different APIs. """
+
+    @classmethod
+    def get(cls, region=None):
+        regions = cls.regions()
+        region = region or cls.get_current_request_region()
+        regions[region] = regions.get(region) or cls()
+        return regions[region]
+
+    @classmethod
+    def regions(cls):
+        if not hasattr(cls, 'REGIONS'):
+            # maps region name to region backend instance
+            cls.REGIONS = {}
+        return cls.REGIONS
+
+    @classmethod
+    def get_current_request_region(cls):
+        return aws_stack.get_region()
+
+
+# ---------------------
+# PROXY LISTENER UTILS
+# ---------------------
+
+# TODO deprecated - should be removed
 class GenericProxyHandler(BaseHTTPRequestHandler):
 
     # List of `ProxyListener` instances that are enabled by default for all requests
@@ -486,6 +518,7 @@ if hasattr(BaseSelectorEventLoop, '_accept_connection2') and not hasattr(BaseSel
     BaseSelectorEventLoop._ls_patched = True
 
 
+# TODO: deprecated, as we're now using the HTTP2 server by default - remove!
 class GenericProxy(FuncThread):
     def __init__(self, port, forward_url=None, ssl=False, host=None, update_listener=None, quiet=False, params={}):
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
@@ -541,6 +574,7 @@ def get_cert_pem_file_path():
     return os.path.join(config.TMP_FOLDER, SERVER_CERT_PEM_FILE)
 
 
+# TODO deprecated - remove
 def start_proxy_server(port, forward_url=None, use_ssl=None, update_listener=None, quiet=False, params={}):
     if USE_HTTP2_SERVER:
         return start_proxy_server_http2(port=port, forward_url=forward_url,

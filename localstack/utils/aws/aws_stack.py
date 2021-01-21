@@ -294,11 +294,14 @@ def check_valid_region(headers):
         raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
 
 
-def set_default_region_in_headers(headers):
+def set_default_region_in_headers(headers, service=None, region=None):
     auth_header = headers.get('Authorization')
+    region = region or get_region()
     if not auth_header:
+        if service:
+            headers['Authorization'] = mock_aws_request_headers(service, region_name=region)['Authorization']
         return
-    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % get_region(), auth_header)
+    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % region, auth_header)
     headers['Authorization'] = replaced
 
 
@@ -317,7 +320,7 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
 
     if not is_str_obj:
         response._content = content
-        response.headers['content-length'] = len(response._content)
+        response.headers['Content-Length'] = len(response._content)
         return response
     return content
 
@@ -492,6 +495,11 @@ def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def elasticsearch_domain_arn(domain_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:es:%s:%s:domain/%s'
+    return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def firehose_stream_arn(stream_name, account_id=None, region_name=None):
     pattern = 'arn:aws:firehose:%s:%s:deliverystream/%s'
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
@@ -517,6 +525,37 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
     return pattern % (region_name, account_id, name)
+
+
+def send_event_to_target(arn, event, target_attributes=None):
+    if ':lambda:' in arn:
+        from localstack.services.awslambda import lambda_api
+        lambda_api.run_lambda(event=event, context={}, func_arn=arn)
+
+    elif ':sns:' in arn:
+        sns_client = connect_to_service('sns')
+        sns_client.publish(TopicArn=arn, Message=json.dumps(event))
+
+    elif ':sqs:' in arn:
+        sqs_client = connect_to_service('sqs')
+        queue_url = get_sqs_queue_url(arn)
+
+        msg_group_id = (target_attributes or {}).get('MessageGroupId')
+        kwargs = {'MessageGroupId': msg_group_id} if msg_group_id else {}
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
+
+    elif ':states' in arn:
+        stepfunctions_client = connect_to_service('stepfunctions')
+        stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
+
+    else:
+        LOG.info('Unsupported Events rule target ARN "%s"' % arn)
+
+
+def get_events_target_attributes(target):
+    # added for sqs, if needed can be moved to an if else
+    # block for multiple targets
+    return target.get('SqsParameters')
 
 
 def create_sqs_queue(queue_name, env=None):
@@ -874,14 +913,26 @@ def deploy_cf_stack(stack_name, template_body):
     return await_stack_completion(stack_name)
 
 
-def await_stack_status(stack_name, expected_status, retries=3, sleep=2):
+def await_stack_status(stack_name, expected_statuses, retries=3, sleep=2):
     def check_stack():
         stack = get_stack_details(stack_name)
-        assert stack['StackStatus'] == expected_status
+        assert stack['StackStatus'] in expected_statuses
         return stack
 
+    expected_statuses = expected_statuses if isinstance(expected_statuses, list) else [expected_statuses]
     return retry(check_stack, retries, sleep)
 
 
-def await_stack_completion(stack_name, retries=3, sleep=2):
-    return await_stack_status(stack_name, 'CREATE_COMPLETE', retries=retries, sleep=sleep)
+def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
+    statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
+    return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
+
+
+def extract_tags(req_data):
+    tags = []
+    req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
+    for i in range(int(len(req_tags.keys()) / 2)):
+        key = req_tags['Tags.member.' + str(i + 1) + '.Key']
+        value = req_tags['Tags.member.' + str(i + 1) + '.Value']
+        tags.append({'Key': key, 'Value': value})
+    return tags

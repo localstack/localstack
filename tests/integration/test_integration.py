@@ -8,12 +8,12 @@ import unittest
 from datetime import datetime, timedelta
 from nose.tools import assert_raises
 from localstack.utils import testutil
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
     load_file, save_file, short_uid, clone, to_bytes, to_str, run_safe, retry, new_tmp_file)
-from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON27
 from localstack.utils.kinesis import kinesis_connector
-from localstack.utils.aws import aws_stack
 from localstack.utils.testutil import get_lambda_log_events
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON27
 from .lambdas import lambda_integration
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO, TEST_LAMBDA_LIBS, LambdaTestBase
 

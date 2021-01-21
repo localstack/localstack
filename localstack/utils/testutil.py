@@ -12,7 +12,7 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, ENV_INTERNAL_TEST_RUN)
 from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
-from localstack.services.awslambda.lambda_api import (
+from localstack.services.awslambda.lambda_utils import (
     get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
@@ -105,15 +105,17 @@ def create_zip_file_python(source_path, base_dir, zip_file):
                 zip_file.write(full_name, dest)
 
 
-def create_zip_file(file_path, get_content=False):
+def create_zip_file(file_path, zip_file=None, get_content=False):
     base_dir = file_path
     if not os.path.isdir(file_path):
         base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
         shutil.copy(file_path, base_dir)
         TMP_FILES.append(base_dir)
     tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
-    zip_file_name = 'archive.zip'
-    full_zip_file = os.path.join(tmp_dir, zip_file_name)
+    full_zip_file = zip_file
+    if not full_zip_file:
+        zip_file_name = 'archive.zip'
+        full_zip_file = os.path.join(tmp_dir, zip_file_name)
     # create zip file
     if is_alpine():
         create_zip_file_cli(file_path, base_dir, zip_file=full_zip_file)

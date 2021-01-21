@@ -5,14 +5,14 @@ import json
 from datetime import datetime
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON36
-from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.aws.aws_stack import get_environment
 from localstack.utils.common import json_safe, short_uid, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+from localstack.utils.aws.aws_stack import get_environment
+from localstack.utils.aws.aws_models import KinesisStream
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 
 PARTITION_KEY = 'id'
 
@@ -463,6 +463,10 @@ class TestDynamoDB(unittest.TestCase):
 
         table_list = dynamodb.list_tables()
         self.assertEqual(tables_before, len(table_list['TableNames']))
+
+        with self.assertRaises(Exception) as ctx:
+            dynamodb.delete_table(TableName=table_name)
+        self.assertIn('ResourceNotFoundException', str(ctx.exception))
 
     def test_transaction_write_items(self):
         table_name = 'test-ddb-table-%s' % short_uid()

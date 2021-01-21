@@ -6,6 +6,7 @@ import json
 import time
 import logging
 import threading
+import traceback
 import subprocess
 import six
 import base64
@@ -18,36 +19,20 @@ from localstack import config
 from localstack.utils import bootstrap
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker,
-    to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
+    CaptureOutput, FuncThread, TMP_FILES, short_uid, save_file, rm_rf, in_docker, long_uid,
+    now, to_str, to_bytes, run, cp_r, json_safe, get_free_tcp_port)
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
-from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue, sqs_error_to_dead_letter_queue
+from localstack.utils.aws.dead_letter_queue import lambda_error_to_dead_letter_queue
+from localstack.utils.aws.dead_letter_queue import sqs_error_to_dead_letter_queue
+from localstack.utils.aws.lambda_destinations import lambda_result_to_destination
 from localstack.utils.cloudwatch.cloudwatch_util import store_cloudwatch_logs, cloudwatched
+from localstack.services.awslambda.lambda_utils import (
+    LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_PROVIDED)
 
 # constants
 LAMBDA_EXECUTOR_JAR = INSTALL_PATH_LOCALSTACK_FAT_JAR
 LAMBDA_EXECUTOR_CLASS = 'cloud.localstack.LambdaExecutor'
 EVENT_FILE_PATTERN = '%s/lambda.event.*.json' % config.TMP_FOLDER
-
-LAMBDA_RUNTIME_PYTHON27 = 'python2.7'
-LAMBDA_RUNTIME_PYTHON36 = 'python3.6'
-LAMBDA_RUNTIME_PYTHON37 = 'python3.7'
-LAMBDA_RUNTIME_PYTHON38 = 'python3.8'
-LAMBDA_RUNTIME_NODEJS = 'nodejs'
-LAMBDA_RUNTIME_NODEJS43 = 'nodejs4.3'
-LAMBDA_RUNTIME_NODEJS610 = 'nodejs6.10'
-LAMBDA_RUNTIME_NODEJS810 = 'nodejs8.10'
-LAMBDA_RUNTIME_NODEJS10X = 'nodejs10.x'
-LAMBDA_RUNTIME_NODEJS12X = 'nodejs12.x'
-LAMBDA_RUNTIME_JAVA8 = 'java8'
-LAMBDA_RUNTIME_JAVA11 = 'java11'
-LAMBDA_RUNTIME_DOTNETCORE2 = 'dotnetcore2.0'
-LAMBDA_RUNTIME_DOTNETCORE21 = 'dotnetcore2.1'
-LAMBDA_RUNTIME_DOTNETCORE31 = 'dotnetcore3.1'
-LAMBDA_RUNTIME_GOLANG = 'go1.x'
-LAMBDA_RUNTIME_RUBY = 'ruby'
-LAMBDA_RUNTIME_RUBY25 = 'ruby2.5'
-LAMBDA_RUNTIME_PROVIDED = 'provided'
 
 LAMBDA_SERVER_UNIQUE_PORTS = 500
 LAMBDA_SERVER_PORT_OFFSET = 5000
@@ -73,6 +58,13 @@ USE_CUSTOM_JAVA_EXECUTOR = False
 
 # maps lambda arns to concurrency locks
 LAMBDA_CONCURRENCY_LOCK = {}
+
+
+class InvocationException(Exception):
+    def __init__(self, message, log_output, result=None):
+        super(InvocationException, self).__init__(message)
+        self.log_output = log_output
+        self.result = result
 
 
 def get_from_event(event, key):
@@ -116,6 +108,14 @@ def get_main_endpoint_from_container():
                 (container_name, e))
     # return main container IP, or fall back to Docker host (bridge IP, or host DNS address)
     return DOCKER_MAIN_CONTAINER_IP or config.DOCKER_HOST_FROM_CONTAINER
+
+
+class InvocationResult(object):
+    def __init__(self, result, log_output=''):
+        if isinstance(result, InvocationResult):
+            raise Exception('Unexpected invocation result type: %s' % result)
+        self.result = result
+        self.log_output = log_output or ''
 
 
 class LambdaExecutor(object):
@@ -162,6 +162,8 @@ class LambdaExecutor(object):
                 finally:
                     self.function_invoke_times[func_arn] = invocation_time
                     callback and callback(result, func_arn, event, error=raised_error, dlq_sent=dlq_sent)
+                    lambda_result_to_destination(func_details, event, result, asynchronous, raised_error)
+
                 # return final result
                 return result
 
@@ -171,7 +173,7 @@ class LambdaExecutor(object):
         if asynchronous:
             LOG.debug('Lambda executed in Event (asynchronous) mode, no response will be returned to caller')
             FuncThread(do_execute).start()
-            return None, 'Lambda executed asynchronously.'
+            return InvocationResult(None, log_output='Lambda executed asynchronously.')
 
         return do_execute()
 
@@ -187,16 +189,20 @@ class LambdaExecutor(object):
 
     def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars={}):
         kwargs = {'stdin': True, 'inherit_env': True, 'asynchronous': True}
+        env_vars = env_vars or {}
 
         is_provided = func_details.runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
         if func_details and is_provided and env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
             # Note: certain "provided" runtimes (e.g., Rust programs) can block when we pass in
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
-            env_vars = {
+            env_updates = {
                 'PATH': env_vars.get('PATH') or os.environ.get('PATH', ''),
                 'AWS_LAMBDA_EVENT_BODY': to_str(event),
                 'DOCKER_LAMBDA_USE_STDIN': '1'
             }
+            env_vars.update(env_updates)
+            # Note: $AWS_LAMBDA_COGNITO_IDENTITY='{}' causes Rust Lambdas to hang
+            env_vars.pop('AWS_LAMBDA_COGNITO_IDENTITY', None)
             event = None
             cmd = re.sub(r'(.*)(%s\s+(run|start))' % self._docker_cmd(), r'\1echo $AWS_LAMBDA_EVENT_BODY | \2', cmd)
 
@@ -223,10 +229,11 @@ class LambdaExecutor(object):
         _store_logs(func_details, log_output)
 
         if return_code != 0:
-            raise Exception('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
-                (return_code, result, log_output))
+            raise InvocationException('Lambda process returned error status code: %s. Result: %s. Output:\n%s' %
+                (return_code, result, log_output), log_output, result)
 
-        return result
+        invocation_result = InvocationResult(result, log_output=log_output)
+        return invocation_result
 
 
 class ContainerInfo:
@@ -735,6 +742,7 @@ class LambdaExecutorLocal(LambdaExecutor):
         def do_execute():
             # now we're executing in the child process, safe to change CWD and ENV
             path_before = sys.path
+            result = None
             try:
                 if lambda_cwd:
                     os.chdir(lambda_cwd)
@@ -742,26 +750,47 @@ class LambdaExecutorLocal(LambdaExecutor):
                 if environment:
                     os.environ.update(environment)
                 result = lambda_function(event, context)
-                queue.put(result)
+            except Exception as e:
+                result = str(e)
+                sys.stderr.write('%s %s' % (e, traceback.format_exc()))
+                raise
             finally:
                 sys.path = path_before
+                queue.put(result)
 
         process = Process(target=do_execute)
+        start_time = now(millis=True)
+        error = None
         with CaptureOutput() as c:
-            process.run()
+            try:
+                process.run()
+            except Exception as e:
+                error = e
         result = queue.get()
+        end_time = now(millis=True)
 
         # Make sure to keep the log line below, to ensure the log stream gets created
-        log_output = 'START: Lambda %s started via "local" executor ...' % func_arn
+        request_id = long_uid()
+        log_output = 'START %s: Lambda %s started via "local" executor ...' % (request_id, func_arn)
         # TODO: Interweaving stdout/stderr currently not supported
         for stream in (c.stdout(), c.stderr()):
             if stream:
                 log_output += ('\n' if log_output else '') + stream
+        log_output += '\nEND RequestId: %s' % request_id
+        log_output += '\nREPORT RequestId: %s Duration: %s ms' % (request_id, int((end_time - start_time) * 1000))
 
         # store logs to CloudWatch
         _store_logs(func_details, log_output)
 
-        return result
+        result = result.result if isinstance(result, InvocationResult) else result
+
+        if error:
+            LOG.info('Error executing Lambda "%s": %s %s' % (func_arn, error,
+                ''.join(traceback.format_tb(error.__traceback__))))
+            raise InvocationException(result, log_output)
+
+        invocation_result = InvocationResult(result, log_output=log_output)
+        return invocation_result
 
     def execute_java_lambda(self, event, context, main_file, func_details=None):
         handler = func_details.handler

@@ -35,8 +35,8 @@ RUN make install-web
 ADD bin/supervisord.conf /etc/supervisord.conf
 ADD bin/docker-entrypoint.sh /usr/local/bin/
 
-# expose service & web dashboard ports (including edge)
-EXPOSE 4566-4597 8080
+# expose edge service, ElasticSearch & web dashboard ports
+EXPOSE 4566 4571 8080
 
 # define command at startup
 ENTRYPOINT ["docker-entrypoint.sh"]
@@ -86,8 +86,8 @@ ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
 RUN LAMBDA_EXECUTOR=local make test
-# clean up temporary files created during test execution
 
+# clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
     rm -rf /tmp/localstack/*elasticsearch* /tmp/localstack.* tests/ /root/.npm/*cache /opt/terraform /root/.serverless; \
     mkdir /root/.serverless; chmod -R 777 /root/.serverless

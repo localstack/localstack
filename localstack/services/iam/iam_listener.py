@@ -24,7 +24,7 @@ class ProxyListenerIAM(ProxyListener):
             MessageConversion.fix_error_codes(method, data, response)
             MessageConversion.fix_xml_empty_boolean(response, BOOL_ATTRS)
             # fix content-length header
-            response.headers['content-length'] = str(len(response._content))
+            response.headers['Content-Length'] = str(len(response._content))
 
 
 # instantiate listener

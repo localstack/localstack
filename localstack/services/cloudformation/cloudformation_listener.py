@@ -1,19 +1,15 @@
+# NOTE: This code is deprecated and will be removed in a future iteration!
+
 import re
-import os
-import json
 import uuid
-import boto3
 import logging
 from requests.models import Request, Response
 from six.moves.urllib import parse as urlparse
-from samtranslator.translator.transform import transform as transform_sam
-from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.services.s3 import s3_listener
-from localstack.utils.common import to_str, obj_to_xml, safe_requests, run_safe, timestamp_millis
+from localstack.utils.common import to_str, obj_to_xml, timestamp_millis
 from localstack.utils.analytics import event_publisher
-from localstack.utils.cloudformation import template_deployer_old as template_deployer
+from localstack.utils.cloudformation import template_deployer, template_preparer
 from localstack.services.generic_proxy import ProxyListener
 
 XMLNS_CLOUDFORMATION = 'http://cloudformation.amazonaws.com/doc/2010-05-15/'
@@ -50,123 +46,6 @@ def make_response(operation_name, content='', code=200):
     return response
 
 
-def validate_template(req_data):
-    # TODO implement actual validation logic
-    # Note: if we enable this via moto, ensure that we have cfnlint module available (adds ~58MB in size :/)
-    response_content = """
-        <Capabilities></Capabilities>
-        <CapabilitiesReason></CapabilitiesReason>
-        <DeclaredTransforms></DeclaredTransforms>
-        <Description>{description}</Description>
-        <Parameters>
-            {parameters}
-        </Parameters>
-    """
-    try:
-        template_body = get_template_body(req_data)
-        valid_template = json.loads(template_deployer.template_to_json(template_body))
-        parameters = ''.join([
-            """
-            <member>
-                <ParameterKey>{pk}</ParameterKey>
-                <DefaultValue>{dv}</DefaultValue>
-                <NoEcho>{echo}</NoEcho>
-                <Description>{desc}</Description>
-            </member>
-            """.format(
-                pk=k,
-                dv=v.get('Default', ''),
-                echo=False,
-                desc=v.get('Description', '')
-
-            )
-            for k, v in valid_template.get('Parameters', {}).items()
-        ])
-
-        resp = response_content.format(
-            parameters=parameters, description=valid_template.get('Description', '')
-        )
-
-        return make_response('ValidateTemplate', resp)
-
-    except Exception as err:
-        return error_response('Template Validation Error: %s' % err)
-
-
-def transform_template(req_data):
-    template_body = get_template_body(req_data)
-    parsed = template_deployer.parse_template(template_body)
-
-    policy_map = {
-        # SAM Transformer expects this map to be non-empty, but apparently the content doesn't matter (?)
-        'dummy': 'entry'
-        # 'AWSLambdaBasicExecutionRole': 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole',
-    }
-
-    class MockPolicyLoader(object):
-        def load(self):
-            return policy_map
-
-    if parsed.get('Transform') == 'AWS::Serverless-2016-10-31':
-        # Note: we need to fix boto3 region, otherwise AWS SAM transformer fails
-        region_before = os.environ.get('AWS_DEFAULT_REGION')
-        if boto3.session.Session().region_name is None:
-            os.environ['AWS_DEFAULT_REGION'] = aws_stack.get_region()
-        try:
-            transformed = transform_sam(parsed, {}, MockPolicyLoader())
-            return json.dumps(transformed)
-        finally:
-            os.environ.pop('AWS_DEFAULT_REGION', None)
-            if region_before is not None:
-                os.environ['AWS_DEFAULT_REGION'] = region_before
-
-
-def get_template_body(req_data):
-    body = req_data.get('TemplateBody')
-    if body:
-        return body
-    url = req_data.get('TemplateURL')
-    if url:
-        response = run_safe(lambda: safe_requests.get(url, verify=False))
-        # check error codes, and code 301 - fixes https://github.com/localstack/localstack/issues/1884
-        status_code = 0 if response is None else response.status_code
-        if response is None or status_code == 301 or status_code >= 400:
-            # check if this is an S3 URL, then get the file directly from there
-            url = convert_s3_to_local_url(url)
-            if is_local_service_url(url):
-                parsed_path = urlparse.urlparse(url).path.lstrip('/')
-                parts = parsed_path.partition('/')
-                client = aws_stack.connect_to_service('s3')
-                LOG.debug('Download CloudFormation template content from local S3: %s - %s' % (parts[0], parts[2]))
-                result = client.get_object(Bucket=parts[0], Key=parts[2])
-                body = to_str(result['Body'].read())
-                return body
-            raise Exception('Unable to fetch template body (code %s) from URL %s' % (status_code, url))
-        return response.content
-    raise Exception('Unable to get template body from input: %s' % req_data)
-
-
-def is_local_service_url(url):
-    candidates = ('localhost', config.LOCALSTACK_HOSTNAME, config.HOSTNAME_EXTERNAL, config.HOSTNAME)
-    return url and any('://%s:' % host in url for host in candidates)
-
-
-def is_real_s3_url(url):
-    return re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com.*', url or '')
-
-
-def convert_s3_to_local_url(url):
-    if not is_real_s3_url(url):
-        return url
-    url_parsed = urlparse.urlparse(url)
-    path = url_parsed.path
-    bucket_name, _, key = path.lstrip('/').replace('//', '/').partition('/')
-    # note: make sure to normalize the bucket name here!
-    bucket_name = s3_listener.normalize_bucket_name(bucket_name)
-    local_url = '%s/%s/%s' % (config.TEST_S3_URL, bucket_name, key)
-    return local_url
-
-
 def fix_hardcoded_creation_date(response):
     # TODO: remove once this is fixed upstream
     search = r'<CreationTime>\s*(2011-05-23T15:47:44Z)?\s*</CreationTime>'
@@ -183,22 +62,6 @@ def fix_region_in_arns(response):
 def fix_in_response(search, replace, response):
     response._content = re.sub(search, replace, to_str(response._content or ''))
     response.headers['Content-Length'] = str(len(response._content))
-
-
-def prepare_template_body(req_data):
-    do_replace_url = is_real_s3_url(req_data.get('TemplateURL'))
-    if do_replace_url:
-        req_data['TemplateURL'] = convert_s3_to_local_url(req_data['TemplateURL'])
-    url = req_data.get('TemplateURL', '')
-    if is_local_service_url(url):
-        modified_template_body = get_template_body(req_data)
-        if modified_template_body:
-            req_data.pop('TemplateURL', None)
-            req_data['TemplateBody'] = modified_template_body
-    modified_template_body = transform_template(req_data)
-    if modified_template_body:
-        req_data['TemplateBody'] = modified_template_body
-    return modified_template_body or do_replace_url
 
 
 class ProxyListenerCloudFormation(ProxyListener):
@@ -231,7 +94,8 @@ class ProxyListenerCloudFormation(ProxyListener):
             if action == 'DeleteStack':
                 client = aws_stack.connect_to_service('cloudformation')
                 stack_resources = client.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
-                template_deployer.delete_stack(stack_name, stack_resources)
+                from localstack.utils.cloudformation import template_deployer_old
+                template_deployer_old.delete_stack(stack_name, stack_resources)
 
             if action == 'DescribeStackEvents':
                 # fix an issue where moto cannot handle ARNs as stack names (or missing names)
@@ -254,10 +118,10 @@ class ProxyListenerCloudFormation(ProxyListener):
 
         if req_data:
             if action == 'ValidateTemplate':
-                return validate_template(req_data)
+                return template_preparer.validate_template(req_data)
 
             if action in ['CreateStack', 'UpdateStack', 'CreateChangeSet']:
-                modified = prepare_template_body(req_data)
+                modified = template_deployer.prepare_template_body(req_data)
                 if modified:
                     data = urlparse.urlencode(req_data, doseq=True)
                     return Request(data=data, headers=headers, method=method)

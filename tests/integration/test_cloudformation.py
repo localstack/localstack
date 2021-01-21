@@ -10,7 +10,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, retry, short_uid, to_str
 from localstack.utils.testutil import create_zip_file
 from localstack.utils.aws.aws_stack import await_stack_completion, deploy_cf_stack
-from localstack.utils.cloudformation import template_deployer
+from localstack.utils.cloudformation import template_preparer
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 
@@ -130,13 +130,16 @@ Resources:
           Value: v2
 Outputs:
   MyElasticsearchDomainEndpoint:
-    Value: !GetAtt "MyElasticsearchDomain.DomainEndpoint"
+    Value: !GetAtt MyElasticsearchDomain.DomainEndpoint
 
   MyElasticsearchArn:
-    Value: !GetAtt "MyElasticsearchDomain.Arn"
+    Value: !GetAtt MyElasticsearchDomain.Arn
 
   MyElasticsearchDomainArn:
-    Value: !GetAtt "MyElasticsearchDomain.DomainArn"
+    Value: !GetAtt MyElasticsearchDomain.DomainArn
+
+  MyElasticsearchRef:
+    Value: !Ref MyElasticsearchDomain
 """
 
 TEST_TEMPLATE_11 = """
@@ -418,9 +421,41 @@ TEST_TEMPLATE_24 = os.path.join(THIS_FOLDER, 'templates', 'template24.yaml')
 
 TEST_TEMPLATE_25 = os.path.join(THIS_FOLDER, 'templates', 'template25.yaml')
 
+TEST_TEMPLATE_27 = os.path.join(THIS_FOLDER, 'templates', 'template27.yaml')
+
 TEST_UPDATE_LAMBDA_FUNCTION_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'update_lambda_template.json')
 
 SQS_TEMPLATE = os.path.join(THIS_FOLDER, 'templates', 'fifo_queue.json')
+
+TEST_TEMPLATE_26_1 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MyQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: %s
+Outputs:
+  TestOutput26:
+    Value: !GetAtt MyQueue.Arn
+    Export:
+      Name: TestQueueArn26
+"""
+TEST_TEMPLATE_26_2 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MessageQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: %s
+      RedrivePolicy:
+        deadLetterTargetArn: !ImportValue TestQueueArn26
+        maxReceiveCount: 3
+Outputs:
+  MessageQueueUrl1:
+    Value: !ImportValue TestQueueArn26
+  MessageQueueUrl2:
+    Value: !Ref MessageQueue
+"""
 
 
 def bucket_exists(name):
@@ -497,7 +532,19 @@ def get_topic_arns():
     return [t['TopicArn'] for t in response['Topics']]
 
 
+def expected_change_set_status():
+    return 'CREATE_COMPLETE'
+
+
 class CloudFormationTest(unittest.TestCase):
+    def cleanup(self, stack_name, change_set_name=None):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        if change_set_name:
+            cloudformation.delete_change_set(StackName=stack_name, ChangeSetName=change_set_name)
+
+        resp = cloudformation.delete_stack(StackName=stack_name)
+        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
+
     def test_create_delete_stack(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
         cf_client = aws_stack.connect_to_service('cloudformation')
@@ -505,7 +552,7 @@ class CloudFormationTest(unittest.TestCase):
         sns = aws_stack.connect_to_service('sns')
         sqs = aws_stack.connect_to_service('sqs')
         apigateway = aws_stack.connect_to_service('apigateway')
-        template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_1))
+        template = template_preparer.template_to_json(load_file(TEST_TEMPLATE_1))
 
         # deploy template
         stack_name = 'stack-%s' % short_uid()
@@ -584,7 +631,7 @@ class CloudFormationTest(unittest.TestCase):
     def test_validate_template(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
 
-        template = template_deployer.template_to_json(load_file(TEST_VALID_TEMPLATE))
+        template = template_preparer.template_to_json(load_file(TEST_VALID_TEMPLATE))
         resp = cloudformation.validate_template(TemplateBody=template)
 
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -607,7 +654,7 @@ class CloudFormationTest(unittest.TestCase):
 
     def test_list_stack_resources_returns_queue_urls(self):
         cloudformation = aws_stack.connect_to_resource('cloudformation')
-        template = template_deployer.template_to_json(load_file(TEST_TEMPLATE_2))
+        template = template_preparer.template_to_json(load_file(TEST_TEMPLATE_2))
         stack_name = 'stack-%s' % short_uid()
         cloudformation.create_stack(StackName=stack_name, TemplateBody=template)
 
@@ -757,7 +804,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetName'], change_set_name)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], self.expected_change_set_status())
+        self.assertEqual(rs['Status'], expected_change_set_status())
 
         rs = cloudformation.execute_change_set(
             StackName=stack_name,
@@ -806,7 +853,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetName'], change_set_name)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], self.expected_change_set_status())
+        self.assertEqual(rs['Status'], expected_change_set_status())
 
         rs = cloudformation.execute_change_set(StackName=stack_name, ChangeSetName=change_set_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
@@ -957,7 +1004,7 @@ class CloudFormationTest(unittest.TestCase):
         rs = cloudformation.describe_change_set(StackName=stack_name, ChangeSetName=change_set_id)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(rs['ChangeSetId'], change_set_id)
-        self.assertEqual(rs['Status'], self.expected_change_set_status())
+        self.assertEqual(rs['Status'], expected_change_set_status())
 
         iam_client = aws_stack.connect_to_service('iam')
         rs = iam_client.list_roles()
@@ -998,7 +1045,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(json.loads(rs['Policy']), policy_doc)
 
         # clean up, assert resources deleted
-        self.cleanup(stack_name,)
+        self.cleanup(stack_name)
 
         self.assertFalse(bucket_exists(bucket_name))
         with self.assertRaises(ClientError) as ctx:
@@ -1019,9 +1066,7 @@ class CloudFormationTest(unittest.TestCase):
         deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_9)
 
         logs_client = aws_stack.connect_to_service('logs')
-        rs = logs_client.describe_log_groups(
-            logGroupNamePrefix=log_group_prefix
-        )
+        rs = logs_client.describe_log_groups(logGroupNamePrefix=log_group_prefix)
 
         self.assertEqual(len(rs['logGroups']), 1)
         self.assertEqual(rs['logGroups'][0]['logGroupName'],
@@ -1047,7 +1092,7 @@ class CloudFormationTest(unittest.TestCase):
 
         details = await_stack_completion(stack_name)
         outputs = details.get('Outputs', [])
-        self.assertEqual(len(outputs), 3)
+        self.assertEqual(len(outputs), 4)
 
         rs = es_client.describe_elasticsearch_domain(DomainName=domain_name)
         status = rs['DomainStatus']
@@ -1061,6 +1106,8 @@ class CloudFormationTest(unittest.TestCase):
                 self.assertEqual(o['OutputValue'], status['ARN'])
             elif o['OutputKey'] == 'MyElasticsearchDomainEndpoint':
                 self.assertEqual(o['OutputValue'], status['Endpoint'])
+            elif o['OutputKey'] == 'MyElasticsearchRef':
+                self.assertEqual(o['OutputValue'], status['DomainName'])
             else:
                 self.fail('Unexpected output: %s' % o)
 
@@ -1163,6 +1210,57 @@ class CloudFormationTest(unittest.TestCase):
         self.cleanup(stack_name)
         rs = iam.list_roles(PathPrefix=role_path_prefix)
         self.assertEqual(len(rs['Roles']), 0)
+
+    def test_describe_template(self):
+        s3 = aws_stack.connect_to_service('s3')
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        bucket_name = 'b-%s' % short_uid()
+        template_body = TEST_TEMPLATE_12 % 'test-firehose-role-name'
+        s3.create_bucket(Bucket=bucket_name, ACL='public-read')
+        s3.put_object(Bucket=bucket_name, Key='template.yml', Body=template_body)
+
+        template_url = '%s/%s/template.yml' % (config.get_edge_url(), bucket_name)
+
+        params = [{'ParameterKey': 'KinesisStreamName'}, {'ParameterKey': 'DeliveryStreamName'}]
+        # get summary by template URL
+        result = cloudformation.get_template_summary(TemplateURL=template_url)
+        self.assertEqual(result.get('Parameters'), params)
+        self.assertIn('AWS::S3::Bucket', result['ResourceTypes'])
+        self.assertTrue(result.get('ResourceIdentifierSummaries'))
+        # get summary by template body
+        result = cloudformation.get_template_summary(TemplateBody=template_body)
+        self.assertEqual(result.get('Parameters'), params)
+        self.assertIn('AWS::Kinesis::Stream', result['ResourceTypes'])
+        self.assertTrue(result.get('ResourceIdentifierSummaries'))
+
+    def test_stack_imports(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        result = cloudformation.list_imports(ExportName='_unknown_')
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(result['Imports'], [])  # TODO: create test with actual import values!
+
+        queue_name1 = 'q-%s' % short_uid()
+        queue_name2 = 'q-%s' % short_uid()
+        template1 = TEST_TEMPLATE_26_1 % queue_name1
+        template2 = TEST_TEMPLATE_26_2 % queue_name2
+        stack_name1 = 'stack-%s' % short_uid()
+        deploy_cf_stack(stack_name=stack_name1, template_body=template1)
+        stack_name2 = 'stack-%s' % short_uid()
+        deploy_cf_stack(stack_name=stack_name2, template_body=template2)
+
+        sqs = aws_stack.connect_to_service('sqs')
+        queue_url1 = sqs.get_queue_url(QueueName=queue_name1)['QueueUrl']
+        queue_url2 = sqs.get_queue_url(QueueName=queue_name2)['QueueUrl']
+        queues = sqs.list_queues().get('QueueUrls', [])
+        self.assertIn(queue_url1, queues)
+        self.assertIn(queue_url2, queues)
+
+        outputs = cloudformation.describe_stacks(StackName=stack_name2)['Stacks'][0]['Outputs']
+        output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl1'][0]
+        self.assertEqual(output, aws_stack.sqs_queue_arn(queue_url1))
+        output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl2'][0]
+        self.assertEqual(output, queue_url2)
 
     def test_cfn_conditional_deployment(self):
         s3 = aws_stack.connect_to_service('s3')
@@ -1384,17 +1482,17 @@ class CloudFormationTest(unittest.TestCase):
 
         s3 = aws_stack.connect_to_service('s3')
         s3.create_bucket(Bucket=bucket_name, ACL='public-read')
-        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, True))
+        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, get_content=True))
         time.sleep(1)
 
-        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
+        rs = cloudformation.create_stack(StackName=stack_name, TemplateBody=json.dumps(template))
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
 
         props.update({
             'Environment': {'Variables': {'AWS_NODEJS_CONNECTION_REUSE_ENABLED': 1}}
         })
 
-        rs = cloudformation.update_stack(StackName=stack_name, TemplateBody=json.dumps(template),)
+        rs = cloudformation.update_stack(StackName=stack_name, TemplateBody=json.dumps(template))
         self.assertEqual(200, rs['ResponseMetadata']['HTTPStatusCode'])
         lambda_client = aws_stack.connect_to_service('lambda')
 
@@ -1411,11 +1509,11 @@ class CloudFormationTest(unittest.TestCase):
         key_name = 'serverless/hofund/local/1599143878432/authorizer.zip'
         package_path = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.js')
 
-        template = template_deployer.template_to_json(load_file(APIGW_INTEGRATION_TEMPLATE))
+        template = template_preparer.template_to_json(load_file(APIGW_INTEGRATION_TEMPLATE))
 
         s3 = aws_stack.connect_to_service('s3')
         s3.create_bucket(Bucket=bucket_name, ACL='public-read')
-        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, True))
+        s3.put_object(Bucket=bucket_name, Key=key_name, Body=create_zip_file(package_path, get_content=True))
 
         cloudformation = aws_stack.connect_to_service('cloudformation')
         apigw_client = aws_stack.connect_to_service('apigateway')
@@ -1519,7 +1617,7 @@ class CloudFormationTest(unittest.TestCase):
 
         s3_client = aws_stack.connect_to_service('s3')
         s3_client.create_bucket(Bucket=bucket)
-        s3_client.put_object(Bucket=bucket, Key=key, Body=create_zip_file(path, True))
+        s3_client.put_object(Bucket=bucket, Key=key, Body=create_zip_file(path, get_content=True))
 
         template = load_file(os.path.join(THIS_FOLDER, 'templates', 'cdktemplate.json'))
 
@@ -1600,7 +1698,7 @@ class CloudFormationTest(unittest.TestCase):
 
         s3 = aws_stack.connect_to_service('s3')
         s3.create_bucket(Bucket=bucket, ACL='public-read')
-        s3.put_object(Bucket=bucket, Key=key, Body=create_zip_file(package_path, True))
+        s3.put_object(Bucket=bucket, Key=key, Body=create_zip_file(package_path, get_content=True))
         time.sleep(1)
 
         template = load_file(TEST_TEMPLATE_24) % (bucket, key, bucket, key)
@@ -1699,12 +1797,148 @@ class CloudFormationTest(unittest.TestCase):
         # clean up
         self.cleanup(stack_name)
 
-    def cleanup(self, stack_name, change_set_name=None):
+    def test_list_exports_correctly_returns_exports(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
-        if change_set_name:
-            cloudformation.delete_change_set(StackName=stack_name, ChangeSetName=change_set_name)
-        resp = cloudformation.delete_stack(StackName=stack_name)
-        self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
 
-    def expected_change_set_status(self):
-        return 'CREATE_COMPLETE' if config.USE_MOTO_CF else 'CREATE_PENDING'
+        # fetch initial list of exports
+        exports_before = cloudformation.list_exports()['Exports']
+
+        template = load_file(TEST_TEMPLATE_27)
+        stack_name = 'stack-%s' % short_uid()
+        deploy_cf_stack(stack_name, template_body=template)
+
+        response = cloudformation.list_exports()
+
+        exports = response['Exports']
+        self.assertEqual(len(exports), len(exports_before) + 1)
+        export_names = [e['Name'] for e in exports]
+        self.assertIn('T27SQSQueue1-URL', export_names)
+
+        # clean up
+        self.cleanup(stack_name)
+
+    def test_deploy_stack_with_kms(self):
+        stack_name = 'stack-%s' % short_uid()
+        environment = 'env-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'cdk_template_with_kms.json'))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'Environment',
+                    'ParameterValue': environment
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+
+        resources = cfn.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
+        kmskeys = [res for res in resources if res['ResourceType'] == 'AWS::KMS::Key']
+
+        self.assertEqual(len(kmskeys), 1)
+        self.assertEqual(kmskeys[0]['LogicalResourceId'], 'kmskeystack8A5DBE89')
+        key_id = kmskeys[0]['PhysicalResourceId']
+
+        self.cleanup(stack_name)
+
+        kms = aws_stack.connect_to_service('kms')
+        resp = kms.describe_key(KeyId=key_id)['KeyMetadata']
+        self.assertEqual(resp['KeyState'], 'PendingDeletion')
+
+    # TODO fix-cfn_deploying_issue_with_iam_instance_profile
+    # def test_deploy_stack_with_sub_select_and_sub_getaz(self):
+    #     stack_name = 'stack-%s' % short_uid()
+    #     template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template28.yaml'))
+    #
+    #     cfn = aws_stack.connect_to_service('cloudformation')
+    #     cfn.create_stack(
+    #         StackName=stack_name,
+    #         TemplateBody=template
+    #     )
+    #     await_stack_completion(stack_name)
+    #
+    #     exports = cfn.list_exports()['Exports']
+    #
+    #     subnets = [export for export in exports if export['Name'] == 'public-sn-a']
+    #     instances = [export for export in exports if export['Name'] == 'RegmonEc2InstanceId']
+    #
+    #     self.assertEqual(len(subnets), 1)
+    #     self.assertEqual(len(instances), 1)
+    #
+    #     subnet_id = subnets[0]['Value']
+    #     instance_id = instances[0]['Value']
+    #
+    #     ec2_client = aws_stack.connect_to_service('ec2')
+    #     resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
+    #     self.assertEqual(len(resp['Subnets']), 1)
+    #
+    #     resp = ec2_client.describe_instances(
+    #         InstanceIds=[
+    #             instance_id
+    #         ]
+    #     )
+    #     self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
+    #
+    #     sns_client = aws_stack.connect_to_service('sns')
+    #     resp = sns_client.list_topics()
+    #     topic_arns = [tp['TopicArn'] for tp in resp['Topics']]
+    #     self.assertIn(aws_stack.sns_topic_arn('companyname-slack-topic'), topic_arns)
+    #
+    #     self.cleanup(stack_name)
+
+    def test_cfn_update_ec2_instance_type(self):
+        stack_name = 'stack-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml'))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'KeyName',
+                    'ParameterValue': 'testkey'
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+        resources = cfn.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
+
+        instances = [res for res in resources if res['ResourceType'] == 'AWS::EC2::Instance']
+        self.assertEqual(len(instances), 1)
+
+        ec2_client = aws_stack.connect_to_service('ec2')
+
+        resp = ec2_client.describe_instances(
+            InstanceIds=[
+                instances[0]['PhysicalResourceId']
+            ]
+        )
+        self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
+
+        self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.nano')
+
+        cfn.update_stack(
+            StackName=stack_name,
+            TemplateBody=load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml')),
+            Parameters=[
+                {
+                    'ParameterKey': 'InstanceType',
+                    'ParameterValue': 't2.medium'
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+
+        resp = ec2_client.describe_instances(
+            InstanceIds=[
+                instances[0]['PhysicalResourceId']
+            ]
+        )
+
+        self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.medium')
+
+        self.cleanup(stack_name)

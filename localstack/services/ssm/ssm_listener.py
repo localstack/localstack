@@ -1,4 +1,5 @@
 import json
+import time
 from requests.models import Request
 from localstack.utils.common import to_str
 from localstack.utils.aws import aws_stack
@@ -22,9 +23,11 @@ def get_secrets_information(name, resource_name):
     try:
         secret_info = client.get_secret_value(SecretId=resource_name)
         del secret_info['ResponseMetadata']
+        created_date_timestamp = time.mktime(secret_info['CreatedDate'].timetuple())
+        secret_info['CreatedDate'] = created_date_timestamp
         result = {'Parameter': {'SourceResult': secret_info, 'Name': name, 'Value':
                 secret_info.get('SecretString'), 'Type': 'SecureString',
-                            'LastModifiedDate': secret_info.get('CreatedDate')}}
+                            'LastModifiedDate': created_date_timestamp}}
         return result
     except client.exceptions.ResourceNotFoundException:
         return None
@@ -52,6 +55,7 @@ def get_params_and_secrets(names):
         else:
             try:
                 param = ssm_client.get_parameter(Name=name)
+                param['Parameter']['LastModifiedDate'] = time.mktime(param['Parameter']['LastModifiedDate'].timetuple())
                 result['Parameters'].append(param['Parameter'])
             except ssm_client.exceptions.ParameterNotFound:
                 result['InvalidParameters'].append(name)

@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 import os
 import json
@@ -10,7 +11,7 @@ from botocore.exceptions import ClientError
 from io import BytesIO
 from localstack import config
 from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
 from localstack.utils import testutil
 from localstack.utils.testutil import (
     get_lambda_log_events, check_expected_lambda_log_events_length, create_lambda_archive
@@ -26,10 +27,11 @@ from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.awslambda.lambda_api import (
+    use_docker, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION, LAMBDA_DEFAULT_HANDLER)
+from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
-    use_docker, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11,
-    LAMBDA_RUNTIME_NODEJS810, LAMBDA_RUNTIME_PROVIDED, BATCH_SIZE_RANGES, INVALID_PARAMETER_VALUE_EXCEPTION,
-    LAMBDA_DEFAULT_HANDLER)
+    LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_NODEJS810,
+    LAMBDA_RUNTIME_PROVIDED)
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -229,18 +231,85 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         # update DLQ config
         lambda_client.update_function_configuration(FunctionName=lambda_name, DeadLetterConfig={})
         # invoke Lambda again, assert that status code is 200 and error details contained in the payload
-        result = lambda_client.invoke(FunctionName=lambda_name, Payload=json.dumps(payload))
+        result = lambda_client.invoke(FunctionName=lambda_name, Payload=json.dumps(payload), LogType='Tail')
         payload = json.loads(to_str(result['Payload'].read()))
         self.assertEqual(200, result['StatusCode'])
         self.assertEqual('Unhandled', result['FunctionError'])
         self.assertEqual('$LATEST', result['ExecutedVersion'])
         self.assertIn('Test exception', payload['errorMessage'])
-        self.assertEqual('Exception', payload['errorType'])
+        self.assertIn('Exception', payload['errorType'])
         self.assertEqual(list, type(payload['stackTrace']))
+        log_result = result.get('LogResult')
+        self.assertTrue(log_result)
+        logs = to_str(base64.b64decode(to_str(log_result)))
+        self.assertIn('START', logs)
+        self.assertIn('Test exception', logs)
+        self.assertIn('END', logs)
+        self.assertIn('REPORT', logs)
 
         # clean up
         sqs_client.delete_queue(QueueUrl=queue_url)
         lambda_client.delete_function(FunctionName=lambda_name)
+
+    def test_success_failure_destination(self):
+
+        def test_destination(success=False):
+
+            sqs_client = aws_stack.connect_to_service('sqs')
+            lambda_client = aws_stack.connect_to_service('lambda')
+
+            # create DLQ and Lambda function
+            queue_name = 'test-%s' % short_uid()
+            lambda_name = 'test-%s' % short_uid()
+            queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+            queue_arn = aws_stack.sqs_queue_arn(queue_name)
+            testutil.create_lambda_function(
+                handler_file=TEST_LAMBDA_PYTHON,
+                func_name=lambda_name,
+                libs=TEST_LAMBDA_LIBS,
+                runtime=LAMBDA_RUNTIME_PYTHON36
+            )
+
+            lambda_client.put_function_event_invoke_config(
+                FunctionName=lambda_name,
+                DestinationConfig={
+                    'OnSuccess': {
+                        'Destination': queue_arn
+                    },
+                    'OnFailure': {
+                        'Destination': queue_arn
+                    }
+                }
+            )
+
+            # invoke Lambda, triggering an error
+            payload = {
+                lambda_integration.MSG_BODY_RAISE_ERROR_FLAG: 1
+            }
+
+            # expected condition
+            condition = 'RetriesExhausted'
+
+            if success:
+                condition = 'Success'
+                payload = {}
+            lambda_client.invoke(FunctionName=lambda_name,
+                                Payload=json.dumps(payload), InvocationType='Event')
+
+            def receive_message():
+                rs = sqs_client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
+                self.assertGreater(len(rs['Messages']), 0)
+                msg = rs['Messages'][0]['Body']
+                msg = json.loads(msg)
+                self.assertEqual(msg['requestContext']['condition'], condition)
+
+            retry(receive_message, retries=5, sleep=2)
+            # clean up
+            sqs_client.delete_queue(QueueUrl=queue_url)
+            lambda_client.delete_function(FunctionName=lambda_name)
+
+        test_destination(success=True)
+        test_destination(success=False)
 
     def test_add_lambda_permission(self):
         function_name = 'lambda_func-{}'.format(short_uid())
@@ -269,7 +338,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(policy['Statement'][0]['Resource'], lambda_api.func_arn(function_name))
         self.assertEqual(policy['Statement'][0]['Principal']['Service'], principal)
         self.assertEqual(policy['Statement'][0]['Condition']['ArnLike']['AWS:SourceArn'],
-                         aws_stack.s3_bucket_arn('test-bucket'))
+                        aws_stack.s3_bucket_arn('test-bucket'))
         # fetch IAM policy
         policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
         matching = [p for p in policies if p['PolicyName'] == 'lambda_policy_%s' % function_name]
@@ -278,7 +347,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # remove permission that we just added
         resp = lambda_client.remove_permission(FunctionName=function_name,
-                                               StatementId=sid, Qualifier='qual1', RevisionId='r1')
+                                            StatementId=sid, Qualifier='qual1', RevisionId='r1')
         self.assertEqual(resp['ResponseMetadata']['HTTPStatusCode'], 200)
         lambda_client.delete_function(FunctionName=function_name)
 
@@ -383,6 +452,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # checking if 'MaximumEventAgeInSeconds' is removed
         self.assertNotIn('MaximumEventAgeInSeconds', response)
+        self.assertEquals(isinstance(response['LastModified'], datetime), True)
 
         # updating event invoke config
         response = lambda_client.update_function_event_invoke_config(
@@ -646,7 +716,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         testutil.delete_lambda_function(name=function_name)
 
-    def test_function_code_singing_config(self):
+    def test_function_code_signing_config(self):
         lambda_client = aws_stack.connect_to_service('lambda')
         function_name = 'lambda_func-{}'.format(short_uid())
 
@@ -727,12 +797,20 @@ class TestPythonRuntimes(LambdaTestBase):
         testutil.delete_lambda_function(TEST_LAMBDA_NAME_PY)
 
     def test_invocation_type_not_set(self):
-        result = self.lambda_client.invoke(
-            FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}')
+        result = self.lambda_client.invoke(FunctionName=TEST_LAMBDA_NAME_PY, Payload=b'{}', LogType='Tail')
         result_data = json.loads(result['Payload'].read())
 
+        # assert response details
         self.assertEqual(result['StatusCode'], 200)
         self.assertEqual(result_data['event'], {})
+
+        # assert that logs are contained in response
+        logs = result.get('LogResult', '')
+        logs = to_str(base64.b64decode(to_str(logs)))
+        self.assertIn('START', logs)
+        self.assertIn('Lambda log message', logs)
+        self.assertIn('END', logs)
+        self.assertIn('REPORT', logs)
 
     def test_invocation_type_request_response(self):
         result = self.lambda_client.invoke(
@@ -795,14 +873,13 @@ class TestPythonRuntimes(LambdaTestBase):
         # create lambda function
         response = self.lambda_client.create_function(
             FunctionName=lambda_name, Handler='handler.handler',
-            Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1',
             Code={
                 'S3Bucket': bucket_name,
                 'S3Key': bucket_key
             },
             Publish=True
         )
-
         self.assertIn('Version', response)
 
         # invoke lambda function
@@ -846,11 +923,8 @@ class TestPythonRuntimes(LambdaTestBase):
         # create lambda function
         self.lambda_client.create_function(
             FunctionName=lambda_name, Handler='handler.handler',
-            Runtime=lambda_api.LAMBDA_RUNTIME_PYTHON27, Role='r1',
-            Code={
-                'S3Bucket': bucket_name,
-                'S3Key': bucket_key
-            }
+            Runtime=LAMBDA_RUNTIME_PYTHON27, Role='r1',
+            Code={'S3Bucket': bucket_name, 'S3Key': bucket_key}
         )
 
         # invoke lambda function

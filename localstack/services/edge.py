@@ -1,4 +1,3 @@
-from localstack.utils import persistence
 import re
 import os
 import sys
@@ -9,6 +8,7 @@ import logging
 import threading
 from requests.models import Response
 from localstack import config
+from localstack.utils import persistence
 from localstack.services import plugins
 from localstack.dashboard import infra as dashboard_infra
 from localstack.utils.aws import aws_stack
@@ -33,6 +33,10 @@ HEADER_KILL_SIGNAL = 'x-localstack-kill'
 
 # lock obtained during boostrapping (persistence restoration) to avoid concurrency issues
 BOOTSTRAP_LOCK = threading.RLock()
+
+GZIP_ENCODING = 'GZIP'
+IDENTITY_ENCODING = 'IDENTITY'
+S3 = 's3'
 
 
 class ProxyListenerEdge(ProxyListener):
@@ -69,9 +73,10 @@ class ProxyListenerEdge(ProxyListener):
 
             if api in ['', None, '_unknown_']:
                 truncated = truncate(data)
-                LOG.info(('Unable to find forwarding rule for host "%s", path "%s %s", '
-                    'target header "%s", auth header "%s", data "%s"') % (
-                        host, method, path, target, auth_header, truncated))
+                if auth_header or target or data or path not in ['/', '/favicon.ico']:
+                    LOG.info(('Unable to find forwarding rule for host "%s", path "%s %s", '
+                        'target header "%s", auth header "%s", data "%s"') % (
+                            host, method, path, target, auth_header, truncated))
             else:
                 LOG.info(('Unable to determine forwarding port for API "%s" - please '
                     'make sure this API is enabled via the SERVICES configuration') % api)
@@ -86,6 +91,11 @@ class ProxyListenerEdge(ProxyListener):
         headers['Host'] = host
         if isinstance(data, dict):
             data = json.dumps(data)
+
+        encoding_type = headers.get('content-encoding') or ''
+        if encoding_type.upper() == GZIP_ENCODING and api is not S3:
+            headers.set('content-encoding', IDENTITY_ENCODING)
+            data = gzip.decompress(data)
 
         lock_ctx = BOOTSTRAP_LOCK
         if persistence.API_CALLS_RESTORED or is_internal_call_context(headers):
@@ -267,6 +277,9 @@ def get_api_from_custom_rules(method, path, data, headers):
 
     if path == '/' and b'QueueName=' in data_bytes:
         return 'sqs', config.PORT_SQS
+
+    if 'Action=ConfirmSubscription' in path:
+        return 'sns', config.PORT_SNS
 
     if path.startswith('/2015-03-31/functions/'):
         return 'lambda', config.PORT_LAMBDA

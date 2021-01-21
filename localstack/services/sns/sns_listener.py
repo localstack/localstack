@@ -291,11 +291,14 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, subscriptio
                     queue_url = aws_stack.get_sqs_queue_url(queue_name)
                     subscriber['sqs_queue_url'] = queue_url
 
+                message_group_id = req_data.get('MessageGroupId')[0] if req_data.get('MessageGroupId') else ''
+
                 sqs_client = aws_stack.connect_to_service('sqs')
                 sqs_client.send_message(
                     QueueUrl=queue_url,
                     MessageBody=create_sns_message_body(subscriber, req_data, message_id),
-                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
+                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
+                    MessageGroupId=message_group_id
                 )
             except Exception as exc:
                 LOG.warning('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))
@@ -526,7 +529,6 @@ def make_error(message, code=400, code_string='InvalidParameter'):
 
 def create_sns_message_body(subscriber, req_data, message_id=None):
     message = req_data['Message'][0]
-    subject = req_data.get('Subject', [None])[0]
     protocol = subscriber['Protocol']
 
     if six.PY2 and type(message).__name__ == 'unicode':
@@ -546,10 +548,8 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
     data = {
         'Type': req_data.get('Type', ['Notification'])[0],
         'MessageId': message_id,
-        'Token': req_data.get('Token', [None])[0],
         'TopicArn': subscriber['TopicArn'],
         'Message': message,
-        'SubscribeURL': req_data.get('SubscribeURL', [None])[0],
         'Timestamp': timestamp_millis(),
         'SignatureVersion': '1',
         # TODO Add a more sophisticated solution with an actual signature
@@ -558,8 +558,9 @@ def create_sns_message_body(subscriber, req_data, message_id=None):
         'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem'
     }
 
-    if subject is not None:
-        data['Subject'] = subject
+    for key in ['Subject', 'SubscribeURL', 'Token']:
+        if req_data.get(key):
+            data[key] = req_data[key][0]
 
     attributes = get_message_attributes(req_data)
     if attributes:
