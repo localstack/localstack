@@ -1,0 +1,14 @@
+TableName: test-table
+KeySchema:
+  - KeyType: HASH
+    AttributeName: pk
+  - KeyType: RANGE
+    AttributeName: sk
+AttributeDefinitions:
+  - AttributeName: pk
+    AttributeType: S
+  - AttributeName: sk
+    AttributeType: S
+ProvisionedThroughput:
+  ReadCapacityUnits: 300
+  WriteCapacityUnits: 300

@@ -1,0 +1,6 @@
+TableName: test-table
+Key:
+  pk:
+    S: oh
+  sk:
+    S: hai

@@ -2,8 +2,11 @@ version: '2.1'
 
 services:
   localstack:
+    # NOTE: this just speeds up start/stop & shouldn't affect anything else
+    init: true
     container_name: "${LOCALSTACK_DOCKER_NAME-localstack_main}"
-    image: localstack/localstack
+    # 8b7d62b2d8f4
+    image: localstack/localstack-light:latest
     network_mode: bridge
     ports:
       - "4566:4566"
@@ -17,6 +20,7 @@ services:
       - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR- }
       - KINESIS_ERROR_PROBABILITY=${KINESIS_ERROR_PROBABILITY- }
       - DOCKER_HOST=unix:///var/run/docker.sock
+      - DYNAMODB_ERROR_PROBABILITY=1.0
       - HOST_TMP_FOLDER=${TMPDIR}
     volumes:
       - "${TMPDIR:-/tmp/localstack}:/tmp/localstack"
