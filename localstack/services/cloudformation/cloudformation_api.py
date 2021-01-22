@@ -51,7 +51,6 @@ class CloudFormationRegion(RegionBackend):
 
 
 class Stack(object):
-
     def __init__(self, metadata=None, template={}):
         self.metadata = metadata or {}
         self.template = template or {}
@@ -140,21 +139,30 @@ class Stack(object):
     @property
     def resources(self):
         """ Return dict of resources, parameters, conditions, and other stack metadata. """
+
         def add_params(defaults=True):
             for param in self.stack_parameters(defaults=defaults):
                 if param['ParameterKey'] not in result:
                     props = {'Value': param['ParameterValue']}
-                    result[param['ParameterKey']] = {'Type': 'Parameter',
-                        'LogicalResourceId': param['ParameterKey'], 'Properties': props}
+                    result[param['ParameterKey']] = {
+                        'Type': 'Parameter',
+                        'LogicalResourceId': param['ParameterKey'],
+                        'Properties': props
+                    }
+
         result = dict(self.template_resources)
+
         add_params(defaults=False)
+
         for name, value in self.conditions.items():
             if name not in result:
                 result[name] = {'Type': 'Parameter', 'LogicalResourceId': name, 'Properties': {'Value': value}}
         for name, value in self.mappings.items():
             if name not in result:
                 result[name] = {'Type': 'Parameter', 'LogicalResourceId': name, 'Properties': {'Value': value}}
+
         add_params(defaults=True)
+
         return result
 
     @property
@@ -261,12 +269,12 @@ class Stack(object):
 
 
 class StackChangeSet(Stack):
-
     def __init__(self, params={}, template={}):
         super(StackChangeSet, self).__init__(params, template)
         name = self.metadata['ChangeSetName']
         if not self.metadata.get('ChangeSetId'):
             self.metadata['ChangeSetId'] = aws_stack.cf_change_set_arn(name, change_set_id=short_uid())
+
         stack = self.stack = find_stack(self.metadata['StackName'])
         self.metadata['StackId'] = stack.stack_id
         self.metadata['Status'] = 'CREATE_PENDING'
@@ -295,7 +303,6 @@ def create_stack(req_params):
     template_deployer.prepare_template_body(req_params)
     template = template_preparer.parse_template(req_params['TemplateBody'])
     template['StackName'] = req_params.get('StackName')
-    # print("##################333", req_params)
     stack = Stack(req_params, template)
     state.stacks[stack.stack_id] = stack
     LOG.debug('Creating stack "%s" with %s resources ...' % (stack.stack_name, len(stack.template_resources)))

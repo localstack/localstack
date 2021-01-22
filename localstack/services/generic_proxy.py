@@ -108,13 +108,17 @@ class RegionBackend(object):
 
     @classmethod
     def get(cls, region=None):
+        regions = cls.regions()
+        region = region or cls.get_current_request_region()
+        regions[region] = regions.get(region) or cls()
+        return regions[region]
+
+    @classmethod
+    def regions(cls):
         if not hasattr(cls, 'REGIONS'):
             # maps region name to region backend instance
             cls.REGIONS = {}
-
-        region = region or cls.get_current_request_region()
-        cls.REGIONS[region] = cls.REGIONS.get(region) or cls()
-        return cls.REGIONS[region]
+        return cls.REGIONS
 
     @classmethod
     def get_current_request_region(cls):

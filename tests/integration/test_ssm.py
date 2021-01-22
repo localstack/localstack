@@ -53,6 +53,10 @@ class SSMTest(unittest.TestCase):
         self.assertEqual(result.get('Parameter').get('Name'), '/aws/reference/secretsmanager/{0}'.format(secret_name))
         self.assertEqual(result.get('Parameter').get('Value'), 'my_secret')
 
+        source_result = result.get('Parameter').get('SourceResult')
+        self.assertTrue(source_result is not None, 'SourceResult should be present')
+        self.assertTrue(type(source_result) is str, 'SourceResult should be a string')
+
     def test_get_inexistent_secret(self):
         ssm_client = aws_stack.connect_to_service('ssm')
         self.assertRaises(ssm_client.exceptions.ParameterNotFound,

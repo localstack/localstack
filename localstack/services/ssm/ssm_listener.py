@@ -22,10 +22,11 @@ def get_secrets_information(name, resource_name):
     client = aws_stack.connect_to_service('secretsmanager')
     try:
         secret_info = client.get_secret_value(SecretId=resource_name)
+
         del secret_info['ResponseMetadata']
         created_date_timestamp = time.mktime(secret_info['CreatedDate'].timetuple())
         secret_info['CreatedDate'] = created_date_timestamp
-        result = {'Parameter': {'SourceResult': secret_info, 'Name': name, 'Value':
+        result = {'Parameter': {'SourceResult': json.dumps(secret_info, default=str), 'Name': name, 'Value':
                 secret_info.get('SecretString'), 'Type': 'SecureString',
                             'LastModifiedDate': created_date_timestamp}}
         return result

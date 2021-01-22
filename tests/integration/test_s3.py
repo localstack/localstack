@@ -1521,6 +1521,21 @@ class S3ListenerTest(unittest.TestCase):
         self._delete_bucket(bucket_name, [key])
         lambda_client.delete_function(FunctionName=function_name)
 
+    def test_putobject_with_multiple_keys(self):
+        client = self._get_test_client()
+        bucket = 'bucket-%s' % short_uid()
+        key_by_path = 'aws/key1/key2/key3'
+
+        client.create_bucket(Bucket=bucket)
+        client.put_object(
+            Body=b'test',
+            Bucket=bucket,
+            Key=key_by_path
+        )
+
+        # Cleanup
+        self._delete_bucket(bucket, key_by_path)
+
     # ---------------
     # HELPER METHODS
     # ---------------

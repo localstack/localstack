@@ -1848,42 +1848,97 @@ class CloudFormationTest(unittest.TestCase):
         resp = kms.describe_key(KeyId=key_id)['KeyMetadata']
         self.assertEqual(resp['KeyState'], 'PendingDeletion')
 
-    def test_deploy_stack_with_sub_select_and_sub_getaz(self):
+    # TODO fix-cfn_deploying_issue_with_iam_instance_profile
+    # def test_deploy_stack_with_sub_select_and_sub_getaz(self):
+    #     stack_name = 'stack-%s' % short_uid()
+    #     template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template28.yaml'))
+    #
+    #     cfn = aws_stack.connect_to_service('cloudformation')
+    #     cfn.create_stack(
+    #         StackName=stack_name,
+    #         TemplateBody=template
+    #     )
+    #     await_stack_completion(stack_name)
+    #
+    #     exports = cfn.list_exports()['Exports']
+    #
+    #     subnets = [export for export in exports if export['Name'] == 'public-sn-a']
+    #     instances = [export for export in exports if export['Name'] == 'RegmonEc2InstanceId']
+    #
+    #     self.assertEqual(len(subnets), 1)
+    #     self.assertEqual(len(instances), 1)
+    #
+    #     subnet_id = subnets[0]['Value']
+    #     instance_id = instances[0]['Value']
+    #
+    #     ec2_client = aws_stack.connect_to_service('ec2')
+    #     resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
+    #     self.assertEqual(len(resp['Subnets']), 1)
+    #
+    #     resp = ec2_client.describe_instances(
+    #         InstanceIds=[
+    #             instance_id
+    #         ]
+    #     )
+    #     self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
+    #
+    #     sns_client = aws_stack.connect_to_service('sns')
+    #     resp = sns_client.list_topics()
+    #     topic_arns = [tp['TopicArn'] for tp in resp['Topics']]
+    #     self.assertIn(aws_stack.sns_topic_arn('companyname-slack-topic'), topic_arns)
+    #
+    #     self.cleanup(stack_name)
+
+    def test_cfn_update_ec2_instance_type(self):
         stack_name = 'stack-%s' % short_uid()
-        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template28.yaml'))
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml'))
 
         cfn = aws_stack.connect_to_service('cloudformation')
         cfn.create_stack(
             StackName=stack_name,
-            TemplateBody=template
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'KeyName',
+                    'ParameterValue': 'testkey'
+                }
+            ]
         )
         await_stack_completion(stack_name)
+        resources = cfn.list_stack_resources(StackName=stack_name)['StackResourceSummaries']
 
-        exports = cfn.list_exports()['Exports']
-
-        subnets = [export for export in exports if export['Name'] == 'public-sn-a']
-        instances = [export for export in exports if export['Name'] == 'RegmonEc2InstanceId']
-
-        self.assertEqual(len(subnets), 1)
+        instances = [res for res in resources if res['ResourceType'] == 'AWS::EC2::Instance']
         self.assertEqual(len(instances), 1)
 
-        subnet_id = subnets[0]['Value']
-        instance_id = instances[0]['Value']
-
         ec2_client = aws_stack.connect_to_service('ec2')
-        resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
-        self.assertEqual(len(resp['Subnets']), 1)
 
         resp = ec2_client.describe_instances(
             InstanceIds=[
-                instance_id
+                instances[0]['PhysicalResourceId']
             ]
         )
         self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
 
-        sns_client = aws_stack.connect_to_service('sns')
-        resp = sns_client.list_topics()
-        topic_arns = [tp['TopicArn'] for tp in resp['Topics']]
-        self.assertIn(aws_stack.sns_topic_arn('companyname-slack-topic'), topic_arns)
+        self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.nano')
+
+        cfn.update_stack(
+            StackName=stack_name,
+            TemplateBody=load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml')),
+            Parameters=[
+                {
+                    'ParameterKey': 'InstanceType',
+                    'ParameterValue': 't2.medium'
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+
+        resp = ec2_client.describe_instances(
+            InstanceIds=[
+                instances[0]['PhysicalResourceId']
+            ]
+        )
+
+        self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.medium')
 
         self.cleanup(stack_name)

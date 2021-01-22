@@ -6,7 +6,7 @@ import mock
 import time
 import datetime
 from localstack.constants import LAMBDA_TEST_ROLE
-from localstack.utils.common import save_file, new_tmp_dir, mkdir
+from localstack.utils.common import isoformat_milliseconds, save_file, new_tmp_dir, mkdir
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
 
@@ -19,7 +19,7 @@ class TestLambdaAPI(unittest.TestCase):
     UPDATED_CODE_SHA_256 = '/u6A='
     MEMORY_SIZE = 128
     ROLE = 'arn:aws:iam::123456:role/role-name'
-    LAST_MODIFIED = '2019-05-25T17:00:48.260+0000'
+    LAST_MODIFIED = datetime.datetime.utcnow()
     TRACING_CONFIG = {'Mode': 'PassThrough'}
     REVISION_ID = 'e54dbcf8-e3ef-44ab-9af7-8dbef510608a'
     HANDLER = 'index.handler'
@@ -288,7 +288,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Role'] = self.ROLE
             expected_result['KMSKeyArn'] = None
             expected_result['VpcConfig'] = None
-            expected_result['LastModified'] = self.LAST_MODIFIED
+            expected_result['LastModified'] = isoformat_milliseconds(self.LAST_MODIFIED) + '+0000'
             expected_result['TracingConfig'] = self.TRACING_CONFIG
             expected_result['Version'] = '1'
             expected_result['State'] = 'Active'
@@ -303,7 +303,6 @@ class TestLambdaAPI(unittest.TestCase):
 
             self._update_function_code(self.FUNCTION_NAME)
             result = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
-
             result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
 
             expected_result = dict()
@@ -319,7 +318,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Role'] = self.ROLE
             expected_result['KMSKeyArn'] = None
             expected_result['VpcConfig'] = None
-            expected_result['LastModified'] = self.LAST_MODIFIED
+            expected_result['LastModified'] = isoformat_milliseconds(self.LAST_MODIFIED) + '+0000'
             expected_result['TracingConfig'] = self.TRACING_CONFIG
             expected_result['Version'] = '2'
             expected_result['State'] = 'Active'
@@ -358,7 +357,7 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['Role'] = self.ROLE
             latest_version['KMSKeyArn'] = None
             latest_version['VpcConfig'] = None
-            latest_version['LastModified'] = self.LAST_MODIFIED
+            latest_version['LastModified'] = isoformat_milliseconds(self.LAST_MODIFIED) + '+0000'
             latest_version['TracingConfig'] = self.TRACING_CONFIG
             latest_version['Version'] = '$LATEST'
             latest_version['State'] = 'Active'
@@ -747,7 +746,7 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
     CODE_SHA_256 = '/u60ZpAA9bzZPVwb8d4390i5oqP1YAObUwV03CZvsWA='
     MEMORY_SIZE = 128
     ROLE = LAMBDA_TEST_ROLE
-    LAST_MODIFIED = '2019-05-25T17:00:48.260+0000'
+    LAST_MODIFIED = datetime.datetime.utcnow()
     REVISION_ID = 'e54dbcf8-e3ef-44ab-9af7-8dbef510608a'
     HANDLER = 'index.handler'
     RUNTIME = 'node.js4.3'
