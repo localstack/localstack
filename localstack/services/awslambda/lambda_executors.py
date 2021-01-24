@@ -80,7 +80,7 @@ def is_java_lambda(lambda_details):
 
 
 def is_nodejs_runtime(lambda_details):
-    runtime = getattr(lambda_details, 'runtime', lambda_details)
+    runtime = getattr(lambda_details, 'runtime', lambda_details) or ''
     return runtime.startswith('nodejs')
 
 
@@ -190,8 +190,9 @@ class LambdaExecutor(object):
     def run_lambda_executor(self, cmd, event=None, func_details=None, env_vars={}):
         kwargs = {'stdin': True, 'inherit_env': True, 'asynchronous': True}
         env_vars = env_vars or {}
+        runtime = func_details.runtime or ''
 
-        is_provided = func_details.runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
+        is_provided = runtime.startswith(LAMBDA_RUNTIME_PROVIDED)
         if func_details and is_provided and env_vars.get('DOCKER_LAMBDA_USE_STDIN') == '1':
             # Note: certain "provided" runtimes (e.g., Rust programs) can block when we pass in
             # the event payload via stdin, hence we rewrite the command to "echo ... | ..." below
@@ -246,7 +247,7 @@ class ContainerInfo:
 class LambdaExecutorContainers(LambdaExecutor):
     """ Abstract executor class for executing Lambda functions in Docker containers """
 
-    def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
+    def prepare_execution(self, func_details, env_vars, command):
         raise Exception('Not implemented')
 
     def _docker_cmd(self):
@@ -319,9 +320,9 @@ class LambdaExecutorContainers(LambdaExecutor):
             environment['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 
         # determine the command to be executed (implemented by subclasses)
-        cmd = self.prepare_execution(func_arn, environment, runtime, command, handler, lambda_cwd)
+        cmd = self.prepare_execution(func_details, environment, command)
 
-        # lambci writes the Lambda result to stdout and logs to stderr, fetch it from there!
+        # run Lambda executor and fetch invocation result
         LOG.info('Running lambda cmd: %s' % cmd)
         result = self.run_lambda_executor(cmd, stdin, env_vars=environment, func_details=func_details)
 
@@ -346,7 +347,12 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.max_port = LAMBDA_SERVER_UNIQUE_PORTS
         self.port_offset = LAMBDA_SERVER_PORT_OFFSET
 
-    def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
+    def prepare_execution(self, func_details, env_vars, command):
+        func_arn = func_details.arn()
+        lambda_cwd = func_details.cwd
+        runtime = func_details.runtime
+        handler = func_details.handler
+
         # check whether the Lambda has been invoked before
         has_been_invoked_before = func_arn in self.function_invoke_times
 
@@ -357,7 +363,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         # create/verify the docker container is running.
         LOG.debug('Priming docker container with runtime "%s" and arn "%s".', runtime, func_arn)
-        container_info = self.prime_docker_container(runtime, func_arn, env_vars.items(), lambda_cwd)
+        container_info = self.prime_docker_container(func_details, env_vars.items(), lambda_cwd)
 
         # Note: currently "docker exec" does not support --env-file, i.e., environment variables can only be
         # passed directly on the command line, using "-e" below. TODO: Update this code once --env-file is
@@ -405,7 +411,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.function_invoke_times = {}
         return self.destroy_existing_docker_containers()
 
-    def prime_docker_container(self, runtime, func_arn, env_vars, lambda_cwd):
+    def prime_docker_container(self, func_details, env_vars, lambda_cwd):
         """
         Prepares a persistent docker container for a specific function.
         :param runtime: Lamda runtime environment. python2.7, nodejs6.10, etc.
@@ -416,13 +422,14 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         """
         with self.docker_container_lock:
             # Get the container name and id.
+            func_arn = func_details.arn()
             container_name = self.get_container_name(func_arn)
             docker_cmd = self._docker_cmd()
 
             status = self.get_docker_container_status(func_arn)
             LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
 
-            docker_image = Util.docker_image_for_runtime(runtime)
+            docker_image = Util.docker_image_for_lambda(func_details)
             rm_flag = Util.get_docker_remove_flag()
 
             # Container is not running or doesn't exist.
@@ -672,12 +679,17 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         environment['DOCKER_LAMBDA_USE_STDIN'] = '1'
         return event_body.encode()
 
-    def prepare_execution(self, func_arn, env_vars, runtime, command, handler, lambda_cwd):
+    def prepare_execution(self, func_details, env_vars, command):
+        lambda_cwd = func_details.cwd
+        handler = func_details.handler
+
         entrypoint = ''
         if command:
             entrypoint = ' --entrypoint ""'
-        else:
+        elif handler:
             command = '"%s"' % handler
+        else:
+            command = ''
 
         # add Docker Lambda env vars
         network = config.LAMBDA_DOCKER_NETWORK
@@ -693,10 +705,11 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
         env_vars_string = ' '.join(['-e {}="${}"'.format(k, k) for (k, v) in env_vars.items()])
         debug_docker_java_port = '-p {p}:{p}'.format(p=Util.debug_java_port) if Util.debug_java_port else ''
         docker_cmd = self._docker_cmd()
-        docker_image = Util.docker_image_for_runtime(runtime)
+        docker_image = Util.docker_image_for_lambda(func_details)
         rm_flag = Util.get_docker_remove_flag()
 
         if config.LAMBDA_REMOTE_DOCKER:
+            cp_cmd = '%s cp "%s/." "$CONTAINER_ID:/var/task";' % (docker_cmd, lambda_cwd) if lambda_cwd else ''
             cmd = (
                 'CONTAINER_ID="$(%s create -i'
                 ' %s'  # entrypoint
@@ -707,24 +720,27 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 ' %s'  # --rm flag
                 ' %s %s'  # image and command
                 ')";'
-                '%s cp "%s/." "$CONTAINER_ID:/var/task"; '
+                '%s '
                 '%s start -ai "$CONTAINER_ID";'
             ) % (docker_cmd, entrypoint, debug_docker_java_port,
                 env_vars_string, network_str, dns_str, rm_flag,
                  docker_image, command,
-                 docker_cmd, lambda_cwd,
+                 cp_cmd,
                  docker_cmd)
         else:
-            lambda_cwd_on_host = Util.get_host_path_for_path_in_docker(lambda_cwd)
+            mount_flag = ''
+            if lambda_cwd:
+                mount_flag = '-v "%s":/var/task' % Util.get_host_path_for_path_in_docker(lambda_cwd)
             cmd = (
                 '%s run -i'
-                ' %s -v "%s":/var/task'
+                ' %s'
+                ' %s'  # code mount
                 ' %s'
                 ' %s'  # network
                 ' %s'  # dns
                 ' %s'  # --rm flag
                 ' %s %s'
-            ) % (docker_cmd, entrypoint, lambda_cwd_on_host, env_vars_string,
+            ) % (docker_cmd, entrypoint, mount_flag, env_vars_string,
                  network_str, dns_str, rm_flag, docker_image, command)
         return cmd
 
@@ -839,7 +855,8 @@ class Util:
         return temp
 
     @classmethod
-    def docker_image_for_runtime(cls, runtime):
+    def docker_image_for_lambda(cls, func_details):
+        runtime = func_details.runtime
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
         # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas

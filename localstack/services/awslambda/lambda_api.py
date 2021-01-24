@@ -179,8 +179,9 @@ def check_batch_size_range(source_arn, batch_size=None):
 def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     region = LambdaRegion.get()
     arn = func_arn(lambda_name)
-    region.lambdas[arn].versions.get(VERSION_LATEST)['Function'] = lambda_handler
-    region.lambdas[arn].cwd = lambda_cwd
+    lambda_details = region.lambdas[arn]
+    lambda_details.versions.get(VERSION_LATEST)['Function'] = lambda_handler
+    lambda_details.cwd = lambda_cwd or lambda_details.cwd
 
 
 def add_event_source(function_name, source_arn, enabled, batch_size=None):
@@ -641,6 +642,8 @@ def get_zip_bytes(function_code):
     elif 'ZipFile' in function_code:
         zip_file_content = function_code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
+    elif 'ImageUri' in function_code:
+        zip_file_content = None
     else:
         raise ClientError('No valid Lambda archive specified: %s' % list(function_code.keys()))
     return zip_file_content
@@ -692,6 +695,9 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
     # get file content
     zip_file_content = zip_file_content or get_zip_bytes(code)
 
+    if not zip_file_content:
+        return
+
     # Save the zip file to a temporary file that the lambda executors can reference
     code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
     latest_version = lambda_details.get_version(VERSION_LATEST)
@@ -707,8 +713,11 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
 
 
 def set_function_code(code, lambda_name, lambda_cwd=None):
+    def _set_and_configure():
+        lambda_handler = do_set_function_code(code, lambda_name, lambda_cwd=lambda_cwd)
+        add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
     # unzipping can take some time - limit the execution time to avoid client/network timeout issues
-    run_for_max_seconds(25, do_set_function_code, code, lambda_name, lambda_cwd=lambda_cwd)
+    run_for_max_seconds(25, _set_and_configure)
     return {'FunctionName': lambda_name}
 
 
@@ -736,8 +745,11 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
     else:
         lambda_cwd = lambda_cwd or lambda_details.cwd
 
+    if not lambda_cwd:
+        return
+
     # get local lambda working directory
-    tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
+    tmp_file = os.path.join(lambda_cwd, LAMBDA_ZIP_FILE_NAME)
 
     if not zip_file_content:
         zip_file_content = load_file(tmp_file, mode='rb')
@@ -794,8 +806,7 @@ def do_set_function_code(code, lambda_name, lambda_cwd=None):
             except Exception as e:
                 raise ClientError('Unable to get handler function from lambda code.', e)
 
-    add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
-    return {'FunctionName': lambda_name}
+    return lambda_handler
 
 
 def do_list_functions():
@@ -959,8 +970,8 @@ def create_function():
         func_details.vpc_config = data.get('VpcConfig', {})
         func_details.last_modified = datetime.utcnow()
         func_details.description = data.get('Description', '')
-        func_details.handler = data['Handler']
-        func_details.runtime = data['Runtime']
+        func_details.handler = data.get('Handler')
+        func_details.runtime = data.get('Runtime')
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
         func_details.tags = data.get('Tags', {})
         func_details.timeout = data.get('Timeout', LAMBDA_DEFAULT_TIMEOUT)
@@ -969,7 +980,6 @@ def create_function():
         func_details.memory_size = data.get('MemorySize')
         func_details.code_signing_config_arn = data.get('CodeSigningConfigArn')
         func_details.code = data['Code']
-        # TODO: support package type 'Image'
         func_details.package_type = 'Zip'
         func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
