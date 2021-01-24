@@ -179,8 +179,9 @@ def check_batch_size_range(source_arn, batch_size=None):
 def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     region = LambdaRegion.get()
     arn = func_arn(lambda_name)
-    region.lambdas[arn].versions.get(VERSION_LATEST)['Function'] = lambda_handler
-    region.lambdas[arn].cwd = lambda_cwd
+    lambda_details = region.lambdas[arn]
+    lambda_details.versions.get(VERSION_LATEST)['Function'] = lambda_handler
+    lambda_details.cwd = lambda_cwd or lambda_details.cwd
 
 
 def add_event_source(function_name, source_arn, enabled, batch_size=None):

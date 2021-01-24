@@ -17,7 +17,7 @@ from localstack.utils.testutil import (
     get_lambda_log_events, check_expected_lambda_log_events_length, create_lambda_archive
 )
 from localstack.utils.kinesis import kinesis_connector
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, aws_models
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download, save_file,
     run_safe, get_free_tcp_port, get_service_protocol, retry, to_bytes, cp_r
@@ -1661,16 +1661,18 @@ class TestDockerBehaviour(LambdaTestBase):
         config.LAMBDA_DOCKER_NETWORK = network
         config.LAMBDA_DOCKER_DNS = dns
 
+        func_details = aws_models.LambdaFunction(func_arn)
+        func_details.runtime = LAMBDA_RUNTIME_NODEJS810
+        func_details.lambda_cwd = lambda_cwd
+        func_details.handler = handler
+
         try:
-            cmd = executor.prepare_execution(
-                func_arn, {}, LAMBDA_RUNTIME_NODEJS810, '', handler, lambda_cwd)
-            expected = 'docker run -v "%s":/var/task   --network="%s"  --dns="%s"  --rm "lambci/lambda:%s" "%s"' % (
+            cmd = executor.prepare_execution(func_details, {}, '')
+            expected = 'docker run -v "%s":/var/task --network="%s" --dns="%s" --rm "lambci/lambda:%s" "%s"' % (
                 lambda_cwd, network, dns, LAMBDA_RUNTIME_NODEJS810, handler)
 
-            self.assertIn(('--network="%s"' % network), cmd,
-                        'cmd=%s expected=%s' % (cmd, expected))
-            self.assertIn(('--dns="%s"' % dns), cmd,
-                        'cmd=%s expected=%s' % (cmd, expected))
+            self.assertIn('--network="%s"' % network, cmd, 'cmd=%s expected=%s' % (cmd, expected))
+            self.assertIn('--dns="%s"' % dns, cmd, 'cmd=%s expected=%s' % (cmd, expected))
         finally:
             config.LAMBDA_DOCKER_NETWORK = ''
             config.LAMBDA_DOCKER_DNS = ''
