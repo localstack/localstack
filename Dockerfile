@@ -3,6 +3,13 @@ FROM localstack/java-maven-node-python
 MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="LocalStack Contributors"
 
+# set library path and default LocalStack hostname
+ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
+ENV LOCALSTACK_HOSTNAME=localhost
+
+# add trusted CA certificates to the cert store
+RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
+
 # install basic tools
 RUN pip install awscli awscli-local requests --upgrade
 RUN apk add iputils
@@ -58,9 +65,6 @@ ENV PYTHONPATH=/opt/code/localstack/.venv/lib/python3.8/site-packages
 ADD localstack/ localstack/
 ADD bin/localstack bin/localstack
 
-# add trusted CA certificates to the cert store
-RUN curl https://letsencrypt.org/certs/letsencryptauthorityx3.pem.txt >> /etc/ssl/certs/ca-certificates.crt
-
 # fix some permissions and create local user
 RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
     mkdir -p /.npm && \
@@ -79,9 +83,6 @@ RUN ES_BASE_DIR=localstack/infra/elasticsearch; \
 
 # Fix for Centos host OS
 RUN echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
-
-# set library path
-ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
