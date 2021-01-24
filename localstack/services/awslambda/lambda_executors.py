@@ -363,7 +363,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
 
         # create/verify the docker container is running.
         LOG.debug('Priming docker container with runtime "%s" and arn "%s".', runtime, func_arn)
-        container_info = self.prime_docker_container(runtime, func_arn, env_vars.items(), lambda_cwd)
+        container_info = self.prime_docker_container(func_details, env_vars.items(), lambda_cwd)
 
         # Note: currently "docker exec" does not support --env-file, i.e., environment variables can only be
         # passed directly on the command line, using "-e" below. TODO: Update this code once --env-file is
@@ -411,7 +411,7 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         self.function_invoke_times = {}
         return self.destroy_existing_docker_containers()
 
-    def prime_docker_container(self, runtime, func_arn, env_vars, lambda_cwd):
+    def prime_docker_container(self, func_details, env_vars, lambda_cwd):
         """
         Prepares a persistent docker container for a specific function.
         :param runtime: Lamda runtime environment. python2.7, nodejs6.10, etc.
@@ -422,13 +422,14 @@ class LambdaExecutorReuseContainers(LambdaExecutorContainers):
         """
         with self.docker_container_lock:
             # Get the container name and id.
+            func_arn = func_details.arn()
             container_name = self.get_container_name(func_arn)
             docker_cmd = self._docker_cmd()
 
             status = self.get_docker_container_status(func_arn)
             LOG.debug('Priming docker container (status "%s"): %s' % (status, container_name))
 
-            docker_image = Util.docker_image_for_runtime(runtime)
+            docker_image = Util.docker_image_for_lambda(func_details)
             rm_flag = Util.get_docker_remove_flag()
 
             # Container is not running or doesn't exist.
