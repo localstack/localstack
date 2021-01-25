@@ -2,7 +2,6 @@ import re
 import json
 import random
 import cbor2
-import base64
 from requests.models import Response
 from localstack import config
 from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR
@@ -152,7 +151,7 @@ class ProxyListenerKinesis(ProxyListener):
                 if sdk_v2:
                     record['ApproximateArrivalTimestamp'] = int(record['ApproximateArrivalTimestamp'] * 1000)
                 if not isinstance(record['Data'], str):
-                    record['Data'] = base64.encodebytes(bytearray(record['Data']['data']))
+                    record['Data'] = bytearray(record['Data']['data'])
 
             if encoding_type == APPLICATION_CBOR:
                 response._content = cbor2.dumps(results)
