@@ -1,6 +1,10 @@
 import json
 from localstack.utils import common
 
+# placeholders
+PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
+PLACEHOLDER_AWS_NO_VALUE = '__aws_no_value__'
+
 
 def dump_json_params(param_func=None, *param_names):
     def replace(params, **kwargs):
@@ -27,3 +31,18 @@ def param_defaults(param_func, defaults):
                 result[key] = value
         return result
     return replace
+
+
+def remove_none_values(params):
+    """ Remove None values recursively in the given object. """
+    def remove_nones(o, **kwargs):
+        if isinstance(o, dict):
+            for k, v in dict(o).items():
+                if v is None:
+                    o.pop(k)
+        if isinstance(o, list):
+            common.run_safe(o.remove, None)
+            common.run_safe(o.remove, PLACEHOLDER_AWS_NO_VALUE)
+        return o
+    result = common.recurse_object(params, remove_nones)
+    return result

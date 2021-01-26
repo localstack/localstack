@@ -9,15 +9,12 @@ from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
+from localstack.services.cloudformation.deployment_utils import remove_none_values, PLACEHOLDER_RESOURCE_NAME
 
 LOG = logging.getLogger(__name__)
 
 # name pattern of IAM policies associated with Lambda functions
 LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
-
-# placeholders
-PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
-PLACEHOLDER_AWS_NO_VALUE = '__aws_no_value__'
 
 # ref attribute definitions
 REF_ATTRS = ['PhysicalResourceId', 'Ref']
@@ -453,29 +450,28 @@ class IAMPolicy(GenericBaseModel):
         return 'AWS::IAM::Policy'
 
     def fetch_state(self, stack_name, resources):
-        return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policies=False)
+        return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
 
     @classmethod
     def get_deploy_templates(cls):
         def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
             iam = aws_stack.connect_to_service('iam')
-            resource = resources[resource_id]
-            props = resource['Properties']
+            props = resources[resource_id]['Properties']
             cls.resolve_refs_recursively(stack_name, props, resources)
-            policy_doc = json.dumps(props['PolicyDocument'])
+            policy_doc = json.dumps(remove_none_values(props['PolicyDocument']))
             policy_name = props['PolicyName']
-            for role in resource.get('Roles', []):
+            for role in props.get('Roles', []):
                 iam.put_role_policy(RoleName=role, PolicyName=policy_name, PolicyDocument=policy_doc)
-            for user in resource.get('Users', []):
+            for user in props.get('Users', []):
                 iam.put_user_policy(UserName=user, PolicyName=policy_name, PolicyDocument=policy_doc)
-            for group in resource.get('Groups', []):
+            for group in props.get('Groups', []):
                 iam.put_group_policy(GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc)
             return {}
 
         return {'create': {'function': _create}}
 
     @staticmethod
-    def get_policy_state(obj, stack_name, resources, managed_policies=False):
+    def get_policy_state(obj, stack_name, resources, managed_policy=False):
         def _filter(pols):
             return [p for p in pols['AttachedPolicies'] if p['PolicyName'] == policy_name]
         iam = aws_stack.connect_to_service('iam')
@@ -485,25 +481,25 @@ class IAMPolicy(GenericBaseModel):
         roles = props.get('Roles', [])
         users = props.get('Users', [])
         groups = props.get('Groups', [])
-        if managed_policies:
+        if managed_policy:
             result['policy'] = iam.get_policy(PolicyArn=aws_stack.policy_arn(policy_name))
         for role in roles:
             role = obj.resolve_refs_recursively(stack_name, role, resources)
-            policies = (_filter(iam.list_attached_role_policies(RoleName=role)) if managed_policies else
+            policies = (_filter(iam.list_attached_role_policies(RoleName=role)) if managed_policy else
                 iam.get_role_policy(RoleName=role, PolicyName=policy_name))
             result['role:%s' % role] = policies
         for user in users:
             user = obj.resolve_refs_recursively(stack_name, user, resources)
-            policies = (_filter(iam.list_attached_user_policies(UserName=user)) if managed_policies else
+            policies = (_filter(iam.list_attached_user_policies(UserName=user)) if managed_policy else
                 iam.get_user_policy(UserName=user, PolicyName=policy_name))
             result['user:%s' % user] = policies
         for group in groups:
             group = obj.resolve_refs_recursively(stack_name, group, resources)
-            policies = (_filter(iam.list_attached_group_policies(GroupName=group)) if managed_policies else
+            policies = (_filter(iam.list_attached_group_policies(GroupName=group)) if managed_policy else
                 iam.get_group_policy(GroupName=group, PolicyName=policy_name))
             result['group:%s' % group] = policies
         result = {k: v for k, v in result.items() if v}
-        return result
+        return result or None
 
 
 class IAMManagedPolicy(GenericBaseModel):
@@ -515,7 +511,7 @@ class IAMManagedPolicy(GenericBaseModel):
         return aws_stack.role_arn(self.props['ManagedPolicyName'])
 
     def fetch_state(self, stack_name, resources):
-        return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policies=True)
+        return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
 
     @classmethod
     def get_deploy_templates(cls):
