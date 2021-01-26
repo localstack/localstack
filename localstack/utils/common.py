@@ -2,14 +2,15 @@ import io
 import os
 import re
 import sys
+import glob
 import json
 import uuid
 import time
-import glob
 import base64
 import socket
 import hashlib
 import decimal
+import inspect
 import logging
 import tarfile
 import zipfile
@@ -28,6 +29,7 @@ from datetime import datetime, date
 from contextlib import closing
 from six import with_metaclass
 from six.moves import cStringIO as StringIO
+from six.moves.queue import Queue
 from six.moves.urllib.parse import urlparse, parse_qs
 from multiprocessing.dummy import Pool
 from localstack import config
@@ -78,6 +80,7 @@ class CustomEncoder(json.JSONEncoder):
     """ Helper class to convert JSON documents with datetime, decimals, or bytes. """
 
     def default(self, o):
+        import yaml  # leave import here, to avoid breaking our Lambda tests!
         if isinstance(o, decimal.Decimal):
             if o % 1 > 0:
                 return float(o)
@@ -85,9 +88,17 @@ class CustomEncoder(json.JSONEncoder):
                 return int(o)
         if isinstance(o, (datetime, date)):
             return timestamp_millis(o)
-        if isinstance(o, six.binary_type):
-            return to_str(o)
+        if isinstance(o, yaml.ScalarNode):
+            if o.tag == 'tag:yaml.org,2002:int':
+                return int(o.value)
+            if o.tag == 'tag:yaml.org,2002:float':
+                return float(o.value)
+            if o.tag == 'tag:yaml.org,2002:bool':
+                return bool(o.value)
+            return str(o.value)
         try:
+            if isinstance(o, six.binary_type):
+                return to_str(o)
             return super(CustomEncoder, self).default(o)
         except Exception:
             return None
@@ -338,6 +349,11 @@ def start_worker_thread(method, *args, **kwargs):
     return start_thread(method, *args, _shutdown_hook=False, **kwargs)
 
 
+def empty_context_manager():
+    import contextlib
+    return contextlib.nullcontext()
+
+
 def synchronized(lock=None):
     """
     Synchronization decorator as described in
@@ -349,6 +365,39 @@ def synchronized(lock=None):
             with lock:
                 return wrapped(*args, **kwargs)
         return _wrapper
+    return _decorator
+
+
+def prevent_stack_overflow(match_parameters=False):
+    """ Function decorator to protect a function from stack overflows -
+        raises an exception if a (potential) infinite recursion is detected. """
+    def _decorator(wrapped):
+        @functools.wraps(wrapped)
+        def func(*args, **kwargs):
+            def _matches(frame):
+                if frame.function != wrapped.__name__:
+                    return False
+                frame = frame.frame
+
+                if not match_parameters:
+                    return False
+
+                # construct dict of arguments this stack frame has been called with
+                prev_call_args = {frame.f_code.co_varnames[i]: frame.f_locals[frame.f_code.co_varnames[i]]
+                                  for i in range(frame.f_code.co_argcount)}
+
+                # construct dict of arguments the original function has been called with
+                sig = inspect.signature(wrapped)
+                this_call_args = dict(zip(sig.parameters.keys(), args))
+                this_call_args.update(kwargs)
+
+                return prev_call_args == this_call_args
+
+            matching_frames = [frame[2] for frame in inspect.stack(context=1) if _matches(frame)]
+            if matching_frames:
+                raise RecursionError('(Potential) infinite recursion detected')
+            return wrapped(*args, **kwargs)
+        return func
     return _decorator
 
 
@@ -454,6 +503,18 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
             raise Exception()
 
     return retry(check, sleep=sleep_time, retries=retries)
+
+
+def port_can_be_bound(port):
+    """ Return whether a local port can be bound to. Note that this is a stricter check
+        than is_port_open(...) above, as is_port_open() may return False if the port is
+        not accessible (i.e., does not respond), yet cannot be bound to. """
+    try:
+        tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp.bind(('', port))
+        return True
+    except Exception:
+        return False
 
 
 def get_free_tcp_port(blacklist=None):
@@ -576,6 +637,10 @@ def keys_to_lower(obj):
     return result
 
 
+def camel_to_snake_case(string):
+    return re.sub(r'(?<!^)(?=[A-Z])', '_', string).replace('__', '_').lower()
+
+
 def base64_to_hex(b64_string):
     return binascii.hexlify(base64.b64decode(b64_string))
 
@@ -681,6 +746,28 @@ def cp_r(src, dst):
     return shutil.copytree(src, dst, dirs_exist_ok=True)
 
 
+def disk_usage(path, include_hidden=False):
+    total_size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            fp = os.path.join(dirpath, f)
+            # skip if it is symbolic link
+            if not os.path.islink(fp):
+                total_size += os.path.getsize(fp)
+    return total_size
+
+
+def format_bytes(count, default='n/a'):
+    if not is_number(count) or count < 0:
+        return default
+    cnt = float(count)
+    for unit in ('B', 'KB', 'MB', 'GB', 'TB'):
+        if cnt < 1000:
+            return '%s%s' % (format_number(cnt, decimals=3), unit)
+        cnt = cnt / 1000.0
+    return count
+
+
 def download(url, path, verify_ssl=True):
     """Downloads file at url to the given path"""
     # make sure we're creating a new session here to
@@ -697,7 +784,7 @@ def download(url, path, verify_ssl=True):
     try:
         if not os.path.exists(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path))
-        LOG.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('content-length')))
+        LOG.debug('Starting download from %s to %s (%s bytes)' % (url, path, r.headers.get('Content-Length')))
         with open(path, 'wb') as f:
             iter_length = 0
             iter_limit = 1000000  # print a log line for every 1MB chunk
@@ -737,6 +824,10 @@ def parse_request_data(method, path, data):
 
 def first_char_to_lower(s):
     return '%s%s' % (s[0].lower(), s[1:])
+
+
+def format_number(number, decimals=2):
+    return ('{0:.%sg}' % decimals).format(number)
 
 
 def is_number(s):
@@ -894,6 +985,11 @@ def str_remove(string, index, end_index=None):
     return '%s%s' % (string[:index], string[end_index:])
 
 
+def is_sub_dict(child_dict, parent_dict):
+    """ Returns whether the first dict is a sub-dict (subset) of the second dict. """
+    return all(parent_dict.get(key) == val for key, val in child_dict.items())
+
+
 def cleanup(files=True, env=ENV_DEV, quiet=True):
     if files:
         cleanup_tmp_files()
@@ -982,6 +1078,7 @@ def unzip(path, target_dir, overwrite=True):
     if is_alpine():
         # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
         flags = '-o' if overwrite else ''
+        flags += ' -q'
         return run('cd %s; unzip %s %s' % (target_dir, flags, path))
     try:
         zip_ref = zipfile.ZipFile(path, 'r')
@@ -1182,6 +1279,36 @@ def run_cmd_safe(**kwargs):
     return run_safe(run, print_error=False, **kwargs)
 
 
+def run_for_max_seconds(max_secs, _function, *args, **kwargs):
+    """ Run the given function for a maximum of `max_secs` seconds - continue running
+        in a background thread if the function does not finish in time. """
+    def _worker(*_args):
+        result = None
+        try:
+            result = _function(*args, **kwargs)
+        except Exception as e:
+            result = e
+        result = True if result is None else result
+        q.put(result)
+        return result
+    start = now()
+    q = Queue()
+    start_worker_thread(_worker)
+    for i in range(max_secs * 2):
+        result = None
+        try:
+            result = q.get_nowait()
+        except Exception:
+            pass
+        if result is not None:
+            if isinstance(result, Exception):
+                raise result
+            return result
+        if now() - start >= max_secs:
+            return
+        time.sleep(0.5)
+
+
 def run(cmd, cache_duration_secs=0, **kwargs):
     def do_run(cmd):
         return bootstrap.run(cmd, **kwargs)
@@ -1315,8 +1442,9 @@ def isoformat_milliseconds(t):
         return t.isoformat()[:-3]
 
 
-def _replace(response, pattern, replacement):
-    content = to_str(response.content)
+# TODO move to aws_responses.py?
+def replace_response_content(response, pattern, replacement):
+    content = to_str(response.content or '')
     response._content = re.sub(pattern, replacement, content)
 
 

@@ -5,22 +5,20 @@ import json
 from datetime import datetime
 from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import STRING
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON36
-
-from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.aws.aws_models import KinesisStream
-from localstack.utils.aws.aws_stack import get_environment
 from localstack.utils.common import json_safe, short_uid, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
+from localstack.utils.aws.aws_stack import get_environment
+from localstack.utils.aws.aws_models import KinesisStream
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
+from localstack.services.dynamodbstreams.dynamodbstreams_api import get_kinesis_stream_name
 
 PARTITION_KEY = 'id'
 
 TEST_DDB_TABLE_NAME = 'test-ddb-table-1'
 TEST_DDB_TABLE_NAME_2 = 'test-ddb-table-2'
 TEST_DDB_TABLE_NAME_3 = 'test-ddb-table-3'
-TEST_DDB_TABLE_NAME_4 = 'test-ddb-table-4'
 
 TEST_DDB_TAGS = [
     {
@@ -37,7 +35,7 @@ THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 
 
-class DynamoDBIntegrationTest (unittest.TestCase):
+class TestDynamoDB(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dynamodb = aws_stack.connect_to_resource('dynamodb')
@@ -196,28 +194,37 @@ class DynamoDBIntegrationTest (unittest.TestCase):
         delete_table(table_name)
 
     def test_stream_spec_and_region_replacement(self):
+        ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
+        kinesis = aws_stack.connect_to_service('kinesis')
+        table_name = 'ddb-%s' % short_uid()
         aws_stack.create_dynamodb_table(
-            TEST_DDB_TABLE_NAME_4,
-            partition_key=PARTITION_KEY,
-            stream_view_type='NEW_AND_OLD_IMAGES'
-        )
+            table_name, partition_key=PARTITION_KEY, stream_view_type='NEW_AND_OLD_IMAGES')
 
-        table = self.dynamodb.Table(TEST_DDB_TABLE_NAME_4)
+        table = self.dynamodb.Table(table_name)
 
         # assert ARN formats
         expected_arn_prefix = 'arn:aws:dynamodb:' + aws_stack.get_local_region()
         self.assertTrue(table.table_arn.startswith(expected_arn_prefix))
         self.assertTrue(table.latest_stream_arn.startswith(expected_arn_prefix))
 
+        # assert stream has been created
+        stream_tables = [s['TableName'] for s in ddbstreams.list_streams()['Streams']]
+        self.assertIn(table_name, stream_tables)
+        stream_name = get_kinesis_stream_name(table_name)
+        self.assertIn(stream_name, kinesis.list_streams()['StreamNames'])
+
         # assert shard ID formats
-        ddbstreams = aws_stack.connect_to_service('dynamodbstreams')
         result = ddbstreams.describe_stream(StreamArn=table.latest_stream_arn)['StreamDescription']
         self.assertIn('Shards', result)
         for shard in result['Shards']:
             self.assertRegex(shard['ShardId'], r'^shardId\-[0-9]{20}\-[a-zA-Z0-9]{1,36}$')
 
         # clean up
-        delete_table(TEST_DDB_TABLE_NAME_4)
+        delete_table(table_name)
+        # assert stream has been deleted
+        stream_tables = [s['TableName'] for s in ddbstreams.list_streams()['Streams']]
+        self.assertNotIn(table_name, stream_tables)
+        self.assertNotIn(stream_name, kinesis.list_streams()['StreamNames'])
 
     def test_multiple_update_expressions(self):
         dynamodb = aws_stack.connect_to_service('dynamodb')
@@ -456,6 +463,10 @@ class DynamoDBIntegrationTest (unittest.TestCase):
 
         table_list = dynamodb.list_tables()
         self.assertEqual(tables_before, len(table_list['TableNames']))
+
+        with self.assertRaises(Exception) as ctx:
+            dynamodb.delete_table(TableName=table_name)
+        self.assertIn('ResourceNotFoundException', str(ctx.exception))
 
     def test_transaction_write_items(self):
         table_name = 'test-ddb-table-%s' % short_uid()

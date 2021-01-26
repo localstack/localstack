@@ -15,12 +15,11 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import (
     to_str, json_safe, clone, short_uid, get_free_tcp_port, load_file, safe_requests as requests)
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
-from localstack.services.awslambda.lambda_api import add_event_source
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs, gateway_request_url)
+from localstack.services.awslambda.lambda_api import add_event_source
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
-from localstack.services.awslambda.lambda_api import LAMBDA_RUNTIME_PYTHON36
-
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, 'files', 'swagger.json')

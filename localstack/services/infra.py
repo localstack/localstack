@@ -1,3 +1,4 @@
+# noqa
 import os
 import re
 import sys
@@ -10,16 +11,16 @@ import boto3
 import subprocess
 from moto import core as moto_core
 from requests.models import Response
-from localstack import constants, config
+from localstack import config, constants
+from localstack.utils import common, persistence
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
-from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux, start_thread,
     ShellCommandThread, in_docker, is_port_open, sleep_forever, print_debug, edge_ports_info)
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.bootstrap import (
-    setup_logging, is_debug, canonicalize_api_names, load_plugins, in_ci)
+    setup_logging, canonicalize_api_names, load_plugins, in_ci)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
 from localstack.services.es import es_api
@@ -27,6 +28,7 @@ from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, 
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
+from localstack.services.cloudformation import cloudformation_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.utils.analytics.profiler import log_duration
 
@@ -44,9 +46,6 @@ PROXY_LISTENERS = {}
 
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# fix moto account ID - note: keep this at the top level here
-moto_core.ACCOUNT_ID = constants.TEST_AWS_ACCOUNT_ID
 
 
 # -----------------------
@@ -109,12 +108,6 @@ def start_acm(port=None, asynchronous=False):
     return start_moto_server('acm', port, name='ACM', asynchronous=asynchronous)
 
 
-# TODO still needed?
-def start_ses(port=None, asynchronous=False):
-    port = port or config.PORT_SES
-    return start_moto_server('ses', port, name='SES', asynchronous=asynchronous)
-
-
 # TODO move to es_starter.py?
 def start_elasticsearch_service(port=None, asynchronous=False):
     port = port or config.PORT_ES
@@ -135,6 +128,12 @@ def start_dynamodbstreams(port=None, asynchronous=False):
 def start_lambda(port=None, asynchronous=False):
     port = port or config.PORT_LAMBDA
     return start_local_api('Lambda', port, api='lambda', method=lambda_api.serve, asynchronous=asynchronous)
+
+
+def start_cloudformation(port=None, asynchronous=False):
+    port = port or config.PORT_CLOUDFORMATION
+    return start_local_api('CloudFormation', port, api='cloudformation',
+        method=cloudformation_api.serve, asynchronous=asynchronous)
 
 
 def start_ssm(port=None, asynchronous=False, update_listener=None):
@@ -256,7 +255,7 @@ def register_signal_handlers():
 def do_run(cmd, asynchronous, print_output=None, env_vars={}):
     sys.stdout.flush()
     if asynchronous:
-        if is_debug() and print_output is None:
+        if config.DEBUG and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
         t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)
@@ -404,6 +403,9 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
+    # import to avoid cyclic dependency
+    from localstack.services.edge import BOOTSTRAP_LOCK
+
     event_publisher.fire_event(event_publisher.EVENT_START_INFRA,
         {'d': is_in_docker and 1 or 0, 'c': in_ci() and 1 or 0})
 
@@ -431,6 +433,7 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     @log_duration()
     def start_api_services():
+
         # Some services take a bit to come up
         sleep_time = 5
         # start services
@@ -452,7 +455,8 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     prepare_environment()
     prepare_installation()
-    thread = start_api_services()
+    with BOOTSTRAP_LOCK:
+        thread = start_api_services()
     print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
 

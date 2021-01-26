@@ -1,10 +1,14 @@
 import base64
-
+import logging
+import localstack.config as config
+from datetime import date, datetime
 from moto.ses.responses import EmailResponse as email_responses
+from moto.ses.responses import ses_backend
 from moto.ses.exceptions import MessageRejectedError
-from localstack import config
-from localstack.utils.common import to_str
+from localstack.utils.common import to_str, timestamp_millis
 from localstack.services.infra import start_moto_server
+
+LOGGER = logging.getLogger(__name__)
 
 
 def apply_patches():
@@ -23,7 +27,10 @@ def apply_patches():
         if source.strip():
             return email_responses_send_raw_email_orig(self)
 
-        raw_data = to_str(base64.b64decode(self.querystring.get('RawMessage.Data')[0]))
+        raw_data = to_str(base64.b64decode(
+            self.querystring.get('RawMessage.Data')[0]))
+
+        LOGGER.debug('Raw email:\n%s' % raw_data)
 
         source = get_source_from_raw(raw_data)
         if not source:
@@ -34,8 +41,48 @@ def apply_patches():
 
     email_responses.send_raw_email = email_responses_send_raw_email
 
+    email_responses_send_email_orig = email_responses.send_email
 
-def start_ses(port=None, backend_port=None, asynchronous=None):
+    def email_responses_send_email(self):
+        bodydatakey = 'Message.Body.Text.Data'
+        if 'Message.Body.Html.Data' in self.querystring:
+            bodydatakey = 'Message.Body.Html.Data'
+
+        body = self.querystring.get(bodydatakey)[0]
+        source = self.querystring.get('Source')[0]
+        subject = self.querystring.get('Message.Subject.Data')[0]
+        destinations = {'ToAddresses': [],
+                        'CcAddresses': [], 'BccAddresses': []}
+        for dest_type in destinations:
+            # consume up to 51 to allow exception
+            for i in range(1, 52):
+                field = 'Destination.%s.member.%s' % (dest_type, i)
+                address = self.querystring.get(field)
+                if address is None:
+                    break
+                destinations[dest_type].append(address[0])
+
+        LOGGER.debug('Raw email\nFrom: %s\nTo: %s\nSubject: %s\nBody:\n%s'
+                     % (source, destinations, subject, body))
+
+        return email_responses_send_email_orig(self)
+
+    email_responses.send_email = email_responses_send_email
+
+    email_responses_list_templates_orig = email_responses.list_templates
+
+    def list_templates(self):
+        email_templates = ses_backend.list_templates()
+        for template in email_templates:
+            if isinstance(template['Timestamp'], (date, datetime)):
+                # Hack to change the last digits to Java SDKv2 compatible format
+                template['Timestamp'] = timestamp_millis(template['Timestamp'])
+        return email_responses_list_templates_orig(self)
+
+    email_responses.list_templates = list_templates
+
+
+def start_ses(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_SES
     apply_patches()
     return start_moto_server(
@@ -43,5 +90,6 @@ def start_ses(port=None, backend_port=None, asynchronous=None):
         name='SES',
         port=port,
         backend_port=backend_port,
-        asynchronous=asynchronous
+        asynchronous=asynchronous,
+        update_listener=update_listener
     )

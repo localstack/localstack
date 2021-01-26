@@ -56,8 +56,10 @@ DYNAMODB_WRITE_ERROR_PROBABILITY = float(os.environ.get('DYNAMODB_WRITE_ERROR_PR
 DYNAMODB_HEAP_SIZE = os.environ.get('DYNAMODB_HEAP_SIZE', '').strip() or '256m'
 
 # expose services on a specific host internally
-# TODO: evaluate whether this should be hardcoded as HOSTNAME=LOCALHOST ..?
-HOSTNAME = os.environ.get('HOSTNAME', '').strip() or LOCALHOST
+# Note: This used to be os.environ['HOSTNAME'] but since this has caused several issues with hostnames
+# that could not be resolved, we're hardcoding this to 'localhost' (as its purpose is local invocations)
+# TODO: potentially remove this entirely in the future ?!
+HOSTNAME = LOCALHOST
 
 # expose services on a specific host externally
 HOSTNAME_EXTERNAL = os.environ.get('HOSTNAME_EXTERNAL', '').strip() or LOCALHOST
@@ -152,6 +154,8 @@ DISABLE_EVENTS = is_env_true('DISABLE_EVENTS')
 # Whether to skip downloading additional infrastructure components (e.g., custom Elasticsearch versions)
 SKIP_INFRA_DOWNLOADS = os.environ.get('SKIP_INFRA_DOWNLOADS', '').strip()
 
+# Adding Stepfunctions default port
+LOCAL_PORT_STEPFUNCTIONS = int(os.environ.get('LOCAL_PORT_STEPFUNCTIONS') or 8083)
 # Stepfunctions lambda endpoint override
 STEPFUNCTIONS_LAMBDA_ENDPOINT = os.environ.get('STEPFUNCTIONS_LAMBDA_ENDPOINT', '').strip()
 
@@ -208,7 +212,8 @@ CONFIG_ENV_VARS = ['SERVICES', 'HOSTNAME', 'HOSTNAME_EXTERNAL', 'LOCALSTACK_HOST
                    'WINDOWS_DOCKER_MOUNT_PREFIX', 'USE_HTTP2_SERVER',
                    'SYNCHRONOUS_API_GATEWAY_EVENTS', 'SYNCHRONOUS_KINESIS_EVENTS',
                    'SYNCHRONOUS_SNS_EVENTS', 'SYNCHRONOUS_SQS_EVENTS', 'SYNCHRONOUS_DYNAMODB_EVENTS',
-                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS']
+                   'DYNAMODB_HEAP_SIZE', 'MAIN_CONTAINER_NAME', 'LAMBDA_DOCKER_DNS',
+                   'USE_MOTO_CF']
 
 for key, value in six.iteritems(DEFAULT_SERVICE_PORTS):
     clean_key = key.upper().replace('-', '_')
@@ -386,3 +391,6 @@ BUNDLE_API_PROCESSES = True
 
 # whether to use a CPU/memory profiler when running the integration tests
 USE_PROFILER = is_env_true('USE_PROFILER')
+
+# whether to use the legacy CF deployment based on moto (TODO: remove in a future release)
+USE_MOTO_CF = is_env_true('USE_MOTO_CF')

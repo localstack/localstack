@@ -28,6 +28,7 @@ LOGGER = logging.getLogger(__name__)
 PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
+HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
 
 # Maps API IDs to list of gateway responses
 GATEWAY_RESPONSES = {}
@@ -50,10 +51,12 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_RESPONSES, path):
             search_match = re.search(PATH_REGEX_RESPONSES, path)
             api_id = search_match.group(1)
+            response_type = (search_match.group(2) or '').lstrip('/')
             if method == 'GET':
+                if response_type:
+                    return get_gateway_response(api_id, response_type)
                 return get_gateway_responses(api_id)
             if method == 'PUT':
-                response_type = search_match.group(2).lstrip('/')
                 return put_gateway_response(api_id, response_type, data)
 
         return True
@@ -125,6 +128,12 @@ def get_gateway_responses(api_id):
         'item': [item(i) for i in result]
     }
     return result
+
+
+def get_gateway_response(api_id, response_type):
+    responses = GATEWAY_RESPONSES.get(api_id, [])
+    result = [r for r in responses if r['responseType'] == response_type]
+    return result[0] if result else 404
 
 
 def put_gateway_response(api_id, response_type, data):
@@ -210,16 +219,23 @@ def apply_template(integration, req_res_type, data, path_params={}, query_params
     return data
 
 
-def get_api_id_stage_invocation_path(path):
-    search_match = re.search(PATH_REGEX_USER_REQUEST, path)
-    api_id = search_match.group(1)
-    stage = search_match.group(2)
-    relative_path_w_query_params = '/%s' % search_match.group(3)
+def get_api_id_stage_invocation_path(path, headers):
+    path_match = re.search(PATH_REGEX_USER_REQUEST, path)
+    host_header = headers.get('Host', '')
+    host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
+    if path_match:
+        api_id = path_match.group(1)
+        stage = path_match.group(2)
+        relative_path_w_query_params = '/%s' % path_match.group(3)
+    elif host_match:
+        api_id = host_match.group(1)
+        stage = path.strip('/').split('/')[0]
+        relative_path_w_query_params = '/%s' % path.lstrip('/').partition('/')[2]
     return api_id, stage, relative_path_w_query_params
 
 
 def invoke_rest_api_from_request(method, path, data, headers, context={}):
-    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path)
+    api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     try:
         return invoke_rest_api(api_id, stage, method, relative_path_w_query_params,
             data, headers, path=path, context=context)
@@ -438,7 +454,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
 
 
 def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
-    _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path)
+    _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
     relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
     source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
     integration_uri = integration_uri or ''

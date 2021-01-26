@@ -10,7 +10,7 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
         if method == 'POST' and path == '/':
             if 'nextToken' in to_str(data or ''):
                 data = self._fix_next_token_request(data)
-                headers['content-length'] = str(len(data))
+                headers['Content-Length'] = str(len(data))
                 return Request(data=data, headers=headers, method=method)
 
         return True
@@ -26,7 +26,7 @@ class ProxyListenerCloudWatchLogs(ProxyListener):
         response._content = str.encode(str_content)
         if 'nextToken' in str_content:
             self._fix_next_token_response(response)
-            response.headers['content-length'] = str(len(response._content))
+            response.headers['Content-Length'] = str(len(response._content))
 
     @staticmethod
     def _fix_next_token_request(data):

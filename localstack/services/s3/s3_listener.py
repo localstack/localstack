@@ -24,6 +24,7 @@ from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack import config, constants
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
 from localstack.utils.common import (
@@ -32,8 +33,8 @@ from localstack.utils.common import (
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import uses_chunked_encoding
 from localstack.utils.persistence import PersistingProxyListener
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws.aws_responses import requests_response, requests_error_response_xml_signature_calculation
+from localstack.services.cloudformation.service_models import S3Bucket
 
 CONTENT_SHA256_HEADER = 'x-amz-content-sha256'
 STREAMING_HMAC_PAYLOAD = 'STREAMING-AWS4-HMAC-SHA256-PAYLOAD'
@@ -88,9 +89,9 @@ ALLOWED_HEADER_OVERRIDES = {
     'response-content-encoding': 'Content-Encoding',
 }
 
-# From botocore's auth.py:
-# https://github.com/boto/botocore/blob/30206ab9e9081c80fa68e8b2cb56296b09be6337/botocore/auth.py#L47
-POLICY_EXPIRATION_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+# STS policy expiration date format
+POLICY_EXPIRATION_FORMAT1 = '%Y-%m-%dT%H:%M:%SZ'
+POLICY_EXPIRATION_FORMAT2 = '%Y-%m-%dT%H:%M:%S.%IZ'
 
 # ignored_headers_lower conatins headers which don't get involved in signature calculations process
 # these headers are being sent by the localstack by default.
@@ -108,6 +109,8 @@ CORS_HEADERS = [
     'Access-Control-Max-Age', 'Access-Control-Allow-Credentials', 'Access-Control-Expose-Headers',
     'Access-Control-Request-Headers', 'Access-Control-Request-Method'
 ]
+
+SIGNATURE_V4_PARAMS = ['X-Amz-Algorithm']
 
 
 def event_type_matches(events, action, api_method):
@@ -247,9 +250,9 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
         sns_client = aws_stack.connect_to_service('sns')
         try:
             sns_client.publish(TopicArn=notif['Topic'], Message=message, Subject='Amazon S3 Notification')
-        except Exception:
-            LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s".' %
-                (bucket_name, notif['Topic']))
+        except Exception as e:
+            LOGGER.warning('Unable to send notification for S3 bucket "%s" to SNS topic "%s": %s' %
+                (bucket_name, notif['Topic'], e))
     # CloudFunction and LambdaFunction are semantically identical
     lambda_function_config = notif.get('CloudFunction') or notif.get('LambdaFunction')
     if lambda_function_config:
@@ -873,10 +876,7 @@ def is_object_specific_request(path, headers):
 
 
 def normalize_bucket_name(bucket_name):
-    bucket_name = bucket_name or ''
-    # AWS appears to automatically convert upper to lower case chars in bucket names
-    bucket_name = bucket_name.lower()
-    return bucket_name
+    return S3Bucket.normalize_bucket_name(bucket_name)
 
 
 def get_key_name(path, headers):
@@ -1002,6 +1002,14 @@ class ProxyListenerS3(PersistingProxyListener):
         return 'x-amz-copy-source' in headers or 'x-amz-copy-source' in path
 
     @staticmethod
+    def is_create_multipart_request(query):
+        return query.startswith('uploads')
+
+    @staticmethod
+    def is_multipart_upload(query):
+        return query.startswith('uploadId')
+
+    @staticmethod
     def get_201_response(key, bucket_name):
         return """
                 <PostResponse>
@@ -1041,11 +1049,20 @@ class ProxyListenerS3(PersistingProxyListener):
         if (method == 'POST' and query.startswith('uploadId')) or contains_cred or contains_key:
             return True
 
+    @staticmethod
+    def parse_policy_expiration_date(expiration_string):
+        try:
+            return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT1)
+        except Exception:
+            return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
+
     def forward_request(self, method, path, data, headers):
 
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
+        path_orig = path
+        path = path.replace('#', '%23')  # support key names containing hashes (e.g., required by Amplify)
 
         # Detecting pre-sign url and checking signature
         if any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
@@ -1061,8 +1078,9 @@ class ProxyListenerS3(PersistingProxyListener):
         if 's3.amazonaws.com' not in headers.get('host', ''):
             headers['host'] = 'localhost'
 
-        # check content md5 hash integrity if not a copy request
-        if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path):
+        # check content md5 hash integrity if not a copy request or multipart initialization
+        if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
+                and not self.is_create_multipart_request(parsed_path.query):
             response = check_content_md5(data, headers)
             if response is not None:
                 return response
@@ -1138,7 +1156,7 @@ class ProxyListenerS3(PersistingProxyListener):
                 policy = json.loads(base64.b64decode(policy_value).decode('utf-8'))
                 expiration_string = policy.get('expiration', None)  # Example: 2020-06-05T13:37:12Z
                 if expiration_string:
-                    expiration_datetime = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT)
+                    expiration_datetime = self.parse_policy_expiration_date(expiration_string)
                     expiration_timestamp = expiration_datetime.timestamp()
                     if is_url_already_expired(expiration_timestamp):
                         return token_expired_error(path, headers.get('x-amz-request-id'), 400)
@@ -1175,11 +1193,12 @@ class ProxyListenerS3(PersistingProxyListener):
             if method == 'PUT':
                 return set_object_lock(bucket, data)
 
-        if modified_data is not None or headers_changed:
+        path_orig_escaped = path_orig.replace('#', '%23')
+        if modified_data is not None or headers_changed or path_orig != path_orig_escaped:
             data_to_return = not_none_or(modified_data, data)
             if modified_data is not None:
                 headers['Content-Length'] = str(len(data_to_return or ''))
-            return Request(data=data_to_return, headers=headers, method=method)
+            return Request(url=path_orig_escaped, data=data_to_return, headers=headers, method=method)
         return True
 
     def get_forward_url(self, method, path, data, headers):
@@ -1198,6 +1217,8 @@ class ProxyListenerS3(PersistingProxyListener):
     def return_response(self, method, path, data, headers, response, request_handler=None):
         path = to_str(path)
         method = to_str(method)
+        path = path.replace('#', '%23')
+
         # persist this API call to disk
         super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
@@ -1366,7 +1387,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
                 reset_content_length = True
 
-            # update content-length headers (fix https://github.com/localstack/localstack/issues/541)
+            # update Content-Length headers (fix https://github.com/localstack/localstack/issues/541)
             if method == 'DELETE':
                 reset_content_length = True
 
@@ -1440,6 +1461,13 @@ def authenticate_presign_url(method, path, headers, data=None):
     # Comparing the signature in url with signature we calculated
     query_sig = urlparse.unquote(query_params['Signature'][0])
     if query_sig != signature:
+
+        # older signature calculation methods are not supported
+        # so logging a warning to the user to use the v4 calculation method
+        for param in SIGNATURE_V4_PARAMS:
+            if param.lower() not in (query_param.lower() for query_param in query_params):
+                LOGGER.warning(
+                    'Older version of signature calculation method detected. Please use v4 calculation method')
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',

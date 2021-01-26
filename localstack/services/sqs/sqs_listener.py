@@ -100,6 +100,24 @@ def _set_queue_attributes(queue_url, req_data):
     return forward_attrs
 
 
+def _fix_dlq_arn_in_attributes(req_data):
+    """ Convert queue URL to ARN for DLQ in redrive policy config. """
+    attrs = _format_attributes(req_data)
+    policy = json.loads(attrs.get('RedrivePolicy') or '{}')
+    dlq_arn = policy.get('deadLetterTargetArn', '')
+    if '://' in dlq_arn:
+        # convert queue URL to queue ARN
+        policy['deadLetterTargetArn'] = aws_stack.sqs_queue_arn(dlq_arn)
+        attrs['RedrivePolicy'] = json.dumps(policy)
+        return attrs
+
+
+def _fix_redrive_policy(match):
+    result = '<Attribute><Name>RedrivePolicy</Name><Value>{%s}</Value></Attribute>' % (
+        match.group(1).replace(' ', ''))
+    return result
+
+
 def _add_queue_attributes(path, req_data, content_str, headers):
     # TODO remove this function if we stop using ElasticMQ entirely
     if SQS_BACKEND_IMPL != 'elasticmq':
@@ -246,6 +264,11 @@ class ProxyListenerSQS(PersistingProxyListener):
                         # make sure we only forward the supported attributes to the backend
                         return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
 
+            elif action == 'CreateQueue':
+                changed_attrs = _fix_dlq_arn_in_attributes(req_data)
+                if changed_attrs:
+                    return _get_attributes_forward_request(method, path, headers, req_data, changed_attrs)
+
             elif action == 'DeleteQueue':
                 queue_url = _queue_url(path, req_data, headers)
                 QUEUE_ATTRIBUTES.pop(queue_url, None)
@@ -296,6 +319,11 @@ class ProxyListenerSQS(PersistingProxyListener):
         if action == 'GetQueueAttributes':
             content_str = _add_queue_attributes(path, req_data, content_str, headers)
 
+        name = r'<Name>\s*RedrivePolicy\s*<\/Name>'
+        value = r'<Value>\s*{(.*)}\s*<\/Value>'
+        for p1, p2 in ((name, value), (value, name)):
+            content_str = re.sub(r'<Attribute>\s*%s\s*%s\s*<\/Attribute>' % (p1, p2), _fix_redrive_policy, content_str)
+
         # patch the response and return the correct endpoint URLs / ARNs
         if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes', 'ListDeadLetterSourceQueues'):
             if config.USE_SSL and '<QueueUrl>http://' in content_str:
@@ -330,7 +358,7 @@ class ProxyListenerSQS(PersistingProxyListener):
 
         if content_str_original != content_str:
             # if changes have been made, return patched response
-            response.headers['content-length'] = len(content_str)
+            response.headers['Content-Length'] = len(content_str)
             response.headers['x-amz-crc32'] = calculate_crc32(content_str)
             return requests_response(content_str, headers=response.headers, status_code=response.status_code)
 
