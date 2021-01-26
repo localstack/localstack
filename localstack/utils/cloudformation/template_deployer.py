@@ -21,6 +21,8 @@ from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import (
     GenericBaseModel, DependencyNotYetSatisfied, PLACEHOLDER_RESOURCE_NAME, PLACEHOLDER_AWS_NO_VALUE)
+from localstack.services.cloudformation.deployment_utils import (
+    dump_json_params, select_parameters, param_defaults)
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -161,35 +163,8 @@ def es_add_tags_params(params, **kwargs):
     return {'ARN': es_arn, 'TagList': tags}
 
 
-def select_parameters(*param_names):
-    return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])
-
-
 def merge_parameters(func1, func2):
     return lambda params, **kwargs: common.merge_dicts(func1(params, **kwargs), func2(params, **kwargs))
-
-
-def dump_json_params(param_func=None, *param_names):
-    def replace(params, **kwargs):
-        result = param_func(params, **kwargs) if param_func else params
-        for name in param_names:
-            if isinstance(result.get(name), (dict, list)):
-                # Fix for https://github.com/localstack/localstack/issues/2022
-                # Convert any date instances to date strings, etc, Version: "2012-10-17"
-                param_value = common.json_safe(result[name])
-                result[name] = json.dumps(param_value)
-        return result
-    return replace
-
-
-def param_defaults(param_func, defaults):
-    def replace(params, **kwargs):
-        result = param_func(params, **kwargs)
-        for key, value in defaults.items():
-            if result.get(key) in ['', None]:
-                result[key] = value
-        return result
-    return replace
 
 
 def iam_create_policy_params(params, **kwargs):
@@ -726,7 +701,7 @@ def get_resource_name(resource):
         name = instance.get_resource_name()
 
     if not name:
-        LOG.info('Unable to extract name for resource type "%s"' % res_type)
+        LOG.debug('Unable to extract name for resource type "%s"' % res_type)
     return name
 
 
@@ -1671,6 +1646,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
 
     elif res_type == 'AWS::SQS::QueuePolicy' and not resource.get('PhysicalResourceId'):
         resource['PhysicalResourceId'] = _generate_res_name()
+
+    elif res_type == 'AWS::IAM::ManagedPolicy' and not resource.get('ManagedPolicyName'):
+        resource['ManagedPolicyName'] = _generate_res_name()
 
     elif res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
         props['Name'] = _generate_res_name()

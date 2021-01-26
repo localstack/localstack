@@ -221,6 +221,17 @@ Resources:
             Resource:
               - !Sub >-
                 arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/aws-dev-log:*
+  ManagedRolePolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      ManagedPolicyName: %s
+      Roles: [!GetAtt IamRoleLambdaExecution.RoleName]
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: '*'
+            Resource: '*'
 """
 
 TEST_TEMPLATE_14 = """
@@ -1179,9 +1190,11 @@ class CloudFormationTest(unittest.TestCase):
     def test_cfn_handle_iam_role_resource(self):
         stack_name = 'stack-%s' % short_uid()
         role_name = 'role-%s' % short_uid()
+        policy_name = 'policy-%s' % short_uid()
         role_path_prefix = '/role-prefix-%s/' % short_uid()
 
-        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_13 % (role_name, role_path_prefix))
+        template_body = TEST_TEMPLATE_13 % (role_name, role_path_prefix, policy_name)
+        deploy_cf_stack(stack_name=stack_name, template_body=template_body)
 
         iam = aws_stack.connect_to_service('iam')
         rs = iam.list_roles(PathPrefix=role_path_prefix)
@@ -1189,6 +1202,9 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(rs['Roles']), 1)
         role = rs['Roles'][0]
         self.assertEqual(role['RoleName'], role_name)
+
+        result = iam.get_policy(PolicyArn=aws_stack.policy_arn(policy_name))
+        self.assertEqual(result['Policy']['PolicyName'], policy_name)
 
         # clean up
         self.cleanup(stack_name)
