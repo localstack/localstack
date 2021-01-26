@@ -429,7 +429,7 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
         kwargs = {
             'method': method,
             'path': path,
-            'data': data_bytes,
+            'data': data,
             'headers': headers,
             'response': response
         }
