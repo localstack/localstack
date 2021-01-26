@@ -423,6 +423,11 @@ def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
         (get_region(), account_id, table_name, latest_stream_label))
 
 
+def cloudwatch_alarm_arn(alarm_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:cloudwatch:%s:%s:alarm:%s'
+    return _resource_arn(alarm_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def log_group_arn(group_name, account_id=None, region_name=None):
     pattern = 'arn:aws:logs:%s:%s:log-group:%s'
     return _resource_arn(group_name, pattern, account_id=account_id, region_name=region_name)
@@ -928,6 +933,7 @@ def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
     return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
 
 
+# TODO: move to aws_responses.py?
 def extract_tags(req_data):
     tags = []
     req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}

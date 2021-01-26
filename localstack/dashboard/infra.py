@@ -9,6 +9,7 @@ from localstack.config import DEFAULT_REGION
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (short_uid, parallelize, is_port_open, new_tmp_file,
     to_str, rm_rf, unzip, download, clean_cache, mktime, load_file, mkdir, run, md5)
+from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.aws.aws_models import (ElasticSearch, S3Notification,
     EventSource, DynamoDB, DynamoDBStream, FirehoseStream, S3Bucket, SqsQueue,
     KinesisShard, KinesisStream, LambdaFunction)
@@ -54,6 +55,8 @@ def run_cached(cmd, cache_duration_secs=None):
 
 def run_aws_cmd(service, cmd_params, env=None, cache_duration_secs=None):
     cmd = '%s %s' % (aws_cmd(service, env), cmd_params)
+    if not is_api_enabled(service):
+        return '{}'
     return run_cached(cmd, cache_duration_secs=cache_duration_secs)
 
 

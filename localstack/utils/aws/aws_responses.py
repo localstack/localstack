@@ -9,7 +9,7 @@ from requests.models import CaseInsensitiveDict
 from requests.models import Response as RequestsResponse
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_str, to_bytes, json_safe
+from localstack.utils.common import short_uid, to_str, to_bytes, json_safe, replace_response_content
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
@@ -184,14 +184,9 @@ class MessageConversion(object):
     @staticmethod
     def fix_date_format(response):
         """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
-
-        def _replace(response, pattern, replacement):
-            content = to_str(response.content)
-            response._content = re.sub(pattern, replacement, content)
-
         pattern = r'<CreateDate>([^<]+) ([^<+]+)(\+[^<]*)?</CreateDate>'
         replacement = r'<CreateDate>\1T\2Z</CreateDate>'
-        _replace(response, pattern, replacement)
+        replace_response_content(response, pattern, replacement)
 
     @staticmethod
     def fix_account_id(response):

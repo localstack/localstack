@@ -573,8 +573,10 @@ class GatewayMethod(GenericBaseModel):
         }
         if integration:
             kwargs['type'] = integration['Type']
-            kwargs['integrationHttpMethod'] = integration.get('IntegrationHttpMethod')
-            kwargs['uri'] = integration.get('Uri')
+            if integration.get('IntegrationHttpMethod'):
+                kwargs['integrationHttpMethod'] = integration.get('IntegrationHttpMethod')
+            if integration.get('Uri'):
+                kwargs['uri'] = integration.get('Uri')
             return client.put_integration(**kwargs)
         kwargs['authorizationType'] = props.get('AuthorizationType')
 
