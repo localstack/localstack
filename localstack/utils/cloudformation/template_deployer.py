@@ -19,8 +19,10 @@ from localstack.utils.common import (
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
-from localstack.services.cloudformation.service_models import (
-    GenericBaseModel, DependencyNotYetSatisfied, PLACEHOLDER_RESOURCE_NAME, PLACEHOLDER_AWS_NO_VALUE)
+from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
+from localstack.services.cloudformation.deployment_utils import (
+    dump_json_params, select_parameters, param_defaults, remove_none_values,
+    PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -161,42 +163,8 @@ def es_add_tags_params(params, **kwargs):
     return {'ARN': es_arn, 'TagList': tags}
 
 
-def select_parameters(*param_names):
-    return lambda params, **kwargs: dict([(k, v) for k, v in params.items() if k in param_names])
-
-
 def merge_parameters(func1, func2):
     return lambda params, **kwargs: common.merge_dicts(func1(params, **kwargs), func2(params, **kwargs))
-
-
-def dump_json_params(param_func=None, *param_names):
-    def replace(params, **kwargs):
-        result = param_func(params, **kwargs) if param_func else params
-        for name in param_names:
-            if isinstance(result.get(name), (dict, list)):
-                # Fix for https://github.com/localstack/localstack/issues/2022
-                # Convert any date instances to date strings, etc, Version: "2012-10-17"
-                param_value = common.json_safe(result[name])
-                result[name] = json.dumps(param_value)
-        return result
-    return replace
-
-
-def param_defaults(param_func, defaults):
-    def replace(params, **kwargs):
-        result = param_func(params, **kwargs)
-        for key, value in defaults.items():
-            if result.get(key) in ['', None]:
-                result[key] = value
-        return result
-    return replace
-
-
-def iam_create_policy_params(params, **kwargs):
-    result = {'PolicyName': params['PolicyName']}
-    policy_doc = remove_none_values(params['PolicyDocument'])
-    result['PolicyDocument'] = json.dumps(policy_doc)
-    return result
 
 
 def lambda_permission_params(params, **kwargs):
@@ -465,13 +433,6 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'IAM::Policy': {
-        'create': {
-            'function': 'create_policy',
-            'parameters': iam_create_policy_params
-        }
-        # InlinePolicy in cloudformation will be deleted on deleting Role
-    },
     'ApiGateway::RestApi': {
         'create': {
             'function': 'create_rest_api',
@@ -726,7 +687,7 @@ def get_resource_name(resource):
         name = instance.get_resource_name()
 
     if not name:
-        LOG.info('Unable to extract name for resource type "%s"' % res_type)
+        LOG.debug('Unable to extract name for resource type "%s"' % res_type)
     return name
 
 
@@ -797,7 +758,8 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
 
 def check_not_found_exception(e, resource_type, resource, resource_status):
     # we expect this to be a "not found" exception
-    markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException', '404', 'not found', 'not exist']
+    markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException',
+        '404', 'not found', 'not exist']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
             (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
@@ -1205,21 +1167,6 @@ def convert_data_types(func_details, params):
                     o[k] = cast(v, types[k])
         return o
     result = common.recurse_object(params, fix_types)
-    return result
-
-
-def remove_none_values(params):
-    """ Remove None values recursively in the given object. """
-    def remove_nones(o, **kwargs):
-        if isinstance(o, dict):
-            for k, v in dict(o).items():
-                if v is None:
-                    o.pop(k)
-        if isinstance(o, list):
-            common.run_safe(o.remove, None)
-            common.run_safe(o.remove, PLACEHOLDER_AWS_NO_VALUE)
-        return o
-    result = common.recurse_object(params, remove_nones)
     return result
 
 
@@ -1671,6 +1618,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
 
     elif res_type == 'AWS::SQS::QueuePolicy' and not resource.get('PhysicalResourceId'):
         resource['PhysicalResourceId'] = _generate_res_name()
+
+    elif res_type == 'AWS::IAM::ManagedPolicy' and not resource.get('ManagedPolicyName'):
+        resource['ManagedPolicyName'] = _generate_res_name()
 
     elif res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
         props['Name'] = _generate_res_name()
