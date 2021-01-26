@@ -94,7 +94,7 @@ class ProxyListenerDynamoDB(ProxyListener):
         action = headers.get('X-Amz-Target')
 
         if self.should_throttle(action):
-            return self.error_response_throughput()
+            return error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
 

@@ -304,6 +304,8 @@ def canonicalize_api_names(apis=None):
                 including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
         (3) removing duplicates from the list. """
 
+    # TODO: cache the result, as the code below is a relatively expensive operation!
+
     apis = apis or list(config.SERVICE_PORTS.keys())
 
     def contains(apis, api):

@@ -6,7 +6,7 @@ import logging
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import to_str, save_file, TMP_FILES, mkdir
+from localstack.utils.common import to_str, save_file, TMP_FILES, mkdir, replace_response_content
 from localstack.utils.tagging import TaggingService
 from localstack.services.generic_proxy import ProxyListener
 from localstack.services.events.scheduler import JobScheduler
@@ -19,11 +19,6 @@ EVENTS_TMP_DIR = os.path.join(config.TMP_FOLDER, 'cw_events')
 RULE_SCHEDULED_JOBS = {}
 
 
-def _replace(response, pattern, replacement):
-    content = to_str(response.content)
-    response._content = re.sub(pattern, replacement, content)
-
-
 def fix_account_id(response):
     return aws_stack.fix_account_id_in_arns(response, existing=MOTO_ACCOUNT_ID, replace=TEST_AWS_ACCOUNT_ID)
 
@@ -32,7 +27,7 @@ def fix_date_format(response):
     """ Normalize date to format '2019-06-13T18:10:09.1234Z' """
     pattern = r'<CreateDate>([^<]+) ([^<+]+)(\+[^<]*)?</CreateDate>'
     replacement = r'<CreateDate>\1T\2Z</CreateDate>'
-    _replace(response, pattern, replacement)
+    replace_response_content(response, pattern, replacement)
 
 
 def _create_and_register_temp_dir():

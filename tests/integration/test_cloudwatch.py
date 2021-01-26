@@ -141,3 +141,24 @@ class CloudWatchTest(unittest.TestCase):
                 self.assertEquals(len(data_metric['Values']), 0)
             if data_metric['Id'] == 'part':
                 self.assertEquals(len(data_metric['Values']), 0)
+
+    def test_store_tags(self):
+        cloudwatch = aws_stack.connect_to_service('cloudwatch')
+
+        alarm_name = 'a-%s' % short_uid()
+        response = cloudwatch.put_metric_alarm(AlarmName=alarm_name,
+            EvaluationPeriods=1, ComparisonOperator='GreaterThanThreshold')
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        alarm_arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
+
+        tags = [{'Key': 'tag1', 'Value': 'foo'}, {'Key': 'tag2', 'Value': 'bar'}]
+        response = cloudwatch.tag_resource(ResourceARN=alarm_arn, Tags=tags)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(response['Tags'], tags)
+        response = cloudwatch.untag_resource(ResourceARN=alarm_arn, TagKeys=['tag1'])
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(response['Tags'], [{'Key': 'tag2', 'Value': 'bar'}])

@@ -1,5 +1,7 @@
+import io
 import json
 import base64
+from gzip import GzipFile
 from localstack import config
 from localstack.utils.aws import aws_stack
 from moto.awslambda import models as lambda_models
@@ -24,11 +26,8 @@ def patch_lambda():
         return get_function
 
     def patch_send_log_event(backend):
-        send_log_event_orig = backend.send_log_event
 
         def send_log_event(*args, **kwargs):
-            if backend.get_function(args[0]):
-                return send_log_event_orig(*args, **kwargs)
 
             filter_name = args[1]
             log_group_name = args[2]
@@ -44,12 +43,15 @@ def patch_lambda():
                 'logEvents': log_events,
             }
 
-            payload = base64.b64encode(json.dumps(data, separators=(',', ':')).
-                                       encode('utf-8')).decode('utf-8')
-            event = {'awslogs': {'data': payload}}
+            output = io.BytesIO()
+            with GzipFile(fileobj=output, mode='w') as f:
+                f.write(json.dumps(data, separators=(',', ':')).encode('utf-8'))
+            payload_gz_encoded = base64.b64encode(output.getvalue()).decode('utf-8')
+            event = {'awslogs': {'data': payload_gz_encoded}}
+
             client = aws_stack.connect_to_service('lambda')
             lambda_name = aws_stack.lambda_function_name(args[0])
-            client.invoke(FunctionName=lambda_name, Payload=event)
+            client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
 
         return send_log_event
 

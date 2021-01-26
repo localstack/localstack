@@ -985,6 +985,11 @@ def str_remove(string, index, end_index=None):
     return '%s%s' % (string[:index], string[end_index:])
 
 
+def is_sub_dict(child_dict, parent_dict):
+    """ Returns whether the first dict is a sub-dict (subset) of the second dict. """
+    return all(parent_dict.get(key) == val for key, val in child_dict.items())
+
+
 def cleanup(files=True, env=ENV_DEV, quiet=True):
     if files:
         cleanup_tmp_files()
@@ -1437,8 +1442,9 @@ def isoformat_milliseconds(t):
         return t.isoformat()[:-3]
 
 
-def _replace(response, pattern, replacement):
-    content = to_str(response.content)
+# TODO move to aws_responses.py?
+def replace_response_content(response, pattern, replacement):
+    content = to_str(response.content or '')
     response._content = re.sub(pattern, replacement, content)
 
 
