@@ -21,8 +21,8 @@ from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
 from localstack.services.cloudformation.deployment_utils import (
-    dump_json_params, select_parameters, param_defaults, remove_none_values,
-    PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
+    dump_json_params, select_parameters, param_defaults, remove_none_values, params_list_to_dict,
+    lambda_keys_to_lower, PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
 
 ACTION_CREATE = 'create'
 ACTION_DELETE = 'delete'
@@ -69,10 +69,6 @@ def lambda_get_params():
     return lambda params, **kwargs: params
 
 
-def lambda_keys_to_lower(key=None):
-    return lambda params, **kwargs: common.keys_to_lower(params.get(key) if key else params)
-
-
 def rename_params(func, rename_map):
     def do_rename(params, **kwargs):
         values = func(params, **kwargs) if func else params
@@ -80,17 +76,6 @@ def rename_params(func, rename_map):
             values[new_param] = values.pop(old_param, None)
         return values
     return do_rename
-
-
-def params_list_to_dict(param_name, key_attr_name='Key', value_attr_name='Value'):
-    def do_replace(params, **kwargs):
-        result = {}
-        for entry in params.get(param_name, []):
-            key = entry[key_attr_name]
-            value = entry[value_attr_name]
-            result[key] = value
-        return result
-    return do_replace
 
 
 def params_dict_to_list(param_name, key_attr_name='Key', value_attr_name='Value', wrapper=None):
@@ -732,6 +717,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         if resource_class:
             instance = resource_class(resource)
             state = instance.fetch_state(stack_name=stack_name, resources=resources)
+            instance.update_state(state)
             return state
 
         # special case for stack parameters
@@ -1601,6 +1587,8 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
     def _generate_res_name():
         return '%s-%s-%s' % (stack_name, resource_name or resource_id, short_uid())
 
+    # TODO: move logic below into resource classes!
+
     if res_type == 'AWS::Lambda::EventSourceMapping' and not props.get('StartingPosition'):
         props['StartingPosition'] = 'LATEST'
 
@@ -1624,6 +1612,15 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
 
     elif res_type == 'AWS::ApiGateway::RestApi' and not props.get('Name'):
         props['Name'] = _generate_res_name()
+
+    elif res_type == 'AWS::ApiGateway::Stage' and not props.get('StageName'):
+        props['StageName'] = 'default'
+
+    elif res_type == 'AWS::ApiGateway::ApiKey' and not props.get('Name'):
+        props['Name'] = _generate_res_name()
+
+    elif res_type == 'AWS::ApiGateway::UsagePlan' and not props.get('UsagePlanName'):
+        props['UsagePlanName'] = _generate_res_name()
 
     elif res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource)

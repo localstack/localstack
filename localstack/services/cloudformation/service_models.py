@@ -9,7 +9,8 @@ from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
-from localstack.services.cloudformation.deployment_utils import remove_none_values, PLACEHOLDER_RESOURCE_NAME
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower)
 
 LOG = logging.getLogger(__name__)
 
@@ -45,10 +46,12 @@ class GenericBaseModel(CloudFormationModel):
         self.region_name = region_name or aws_stack.get_region()
         self.resource_json = resource_json
         self.resource_type = resource_json['Type']
-        # properties, as defined in the template
+        # Properties, as defined in the resource template
         self.properties = resource_json.get('Properties') or {}
-        # state, as determined from the deployed resource
-        self.state = {}
+        # State, as determined from the deployed resource; use a special dict key here to keep
+        # track of state changes within resource_json (this way we encapsulate all state details
+        # in `resource_json` and the changes will survive creation of multiple instances of this class)
+        self.state = resource_json['_state_'] = resource_json.get('_state_') or {}
 
     # ----------------------
     # ABSTRACT BASE METHODS
@@ -111,8 +114,7 @@ class GenericBaseModel(CloudFormationModel):
     def update_state(self, details):
         """ Update the deployment state of this resource (existing attributes will be overwritten). """
         details = details or {}
-        update_props = {k: v for k, v in details.items() if k not in self.props}
-        self.props.update(update_props)
+        self.state.update(details)
         return self.props
 
     @property
@@ -661,6 +663,105 @@ class GatewayStage(GenericBaseModel):
         result = aws_stack.connect_to_service('apigateway').get_stage(restApiId=api_id,
             stageName=self.props['StageName'])
         return result
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
+
+class GatewayUsagePlan(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::UsagePlan'
+
+    def fetch_state(self, stack_name, resources):
+        plan_name = self.props.get('UsagePlanName')
+        plan_name = self.resolve_refs_recursively(stack_name, plan_name, resources)
+        result = aws_stack.connect_to_service('apigateway').get_usage_plans().get('items', [])
+        result = [r for r in result if r['name'] == plan_name]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_usage_plan',
+                'parameters': {
+                    'name': 'UsagePlanName',
+                    'description': 'Description',
+                    'apiStages': lambda_keys_to_lower('ApiStages'),
+                    'quota': lambda_keys_to_lower('Quota'),
+                    'throttle': lambda_keys_to_lower('Throttle'),
+                    'tags': params_list_to_dict('Tags')
+                }
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
+
+class GatewayApiKey(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::ApiKey'
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        key_name = self.resolve_refs_recursively(stack_name, props.get('Name'), resources)
+        cust_id = props.get('CustomerId')
+        result = aws_stack.connect_to_service('apigateway').get_api_keys().get('items', [])
+        result = [r for r in result if r.get('name') == key_name and cust_id in (None, r.get('customerId'))]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_api_key',
+                'parameters': {
+                    'description': 'Description',
+                    'customerId': 'CustomerId',
+                    'name': 'Name',
+                    'value': 'Value',
+                    'enabled': 'Enabled',
+                    'stageKeys': lambda_keys_to_lower('StageKeys'),
+                    'tags': params_list_to_dict('Tags')
+                },
+                'types': {
+                    'enabled': bool
+                }
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
+
+class GatewayUsagePlanKey(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::UsagePlanKey'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('apigateway')
+        key_id = self.resolve_refs_recursively(stack_name, self.props.get('KeyId'), resources)
+        key_type = self.resolve_refs_recursively(stack_name, self.props.get('KeyType'), resources)
+        plan_id = self.resolve_refs_recursively(stack_name, self.props.get('UsagePlanId'), resources)
+        result = client.get_usage_plan_keys(usagePlanId=plan_id).get('items', [])
+        result = [r for r in result if r['id'] == key_id and key_type in [None, r.get('type')]]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_usage_plan_key',
+                'parameters': lambda_keys_to_lower()
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
 
 
 class S3Bucket(GenericBaseModel, FakeBucket):
