@@ -330,8 +330,12 @@ class LambdaPermission(GenericBaseModel):
         principal = props.get('Principal')
         existing = [s for s in statements if s['Action'] == props['Action'] and
             s['Resource'] == func_arn and
-            (not principal or s['Principal'] in [{'Service': principal}, {'Service': [principal]}])]
+            (not principal or s['Principal'] in [principal, {'Service': principal}, {'Service': [principal]}])]
         return existing[0] if existing else None
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        # return statement ID here to indicate that the resource has been deployed
+        return self.props.get('Sid')
 
 
 class ElasticsearchDomain(GenericBaseModel):
