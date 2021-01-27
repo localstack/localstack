@@ -764,7 +764,7 @@ class S3Bucket(GenericBaseModel, FakeBucket):
         return response
 
     def get_cfn_attribute(self, attribute_name):
-        if attribute_name == 'RegionalDomainName':
+        if attribute_name in ['DomainName', 'RegionalDomainName']:
             return LOCALHOST
         return super(S3Bucket, self).get_cfn_attribute(attribute_name)
 

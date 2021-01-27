@@ -887,8 +887,8 @@ def canonical_resource_type(resource_type):
 
 def get_attr_from_model_instance(resource, attribute, resource_type, resource_id=None):
     resource_type = canonical_resource_type(resource_type)
-    # TODO: look up class from RESOURCE_MODELS instead of moto.MODEL_MAP here!
-    model_class = parsing.MODEL_MAP.get(resource_type)
+    # TODO: remove moto.MODEL_MAP here
+    model_class = RESOURCE_MODELS.get(resource_type) or parsing.MODEL_MAP.get(resource_type)
     if not model_class:
         if resource_type not in ['AWS::Parameter', 'Parameter']:
             LOG.debug('Unable to find model class for resource type "%s"' % resource_type)
@@ -940,7 +940,7 @@ def resolve_ref(stack_name, ref, resources, attribute):
     resource_type = get_resource_type(resource)
     result = extract_resource_attribute(resource_type, resource_new, attribute,
         resource_id=ref, resource=resource, resources=resources, stack_name=stack_name)
-    if not result:
+    if result is None:
         LOG.warning('Unable to extract reference attribute "%s" from resource: %s %s' %
             (attribute, resource_new, resource))
     return result
