@@ -142,6 +142,33 @@
         }
       }
     },
+    "ApiGatewayApiKey": {
+      "Type": "AWS::ApiGateway::ApiKey",
+      "Properties": {
+        "Name": "ApiGatewayApiKey421",
+        "Value": "test123"
+      }
+    },
+    "ApiGatewayUsagePlan": {
+      "Type": "AWS::ApiGateway::UsagePlan",
+      "Properties": {
+        "Quota": {"Limit" : 123},
+        "ApiStages": [
+          {
+            "ApiId": {"Ref": "ApiGatewayRestApi"},
+            "Stage": {"Ref": "ApiGWStage"}
+          }
+        ]
+      }
+    },
+    "ApiGatewayUsagePlanKey": {
+      "Type": "AWS::ApiGateway::UsagePlanKey",
+      "Properties": {
+        "KeyId": {"Ref" : "ApiGatewayApiKey"},
+        "KeyType": "API_KEY",
+        "UsagePlanId": {"Ref": "ApiGatewayUsagePlan"}
+      }
+    },
     "ApiGatewayRestApi": {
       "Type": "AWS::ApiGateway::RestApi",
       "Properties": {
@@ -204,6 +231,21 @@
           "Ref": "ApiGatewayRestApi"
         },
         "StageName": "local"
+      },
+      "DependsOn": [
+        "ProxyMethod"
+      ]
+    },
+    "ApiGWStage": {
+      "Type": "AWS::ApiGateway::Stage",
+      "Properties": {
+        "Description": "Test Stage 123",
+        "DeploymentId": {
+          "Ref": "ApiGWDeployment"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
       },
       "DependsOn": [
         "ProxyMethod"

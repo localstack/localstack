@@ -46,3 +46,18 @@ def remove_none_values(params):
         return o
     result = common.recurse_object(params, remove_nones)
     return result
+
+
+def params_list_to_dict(param_name, key_attr_name='Key', value_attr_name='Value'):
+    def do_replace(params, **kwargs):
+        result = {}
+        for entry in params.get(param_name, []):
+            key = entry[key_attr_name]
+            value = entry[value_attr_name]
+            result[key] = value
+        return result
+    return do_replace
+
+
+def lambda_keys_to_lower(key=None):
+    return lambda params, **kwargs: common.keys_to_lower(params.get(key) if key else params)
