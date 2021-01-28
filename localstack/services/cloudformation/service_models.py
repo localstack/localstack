@@ -1023,11 +1023,11 @@ class EC2Instance(GenericBaseModel):
         return 'AWS::EC2::Instance'
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service('ec2')
         instance_id = resources[self.resource_id].get('PhysicalResourceId')
         if not instance_id:
             return None
 
+        client = aws_stack.connect_to_service('ec2')
         resp = client.describe_instances(
             InstanceIds=[
                 instance_id
@@ -1039,11 +1039,12 @@ class EC2Instance(GenericBaseModel):
     def update_resource(self, new_resource, stack_name, resources):
         instance_id = new_resource['PhysicalResourceId']
         props = new_resource['Properties']
+        groups = props.get('SecurityGroups', props.get('SecurityGroupIds'))
 
         client = aws_stack.connect_to_service('ec2')
         client.modify_instance_attribute(
             Attribute='instanceType',
-            Groups=props['SecurityGroups'],
+            Groups=groups,
             InstanceId=instance_id,
             InstanceType={
                 'Value': props['InstanceType']
@@ -1056,3 +1057,41 @@ class EC2Instance(GenericBaseModel):
         )
 
         return resp['Reservations'][0]['Instances'][0]
+
+
+class SecurityGroup(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::SecurityGroup'
+
+    def fetch_state(self, stack_name, resources):
+        group_id = resources[self.resource_id].get('PhysicalResourceId')
+        if not group_id:
+            return None
+
+        client = aws_stack.connect_to_service('ec2')
+        resp = client.describe_security_groups(
+            GroupIds=[
+                group_id
+            ]
+        )
+
+        return resp['SecurityGroups'][0]
+
+
+class InstanceProfile(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::IAM::InstanceProfile'
+
+    def fetch_state(self, stack_name, resources):
+        instance_profile_name = resources[self.resource_id].get('PhysicalResourceId')
+        if not instance_profile_name:
+            return None
+
+        client = aws_stack.connect_to_service('iam')
+        resp = client.get_instance_profile(
+            InstanceProfileName=instance_profile_name
+        )
+
+        return resp['InstanceProfile']

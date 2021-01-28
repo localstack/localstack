@@ -588,6 +588,37 @@ RESOURCE_TO_FUNCTION = {
                 'InstanceIds': lambda params, **kw: [kw['resources'][kw['resource_id']]['PhysicalResourceId']]
             }
         }
+    },
+    'EC2::SecurityGroup': {
+        'create': {
+            'function': 'create_security_group',
+            'parameters': {
+                'GroupName': 'GroupName',
+                'VpcId': 'VpcId',
+                'Description': 'GroupDescription'
+            }
+        },
+        'delete': {
+            'function': 'delete_security_group',
+            'parameters': {
+                'GroupId': 'PhysicalResourceId'
+            }
+        }
+    },
+    'IAM::InstanceProfile': {
+        'create': {
+            'function': 'create_instance_profile',
+            'parameters': {
+                'InstanceProfileName': 'InstanceProfileName',
+                'Path': 'Path'
+            }
+        },
+        'delete': {
+            'function': 'delete_instance_profile',
+            'parameters': {
+                'InstanceProfileName': 'InstanceProfileName'
+            }
+        }
     }
 }
 
@@ -1187,9 +1218,9 @@ def delete_resource(resource_id, resources, stack_name):
                     InstanceProfileName=ip_name,
                     RoleName=role_name
                 )
-                iam_client.delete_instance_profile(
-                    InstanceProfileName=ip_name
-                )
+                # iam_client.delete_instance_profile(
+                #     InstanceProfileName=ip_name
+                # )
 
         except Exception as e:
             if 'NoSuchEntity' not in str(e):
@@ -1480,6 +1511,14 @@ def run_post_create_actions(action_name, resource_id, resources, resource_type, 
         for user in users:
             iam.attach_user_policy(UserName=user, PolicyArn=policy_arn)
 
+    elif resource_type == 'IAM::InstanceProfile':
+        if resource_props.get('Roles', []):
+            iam = aws_stack.connect_to_service('iam')
+            iam.add_role_to_instance_profile(
+                InstanceProfileName=resource_props['InstanceProfileName'],
+                RoleName=resource_props['Roles'][0]
+            )
+
 
 def is_none_or_empty_value(value):
     return not value or value == PLACEHOLDER_AWS_NO_VALUE
@@ -1558,6 +1597,7 @@ def update_resource_details(stack, resource_id, details, action=None):
     resource = stack.resources.get(resource_id, {})
     if not resource:
         return
+
     resource_type = resource.get('Type') or ''
     resource_type = re.sub('^AWS::', '', resource_type)
     resource_props = resource.get('Properties', {})
@@ -1570,6 +1610,12 @@ def update_resource_details(stack, resource_id, details, action=None):
     if resource_type == 'EC2::Instance':
         if action == 'CREATE':
             stack.resources[resource_id]['PhysicalResourceId'] = details[0].id
+
+    if resource_type == 'EC2::SecurityGroup':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['GroupId']
+
+    if resource_type == 'IAM::InstanceProfile':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['InstanceProfile']['InstanceProfileName']
 
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
@@ -1636,6 +1682,12 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
 
     elif res_type == 'AWS::CloudFormation::Stack' and not props.get('StackName'):
         props['StackName'] = _generate_res_name()
+
+    elif res_type == 'AWS::EC2::SecurityGroup':
+        props['GroupName'] = props.get('GroupName') or _generate_res_name()
+
+    elif res_type == 'AWS::IAM::InstanceProfile':
+        props['InstanceProfileName'] = props.get('InstanceProfileName') or _generate_res_name()
 
     # generate default names for certain resource types
     default_attrs = (('AWS::IAM::Role', 'RoleName'), ('AWS::Events::Rule', 'Name'))
