@@ -690,6 +690,7 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
         # WARNING: this means we're pointing lambda_cwd to a local path in the user's
         # file system! We must ensure that there is no data loss (i.e., we must *not* add
         # this folder to TMP_FILES or similar).
+        lambda_details.cwd = code.get('S3Key')
         return code['S3Key']
 
     # get file content
