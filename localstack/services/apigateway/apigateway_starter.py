@@ -1,6 +1,8 @@
+import re
 import json
 import logging
 from jsonpatch import apply_patch
+from moto.core.utils import camelcase_to_underscores
 from moto.apigateway import models as apigateway_models
 from moto.apigateway.models import Resource, Integration
 from moto.apigateway.responses import APIGatewayResponse
@@ -12,6 +14,21 @@ from localstack.utils.common import short_uid, to_str, DelSafeDict
 from localstack.services.infra import start_moto_server
 
 LOG = logging.getLogger(__name__)
+
+# additional REST API attributes
+REST_API_ATTRIBUTES = ['disableExecuteApiEndpoint', 'apiKeySource', 'minimumCompressionSize']
+
+
+def apply_json_patch_safe(subject, patch_operations, in_place=True):
+    for operation in patch_operations:
+        try:
+            return apply_patch(subject, [operation], in_place=in_place)
+        except Exception as e:
+            if operation['op'] == 'replace' and 'replace a non-existent object' in str(e):
+                # fall back to an ADD operation if the REPLACE fails
+                operation['op'] = 'add'
+                return apply_patch(subject, [operation], in_place=in_place)
+            raise
 
 
 def apply_patches():
@@ -113,6 +130,7 @@ def apply_patches():
     # Implement import rest_api
     # https://github.com/localstack/localstack/issues/2763
     def apigateway_response_restapis_individual(self, request, full_url, headers):
+
         if request.method in ['GET', 'DELETE']:
             return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
 
@@ -129,12 +147,14 @@ def apply_patches():
 
             patch_operations = self._get_param('patchOperations')
             for operation in patch_operations:
+                if operation['path'].strip('/') in REST_API_ATTRIBUTES:
+                    operation['path'] = camelcase_to_underscores(operation['path'])
                 if operation['path'] in not_supported_attributes:
                     msg = 'Invalid patch path %s' % (operation['path'])
                     return (400, {}, msg)
 
             rest_api.__dict__ = DelSafeDict(rest_api.__dict__)
-            apply_patch(rest_api.__dict__, patch_operations, in_place=True)
+            apply_json_patch_safe(rest_api.__dict__, patch_operations, in_place=True)
 
             return 200, {}, json.dumps(self.backend.get_rest_api(function_id).to_dict())
 
@@ -238,11 +258,15 @@ def apply_patches():
 
     def apigateway_models_RestAPI_to_dict(self):
         resp = apigateway_models_RestAPI_to_dict_orig(self)
+        resp['policy'] = None
         if self.policy:
             # Currently still not found any document about apigateway policy escaped format, just a workaround
             resp['policy'] = json.dumps(json.dumps(json.loads(self.policy)))[1:-1]
-        else:
-            resp['policy'] = None
+        for attr in REST_API_ATTRIBUTES:
+            if attr not in resp:
+                resp[attr] = getattr(self, camelcase_to_underscores(attr), None)
+        resp['disableExecuteApiEndpoint'] = bool(re.match(r'true',
+            resp.get('disableExecuteApiEndpoint') or '', flags=re.IGNORECASE))
 
         return resp
 
