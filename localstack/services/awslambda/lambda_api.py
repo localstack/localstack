@@ -13,9 +13,10 @@ import threading
 import traceback
 from io import BytesIO
 from datetime import datetime
+from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
-from flask import Flask, Response, jsonify, request
+from moto.apigateway.models import apigateway_backends
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
@@ -244,7 +245,8 @@ def use_docker():
 
 
 def get_stage_variables(api_id, stage):
-    api_gateway_client = aws_stack.connect_to_service('apigateway')
+    region_name = [name for name, region in apigateway_backends.items() if api_id in region.apis][0]
+    api_gateway_client = aws_stack.connect_to_service('apigateway', region_name=region_name)
     response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
     return response.get('variables', None)
 
