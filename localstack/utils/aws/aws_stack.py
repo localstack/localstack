@@ -356,6 +356,11 @@ def extract_region_from_arn(arn):
     return parts[3] if len(parts) > 1 else None
 
 
+def extract_service_from_arn(arn):
+    parts = arn.split(':')
+    return parts[2] if len(parts) > 1 else None
+
+
 def get_account_id(account_id=None, env=None):
     if account_id:
         return account_id

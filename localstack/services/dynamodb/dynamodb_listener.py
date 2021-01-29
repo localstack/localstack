@@ -7,7 +7,7 @@ import time
 from binascii import crc32
 from cachetools import TTLCache
 from requests.models import Request, Response
-from localstack import config
+from localstack import config, constants
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import to_bytes, to_str, clone, select_attributes
 from localstack.utils.analytics import event_publisher
@@ -87,8 +87,11 @@ class ProxyListenerDynamoDB(ProxyListener):
         if result is not None:
             return result
 
-        if not data:
-            data = '{}'
+        # prepare request headers
+        self.prepare_request_headers(headers)
+
+        data_orig = data
+        data = data or '{}'
         data = json.loads(to_str(data))
         ddb_client = aws_stack.connect_to_service('dynamodb')
         action = headers.get('X-Amz-Target')
@@ -157,10 +160,10 @@ class ProxyListenerDynamoDB(ProxyListener):
         elif action == '%s.Query' % ACTION_PREFIX:
             if data.get('IndexName'):
                 if not is_index_query_valid(to_str(data['TableName']), data.get('Select')):
-                    return error_response(message='One or more parameter values were invalid: Select type '
-                                                  'ALL_ATTRIBUTES is not supported for global secondary index id-index '
-                                                  'because its projection type is not ALL',
-                                          error_type='ValidationException', code=400)
+                    return error_response(
+                        message='One or more parameter values were invalid: Select type ALL_ATTRIBUTES '
+                                'is not supported for global secondary index id-index because its projection '
+                                'type is not ALL', error_type='ValidationException', code=400)
 
         elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
             existing_items = []
@@ -222,7 +225,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             fix_headers_for_updated_response(response)
             return response
 
-        return True
+        return Request(data=data_orig, method=method, headers=headers)
 
     def return_response(self, method, path, data, headers, response):
         if path.startswith('/shell') or method == 'GET':
@@ -280,6 +283,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     record['dynamodb']['OldImage'] = existing_item
                 record['dynamodb']['NewImage'] = updated_item
                 record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
+
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             records = self.prepare_batch_write_item_records(record, data)
             for record in records:
@@ -394,6 +398,12 @@ class ProxyListenerDynamoDB(ProxyListener):
     # -------------
     # UTIL METHODS
     # -------------
+
+    def prepare_request_headers(self, headers):
+        # Note: We need to ensure that the same access key is used here for all requests,
+        # otherwise DynamoDBLocal stores tables/items in separate namespaces
+        headers['Authorization'] = re.sub(r'Credential=[^/]+/',
+            r'Credential=%s/' % constants.TEST_AWS_ACCESS_KEY_ID, headers.get('Authorization') or '')
 
     def prepare_batch_write_item_records(self, record, data):
         records = []
@@ -691,7 +701,6 @@ def forward_to_lambda(records):
         for src in sources:
             if src.get('State') != 'Enabled':
                 continue
-
             lambda_api.run_lambda(event=event, context={}, func_arn=src['FunctionArn'],
                 asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS)
 

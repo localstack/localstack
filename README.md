@@ -76,7 +76,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **IAM Security Policy Enforcement**
 * **IoT**
 * **Kinesis Data Analytics**
-* **Lambda Layers**
+* **Lambda Layers & Container Images**
 * **Managed Streaming for Kafka (MSK)**
 * **MediaStore**
 * **QLDB**

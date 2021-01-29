@@ -5,7 +5,14 @@ from gzip import GzipFile
 from localstack import config
 from localstack.utils.aws import aws_stack
 from moto.awslambda import models as lambda_models
+from moto.logs import models as logs_models
+from moto.logs.models import LogStream
+from moto.core.utils import unix_time_millis
 from localstack.services.infra import start_moto_server
+from moto.logs.exceptions import (
+    ResourceNotFoundException,
+    InvalidParameterException,
+)
 
 
 def patch_lambda():
@@ -25,39 +32,119 @@ def patch_lambda():
 
         return get_function
 
-    def patch_send_log_event(backend):
+    def patch_put_subscription_filter(backend):
 
-        def send_log_event(*args, **kwargs):
-
+        def put_subscription_filter(*args, **kwargs):
+            log_group_name = args[0]
             filter_name = args[1]
-            log_group_name = args[2]
-            log_stream_name = args[3]
-            log_events = args[4]
+            filter_pattern = args[2]
+            destination_arn = args[3]
+            role_arn = args[4]
 
-            data = {
-                'messageType': 'DATA_MESSAGE',
-                'owner': aws_stack.get_account_id(),
-                'logGroup': log_group_name,
-                'logStream': log_stream_name,
-                'subscriptionFilters': [filter_name],
-                'logEvents': log_events,
+            log_group = logs_models.logs_backends[aws_stack.get_region()].groups.get(log_group_name)
+
+            if not log_group:
+                raise ResourceNotFoundException('The specified log group does not exist.')
+
+            if ':lambda:' in destination_arn:
+                client = aws_stack.connect_to_service('lambda')
+                lambda_name = aws_stack.lambda_function_name(destination_arn)
+                try:
+                    client.get_function(FunctionName=lambda_name)
+                except Exception:
+                    raise InvalidParameterException(
+                        'destinationArn for vendor lambda cannot be used with roleArn'
+                    )
+
+            elif ':kinesis:' in destination_arn:
+                client = aws_stack.connect_to_service('kinesis')
+                stream_name = aws_stack.kinesis_stream_name(destination_arn)
+                try:
+                    client.describe_stream(StreamName=stream_name)
+                except Exception:
+                    raise InvalidParameterException(
+                        'Could not deliver test message to specified Kinesis stream. '
+                        'Check if the given kinesis stream is in ACTIVE state. '
+                    )
+
+            elif ':firehose:' in destination_arn:
+                client = aws_stack.connect_to_service('firehose')
+                firehose_name = aws_stack.firehose_name(destination_arn)
+                try:
+                    client.describe_delivery_stream(DeliveryStreamName=firehose_name)
+                except Exception:
+                    raise InvalidParameterException(
+                        'Could not deliver test message to specified Firehose stream. '
+                        'Check if the given Firehose stream is in ACTIVE state.'
+                    )
+
+            else:
+                service = aws_stack.extract_service_from_arn(destination_arn)
+                raise InvalidParameterException(
+                    'PutSubscriptionFilter operation cannot work with destinationArn for vendor %s' % service
+                )
+
+            log_group.put_subscription_filter(
+                filter_name, filter_pattern, destination_arn, role_arn
+            )
+
+        return put_subscription_filter
+
+    def put_log_events_model(self, log_group_name, log_stream_name, log_events, sequence_token):
+        self.lastIngestionTime = int(unix_time_millis())
+        self.storedBytes += sum([len(log_event['message']) for log_event in log_events])
+        events = [
+            logs_models.LogEvent(self.lastIngestionTime, log_event) for log_event in log_events
+        ]
+        self.events += events
+        self.uploadSequenceToken += 1
+
+        log_events = [
+            {
+                'id': event.eventId,
+                'timestamp': event.timestamp,
+                'message': event.message,
             }
+            for event in events
+        ]
 
-            output = io.BytesIO()
-            with GzipFile(fileobj=output, mode='w') as f:
-                f.write(json.dumps(data, separators=(',', ':')).encode('utf-8'))
-            payload_gz_encoded = base64.b64encode(output.getvalue()).decode('utf-8')
-            event = {'awslogs': {'data': payload_gz_encoded}}
+        data = {
+            'messageType': 'DATA_MESSAGE',
+            'owner': aws_stack.get_account_id(),
+            'logGroup': log_group_name,
+            'logStream': log_stream_name,
+            'subscriptionFilters': [self.filter_name],
+            'logEvents': log_events,
+        }
 
-            client = aws_stack.connect_to_service('lambda')
-            lambda_name = aws_stack.lambda_function_name(args[0])
-            client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
+        output = io.BytesIO()
+        with GzipFile(fileobj=output, mode='w') as f:
+            f.write(json.dumps(data, separators=(',', ':')).encode('utf-8'))
+        payload_gz_encoded = base64.b64encode(output.getvalue()).decode('utf-8')
+        event = {'awslogs': {'data': payload_gz_encoded}}
 
-        return send_log_event
+        if self.destination_arn:
+            if ':lambda:' in self.destination_arn:
+                client = aws_stack.connect_to_service('lambda')
+                lambda_name = aws_stack.lambda_function_name(self.destination_arn)
+                client.invoke(FunctionName=lambda_name, Payload=json.dumps(event))
+            if ':kinesis:' in self.destination_arn:
+                client = aws_stack.connect_to_service('kinesis')
+                stream_name = aws_stack.kinesis_stream_name(self.destination_arn)
+                client.put_record(StreamName=stream_name, Data=json.dumps(payload_gz_encoded),
+                    PartitionKey=log_group_name)
+            if ':firehose:' in self.destination_arn:
+                client = aws_stack.connect_to_service('firehose')
+                firehose_name = aws_stack.firehose_name(self.destination_arn)
+                client.put_record(DeliveryStreamName=firehose_name,
+                    Record={'Data': json.dumps(payload_gz_encoded)})
+
+    setattr(LogStream, 'put_log_events', put_log_events_model)
 
     for lambda_backend in lambda_models.lambda_backends.values():
         lambda_backend.get_function = patch_get_function(lambda_backend)
-        lambda_backend.send_log_event = patch_send_log_event(lambda_backend)
+    for logs_backend in logs_models.logs_backends.values():
+        logs_backend.put_subscription_filter = patch_put_subscription_filter(logs_backend)
 
 
 def start_cloudwatch_logs(port=None, asynchronous=False, update_listener=None):

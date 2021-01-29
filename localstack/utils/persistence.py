@@ -82,7 +82,7 @@ class PersistingProxyListener(ProxyListener):
 
 def should_record(method):
     """ Decide whether or not a given API call should be recorded (persisted to disk) """
-    return method in ['PUT', 'POST', 'DELETE']
+    return method in ['PUT', 'POST', 'DELETE', 'PATCH']
 
 
 def record(api, method=None, path=None, data=None, headers=None, response=None, request=None):
