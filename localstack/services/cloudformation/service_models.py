@@ -1,4 +1,5 @@
 import re
+import json
 import logging
 from moto.s3.models import FakeBucket
 from moto.sqs.models import Queue as MotoQueue
@@ -8,15 +9,13 @@ from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case
+from localstack.services.cloudformation.deployment_utils import (
+    PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower)
 
 LOG = logging.getLogger(__name__)
 
 # name pattern of IAM policies associated with Lambda functions
 LAMBDA_POLICY_NAME_PATTERN = 'lambda_policy_%s'
-
-# placeholders
-PLACEHOLDER_RESOURCE_NAME = '__resource_name__'
-PLACEHOLDER_AWS_NO_VALUE = '__aws_no_value__'
 
 # ref attribute definitions
 REF_ATTRS = ['PhysicalResourceId', 'Ref']
@@ -47,10 +46,12 @@ class GenericBaseModel(CloudFormationModel):
         self.region_name = region_name or aws_stack.get_region()
         self.resource_json = resource_json
         self.resource_type = resource_json['Type']
-        # properties, as defined in the template
+        # Properties, as defined in the resource template
         self.properties = resource_json.get('Properties') or {}
-        # state, as determined from the deployed resource
-        self.state = {}
+        # State, as determined from the deployed resource; use a special dict key here to keep
+        # track of state changes within resource_json (this way we encapsulate all state details
+        # in `resource_json` and the changes will survive creation of multiple instances of this class)
+        self.state = resource_json['_state_'] = resource_json.get('_state_') or {}
 
     # ----------------------
     # ABSTRACT BASE METHODS
@@ -113,8 +114,7 @@ class GenericBaseModel(CloudFormationModel):
     def update_state(self, details):
         """ Update the deployment state of this resource (existing attributes will be overwritten). """
         details = details or {}
-        update_props = {k: v for k, v in details.items() if k not in self.props}
-        self.props.update(update_props)
+        self.state.update(details)
         return self.props
 
     @property
@@ -157,7 +157,8 @@ class GenericBaseModel(CloudFormationModel):
     def create_from_cloudformation_json(cls, resource_name, resource_json, region_name):
         return cls(resource_name=resource_name, resource_json=resource_json, region_name=region_name)
 
-    def resolve_refs_recursively(self, stack_name, value, resources):
+    @classmethod
+    def resolve_refs_recursively(cls, stack_name, value, resources):
         # TODO: restructure code to avoid circular import here
         from localstack.utils.cloudformation.template_deployer import resolve_refs_recursively
         return resolve_refs_recursively(stack_name, value, resources)
@@ -329,8 +330,12 @@ class LambdaPermission(GenericBaseModel):
         principal = props.get('Principal')
         existing = [s for s in statements if s['Action'] == props['Action'] and
             s['Resource'] == func_arn and
-            (not principal or s['Principal'] in [{'Service': principal}, {'Service': [principal]}])]
+            (not principal or s['Principal'] in [principal, {'Service': principal}, {'Service': [principal]}])]
         return existing[0] if existing else None
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        # return statement ID here to indicate that the resource has been deployed
+        return self.props.get('Sid')
 
 
 class ElasticsearchDomain(GenericBaseModel):
@@ -451,27 +456,88 @@ class IAMPolicy(GenericBaseModel):
         return 'AWS::IAM::Policy'
 
     def fetch_state(self, stack_name, resources):
+        return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=False)
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
+            iam = aws_stack.connect_to_service('iam')
+            props = resources[resource_id]['Properties']
+            cls.resolve_refs_recursively(stack_name, props, resources)
+            policy_doc = json.dumps(remove_none_values(props['PolicyDocument']))
+            policy_name = props['PolicyName']
+            for role in props.get('Roles', []):
+                iam.put_role_policy(RoleName=role, PolicyName=policy_name, PolicyDocument=policy_doc)
+            for user in props.get('Users', []):
+                iam.put_user_policy(UserName=user, PolicyName=policy_name, PolicyDocument=policy_doc)
+            for group in props.get('Groups', []):
+                iam.put_group_policy(GroupName=group, PolicyName=policy_name, PolicyDocument=policy_doc)
+            return {}
+
+        return {'create': {'function': _create}}
+
+    @staticmethod
+    def get_policy_state(obj, stack_name, resources, managed_policy=False):
         def _filter(pols):
             return [p for p in pols['AttachedPolicies'] if p['PolicyName'] == policy_name]
         iam = aws_stack.connect_to_service('iam')
-        props = self.props
-        policy_name = props['PolicyName']
-        # The policy in cloudformation is InlinePolicy, which can be attached to either of [Roles, Users, Groups]
-        # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-policy.html
+        props = obj.props
+        policy_name = props.get('PolicyName') or props.get('ManagedPolicyName')
         result = {}
         roles = props.get('Roles', [])
         users = props.get('Users', [])
         groups = props.get('Groups', [])
+        if managed_policy:
+            result['policy'] = iam.get_policy(PolicyArn=aws_stack.policy_arn(policy_name))
         for role in roles:
-            role = self.resolve_refs_recursively(stack_name, role, resources)
-            result['role:%s' % role] = _filter(iam.list_attached_role_policies(RoleName=role))
+            role = obj.resolve_refs_recursively(stack_name, role, resources)
+            policies = (_filter(iam.list_attached_role_policies(RoleName=role)) if managed_policy else
+                iam.get_role_policy(RoleName=role, PolicyName=policy_name))
+            result['role:%s' % role] = policies
         for user in users:
-            user = self.resolve_refs_recursively(stack_name, user, resources)
-            result['user:%s' % user] = _filter(iam.list_attached_user_policies(UserName=user))
+            user = obj.resolve_refs_recursively(stack_name, user, resources)
+            policies = (_filter(iam.list_attached_user_policies(UserName=user)) if managed_policy else
+                iam.get_user_policy(UserName=user, PolicyName=policy_name))
+            result['user:%s' % user] = policies
         for group in groups:
-            group = self.resolve_refs_recursively(stack_name, group, resources)
-            result['group:%s' % group] = _filter(iam.list_attached_group_policies(GroupName=group))
-        return {k: v for k, v in result.items() if v}
+            group = obj.resolve_refs_recursively(stack_name, group, resources)
+            policies = (_filter(iam.list_attached_group_policies(GroupName=group)) if managed_policy else
+                iam.get_group_policy(GroupName=group, PolicyName=policy_name))
+            result['group:%s' % group] = policies
+        result = {k: v for k, v in result.items() if v}
+        return result or None
+
+
+class IAMManagedPolicy(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::IAM::ManagedPolicy'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return aws_stack.role_arn(self.props['ManagedPolicyName'])
+
+    def fetch_state(self, stack_name, resources):
+        return IAMPolicy.get_policy_state(self, stack_name, resources, managed_policy=True)
+
+    @classmethod
+    def get_deploy_templates(cls):
+        def _create(resource_id, resources, resource_type, func, stack_name, *args, **kwargs):
+            iam = aws_stack.connect_to_service('iam')
+            resource = resources[resource_id]
+            props = resource['Properties']
+            cls.resolve_refs_recursively(stack_name, props, resources)
+            policy_doc = json.dumps(props['PolicyDocument'])
+            policy = iam.create_policy(PolicyName=props['ManagedPolicyName'], PolicyDocument=policy_doc)
+            policy_arn = policy['Policy']['Arn']
+            for role in resource.get('Roles', []):
+                iam.attach_role_policy(RoleName=role, PolicyArn=policy_arn)
+            for user in resource.get('Users', []):
+                iam.attach_user_policy(UserName=user, PolicyArn=policy_arn)
+            for group in resource.get('Groups', []):
+                iam.attach_group_policy(GroupName=group, PolicyArn=policy_arn)
+            return {}
+
+        return {'create': {'function': _create}}
 
 
 class GatewayResponse(GenericBaseModel):
@@ -602,6 +668,105 @@ class GatewayStage(GenericBaseModel):
             stageName=self.props['StageName'])
         return result
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
+
+class GatewayUsagePlan(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::UsagePlan'
+
+    def fetch_state(self, stack_name, resources):
+        plan_name = self.props.get('UsagePlanName')
+        plan_name = self.resolve_refs_recursively(stack_name, plan_name, resources)
+        result = aws_stack.connect_to_service('apigateway').get_usage_plans().get('items', [])
+        result = [r for r in result if r['name'] == plan_name]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_usage_plan',
+                'parameters': {
+                    'name': 'UsagePlanName',
+                    'description': 'Description',
+                    'apiStages': lambda_keys_to_lower('ApiStages'),
+                    'quota': lambda_keys_to_lower('Quota'),
+                    'throttle': lambda_keys_to_lower('Throttle'),
+                    'tags': params_list_to_dict('Tags')
+                }
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
+
+class GatewayApiKey(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::ApiKey'
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        key_name = self.resolve_refs_recursively(stack_name, props.get('Name'), resources)
+        cust_id = props.get('CustomerId')
+        result = aws_stack.connect_to_service('apigateway').get_api_keys().get('items', [])
+        result = [r for r in result if r.get('name') == key_name and cust_id in (None, r.get('customerId'))]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_api_key',
+                'parameters': {
+                    'description': 'Description',
+                    'customerId': 'CustomerId',
+                    'name': 'Name',
+                    'value': 'Value',
+                    'enabled': 'Enabled',
+                    'stageKeys': lambda_keys_to_lower('StageKeys'),
+                    'tags': params_list_to_dict('Tags')
+                },
+                'types': {
+                    'enabled': bool
+                }
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
+
+class GatewayUsagePlanKey(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::UsagePlanKey'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('apigateway')
+        key_id = self.resolve_refs_recursively(stack_name, self.props.get('KeyId'), resources)
+        key_type = self.resolve_refs_recursively(stack_name, self.props.get('KeyType'), resources)
+        plan_id = self.resolve_refs_recursively(stack_name, self.props.get('UsagePlanId'), resources)
+        result = client.get_usage_plan_keys(usagePlanId=plan_id).get('items', [])
+        result = [r for r in result if r['id'] == key_id and key_type in [None, r.get('type')]]
+        return (result or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_usage_plan_key',
+                'parameters': lambda_keys_to_lower()
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
 
 class S3Bucket(GenericBaseModel, FakeBucket):
     def get_resource_name(self):
@@ -704,7 +869,7 @@ class S3Bucket(GenericBaseModel, FakeBucket):
         return response
 
     def get_cfn_attribute(self, attribute_name):
-        if attribute_name == 'RegionalDomainName':
+        if attribute_name in ['DomainName', 'RegionalDomainName']:
             return LOCALHOST
         return super(S3Bucket, self).get_cfn_attribute(attribute_name)
 
@@ -858,11 +1023,11 @@ class EC2Instance(GenericBaseModel):
         return 'AWS::EC2::Instance'
 
     def fetch_state(self, stack_name, resources):
-        client = aws_stack.connect_to_service('ec2')
         instance_id = resources[self.resource_id].get('PhysicalResourceId')
         if not instance_id:
             return None
 
+        client = aws_stack.connect_to_service('ec2')
         resp = client.describe_instances(
             InstanceIds=[
                 instance_id
@@ -874,11 +1039,12 @@ class EC2Instance(GenericBaseModel):
     def update_resource(self, new_resource, stack_name, resources):
         instance_id = new_resource['PhysicalResourceId']
         props = new_resource['Properties']
+        groups = props.get('SecurityGroups', props.get('SecurityGroupIds'))
 
         client = aws_stack.connect_to_service('ec2')
         client.modify_instance_attribute(
             Attribute='instanceType',
-            Groups=props['SecurityGroups'],
+            Groups=groups,
             InstanceId=instance_id,
             InstanceType={
                 'Value': props['InstanceType']
@@ -891,3 +1057,41 @@ class EC2Instance(GenericBaseModel):
         )
 
         return resp['Reservations'][0]['Instances'][0]
+
+
+class SecurityGroup(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::SecurityGroup'
+
+    def fetch_state(self, stack_name, resources):
+        group_id = resources[self.resource_id].get('PhysicalResourceId')
+        if not group_id:
+            return None
+
+        client = aws_stack.connect_to_service('ec2')
+        resp = client.describe_security_groups(
+            GroupIds=[
+                group_id
+            ]
+        )
+
+        return resp['SecurityGroups'][0]
+
+
+class InstanceProfile(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::IAM::InstanceProfile'
+
+    def fetch_state(self, stack_name, resources):
+        instance_profile_name = resources[self.resource_id].get('PhysicalResourceId')
+        if not instance_profile_name:
+            return None
+
+        client = aws_stack.connect_to_service('iam')
+        resp = client.get_instance_profile(
+            InstanceProfileName=instance_profile_name
+        )
+
+        return resp['InstanceProfile']

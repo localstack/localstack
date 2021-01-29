@@ -221,6 +221,17 @@ Resources:
             Resource:
               - !Sub >-
                 arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/aws-dev-log:*
+  ManagedRolePolicy:
+    Type: 'AWS::IAM::ManagedPolicy'
+    Properties:
+      ManagedPolicyName: %s
+      Roles: [!GetAtt IamRoleLambdaExecution.RoleName]
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: '*'
+            Resource: '*'
 """
 
 TEST_TEMPLATE_14 = """
@@ -1179,9 +1190,11 @@ class CloudFormationTest(unittest.TestCase):
     def test_cfn_handle_iam_role_resource(self):
         stack_name = 'stack-%s' % short_uid()
         role_name = 'role-%s' % short_uid()
+        policy_name = 'policy-%s' % short_uid()
         role_path_prefix = '/role-prefix-%s/' % short_uid()
 
-        deploy_cf_stack(stack_name=stack_name, template_body=TEST_TEMPLATE_13 % (role_name, role_path_prefix))
+        template_body = TEST_TEMPLATE_13 % (role_name, role_path_prefix, policy_name)
+        deploy_cf_stack(stack_name=stack_name, template_body=template_body)
 
         iam = aws_stack.connect_to_service('iam')
         rs = iam.list_roles(PathPrefix=role_path_prefix)
@@ -1189,6 +1202,9 @@ class CloudFormationTest(unittest.TestCase):
         self.assertEqual(len(rs['Roles']), 1)
         role = rs['Roles'][0]
         self.assertEqual(role['RoleName'], role_name)
+
+        result = iam.get_policy(PolicyArn=aws_stack.policy_arn(policy_name))
+        self.assertEqual(result['Policy']['PolicyName'], policy_name)
 
         # clean up
         self.cleanup(stack_name)
@@ -1848,46 +1864,45 @@ class CloudFormationTest(unittest.TestCase):
         resp = kms.describe_key(KeyId=key_id)['KeyMetadata']
         self.assertEqual(resp['KeyState'], 'PendingDeletion')
 
-    # TODO fix-cfn_deploying_issue_with_iam_instance_profile
-    # def test_deploy_stack_with_sub_select_and_sub_getaz(self):
-    #     stack_name = 'stack-%s' % short_uid()
-    #     template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template28.yaml'))
-    #
-    #     cfn = aws_stack.connect_to_service('cloudformation')
-    #     cfn.create_stack(
-    #         StackName=stack_name,
-    #         TemplateBody=template
-    #     )
-    #     await_stack_completion(stack_name)
-    #
-    #     exports = cfn.list_exports()['Exports']
-    #
-    #     subnets = [export for export in exports if export['Name'] == 'public-sn-a']
-    #     instances = [export for export in exports if export['Name'] == 'RegmonEc2InstanceId']
-    #
-    #     self.assertEqual(len(subnets), 1)
-    #     self.assertEqual(len(instances), 1)
-    #
-    #     subnet_id = subnets[0]['Value']
-    #     instance_id = instances[0]['Value']
-    #
-    #     ec2_client = aws_stack.connect_to_service('ec2')
-    #     resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
-    #     self.assertEqual(len(resp['Subnets']), 1)
-    #
-    #     resp = ec2_client.describe_instances(
-    #         InstanceIds=[
-    #             instance_id
-    #         ]
-    #     )
-    #     self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
-    #
-    #     sns_client = aws_stack.connect_to_service('sns')
-    #     resp = sns_client.list_topics()
-    #     topic_arns = [tp['TopicArn'] for tp in resp['Topics']]
-    #     self.assertIn(aws_stack.sns_topic_arn('companyname-slack-topic'), topic_arns)
-    #
-    #     self.cleanup(stack_name)
+    def test_deploy_stack_with_sub_select_and_sub_getaz(self):
+        stack_name = 'stack-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template28.yaml'))
+
+        cfn = aws_stack.connect_to_service('cloudformation')
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template
+        )
+        await_stack_completion(stack_name)
+
+        exports = cfn.list_exports()['Exports']
+
+        subnets = [export for export in exports if export['Name'] == 'public-sn-a']
+        instances = [export for export in exports if export['Name'] == 'RegmonEc2InstanceId']
+
+        self.assertEqual(len(subnets), 1)
+        self.assertEqual(len(instances), 1)
+
+        subnet_id = subnets[0]['Value']
+        instance_id = instances[0]['Value']
+
+        ec2_client = aws_stack.connect_to_service('ec2')
+        resp = ec2_client.describe_subnets(SubnetIds=[subnet_id])
+        self.assertEqual(len(resp['Subnets']), 1)
+
+        resp = ec2_client.describe_instances(
+            InstanceIds=[
+                instance_id
+            ]
+        )
+        self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
+
+        sns_client = aws_stack.connect_to_service('sns')
+        resp = sns_client.list_topics()
+        topic_arns = [tp['TopicArn'] for tp in resp['Topics']]
+        self.assertIn(aws_stack.sns_topic_arn('companyname-slack-topic'), topic_arns)
+
+        self.cleanup(stack_name)
 
     def test_cfn_update_ec2_instance_type(self):
         stack_name = 'stack-%s' % short_uid()

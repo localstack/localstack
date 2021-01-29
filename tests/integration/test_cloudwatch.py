@@ -162,3 +162,6 @@ class CloudWatchTest(unittest.TestCase):
         response = cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(response['Tags'], [{'Key': 'tag2', 'Value': 'bar'}])
+
+        # clean up
+        cloudwatch.delete_alarms(AlarmNames=[alarm_name])
