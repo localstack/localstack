@@ -70,7 +70,6 @@ def filter_event_based_on_event_format(self, rule, event):
             if not event_value:
                 return False
 
-
             if isinstance(value, list) and not identify_content_base_parameter_in_pattern(value):
                 if isinstance(event_value, list) and \
                    get_two_lists_intersection(value, event_value) == []:
