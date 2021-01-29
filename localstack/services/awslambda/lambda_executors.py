@@ -295,7 +295,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         command = ''
         events_file = ''
 
-        if is_java_lambda(runtime):
+        if config.LAMBDA_JAVA_OPTS and is_java_lambda(runtime):
             # if running a Java Lambda with our custom executor, set up classpath arguments
             java_opts = Util.get_java_opts()
             stdin = None
