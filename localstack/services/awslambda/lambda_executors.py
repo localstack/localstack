@@ -52,10 +52,6 @@ EVENT_SOURCE_SQS = 'aws:sqs'
 # IP address of main Docker container (lazily initialized)
 DOCKER_MAIN_CONTAINER_IP = None
 
-# whether to use our custom Java executor, or the default from lambci
-# TODO: deprecated, should be removed in the future
-USE_CUSTOM_JAVA_EXECUTOR = False
-
 # maps lambda arns to concurrency locks
 LAMBDA_CONCURRENCY_LOCK = {}
 
@@ -299,7 +295,7 @@ class LambdaExecutorContainers(LambdaExecutor):
         command = ''
         events_file = ''
 
-        if USE_CUSTOM_JAVA_EXECUTOR and is_java_lambda(runtime):
+        if config.LAMBDA_JAVA_OPTS and is_java_lambda(runtime):
             # if running a Java Lambda with our custom executor, set up classpath arguments
             java_opts = Util.get_java_opts()
             stdin = None
