@@ -1348,6 +1348,51 @@ class S3ListenerTest(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_s3_get_deep_archive_object_restore(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        object_key = 'key-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put DEEP_ARCHIVE object
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='body data',
+            StorageClass='DEEP_ARCHIVE'
+        )
+
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.get_object(
+                Bucket=bucket_name,
+                Key=object_key
+            )
+
+        self.assertIn('InvalidObjectState', str(ctx.exception))
+
+        # put DEEP_ARCHIVE object
+        self.s3_client.restore_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            RestoreRequest={
+                'Days': 30,
+                'GlacierJobParameters': {
+                    'Tier': 'Bulk'
+                },
+                'Tier': 'Bulk',
+            },
+        )
+
+        response = self.s3_client.get_object(
+            Bucket=bucket_name,
+            Key=object_key
+        )
+
+        self.assertIn('etag', response.get('ResponseMetadata').get('HTTPHeaders'))
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
     def test_encoding_notification_messages(self):
         key = 'a@b'
         bucket_name = 'notif-enc-%s' % short_uid()
