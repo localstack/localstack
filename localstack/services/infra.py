@@ -98,11 +98,6 @@ def start_sts(port=None, asynchronous=False):
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
 
 
-def start_redshift(port=None, asynchronous=False):
-    port = port or config.PORT_REDSHIFT
-    return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
-
-
 def start_acm(port=None, asynchronous=False):
     port = port or config.PORT_ACM
     return start_moto_server('acm', port, name='ACM', asynchronous=asynchronous)
