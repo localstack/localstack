@@ -1,11 +1,14 @@
-import unittest
+import json
 import gzip
-from localstack.utils.aws import aws_stack
+import unittest
+import requests
 from datetime import datetime, timedelta
 from dateutil.tz import tzutc
-from localstack.utils.common import short_uid
-from localstack import config
 from six.moves.urllib.request import Request, urlopen
+from localstack import config
+from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid, to_str
+from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 
 
 class CloudWatchTest(unittest.TestCase):
@@ -141,6 +144,13 @@ class CloudWatchTest(unittest.TestCase):
                 self.assertEquals(len(data_metric['Values']), 0)
             if data_metric['Id'] == 'part':
                 self.assertEquals(len(data_metric['Values']), 0)
+
+        # get raw metric data
+        url = '%s%s' % (config.get_edge_url(), PATH_GET_RAW_METRICS)
+        result = requests.get(url)
+        self.assertEqual(result.status_code, 200)
+        result = json.loads(to_str(result.content))
+        self.assertGreaterEqual(len(result['metrics']), 3)
 
     def test_store_tags(self):
         cloudwatch = aws_stack.connect_to_service('cloudwatch')
