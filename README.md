@@ -79,6 +79,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Lambda Layers & Container Images**
 * **Managed Streaming for Kafka (MSK)**
 * **MediaStore**
+* **Neptune Graph DB**
 * **QLDB**
 * **RDS / Aurora Serverless**
 * **Timestream**
