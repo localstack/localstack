@@ -197,7 +197,8 @@ def update_content_length(response):
 
 
 def apply_template(integration, req_res_type, data, path_params={}, query_params={}, headers={}):
-    if integration['type'] in ['HTTP', 'AWS']:
+    integration_type = integration.get('type') or integration.get('integrationType')
+    if integration_type in ['HTTP', 'AWS']:
         # apply custom request template
         template = integration.get('%sTemplates' % req_res_type, {}).get(APPLICATION_JSON)
         if template:
@@ -284,8 +285,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
         resource_path, context={}, resource_id=None, response_templates={}):
 
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
-    integration_type = integration.get('type') or integration.get('IntegrationType')
-    uri = integration.get('uri') or integration.get('IntegrationUri')
+    integration_type = integration.get('type') or integration.get('integrationType')
+    uri = integration.get('uri') or integration.get('integrationUri')
 
     if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
         if integration_type in ['AWS', 'AWS_PROXY']:
