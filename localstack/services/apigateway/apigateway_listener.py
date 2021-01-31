@@ -270,8 +270,22 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             return get_cors_response(headers)
         return make_error_response('Unable to find integration for path %s' % path, 404)
 
-    uri = integration.get('uri') or ''
-    integration_type = integration['type'].upper()
+    res_methods = path_map.get(relative_path, {}).get('resourceMethods', {})
+    meth_integration = res_methods.get(method, {}).get('methodIntegration', {})
+    int_responses = meth_integration.get('integrationResponses', {})
+    response_templates = int_responses.get('200', {}).get('responseTemplates', {})
+
+    return invoke_rest_api_integration(api_id, stage, integration, method, path, invocation_path, data,
+        headers, resource_path=extracted_path, context=context,
+        resource_id=resource.get('id'), response_templates=response_templates)
+
+
+def invoke_rest_api_integration(api_id, stage, integration, method, path, invocation_path, data, headers,
+        resource_path, context={}, resource_id=None, response_templates={}):
+
+    relative_path, query_string_params = extract_query_string_params(path=invocation_path)
+    integration_type = integration.get('type') or integration.get('IntegrationType')
+    uri = integration.get('uri') or integration.get('IntegrationUri')
 
     if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
         if integration_type in ['AWS', 'AWS_PROXY']:
@@ -279,7 +293,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
 
             try:
-                path_params = extract_path_params(path=relative_path, extracted_path=extracted_path)
+                path_params = extract_path_params(path=relative_path, extracted_path=resource_path)
             except Exception:
                 path_params = {}
 
@@ -290,7 +304,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             # Sample request context:
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = get_lambda_event_request_context(method, path, data, headers,
-                integration_uri=uri, resource_id=resource.get('id'))
+                integration_uri=uri, resource_id=resource_id)
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                 stage, api_id, headers, path_params=path_params, query_string_params=query_string_params,
@@ -393,10 +407,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
             action = uri.split(':dynamodb:action')[1].split('&Table=')[0]
 
             if 'PutItem' in action and method == 'PUT':
-                response_template = path_map.get(relative_path, {}).get('resourceMethods', {})\
-                    .get(method, {}).get('methodIntegration', {}).\
-                    get('integrationResponses', {}).get('200', {}).get('responseTemplates', {})\
-                    .get('application/json', None)
+                response_template = response_templates.get('application/json', None)
 
                 if response_template is None:
                     msg = 'Invalid response template defined in integration response.'
@@ -432,7 +443,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         if isinstance(data, dict):
             data = json.dumps(data)
 
-        result = function(integration['uri'], data=data, headers=headers)
+        result = function(uri, data=data, headers=headers)
 
         # apply custom response template
         data = apply_template(integration, 'response', data)
@@ -448,7 +459,7 @@ def invoke_rest_api(api_id, stage, method, invocation_path, data, headers, path=
         return get_cors_response(headers)
 
     msg = ('API Gateway integration type "%s", method "%s", URI "%s" not yet implemented' %
-           (integration['type'], method, integration.get('uri')))
+           (integration_type, method, uri))
     LOGGER.warning(msg)
     return make_error_response(msg, 404)
 
