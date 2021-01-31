@@ -1,9 +1,13 @@
+from moto.cloudwatch.models import cloudwatch_backends
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import replace_response_content, parse_request_data
 from localstack.utils.tagging import TaggingService
 from localstack.services.generic_proxy import ProxyListener
 
 XMLNS_CLOUDWATCH = ''
+
+# path for backdoor API to receive raw metrics
+PATH_GET_RAW_METRICS = '/cloudwatch/metrics/raw'
 
 TAGS = TaggingService()
 
@@ -28,6 +32,14 @@ class ProxyListenerCloudWatch(ProxyListener):
             tags = TAGS.list_tags_for_resource(arn)
             result = {'Tags': {'member': tags.get('Tags', [])}}
             return aws_responses.requests_response_xml(action, result, xmlns=XMLNS_CLOUDWATCH)
+        if path.startswith(PATH_GET_RAW_METRICS):
+            result = cloudwatch_backends[aws_stack.get_region()].metric_data
+            result = [
+                {'ns': r.namespace, 'n': r.name, 'v': r.value, 't': r.timestamp,
+                 'd': [{'n': d.name, 'v': d.value} for d in r.dimensions]}
+                for r in result
+            ]
+            return {'metrics': result}
         return True
 
     def return_response(self, method, path, data, headers, response):

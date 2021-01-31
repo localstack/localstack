@@ -79,7 +79,6 @@ class ProxyListenerKinesis(ProxyListener):
         action = headers.get('X-Amz-Target')
         data = self.decode_content(data or '{}')
         response._content = self.replace_in_encoded(response.content or '')
-
         records = []
         if action in (ACTION_CREATE_STREAM, ACTION_DELETE_STREAM):
             event_type = (event_publisher.EVENT_KINESIS_CREATE_STREAM if action == ACTION_CREATE_STREAM
@@ -149,7 +148,7 @@ class ProxyListenerKinesis(ProxyListener):
 
             for record in records:
                 if sdk_v2:
-                    record['ApproximateArrivalTimestamp'] = int(record['ApproximateArrivalTimestamp'] * 1000)
+                    record['ApproximateArrivalTimestamp'] = int(record['ApproximateArrivalTimestamp'])
                 if not isinstance(record['Data'], str):
                     record['Data'] = bytearray(record['Data']['data'])
 

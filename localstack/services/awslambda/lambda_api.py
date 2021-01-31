@@ -897,7 +897,15 @@ def forward_to_fallback_url(func_arn, data):
     if re.match(r'^https?://.+', config.LAMBDA_FALLBACK_URL):
         headers = {'lambda-function-name': lambda_name}
         response = safe_requests.post(config.LAMBDA_FALLBACK_URL, data, headers=headers)
-        return response.content
+        content = response.content
+        try:
+            # parse the response into a dictionary to get details
+            # like function error etc.
+            content = json.loads(content)
+        except Exception:
+            pass
+
+        return content
     raise ClientError('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
 
 

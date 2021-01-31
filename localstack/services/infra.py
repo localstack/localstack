@@ -98,11 +98,6 @@ def start_sts(port=None, asynchronous=False):
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
 
 
-def start_redshift(port=None, asynchronous=False):
-    port = port or config.PORT_REDSHIFT
-    return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
-
-
 def start_acm(port=None, asynchronous=False):
     port = port or config.PORT_ACM
     return start_moto_server('acm', port, name='ACM', asynchronous=asynchronous)
@@ -287,7 +282,7 @@ def start_proxy(port, backend_url, update_listener=None, quiet=False, params={},
 def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
     if not name:
         name = key
-    print('Starting mock %s service on %s ...' % (name, edge_ports_info()))
+    log_startup_message(name)
     if not backend_port:
         if config.FORWARD_EDGE_INMEM:
             backend_port = multiserver.get_moto_server_port()
@@ -309,7 +304,7 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
 
 
 def start_local_api(name, port, api, method, asynchronous=False):
-    print('Starting mock %s service on %s ...' % (name, edge_ports_info()))
+    log_startup_message(name)
     if config.FORWARD_EDGE_INMEM:
         port = get_free_tcp_port()
         PROXY_LISTENERS[api] = (api, port, None)
@@ -339,6 +334,10 @@ def stop_infra(debug=False):
     # check_infra(retries=2, expect_shutdown=True)
 
 
+def log_startup_message(service):
+    print('Starting mock %s service on %s ...' % (service, edge_ports_info()))
+
+
 def check_aws_credentials():
     session = boto3.Session()
     credentials = None
@@ -357,7 +356,6 @@ def check_aws_credentials():
 # -------------
 # MAIN STARTUP
 # -------------
-
 
 def start_infra(asynchronous=False, apis=None):
     try:

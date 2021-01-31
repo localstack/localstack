@@ -30,32 +30,32 @@ def do_register_localstack_plugins():
     # register default plugins
     try:
         from localstack.services import edge
-        from localstack.services.apigateway import apigateway_starter
-        from localstack.services.cloudformation import cloudformation_starter, cloudformation_listener
-        from localstack.services.s3 import s3_listener, s3_starter
-        from localstack.services.ec2 import ec2_starter, ec2_listener
-        from localstack.services.kms import kms_starter
-        from localstack.services.sns import sns_listener
-        from localstack.services.sqs import sqs_listener, sqs_starter
-        from localstack.services.iam import iam_listener, iam_starter
-        from localstack.services.route53 import route53_listener, route53_starter
-        from localstack.services.sts import sts_starter, sts_listener
-        from localstack.services.ses import ses_starter, ses_listener
-        from localstack.services.ssm import ssm_listener
-        from localstack.services.logs import logs_listener, logs_starter
+        from localstack.services.plugins import Plugin, register_plugin
+
         from localstack.services.infra import (
             start_sns, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
-            start_redshift, start_firehose, start_dynamodbstreams, start_acm, start_cloudformation
+            start_firehose, start_dynamodbstreams, start_acm, start_cloudformation
         )
-        from localstack.services.events import events_listener, events_starter
-        from localstack.services.plugins import Plugin, register_plugin
-        from localstack.services.kinesis import kinesis_listener, kinesis_starter
-        from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
-        from localstack.services.apigateway import apigateway_listener
-        from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
-        from localstack.services.secretsmanager import secretsmanager_listener
-        from localstack.services.secretsmanager import secretsmanager_starter
+        from localstack.services.apigateway import apigateway_listener, apigateway_starter
+        from localstack.services.cloudformation import cloudformation_starter, cloudformation_listener
         from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
+        from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
+        from localstack.services.ec2 import ec2_starter, ec2_listener
+        from localstack.services.events import events_listener, events_starter
+        from localstack.services.iam import iam_listener, iam_starter
+        from localstack.services.kinesis import kinesis_listener, kinesis_starter
+        from localstack.services.kms import kms_starter
+        from localstack.services.logs import logs_listener, logs_starter
+        from localstack.services.redshift import redshift_starter
+        from localstack.services.route53 import route53_listener, route53_starter
+        from localstack.services.s3 import s3_listener, s3_starter
+        from localstack.services.secretsmanager import secretsmanager_listener, secretsmanager_starter
+        from localstack.services.ses import ses_starter, ses_listener
+        from localstack.services.sns import sns_listener
+        from localstack.services.sqs import sqs_listener, sqs_starter
+        from localstack.services.ssm import ssm_listener
+        from localstack.services.stepfunctions import stepfunctions_starter, stepfunctions_listener
+        from localstack.services.sts import sts_starter, sts_listener
 
         register_plugin(Plugin(
             'edge',
@@ -144,7 +144,7 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'redshift',
-            start=start_redshift))
+            start=redshift_starter.start_redshift))
 
         register_plugin(Plugin(
             'route53',
