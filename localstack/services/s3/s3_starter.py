@@ -181,7 +181,8 @@ def apply_patches():
         resp_status, resp_headers, resp_value = s3_key_response_get_orig(
             bucket_name, query, key_name, headers, *args, **kwargs
         )
-        if resp_headers.get('x-amz-storage-class') == 'DEEP_ARCHIVE':
+
+        if resp_headers.get('x-amz-storage-class') == 'DEEP_ARCHIVE' and not resp_headers.get('x-amz-restore'):
             raise InvalidObjectState()
 
         return resp_status, resp_headers, resp_value
