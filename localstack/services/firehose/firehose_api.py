@@ -57,6 +57,8 @@ def put_record(stream_name, record):
 
 def put_records(stream_name, records):
     stream = get_stream(stream_name)
+    if not stream:
+        return error_not_found(stream_name)
     for dest in stream['Destinations']:
         if 'ESDestinationDescription' in dest:
             es_dest = dest['ESDestinationDescription']
@@ -95,6 +97,9 @@ def put_records(stream_name, records):
             except Exception as e:
                 LOG.error('Unable to put record to stream: %s %s' % (e, traceback.format_exc()))
                 raise e
+    return {
+        'RecordId': str(uuid.uuid4())
+    }
 
 
 def get_s3_object_path(stream_name, prefix):
@@ -137,7 +142,7 @@ def update_destination(stream_name, destination_id,
 
 
 def process_records(records, shard_id, fh_d_stream):
-    put_records(fh_d_stream, records)
+    return put_records(fh_d_stream, records)
 
 
 def create_stream(stream_name, delivery_stream_type='DirectPut', delivery_stream_type_configuration=None,
@@ -249,10 +254,7 @@ def post_request():
     elif action == 'PutRecord':
         stream_name = data['DeliveryStreamName']
         record = data['Record']
-        put_record(stream_name, record)
-        response = {
-            'RecordId': str(uuid.uuid4())
-        }
+        response = put_record(stream_name, record)
     elif action == 'PutRecordBatch':
         stream_name = data['DeliveryStreamName']
         records = data['Records']
