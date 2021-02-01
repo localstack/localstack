@@ -263,7 +263,7 @@ def setup_logging(log_level=None):
     # log level set by DEBUG env variable
     log_level = log_level or (logging.DEBUG if config.DEBUG else logging.INFO)
 
-    # overriding the DEBUG env variable if LS_LOG has been set
+    # overriding the log level if LS_LOG has been set
     if config.LS_LOG:
         LS_LOG = str(config.LS_LOG).upper()
         LS_LOG = 'WARNING' if LS_LOG == 'WARN' else LS_LOG
