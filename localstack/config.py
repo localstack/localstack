@@ -388,22 +388,8 @@ def get_edge_url():
 # initialize config values
 populate_configs()
 
-# set log levels LS_LOG should be able to overwrite DEBUG env variable
-if LS_LOG:
-    LS_LOG = str(LS_LOG).upper()
-    if LS_LOG == 'ERROR':
-        logging.getLogger('').setLevel(logging.ERROR)
-        logging.getLogger('localstack').setLevel(logging.ERROR)
-    elif LS_LOG in ('WARN', 'WARNING'):
-        logging.getLogger('').setLevel(logging.WARNING)
-        logging.getLogger('localstack').setLevel(logging.WARNING)
-    elif LS_LOG == 'INFO':
-        logging.getLogger('').setLevel(logging.INFO)
-        logging.getLogger('localstack').setLevel(logging.INFO)
-    else:
-        logging.getLogger('').setLevel(logging.DEBUG)
-        logging.getLogger('localstack').setLevel(logging.DEBUG)
-elif DEBUG:
+# set log levels
+if DEBUG:
     logging.getLogger('').setLevel(logging.DEBUG)
     logging.getLogger('localstack').setLevel(logging.DEBUG)
 
