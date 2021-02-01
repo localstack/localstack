@@ -70,6 +70,7 @@ APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
 # strings to indicate truthy/falsy values
 TRUE_STRINGS = ('1', 'true', 'True')
 FALSE_STRINGS = ('0', 'false', 'False')
+LOG_LEVELS = ('debug', 'info', 'warn', 'error', 'warning')
 
 # Lambda defaults
 LAMBDA_TEST_ROLE = 'arn:aws:iam::%s:role/lambda-test-role' % TEST_AWS_ACCOUNT_ID
