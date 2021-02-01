@@ -240,6 +240,8 @@ You can pass the following environment variables to LocalStack:
 * `LAMBDA_JAVA_OPTS`: Allow passing custom JVM options (e.g., `-Xmx512M`) to Java Lambdas executed in Docker. Use `_debug_port_` placeholder to configure the debug port (e.g., `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_`).
 * `MAIN_CONTAINER_NAME`: Specify the main docker container name (default: `localstack_main`).
 * `INIT_SCRIPTS_PATH`: Specify the path to the initializing files with extensions .sh that are found default in `/docker-entrypoint-initaws.d`.
+* `DEBUG`: For troubleshooting LocalStack start issues
+* `LS_LOG`: Specify the log level('debug', 'info', 'warn', 'error', 'warning') currently overrides the `DEBUG` configuration.
 
 The following environment configurations are *deprecated*:
 * `USE_SSL`: Whether to use `https://...` URLs with SSL encryption (default: `false`). Deprecated as of version 0.11.3 - each service endpoint now supports multiplexing HTTP/HTTPS traffic over the same port.
