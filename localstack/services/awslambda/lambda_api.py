@@ -231,7 +231,9 @@ def update_event_source(uuid_value, data):
                 mapping['FunctionArn'] = func_arn(function_name)
             batch_size = data.get('BatchSize')
             if 'SelfManagedEventSource' in mapping:
-                batch_size = check_batch_size_range(mapping['SourceAccessConfigurations'][0]['URI'], batch_size or mapping['BatchSize'])
+                batch_size = check_batch_size_range(
+                    mapping['SourceAccessConfigurations'][0]['URI'],
+                    batch_size or mapping['BatchSize'])
             else:
                 batch_size = check_batch_size_range(mapping['EventSourceArn'], batch_size or mapping['BatchSize'])
             mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
