@@ -221,28 +221,28 @@ def add_event_source(data):
 
 
 def update_event_source(uuid_value, data):
-    batch_size = None
     region = LambdaRegion.get()
     function_name = data.get('FunctionName') or ''
+    batch_size = None
     enabled = data.get('Enabled', True)
     for mapping in region.event_source_mappings:
         if uuid_value == mapping['UUID']:
             if function_name:
                 mapping['FunctionArn'] = func_arn(function_name)
-                mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
-                mapping['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
-                batch_size = data.get('BatchSize')
-                if 'SelfManagedEventSource' in data:
-                    batch_size = check_batch_size_range(
-                        mapping['SourceAccessConfigurations'][0]['URI'],
-                        batch_size or mapping['BatchSize']
-                    )
-                else:
-                    batch_size = check_batch_size_range(mapping['EventSourceArn'], batch_size or mapping['BatchSize'])
-                mapping['BatchSize'] = batch_size
-                if 'SourceAccessConfigurations' in (mapping and data):
-                    mapping['SourceAccessConfigurations'] = data['SourceAccessConfigurations']
-                return mapping
+            batch_size = data.get('BatchSize')
+            if 'SelfManagedEventSource' in data:
+                batch_size = check_batch_size_range(
+                    mapping['SourceAccessConfigurations'][0]['URI'],
+                    batch_size or mapping['BatchSize']
+                )
+            else:
+                batch_size = check_batch_size_range(mapping['EventSourceArn'], batch_size or mapping['BatchSize'])
+            mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
+            mapping['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
+            mapping['BatchSize'] = batch_size
+            if 'SourceAccessConfigurations' in (mapping and data):
+                mapping['SourceAccessConfigurations'] = data['SourceAccessConfigurations']
+            return mapping
     return {}
 
 

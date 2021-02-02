@@ -293,7 +293,8 @@ class TestLambdaAPI(unittest.TestCase):
                 'SourceAccessConfigurations': [
                     {'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}
                 ],
-                'SelfManagedEventSource': {'Endpoints': {'KAFKA_BOOTSTRAP_SERVERS': ['127.0.0.1:9092']}}
+                'SelfManagedEventSource': {'Endpoints': {'KAFKA_BOOTSTRAP_SERVERS': ['127.0.0.1:9092']}},
+                'Enabled': 'true'
             }))
         createResult = json.loads(createResponse.get_data())
 
