@@ -176,24 +176,15 @@ class ShellCommandThread(FuncThread):
         return not psutil.pid_exists(self.process.pid)
 
     def stop(self, quiet=False):
-        # Note: Do NOT import "psutil" at the root scope, as this leads
-        # to problems when importing this file from our test Lambdas in Docker
-        # (Error: libc.musl-x86_64.so.1: cannot open shared object file)
-        import psutil
-
         if getattr(self, 'stopped', False):
             return
-
         if not self.process:
             LOG.warning("No process found for command '%s'" % self.cmd)
             return
 
         parent_pid = self.process.pid
         try:
-            parent = psutil.Process(parent_pid)
-            for child in parent.children(recursive=True):
-                child.kill()
-            parent.kill()
+            kill_process_tree(parent_pid)
             self.process = None
         except Exception:
             if not quiet:
@@ -1012,7 +1003,8 @@ def cleanup_threads_and_processes(quiet=True, debug=False):
     for proc in TMP_PROCESSES:
         try:
             print_debug('[shutdown] Cleaning up process: %s' % proc, debug)
-            proc.terminate()
+            kill_process_tree(proc.pid)
+            # proc.terminate()
         except Exception as e:
             print(e)
     # clean up async tasks
@@ -1030,6 +1022,19 @@ def cleanup_threads_and_processes(quiet=True, debug=False):
     # clear lists
     clear_list(TMP_THREADS)
     clear_list(TMP_PROCESSES)
+
+
+def kill_process_tree(parent_pid):
+    # Note: Do NOT import "psutil" at the root scope
+    import psutil
+    parent_pid = getattr(parent_pid, 'pid', None) or parent_pid
+    parent = psutil.Process(parent_pid)
+    for child in parent.children(recursive=True):
+        try:
+            child.kill()
+        except Exception:
+            pass
+    parent.kill()
 
 
 def clear_list(list_obj):

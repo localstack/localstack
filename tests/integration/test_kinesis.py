@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 import unittest
+from time import sleep
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry, short_uid
 from localstack.utils.kinesis import kinesis_connector
@@ -40,6 +41,30 @@ class TestKinesisServer(unittest.TestCase):
         # delete existing consumer and assert 0 remaining consumers
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
         assert_consumers(0)
+
+    def test_get_records(self):
+        client = aws_stack.connect_to_service('kinesis')
+        stream_name = 'test-%s' % short_uid()
+
+        client.create_stream(StreamName=stream_name, ShardCount=1)
+        sleep(3)
+        client.put_records(StreamName=stream_name, Records=[{'Data': 'SGVsbG8gd29ybGQ=', 'PartitionKey': '1'}])
+
+        response = client.describe_stream(StreamName=stream_name)
+
+        sequence_number = response.get('StreamDescription').get('Shards')[0].get('SequenceNumberRange'). \
+            get('StartingSequenceNumber')
+
+        shard_id = response.get('StreamDescription').get('Shards')[0].get('ShardId')
+
+        response = client.get_shard_iterator(StreamName=stream_name, ShardId=shard_id,
+                                             ShardIteratorType='AT_SEQUENCE_NUMBER',
+                                             StartingSequenceNumber=sequence_number)
+
+        response = client.get_records(ShardIterator=response.get('ShardIterator'))
+
+        self.assertEqual(len(response.get('Records')), 1)
+        self.assertIn('Data', response.get('Records')[0])
 
 
 class TestKinesisPythonClient(unittest.TestCase):

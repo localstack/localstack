@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.12.5'
+VERSION = '0.12.6'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -70,6 +70,7 @@ APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
 # strings to indicate truthy/falsy values
 TRUE_STRINGS = ('1', 'true', 'True')
 FALSE_STRINGS = ('0', 'false', 'False')
+LOG_LEVELS = ('debug', 'info', 'warn', 'error', 'warning')
 
 # Lambda defaults
 LAMBDA_TEST_ROLE = 'arn:aws:iam::%s:role/lambda-test-role' % TEST_AWS_ACCOUNT_ID

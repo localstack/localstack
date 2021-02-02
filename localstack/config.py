@@ -10,12 +10,18 @@ import six
 from boto3 import Session
 from localstack.constants import (
     DEFAULT_SERVICE_PORTS, LOCALHOST, LOCALHOST_IP, DEFAULT_PORT_WEB_UI, TRUE_STRINGS, FALSE_STRINGS,
-    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1)
+    DEFAULT_LAMBDA_CONTAINER_REGISTRY, DEFAULT_PORT_EDGE, AWS_REGION_US_EAST_1, LOG_LEVELS)
 
 
 def is_env_true(env_var_name):
     """ Whether the given environment variable has a truthy value. """
     return os.environ.get(env_var_name, '').lower().strip() in TRUE_STRINGS
+
+
+def eval_log_type(env_var_name):
+    """get the log type from environment variable"""
+    ls_log = os.environ.get(env_var_name, '').lower().strip()
+    return ls_log if ls_log in LOG_LEVELS else False
 
 
 def is_env_not_false(env_var_name):
@@ -110,6 +116,7 @@ HOST_TMP_FOLDER = os.environ.get('HOST_TMP_FOLDER', TMP_FOLDER)
 
 # whether to enable verbose debug logging
 DEBUG = is_env_true('DEBUG')
+LS_LOG = eval_log_type('LS_LOG')
 
 # whether to use SSL encryption for the services
 USE_SSL = is_env_true('USE_SSL')

@@ -19,11 +19,11 @@ from localstack.utils.common import (
     empty_context_manager, run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
     get_service_protocol, in_docker, safe_requests as requests)
 from localstack.services.infra import PROXY_LISTENERS
-from localstack.utils.aws.aws_stack import Environment, is_internal_call_context
+from localstack.utils.aws.aws_stack import Environment, is_internal_call_context, set_default_region_in_headers
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils.server.http2_server import HTTPErrorResponse
-from localstack.utils.aws.aws_stack import set_default_region_in_headers
+from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 
 LOG = logging.getLogger(__name__)
 
@@ -290,6 +290,14 @@ def get_api_from_custom_rules(method, path, data, headers):
     if b'Action=AssumeRoleWithSAML' in data_bytes or 'Action=AssumeRoleWithSAML' in path:
         return 'sts', config.PORT_STS
 
+    # CloudWatch backdoor API to retrieve raw metrics
+    if path.startswith(PATH_GET_RAW_METRICS):
+        return 'cloudwatch', config.PORT_CLOUDWATCH
+
+    # SQS queue requests
+    if ('QueueUrl=' in path and 'Action=' in path) or (b'QueueUrl=' in data_bytes and b'Action=' in data_bytes):
+        return 'sqs', config.PORT_SQS
+
     # TODO: move S3 public URLs to a separate port/endpoint, OR check ACLs here first
     stripped = path.strip('/')
     if method in ['GET', 'HEAD'] and '/' in stripped:
@@ -315,10 +323,6 @@ def get_api_from_custom_rules(method, path, data, headers):
     # S3 delete object requests
     if method == 'POST' and 'delete=' in path and b'<Delete' in data_bytes and b'<Key>' in data_bytes:
         return 's3', config.PORT_S3
-
-    # SQS queue requests
-    if ('QueueUrl=' in path and 'Action=' in path) or (b'QueueUrl=' in data_bytes and b'Action=' in data_bytes):
-        return 'sqs', config.PORT_SQS
 
     # Put Object API can have multiple keys
     if stripped.count('/') >= 1 and method == 'PUT':
