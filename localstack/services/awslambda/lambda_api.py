@@ -1483,7 +1483,6 @@ def create_event_source_mapping():
             - name: 'request'
               in: body
     """
-    print(request.data)
     data = json.loads(to_str(request.data))
     try:
         mapping = add_event_source(data)
