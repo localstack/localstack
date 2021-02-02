@@ -199,19 +199,17 @@ def build_mapping_obj(data):
     mapping['StateTransitionReason'] = 'User action'
     mapping['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
     mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
-    if not 'SelfManagedEventSource' in data:
-        source_arn = data['EventSourceArn']
-        mapping['EventSourceArn'] =  source_arn
-        batch_size = check_batch_size_range(source_arn, batch_size)
-        mapping['BatchSize'] = batch_size
-        mapping['StartingPosition'] =  LAMBDA_DEFAULT_STARTING_POSITION
-    else:
+    if 'SelfManagedEventSource' in data:
         source_arn = data['SourceAccessConfigurations'][0]['URI']
-        batch_size = check_batch_size_range(source_arn, batch_size)
-        mapping['BatchSize'] = batch_size
         mapping['SelfManagedEventSource'] = data['SelfManagedEventSource']
         mapping['Topics'] = data['Topics']
         mapping['SourceAccessConfigurations'] = data['SourceAccessConfigurations']
+    else:
+        source_arn = data['EventSourceArn']
+        mapping['EventSourceArn'] = source_arn
+        mapping['StartingPosition'] = LAMBDA_DEFAULT_STARTING_POSITION
+    batch_size = check_batch_size_range(source_arn, batch_size)
+    mapping['BatchSize'] = batch_size
     return mapping
 
 
@@ -234,10 +232,13 @@ def update_event_source(uuid_value, data):
                 mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
                 mapping['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
                 batch_size = data.get('BatchSize')
-                if not 'SelfManagedEventSource' in data:
-                    batch_size = check_batch_size_range(mapping['EventSourceArn'], batch_size or mapping['BatchSize'])
+                if 'SelfManagedEventSource' in data:
+                    batch_size = check_batch_size_range(
+                        mapping['SourceAccessConfigurations'][0]['URI'],
+                        batch_size or mapping['BatchSize']
+                    )
                 else:
-                    batch_size = check_batch_size_range(mapping['SourceAccessConfigurations'][0]['URI'], batch_size or mapping['BatchSize'])
+                    batch_size = check_batch_size_range(mapping['EventSourceArn'], batch_size or mapping['BatchSize'])
                 mapping['BatchSize'] = batch_size
                 if 'SourceAccessConfigurations' in (mapping and data):
                     mapping['SourceAccessConfigurations'] = data['SourceAccessConfigurations']

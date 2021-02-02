@@ -236,13 +236,14 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual('Enabled', eventSourceMappings[0]['State'])
 
     def test_create_event_source_mapping_self_managed_event_source(self):
-        self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),data=json.dumps({
-                'FunctionName': 'test-lambda-function',
+        self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+            data=json.dumps({'FunctionName': 'test-lambda-function',
                 'Topics': ['test'],
-                'SourceAccessConfigurations': [{'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}],
+                'SourceAccessConfigurations': [
+                    {'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}
+                ],
                 'SelfManagedEventSource': {'Endpoints': {'KAFKA_BOOTSTRAP_SERVERS': ['127.0.0.1:9092']}}
             }))
-
         listResponse = self.client.get('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT))
         listResult = json.loads(listResponse.get_data())
 
@@ -286,10 +287,12 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual('Disabled', getResult['State'])
 
     def test_update_event_source_mapping_self_managed_event_source(self):
-        createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),data=json.dumps({
-                'FunctionName': 'test-lambda-function',
+        createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+            data=json.dumps({'FunctionName': 'test-lambda-function',
                 'Topics': ['test'],
-                'SourceAccessConfigurations': [{'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}],
+                'SourceAccessConfigurations': [
+                    {'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}
+                ],
                 'SelfManagedEventSource': {'Endpoints': {'KAFKA_BOOTSTRAP_SERVERS': ['127.0.0.1:9092']}}
             }))
         createResult = json.loads(createResponse.get_data())
