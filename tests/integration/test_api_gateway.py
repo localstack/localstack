@@ -136,7 +136,7 @@ class TestAPIGateway(unittest.TestCase):
         self.create_lambda_function(self.TEST_LAMBDA_SQS_HANDLER_NAME)
         event_source_data = {
             'FunctionName': self.TEST_LAMBDA_SQS_HANDLER_NAME,
-            'FunctionArn': aws_stack.sqs_queue_arn(queue_name),
+            'EventSourceArn': aws_stack.sqs_queue_arn(queue_name),
             'Enabled': True
         }
         add_event_source(event_source_data)
