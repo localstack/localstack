@@ -260,7 +260,17 @@ def setup_logging(log_level=None):
         return
     PLUGINS_LOADED['_logging_'] = True
 
+    # log level set by DEBUG env variable
     log_level = log_level or (logging.DEBUG if config.DEBUG else logging.INFO)
+
+    # overriding the log level if LS_LOG has been set
+    if config.LS_LOG:
+        LS_LOG = str(config.LS_LOG).upper()
+        LS_LOG = 'WARNING' if LS_LOG == 'WARN' else LS_LOG
+        log_level = getattr(logging, LS_LOG)
+        logging.getLogger('').setLevel(log_level)
+        logging.getLogger('localstack').setLevel(log_level)
+
     logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
 
     # set up werkzeug logger
