@@ -28,6 +28,7 @@ from localstack.services.apigateway.helpers import (
     PATH_REGEX_DOC_PARTS,
     PATH_REGEX_PATH_MAPPINGS,
     PATH_REGEX_RESPONSES,
+    PATH_REGEX_TEST_INVOKE_API,
     PATH_REGEX_VALIDATORS,
     extract_path_params,
     extract_query_string_params,
@@ -39,6 +40,7 @@ from localstack.services.apigateway.helpers import (
     handle_client_certificates,
     handle_documentation_parts,
     handle_gateway_responses,
+    handle_test_invoke_api,
     handle_validators,
     handle_vpc_links,
     make_error_response,
@@ -103,6 +105,9 @@ class ProxyListenerApiGateway(ProxyListener):
 
         if re.match(PATH_REGEX_RESPONSES, path):
             return handle_gateway_responses(method, path, data, headers)
+
+        if re.match(PATH_REGEX_TEST_INVOKE_API, path) and method == "POST":
+            return handle_test_invoke_api(method, path, data, headers)
 
         return True
 
@@ -270,6 +275,7 @@ def get_api_id_stage_invocation_path(path: str, headers: Dict[str, str]) -> Tupl
     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
     host_header = headers.get(HEADER_LOCALSTACK_EDGE_URL, "") or headers.get("Host") or ""
     host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
+    test_invoke_match = re.search(PATH_REGEX_TEST_INVOKE_API, path)
     if path_match:
         api_id = path_match.group(1)
         stage = path_match.group(2)
@@ -278,6 +284,10 @@ def get_api_id_stage_invocation_path(path: str, headers: Dict[str, str]) -> Tupl
         api_id = extract_api_id_from_hostname_in_url(host_header)
         stage = path.strip("/").split("/")[0]
         relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
+    elif test_invoke_match:
+        api_id = test_invoke_match.group(1)
+        stage = None
+        relative_path_w_query_params = "/%s" % test_invoke_match.group(4)
     else:
         raise Exception(f"Unable to extract API Gateway details from request: {path} {headers}")
     if api_id:
@@ -296,8 +306,12 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     return api_id
 
 
-def invoke_rest_api_from_request(method, path, data, headers, context={}, auth_info={}, **kwargs):
+def invoke_rest_api_from_request(
+    method, path, data, headers, context={}, auth_info={}, path_with_query_string=None, **kwargs
+):
     api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
+    if path_with_query_string:
+        relative_path_w_query_params = path_with_query_string
     try:
         return invoke_rest_api(
             api_id,
@@ -781,6 +795,13 @@ def get_lambda_event_request_context(
     }
     if isinstance(auth_info, dict) and auth_info.get("context"):
         request_context["authorizer"] = auth_info["context"]
+    if not re.match(PATH_REGEX_TEST_INVOKE_API, path):
+        _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
+        relative_path, query_string_params = extract_query_string_params(
+            path=relative_path_w_query_params
+        )
+        request_context["path"] = "/" + stage + relative_path
+        request_context["stage"] = stage
     return request_context
 
 

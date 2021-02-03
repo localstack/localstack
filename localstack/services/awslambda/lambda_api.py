@@ -565,7 +565,8 @@ def process_apigateway_invocation(
         event["pathParameters"] = path_params
         event["resource"] = resource_path
         event["requestContext"] = request_context
-        event["stageVariables"] = stage_variables
+        if stage:
+            event["stageVariables"] = stage_variables
         LOG.debug(
             "Running Lambda function %s from API Gateway invocation: %s %s"
             % (func_arn, method or "GET", path)
