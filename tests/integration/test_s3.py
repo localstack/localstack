@@ -19,7 +19,7 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
+    short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, load_file)
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
@@ -56,7 +56,7 @@ class PutRequest(Request):
         return 'PUT'
 
 
-class S3ListenerTest(unittest.TestCase):
+class TestS3(unittest.TestCase):
     def setUp(self):
         self.s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
@@ -1580,6 +1580,20 @@ class S3ListenerTest(unittest.TestCase):
 
         # Cleanup
         self._delete_bucket(bucket, key_by_path)
+
+    def test_terraform_request_sequence(self):
+
+        reqs = load_file(os.path.join(os.path.dirname(__file__), 'files', 's3.requests.txt'))
+        reqs = reqs.split('---')
+
+        for req in reqs:
+            header, _, body = req.strip().partition('\n\n')
+            req, _, headers = header.strip().partition('\n')
+            headers = {h.split(':')[0]: h.partition(':')[2].strip() for h in headers.split('\n')}
+            method, path, _ = req.split(' ')
+            url = '%s%s' % (config.get_edge_url(), path)
+            result = getattr(requests, method.lower())(url, data=body, headers=headers)
+            self.assertLess(result.status_code, 400)
 
     # ---------------
     # HELPER METHODS
