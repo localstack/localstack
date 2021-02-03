@@ -131,6 +131,15 @@ def patch_lambda():
             if ':kinesis:' in self.destination_arn:
                 client = aws_stack.connect_to_service('kinesis')
                 stream_name = aws_stack.kinesis_stream_name(self.destination_arn)
+                response = client.describe_stream(
+                    StreamName=stream_name
+                )
+                stream_status = response['StreamDescription']['StreamStatus']
+                if stream_status != 'ACTIVE':
+                    raise InvalidParameterException(
+                        'Could not deliver test message to specified Firehose stream. '
+                        'Check if the given Firehose stream is in ACTIVE state.'
+                    )
                 client.put_record(StreamName=stream_name, Data=json.dumps(payload_gz_encoded),
                     PartitionKey=log_group_name)
             if ':firehose:' in self.destination_arn:
