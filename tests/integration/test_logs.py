@@ -103,16 +103,16 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         log_group_name = '/aws/lambda/{}'.format(TEST_LAMBDA_NAME_PY3)
 
-        self.log_client.put_subscription_filter(
+        self.logs_client.put_subscription_filter(
             logGroupName=log_group_name,
             filterName='test',
             filterPattern='',
             destinationArn=func_arn(TEST_LAMBDA_NAME_PY3),
         )
         stream = 'ls-%s' % short_uid()
-        self.log_client.create_log_stream(logGroupName=log_group_name, logStreamName=stream)
+        self.logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=stream)
 
-        self.log_client.put_log_events(
+        self.logs_client.put_log_events(
             logGroupName=log_group_name,
             logStreamName=stream,
             logEvents=[
@@ -121,7 +121,7 @@ class CloudWatchLogsTest(unittest.TestCase):
             ],
         )
 
-        resp2 = self.log_client.describe_subscription_filters(logGroupName=log_group_name)
+        resp2 = self.logs_client.describe_subscription_filters(logGroupName=log_group_name)
         self.assertEqual(len(resp2['subscriptionFilters']), 1)
 
         def check_invocation():
