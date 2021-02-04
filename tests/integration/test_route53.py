@@ -29,3 +29,7 @@ class TestRoute53(unittest.TestCase):
         result = route53.disassociate_vpc_from_hosted_zone(
             HostedZoneId=zone_id, VPC={'VPCRegion': aws_stack.get_region(), 'VPCId': vpc_id}, Comment='test2')
         self.assertIn(response['ResponseMetadata']['HTTPStatusCode'], [200, 201])
+        # subsequent call (after disassociation) should fail with 404 error
+        with self.assertRaises(Exception):
+            route53.disassociate_vpc_from_hosted_zone(
+                HostedZoneId=zone_id, VPC={'VPCRegion': aws_stack.get_region(), 'VPCId': vpc_id})
