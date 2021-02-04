@@ -1,12 +1,11 @@
-from localstack.utils.common import parse_request_data, short_uid, to_str
 import xmltodict
-from requests.models import Response
 from six.moves.urllib.parse import urlparse
+from localstack.utils.common import short_uid, to_str, timestamp_millis
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.generic_proxy import RegionBackend
+from localstack.utils.aws.aws_responses import requests_response
 
 
-# TODO import RegionBackend
 class Route53Backend(RegionBackend):
     def __init__(self):
         # maps association ID to details
@@ -22,45 +21,47 @@ class ProxyListenerRoute53(PersistingProxyListener):
         parsed_url = urlparse(path)
         action = parsed_url.path.split('/')[2]
 
-        if path.endswith('/associatevpc'):
+        is_associate = path.endswith('/associatevpc')
+        if is_associate or path.endswith('/disassociatevpc'):
             path_parts = path.split('/')
             zone_id = path_parts[3]
             req_data = xmltodict.parse(to_str(data))
-            root = req_data['AssociateVPCWithHostedZoneRequest']
-            vpc_id = root['VPC']['VPCId']
-            # vpc_region = root['VPC']['VPCRegion']
-
             region_details = Route53Backend.get()
-            assoc_id = short_uid()
-            if zone_id in region_details.vpc_hosted_zone_associations.keys():
-                region_details.vpc_hosted_zone_associations[zone_id][vpc_id] = assoc_id
-            else:
-                region_details.vpc_hosted_zone_associations[zone_id] = {
-                    vpc_id: assoc_id
-                }
-
-            response = Response()
-            associate_response = {
-                'AssociateVPCWithHostedZoneResponse': {
+            zone_details = region_details.vpc_hosted_zone_associations.get(zone_id) or []
+            if is_associate:
+                assoc_id = short_uid()
+                zone_data = req_data.get('AssociateVPCWithHostedZoneRequest', {})
+                zone_data['Id'] = assoc_id
+                zone_data['HostedZoneId'] = zone_id
+                zone_details.append(zone_data)
+                response_entry = {
                     'ChangeInfo': {
                         'Id': assoc_id,
                         'Status': 'INSYNC',
-                        'SubmittedAt': '2010-09-10T01:36:41.958Z'
+                        'SubmittedAt': timestamp_millis()
                     }
                 }
+            else:
+                def _match(z):
+                    return z['HostedZoneId'] == zone_id and z['VPC']['VPCId'] == zone_data['VPC']['VPCId']
+                zone_data = req_data.get('DisassociateVPCFromHostedZoneRequest', {})
+                response_entry = [z for z in zone_details if _match(z)]
+                zone_details = [z for z in zone_details if not _match(z)]
+                if not response_entry:
+                    return 404
+                response_entry = response_entry[0]
+
+            region_details.vpc_hosted_zone_associations[zone_id] = zone_details
+
+            response_tag = '%sVPCWithHostedZoneResponse' % ('Associate' if is_associate else 'Disassociate')
+            response = {
+                response_tag: response_entry
             }
-            body = xmltodict.unparse(associate_response)
-            response._content = body
-            response.status_code = 200
-            print(body)
+            body = xmltodict.unparse(response)
+            response = requests_response(body)
             return response
 
-        if method == 'GET' and parsed_url.path.endswith('/hostedzonesbyvpc'):
-            # todo
-            print()
-
         if action == 'change':
-            response = Response()
             if method == 'GET':
                 resource_id = parsed_url.path.split('/')[-1]
                 change_response = {
@@ -68,22 +69,15 @@ class ProxyListenerRoute53(PersistingProxyListener):
                         'ChangeInfo': {
                             'Id': resource_id,
                             'Status': 'INSYNC',
-                            'SubmittedAt': '2010-09-10T01:36:41.958Z'
+                            'SubmittedAt': timestamp_millis()
                         }
                     }
                 }
-
                 body = xmltodict.unparse(change_response)
-                response._content = body
-                response.status_code = 200
-            return response
+                response = requests_response(body)
+                return response
 
         return True
-
-    def return_response(self, method, path, data, headers, response, request_handler):
-        print(response)
-        print(response._content)
-        return super().return_response(method, path, data, headers, response, request_handler=request_handler)
 
 
 # instantiate listener
