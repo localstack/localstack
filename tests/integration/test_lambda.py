@@ -1525,7 +1525,7 @@ class TestJavaRuntimes(LambdaTestBase):
 
         self.assertEqual(result['StatusCode'], 200)
         self.assertDictEqual(
-            json.loads(to_str(result_data)),
+            json.loads(result_data),
             {'validated': True, 'bucket': 'test_bucket', 'key': 'test_key'}
         )
 
