@@ -3,10 +3,8 @@ import json
 from datetime import datetime
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
-TEST_SECRET_NAME_1 = 'test_secret_put'
-TEST_SECRET_NAME_2 = 'test_secret_2nd'
-TEST_SECRET_NAME_3 = 'test_secret_3rd'
 RESOURCE_POLICY = {
     'Version': '2012-10-17',
     'Statement': [{
@@ -25,74 +23,49 @@ class SecretsManagerTest(unittest.TestCase):
         self.secretsmanager_client = aws_stack.connect_to_service('secretsmanager')
 
     def test_create_and_update_secret(self):
+        secret_name = 's-%s' % short_uid()
         rs = self.secretsmanager_client.create_secret(
-            Name=TEST_SECRET_NAME_1,
-            SecretString='my_secret',
-            Description='testing creation of secrets'
-        )
-
+            Name=secret_name, SecretString='my_secret', Description='testing creation of secrets')
         secret_arn = rs['ARN']
 
-        rs = self.secretsmanager_client.get_secret_value(
-            SecretId=TEST_SECRET_NAME_1,
-        )
-
-        self.assertEqual(rs['Name'], TEST_SECRET_NAME_1)
+        rs = self.secretsmanager_client.get_secret_value(SecretId=secret_name)
+        self.assertEqual(rs['Name'], secret_name)
         self.assertEqual(rs['SecretString'], 'my_secret')
         self.assertEqual(rs['ARN'], secret_arn)
         self.assertTrue(isinstance(rs['CreatedDate'], datetime))
 
-        self.secretsmanager_client.put_secret_value(
-            SecretId=TEST_SECRET_NAME_1,
-            SecretString='new_secret'
-        )
+        self.secretsmanager_client.put_secret_value(SecretId=secret_name, SecretString='new_secret')
 
-        rs = self.secretsmanager_client.get_secret_value(
-            SecretId=TEST_SECRET_NAME_1,
-        )
-
-        self.assertEqual(rs['Name'], TEST_SECRET_NAME_1)
+        rs = self.secretsmanager_client.get_secret_value(SecretId=secret_name)
+        self.assertEqual(rs['Name'], secret_name)
         self.assertEqual(rs['SecretString'], 'new_secret')
 
+        # update secret by ARN
+        rs = self.secretsmanager_client.update_secret(SecretId=secret_arn, KmsKeyId='test123', Description='d1')
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['ARN'], secret_arn)
+
         # clean up
-        self.secretsmanager_client.delete_secret(
-            SecretId=TEST_SECRET_NAME_1,
-            ForceDeleteWithoutRecovery=True
-        )
+        self.secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
     def test_call_lists_secrets_multiple_time(self):
+        secret_name = 's-%s' % short_uid()
         self.secretsmanager_client.create_secret(
-            Name=TEST_SECRET_NAME_2,
-            SecretString='my_secret',
-            Description='testing creation of secrets'
-        )
+            Name=secret_name, SecretString='my_secret', Description='testing creation of secrets')
 
-        # call list_secrets 1st
-        rs = self.secretsmanager_client.list_secrets()
-        secrets = [
-            secret for secret in rs['SecretList'] if secret['Name'] == TEST_SECRET_NAME_2
-        ]
-
-        self.assertEqual(len(secrets), 1)
-        secret_arn = secrets[0]['ARN']
-
-        # call list_secrets 2nd
-        rs = self.secretsmanager_client.list_secrets()
-        secrets = [
-            secret for secret in rs['SecretList'] if secret['Name'] == TEST_SECRET_NAME_2
-        ]
-
-        self.assertEqual(len(secrets), 1)
-        self.assertEqual(secrets[0]['ARN'], secret_arn)
+        # call list_secrets multiple times
+        for i in range(3):
+            rs = self.secretsmanager_client.list_secrets()
+            secrets = [
+                secret for secret in rs['SecretList'] if secret['Name'] == secret_name
+            ]
+            self.assertEqual(len(secrets), 1)
 
         # clean up
-        self.secretsmanager_client.delete_secret(
-            SecretId=TEST_SECRET_NAME_2,
-            ForceDeleteWithoutRecovery=True
-        )
+        self.secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
     def test_create_multi_secrets(self):
-        secret_names = [TEST_SECRET_NAME_1, TEST_SECRET_NAME_2, TEST_SECRET_NAME_3]
+        secret_names = [short_uid(), short_uid(), short_uid()]
         arns = []
         for secret_name in secret_names:
             rs = self.secretsmanager_client.create_secret(
@@ -100,7 +73,6 @@ class SecretsManagerTest(unittest.TestCase):
                 SecretString='my_secret_{}'.format(secret_name),
                 Description='testing creation of secrets'
             )
-
             arns.append(rs['ARN'])
 
         rs = self.secretsmanager_client.list_secrets()
@@ -115,10 +87,7 @@ class SecretsManagerTest(unittest.TestCase):
 
         # clean up
         for secret_name in secret_names:
-            self.secretsmanager_client.delete_secret(
-                SecretId=secret_name,
-                ForceDeleteWithoutRecovery=True
-            )
+            self.secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)
 
     def test_get_random_exclude_characters_and_symbols(self):
         random_password = self.secretsmanager_client.get_random_password(
@@ -129,34 +98,23 @@ class SecretsManagerTest(unittest.TestCase):
         self.assertTrue(all([c not in 'xyzDje@?!.' for c in random_password['RandomPassword']]))
 
     def test_resource_policy(self):
+        secret_name = 's-%s' % short_uid()
+
         self.secretsmanager_client.create_secret(
-            Name=TEST_SECRET_NAME_1,
-            SecretString='my_secret',
-            Description='testing creation of secrets'
-        )
+            Name=secret_name, SecretString='my_secret', Description='testing creation of secrets')
 
         self.secretsmanager_client.put_resource_policy(
-            SecretId=TEST_SECRET_NAME_1,
-            ResourcePolicy=json.dumps(RESOURCE_POLICY)
-        )
+            SecretId=secret_name, ResourcePolicy=json.dumps(RESOURCE_POLICY))
 
-        rs = self.secretsmanager_client.get_resource_policy(
-            SecretId=TEST_SECRET_NAME_1
-        )
+        rs = self.secretsmanager_client.get_resource_policy(SecretId=secret_name)
 
         policy = json.loads(rs['ResourcePolicy'])
 
         self.assertEqual(policy['Version'], RESOURCE_POLICY['Version'])
         self.assertEqual(policy['Statement'], RESOURCE_POLICY['Statement'])
 
-        rs = self.secretsmanager_client.delete_resource_policy(
-            SecretId=TEST_SECRET_NAME_1
-        )
-
+        rs = self.secretsmanager_client.delete_resource_policy(SecretId=secret_name)
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         # clean up
-        self.secretsmanager_client.delete_secret(
-            SecretId=TEST_SECRET_NAME_1,
-            ForceDeleteWithoutRecovery=True
-        )
+        self.secretsmanager_client.delete_secret(SecretId=secret_name, ForceDeleteWithoutRecovery=True)

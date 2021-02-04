@@ -92,9 +92,9 @@ class ProxyListenerEdge(ProxyListener):
         if isinstance(data, dict):
             data = json.dumps(data)
 
-        encoding_type = headers.get('content-encoding') or ''
-        if encoding_type.upper() == GZIP_ENCODING and api is not S3:
-            headers.set('content-encoding', IDENTITY_ENCODING)
+        encoding_type = headers.get('Content-Encoding') or ''
+        if encoding_type.upper() == GZIP_ENCODING.upper() and api not in [S3]:
+            headers.set('Content-Encoding', IDENTITY_ENCODING)
             data = gzip.decompress(data)
 
         lock_ctx = BOOTSTRAP_LOCK
@@ -116,7 +116,7 @@ def do_forward_request(api, method, path, data, headers, port=None):
         result = do_forward_request_inmem(api, method, path, data, headers, port=port)
     else:
         result = do_forward_request_network(port, method, path, data, headers)
-    if hasattr(result, 'status_code') and result.status_code >= 400 and method == 'OPTIONS':
+    if hasattr(result, 'status_code') and int(result.status_code) >= 400 and method == 'OPTIONS':
         # fall back to successful response for OPTIONS requests
         return 200
     return result

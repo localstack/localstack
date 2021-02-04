@@ -53,6 +53,7 @@ VERSION_LATEST = '$LATEST'
 FUNCTION_MAX_SIZE = 69905067
 
 BATCH_SIZE_RANGES = {
+    'kafka': (100, 10000),
     'kinesis': (100, 10000),
     'dynamodb': (100, 1000),
     'sqs': (10, 10)
@@ -161,7 +162,9 @@ def func_qualifier(function_name, qualifier=None):
 
 
 def check_batch_size_range(source_arn, batch_size=None):
-    batch_size_entry = BATCH_SIZE_RANGES.get(source_arn.split(':')[2].lower())
+    source = source_arn.split(':')[2].lower()
+    source = 'kafka' if 'secretsmanager' in source else source
+    batch_size_entry = BATCH_SIZE_RANGES.get(source)
     if not batch_size_entry:
         raise ValueError(
             INVALID_PARAMETER_VALUE_EXCEPTION, 'Unsupported event source type'
@@ -185,40 +188,60 @@ def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
     lambda_details.cwd = lambda_cwd or lambda_details.cwd
 
 
-def add_event_source(function_name, source_arn, enabled, batch_size=None):
+def build_mapping_obj(data):
+    mapping = {}
+    function_name = data['FunctionName']
+    enabled = data.get('Enabled', True)
+    batch_size = data.get('BatchSize')
+    mapping['UUID'] = str(uuid.uuid4())
+    mapping['FunctionArn'] = func_arn(function_name)
+    mapping['LastProcessingResult'] = 'OK'
+    mapping['StateTransitionReason'] = 'User action'
+    mapping['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
+    mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
+    if 'SelfManagedEventSource' in data:
+        source_arn = data['SourceAccessConfigurations'][0]['URI']
+        mapping['SelfManagedEventSource'] = data['SelfManagedEventSource']
+        mapping['Topics'] = data['Topics']
+        mapping['SourceAccessConfigurations'] = data['SourceAccessConfigurations']
+    else:
+        source_arn = data['EventSourceArn']
+        mapping['EventSourceArn'] = source_arn
+        mapping['StartingPosition'] = LAMBDA_DEFAULT_STARTING_POSITION
     batch_size = check_batch_size_range(source_arn, batch_size)
-    region = LambdaRegion.get()
+    mapping['BatchSize'] = batch_size
+    return mapping
 
-    mapping = {
-        'UUID': str(uuid.uuid4()),
-        'StateTransitionReason': 'User action',
-        'LastModified': float(time.mktime(datetime.utcnow().timetuple())),
-        'BatchSize': batch_size,
-        'State': 'Enabled' if enabled in [True, None] else 'Disabled',
-        'FunctionArn': func_arn(function_name),
-        'EventSourceArn': source_arn,
-        'LastProcessingResult': 'OK',
-        'StartingPosition': LAMBDA_DEFAULT_STARTING_POSITION
-    }
+
+def add_event_source(data):
+    region = LambdaRegion.get()
+    mapping = build_mapping_obj(data)
     region.event_source_mappings.append(mapping)
     return mapping
 
 
-def update_event_source(uuid_value, function_name, enabled, batch_size):
+def update_event_source(uuid_value, data):
     region = LambdaRegion.get()
-    for m in region.event_source_mappings:
-        if uuid_value == m['UUID']:
+    function_name = data.get('FunctionName') or ''
+    batch_size = None
+    enabled = data.get('Enabled', True)
+    for mapping in region.event_source_mappings:
+        if uuid_value == mapping['UUID']:
             if function_name:
-                m['FunctionArn'] = func_arn(function_name)
-
-            batch_size = check_batch_size_range(m['EventSourceArn'], batch_size or m['BatchSize'])
-
-            m['BatchSize'] = batch_size
-            m['State'] = 'Enabled' if enabled is True else 'Disabled'
-            m['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
-
-            return m
-
+                mapping['FunctionArn'] = func_arn(function_name)
+            batch_size = data.get('BatchSize')
+            if 'SelfManagedEventSource' in mapping:
+                batch_size = check_batch_size_range(
+                    mapping['SourceAccessConfigurations'][0]['URI'],
+                    batch_size or mapping['BatchSize'])
+            else:
+                batch_size = check_batch_size_range(mapping['EventSourceArn'], batch_size or mapping['BatchSize'])
+            mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
+            mapping['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
+            mapping['BatchSize'] = batch_size
+            if 'SourceAccessConfigurations' in (mapping and data):
+                mapping['SourceAccessConfigurations'] = data['SourceAccessConfigurations']
+            return mapping
     return {}
 
 
@@ -1461,9 +1484,7 @@ def create_event_source_mapping():
     """
     data = json.loads(to_str(request.data))
     try:
-        mapping = add_event_source(
-            data['FunctionName'], data['EventSourceArn'], data.get('Enabled'), data.get('BatchSize')
-        )
+        mapping = add_event_source(data)
         return jsonify(mapping)
     except ValueError as error:
         error_type, message = error.args
@@ -1479,16 +1500,12 @@ def update_event_source_mapping(mapping_uuid):
             - name: 'request'
               in: body
     """
-    data = json.loads(request.data)
+    data = json.loads(to_str(request.data))
     if not mapping_uuid:
         return jsonify({})
 
-    function_name = data.get('FunctionName') or ''
-    enabled = data.get('Enabled', True)
-    batch_size = data.get('BatchSize')
-
     try:
-        mapping = update_event_source(mapping_uuid, function_name, enabled, batch_size)
+        mapping = update_event_source(mapping_uuid, data)
         return jsonify(mapping)
     except ValueError as error:
         error_type, message = error.args
