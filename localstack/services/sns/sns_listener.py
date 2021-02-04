@@ -17,7 +17,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
-from localstack.utils.common import timestamp_millis, short_uid, to_str, to_bytes, start_thread
+from localstack.utils.common import parse_request_data, timestamp_millis, short_uid, to_str, to_bytes, start_thread
 from localstack.utils.persistence import PersistingProxyListener
 
 # set up logger
@@ -37,6 +37,9 @@ PLATFORM_ENDPOINT_MESSAGES = {}
 
 # maps phone numbers to list of sent messages
 SMS_MESSAGES = []
+
+# actions to be skipped from persistence
+SKIP_PERSISTENCE_ACTIONS = ['Subscribe', 'ConfirmSubscription', 'Unsubscribe']
 
 
 class ProxyListenerSNS(PersistingProxyListener):
@@ -241,6 +244,13 @@ class ProxyListenerSNS(PersistingProxyListener):
                     event_publisher.EVENT_SNS_DELETE_TOPIC,
                     payload={'t': event_publisher.get_hash(topic_arn)}
                 )
+
+    def should_persist(self, method, path, data, headers, response):
+        req_params = parse_request_data(method, path, data)
+        action = req_params.get('Action', '')
+        if action in SKIP_PERSISTENCE_ACTIONS:
+            return False
+        return super(ProxyListenerSNS, self).should_persist(method, path, data, headers, response)
 
 
 # instantiate listener
