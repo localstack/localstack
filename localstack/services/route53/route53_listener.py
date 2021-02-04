@@ -8,9 +8,8 @@ from localstack.utils.aws.aws_responses import requests_response
 
 class Route53Backend(RegionBackend):
     def __init__(self):
-        # maps association ID to details
+        # maps zone ID to association details
         self.vpc_hosted_zone_associations = {}
-        self.domains = {}
 
 
 class ProxyListenerRoute53(PersistingProxyListener):
