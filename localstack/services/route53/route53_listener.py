@@ -1,6 +1,6 @@
 import xmltodict
 from six.moves.urllib.parse import urlparse
-from localstack.utils.common import short_uid, to_str, timestamp_millis
+from localstack.utils.common import short_uid, to_str, timestamp_millis, parse_request_data
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.generic_proxy import RegionBackend
 from localstack.utils.aws.aws_responses import requests_response
@@ -20,12 +20,35 @@ class ProxyListenerRoute53(PersistingProxyListener):
         parsed_url = urlparse(path)
         action = parsed_url.path.split('/')[2]
 
+        if action == 'change':
+            if method == 'GET':
+                resource_id = parsed_url.path.split('/')[-1]
+                change_response = {
+                    'GetChangeResponse': {
+                        'ChangeInfo': {
+                            'Id': resource_id,
+                            'Status': 'INSYNC',
+                            'SubmittedAt': timestamp_millis()
+                        }
+                    }
+                }
+                body = xmltodict.unparse(change_response)
+                response = requests_response(body)
+                return response
+
+        return True
+
+    def return_response(self, method, path, data, headers, response):
+        if response.status_code < 400 or response.status_code >= 500:
+            return
+
+        region_details = Route53Backend.get()
+
         is_associate = path.endswith('/associatevpc')
         if is_associate or path.endswith('/disassociatevpc'):
-            path_parts = path.split('/')
-            zone_id = path_parts[3]
+            path_parts = path.lstrip('/').split('/')
+            zone_id = path_parts[2]
             req_data = xmltodict.parse(to_str(data))
-            region_details = Route53Backend.get()
             zone_details = region_details.vpc_hosted_zone_associations.get(zone_id) or []
             if is_associate:
                 assoc_id = short_uid()
@@ -60,23 +83,15 @@ class ProxyListenerRoute53(PersistingProxyListener):
             response = requests_response(body)
             return response
 
-        if action == 'change':
-            if method == 'GET':
-                resource_id = parsed_url.path.split('/')[-1]
-                change_response = {
-                    'GetChangeResponse': {
-                        'ChangeInfo': {
-                            'Id': resource_id,
-                            'Status': 'INSYNC',
-                            'SubmittedAt': timestamp_millis()
-                        }
-                    }
-                }
-                body = xmltodict.unparse(change_response)
-                response = requests_response(body)
-                return response
-
-        return True
+        if '/hostedzonesbyvpc' in path and method == 'GET':
+            req_data = parse_request_data(method, path, data)
+            vpc_id = req_data.get('vpcid')
+            zone_details = region_details.vpc_hosted_zone_associations
+            result = [z for z_list in zone_details.values() for z in z_list if z['VPC']['VPCId'] == vpc_id]
+            response = {'ListHostedZonesByVPCResponse': {'HostedZoneSummaries': {'HostedZoneSummary': result}}}
+            body = xmltodict.unparse(response)
+            response = requests_response(body)
+            return response
 
 
 # instantiate listener

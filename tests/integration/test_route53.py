@@ -19,12 +19,24 @@ class TestRoute53(unittest.TestCase):
 
         response = route53.create_hosted_zone(Name='zone123', CallerReference='ref123')
         zone_id = response['HostedZone']['Id']
+        zone_id = zone_id.replace('/hostedzone/', '')
 
-        vpc = ec2.create_vpc(CidrBlock='10.0.0.0/16')
+        # associate zone with VPC
+        vpc = ec2.create_vpc(CidrBlock='10.0.0.0/24')
         vpc_id = vpc['Vpc']['VpcId']
+        vpc_region = aws_stack.get_region()
         result = route53.associate_vpc_with_hosted_zone(HostedZoneId=zone_id,
-            VPC={'VPCRegion': aws_stack.get_region(), 'VPCId': vpc_id}, Comment='test 123')
+            VPC={'VPCRegion': vpc_region, 'VPCId': vpc_id}, Comment='test 123')
         self.assertTrue(result['ChangeInfo'].get('Id'))
+
+        # list zones by VPC
+        result = route53.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=vpc_region)['HostedZoneSummaries']
+        self.assertIn({'HostedZoneId': zone_id}, result)
+
+        # list zones by name
+        result = route53.list_hosted_zones_by_name(DNSName='test').get('HostedZones')
+        # TODO: add test which checks content of result list
+        self.assertTrue(isinstance(result, list))
 
         result = route53.disassociate_vpc_from_hosted_zone(
             HostedZoneId=zone_id, VPC={'VPCRegion': aws_stack.get_region(), 'VPCId': vpc_id}, Comment='test2')
