@@ -16,7 +16,6 @@ from datetime import datetime
 from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
-from moto.apigateway.models import apigateway_backends
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
@@ -267,13 +266,6 @@ def use_docker():
     return DO_USE_DOCKER
 
 
-def get_stage_variables(api_id, stage):
-    region_name = [name for name, region in apigateway_backends.items() if api_id in region.apis][0]
-    api_gateway_client = aws_stack.connect_to_service('apigateway', region_name=region_name)
-    response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
-    return response.get('variables', None)
-
-
 def fix_proxy_path_params(path_params):
     proxy_path_param_value = path_params.get('proxy+')
     if not proxy_path_param_value:
@@ -294,8 +286,8 @@ def message_attributes_to_lower(message_attrs):
 
 
 def process_apigateway_invocation(func_arn, path, payload, stage, api_id, headers={},
-                                  resource_path=None, method=None, path_params={},
-                                  query_string_params=None, request_context={}, event_context={}):
+                                  resource_path=None, method=None, path_params={}, query_string_params=None,
+                                  stage_variables={}, request_context={}, event_context={}):
     try:
         resource_path = resource_path or path
         path_params = dict(path_params)
@@ -312,7 +304,7 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
             'queryStringParameters': query_string_params,
             'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params),
             'requestContext': request_context,
-            'stageVariables': get_stage_variables(api_id, stage),
+            'stageVariables': stage_variables,
         }
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
         asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
@@ -557,7 +549,8 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False, callback=None):
-    region = LambdaRegion.get()
+    region_name = func_arn.split(':')[3]
+    region = LambdaRegion.get(region_name)
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr

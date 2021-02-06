@@ -5,8 +5,9 @@ import logging
 import requests
 import datetime
 from flask import Response as FlaskResponse
-from six.moves.urllib_parse import urljoin
 from requests.models import Response
+from six.moves.urllib_parse import urljoin
+from moto.apigateway.models import apigateway_backends
 from localstack.utils import common
 from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
@@ -288,9 +289,11 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
     integration_type = integration.get('type') or integration.get('integrationType')
     uri = integration.get('uri') or integration.get('integrationUri')
 
-    if uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri:
+    if (uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri) or uri.startswith('arn:aws:lambda'):
         if integration_type in ['AWS', 'AWS_PROXY']:
-            func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
+            func_arn = uri
+            if ':lambda:path' in uri:
+                func_arn = uri.split(':lambda:path')[1].split('functions/')[1].split('/invocations')[0]
             data_str = json.dumps(data) if isinstance(data, (dict, list)) else to_str(data)
 
             try:
@@ -306,10 +309,12 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = get_lambda_event_request_context(method, path, data, headers,
                 integration_uri=uri, resource_id=resource_id)
+            stage_variables = get_stage_variables(api_id, stage)
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                 stage, api_id, headers, path_params=path_params, query_string_params=query_string_params,
-                method=method, resource_path=path, request_context=request_context, event_context=context)
+                method=method, resource_path=path, request_context=request_context,
+                event_context=context, stage_variables=stage_variables)
 
             if isinstance(result, FlaskResponse):
                 response = flask_to_requests_response(result)
@@ -431,7 +436,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
                 response = requests_response(event_data, headers=aws_stack.mock_aws_request_headers())
                 return response
         else:
-            msg = 'API Gateway action uri "%s" not yet implemented' % uri
+            msg = 'API Gateway action uri "%s", integration type %s not yet implemented' % (uri, integration_type)
             LOGGER.warning(msg)
             return make_error_response(msg, 404)
 
@@ -463,6 +468,13 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
            (integration_type, method, uri))
     LOGGER.warning(msg)
     return make_error_response(msg, 404)
+
+
+def get_stage_variables(api_id, stage):
+    region_name = [name for name, region in apigateway_backends.items() if api_id in region.apis][0]
+    api_gateway_client = aws_stack.connect_to_service('apigateway', region_name=region_name)
+    response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
+    return response.get('variables', None)
 
 
 def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
