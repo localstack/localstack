@@ -1,4 +1,3 @@
-# noqa
 import os
 import re
 import sys
@@ -23,7 +22,6 @@ from localstack.utils.bootstrap import (
     setup_logging, canonicalize_api_names, load_plugins, in_ci)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
-from localstack.services.es import es_api
 from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
@@ -96,17 +94,6 @@ def start_sns(port=None, asynchronous=False, update_listener=None):
 def start_sts(port=None, asynchronous=False):
     port = port or config.PORT_STS
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
-
-
-def start_acm(port=None, asynchronous=False):
-    port = port or config.PORT_ACM
-    return start_moto_server('acm', port, name='ACM', asynchronous=asynchronous)
-
-
-# TODO move to es_starter.py?
-def start_elasticsearch_service(port=None, asynchronous=False):
-    port = port or config.PORT_ES
-    return start_local_api('ES', port, api='es', method=es_api.serve, asynchronous=asynchronous)
 
 
 def start_firehose(port=None, asynchronous=False):

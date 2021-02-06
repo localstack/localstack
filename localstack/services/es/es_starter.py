@@ -8,8 +8,9 @@ import traceback
 from localstack import config
 from localstack.services import install
 from localstack.utils.aws import aws_stack
+from localstack.services.es import es_api
 from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port, get_service_protocol
-from localstack.services.infra import start_proxy_for_service, do_run
+from localstack.services.infra import start_proxy_for_service, do_run, start_local_api
 
 LOG = logging.getLogger(__name__)
 
@@ -97,3 +98,7 @@ def check_elasticsearch(expect_shutdown=False, print_error=True):
         if print_error:
             LOG.error('Elasticsearch health check to endpoint %s failed (retrying...): %s %s' % (endpoint, e, traceback.format_exc()))
         pass
+
+def start_elasticsearch_service(port=None, asynchronous=False):
+    port = port or config.PORT_ES
+    return start_local_api('ES', port, api='es', method=es_api.serve, asynchronous=asynchronous)
