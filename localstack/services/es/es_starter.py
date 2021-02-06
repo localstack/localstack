@@ -1,6 +1,9 @@
 import os
 import six
+import time
+import json
 import logging
+import requests
 import traceback
 from localstack import config
 from localstack.services import install
@@ -82,16 +85,15 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
     return thread
 
 
-def check_elasticsearch(expect_shutdown=False, print_error=False):
-    out = None
+def check_elasticsearch(expect_shutdown=False, print_error=True):
+    # Check internal endpoint for health
+    endpoint = '%s://%s:%s' % (get_service_protocol(), 'localhost', config.PORT_ELASTICSEARCH)
     try:
-        # check Elasticsearch
-        es = aws_stack.connect_elasticsearch()
-        out = es.cat.aliases()
-    except Exception as e:
+        req = requests.get(endpoint + '/_cluster/health')
+        es_status = json.loads(req.text)
+        es_status = es_status['status']
+        return es_status == 'green' or es_status == 'yellow'
+    except ValueError as e:
         if print_error:
-            LOG.error('Elasticsearch health check failed (retrying...): %s %s' % (e, traceback.format_exc()))
-    if expect_shutdown:
-        assert out is None
-    else:
-        assert isinstance(out, six.string_types)
+            LOG.error('Elasticsearch health check to endpoint %s failed (retrying...): %s %s' % (endpoint, e, traceback.format_exc()))
+        pass
