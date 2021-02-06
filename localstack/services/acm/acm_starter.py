@@ -29,6 +29,7 @@ def apply_patches():
         for key, value in addenda.items():
             if not cert.get(key):
                 cert[key] = value
+        cert['Serial'] = str(cert.get('Serial') or '')
         return result
 
     describe_orig = acm_models.CertBundle.describe
