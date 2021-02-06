@@ -64,8 +64,8 @@ class ElasticsearchTest(unittest.TestCase):
             req = requests.get('http://localhost:4571' + '/_cat/indices/' + ind + '?format=json&pretty')
             self.assertEqual(req.status_code, 200)
             req_result = json.loads(req.text)
-            self.assertIn(req_result['health'], ['green', 'yellow'])
-            self.assertIn(req_result['index'], indexes)
+            self.assertTrue(req_result['health'] in ['green', 'yellow'])
+            self.assertTrue(req_result['index'] in indexes)
 
         es_client = aws_stack.connect_to_service('es')
         domain_name = 'es-%s' % short_uid()
