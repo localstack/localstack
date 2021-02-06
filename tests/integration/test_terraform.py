@@ -21,7 +21,7 @@ class TestTerraform(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         with(INIT_LOCK):
-            run('cd %s; TF_LOG=debug terraform apply -input=false tfplan' % (cls.get_base_dir()))
+            run('cd %s; terraform apply -input=false tfplan' % (cls.get_base_dir()))
 
     @classmethod
     def tearDownClass(cls):
