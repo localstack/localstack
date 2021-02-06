@@ -33,14 +33,16 @@ def do_register_localstack_plugins():
         from localstack.services.plugins import Plugin, register_plugin
 
         from localstack.services.infra import (
-            start_sns, start_elasticsearch_service, start_lambda, start_sts, start_ssm,
-            start_firehose, start_dynamodbstreams, start_acm, start_cloudformation
+            start_sns, start_lambda, start_sts, start_ssm,
+            start_firehose, start_dynamodbstreams, start_cloudformation
         )
+        from localstack.services.acm import acm_starter
         from localstack.services.apigateway import apigateway_listener, apigateway_starter
         from localstack.services.cloudformation import cloudformation_starter, cloudformation_listener
         from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
         from localstack.services.ec2 import ec2_starter, ec2_listener
+        from localstack.services.es import es_starter
         from localstack.services.events import events_listener, events_starter
         from localstack.services.iam import iam_listener, iam_starter
         from localstack.services.kinesis import kinesis_listener, kinesis_starter
@@ -64,7 +66,7 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'acm',
-            start=start_acm))
+            start=acm_starter.start_acm))
 
         register_plugin(Plugin(
             'apigateway',
@@ -106,7 +108,7 @@ def do_register_localstack_plugins():
 
         register_plugin(Plugin(
             'es',
-            start=start_elasticsearch_service))
+            start=es_starter.start_elasticsearch_service))
 
         register_plugin(Plugin(
             'firehose',

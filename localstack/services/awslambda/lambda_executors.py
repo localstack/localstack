@@ -852,7 +852,7 @@ class Util:
 
     @classmethod
     def docker_image_for_lambda(cls, func_details):
-        runtime = func_details.runtime
+        runtime = func_details.runtime or ''
         docker_tag = runtime
         docker_image = config.LAMBDA_CONTAINER_REGISTRY
         # TODO: remove prefix once execution issues are fixed with dotnetcore/python lambdas
