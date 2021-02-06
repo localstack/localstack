@@ -42,6 +42,7 @@ install:
 
 script:
   - set -e # fail fast
+  - make docker-build
   # check if the build environment contains a special command via $CUSTOM_CMD
   - if [ "$CUSTOM_CMD" = rebuild-base-image ]; then make docker-build-base-ci; exit; fi
   # run tests using Python 3 (limit the set of tests to reduce test duration)
