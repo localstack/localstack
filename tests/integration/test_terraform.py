@@ -90,11 +90,13 @@ class TestTerraform(unittest.TestCase):
         apigateway_client = aws_stack.connect_to_service('apigateway')
         rest_apis = apigateway_client.get_rest_apis()
 
+        rest_id = None
         for rest_api in rest_apis['items']:
             if rest_api['name'] == 'test-tf-apigateway':
                 rest_id = rest_api['id']
-                continue
+                break
 
+        self.assertTrue(rest_id)
         resources = apigateway_client.get_resources(restApiId=rest_id)['items'][1:]
         self.assertEqual(len(resources), 2)
 
