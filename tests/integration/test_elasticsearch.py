@@ -60,13 +60,12 @@ class ElasticsearchTest(unittest.TestCase):
             index_path = '{}/{}'.format(self.es_url, index_name)
             requests.put(index_path, headers=COMMON_HEADERS)
 
-        req = requests.get('http://localhost:4571' + '/_cat/indices?format=json&pretty')
-        self.assertEqual(req.status_code, 200)
-
-        req_result = json.loads(req.text)
-        for ind in req_result:
-            self.assertIn(ind['health'], ['green', 'yellow'])
-            self.assertIn(ind['index'], indexes)
+        for ind in indexes:
+            req = requests.get('http://localhost:4571' + '/_cat/indices/' + ind + '?format=json&pretty')
+            self.assertEqual(req.status_code, 200)
+            req_result = json.loads(req.text)
+            self.assertIn(req_result['health'], ['green', 'yellow'])
+            self.assertIn(req_result['index'], indexes)
 
         es_client = aws_stack.connect_to_service('es')
         domain_name = 'es-%s' % short_uid()
