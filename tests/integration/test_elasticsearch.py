@@ -54,7 +54,6 @@ class ElasticsearchTest(unittest.TestCase):
         status = es_client.describe_elasticsearch_domain(DomainName=domain_name)['DomainStatus']
         self.assertEqual(status['ElasticsearchVersion'], '6.8')
 
-
     def test_create_indexes_and_domains(self):
         indexes = ['index1', 'index2']
         for index_name in indexes:
@@ -63,18 +62,17 @@ class ElasticsearchTest(unittest.TestCase):
 
         req = requests.get(self.es_url + '_cat/indices?format=json&pretty')
         req = json.loads(indexes.text)
+
         for ind in req:
             self.assertEqual(req.status_code, 200)
             self.assertEqual(ind['health'], 'yellow')
             self.assertIn(ind['index'], indexes)
 
         es_client = aws_stack.connect_to_service('es')
-
         domain_name = 'es-%s' % short_uid()
         self._create_domain(name=domain_name, version='6.8')
         status = es_client.describe_elasticsearch_domain(DomainName=domain_name)['DomainStatus']
         self.assertTrue(status['DomainStatus']['Created'])
-
 
     def test_domain_creation(self):
         es_client = aws_stack.connect_to_service('es')

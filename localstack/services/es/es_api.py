@@ -235,7 +235,7 @@ def create_domain():
             data['Created'] = True
         else:
             LOG.error('Elasticsearch status is not healthy, please check the application status and logs')
-    except requests.exceptions.ConnectionError as e:
+    except requests.exceptions.ConnectionError:
         # Catch first run
         FuncThread(do_start).start()
         LOG.info('Elasticsearch is starting for the first time, please wait..')
