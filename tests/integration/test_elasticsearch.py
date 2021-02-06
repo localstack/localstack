@@ -61,10 +61,10 @@ class ElasticsearchTest(unittest.TestCase):
             requests.put(index_path, headers=COMMON_HEADERS)
 
         req = requests.get('http://localhost:4571' + '/_cat/indices?format=json&pretty')
-        req = json.loads(req.text)
-
-        for ind in req:
-            self.assertEqual(req.status_code, 200)
+        self.assertEqual(req.status_code, 200)
+        
+        req_result = json.loads(req.text)
+        for ind in req_result:
             self.assertIn(ind['health'], ['green', 'yellow'])
             self.assertIn(ind['index'], indexes)
 
