@@ -60,7 +60,7 @@ class ElasticsearchTest(unittest.TestCase):
             index_path = '{}/{}'.format(self.es_url, index_name)
             requests.put(index_path, headers=COMMON_HEADERS)
 
-        req = requests.get(self.es_url + '_cat/indices?format=json&pretty')
+        req = requests.get(self.es_url + '/_cat/indices?format=json&pretty')
         req = json.loads(indexes.text)
 
         for ind in req:
