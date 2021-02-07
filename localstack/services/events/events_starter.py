@@ -10,7 +10,7 @@ from localstack import config
 from localstack.constants import (
     APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID)
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_bytes, extract_jsonpath
+from localstack.utils.common import short_uid, to_bytes, json_safe, extract_jsonpath
 from localstack.services.infra import start_moto_server
 from localstack.services.events.scheduler import JobScheduler
 from localstack.services.awslambda.lambda_api import run_lambda
@@ -193,7 +193,7 @@ def apply_patches():
                 'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'region': self.region,
                 'resources': event.get('Resources', []),
-                'detail': json.loads(event.get('Detail')),
+                'detail': json_safe(event.get('Detail')),
             }
 
             targets = []

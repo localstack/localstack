@@ -7,7 +7,7 @@ from localstack import config
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import (
-    load_file, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, get_service_protocol
+    load_file, json_safe, retry, short_uid, get_free_tcp_port, wait_for_port_open, to_str, get_service_protocol
 )
 from localstack.services.infra import start_proxy
 from localstack.utils.testutil import check_expected_lambda_log_events_length
@@ -69,7 +69,7 @@ class EventsTest(unittest.TestCase):
                 'Source': 'unittest',
                 'Resources': [],
                 'DetailType': event_type,
-                'Detail': json.dumps(detail)
+                'Detail': json_safe(detail)
             }])
 
         sorted_events_written_to_disk = map(
@@ -80,7 +80,7 @@ class EventsTest(unittest.TestCase):
                                     sorted_events_written_to_disk))
 
         self.assertListEqual(event_details_to_publish,
-                             list(map(lambda event: json.loads(event['Detail']), sorted_events)))
+                             list(map(lambda event: json_safe(event['Detail']), sorted_events)))
 
     def test_list_tags_for_resource(self):
         rule_name = 'rule-{}'.format(short_uid())
@@ -150,7 +150,7 @@ class EventsTest(unittest.TestCase):
                 'EventBusName': bus_name,
                 'Source': TEST_EVENT_PATTERN['Source'][0],
                 'DetailType': TEST_EVENT_PATTERN['detail-type'][0],
-                'Detail': json.dumps(TEST_EVENT_PATTERN['Detail'][0])
+                'Detail': json_safe(TEST_EVENT_PATTERN['Detail'][0])
             }]
         )
 
