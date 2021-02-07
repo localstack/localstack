@@ -4,6 +4,7 @@ import unittest
 from nose.tools import assert_equal, assert_in, assert_not_in
 from botocore.exceptions import ClientError
 from localstack import config
+from localstack.utils import constants
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, retry, safe_requests as requests
 from localstack.services.es.es_api import DEFAULT_ES_VERSION
@@ -15,7 +16,6 @@ COMMON_HEADERS = {
     'Accept-encoding': 'identity'
 }
 TEST_DOMAIN_NAME = 'test_es_domain_1'
-TEST_ENDPOINT_URL = 'http://localhost:4571'
 
 
 class ElasticsearchTest(unittest.TestCase):
@@ -59,7 +59,8 @@ class ElasticsearchTest(unittest.TestCase):
         for index_name in indexes:
             index_path = '{}/{}'.format(self.es_url, index_name)
             requests.put(index_path, headers=COMMON_HEADERS)
-            req = requests.get('http://localhost:4571' + '/_cat/indices/' + index_name + '?format=json&pretty')
+            endpoint = 'http://localhost:{}/_cat/indices/{}?format=json&pretty'.format(config.PORT_ELASTICSEARCH, index_name)
+            req = requests.get(endpoint)
             self.assertEqual(req.status_code, 200)
             req_result = json.loads(req.text)
             self.assertTrue(req_result[0]['health'] in ['green', 'yellow'])

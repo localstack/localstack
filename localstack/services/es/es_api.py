@@ -191,13 +191,7 @@ def start_elasticsearch_instance(version):
 
     # install ES version
     install_version = get_install_version_for_api_version(version)
-
-    t1 = es_starter.start_elasticsearch(asynchronous=False, version=install_version)
-    # Ensure that all infra components are up and running
-    check_infra(apis=[], additional_checks=[es_starter.check_elasticsearch])
-    time.sleep(15)
-    LOG.info('Elasticsearch started')
-    return t1
+    es_starter.start_elasticsearch(asynchronous=False, version=install_version)
 
 
 def cleanup_elasticsearch_instance(status):
@@ -241,7 +235,6 @@ def create_domain():
         FuncThread(do_start).start()
         LOG.info('Elasticsearch is starting for the first time, please wait..')
         data['Created'] = True
-        pass
 
     result = get_domain_status(domain_name)
     # record event

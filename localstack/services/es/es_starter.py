@@ -5,6 +5,7 @@ import logging
 import requests
 import traceback
 from localstack import config
+from localstack.utils import constants
 from localstack.services import install
 from localstack.services.es import es_api
 from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port, get_service_protocol
@@ -86,7 +87,7 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
 
 def check_elasticsearch(expect_shutdown=False, print_error=True):
     # Check internal endpoint for health
-    endpoint = '%s://%s:%s' % (get_service_protocol(), 'localhost', config.PORT_ELASTICSEARCH)
+    endpoint = '%s://%s:%s' % (get_service_protocol(), constants.LOCALHOST, config.PORT_ELASTICSEARCH)
     try:
         req = requests.get(endpoint + '/_cluster/health')
         es_status = json.loads(req.text)
