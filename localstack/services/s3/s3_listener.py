@@ -271,13 +271,14 @@ def send_notification_for_subscriber(notif, bucket_name, object_path, version_id
             '/'.join(NOTIFICATION_DESTINATION_TYPES))
 
 
+# TODO: refactor/unify the 3 functions below...
 def get_cors(bucket_name):
     bucket_name = normalize_bucket_name(bucket_name)
     response = Response()
 
     exists, code = bucket_exists(bucket_name)
     if not exists:
-        response.status_code = code
+        response.status_code = int(code)
         return response
 
     cors = BUCKET_CORS.get(bucket_name)
@@ -297,7 +298,7 @@ def set_cors(bucket_name, cors):
 
     exists, code = bucket_exists(bucket_name)
     if not exists:
-        response.status_code = code
+        response.status_code = int(code)
         return response
 
     if not isinstance(cors, dict):
@@ -314,7 +315,7 @@ def delete_cors(bucket_name):
 
     exists, code = bucket_exists(bucket_name)
     if not exists:
-        response.status_code = code
+        response.status_code = int(code)
         return response
 
     BUCKET_CORS.pop(bucket_name, {})
@@ -434,7 +435,7 @@ def is_url_already_expired(expiry_timestamp):
     return False
 
 
-def add_reponse_metadata_headers(response):
+def add_response_metadata_headers(response):
     if response.headers.get('content-language') is None:
         response.headers['content-language'] = 'en-US'
     if response.headers.get('cache-control') is None:
@@ -551,7 +552,7 @@ def fix_metadata_key_underscores(request_headers={}, response=None):
             if key != key_new:
                 request_headers[key_new] = request_headers.pop(key)
                 updated = True
-    if response:
+    if response is not None:
         for key in list(response.headers.keys()):
             if key.lower().startswith(meta_header_prefix):
                 key_new = meta_header_prefix + key[prefix_len:].replace(underscore_replacement, '_')
@@ -1333,7 +1334,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
             # Remove body from PUT response on presigned URL
             # https://github.com/localstack/localstack/issues/1317
-            if method == 'PUT' and response.status_code < 400 and ('X-Amz-Security-Token=' in path or
+            if method == 'PUT' and int(response.status_code) < 400 and ('X-Amz-Security-Token=' in path or
                     'X-Amz-Credential=' in path or 'AWSAccessKeyId=' in path):
                 response._content = ''
                 reset_content_length = True
@@ -1348,7 +1349,7 @@ class ProxyListenerS3(PersistingProxyListener):
             # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
             if method == 'GET':
                 add_accept_range_header(response)
-                add_reponse_metadata_headers(response)
+                add_response_metadata_headers(response)
                 if is_object_expired(path):
                     return no_such_key_error(path, headers.get('x-amz-request-id'), 400)
 

@@ -91,9 +91,8 @@ class CloudWatchLogsTest(unittest.TestCase):
             logGroupName=group
         )
 
-    def test_put_subscribe_policy(self):
+    def test_put_subscription_filter_lambda(self):
         lambda_client = aws_stack.connect_to_service('lambda')
-        log_client = aws_stack.connect_to_service('logs')
 
         testutil.create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON3, libs=TEST_LAMBDA_LIBS,
@@ -104,16 +103,16 @@ class CloudWatchLogsTest(unittest.TestCase):
 
         log_group_name = '/aws/lambda/{}'.format(TEST_LAMBDA_NAME_PY3)
 
-        log_client.put_subscription_filter(
+        self.logs_client.put_subscription_filter(
             logGroupName=log_group_name,
             filterName='test',
             filterPattern='',
             destinationArn=func_arn(TEST_LAMBDA_NAME_PY3),
         )
         stream = 'ls-%s' % short_uid()
-        log_client.create_log_stream(logGroupName=log_group_name, logStreamName=stream)
+        self.logs_client.create_log_stream(logGroupName=log_group_name, logStreamName=stream)
 
-        log_client.put_log_events(
+        self.logs_client.put_log_events(
             logGroupName=log_group_name,
             logStreamName=stream,
             logEvents=[
@@ -122,7 +121,7 @@ class CloudWatchLogsTest(unittest.TestCase):
             ],
         )
 
-        resp2 = log_client.describe_subscription_filters(logGroupName=log_group_name)
+        resp2 = self.logs_client.describe_subscription_filters(logGroupName=log_group_name)
         self.assertEqual(len(resp2['subscriptionFilters']), 1)
 
         def check_invocation():
@@ -130,3 +129,141 @@ class CloudWatchLogsTest(unittest.TestCase):
             self.assertEqual(len(events), 2)
 
         retry(check_invocation, retries=6, sleep=3.0)
+
+    def test_put_subscription_filter_firehose(self):
+        log_group = 'lg-%s' % short_uid()
+        log_stream = 'ls-%s' % short_uid()
+        s3_bucket = 's3-%s' % short_uid()
+        s3_bucket_arn = 'arn:aws:s3:::{}'.format(s3_bucket)
+        firehose = 'firehose-%s' % short_uid()
+
+        s3_client = aws_stack.connect_to_service('s3')
+        firehose_client = aws_stack.connect_to_service('firehose')
+
+        s3_client.create_bucket(Bucket=s3_bucket)
+        response = firehose_client.create_delivery_stream(
+            DeliveryStreamName=firehose,
+            S3DestinationConfiguration={
+                'BucketARN': s3_bucket_arn,
+                'RoleARN': 'arn:aws:iam::000000000000:role/FirehosetoS3Role'
+            }
+        )
+        firehose_arn = response['DeliveryStreamARN']
+
+        self.logs_client.create_log_group(
+            logGroupName=log_group
+        )
+        self.logs_client.create_log_stream(
+            logGroupName=log_group,
+            logStreamName=log_stream
+        )
+
+        self.logs_client.put_subscription_filter(
+            logGroupName=log_group,
+            filterName='Destination',
+            filterPattern='',
+            destinationArn=firehose_arn,
+        )
+
+        self.logs_client.put_log_events(
+            logGroupName=log_group,
+            logStreamName=log_stream,
+            logEvents=[
+                {'timestamp': 0, 'message': 'test'},
+                {'timestamp': 0, 'message': 'test 2'},
+            ]
+        )
+
+        self.logs_client.put_log_events(
+            logGroupName=log_group,
+            logStreamName=log_stream,
+            logEvents=[
+                {'timestamp': 0, 'message': 'test'},
+                {'timestamp': 0, 'message': 'test 2'},
+            ]
+        )
+
+        response = s3_client.list_objects(
+            Bucket=s3_bucket
+        )
+        self.assertEqual(len(response['Contents']), 2)
+
+        # clean up
+        self.logs_client.delete_log_stream(
+            logGroupName=log_group,
+            logStreamName=log_stream
+        )
+        self.logs_client.delete_log_group(
+            logGroupName=log_group
+        )
+        firehose_client.delete_delivery_stream(
+            DeliveryStreamName=firehose,
+            AllowForceDelete=True
+        )
+
+    def test_put_subscription_filter_kinesis(self):
+        log_group = 'lg-%s' % short_uid()
+        log_stream = 'ls-%s' % short_uid()
+        kinesis = 'kinesis-%s' % short_uid()
+
+        kinesis_client = aws_stack.connect_to_service('kinesis')
+
+        self.logs_client.create_log_group(
+            logGroupName=log_group
+        )
+        self.logs_client.create_log_stream(
+            logGroupName=log_group,
+            logStreamName=log_stream
+        )
+
+        kinesis_client.create_stream(
+            StreamName=kinesis,
+            ShardCount=1
+        )
+
+        kinesis_arn = kinesis_client.describe_stream(
+            StreamName=kinesis
+        )['StreamDescription']['StreamARN']
+
+        self.logs_client.put_subscription_filter(
+            logGroupName=log_group,
+            filterName='Destination',
+            filterPattern='',
+            destinationArn=kinesis_arn,
+        )
+
+        def put_event():
+            self.logs_client.put_log_events(
+                logGroupName=log_group,
+                logStreamName=log_stream,
+                logEvents=[
+                    {'timestamp': 0, 'message': 'test'},
+                    {'timestamp': 0, 'message': 'test 2'},
+                ]
+            )
+
+        retry(put_event, retries=6, sleep=3.0)
+
+        shard_iterator = kinesis_client.get_shard_iterator(
+            StreamName=kinesis,
+            ShardId='shardId-000000000000',
+            ShardIteratorType='TRIM_HORIZON'
+        )['ShardIterator']
+
+        response = kinesis_client.get_records(
+            ShardIterator=shard_iterator
+        )
+        self.assertEqual(len(response['Records']), 1)
+
+        # clean up
+        self.logs_client.delete_log_stream(
+            logGroupName=log_group,
+            logStreamName=log_stream
+        )
+        self.logs_client.delete_log_group(
+            logGroupName=log_group
+        )
+        response = kinesis_client.delete_stream(
+            StreamName=kinesis,
+            EnforceConsumerDeletion=True
+        )

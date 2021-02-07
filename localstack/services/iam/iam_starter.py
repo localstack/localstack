@@ -1,12 +1,12 @@
+import re
 import json
-import uuid
 from copy import deepcopy
 from urllib.parse import quote
 from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.models import (
     iam_backend as moto_iam_backend, aws_managed_policies,
-    AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy, User
+    AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy
 )
 from localstack import config
 from localstack.services.infra import start_moto_server
@@ -117,39 +117,19 @@ def apply_patches():
 
     IAMPolicyDocumentValidator._validate_resource_syntax = _validate_resource_syntax
 
-    def iam_response_create_user(self):
-        user = moto_iam_backend.create_user(
-            self._get_param('UserName'),
-            self._get_param('Path'),
-            self._get_multi_param('Tags.member')
-        )
-
-        template = self.response_template(USER_RESPONSE_TEMPLATE)
-        return template.render(
-            action='Create',
-            user=user,
-            request_id=str(uuid.uuid4())
-        )
-
-    IamResponse.create_user = iam_response_create_user
-
     def iam_response_get_user(self):
-        user_name = self._get_param('UserName')
-        if not user_name:
-            access_key_id = self.get_current_user()
-            user = moto_iam_backend.get_user_from_access_key_id(access_key_id)
-            if user is None:
-                user = User('default_user')
-        else:
-            user = moto_iam_backend.get_user(user_name)
+        result = iam_response_get_user_orig(self)
+        user_name = re.sub(r'.*<UserName>\s*([^\s]+)\s*</UserName>.*', r'\1',
+            result, flags=re.MULTILINE | re.DOTALL)
+        user = moto_iam_backend.users[user_name]
+        tags = moto_iam_backend.tagger.list_tags_for_resource(user.arn)
+        if tags and '<Tags>' not in result:
+            tags_str = ''.join([
+                '<member><Key>%s</Key><Value>%s</Value></member>' % (t['Key'], t['Value']) for t in tags['Tags']])
+            result = result.replace('</Arn>', '</Arn><Tags>%s</Tags>' % tags_str)
+        return result
 
-        template = self.response_template(USER_RESPONSE_TEMPLATE)
-        return template.render(
-            action='Get',
-            user=user,
-            request_id=str(uuid.uuid4())
-        )
-
+    iam_response_get_user_orig = IamResponse.get_user
     IamResponse.get_user = iam_response_get_user
 
     def iam_response_delete_policy(self):
@@ -254,20 +234,6 @@ def apply_patches():
             pass
 
     InlinePolicy.unapply_policy = inline_policy_unapply_policy
-
-    # TODO We already supported InstanceProfile resource in CFN
-    # def instance_profile_create_from_cloudformation(resource_physical_name, cloudformation_json, region_name):
-    #     properties = cloudformation_json['Properties']
-    #
-    #     role_ids = [role.id for role in moto_iam_backend.roles.values() if role.name in properties['Roles']]
-    #
-    #     return moto_iam_backend.create_instance_profile(
-    #         name=resource_physical_name,
-    #         path=properties.get('Path', '/'),
-    #         role_ids=role_ids,
-    #     )
-    #
-    # InstanceProfile.create_from_cloudformation_json = instance_profile_create_from_cloudformation
 
 
 def start_iam(port=None, asynchronous=False, update_listener=None):

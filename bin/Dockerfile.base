@@ -33,6 +33,8 @@ RUN /usr/lib/jvm/java-11-openjdk/bin/jlink --add-modules \
 java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
 # jdk.unsupported contains sun.misc.Unsafe which is required by certain dependencies
 jdk.unsupported,\
+# add ability to open ZIP/JAR files
+jdk.zipfs,\
 # Elasticsearch 7+ crashes without Thai Segmentation support
 jdk.localedata --include-locales en,th \
     --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \

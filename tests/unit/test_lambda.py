@@ -11,6 +11,7 @@ from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
 
 TEST_EVENT_SOURCE_ARN = 'arn:aws:sqs:eu-west-1:000000000000:testq'
+TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN = 'arn:aws:secretsmanager:us-east-1:000000000000:secret:mysecret-kUBhE'
 
 
 class TestLambdaAPI(unittest.TestCase):
@@ -234,6 +235,23 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual(1, len(eventSourceMappings))
         self.assertEqual('Enabled', eventSourceMappings[0]['State'])
 
+    def test_create_event_source_mapping_self_managed_event_source(self):
+        self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+            data=json.dumps({'FunctionName': 'test-lambda-function',
+                'Topics': ['test'],
+                'SourceAccessConfigurations': [
+                    {'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}
+                ],
+                'SelfManagedEventSource': {'Endpoints': {'KAFKA_BOOTSTRAP_SERVERS': ['127.0.0.1:9092']}}
+            }))
+        listResponse = self.client.get('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT))
+        listResult = json.loads(listResponse.get_data())
+
+        eventSourceMappings = listResult.get('EventSourceMappings')
+
+        self.assertEqual(1, len(eventSourceMappings))
+        self.assertEqual('Enabled', eventSourceMappings[0]['State'])
+
     def test_create_disabled_event_source_mapping(self):
         createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
                             data=json.dumps({'FunctionName': 'test-lambda-function',
@@ -254,6 +272,30 @@ class TestLambdaAPI(unittest.TestCase):
                             data=json.dumps({'FunctionName': 'test-lambda-function',
                                              'EventSourceArn': TEST_EVENT_SOURCE_ARN,
                                              'Enabled': 'true'}))
+        createResult = json.loads(createResponse.get_data())
+
+        putResponse = self.client.put('{0}/event-source-mappings/{1}'.format(lambda_api.PATH_ROOT,
+                        createResult.get('UUID')), data=json.dumps({'Enabled': 'false'}))
+        putResult = json.loads(putResponse.get_data())
+
+        self.assertEqual('Disabled', putResult['State'])
+
+        getResponse = self.client.get('{0}/event-source-mappings/{1}'.format(lambda_api.PATH_ROOT,
+                        createResult.get('UUID')))
+        getResult = json.loads(getResponse.get_data())
+
+        self.assertEqual('Disabled', getResult['State'])
+
+    def test_update_event_source_mapping_self_managed_event_source(self):
+        createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+            data=json.dumps({'FunctionName': 'test-lambda-function',
+                'Topics': ['test'],
+                'SourceAccessConfigurations': [
+                    {'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}
+                ],
+                'SelfManagedEventSource': {'Endpoints': {'KAFKA_BOOTSTRAP_SERVERS': ['127.0.0.1:9092']}},
+                'Enabled': 'true'
+            }))
         createResult = json.loads(createResponse.get_data())
 
         putResponse = self.client.put('{0}/event-source-mappings/{1}'.format(lambda_api.PATH_ROOT,
