@@ -508,7 +508,7 @@ def fix_range_content_type(bucket_name, path, headers, response):
     if 'Range' not in headers:
         return
 
-    if response.status_code == 404:
+    if response.status_code >= 400:
         return
 
     s3_client = aws_stack.connect_to_service('s3')
