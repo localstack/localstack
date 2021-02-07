@@ -2,7 +2,7 @@ import os
 import unittest
 import threading
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import run, start_worker_thread, is_command_available
+from localstack.utils.common import run, start_worker_thread, is_command_available, rm_rf
 
 BUCKET_NAME = 'tf-bucket'
 QUEUE_NAME = 'tf-queue'
@@ -35,8 +35,12 @@ class TestTerraform(unittest.TestCase):
         def _run(*args):
             with(INIT_LOCK):
                 base_dir = cls.get_base_dir()
-                if not os.path.exists(os.path.join(base_dir, '.terraform')):
+                if not os.path.exists(os.path.join(base_dir, '.terraform', 'plugins')):
                     run('cd %s; terraform init -input=false' % base_dir)
+                # remove any cache files from previous runs
+                for tf_file in ['tfplan', 'terraform.tfstate', 'terraform.tfstate.backup']:
+                    rm_rf(os.path.join(base_dir, tf_file))
+                # create TF plan
                 run('cd %s; terraform plan -out=tfplan -input=false' % base_dir)
         start_worker_thread(_run)
 
@@ -86,11 +90,13 @@ class TestTerraform(unittest.TestCase):
         apigateway_client = aws_stack.connect_to_service('apigateway')
         rest_apis = apigateway_client.get_rest_apis()
 
+        rest_id = None
         for rest_api in rest_apis['items']:
             if rest_api['name'] == 'test-tf-apigateway':
                 rest_id = rest_api['id']
-                continue
+                break
 
+        self.assertTrue(rest_id)
         resources = apigateway_client.get_resources(restApiId=rest_id)['items'][1:]
         self.assertEqual(len(resources), 2)
 
@@ -112,9 +118,17 @@ class TestTerraform(unittest.TestCase):
 
         response = route53.create_hosted_zone(Name='zone123', CallerReference='ref123')
         self.assertEqual(201, response['ResponseMetadata']['HTTPStatusCode'])
+        change_id = response.get('ChangeInfo', {}).get('Id', 'change123')
 
-        response = route53.get_change(Id='string')
+        response = route53.get_change(Id=change_id)
         self.assertEqual(200, response['ResponseMetadata']['HTTPStatusCode'])
+
+    def test_acm(self):
+        acm = aws_stack.connect_to_service('acm')
+
+        certs = acm.list_certificates()['CertificateSummaryList']
+        certs = [c for c in certs if c.get('DomainName') == 'example.com']
+        self.assertEqual(len(certs), 1)
 
     def test_apigateway_escaped_policy(self):
         apigateway_client = aws_stack.connect_to_service('apigateway')

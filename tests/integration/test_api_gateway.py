@@ -134,11 +134,12 @@ class TestAPIGateway(unittest.TestCase):
 
         # create event source for sqs lambda processor
         self.create_lambda_function(self.TEST_LAMBDA_SQS_HANDLER_NAME)
-        add_event_source(
-            self.TEST_LAMBDA_SQS_HANDLER_NAME,
-            aws_stack.sqs_queue_arn(queue_name),
-            True
-        )
+        event_source_data = {
+            'FunctionName': self.TEST_LAMBDA_SQS_HANDLER_NAME,
+            'EventSourceArn': aws_stack.sqs_queue_arn(queue_name),
+            'Enabled': True
+        }
+        add_event_source(event_source_data)
 
         # generate test data
         test_data = {'spam': 'eggs & beans'}

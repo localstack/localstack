@@ -128,8 +128,9 @@ def requests_response(content, status_code=200, headers={}):
     resp = RequestsResponse()
     content = json.dumps(content) if isinstance(content, dict) else content
     resp._content = content
-    resp.status_code = status_code
-    resp.headers = headers
+    resp.status_code = int(status_code)
+    # Note: update headers (instead of assigning directly), to ensure we're using a case-insensitive dict
+    resp.headers.update(headers or {})
     return resp
 
 
