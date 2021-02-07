@@ -42,7 +42,7 @@ Commands:
 
 Options:
   --docker          Run the infrastructure in a Docker container (default)
-  --host            Run the infrastructure on the local host
+  --host            Run the infrastructure on the local host (deprecated / not supported)
     """
     if argv[0] == 'start':
         argv = ['infra', 'start'] + argv[1:]

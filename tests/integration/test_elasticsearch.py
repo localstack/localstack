@@ -15,7 +15,6 @@ COMMON_HEADERS = {
     'Accept-encoding': 'identity'
 }
 TEST_DOMAIN_NAME = 'test_es_domain_1'
-TEST_ENDPOINT_URL = 'http://localhost:4571'
 
 
 class ElasticsearchTest(unittest.TestCase):
@@ -53,6 +52,29 @@ class ElasticsearchTest(unittest.TestCase):
         self._create_domain(name=domain_name, version='6.8')
         status = es_client.describe_elasticsearch_domain(DomainName=domain_name)['DomainStatus']
         self.assertEqual(status['ElasticsearchVersion'], '6.8')
+
+    def test_create_indexes_and_domains(self):
+        indexes = ['index1', 'index2']
+        for index_name in indexes:
+            index_path = '{}/{}'.format(self.es_url, index_name)
+            requests.put(index_path, headers=COMMON_HEADERS)
+            endpoint = 'http://localhost:{}/_cat/indices/{}?format=json&pretty'.format(
+                config.PORT_ELASTICSEARCH, index_name)
+            req = requests.get(endpoint)
+            self.assertEqual(req.status_code, 200)
+            req_result = json.loads(req.text)
+            self.assertTrue(req_result[0]['health'] in ['green', 'yellow'])
+            self.assertTrue(req_result[0]['index'] in indexes)
+
+        es_client = aws_stack.connect_to_service('es')
+        test_domain_name_1 = 'test1-%s' % short_uid()
+        test_domain_name_2 = 'test2-%s' % short_uid()
+        self._create_domain(name=test_domain_name_1, version='6.8')
+        self._create_domain(name=test_domain_name_2, version='6.8')
+        status_test_domain_name_1 = es_client.describe_elasticsearch_domain(DomainName=test_domain_name_1)
+        status_test_domain_name_2 = es_client.describe_elasticsearch_domain(DomainName=test_domain_name_2)
+        self.assertTrue(status_test_domain_name_1['DomainStatus']['Created'])
+        self.assertTrue(status_test_domain_name_2['DomainStatus']['Created'])
 
     def test_domain_creation(self):
         es_client = aws_stack.connect_to_service('es')
