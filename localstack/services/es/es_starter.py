@@ -1,4 +1,5 @@
 import os
+import time
 import json
 import logging
 import requests
@@ -80,6 +81,8 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
         cmd = "su localstack -c '%s'" % cmd
     thread = do_run(cmd, asynchronous, env_vars=env_vars)
     STATE['_thread_'] = thread
+    time.sleep(15)
+    LOG.info('Elasticsearch started (%s port %s)' % (get_service_protocol(), port))
     return thread
 
 
