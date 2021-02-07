@@ -12,7 +12,6 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID, ELASTICSEARCH_DEFAULT_VERS
 from localstack.utils.common import to_str, FuncThread, get_service_protocol
 from localstack.utils.tagging import TaggingService
 from localstack.utils.analytics import event_publisher
-from localstack.services.plugins import check_infra
 
 LOG = logging.getLogger(__name__)
 

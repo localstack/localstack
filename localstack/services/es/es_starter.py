@@ -4,7 +4,7 @@ import logging
 import requests
 import traceback
 from localstack import config
-from localstack.utils import constants
+from localstack import constants
 from localstack.services import install
 from localstack.services.es import es_api
 from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port, get_service_protocol
