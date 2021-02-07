@@ -973,7 +973,7 @@ def handle_notification_request(bucket, method, data):
                 events = config.get('Event')
                 if isinstance(events, six.string_types):
                     events = [events]
-                event_filter = config.get('Filter', {})
+                event_filter = config.get('Filter') or {}
                 # make sure FilterRule is an array
                 s3_filter = _get_s3_filter(event_filter)
                 if s3_filter and not isinstance(s3_filter.get('FilterRule', []), list):

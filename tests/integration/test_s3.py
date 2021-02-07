@@ -1635,7 +1635,8 @@ class TestS3(unittest.TestCase):
                 'QueueConfigurations': [
                     {
                         'QueueArn': queue_attributes['Attributes']['QueueArn'],
-                        'Events': ['s3:ObjectCreated:*']
+                        'Events': ['s3:ObjectCreated:*'],
+                        'Filter': None,
                     }
                 ]
             }
