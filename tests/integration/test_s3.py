@@ -480,6 +480,18 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
+    def test_create_bucket_on_non_default_region(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name,
+                             CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+
+        with self.assertRaises(ClientError) as ctx:
+            client.create_bucket(Bucket=bucket_name,
+                                 CreateBucketConfiguration={'LocationConstraint': 'us-west-1'})
+
+        self.assertIn('BucketAlreadyExists', str(ctx.exception))
+
     def test_s3_put_object_chunked_newlines(self):
         # Test for https://github.com/localstack/localstack/issues/1571
         bucket_name = 'test-bucket-%s' % short_uid()

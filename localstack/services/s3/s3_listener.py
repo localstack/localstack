@@ -1195,6 +1195,11 @@ class ProxyListenerS3(PersistingProxyListener):
                 return set_object_lock(bucket, data)
 
         path_orig_escaped = path_orig.replace('#', '%23')
+
+        # moto picks the region from the URL so adding the region param to the URL.
+        if method == 'PUT' and 'create-bucket' in headers.get('User-Agent'):
+            path_orig_escaped = path_orig_escaped + '.s3-{0}.amazonaws.com'.format(aws_stack.get_region())
+
         if modified_data is not None or headers_changed or path_orig != path_orig_escaped:
             data_to_return = not_none_or(modified_data, data)
             if modified_data is not None:
