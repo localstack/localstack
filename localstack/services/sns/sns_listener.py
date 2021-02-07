@@ -375,6 +375,16 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, subscriptio
                 LOG.warning('Unable to forward SNS message to SNS platform app: %s %s' % (exc, traceback.format_exc()))
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
 
+        elif subscriber['Protocol'] == 'email':
+            ses_client = aws_stack.connect_to_service('ses')
+            if subscriber.get('Endpoint'):
+                ses_client.verify_email_address(EmailAddress=subscriber.get('Endpoint'))
+                ses_client.verify_email_address(EmailAddress='admin@localstack.com')
+
+                ses_client.send_email(Source='admin@localstack.com',
+                                      Message={'Body': {'Text': {'Data': message}},
+                                               'Subject': {'Data': 'SNS-Subscriber-Endpoint'}},
+                                      Destination={'ToAddresses': [subscriber.get('Endpoint')]})
         else:
             LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
