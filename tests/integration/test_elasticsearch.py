@@ -66,10 +66,14 @@ class ElasticsearchTest(unittest.TestCase):
             self.assertTrue(req_result[0]['index'] in indexes)
 
         es_client = aws_stack.connect_to_service('es')
-        domain_name = 'es-%s' % short_uid()
-        self._create_domain(name=domain_name, version='6.8')
-        status = es_client.describe_elasticsearch_domain(DomainName=domain_name)['DomainStatus']
-        self.assertTrue(status['DomainStatus']['Created'])
+        test_domain_name_1 = 'test1-%s' % short_uid()
+        test_domain_name_2 = 'test2-%s' % short_uid()
+        self._create_domain(name=test_domain_name_1, version='6.8')
+        self._create_domain(name=test_domain_name_2, version='6.8')
+        status_test_domain_name_1 = es_client.describe_elasticsearch_domain(DomainName=test_domain_name_1)
+        status_test_domain_name_2 = es_client.describe_elasticsearch_domain(DomainName=test_domain_name_2)
+        self.assertTrue(status_test_domain_name_1['DomainStatus']['Created'])
+        self.assertTrue(status_test_domain_name_2['DomainStatus']['Created'])
 
     def test_domain_creation(self):
         es_client = aws_stack.connect_to_service('es')

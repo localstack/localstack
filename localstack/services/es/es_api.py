@@ -193,9 +193,10 @@ def start_elasticsearch_instance(version):
     install_version = get_install_version_for_api_version(version)
 
     t1 = es_starter.start_elasticsearch(asynchronous=False, version=install_version)
-    time.sleep(15)
     # Ensure that all infra components are up and running
     check_infra(apis=[], additional_checks=[es_starter.check_elasticsearch])
+    time.sleep(15)
+    LOG.info('Elasticsearch started')
     return t1
 
 
