@@ -1080,14 +1080,15 @@ def is_zip_file(content):
 
 
 def unzip(path, target_dir, overwrite=True):
-    if is_alpine():
+    is_in_alpine = is_alpine()
+    if is_in_alpine:
         # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
         flags = '-o' if overwrite else ''
         flags += ' -q'
         try:
             return run('cd %s; unzip %s %s' % (target_dir, flags, path), print_error=False)
         except Exception as e:
-            error_str = truncate(str(e))
+            error_str = truncate(str(e), max_length=200)
             LOG.info('Unable to use native "unzip" command (using fallback mechanism): %s' % error_str)
 
     try:
@@ -1098,8 +1099,12 @@ def unzip(path, target_dir, overwrite=True):
 
     def _unzip_file_entry(zip_ref, file_entry, target_dir):
         """ Extracts a Zipfile entry and preserves permissions """
-        zip_ref.extract(file_entry.filename, path=target_dir)
         out_path = os.path.join(target_dir, file_entry.filename)
+        if is_in_alpine and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
+            # this can happen under certain circumstances if the native "unzip" command
+            # fails with a non-zero exit code, yet manages to extract parts of the zip file 
+            return
+        zip_ref.extract(file_entry.filename, path=target_dir)
         perm = file_entry.external_attr >> 16
         # Make sure to preserve file permissions in the zip file
         # https://www.burgundywall.com/post/preserving-file-perms-with-python-zipfile-module
