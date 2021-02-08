@@ -114,15 +114,6 @@ def get_lambda_code_param(params, **kwargs):
     return code
 
 
-def sns_subscription_params(params, **kwargs):
-    def attr_val(val):
-        return json.dumps(val) if isinstance(val, (dict, list)) else str(val)
-
-    attrs = ['DeliveryPolicy', 'FilterPolicy', 'RawMessageDelivery', 'RedrivePolicy']
-    result = dict([(a, attr_val(params[a])) for a in attrs if a in params])
-    return result
-
-
 def events_put_rule_params(params, **kwargs):
     attrs = ['ScheduleExpression', 'EventPattern', 'State', 'Description', 'Name']
     result = select_parameters(*attrs)(params, **kwargs)
@@ -530,17 +521,6 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'name': ['Name', PLACEHOLDER_RESOURCE_NAME],
                 'tags': 'Tags'
-            }
-        }
-    },
-    'SNS::Subscription': {
-        'create': {
-            'function': 'subscribe',
-            'parameters': {
-                'TopicArn': 'TopicArn',
-                'Protocol': 'Protocol',
-                'Endpoint': 'Endpoint',
-                'Attributes': sns_subscription_params
             }
         }
     },

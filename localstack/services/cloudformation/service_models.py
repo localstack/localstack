@@ -958,6 +958,9 @@ class SNSSubscription(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::SNS::Subscription'
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('SubscriptionArn')
+
     def fetch_state(self, stack_name, resources):
         props = self.props
         topic_arn = props.get('TopicArn')
@@ -969,6 +972,38 @@ class SNSSubscription(GenericBaseModel):
             props.get('Protocol') == sub['Protocol'] and props.get('Endpoint') == sub['Endpoint']]
         # TODO: use get_subscription_attributes to compare FilterPolicy
         return result[0] if result else None
+
+    @staticmethod
+    def get_deploy_templates():
+        def sns_subscription_arn(params, resources, resource_id, **kwargs):
+            resource = resources[resource_id]
+            return resource['PhysicalResourceId']
+
+        def sns_subscription_params(params, **kwargs):
+            def attr_val(val):
+                return json.dumps(val) if isinstance(val, (dict, list)) else str(val)
+
+            attrs = ['DeliveryPolicy', 'FilterPolicy', 'RawMessageDelivery', 'RedrivePolicy']
+            result = dict([(a, attr_val(params[a])) for a in attrs if a in params])
+            return result
+
+        return {
+            'create': {
+                'function': 'subscribe',
+                'parameters': {
+                    'TopicArn': 'TopicArn',
+                    'Protocol': 'Protocol',
+                    'Endpoint': 'Endpoint',
+                    'Attributes': sns_subscription_params
+                }
+            },
+            'delete': {
+                'function': 'unsubscribe',
+                'parameters': {
+                    'SubscriptionArn': sns_subscription_arn
+                }
+            }
+        }
 
 
 class DynamoDBTable(GenericBaseModel):
