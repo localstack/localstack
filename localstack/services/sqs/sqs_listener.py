@@ -332,7 +332,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             # expose external hostname:port
             external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
             content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
-                                 r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port),
+                                 r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (config.HOSTNAME_EXTERNAL, external_port),
                                  content_str)
             # encode account ID in queue URL
             content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://([^/]+)/queue/([^<]*)\s*</QueueUrl>',
