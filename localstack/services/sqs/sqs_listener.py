@@ -6,7 +6,7 @@ from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
 from requests.models import Request
 from six.moves.urllib.parse import urlencode
 from localstack import config, constants
-from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
+from localstack.config import SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
 from localstack.services.sns import sns_listener
 from localstack.utils.common import to_str, clone, path_from_url, get_service_protocol, parse_request_data
@@ -332,7 +332,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             # expose external hostname:port
             external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
             content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
-                                 r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port),
+                                 r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (config.HOSTNAME_EXTERNAL, external_port),
                                  content_str)
             # encode account ID in queue URL
             content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://([^/]+)/queue/([^<]*)\s*</QueueUrl>',
