@@ -474,11 +474,14 @@ def append_last_modified_headers(response, content=None):
 
 def append_list_objects_marker(method, path, data, response):
     if 'marker=' in path:
+        marker = ''
         content = to_str(response.content)
         if '<ListBucketResult' in content and '<Marker>' not in content:
             parsed = urlparse.urlparse(path)
             query_map = urlparse.parse_qs(parsed.query)
-            insert = '<Marker>%s</Marker>' % query_map.get('marker')[0]
+            if query_map.get('marker') and query_map.get('marker')[0]:
+                marker = query_map.get('marker')[0]
+            insert = '<Marker>%s</Marker>' % marker
             response._content = content.replace('</ListBucketResult>', '%s</ListBucketResult>' % insert)
             response.headers.pop('Content-Length', None)
 

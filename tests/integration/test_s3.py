@@ -1127,6 +1127,12 @@ class TestS3(unittest.TestCase):
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, Marker=next_marker)
         self.assertEqual(len(resp['Contents']), 10)
 
+    def test_s3_list_objects_empty_marker(self):
+        bucket_name = 'test' + short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        resp = self.s3_client.list_objects(Bucket=bucket_name, Marker='')
+        self.assertEqual(resp['Marker'], '')
+
     def test_s3_multipart_upload_file(self):
         def upload(size_in_mb, bucket):
             file_name = '{}.tmp'.format(short_uid())
