@@ -1102,7 +1102,7 @@ def unzip(path, target_dir, overwrite=True):
         out_path = os.path.join(target_dir, file_entry.filename)
         if is_in_alpine and os.path.exists(out_path) and os.path.getsize(out_path) > 0:
             # this can happen under certain circumstances if the native "unzip" command
-            # fails with a non-zero exit code, yet manages to extract parts of the zip file 
+            # fails with a non-zero exit code, yet manages to extract parts of the zip file
             return
         zip_ref.extract(file_entry.filename, path=target_dir)
         perm = file_entry.external_attr >> 16
