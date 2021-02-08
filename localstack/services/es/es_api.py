@@ -1,17 +1,17 @@
 import json
 import time
 import logging
+import requests
 from random import randint
 from flask import Flask, jsonify, request, make_response
 from localstack import config
 from localstack.utils import persistence
-from localstack.services import generic_proxy, install
+from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID, ELASTICSEARCH_DEFAULT_VERSION
 from localstack.utils.common import to_str, FuncThread, get_service_protocol
 from localstack.utils.tagging import TaggingService
 from localstack.utils.analytics import event_publisher
-from localstack.services.plugins import check_infra
 
 LOG = logging.getLogger(__name__)
 
@@ -190,14 +190,7 @@ def start_elasticsearch_instance(version):
 
     # install ES version
     install_version = get_install_version_for_api_version(version)
-    install.install_elasticsearch(install_version)
-
-    t1 = es_starter.start_elasticsearch(asynchronous=True, version=install_version)
-    # sleep some time to give Elasticsearch enough time to come up
-    time.sleep(8)
-    # ensure that all infra components are up and running
-    check_infra(apis=[], additional_checks=[es_starter.check_elasticsearch])
-    return t1
+    es_starter.start_elasticsearch(asynchronous=False, version=install_version)
 
 
 def cleanup_elasticsearch_instance(status):
@@ -216,6 +209,8 @@ def list_domain_names():
 
 @app.route('%s/es/domain' % API_PREFIX, methods=['POST'])
 def create_domain():
+    from localstack.services.es import es_starter
+
     data = json.loads(to_str(request.data))
     domain_name = data['DomainName']
     if domain_name in ES_DOMAINS:
@@ -229,12 +224,18 @@ def create_domain():
         start_elasticsearch_instance(version=version)
         data['Created'] = True
 
-    # start ES instance in the background
-    FuncThread(do_start).start()
-    # sleep a short while, then return
-    time.sleep(5)
-    result = get_domain_status(domain_name)
+    try:
+        if es_starter.check_elasticsearch():
+            data['Created'] = True
+        else:
+            LOG.error('Elasticsearch status is not healthy, please check the application status and logs')
+    except requests.exceptions.ConnectionError:
+        # Catch first run
+        FuncThread(do_start).start()
+        LOG.info('Elasticsearch is starting for the first time, please wait..')
+        data['Created'] = True
 
+    result = get_domain_status(domain_name)
     # record event
     event_publisher.fire_event(event_publisher.EVENT_ES_CREATE_DOMAIN,
         payload={'n': event_publisher.get_hash(domain_name)})

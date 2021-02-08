@@ -198,6 +198,19 @@ class TestS3(unittest.TestCase):
         # clean up
         self._delete_bucket(bucket_name, ['steve'])
 
+    def test_range_key_not_exists(self):
+        bucket_name = 'range-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.get_object(Bucket=bucket_name, Key='key', Range='bytes=1024-4096')
+
+        self.assertIn('NoSuchKey', str(ctx.exception))
+
+        # clean up
+        self._delete_bucket(bucket_name)
+
     def test_upload_key_with_hash_prefix(self):
         bucket_name = 'hash-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)

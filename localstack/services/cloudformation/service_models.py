@@ -107,6 +107,19 @@ class GenericBaseModel(CloudFormationModel):
     # GENERIC UTIL METHODS
     # ----------------------
 
+    def fetch_and_update_state(self, *args, **kwargs):
+        try:
+            state = self.fetch_state(*args, **kwargs)
+            self.update_state(state)
+            return state
+        except Exception as e:
+            LOG.debug('Unable to fetch state for resource %s: %s' % (self, e))
+
+    def fetch_state_if_missing(self, *args, **kwargs):
+        if not self.state:
+            self.fetch_and_update_state(*args, **kwargs)
+        return self.state
+
     def set_resource_state(self, state):
         """ Set the deployment state of this resource. """
         self.state = state or {}

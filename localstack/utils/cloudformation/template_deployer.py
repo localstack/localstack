@@ -747,8 +747,7 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
         resource_class = RESOURCE_MODELS.get(canonical_type)
         if resource_class:
             instance = resource_class(resource)
-            state = instance.fetch_state(stack_name=stack_name, resources=resources)
-            instance.update_state(state)
+            state = instance.fetch_and_update_state(stack_name=stack_name, resources=resources)
             return state
 
         # special case for stack parameters
@@ -1538,7 +1537,9 @@ def determine_resource_physical_id(resource_id, resources=None, stack=None, attr
     canonical_type = canonical_resource_type(resource_type)
     resource_class = RESOURCE_MODELS.get(canonical_type)
     if resource_class:
-        result = resource_class(resource).get_physical_resource_id(attribute=attribute)
+        resource_inst = resource_class(resource)
+        resource_inst.fetch_state_if_missing(stack_name=stack_name, resources=resources)
+        result = resource_inst.get_physical_resource_id(attribute=attribute)
         if result:
             return result
 
