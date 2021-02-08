@@ -8,7 +8,7 @@ from localstack import config
 from localstack.utils import persistence
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
-from localstack.constants import TEST_AWS_ACCOUNT_ID, ELASTICSEARCH_DEFAULT_VERSION
+from localstack.constants import TEST_AWS_ACCOUNT_ID, ELASTICSEARCH_DEFAULT_VERSION, ELASTICSEARCH_URLS
 from localstack.utils.common import to_str, FuncThread, get_service_protocol
 from localstack.utils.tagging import TaggingService
 from localstack.utils.analytics import event_publisher
@@ -287,6 +287,14 @@ def delete_domain(domain_name):
     persistence.record('es', request=request)
 
     return jsonify(result)
+
+
+@app.route('%s/es/versions' % API_PREFIX, methods=['GET'])
+def list_es_versions():
+    result = []
+    for key in ELASTICSEARCH_URLS.keys():
+        result.append(key)
+    return jsonify({'ElasticsearchVersions': result})
 
 
 @app.route('%s/es/compatibleVersions' % API_PREFIX, methods=['GET'])
