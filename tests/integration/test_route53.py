@@ -1,4 +1,5 @@
 import unittest
+from localstack import constants
 from localstack.utils.aws import aws_stack
 
 
@@ -17,7 +18,8 @@ class TestRoute53(unittest.TestCase):
         ec2 = aws_stack.connect_to_service('ec2')
         route53 = aws_stack.connect_to_service('route53')
 
-        response = route53.create_hosted_zone(Name='zone123', CallerReference='ref123')
+        name = 'zone123'
+        response = route53.create_hosted_zone(Name=name, CallerReference='ref123')
         zone_id = response['HostedZone']['Id']
         zone_id = zone_id.replace('/hostedzone/', '')
 
@@ -31,7 +33,9 @@ class TestRoute53(unittest.TestCase):
 
         # list zones by VPC
         result = route53.list_hosted_zones_by_vpc(VPCId=vpc_id, VPCRegion=vpc_region)['HostedZoneSummaries']
-        self.assertIn({'HostedZoneId': zone_id}, result)
+        expected = {'HostedZoneId': zone_id, 'Name': '%s.' % name,
+            'Owner': {'OwningAccount': constants.TEST_AWS_ACCOUNT_ID}}
+        self.assertIn(expected, result)
 
         # list zones by name
         result = route53.list_hosted_zones_by_name(DNSName='test').get('HostedZones')
