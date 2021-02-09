@@ -43,9 +43,6 @@ class ProxyListenerCloudWatch(ProxyListener):
         return True
 
     def return_response(self, method, path, data, headers, response):
-        # Fix Incorrect date format to the correct format
-        # the dictionary contains the tag as the key and the value is a
-        # tuple (pattern, replacement)
 
         req_data = parse_request_data(method, path, data)
         action = req_data.get('Action')
@@ -53,6 +50,10 @@ class ProxyListenerCloudWatch(ProxyListener):
             name = req_data.get('AlarmName')
             treat_missing_data = req_data.get('TreatMissingData', 'ignore')
             cloudwatch_backends[aws_stack.get_region()].alarms[name].treat_missing_data = treat_missing_data
+
+        # Fix Incorrect date format to the correct format
+        # the dictionary contains the tag as the key and the value is a
+        # tuple (pattern, replacement)
 
         regexes1 = (r'<{}>([^<]+) ([^<+]+)(\+[^<]*)?</{}>', r'<{}>\1T\2Z</{}>')
         regexes2 = (r'<{}>([^<]+) ([^<+.]+)(\.[^<]*)?</{}>', r'<{}>\1T\2Z</{}>')

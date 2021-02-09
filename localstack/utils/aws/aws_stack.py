@@ -941,9 +941,12 @@ def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
 # TODO: move to aws_responses.py?
 def extract_tags(req_data):
     tags = []
-    req_tags = {k: v for k, v in req_data.items() if k.startswith('Tags.member.')}
-    for i in range(int(len(req_tags.keys()) / 2)):
-        key = req_tags['Tags.member.' + str(i + 1) + '.Key']
-        value = req_tags['Tags.member.' + str(i + 1) + '.Value']
+    for i in range(1, 200):
+        k1 = 'Tags.member.%s.Key' % i
+        k2 = 'Tags.member.%s.Value' % i
+        key = req_data.get(k1)
+        value = req_data.get(k2)
+        if key is None or value is None:
+            break
         tags.append({'Key': key, 'Value': value})
     return tags
