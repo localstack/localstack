@@ -319,12 +319,10 @@ def create_stack(req_params):
 
 
 def delete_stack(req_params):
-    state = CloudFormationRegion.get()
     stack_name = req_params.get('StackName')
     stack = find_stack(stack_name)
     deployer = template_deployer.TemplateDeployer(stack)
     deployer.delete_stack()
-    state.stacks.pop(stack.stack_id)
     return {}
 
 
