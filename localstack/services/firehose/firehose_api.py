@@ -64,7 +64,7 @@ def put_records(stream_name, records):
             es_dest = dest['ESDestinationDescription']
             es_index = es_dest['IndexName']
             es_type = es_dest.get('TypeName')
-            es = connect_elasticsearch()
+            es = connect_elasticsearch(endpoint=es_dest.get('ClusterEndpoint'), domain=es_dest.get('DomainARN'))
             for record in records:
                 obj_id = uuid.uuid4()
 
