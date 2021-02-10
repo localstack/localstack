@@ -48,8 +48,14 @@ class ProxyListenerCloudWatch(ProxyListener):
         action = req_data.get('Action')
         if action == 'PutMetricAlarm':
             name = req_data.get('AlarmName')
+            # add missing attribute "TreatMissingData"
             treat_missing_data = req_data.get('TreatMissingData', 'ignore')
             cloudwatch_backends[aws_stack.get_region()].alarms[name].treat_missing_data = treat_missing_data
+            # record tags
+            arn = aws_stack.cloudwatch_alarm_arn(name)
+            tags = aws_stack.extract_tags(req_data)
+            if tags:
+                TAGS.tag_resource(arn, tags)
 
         # Fix Incorrect date format to the correct format
         # the dictionary contains the tag as the key and the value is a

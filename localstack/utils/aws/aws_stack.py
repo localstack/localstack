@@ -945,8 +945,8 @@ def extract_tags(req_data):
         k1 = 'Tags.member.%s.Key' % i
         k2 = 'Tags.member.%s.Value' % i
         key = req_data.get(k1)
-        value = req_data.get(k2)
-        if key is None or value is None:
+        value = req_data.get(k2, '')
+        if key is None:
             break
         tags.append({'Key': key, 'Value': value})
     return tags
