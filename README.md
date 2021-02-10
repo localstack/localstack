@@ -396,6 +396,8 @@ $ ▶ laws lambda list-functions
 
 * Python: https://github.com/localstack/localstack-python-client
   * alternatively, you can also use `boto3` and use the `endpoint_url` parameter when creating a connection
+* .NET: https://github.com/localstack-dotnet/localstack-dotnet-client
+  * alternatively, you can also use `AWS SDK for .NET` and change `ClientConfig` properties when creating a service client.
 * (more coming soon...)
 
 ### Invoking API Gateway

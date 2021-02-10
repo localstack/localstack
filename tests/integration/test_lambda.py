@@ -1,26 +1,25 @@
-from datetime import datetime
 import re
 import os
 import json
-import shutil
 import time
+import shutil
 import unittest
 import six
 import base64
-from botocore.exceptions import ClientError
 from io import BytesIO
+from datetime import datetime
+from botocore.exceptions import ClientError
 from localstack import config
-from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X
 from localstack.utils import testutil
-from localstack.utils.testutil import (
-    get_lambda_log_events, check_expected_lambda_log_events_length, create_lambda_archive
-)
-from localstack.utils.kinesis import kinesis_connector
+from localstack.constants import LOCALSTACK_MAVEN_VERSION, LOCALSTACK_ROOT_FOLDER, LAMBDA_TEST_ROLE
 from localstack.utils.aws import aws_stack, aws_models
 from localstack.utils.common import (
     unzip, new_tmp_dir, short_uid, load_file, to_str, mkdir, download, save_file,
     run_safe, get_free_tcp_port, get_service_protocol, retry, to_bytes, cp_r
+)
+from localstack.utils.kinesis import kinesis_connector
+from localstack.utils.testutil import (
+    get_lambda_log_events, check_expected_lambda_log_events_length, create_lambda_archive
 )
 from localstack.services.infra import start_proxy
 from localstack.services.install import INSTALL_PATH_LOCALSTACK_FAT_JAR
@@ -31,7 +30,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_NODEJS810,
-    LAMBDA_RUNTIME_PROVIDED)
+    LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X)
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))

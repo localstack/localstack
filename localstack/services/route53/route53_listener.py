@@ -1,5 +1,7 @@
 import xmltodict
 from six.moves.urllib.parse import urlparse
+from localstack import constants
+from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, to_str, timestamp_millis, parse_request_data
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.generic_proxy import RegionBackend
@@ -84,10 +86,20 @@ class ProxyListenerRoute53(PersistingProxyListener):
             return response
 
         if '/hostedzonesbyvpc' in path and method == 'GET':
+            def _zone(z):
+                zone_id = z['HostedZoneId']
+                hosted_zone = client.get_hosted_zone(Id=zone_id).get('HostedZone', {})
+                result = {
+                    'HostedZoneId': zone_id,
+                    'Name': hosted_zone.get('Name'),
+                    'Owner': {'OwningAccount': constants.TEST_AWS_ACCOUNT_ID}
+                }
+                return result
+            client = aws_stack.connect_to_service('route53')
             req_data = parse_request_data(method, path, data)
             vpc_id = req_data.get('vpcid')
             zone_details = region_details.vpc_hosted_zone_associations
-            result = [z for z_list in zone_details.values() for z in z_list if z['VPC']['VPCId'] == vpc_id]
+            result = [_zone(z) for z_list in zone_details.values() for z in z_list if z['VPC']['VPCId'] == vpc_id]
             response = {'ListHostedZonesByVPCResponse': {'HostedZoneSummaries': {'HostedZoneSummary': result}}}
             body = xmltodict.unparse(response)
             response = requests_response(body)
