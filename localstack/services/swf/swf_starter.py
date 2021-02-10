@@ -16,7 +16,7 @@ def check_swf(expect_shutdown=False, print_error=False):
         # wait for port to be opened
         wait_for_port_open(swf_listener.PORT_SWF_BACKEND)
         # check SWF
-        out = aws_stack.connect_to_service(service_name='swf').list_domains(registrationStatus="REGISTERED")
+        out = aws_stack.connect_to_service(service_name='swf').list_domains(registrationStatus='REGISTERED')
     except Exception as e:
         if print_error:
             LOG.error('SWF health check failed: %s %s' % (e, traceback.format_exc()))
