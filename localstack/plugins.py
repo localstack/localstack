@@ -2,6 +2,7 @@ import os
 import sys
 from localstack import config
 from localstack.constants import TRUE_STRINGS
+from localstack.services.swf import swf_starter, swf_listener
 from localstack.utils.bootstrap import ENV_SCRIPT_STARTING_DOCKER
 
 
@@ -199,6 +200,12 @@ def do_register_localstack_plugins():
             'stepfunctions',
             start=stepfunctions_starter.start_stepfunctions,
             listener=stepfunctions_listener.UPDATE_STEPFUNCTIONS))
+
+        register_plugin(Plugin(
+            'swf',
+            start=swf_starter.start_swf,
+            check=swf_starter.check_swf,
+            listener=swf_listener.UPDATE_SWF))
 
     except Exception as e:
         if not os.environ.get(ENV_SCRIPT_STARTING_DOCKER):
