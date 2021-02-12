@@ -182,6 +182,8 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = 's3', config.PORT_S3
     elif result[0] == 'states' in auth_header or host.startswith('states.'):
         result = 'stepfunctions', config.PORT_STEPFUNCTIONS
+    elif 'route53.' in host:
+        result = 'route53', config.PORT_ROUTE53
     elif result[0] == 'monitoring':
         result = 'cloudwatch', config.PORT_CLOUDWATCH
     elif result[0] == 'execute-api' or '.execute-api.' in host:

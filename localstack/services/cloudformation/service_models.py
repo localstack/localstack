@@ -8,7 +8,7 @@ from moto.core.models import CloudFormationModel
 from moto.cloudformation.exceptions import UnformattedGetAttTemplateException
 from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import camel_to_snake_case
+from localstack.utils.common import camel_to_snake_case, select_attributes
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower)
 
@@ -394,6 +394,46 @@ class KinesisStream(GenericBaseModel):
         stream_name = self.resolve_refs_recursively(stack_name, self.props['Name'], resources)
         result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
         return result
+
+
+class Route53RecordSet(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Route53::RecordSet'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('Name')  # Ref attribute is the domain name itself
+
+    def fetch_state(self, stack_name, resources):
+        route53 = aws_stack.connect_to_service('route53')
+        props = self.props
+        result = route53.list_resource_record_sets(HostedZoneId=props['HostedZoneId'])['ResourceRecordSets']
+        result = [r for r in result if r['Name'] == props['Name'] and r['Type'] == props['Type']]
+        return (result or [None])[0]
+
+    def get_deploy_templates():
+        def param_change_batch(params, **kwargs):
+            attr_names = ['Name', 'Type', 'SetIdentifier', 'Weight', 'Region', 'GeoLocation',
+                'Failover', 'MultiValueAnswer', 'TTL', 'ResourceRecords', 'AliasTarget', 'HealthCheckId']
+            attrs = select_attributes(params, attr_names)
+            alias_target = attrs.get('AliasTarget', {})
+            alias_target['EvaluateTargetHealth'] = alias_target.get('EvaluateTargetHealth', False)
+            return {
+                'Comment': params.get('Comment', ''),
+                'Changes': [{
+                    'Action': 'CREATE',
+                    'ResourceRecordSet': attrs
+                }]
+            }
+        return {
+            'create': {
+                'function': 'change_resource_record_sets',
+                'parameters': {
+                    'HostedZoneId': 'HostedZoneId',
+                    'ChangeBatch': param_change_batch
+                }
+            }
+        }
 
 
 class SFNStateMachine(GenericBaseModel):
