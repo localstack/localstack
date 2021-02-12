@@ -187,7 +187,7 @@ def apply_patches():
             formatted_event = {
                 'version': '0',
                 'id': event_envelope['uuid'],
-                'detail-type': event.get('DetailType'),
+                'detailtype': event.get('DetailType'),
                 'source': event.get('Source'),
                 'account': TEST_AWS_ACCOUNT_ID,
                 'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
