@@ -17,7 +17,13 @@ def apply_patches():
                     'admin@%s' % self.common_name
                 ],
                 'ValidationDomain': self.common_name,
-                'DomainName': self.common_name
+                'DomainName': self.common_name,
+                'ValidationStatus': 'SUCCESS',
+                'ResourceRecord': {
+                    'Name': 'test.dns.entry',
+                    'Type': 'CNAME',
+                    'Value': 'test123'
+                }
             }],
             'Options': {
                 'CertificateTransparencyLoggingPreference': 'ENABLED'
