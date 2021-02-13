@@ -13,7 +13,8 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import (
-    to_str, json_safe, clone, short_uid, get_free_tcp_port, load_file, safe_requests as requests)
+    to_str, json_safe, clone, short_uid, get_free_tcp_port,
+    load_file, select_attributes, safe_requests as requests)
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs, gateway_request_url)
@@ -667,6 +668,28 @@ class TestAPIGateway(unittest.TestCase):
         result = client.get_models(restApiId=rest_api_id)
         self.assertEqual(result['items'][0]['name'], model_name)
         self.assertEqual(result['items'][0]['description'], description)
+
+    def test_request_validator(self):
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='this is my api')
+        rest_api_id = response['id']
+        name = 'validator123'
+        result = client.create_request_validator(restApiId=rest_api_id, name=name)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        validator_id = result['id']
+        result = client.get_request_validators(restApiId=rest_api_id)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(result['items'], [{'id': validator_id, 'name': name}])
+        result = client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(select_attributes(result, ['id', 'name']), {'id': validator_id, 'name': name})
+        result = client.update_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id,
+            patchOperations=[])
+        client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+        with self.assertRaises(Exception):
+            client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+        with self.assertRaises(Exception):
+            client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
 
     def test_get_model_by_name(self):
         client = aws_stack.connect_to_service('apigateway')

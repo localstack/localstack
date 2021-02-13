@@ -5,6 +5,7 @@ from requests.models import Response
 from six.moves.urllib import parse as urlparse
 from localstack import config
 from localstack.utils import common
+from localstack.services.generic_proxy import RegionBackend
 from localstack.constants import TEST_AWS_ACCOUNT_ID, APPLICATION_JSON, PATH_USER_REQUEST
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import requests_response
@@ -14,12 +15,18 @@ PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
 PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
 
 PATH_REGEX_AUTHORIZER = r'^/restapis/[A-Za-z0-9_\-]+/authorizers/(.*)'
+PATH_REGEX_VALIDATOR = r'^/restapis/[A-Za-z0-9_\-]+/requestvalidators/(.*)'
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
 
-# maps (API id) -> [authorizers]
-AUTHORIZERS = {}
+
+class APIGatewayRegion(RegionBackend):
+    def __init__(self):
+        # maps (API id) -> [authorizers]
+        self.authorizers = {}
+        # maps (API id) -> [validators]
+        self.validators = {}
 
 
 def make_json_response(message):
@@ -46,23 +53,30 @@ def get_api_id_from_path(path):
     return re.match(PATH_REGEX_MAIN, path).group(1)
 
 
+# -----------------
+# AUTHORIZERS APIs
+# -----------------
+
 def get_authorizer_id_from_path(path):
     match = re.match(PATH_REGEX_AUTHORIZER, path)
     return match.group(1) if match else None
 
 
 def _find_authorizer(api_id, authorizer_id):
-    auth_list = AUTHORIZERS.get(api_id) or []
+    region_details = APIGatewayRegion.get()
+    auth_list = region_details.authorizers.get(api_id) or []
     authorizer = ([a for a in auth_list if a['id'] == authorizer_id] or [None])[0]
     return authorizer
 
 
 def get_authorizers(path):
+    region_details = APIGatewayRegion.get()
+
     # This function returns either a list or a single authorizer (depending on the path)
     api_id = get_api_id_from_path(path)
     authorizer_id = get_authorizer_id_from_path(path)
 
-    auth_list = AUTHORIZERS.get(api_id) or []
+    auth_list = region_details.authorizers.get(api_id) or []
 
     if authorizer_id:
         authorizer = _find_authorizer(api_id, authorizer_id)
@@ -76,31 +90,25 @@ def get_authorizers(path):
 
 
 def to_authorizer_response_json(api_id, data):
+    return to_response_json('authorizer', api_id, data)
+
+
+def to_validator_response_json(api_id, data):
+    return to_response_json('validator', api_id, data)
+
+
+def to_response_json(model_type, api_id, data):
     result = common.clone(data)
-
-    self_link = '/restapis/%s/authorizers/%s' % (api_id, data['id'])
-
+    self_link = '/restapis/%s/%ss/%s' % (api_id, model_type, data['id'])
     if '_links' not in result:
         result['_links'] = {}
-
-    result['_links']['self'] = {
-        'href': self_link
-    }
-
+    result['_links']['self'] = {'href': self_link}
     result['_links']['curies'] = {
         'href': 'https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html',
-        'name': 'authorizer',
+        'name': model_type,
         'templated': True
     }
-
-    result['_links']['authorizer:delete'] = {
-        'href': self_link
-    }
-
-    result['_links']['authorizer:delete'] = {
-        'href': self_link
-    }
-
+    result['_links']['%s:delete' % model_type] = {'href': self_link}
     return result
 
 
@@ -112,6 +120,8 @@ def normalize_authorizer(data):
 
 
 def add_authorizer(path, data):
+    region_details = APIGatewayRegion.get()
+
     api_id = get_api_id_from_path(path)
     authorizer_id = common.short_uid()
     result = common.clone(data)
@@ -119,13 +129,15 @@ def add_authorizer(path, data):
     result['id'] = authorizer_id
     result = normalize_authorizer(result)
 
-    AUTHORIZERS[api_id] = AUTHORIZERS.get(api_id) or []
-    AUTHORIZERS[api_id].append(result)
+    region_details.authorizers[api_id] = region_details.authorizers.get(api_id) or []
+    region_details.authorizers[api_id].append(result)
 
     return make_json_response(to_authorizer_response_json(api_id, result))
 
 
 def update_authorizer(path, data):
+    region_details = APIGatewayRegion.get()
+
     api_id = get_api_id_from_path(path)
     authorizer_id = get_authorizer_id_from_path(path)
 
@@ -136,7 +148,7 @@ def update_authorizer(path, data):
     result = apply_patch(authorizer, data['patchOperations'])
     result = normalize_authorizer(result)
 
-    auth_list = AUTHORIZERS[api_id]
+    auth_list = region_details.authorizers[api_id]
     for i in range(len(auth_list)):
         if auth_list[i]['id'] == authorizer_id:
             auth_list[i] = result
@@ -145,10 +157,12 @@ def update_authorizer(path, data):
 
 
 def delete_authorizer(path):
+    region_details = APIGatewayRegion.get()
+
     api_id = get_api_id_from_path(path)
     authorizer_id = get_authorizer_id_from_path(path)
 
-    auth_list = AUTHORIZERS[api_id]
+    auth_list = region_details.authorizers[api_id]
     for i in range(len(auth_list)):
         if auth_list[i]['id'] == authorizer_id:
             del auth_list[i]
@@ -158,7 +172,6 @@ def delete_authorizer(path):
 
 
 def handle_authorizers(method, path, data, headers):
-
     if method == 'GET':
         return get_authorizers(path)
     elif method == 'POST':
@@ -167,9 +180,109 @@ def handle_authorizers(method, path, data, headers):
         return update_authorizer(path, data)
     elif method == 'DELETE':
         return delete_authorizer(path)
-
     return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
 
+
+# ----------------
+# VALIDATORS APIs
+# ----------------
+
+def get_validator_id_from_path(path):
+    match = re.match(PATH_REGEX_VALIDATOR, path)
+    return match.group(1) if match else None
+
+
+def _find_validator(api_id, validator_id):
+    region_details = APIGatewayRegion.get()
+    auth_list = region_details.validators.get(api_id) or []
+    validator = ([a for a in auth_list if a['id'] == validator_id] or [None])[0]
+    return validator
+
+
+def get_validators(path):
+    region_details = APIGatewayRegion.get()
+
+    # This function returns either a list or a single validator (depending on the path)
+    api_id = get_api_id_from_path(path)
+    validator_id = get_validator_id_from_path(path)
+
+    auth_list = region_details.validators.get(api_id) or []
+
+    if validator_id:
+        validator = _find_validator(api_id, validator_id)
+        if validator is None:
+            return make_error_response('Validator %s for API Gateway %s not found' % (validator_id, api_id), 404)
+        return to_validator_response_json(api_id, validator)
+
+    result = [to_validator_response_json(api_id, a) for a in auth_list]
+    result = {'item': result}
+    return result
+
+
+def add_validator(path, data):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    validator_id = common.short_uid()
+    result = common.clone(data)
+    result['id'] = validator_id
+
+    region_details.validators[api_id] = region_details.validators.get(api_id) or []
+    region_details.validators[api_id].append(result)
+
+    return result
+
+
+def update_validator(path, data):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    validator_id = get_validator_id_from_path(path)
+
+    validator = _find_validator(api_id, validator_id)
+    if validator is None:
+        return make_error_response('Validator %s for API Gateway %s not found' % (validator_id, api_id), 404)
+
+    result = apply_patch(validator, data['patchOperations'])
+
+    entry_list = region_details.validators[api_id]
+    for i in range(len(entry_list)):
+        if entry_list[i]['id'] == validator_id:
+            entry_list[i] = result
+
+    return make_json_response(to_validator_response_json(api_id, result))
+
+
+def delete_validator(path):
+    region_details = APIGatewayRegion.get()
+
+    api_id = get_api_id_from_path(path)
+    validator_id = get_validator_id_from_path(path)
+
+    auth_list = region_details.validators[api_id]
+    for i in range(len(auth_list)):
+        if auth_list[i]['id'] == validator_id:
+            del auth_list[i]
+            return make_accepted_response()
+
+    return make_error_response('Validator %s for API Gateway %s not found' % (validator_id, api_id), 404)
+
+
+def handle_validators(method, path, data, headers):
+    if method == 'GET':
+        return get_validators(path)
+    elif method == 'POST':
+        return add_validator(path, data)
+    elif method == 'PATCH':
+        return update_validator(path, data)
+    elif method == 'DELETE':
+        return delete_validator(path)
+    return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
+
+
+# ---------------
+# UTIL FUNCTIONS
+# ---------------
 
 def gateway_request_url(api_id, stage_name, path):
     """ Return URL for inbound API gateway for given API ID, stage name, and path """
