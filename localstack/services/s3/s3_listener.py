@@ -14,11 +14,12 @@ import urllib.parse
 import six
 import botocore.config
 from pytz import timezone
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlencode
+from collections import namedtuple
 from botocore.compat import urlsplit
 from botocore.client import ClientError
 from botocore.credentials import Credentials
-from localstack.utils.auth import HmacV1QueryAuth
+from localstack.utils.auth import HmacV1QueryAuth, S3SigV4QueryAuth
 from botocore.awsrequest import create_request_object
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
@@ -110,7 +111,21 @@ CORS_HEADERS = [
     'Access-Control-Request-Headers', 'Access-Control-Request-Method'
 ]
 
-SIGNATURE_V4_PARAMS = ['X-Amz-Algorithm']
+SIGNATURE_V4_PARAMS = [
+    'X-Amz-Algorithm', 'X-Amz-Credential', 'X-Amz-Date', 'X-Amz-Expires',
+    'X-Amz-SignedHeaders', 'X-Amz-Signature'
+]
+
+SIGNATURE_QUERY_STRING = [
+    'response-content-type', 'response-cache-control', 'response-content-disposition',
+    'response-content-encoding', 'response-content-language', 'response-expires',
+    'versionId', 'partNumber'
+]
+SIGNATURE_HEADERS = [
+    'If-Match', 'If-Modified-Since', 'If-None-Match', 'If-Unmodified-Since', 'Range',
+    'x-amz-server-side-encryption-customer-algorithm', 'x-amz-server-side-encryption-customer-key',
+    'x-amz-server-side-encryption-customer-key-MD5', 'x-amz-request-payer', 'x-amz-expected-bucket-owner',
+]
 
 
 def event_type_matches(events, action, api_method):
@@ -1072,7 +1087,8 @@ class ProxyListenerS3(PersistingProxyListener):
         path = path.replace('#', '%23')  # support key names containing hashes (e.g., required by Amplify)
 
         # Detecting pre-sign url and checking signature
-        if any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
+        if (any([p in query_params for p in PRESIGN_QUERY_PARAMS]) or
+                any([p in query_params for p in SIGNATURE_V4_PARAMS])):
             response = authenticate_presign_url(method=method, path=path, data=data, headers=headers)
             if response is not None:
                 return response
@@ -1407,45 +1423,58 @@ class ProxyListenerS3(PersistingProxyListener):
 
 def authenticate_presign_url(method, path, headers, data=None):
 
-    sign_headers = []
+    LOGGER.debug('Authentication presign url.')
     url = '{}{}'.format(config.get_edge_url(), path)
     parsed = urlparse.urlparse(url)
     query_params = parse_qs(parsed.query)
+    LOGGER.debug('recieved presign url is %s.' % url)
 
-    # Checking required parameters are present in url or not
-    if not all([p in query_params for p in PRESIGN_QUERY_PARAMS]):
-        return requests_error_response_xml_signature_calculation(
-            code=403,
-            message='Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters',
-            code_string='AccessDenied'
-        )
+    sign_headers = {}
+    query_string = {}
 
-    # Fetching headers which has been sent to the requets
-    for header in headers:
-        key = header[0]
-        if key.lower() not in IGNORED_HEADERS_LOWER:
-            sign_headers.append(header)
+    is_v2 = all([p in query_params for p in PRESIGN_QUERY_PARAMS])
+    is_v4 = all([p in query_params for p in SIGNATURE_V4_PARAMS])
+
+    for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items():
+        if param_name in query_params:
+            query_string[param_name] = query_params[param_name][0]
 
     # Request's headers are more essentials than the query parameters in the request.
     # Different values of header in the header of the request and in the query parameter of the
     # request URL will fail the signature calulation. As per the AWS behaviour
-    presign_params_lower = [p.lower() for p in PRESIGN_QUERY_PARAMS]
+
+    presign_params_lower = \
+        [p.lower() for p in SIGNATURE_V4_PARAMS] if is_v4 else [p.lower() for p in PRESIGN_QUERY_PARAMS]
+    params_header_override = [param_name for param_name, header_name in ALLOWED_HEADER_OVERRIDES.items()]
     if len(query_params) > 2:
         for key in query_params:
             if key.lower() not in presign_params_lower:
-                if key.lower() not in (header[0].lower() for header in headers):
-                    sign_headers.append((key, query_params[key][0]))
+                if (key.lower() not in (header[0].lower() for header in headers) and
+                        key.lower() not in params_header_override and
+                        key.lower() != 'versionid'):
+                    sign_headers[key] = query_params[key][0]
+                if key.lower() == 'versionid':
+                    query_string[key] = query_params[key][0]
+
+    for header_name, header_value in headers.items():
+        if header_name.lower().startswith('x-amz-') or header_name.lower().startswith('content-'):
+            if is_v2 and header_name.lower() in query_params:
+                sign_headers[header_name] = header_value
+            if is_v4 and header_name.lower() in query_params['X-Amz-SignedHeaders'][0]:
+                sign_headers[header_name] = header_value
 
     # Preparnig dictionary of request to build AWSRequest's object of the botocore
     request_url = url.split('?')[0]
+    request_url = \
+        (request_url + '?' + urlencode(query_string) if query_string else request_url)
     forwarded_for = get_forwarded_for_host(headers)
     if forwarded_for:
         request_url = re.sub('://[^/]+', '://%s' % forwarded_for, request_url)
     request_dict = {
         'url_path': path.split('?')[0],
-        'query_string': {},
+        'query_string': query_string,
         'method': method,
-        'headers': dict(sign_headers),
+        'headers': sign_headers,
         'body': b'',
         'url': request_url,
         'context': {
@@ -1456,9 +1485,41 @@ def authenticate_presign_url(method, path, headers, data=None):
             }
         }
     }
-    aws_request = create_request_object(request_dict)
+
+    if not is_v2 and any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
+        LOGGER.debug('URL is kind of version 2 but it does not contains all required query parameters.')
+        response = requests_error_response_xml_signature_calculation(
+            code=403,
+            message='Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters',
+            code_string='AccessDenied'
+        )
+    elif is_v2 and not is_v4:
+        LOGGER.debug('Valid version 2 presign URL.')
+        response = authenticate_presign_url_signv2(method, path, headers, data, url, query_params, request_dict)
+
+    if not is_v4 and any([p in query_params for p in SIGNATURE_V4_PARAMS]):
+        LOGGER.debug('URL is kind of version 4 but it does not contains all required query parameters.')
+        response = requests_error_response_xml_signature_calculation(
+            code=403,
+            message='Query-string authentication requires the X-Amz-Algorithm, \
+                X-Amz-Credential, X-Amz-Date, X-Amz-Expires, \
+                X-Amz-SignedHeaders and X-Amz-Signature parameters.',
+            code_string='AccessDenied'
+        )
+    elif is_v4 and not is_v2:
+        LOGGER.debug('Valid version 4 presign URL.')
+        response = authenticate_presign_url_signv4(method, path, headers, data, url, query_params, request_dict)
+
+    if response is not None:
+        LOGGER.debug('Signature calculation failed with the error.')
+        return response
+
+
+def authenticate_presign_url_signv2(method, path, headers, data, url, query_params, request_dict):
 
     # Calculating Signature
+    LOGGER.debug('Calculating the version 2 signature.')
+    aws_request = create_request_object(request_dict)
     credentials = Credentials(access_key=TEST_AWS_ACCESS_KEY_ID, secret_key=TEST_AWS_SECRET_ACCESS_KEY)
     auth = HmacV1QueryAuth(credentials=credentials, expires=query_params['Expires'][0])
     split = urlsplit(aws_request.url)
@@ -1469,12 +1530,8 @@ def authenticate_presign_url(method, path, headers, data=None):
     query_sig = urlparse.unquote(query_params['Signature'][0])
     if query_sig != signature:
 
-        # older signature calculation methods are not supported
-        # so logging a warning to the user to use the v4 calculation method
-        for param in SIGNATURE_V4_PARAMS:
-            if param.lower() not in (query_param.lower() for query_param in query_params):
-                LOGGER.warning(
-                    'Older version of signature calculation method detected. Please use v4 calculation method')
+        LOGGER.debug('Signature does not match. \
+            What we recieved is %s and what we calculated is %s' % (query_sig, signature))
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',
@@ -1486,11 +1543,52 @@ def authenticate_presign_url(method, path, headers, data=None):
 
     # Checking whether the url is expired or not
     if int(query_params['Expires'][0]) < time.time():
+        LOGGER.debug('Signature matched. But it already expired.')
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='AccessDenied',
             message='Request has expired',
             expires=query_params['Expires'][0]
+        )
+
+
+def authenticate_presign_url_signv4(method, path, headers, data, url, query_params, request_dict):
+
+    # Calculating Signature
+    LOGGER.debug('Calculating the version 4 signature.')
+    aws_request = create_request_object(request_dict)
+    ReadOnlyCredentials = namedtuple('ReadOnlyCredentials',
+                                 ['access_key', 'secret_key', 'token'])
+    credentials = ReadOnlyCredentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, None)
+    region = query_params['X-Amz-Credential'][0].split('/')[2]
+    signer = S3SigV4QueryAuth(credentials, 's3', region, expires=int(query_params['X-Amz-Expires'][0]))
+    signature = signer.add_auth(aws_request, query_params['X-Amz-Date'][0])
+
+    expiration_time = datetime.datetime.strptime(query_params['X-Amz-Date'][0], '%Y%m%dT%H%M%SZ') + \
+        datetime.timedelta(seconds=int(query_params['X-Amz-Expires'][0]))
+
+    # Comparing the signature in url with signature we calculated
+    query_sig = urlparse.unquote(query_params['X-Amz-Signature'][0])
+    if query_sig != signature:
+
+        LOGGER.debug('Signature does not match. \
+            What we recieved is %s and what we calculated is %s' % (query_sig, signature))
+        return requests_error_response_xml_signature_calculation(
+            code=403,
+            code_string='SignatureDoesNotMatch',
+            aws_access_token=TEST_AWS_ACCESS_KEY_ID,
+            signature=signature,
+            message='The request signature we calculated does not match the signature you provided. \
+                    Check your key and signing method.')
+
+    # Checking whether the url is expired or not
+    if expiration_time < datetime.datetime.utcnow():
+        LOGGER.debug('Signature matched. But it already expired.')
+        return requests_error_response_xml_signature_calculation(
+            code=403,
+            code_string='AccessDenied',
+            message='Request has expired',
+            expires=query_params['X-Amz-Expires'][0]
         )
 
 
