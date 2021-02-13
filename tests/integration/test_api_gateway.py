@@ -827,6 +827,55 @@ class TestAPIGateway(unittest.TestCase):
         # when the api key is passed as part of the header
         self.assertEqual(response.status_code, 200)
 
+    def test_multiple_api_keys_validate(self):
+        response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
+                                                              'Item': {'id': '$.Id', 'data': '$.data'}})}
+
+        api_id = self.create_api_gateway_and_deploy(response_templates, True)
+        url = gateway_request_url(api_id=api_id, stage_name='staging', path='/')
+
+        client = aws_stack.connect_to_service('apigateway')
+
+        # Create multiple usage plans
+        usage_plan_ids = []
+        for i in range(2):
+            payload = {
+                'name': 'APIKEYTEST-PLAN-{}'.format(i),
+                'description': 'Description',
+                'quota': {'limit': 10, 'period': 'DAY', 'offset': 0},
+                'throttle': {'rateLimit': 2, 'burstLimit': 1},
+                'apiStages': [{'apiId': api_id, 'stage': 'staging'}],
+                'tags': {'tag_key': 'tag_value'},
+            }
+            usage_plan_ids.append(client.create_usage_plan(**payload)['id'])
+
+        api_keys = []
+        key_type = 'API_KEY'
+        # Create multiple API Keys in each usage plan
+        for usage_plan_id in usage_plan_ids:
+            for i in range(2):
+                api_key = client.create_api_key(name='testMultipleApiKeys{}'.format(i))
+                payload = {'usagePlanId': usage_plan_id, 'keyId': api_key['id'], 'keyType': key_type}
+                client.create_usage_plan_key(**payload)
+                api_keys.append(api_key['value'])
+
+        response = requests.put(
+            url,
+            json.dumps({'id': 'id1', 'data': 'foobar123'}),
+        )
+        # when the api key is not passed as part of the header
+        self.assertEqual(response.status_code, 403)
+
+        # Check All API Keys work
+        for key in api_keys:
+            response = requests.put(
+                url,
+                json.dumps({'id': 'id1', 'data': 'foobar123'}),
+                headers={'X-API-Key': key}
+            )
+            # when the api key is passed as part of the header
+            self.assertEqual(response.status_code, 200)
+
     def test_import_rest_api(self):
         rest_api_name = 'restapi-%s' % short_uid()
 

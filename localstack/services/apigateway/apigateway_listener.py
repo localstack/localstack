@@ -165,8 +165,7 @@ def authorize_invocation(api_id, headers):
 
 def validate_api_key(api_key, stage):
 
-    key = None
-    usage_plan_id = None
+    usage_plan_ids = []
 
     client = aws_stack.connect_to_service('apigateway')
     usage_plans = client.get_usage_plans()
@@ -174,18 +173,15 @@ def validate_api_key(api_key, stage):
         api_stages = item.get('apiStages', [])
         for api_stage in api_stages:
             if api_stage.get('stage') == stage:
-                usage_plan_id = item.get('id')
-    if not usage_plan_id:
-        return False
+                usage_plan_ids.append(item.get('id'))
 
-    usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
-    for item in usage_plan_keys.get('items', []):
-        key = item.get('value')
+    for usage_plan_id in usage_plan_ids:
+        usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
+        for key in usage_plan_keys.get('items', []):
+            if key.get('value') == api_key:
+                return True
 
-    if key != api_key:
-        return False
-
-    return True
+    return False
 
 
 def is_api_key_valid(is_api_key_required, headers, stage):
