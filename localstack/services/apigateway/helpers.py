@@ -27,6 +27,16 @@ class APIGatewayRegion(RegionBackend):
         self.authorizers = {}
         # maps (API id) -> [validators]
         self.validators = {}
+        # account details
+        self.account = {
+            'cloudwatchRoleArn': aws_stack.role_arn('api-gw-cw-role'),
+            'throttleSettings': {
+                'burstLimit': 1000,
+                'rateLimit': 500
+            },
+            'features': ['UsagePlans'],
+            'apiKeyVersion': '1'
+        }
 
 
 def make_json_response(message):
@@ -51,6 +61,29 @@ def get_api_id_from_path(path):
     if match:
         return match.group(1)
     return re.match(PATH_REGEX_MAIN, path).group(1)
+
+
+# -------------
+# ACCOUNT APIs
+# -------------
+
+def get_account():
+    region_details = APIGatewayRegion.get()
+    return to_account_response_json(region_details.account)
+
+
+def update_account(data):
+    region_details = APIGatewayRegion.get()
+    apply_patch(region_details.account, data['patchOperations'], in_place=True)
+    return to_account_response_json(region_details.account)
+
+
+def handle_accounts(method, path, data, headers):
+    if method == 'GET':
+        return get_account()
+    if method == 'PATCH':
+        return update_account(data)
+    return make_error_response('Not implemented for API Gateway accounts: %s' % method, 404)
 
 
 # -----------------
@@ -86,29 +119,6 @@ def get_authorizers(path):
 
     result = [to_authorizer_response_json(api_id, a) for a in auth_list]
     result = {'item': result}
-    return result
-
-
-def to_authorizer_response_json(api_id, data):
-    return to_response_json('authorizer', api_id, data)
-
-
-def to_validator_response_json(api_id, data):
-    return to_response_json('validator', api_id, data)
-
-
-def to_response_json(model_type, api_id, data):
-    result = common.clone(data)
-    self_link = '/restapis/%s/%ss/%s' % (api_id, model_type, data['id'])
-    if '_links' not in result:
-        result['_links'] = {}
-    result['_links']['self'] = {'href': self_link}
-    result['_links']['curies'] = {
-        'href': 'https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html',
-        'name': model_type,
-        'templated': True
-    }
-    result['_links']['%s:delete' % model_type] = {'href': self_link}
     return result
 
 
@@ -277,12 +287,40 @@ def handle_validators(method, path, data, headers):
         return update_validator(path, data)
     elif method == 'DELETE':
         return delete_validator(path)
-    return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
+    return make_error_response('Not implemented for API Gateway validators: %s' % method, 404)
 
 
 # ---------------
 # UTIL FUNCTIONS
 # ---------------
+
+def to_authorizer_response_json(api_id, data):
+    return to_response_json('authorizer', data, api_id=api_id)
+
+
+def to_validator_response_json(api_id, data):
+    return to_response_json('validator', data, api_id=api_id)
+
+
+def to_account_response_json(data):
+    return to_response_json('account', data, self_link='/account')
+
+
+def to_response_json(model_type, data, api_id=None, self_link=None):
+    result = common.clone(data)
+    if not self_link:
+        self_link = '/restapis/%s/%ss/%s' % (api_id, model_type, data['id'])
+    if '_links' not in result:
+        result['_links'] = {}
+    result['_links']['self'] = {'href': self_link}
+    result['_links']['curies'] = {
+        'href': 'https://docs.aws.amazon.com/apigateway/latest/developerguide/restapi-authorizer-latest.html',
+        'name': model_type,
+        'templated': True
+    }
+    result['_links']['%s:delete' % model_type] = {'href': self_link}
+    return result
+
 
 def gateway_request_url(api_id, stage_name, path):
     """ Return URL for inbound API gateway for given API ID, stage name, and path """

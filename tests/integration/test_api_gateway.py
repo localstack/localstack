@@ -646,6 +646,9 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(e.response['Error']['Code'], 'BadRequestException')
             self.assertEqual(e.response['Error']['Message'], 'No Model Name specified')
 
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
     def test_get_api_models(self):
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
@@ -669,6 +672,9 @@ class TestAPIGateway(unittest.TestCase):
         self.assertEqual(result['items'][0]['name'], model_name)
         self.assertEqual(result['items'][0]['description'], description)
 
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
     def test_request_validator(self):
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
@@ -690,6 +696,22 @@ class TestAPIGateway(unittest.TestCase):
             client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
         with self.assertRaises(Exception):
             client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
+    def test_api_account(self):
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='test 123')
+        rest_api_id = response['id']
+
+        result = client.get_account()
+        self.assertIn('UsagePlans', result['features'])
+        result = client.update_account(patchOperations=[{'op': 'add', 'path': '/features/-', 'value': 'foobar'}])
+        self.assertIn('foobar', result['features'])
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
 
     def test_get_model_by_name(self):
         client = aws_stack.connect_to_service('apigateway')
@@ -732,6 +754,9 @@ class TestAPIGateway(unittest.TestCase):
 
         except ClientError as e:
             self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
         api_id = self.create_api_gateway_and_deploy({})
