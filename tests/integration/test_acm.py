@@ -1,6 +1,7 @@
 import unittest
 from moto.ec2 import utils as ec2_utils
 from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid
 
 DIGICERT_ROOT_CERT = """
 -----BEGIN CERTIFICATE-----
@@ -42,7 +43,7 @@ class TestACM(unittest.TestCase):
     def test_domain_validation(self):
         acm = aws_stack.connect_to_service('acm')
 
-        domain_name = 'example.com'
+        domain_name = 'example-%s.com' % short_uid()
         options = [{'DomainName': domain_name, 'ValidationDomain': domain_name}]
         result = acm.request_certificate(DomainName=domain_name, DomainValidationOptions=options)
         self.assertIn('CertificateArn', result)
