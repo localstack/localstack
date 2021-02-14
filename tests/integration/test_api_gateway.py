@@ -13,7 +13,8 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.common import (
-    to_str, json_safe, clone, short_uid, get_free_tcp_port, load_file, safe_requests as requests)
+    to_str, json_safe, clone, short_uid, get_free_tcp_port,
+    load_file, select_attributes, safe_requests as requests)
 from localstack.services.generic_proxy import GenericProxy, ProxyListener
 from localstack.services.apigateway.helpers import (
     get_rest_api_paths, get_resource_for_path, connect_api_gateway_to_sqs, gateway_request_url)
@@ -645,6 +646,9 @@ class TestAPIGateway(unittest.TestCase):
             self.assertEqual(e.response['Error']['Code'], 'BadRequestException')
             self.assertEqual(e.response['Error']['Message'], 'No Model Name specified')
 
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
     def test_get_api_models(self):
         client = aws_stack.connect_to_service('apigateway')
         response = client.create_rest_api(name='my_api', description='this is my api')
@@ -667,6 +671,47 @@ class TestAPIGateway(unittest.TestCase):
         result = client.get_models(restApiId=rest_api_id)
         self.assertEqual(result['items'][0]['name'], model_name)
         self.assertEqual(result['items'][0]['description'], description)
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
+    def test_request_validator(self):
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='this is my api')
+        rest_api_id = response['id']
+        name = 'validator123'
+        result = client.create_request_validator(restApiId=rest_api_id, name=name)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        validator_id = result['id']
+        result = client.get_request_validators(restApiId=rest_api_id)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(result['items'], [{'id': validator_id, 'name': name}])
+        result = client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+        self.assertEqual(result['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(select_attributes(result, ['id', 'name']), {'id': validator_id, 'name': name})
+        result = client.update_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id,
+            patchOperations=[])
+        client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+        with self.assertRaises(Exception):
+            client.get_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+        with self.assertRaises(Exception):
+            client.delete_request_validator(restApiId=rest_api_id, requestValidatorId=validator_id)
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
+    def test_api_account(self):
+        client = aws_stack.connect_to_service('apigateway')
+        response = client.create_rest_api(name='my_api', description='test 123')
+        rest_api_id = response['id']
+
+        result = client.get_account()
+        self.assertIn('UsagePlans', result['features'])
+        result = client.update_account(patchOperations=[{'op': 'add', 'path': '/features/-', 'value': 'foobar'}])
+        self.assertIn('foobar', result['features'])
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
 
     def test_get_model_by_name(self):
         client = aws_stack.connect_to_service('apigateway')
@@ -709,6 +754,9 @@ class TestAPIGateway(unittest.TestCase):
 
         except ClientError as e:
             self.assertEqual(e.response['Error']['Code'], 'NotFoundException')
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
 
     def test_put_integration_dynamodb_proxy_validation_without_response_template(self):
         api_id = self.create_api_gateway_and_deploy({})
@@ -778,6 +826,55 @@ class TestAPIGateway(unittest.TestCase):
         )
         # when the api key is passed as part of the header
         self.assertEqual(response.status_code, 200)
+
+    def test_multiple_api_keys_validate(self):
+        response_templates = {'application/json': json.dumps({'TableName': 'MusicCollection',
+                                                              'Item': {'id': '$.Id', 'data': '$.data'}})}
+
+        api_id = self.create_api_gateway_and_deploy(response_templates, True)
+        url = gateway_request_url(api_id=api_id, stage_name='staging', path='/')
+
+        client = aws_stack.connect_to_service('apigateway')
+
+        # Create multiple usage plans
+        usage_plan_ids = []
+        for i in range(2):
+            payload = {
+                'name': 'APIKEYTEST-PLAN-{}'.format(i),
+                'description': 'Description',
+                'quota': {'limit': 10, 'period': 'DAY', 'offset': 0},
+                'throttle': {'rateLimit': 2, 'burstLimit': 1},
+                'apiStages': [{'apiId': api_id, 'stage': 'staging'}],
+                'tags': {'tag_key': 'tag_value'},
+            }
+            usage_plan_ids.append(client.create_usage_plan(**payload)['id'])
+
+        api_keys = []
+        key_type = 'API_KEY'
+        # Create multiple API Keys in each usage plan
+        for usage_plan_id in usage_plan_ids:
+            for i in range(2):
+                api_key = client.create_api_key(name='testMultipleApiKeys{}'.format(i))
+                payload = {'usagePlanId': usage_plan_id, 'keyId': api_key['id'], 'keyType': key_type}
+                client.create_usage_plan_key(**payload)
+                api_keys.append(api_key['value'])
+
+        response = requests.put(
+            url,
+            json.dumps({'id': 'id1', 'data': 'foobar123'}),
+        )
+        # when the api key is not passed as part of the header
+        self.assertEqual(response.status_code, 403)
+
+        # Check All API Keys work
+        for key in api_keys:
+            response = requests.put(
+                url,
+                json.dumps({'id': 'id1', 'data': 'foobar123'}),
+                headers={'X-API-Key': key}
+            )
+            # when the api key is passed as part of the header
+            self.assertEqual(response.status_code, 200)
 
     def test_import_rest_api(self):
         rest_api_name = 'restapi-%s' % short_uid()

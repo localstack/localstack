@@ -38,9 +38,10 @@ class TestRoute53(unittest.TestCase):
         self.assertIn(expected, result)
 
         # list zones by name
-        result = route53.list_hosted_zones_by_name(DNSName='test').get('HostedZones')
-        # TODO: add test which checks content of result list
-        self.assertTrue(isinstance(result, list))
+        result = route53.list_hosted_zones_by_name(DNSName=name).get('HostedZones')
+        self.assertEqual(result[0]['Name'], 'zone123.')
+        result = route53.list_hosted_zones_by_name(DNSName='%s.' % name).get('HostedZones')
+        self.assertEqual(result[0]['Name'], 'zone123.')
 
         result = route53.disassociate_vpc_from_hosted_zone(
             HostedZoneId=zone_id, VPC={'VPCRegion': aws_stack.get_region(), 'VPCId': vpc_id}, Comment='test2')

@@ -19,14 +19,15 @@ from localstack.services.awslambda import lambda_api
 from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
-from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers,
-    extract_query_string_params, extract_path_params, make_error_response, get_cors_response)
+from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
+    handle_accounts, extract_query_string_params, extract_path_params, make_error_response, get_cors_response)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
 
 # regex path patterns
 PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
+PATH_REGEX_VALIDATORS = r'^/restapis/([A-Za-z0-9_\-]+)/requestvalidators(\?.*)?'
 PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
@@ -48,6 +49,12 @@ class ProxyListenerApiGateway(ProxyListener):
 
         if re.match(PATH_REGEX_AUTHORIZERS, path):
             return handle_authorizers(method, path, data, headers)
+
+        if re.match(PATH_REGEX_VALIDATORS, path):
+            return handle_validators(method, path, data, headers)
+
+        if path == '/account':
+            return handle_accounts(method, path, data, headers)
 
         if re.match(PATH_REGEX_RESPONSES, path):
             search_match = re.search(PATH_REGEX_RESPONSES, path)
@@ -158,8 +165,7 @@ def authorize_invocation(api_id, headers):
 
 def validate_api_key(api_key, stage):
 
-    key = None
-    usage_plan_id = None
+    usage_plan_ids = []
 
     client = aws_stack.connect_to_service('apigateway')
     usage_plans = client.get_usage_plans()
@@ -167,18 +173,15 @@ def validate_api_key(api_key, stage):
         api_stages = item.get('apiStages', [])
         for api_stage in api_stages:
             if api_stage.get('stage') == stage:
-                usage_plan_id = item.get('id')
-    if not usage_plan_id:
-        return False
+                usage_plan_ids.append(item.get('id'))
 
-    usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
-    for item in usage_plan_keys.get('items', []):
-        key = item.get('value')
+    for usage_plan_id in usage_plan_ids:
+        usage_plan_keys = client.get_usage_plan_keys(usagePlanId=usage_plan_id)
+        for key in usage_plan_keys.get('items', []):
+            if key.get('value') == api_key:
+                return True
 
-    if key != api_key:
-        return False
-
-    return True
+    return False
 
 
 def is_api_key_valid(is_api_key_required, headers, stage):
