@@ -156,7 +156,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag=''
     bucket_name = normalize_bucket_name(bucket_name)
     return {
         'Records': [{
-            'eventVersion': '2.0',
+            'eventVersion': '2.1',
             'eventSource': 'aws:s3',
             'awsRegion': aws_stack.get_region(),
             'eventTime': timestamp_millis(),
