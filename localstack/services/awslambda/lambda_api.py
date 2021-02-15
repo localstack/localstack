@@ -564,6 +564,12 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
             result = not_found_error(msg='The resource specified in the request does not exist.')
             return lambda_executors.InvocationResult(result)
 
+        # forward invocation to external endpoint, if configured
+        invocation_type = 'Event' if asynchronous else 'RequestResponse'
+        invoke_result = forward_to_external_url(func_details, event, context, invocation_type)
+        if invoke_result is not None:
+            return invoke_result
+
         context = LambdaContext(func_details, version, context)
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
             version=version, asynchronous=asynchronous, callback=callback)
@@ -891,11 +897,31 @@ def format_func_details(func_details, version=None, always_add_version=False):
     return result
 
 
+def forward_to_external_url(func_details, event, context, invocation_type):
+    """ If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL. """
+    if not config.LAMBDA_FORWARD_URL:
+        return
+    func_name = func_details.name()
+    url = '%s%s/functions/%s/invocations' % (config.LAMBDA_FORWARD_URL, PATH_ROOT, func_name)
+    headers = aws_stack.mock_aws_request_headers('lambda')
+    headers['X-Amz-Invocation-Type'] = invocation_type
+    headers['X-Amz-Log-Type'] = 'Tail'
+    client_context = context.get('client_context')
+    if client_context:
+        headers['X-Amz-Client-Context'] = client_context
+    data = json.dumps(event) if isinstance(event, dict) else str(event)
+    LOG.debug('Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s' % config.LAMBDA_FORWARD_URL)
+    result = safe_requests.post(url, data, headers=headers)
+    LOG.debug('Received result from external Lambda endpoint (status %s): %s' % (
+        result.status_code, result.content))
+    return result
+
+
 def forward_to_fallback_url(func_arn, data):
     """ If LAMBDA_FALLBACK_URL is configured, forward the invocation of this non-existing
         Lambda to the configured URL. """
     if not config.LAMBDA_FALLBACK_URL:
-        return None
+        return
 
     lambda_name = aws_stack.lambda_function_name(func_arn)
     if config.LAMBDA_FALLBACK_URL.startswith('dynamodb://'):

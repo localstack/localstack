@@ -206,6 +206,9 @@ if not LAMBDA_EXECUTOR:
 # DynamoDB table. If this matches `http(s)://...`, then the Lambda invocation is
 # forwarded as a POST request to that URL.
 LAMBDA_FALLBACK_URL = os.environ.get('LAMBDA_FALLBACK_URL', '').strip()
+# Forward URL used to forward any Lambda invocations to an external
+# endpoint (can use useful for advanced test setups)
+LAMBDA_FORWARD_URL = os.environ.get('LAMBDA_FORWARD_URL', '').strip()
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!

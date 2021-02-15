@@ -79,15 +79,24 @@ TEST_LAMBDA_LIBS = [
 ]
 
 
-def _run_forward_to_fallback_url(url, num_requests=3):
+def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_requests=3):
     lambda_client = aws_stack.connect_to_service('lambda')
-    config.LAMBDA_FALLBACK_URL = url
+    if fallback:
+        config.LAMBDA_FALLBACK_URL = url
+    else:
+        config.LAMBDA_FORWARD_URL = url
     try:
         for i in range(num_requests):
-            lambda_client.invoke(FunctionName='non-existing-lambda-%s' % i,
-                                 Payload=b'{}', InvocationType='RequestResponse')
+            lambda_name = lambda_name or 'non-existing-lambda-%s' % i
+            ctx = {'env': 'test'}
+            lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"foo":"bar"}',
+                InvocationType='RequestResponse',
+                ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))))
     finally:
-        config.LAMBDA_FALLBACK_URL = ''
+        if fallback:
+            config.LAMBDA_FALLBACK_URL = ''
+        else:
+            config.LAMBDA_FORWARD_URL = ''
 
 
 class LambdaTestBase(unittest.TestCase):
@@ -166,20 +175,44 @@ class TestLambdaBaseFeatures(unittest.TestCase):
     def test_forward_to_fallback_url_http(self):
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
-                records.append({'data': data, 'headers': headers})
+                records.append({'data': data, 'headers': headers, 'method': method, 'path': path})
                 return 200
 
-        records = []
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
 
-        items_before = len(records)
-        _run_forward_to_fallback_url('%s://localhost:%s' % (get_service_protocol(), local_port))
+        local_url = '%s://localhost:%s' % (get_service_protocol(), local_port)
+
+        # test 1: forward to LAMBDA_FALLBACK_URL
+        records = []
+        _run_forward_to_fallback_url(local_url)
         items_after = len(records)
         for record in records:
             self.assertIn('non-existing-lambda', record['headers']['lambda-function-name'])
+        self.assertEqual(items_after, 3)
 
-        self.assertEqual(items_after, items_before + 3)
+        # create test Lambda
+        lambda_name = 'test-%s' % short_uid()
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON, func_name=lambda_name, libs=TEST_LAMBDA_LIBS)
+
+        # test 2: forward to LAMBDA_FORWARD_URL
+        records = []
+        _run_forward_to_fallback_url(local_url, lambda_name=lambda_name, fallback=False)
+        items_after = len(records)
+        for record in records:
+            headers = record['headers']
+            self.assertIn('/lambda/', headers['Authorization'])
+            self.assertEqual(record['method'], 'POST')
+            self.assertIn('/functions/%s/invocations' % lambda_name, record['path'])
+            self.assertTrue(headers.get('X-Amz-Client-Context'))
+            self.assertEqual(headers.get('X-Amz-Invocation-Type'), 'RequestResponse')
+            self.assertEqual(json.loads(to_str(record['data'])), {'foo': 'bar'})
+        self.assertEqual(items_after, 3)
+
+        # clean up / shutdown
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.delete_function(FunctionName=lambda_name)
         proxy.stop()
 
     def test_adding_fallback_function_name_in_headers(self):
@@ -263,11 +296,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             queue_url = sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
             queue_arn = aws_stack.sqs_queue_arn(queue_name)
             testutil.create_lambda_function(
-                handler_file=TEST_LAMBDA_PYTHON,
-                func_name=lambda_name,
-                libs=TEST_LAMBDA_LIBS,
-                runtime=LAMBDA_RUNTIME_PYTHON36
-            )
+                handler_file=TEST_LAMBDA_PYTHON, func_name=lambda_name, libs=TEST_LAMBDA_LIBS)
 
             lambda_client.put_function_event_invoke_config(
                 FunctionName=lambda_name,
