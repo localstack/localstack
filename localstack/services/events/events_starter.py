@@ -59,7 +59,6 @@ def send_event_to_firehose(event, arn):
 def send_event_to_event_bus(event, arn):
     bus_name = arn.split(':')[-1].split('/')[-1]
     events_client = aws_stack.connect_to_service('events')
-    print(event, event.get('source'), event.get('detail-type'), event.get('detail'))
     events_client.put_events(
         Entries=[{
             'EventBusName': bus_name,
