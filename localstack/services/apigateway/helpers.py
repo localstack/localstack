@@ -13,12 +13,16 @@ from localstack.utils.aws.aws_responses import requests_response
 # regex path patterns
 PATH_REGEX_MAIN = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+(\?.*)?'
 PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
+PATH_REGEX_SUB = r'^/restapis/([A-Za-z0-9_\-]+)/[a-z]+/([A-Za-z0-9_\-]+)/.*'
 
 PATH_REGEX_AUTHORIZER = r'^/restapis/[A-Za-z0-9_\-]+/authorizers/(.*)'
-PATH_REGEX_VALIDATOR = r'^/restapis/[A-Za-z0-9_\-]+/requestvalidators/(.*)'
+PATH_REGEX_VALIDATOR = r'^/restapis/[A-Za-z0-9_\-]+/requestvalidators/?(.*)'
+PATH_REGEX_PATH_MAPPING = r'/domainnames/([^/]+)/basepathmappings/?(.*)'
 
 # template for SQS inbound data
 APIGATEWAY_SQS_DATA_INBOUND_TEMPLATE = "Action=SendMessage&MessageBody=$util.base64Encode($input.json('$'))"
+
+# TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
 
 
 class APIGatewayRegion(RegionBackend):
@@ -37,6 +41,8 @@ class APIGatewayRegion(RegionBackend):
             'features': ['UsagePlans'],
             'apiKeyVersion': '1'
         }
+        # maps (domain_name) -> [path_mappings]
+        self.base_path_mappings = {}
 
 
 def make_json_response(message):
@@ -102,6 +108,13 @@ def _find_authorizer(api_id, authorizer_id):
     return authorizer
 
 
+def normalize_authorizer(data):
+    result = common.clone(data)
+    # terraform sends this as a string in patch, so convert to int
+    result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
+    return result
+
+
 def get_authorizers(path):
     region_details = APIGatewayRegion.get()
 
@@ -119,13 +132,6 @@ def get_authorizers(path):
 
     result = [to_authorizer_response_json(api_id, a) for a in auth_list]
     result = {'item': result}
-    return result
-
-
-def normalize_authorizer(data):
-    result = common.clone(data)
-    # terraform sends this as a string in patch, so convert to int
-    result['authorizerResultTtlInSeconds'] = int(result.get('authorizerResultTtlInSeconds') or 300)
     return result
 
 
@@ -191,6 +197,100 @@ def handle_authorizers(method, path, data, headers):
     elif method == 'DELETE':
         return delete_authorizer(path)
     return make_error_response('Not implemented for API Gateway authorizers: %s' % method, 404)
+
+
+# -----------------------
+# BASE PATH MAPPING APIs
+# -----------------------
+
+def get_domain_from_path(path):
+    return re.match(PATH_REGEX_PATH_MAPPING, path).group(1)
+
+
+def get_base_path_from_path(path):
+    return re.match(PATH_REGEX_PATH_MAPPING, path).group(2)
+
+
+def get_base_path_mapping(path):
+    region_details = APIGatewayRegion.get()
+
+    # This function returns either a list or a single mapping (depending on the path)
+    domain_name = get_domain_from_path(path)
+    base_path = get_base_path_from_path(path)
+
+    mappings_list = region_details.base_path_mappings.get(domain_name) or []
+
+    if base_path:
+        mapping = ([m for m in mappings_list if m['basePath'] == base_path] or [None])[0]
+        if mapping is None:
+            return make_error_response('Not found: %s' % base_path, 404)
+        return to_base_mapping_response_json(domain_name, base_path, mapping)
+
+    result = [to_base_mapping_response_json(domain_name, m['basePath'], m) for m in mappings_list]
+    result = {'item': result}
+    return result
+
+
+def add_base_path_mapping(path, data):
+    region_details = APIGatewayRegion.get()
+
+    domain_name = get_domain_from_path(path)
+    base_path = data.get('basePath')
+    result = common.clone(data)
+
+    region_details.base_path_mappings[domain_name] = region_details.base_path_mappings.get(domain_name) or []
+    region_details.base_path_mappings[domain_name].append(result)
+
+    return make_json_response(to_base_mapping_response_json(domain_name, base_path, result))
+
+
+def update_base_path_mapping(path, data):
+    region_details = APIGatewayRegion.get()
+
+    domain_name = get_domain_from_path(path)
+    base_path = get_base_path_from_path(path)
+
+    mappings_list = region_details.base_path_mappings.get(domain_name) or []
+
+    mapping = ([m for m in mappings_list if m['basePath'] == base_path] or [None])[0]
+    if mapping is None:
+        return make_error_response('Not found: mapping for domain name %s, base path %s' %
+            (domain_name, base_path), 404)
+
+    result = apply_patch(mapping, data['patchOperations'])
+
+    for i in range(len(mappings_list)):
+        if mappings_list[i]['basePath'] == base_path:
+            mappings_list[i] = result
+
+    return make_json_response(to_base_mapping_response_json(domain_name, base_path, result))
+
+
+def delete_base_path_mapping(path):
+    region_details = APIGatewayRegion.get()
+
+    domain_name = get_domain_from_path(path)
+    base_path = get_base_path_from_path(path)
+
+    mappings_list = region_details.base_path_mappings.get(domain_name) or []
+    for i in range(len(mappings_list)):
+        if mappings_list[i]['basePath'] == base_path:
+            del mappings_list[i]
+            return make_accepted_response()
+
+    return make_error_response('Base path mapping %s for domain %s not found' % (base_path, domain_name), 404)
+
+
+def hande_base_path_mappings(method, path, data, headers):
+    if method == 'GET':
+        return get_base_path_mapping(path)
+    elif method == 'POST':
+        return add_base_path_mapping(path, data)
+    if method == 'PATCH':
+        return update_base_path_mapping(path, data)
+    elif method == 'DELETE':
+        return delete_base_path_mapping(path)
+    return make_error_response('Not implemented for API Gateway base path mappings: %s' % method, 404)
 
 
 # ----------------
@@ -300,6 +400,11 @@ def to_authorizer_response_json(api_id, data):
 
 def to_validator_response_json(api_id, data):
     return to_response_json('validator', data, api_id=api_id)
+
+
+def to_base_mapping_response_json(domain_name, base_path, data):
+    self_link = '/domainnames/%s/basepathmappings/%s' % (domain_name, base_path)
+    return to_response_json('basepathmapping', data, self_link=self_link)
 
 
 def to_account_response_json(data):

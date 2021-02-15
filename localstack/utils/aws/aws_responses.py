@@ -150,6 +150,9 @@ def response_regex_replace(response, search, replace):
 def set_response_content(response, content):
     if isinstance(content, dict):
         content = json.dumps(content)
+    elif isinstance(content, RequestsResponse):
+        response.status_code = content.status_code
+        content = content.content
     response._content = content or ''
     response.headers['Content-Length'] = str(len(response._content))
 

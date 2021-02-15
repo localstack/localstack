@@ -914,6 +914,7 @@ def forward_to_external_url(func_details, event, context, invocation_type):
     result = safe_requests.post(url, data, headers=headers)
     LOG.debug('Received result from external Lambda endpoint (status %s): %s' % (
         result.status_code, result.content))
+    result = lambda_executors.InvocationResult(result)
     return result
 
 
