@@ -66,7 +66,7 @@ def filter_event_with_target_input_path(target, event):
 def filter_event_based_on_event_format(self, rule, event):
     def filter_event(event_pattern, event):
         for key, value in event_pattern.items():
-            event_value = event.get(key.lower())
+            event_value = event.get(key.lower().replace('-', ''))
             if not event_value:
                 return False
 
@@ -187,7 +187,7 @@ def apply_patches():
             formatted_event = {
                 'version': '0',
                 'id': event_envelope['uuid'],
-                'detailtype': event.get('DetailType'),
+                'detail-type': event.get('DetailType'),
                 'source': event.get('Source'),
                 'account': TEST_AWS_ACCOUNT_ID,
                 'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
