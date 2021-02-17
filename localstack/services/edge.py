@@ -199,6 +199,8 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = 'web', config.PORT_WEB_UI
     elif result[0] == 'EventBridge':
         result = 'events', config.PORT_EVENTS
+    elif result[0] == 'elasticloadbalancing':
+        result = 'elbv2', config.PORT_ELBV2
 
     return result[0], result_before[1] or result[1], path, host
 

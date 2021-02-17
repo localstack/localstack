@@ -43,6 +43,7 @@ def do_register_localstack_plugins():
         from localstack.services.cloudwatch import cloudwatch_listener, cloudwatch_starter
         from localstack.services.dynamodb import dynamodb_listener, dynamodb_starter
         from localstack.services.ec2 import ec2_starter, ec2_listener
+        from localstack.services.elbv2 import elbv2_starter, elbv2_listener
         from localstack.services.es import es_starter
         from localstack.services.events import events_listener, events_starter
         from localstack.services.iam import iam_listener, iam_starter
@@ -106,6 +107,11 @@ def do_register_localstack_plugins():
             'ec2',
             start=ec2_starter.start_ec2,
             listener=ec2_listener.UPDATE_EC2))
+
+        register_plugin(Plugin(
+            'elbv2',
+            start=elbv2_starter.start_elbv2,
+            listener=elbv2_listener.UPDATE_ELBV2))
 
         register_plugin(Plugin(
             'es',
