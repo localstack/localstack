@@ -92,7 +92,7 @@ def apply_patches():
         rest_api = self.get_rest_api(function_id)
         # Remove default root, then add paths from API spec
         rest_api.resources = {}
-        for path in body['paths']:
+        for path in body.get('paths', {}):
             child_id = create_id()
             child = Resource(
                 id=child_id,
@@ -161,9 +161,6 @@ def apply_patches():
         # handle import rest_api via swagger file
         if self.method == 'PUT':
             body = json.loads(to_str(self.body))
-            if not body.get('paths'):
-                return 400, {}, ''
-
             rest_api = self.backend.put_rest_api(function_id, body)
             return 200, {}, json.dumps(rest_api.to_dict())
 

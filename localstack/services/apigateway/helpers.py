@@ -235,7 +235,9 @@ def add_base_path_mapping(path, data):
     region_details = APIGatewayRegion.get()
 
     domain_name = get_domain_from_path(path)
-    base_path = data.get('basePath')
+    # Note: "(none)" is a special value in API GW:
+    # https://docs.aws.amazon.com/apigateway/api-reference/link-relation/basepathmapping-by-base-path
+    base_path = data['basePath'] = data.get('basePath') or '(none)'
     result = common.clone(data)
 
     region_details.base_path_mappings[domain_name] = region_details.base_path_mappings.get(domain_name) or []

@@ -852,7 +852,7 @@ class TestAPIGateway(unittest.TestCase):
 
         spec_file = load_file(TEST_SWAGGER_FILE)
         rs = client.put_rest_api(
-            restApiId=rest_api_id, body=spec_file)
+            restApiId=rest_api_id, body=spec_file, mode='overwrite')
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         rs = client.get_resources(restApiId=rest_api_id)
