@@ -298,6 +298,9 @@ class LambdaFunction(Component):
         # Example ARN: arn:aws:lambda:aws-region:acct-id:function:helloworld:1
         return self.id.split(':')[6]
 
+    def region(self):
+        return self.id.split(':')[3]
+
     def arn(self):
         return self.id
 
