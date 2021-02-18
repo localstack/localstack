@@ -150,7 +150,7 @@ class ProxyListenerKinesis(ProxyListener):
                 if sdk_v2:
                     record['ApproximateArrivalTimestamp'] = int(record['ApproximateArrivalTimestamp'])
                 if not isinstance(record['Data'], str):
-                    record['Data'] = bytearray(record['Data']['data'])
+                    record['Data'] = bytearray(record['Data']['data']).decode('utf-8')
 
             if encoding_type == APPLICATION_CBOR:
                 response._content = cbor2.dumps(results)

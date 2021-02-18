@@ -11,7 +11,7 @@ from moto.apigateway.models import apigateway_backends
 from localstack.utils import common
 from localstack.config import TEST_KINESIS_URL, TEST_SQS_URL
 from localstack.constants import APPLICATION_JSON, PATH_USER_REQUEST, TEST_AWS_ACCOUNT_ID
-from localstack.utils.aws import aws_stack
+from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import to_str, to_bytes
 from localstack.utils.analytics import event_publisher
 from localstack.services.kinesis import kinesis_listener
@@ -20,7 +20,8 @@ from localstack.services.apigateway import helpers
 from localstack.services.generic_proxy import ProxyListener
 from localstack.utils.aws.aws_responses import flask_to_requests_response, requests_response, LambdaResponse
 from localstack.services.apigateway.helpers import (get_resource_for_path, handle_authorizers, handle_validators,
-    handle_accounts, extract_query_string_params, extract_path_params, make_error_response, get_cors_response)
+    handle_accounts, extract_query_string_params, extract_path_params, make_error_response, get_cors_response,
+    hande_base_path_mappings)
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
@@ -30,6 +31,7 @@ PATH_REGEX_AUTHORIZERS = r'^/restapis/([A-Za-z0-9_\-]+)/authorizers(\?.*)?'
 PATH_REGEX_VALIDATORS = r'^/restapis/([A-Za-z0-9_\-]+)/requestvalidators(\?.*)?'
 PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0-9_\-]+)?(\?.*)?'
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
+PATH_REGEX_PATH_MAPPINGS = r'/domainnames/([^/]+)/basepathmappings(/.*)?'
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
 
 # Maps API IDs to list of gateway responses
@@ -53,9 +55,6 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(PATH_REGEX_VALIDATORS, path):
             return handle_validators(method, path, data, headers)
 
-        if path == '/account':
-            return handle_accounts(method, path, data, headers)
-
         if re.match(PATH_REGEX_RESPONSES, path):
             search_match = re.search(PATH_REGEX_RESPONSES, path)
             api_id = search_match.group(1)
@@ -74,6 +73,18 @@ class ProxyListenerApiGateway(ProxyListener):
         if re.match(r'/restapis/[^/]+/documentation/versions', path):
             if response.status_code == 404:
                 return requests_response({'position': '1', 'items': []})
+
+        # add missing implementations
+        if response.status_code == 404:
+            data = data and json.loads(to_str(data))
+            result = None
+            if path == '/account':
+                result = handle_accounts(method, path, data, headers)
+            if re.match(PATH_REGEX_PATH_MAPPINGS, path):
+                result = hande_base_path_mappings(method, path, data, headers)
+            if result is not None:
+                response.status_code = 200
+                aws_responses.set_response_content(response, result)
 
         # publish event
         if method == 'POST' and path == '/restapis':

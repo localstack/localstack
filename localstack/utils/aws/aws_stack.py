@@ -171,7 +171,7 @@ def get_local_region():
     if LOCAL_REGION is None:
         session = boto3.session.Session()
         LOCAL_REGION = session.region_name or ''
-    return LOCAL_REGION or config.DEFAULT_REGION
+    return config.DEFAULT_REGION or LOCAL_REGION
 
 
 def is_internal_call_context(headers):

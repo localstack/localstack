@@ -56,6 +56,19 @@ def send_event_to_firehose(event, arn):
         Record={'Data': to_bytes(json.dumps(event))})
 
 
+def send_event_to_event_bus(event, arn):
+    bus_name = arn.split(':')[-1].split('/')[-1]
+    events_client = aws_stack.connect_to_service('events')
+    events_client.put_events(
+        Entries=[{
+            'EventBusName': bus_name,
+            'Source': event.get('source'),
+            'DetailType': event.get('detail-type'),
+            'Detail': event.get('detail')
+        }]
+    )
+
+
 def filter_event_with_target_input_path(target, event):
     input_path = target.get('InputPath')
     if input_path:
@@ -116,6 +129,9 @@ def process_events(event, targets):
 
         elif service == 'firehose':
             send_event_to_firehose(changed_event, arn)
+
+        elif service == 'events':
+            send_event_to_event_bus(changed_event, arn)
 
         else:
             LOG.warning('Unsupported Events target service type "%s"' % service)
