@@ -126,6 +126,8 @@ class LambdaExecutor(object):
 
         # injecting aws credentials into docker environment if not provided
         aws_stack.inject_test_credentials_into_env(result)
+        # injecting the region into the docker environment
+        aws_stack.inject_region_into_env(result, func_details.region())
 
         return result
 

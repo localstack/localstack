@@ -332,6 +332,10 @@ def inject_test_credentials_into_env(env):
         env[ENV_SECRET_KEY] = 'test'
 
 
+def inject_region_into_env(env, region):
+    env['AWS_REGION'] = region
+
+
 def sqs_queue_url_for_arn(queue_arn):
     if '://' in queue_arn:
         return queue_arn
