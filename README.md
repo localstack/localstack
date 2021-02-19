@@ -129,7 +129,7 @@ pip install localstack
 should be installed and started entirely under a local non-root user. If you have problems
 with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
-## Running in Docker
+## Running 
 
 By default, LocalStack gets started inside a Docker container using this command:
 
@@ -145,6 +145,16 @@ localstack start
 **Note**: By default, LocalStack uses the image tagged `latest` that is cached on your machine, and will **not** pull the latest image automatically from Docker Hub (i.e., the image needs to be pulled manually if needed).
 
 (**Note**: Although it is strongly recommended to use Docker, the infrastructure can also be spun up directly on the host machine using the `--host` startup flag. Note that this will require [additional dependencies](#Developing), and is not supported on some operating systems, including Windows.)
+
+### Using `docker`
+
+You can also use docker directly and use the following command to get started with localstack
+
+```
+docker run --rm -p 4566:4566 -p 4571:4571 localstack/localstack
+```
+
+to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
 
 ### Using `docker-compose`
 
