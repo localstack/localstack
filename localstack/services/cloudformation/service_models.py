@@ -396,6 +396,32 @@ class KinesisStream(GenericBaseModel):
         return result
 
 
+class KinesisStreamConsumer(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Kinesis::StreamConsumer'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('ConsumerARN')
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        stream_arn = self.resolve_refs_recursively(stack_name, props['StreamARN'], resources)
+        result = aws_stack.connect_to_service('kinesis').list_stream_consumers(StreamARN=stream_arn)
+        result = [r for r in result['Consumers'] if r['ConsumerName'] == props['ConsumerName']]
+        return (result or [None])[0]
+
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'register_stream_consumer'
+            },
+            'delete': {
+                'function': 'deregister_stream_consumer'
+            }
+        }
+
+
 class Route53RecordSet(GenericBaseModel):
     @staticmethod
     def cloudformation_type():

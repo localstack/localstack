@@ -3,6 +3,7 @@ import asyncio
 import logging
 import threading
 import traceback
+import collections.abc
 import h11
 from quart import make_response, request, Quart
 from quart.app import _cancel_all_tasks
@@ -89,6 +90,15 @@ class HTTPErrorResponse(Exception):
         self.code = code
 
 
+def get_async_generator_result(result):
+    gen, headers = result, {}
+    if isinstance(result, tuple) and len(result) >= 2:
+        gen, headers = result[:2]
+    if not isinstance(gen, (collections.abc.Generator, collections.abc.AsyncGenerator)):
+        return
+    return gen, headers
+
+
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
     ensure_event_loop()
@@ -113,6 +123,11 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                     response.status_code = e.code or response.status_code
                 return response
             if result is not None:
+                # check if this is an async generator (for HTTP2 push event responses)
+                async_gen = get_async_generator_result(result)
+                if async_gen:
+                    return async_gen
+                # prepare and return regular response
                 is_chunked = uses_chunked_encoding(result)
                 result_content = result.content or ''
                 response = await make_response(result_content)
