@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import json
+import time
 import uuid
 import unittest
 from localstack import config
@@ -429,6 +430,49 @@ class EventsTest(unittest.TestCase):
         )
         self.events_client.delete_event_bus(
             Name=bus_name
+        )
+
+    def test_rule_disable(self):
+
+        rule_name = 'rule-{}'.format(short_uid())
+        self.events_client.put_rule(
+            Name=rule_name,
+            ScheduleExpression='rate(1 minutes)'
+        )
+
+        queue_name = 'queue-{}'.format(short_uid())
+        queue_target_id = short_uid()
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+        queue_arn = aws_stack.sqs_queue_arn(queue_name)
+
+        event = {
+            'env': 'testing'
+        }
+
+        self.events_client.put_targets(
+            Rule=rule_name,
+            Targets=[
+                {
+                    'Id': queue_target_id,
+                    'Arn': queue_arn,
+                    'Input': json.dumps(event)
+                }]
+        )
+
+        response = self.events_client.list_rules()
+        self.assertEqual(response['Rules'][0]['State'], 'ENABLED')
+
+        self.events_client.disable_rule(Name=rule_name)
+
+        response = self.events_client.list_rules()
+        self.assertEqual(response['Rules'][0]['State'], 'DISABLED')
+        time.sleep(62)
+        msgs = self.sqs_client.receive_message(QueueUrl=queue_url).get('Messages', [])
+        self.assertEqual(len(msgs), 0)
+
+        self.events_client.delete_rule(
+            Name=rule_name,
+            Force=True
         )
 
     def test_scheduled_expression_events(self):
