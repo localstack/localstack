@@ -44,13 +44,10 @@ class JobScheduler(object):
         return job.job_id
 
     def disable_job(self, job_id):
-        i = 0
-        while i < len(self.jobs):
-            if self.jobs[i].job_id == job_id:
-                self.jobs[i].is_enabled = False
+        for job in self.jobs:
+            if job.job_id == job_id:
+                job.is_enabled = False
                 break
-            else:
-                i += 1
 
     def cancel_job(self, job_id):
         i = 0

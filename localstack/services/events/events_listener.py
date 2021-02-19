@@ -82,9 +82,7 @@ def convert_schedule_to_cron(schedule):
 
 def handle_put_rule(data):
     schedule = data.get('ScheduleExpression')
-    enabled = True
-    if data.get('State') and data.get('State') == 'DISABLED':
-        enabled = False
+    enabled = data.get('State') != 'DISABLED'
 
     if schedule:
         job_func = get_scheduled_rule_func(data)
