@@ -9,9 +9,9 @@ from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, now_utc
 from localstack.utils.analytics import event_publisher
-from localstack_ext.services.s3 import s3_select_utils
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
+from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
 
 # list of stream consumer details
 STREAM_CONSUMERS = []
@@ -193,7 +193,7 @@ def subscribe_to_shard(data):
         ShardId=data['ShardId'], ShardIteratorType=iter_type)['ShardIterator']
 
     def send_events():
-        yield s3_select_utils.convert_to_s3_select_payload('', event_type='initial-response')
+        yield convert_to_binary_event_payload('', event_type='initial-response')
         iter = iterator
         # TODO: find better way to run loop up to max 5 minutes (until connection terminates)!
         for i in range(5 * 60):
@@ -207,7 +207,7 @@ def subscribe_to_shard(data):
                 time.sleep(1)
                 continue
             result = json.dumps({'Records': records})
-            yield s3_select_utils.convert_to_s3_select_payload(result, event_type='SubscribeToShardEvent')
+            yield convert_to_binary_event_payload(result, event_type='SubscribeToShardEvent')
 
     headers = {}
     return send_events(), headers
