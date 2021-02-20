@@ -8,14 +8,15 @@ LOG = logging.getLogger(__name__)
 
 class Job(object):
 
-    def __init__(self, job_func, schedule):
+    def __init__(self, job_func, schedule, enabled):
         self.job_func = job_func
         self.schedule = schedule
         self.job_id = short_uid()
+        self.is_enabled = enabled
 
     def run(self):
         try:
-            if self.should_run_now():
+            if self.should_run_now() and self.is_enabled:
                 self.do_run()
         except Exception as e:
             LOG.debug('Unable to run scheduled function %s: %s' % (self.job_func, e))
@@ -37,10 +38,16 @@ class JobScheduler(object):
         self.jobs = []
         self.thread = None
 
-    def add_job(self, job_func, schedule):
-        job = Job(job_func, schedule)
+    def add_job(self, job_func, schedule, enabled):
+        job = Job(job_func, schedule, enabled)
         self.jobs.append(job)
         return job.job_id
+
+    def disable_job(self, job_id):
+        for job in self.jobs:
+            if job.job_id == job_id:
+                job.is_enabled = False
+                break
 
     def cancel_job(self, job_id):
         i = 0

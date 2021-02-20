@@ -510,6 +510,13 @@ def stream_exists(name):
     return name in streams['StreamNames']
 
 
+def stream_consumer_exists(stream_name, consumer_name):
+    kinesis_client = aws_stack.connect_to_service('kinesis')
+    consumers = kinesis_client.list_stream_consumers(StreamARN=aws_stack.kinesis_stream_arn(stream_name))
+    consumers = [c['ConsumerName'] for c in consumers['Consumers']]
+    return consumer_name in consumers
+
+
 def ssm_param_exists(name):
     client = aws_stack.connect_to_service('ssm')
     params = client.describe_parameters(Filters=[{'Key': 'Name', 'Values': [name]}])['Parameters']
@@ -578,6 +585,7 @@ class CloudFormationTest(unittest.TestCase):
         topic_arn = topic_exists('%s-test-topic-1-1' % stack_name)
         self.assertTrue(topic_arn)
         self.assertTrue(stream_exists('cf-test-stream-1'))
+        self.assertTrue(stream_consumer_exists('cf-test-stream-1', 'c1'))
         resource = describe_stack_resource(stack_name, 'SQSQueueNoNameProperty')
         self.assertTrue(queue_exists(resource['PhysicalResourceId']))
         self.assertTrue(ssm_param_exists('cf-test-param-1'))
@@ -633,6 +641,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertFalse(queue_exists('cf-test-queue-1'))
         self.assertFalse(topic_exists('%s-test-topic-1-1' % stack_name))
         retry(lambda: self.assertFalse(stream_exists('cf-test-stream-1')))
+        self.assertFalse(stream_consumer_exists('cf-test-stream-1', 'c1'))
 
     def test_list_stack_events(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')

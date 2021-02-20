@@ -3,10 +3,11 @@ import json
 import binascii
 import datetime
 import xmltodict
-from flask import Response
+from struct import pack
 from binascii import crc32
-from requests.models import CaseInsensitiveDict
-from requests.models import Response as RequestsResponse
+from flask import Response
+from requests.models import CaseInsensitiveDict, Response as RequestsResponse
+from localstack.config import DEFAULT_ENCODING
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import short_uid, to_str, to_bytes, json_safe, replace_response_content
@@ -167,6 +168,41 @@ def make_error(*args, **kwargs):
 
 def calculate_crc32(content):
     return crc32(to_bytes(content)) & 0xffffffff
+
+
+def convert_to_binary_event_payload(result, event_type=None):
+    # e.g.: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html
+    # e.g.: https://docs.aws.amazon.com/transcribe/latest/dg/event-stream.html
+
+    event_type = event_type or 'Records'
+    # construct headers
+    headers = b''
+    header_name = b':event-type'
+    header_value = to_bytes(event_type)
+    headers += pack('!B', len(header_name))
+    headers += header_name
+    headers += pack('!B', 7)
+    headers += pack('!H', len(header_value))
+    headers += header_value
+
+    # construct body
+    body = bytes(result, DEFAULT_ENCODING)
+
+    # calculate lengths
+    headers_length = len(headers)
+    body_length = len(body)
+
+    # construct message
+    result = pack('!I', body_length + headers_length + 16)
+    result += pack('!I', headers_length)
+    prelude_crc = binascii.crc32(result)
+    result += pack('!I', prelude_crc)
+    result += headers
+    result += body
+    payload_crc = binascii.crc32(result)
+    result += pack('!I', payload_crc)
+
+    return result
 
 
 class LambdaResponse(object):

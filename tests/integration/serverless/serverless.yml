@@ -69,6 +69,11 @@ resources:
       Properties:
         Name: KinesisTestStream
         ShardCount: 1
+    KinesisStreamConsumer:
+      Type: AWS::Kinesis::StreamConsumer
+      Properties:
+        ConsumerName: c1
+        StreamARN: !Ref KinesisStream
 
     # DynamoDB configuration
     loginsTable:

@@ -1,13 +1,13 @@
-from datetime import datetime
 import logging
 import unittest
 from time import sleep
+from datetime import datetime
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry, short_uid
 from localstack.utils.kinesis import kinesis_connector
 
 
-class TestKinesisServer(unittest.TestCase):
+class TestKinesis(unittest.TestCase):
 
     def test_stream_consumers(self):
         client = aws_stack.connect_to_service('kinesis')
@@ -42,12 +42,54 @@ class TestKinesisServer(unittest.TestCase):
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
         assert_consumers(0)
 
+        # clean up
+        client.delete_stream(StreamName=stream_name)
+
+    def test_subscribe_to_shard(self):
+        client = aws_stack.connect_to_service('kinesis')
+        stream_name = 'test-%s' % short_uid()
+        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+
+        # create stream and consumer
+        result = client.create_stream(StreamName=stream_name, ShardCount=1)
+        sleep(2)
+        result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')['Consumer']
+
+        # subscribe to shard
+        response = client.describe_stream(StreamName=stream_name)
+        shard_id = response.get('StreamDescription').get('Shards')[0].get('ShardId')
+        result = client.subscribe_to_shard(ConsumerARN=result['ConsumerARN'],
+            ShardId=shard_id, StartingPosition={'Type': 'TRIM_HORIZON'})
+        stream = result['EventStream']
+
+        # put records
+        num_records = 5
+        for i in range(num_records):
+            client.put_records(StreamName=stream_name, Records=[{'Data': 'SGVsbG8gd29ybGQ=', 'PartitionKey': '1'}])
+
+        # assert results
+        results = []
+        for entry in stream:
+            records = entry['SubscribeToShardEvent']['Records']
+            results.extend(records)
+            if len(results) >= num_records:
+                break
+
+        # assert results
+        self.assertEqual(len(results), num_records)
+        for record in results:
+            self.assertEqual(record['Data'], b'Hello world')
+
+        # clean up
+        client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
+        client.delete_stream(StreamName=stream_name)
+
     def test_get_records(self):
         client = aws_stack.connect_to_service('kinesis')
         stream_name = 'test-%s' % short_uid()
 
         client.create_stream(StreamName=stream_name, ShardCount=1)
-        sleep(3)
+        sleep(2)
         client.put_records(StreamName=stream_name, Records=[{'Data': 'SGVsbG8gd29ybGQ=', 'PartitionKey': '1'}])
 
         response = client.describe_stream(StreamName=stream_name)
@@ -62,9 +104,11 @@ class TestKinesisServer(unittest.TestCase):
                                              StartingSequenceNumber=sequence_number)
 
         response = client.get_records(ShardIterator=response.get('ShardIterator'))
-
         self.assertEqual(len(response.get('Records')), 1)
         self.assertIn('Data', response.get('Records')[0])
+
+        # clean up
+        client.delete_stream(StreamName=stream_name)
 
 
 class TestKinesisPythonClient(unittest.TestCase):
