@@ -431,6 +431,30 @@ class EventsTest(unittest.TestCase):
             Name=bus_name
         )
 
+    def test_rule_disable(self):
+
+        rule_name = 'rule-{}'.format(short_uid())
+        self.events_client.put_rule(
+            Name=rule_name,
+            ScheduleExpression='rate(1 minutes)'
+        )
+
+        response = self.events_client.list_rules()
+        self.assertEqual(response['Rules'][0]['State'], 'ENABLED')
+
+        response = self.events_client.disable_rule(Name=rule_name)
+
+        response = self.events_client.list_rules(
+            NamePrefix=rule_name
+        )
+
+        self.assertEqual(response['Rules'][0]['State'], 'DISABLED')
+
+        self.events_client.delete_rule(
+            Name=rule_name,
+            Force=True
+        )
+
     def test_scheduled_expression_events(self):
         class HttpEndpointListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
