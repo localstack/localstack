@@ -232,13 +232,6 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'SSM::Parameter': {
-        'create': {
-            'function': 'put_parameter',
-            'parameters': merge_parameters(params_dict_to_list('Tags', wrapper='Tags'), params_select_attributes(
-                'Name', 'Type', 'Value', 'Description', 'AllowedPattern', 'Policies', 'Tier'))
-        }
-    },
     'SecretsManager::Secret': {
         'create': {
             'function': 'create_secret',
