@@ -1113,7 +1113,10 @@ class SSMParameter(GenericBaseModel):
         return {
             'create': {
                 'function': 'put_parameter',
-                'parameters': select_parameters('Name', 'Type', 'Value')
+                'parameters': select_parameters(
+                    'Name', 'Description', 'Value', 'KeyId', 'Overwrite',
+                    'AllowedPattern' 'Tags', 'Tier', 'Policies', 'DataType'
+                )
             }
         }
 
