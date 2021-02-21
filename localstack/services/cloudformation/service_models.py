@@ -10,7 +10,8 @@ from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case, select_attributes
 from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower, select_parameters)
+    PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower,
+    merge_parameters, params_dict_to_list, select_parameters)
 
 LOG = logging.getLogger(__name__)
 
@@ -1113,10 +1114,8 @@ class SSMParameter(GenericBaseModel):
         return {
             'create': {
                 'function': 'put_parameter',
-                'parameters': select_parameters(
-                    'Name', 'Description', 'Value', 'KeyId', 'Overwrite',
-                    'AllowedPattern' 'Tags', 'Tier', 'Policies', 'DataType'
-                )
+                'parameters': merge_parameters(params_dict_to_list('Tags', wrapper='Tags'), select_parameters(
+                    'Name', 'Type', 'Value', 'Description', 'AllowedPattern', 'Policies', 'Tier'))
             }
         }
 
