@@ -3,10 +3,15 @@ import json
 import time
 import unittest
 import requests
+
 from botocore.exceptions import ClientError
+from localstack.constants import TEST_AWS_ACCOUNT_ID
+from six.moves.urllib.parse import urlencode
+
+from localstack import config
 from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, retry, to_str
+from localstack.utils.common import short_uid, retry, to_str, get_service_protocol
 from localstack.utils.testutil import get_lambda_log_events
 from .lambdas import lambda_integration
 from .test_lambda import use_docker, load_file, TEST_LAMBDA_PYTHON, LAMBDA_RUNTIME_PYTHON36, \
@@ -264,6 +269,23 @@ class SQSTest(unittest.TestCase):
         # clean up
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_send_message_with_invalid_payload_characters(self):
+        queue_name = 'queue-%s' % short_uid()
+
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        # Some common control characters and some code points just outside of a permitted range
+        for invalid_char in ['\0', '\v', '\f', '\u0019', '\uFFFE', '\uFFFF']:
+            raw_payload = 'invalid character: ' + invalid_char
+            with self.assertRaisesRegex(Exception, 'invalid characters'):
+                self.client.send_message(QueueUrl=queue_url, MessageBody=raw_payload)
+
+        raw_payload = 'valid characters: \t\n\r\uD7FF\uE000\uFFFD\u10000\u10FFFF'
+        self.client.send_message(QueueUrl=queue_url, MessageBody=raw_payload)
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
     def test_dead_letter_queue_config(self):
         queue_name = 'queue-%s' % short_uid()
         dlq_name = 'queue-%s' % short_uid()
@@ -327,7 +349,7 @@ class SQSTest(unittest.TestCase):
         self.assertEqual(len(rs.get('Messages', [])), 0)
 
         # assert that message has been put on the DLQ
-        retry(lambda: self.receive_dlq(queue_url1, False), retries=8, sleep=2)
+        retry(lambda: self.receive_dlq(queue_url1, assert_receive_count=2), retries=8, sleep=2)
 
     def test_set_queue_attribute_at_creation(self):
         queue_name = 'queue-%s' % short_uid()
@@ -805,11 +827,45 @@ class SQSTest(unittest.TestCase):
         self.client.untag_queue(QueueUrl=queue_url, TagKeys=['tag1'])
         self.client.delete_queue(QueueUrl=queue_url)
 
+    def test_posting_to_queue_with_trailing_slash(self):
+        queue_name = 'queue-{}'.format(short_uid())
+        queue_url = self.client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
+        encoded_url = urlencode({
+            'Action': 'SendMessage',
+            'Version': '2012-11-05',
+            'QueueUrl': '{}/{}/{}/'.format(base_url, TEST_AWS_ACCOUNT_ID, queue_name),
+            'MessageBody': 'test body'
+        })
+        r = requests.post(url=base_url, data=encoded_url)
+        self.assertEqual(r.status_code, 200)
+
+        # We can get the message back
+        resp = self.client.receive_message(QueueUrl=queue_url)
+        self.assertEqual(resp['Messages'][0]['Body'], 'test body')
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url)
+
+    def test_create_queue_with_slashes(self):
+        queue_name = 'queue/%s' % short_uid()
+        queue_url = self.client.create_queue(QueueName=queue_name)
+
+        result = self.client.list_queues()
+        self.assertIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
+
+        # clean up
+        self.client.delete_queue(QueueUrl=queue_url.get('QueueUrl'))
+
+        result = self.client.list_queues()
+        self.assertNotIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
+
     # ---------------
     # HELPER METHODS
     # ---------------
 
-    def receive_dlq(self, queue_url, assert_error_details=True):
+    def receive_dlq(self, queue_url, assert_error_details=False, assert_receive_count=None):
         """ Assert that a message has been received on the given DLQ """
         result = self.client.receive_message(QueueUrl=queue_url, MessageAttributeNames=['All'])
         self.assertGreater(len(result['Messages']), 0)
@@ -820,4 +876,5 @@ class SQSTest(unittest.TestCase):
             self.assertIn('ErrorCode', msg_attrs)
             self.assertIn('ErrorMessage', msg_attrs)
         else:
-            self.assertEqual('2', msg_attrs.get('ApproximateReceiveCount'))
+            if assert_receive_count is not None:
+                self.assertEqual(str(assert_receive_count), msg_attrs.get('ApproximateReceiveCount'))

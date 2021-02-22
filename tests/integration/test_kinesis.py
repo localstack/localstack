@@ -1,11 +1,13 @@
 import logging
 import unittest
+from time import sleep
+from datetime import datetime
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import retry, short_uid
 from localstack.utils.kinesis import kinesis_connector
 
 
-class TestKinesisServer(unittest.TestCase):
+class TestKinesis(unittest.TestCase):
 
     def test_stream_consumers(self):
         client = aws_stack.connect_to_service('kinesis')
@@ -23,10 +25,14 @@ class TestKinesisServer(unittest.TestCase):
 
         # create consumer and assert 1 consumer
         consumer_name = 'cons1'
-        client.register_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        response = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
+        self.assertEqual(response['Consumer']['ConsumerName'], consumer_name)
+        # boto3 converts the timestamp to datetime
+        self.assertTrue(isinstance(response['Consumer']['ConsumerCreationTimestamp'], datetime))
         consumers = assert_consumers(1)
         self.assertEqual(consumers[0]['ConsumerName'], consumer_name)
         self.assertIn('/%s' % consumer_name, consumers[0]['ConsumerARN'])
+        self.assertTrue(isinstance(consumers[0]['ConsumerCreationTimestamp'], datetime))
 
         # delete non-existing consumer and assert 1 consumer
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='_invalid_')
@@ -35,6 +41,74 @@ class TestKinesisServer(unittest.TestCase):
         # delete existing consumer and assert 0 remaining consumers
         client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName=consumer_name)
         assert_consumers(0)
+
+        # clean up
+        client.delete_stream(StreamName=stream_name)
+
+    def test_subscribe_to_shard(self):
+        client = aws_stack.connect_to_service('kinesis')
+        stream_name = 'test-%s' % short_uid()
+        stream_arn = aws_stack.kinesis_stream_arn(stream_name)
+
+        # create stream and consumer
+        result = client.create_stream(StreamName=stream_name, ShardCount=1)
+        sleep(2)
+        result = client.register_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')['Consumer']
+
+        # subscribe to shard
+        response = client.describe_stream(StreamName=stream_name)
+        shard_id = response.get('StreamDescription').get('Shards')[0].get('ShardId')
+        result = client.subscribe_to_shard(ConsumerARN=result['ConsumerARN'],
+            ShardId=shard_id, StartingPosition={'Type': 'TRIM_HORIZON'})
+        stream = result['EventStream']
+
+        # put records
+        num_records = 5
+        for i in range(num_records):
+            client.put_records(StreamName=stream_name, Records=[{'Data': 'SGVsbG8gd29ybGQ=', 'PartitionKey': '1'}])
+
+        # assert results
+        results = []
+        for entry in stream:
+            records = entry['SubscribeToShardEvent']['Records']
+            results.extend(records)
+            if len(results) >= num_records:
+                break
+
+        # assert results
+        self.assertEqual(len(results), num_records)
+        for record in results:
+            self.assertEqual(record['Data'], b'Hello world')
+
+        # clean up
+        client.deregister_stream_consumer(StreamARN=stream_arn, ConsumerName='c1')
+        client.delete_stream(StreamName=stream_name)
+
+    def test_get_records(self):
+        client = aws_stack.connect_to_service('kinesis')
+        stream_name = 'test-%s' % short_uid()
+
+        client.create_stream(StreamName=stream_name, ShardCount=1)
+        sleep(2)
+        client.put_records(StreamName=stream_name, Records=[{'Data': 'SGVsbG8gd29ybGQ=', 'PartitionKey': '1'}])
+
+        response = client.describe_stream(StreamName=stream_name)
+
+        sequence_number = response.get('StreamDescription').get('Shards')[0].get('SequenceNumberRange'). \
+            get('StartingSequenceNumber')
+
+        shard_id = response.get('StreamDescription').get('Shards')[0].get('ShardId')
+
+        response = client.get_shard_iterator(StreamName=stream_name, ShardId=shard_id,
+                                             ShardIteratorType='AT_SEQUENCE_NUMBER',
+                                             StartingSequenceNumber=sequence_number)
+
+        response = client.get_records(ShardIterator=response.get('ShardIterator'))
+        self.assertEqual(len(response.get('Records')), 1)
+        self.assertIn('Data', response.get('Records')[0])
+
+        # clean up
+        client.delete_stream(StreamName=stream_name)
 
 
 class TestKinesisPythonClient(unittest.TestCase):

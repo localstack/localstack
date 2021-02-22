@@ -20,6 +20,7 @@ package-lock.json
 .DS_Store
 *.egg-info/
 .eggs/
+.vagrant/
 *.sw*
 ~*
 *~
@@ -39,3 +40,10 @@ node_modules/
 
 requirements.copy.txt
 .serverless/
+
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*tfplan
+
+.python-version

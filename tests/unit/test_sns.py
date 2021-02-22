@@ -27,9 +27,6 @@ class SNSTests(unittest.TestCase):
         sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
         topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
-        self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
-        sns_listener.do_create_topic(topic_arn)
-        self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
         sns_listener.do_subscribe(
             topic_arn,
             'arn:aws:sqs:us-east-1:000000000000:test-queue',
@@ -69,7 +66,8 @@ class SNSTests(unittest.TestCase):
         action = {
             'Message': ['msg']
         }
-        result_str = sns_listener.create_sns_message_body(self.subscriber, action)
+
+        result_str = sns_listener.create_sns_message_body(self.subscriber, action, str(uuid.uuid4()))
         result = json.loads(result_str)
         try:
             uuid.UUID(result.pop('MessageId'))
@@ -91,8 +89,6 @@ class SNSTests(unittest.TestCase):
             'SignatureVersion': '1',
             'SigningCertURL':
                 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
-            'SubscribeURL': None,
-            'Token': None,
             'TopicArn': 'arn',
             'Type': 'Notification'
         })
@@ -121,8 +117,6 @@ class SNSTests(unittest.TestCase):
             'SignatureVersion': '1',
             'SigningCertURL':
                 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem',
-            'SubscribeURL': None,
-            'Token': None,
             'TopicArn': 'arn',
             'Type': 'Notification',
             'MessageAttributes': {
@@ -210,9 +204,6 @@ class SNSTests(unittest.TestCase):
         sub_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic:45e61c7f-dca5-4fcd-be2b-4e1b0d6eef72'
         topic_arn = 'arn:aws:sns:us-east-1:000000000000:test-topic'
 
-        self.assertFalse(sns_listener.get_topic_by_arn(topic_arn))
-        sns_listener.do_create_topic(topic_arn)
-        self.assertTrue(sns_listener.get_topic_by_arn(topic_arn) is not None)
         for i in [1, 2]:
             sns_listener.do_subscribe(
                 topic_arn,

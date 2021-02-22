@@ -5,21 +5,22 @@ import unittest
 import mock
 import time
 import datetime
-from localstack.utils.common import save_file, new_tmp_dir, mkdir
+from localstack.constants import LAMBDA_TEST_ROLE
+from localstack.utils.common import isoformat_milliseconds, save_file, new_tmp_dir, mkdir
 from localstack.services.awslambda import lambda_api, lambda_executors
 from localstack.utils.aws.aws_models import LambdaFunction
-from localstack.constants import LAMBDA_TEST_ROLE
-
 
 TEST_EVENT_SOURCE_ARN = 'arn:aws:sqs:eu-west-1:000000000000:testq'
+TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN = 'arn:aws:secretsmanager:us-east-1:000000000000:secret:mysecret-kUBhE'
 
 
 class TestLambdaAPI(unittest.TestCase):
     CODE_SIZE = 50
     CODE_SHA_256 = '/u60ZpAA9bzZPVwb8d4390i5oqP1YAObUwV03CZvsWA='
+    UPDATED_CODE_SHA_256 = '/u6A='
     MEMORY_SIZE = 128
     ROLE = 'arn:aws:iam::123456:role/role-name'
-    LAST_MODIFIED = '2019-05-25T17:00:48.260+0000'
+    LAST_MODIFIED = datetime.datetime.utcnow()
     TRACING_CONFIG = {'Mode': 'PassThrough'}
     REVISION_ID = 'e54dbcf8-e3ef-44ab-9af7-8dbef510608a'
     HANDLER = 'index.handler'
@@ -53,14 +54,16 @@ class TestLambdaAPI(unittest.TestCase):
                 result['message'])
 
     def test_get_event_source_mapping(self):
+        region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
-            lambda_api.EVENT_SOURCE_MAPPINGS.append({'UUID': self.TEST_UUID})
+            region.event_source_mappings.append({'UUID': self.TEST_UUID})
             result = lambda_api.get_event_source_mapping(self.TEST_UUID)
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
 
     def test_get_event_sources(self):
+        region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
-            lambda_api.EVENT_SOURCE_MAPPINGS.append(
+            region.event_source_mappings.append(
                 {
                     'UUID': self.TEST_UUID,
                     'EventSourceArn': 'the_arn'
@@ -76,8 +79,9 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(len(result), 0)
 
     def test_get_event_sources_with_paths(self):
+        region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
-            lambda_api.EVENT_SOURCE_MAPPINGS.append(
+            region.event_source_mappings.append(
                 {
                     'UUID': self.TEST_UUID,
                     'EventSourceArn': 'the_arn/path/subpath'
@@ -90,11 +94,12 @@ class TestLambdaAPI(unittest.TestCase):
             self.assertEqual(len(result), 1)
 
     def test_delete_event_source_mapping(self):
+        region = lambda_api.LambdaRegion.get()
         with self.app.test_request_context():
-            lambda_api.EVENT_SOURCE_MAPPINGS.append({'UUID': self.TEST_UUID})
+            region.event_source_mappings.append({'UUID': self.TEST_UUID})
             result = lambda_api.delete_event_source_mapping(self.TEST_UUID)
             self.assertEqual(json.loads(result.get_data()).get('UUID'), self.TEST_UUID)
-            self.assertEqual(0, len(lambda_api.EVENT_SOURCE_MAPPINGS))
+            self.assertEqual(0, len(region.event_source_mappings))
 
     def test_invoke_RETURNS_415_WHEN_not_json_input(self):
         with self.app.test_request_context() as context:
@@ -230,6 +235,23 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual(1, len(eventSourceMappings))
         self.assertEqual('Enabled', eventSourceMappings[0]['State'])
 
+    def test_create_event_source_mapping_self_managed_event_source(self):
+        self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+            data=json.dumps({'FunctionName': 'test-lambda-function',
+                'Topics': ['test'],
+                'SourceAccessConfigurations': [
+                    {'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}
+                ],
+                'SelfManagedEventSource': {'Endpoints': {'KAFKA_BOOTSTRAP_SERVERS': ['127.0.0.1:9092']}}
+            }))
+        listResponse = self.client.get('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT))
+        listResult = json.loads(listResponse.get_data())
+
+        eventSourceMappings = listResult.get('EventSourceMappings')
+
+        self.assertEqual(1, len(eventSourceMappings))
+        self.assertEqual('Enabled', eventSourceMappings[0]['State'])
+
     def test_create_disabled_event_source_mapping(self):
         createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
                             data=json.dumps({'FunctionName': 'test-lambda-function',
@@ -264,14 +286,36 @@ class TestLambdaAPI(unittest.TestCase):
 
         self.assertEqual('Disabled', getResult['State'])
 
+    def test_update_event_source_mapping_self_managed_event_source(self):
+        createResponse = self.client.post('{0}/event-source-mappings/'.format(lambda_api.PATH_ROOT),
+            data=json.dumps({'FunctionName': 'test-lambda-function',
+                'Topics': ['test'],
+                'SourceAccessConfigurations': [
+                    {'Type': 'SASL_SCRAM_512_AUTH', 'URI': TEST_SECRETSMANANAGER_EVENT_SOURCE_ARN}
+                ],
+                'SelfManagedEventSource': {'Endpoints': {'KAFKA_BOOTSTRAP_SERVERS': ['127.0.0.1:9092']}},
+                'Enabled': 'true'
+            }))
+        createResult = json.loads(createResponse.get_data())
+
+        putResponse = self.client.put('{0}/event-source-mappings/{1}'.format(lambda_api.PATH_ROOT,
+                        createResult.get('UUID')), data=json.dumps({'Enabled': 'false'}))
+        putResult = json.loads(putResponse.get_data())
+
+        self.assertEqual('Disabled', putResult['State'])
+
+        getResponse = self.client.get('{0}/event-source-mappings/{1}'.format(lambda_api.PATH_ROOT,
+                        createResult.get('UUID')))
+        getResult = json.loads(getResponse.get_data())
+
+        self.assertEqual('Disabled', getResult['State'])
+
     def test_publish_function_version(self):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)
 
             result = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
-            result2 = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
             result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
-            result2.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
 
             expected_result = dict()
             expected_result['CodeSize'] = self.CODE_SIZE
@@ -286,16 +330,43 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['Role'] = self.ROLE
             expected_result['KMSKeyArn'] = None
             expected_result['VpcConfig'] = None
-            expected_result['LastModified'] = self.LAST_MODIFIED
+            expected_result['LastModified'] = isoformat_milliseconds(self.LAST_MODIFIED) + '+0000'
             expected_result['TracingConfig'] = self.TRACING_CONFIG
             expected_result['Version'] = '1'
             expected_result['State'] = 'Active'
             expected_result['LastUpdateStatus'] = 'Successful'
-            expected_result2 = dict(expected_result)
-            expected_result2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
-            expected_result2['Version'] = '2'
+            expected_result['PackageType'] = None
             self.assertDictEqual(expected_result, result)
-            self.assertDictEqual(expected_result2, result2)
+
+    def test_publish_update_version_increment(self):
+        with self.app.test_request_context():
+            self._create_function(self.FUNCTION_NAME)
+            lambda_api.publish_version(self.FUNCTION_NAME)
+
+            self._update_function_code(self.FUNCTION_NAME)
+            result = json.loads(lambda_api.publish_version(self.FUNCTION_NAME).get_data())
+            result.pop('RevisionId', None)  # we need to remove this, since this is random, so we cannot know its value
+
+            expected_result = dict()
+            expected_result['CodeSize'] = self.CODE_SIZE
+            expected_result['CodeSha256'] = self.UPDATED_CODE_SHA_256
+            expected_result['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
+            expected_result['FunctionName'] = str(self.FUNCTION_NAME)
+            expected_result['Handler'] = str(self.HANDLER)
+            expected_result['Runtime'] = str(self.RUNTIME)
+            expected_result['Timeout'] = self.TIMEOUT
+            expected_result['Description'] = ''
+            expected_result['MemorySize'] = self.MEMORY_SIZE
+            expected_result['Role'] = self.ROLE
+            expected_result['KMSKeyArn'] = None
+            expected_result['VpcConfig'] = None
+            expected_result['LastModified'] = isoformat_milliseconds(self.LAST_MODIFIED) + '+0000'
+            expected_result['TracingConfig'] = self.TRACING_CONFIG
+            expected_result['Version'] = '2'
+            expected_result['State'] = 'Active'
+            expected_result['LastUpdateStatus'] = 'Successful'
+            expected_result['PackageType'] = None
+            self.assertDictEqual(expected_result, result)
 
     def test_publish_non_existant_function_version_returns_error(self):
         with self.app.test_request_context():
@@ -328,18 +399,16 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['Role'] = self.ROLE
             latest_version['KMSKeyArn'] = None
             latest_version['VpcConfig'] = None
-            latest_version['LastModified'] = self.LAST_MODIFIED
+            latest_version['LastModified'] = isoformat_milliseconds(self.LAST_MODIFIED) + '+0000'
             latest_version['TracingConfig'] = self.TRACING_CONFIG
             latest_version['Version'] = '$LATEST'
             latest_version['State'] = 'Active'
             latest_version['LastUpdateStatus'] = 'Successful'
+            latest_version['PackageType'] = None
             version1 = dict(latest_version)
             version1['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':1'
             version1['Version'] = '1'
-            version2 = dict(latest_version)
-            version2['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':2'
-            version2['Version'] = '2'
-            expected_result = {'Versions': sorted([latest_version, version1, version2],
+            expected_result = {'Versions': sorted([latest_version, version],
                                                   key=lambda k: str(k.get('Version')))}
             self.assertDictEqual(expected_result, result)
 
@@ -493,7 +562,7 @@ class TestLambdaAPI(unittest.TestCase):
         name = executor.get_container_name('arn:aws:lambda:us-east-1:00000000:function:my_function_name')
         self.assertEqual(name, 'localstack_lambda_arn_aws_lambda_us-east-1_00000000_function_my_function_name')
 
-    def test_put_concurrency(self):
+    def test_concurrency(self):
         with self.app.test_request_context():
             self._create_function(self.FUNCTION_NAME)
             # note: PutFunctionConcurrency is mounted at: /2017-10-31
@@ -505,6 +574,12 @@ class TestLambdaAPI(unittest.TestCase):
 
             result = json.loads(response.get_data())
             self.assertDictEqual(concurrency_data, result)
+
+            response = self.client.get('/2019-09-30/functions/{0}/concurrency'.format(self.FUNCTION_NAME))
+            self.assertDictEqual(concurrency_data, result)
+
+            response = self.client.delete('/2017-10-31/functions/{0}/concurrency'.format(self.FUNCTION_NAME))
+            self.assertIsNotNone('ReservedConcurrentExecutions', result)
 
     def test_concurrency_get_function(self):
         with self.app.test_request_context():
@@ -590,26 +665,51 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertTrue(re.match(expected, result))
         self.assertTrue(lambda_executors.Util.debug_java_port is not False)
 
-    def test_java_options_with_unset_debug_port_in_middle(self):
-        expected = '.*transport=dt_socket,server=y,address=[0-9]+,suspend=y'
-        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
-                                      ',address=_debug_port_,suspend=y')
-        self.assertTrue(re.match(expected, result))
-        self.assertTrue(lambda_executors.Util.debug_java_port is not False)
+    def test_java_options_with_unset_debug_port(self):
+        options = [
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=_debug_port_,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=localhost:_debug_port_,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=127.0.0.1:_debug_port_,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=*:_debug_port_,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:_debug_port_',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:_debug_port_',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:_debug_port_'
+        ]
+
+        expected_results = [
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=([0-9]+),suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=localhost:([0-9]+),suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=127.0.0.1:([0-9]+),suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=\\*:([0-9]+),suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=([0-9]+)',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:([0-9]+)',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:([0-9]+)',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=\\*:([0-9]+)'
+        ]
+
+        for i in range(len(options)):
+            result = self.prepare_java_opts(options[i])
+            m = re.match(expected_results[i], result)
+            self.assertTrue(m)
+            self.assertEqual(m.groups()[0], lambda_executors.Util.debug_java_port)
 
     def test_java_options_with_configured_debug_port(self):
-        expected = '.*transport=dt_socket,server=y,suspend=y,address=1234'
-        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
-                                      ',suspend=y,address=1234')
-        self.assertTrue(re.match(expected, result))
-        self.assertEqual('1234', lambda_executors.Util.debug_java_port)
+        options = [
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=1234,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=localhost:1234,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=127.0.0.1:1234,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,address=*:1234,suspend=y',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=1234',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:1234',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=127.0.0.1:1234',
+            '-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:1234'
+        ]
 
-    def test_java_options_with_configured_debug_port_in_middle(self):
-        expected = '.*transport=dt_socket,server=y,address=1234,suspend=y'
-        result = self.prepare_java_opts('-Xmx512M -agentlib:jdwp=transport=dt_socket,server=y'
-                                      ',address=1234,suspend=y')
-        self.assertTrue(re.match(expected, result))
-        self.assertEqual('1234', lambda_executors.Util.debug_java_port)
+        for item in options:
+            result = self.prepare_java_opts(item)
+            self.assertEqual('1234', lambda_executors.Util.debug_java_port)
+            self.assertEqual(item, result)
 
     def prepare_java_opts(self, java_opts):
         lambda_executors.config.LAMBDA_JAVA_OPTS = java_opts
@@ -655,19 +755,29 @@ class TestLambdaAPI(unittest.TestCase):
         self.assertEqual(date_part, today)
 
     def _create_function(self, function_name, tags={}):
+        region = lambda_api.LambdaRegion.get()
         arn = lambda_api.func_arn(function_name)
-        lambda_api.ARN_TO_LAMBDA[arn] = LambdaFunction(arn)
-        lambda_api.ARN_TO_LAMBDA[arn].versions = {
+        region.lambdas[arn] = LambdaFunction(arn)
+        region.lambdas[arn].versions = {
             '$LATEST': {'CodeSize': self.CODE_SIZE, 'CodeSha256': self.CODE_SHA_256, 'RevisionId': self.REVISION_ID}
         }
-        lambda_api.ARN_TO_LAMBDA[arn].handler = self.HANDLER
-        lambda_api.ARN_TO_LAMBDA[arn].runtime = self.RUNTIME
-        lambda_api.ARN_TO_LAMBDA[arn].timeout = self.TIMEOUT
-        lambda_api.ARN_TO_LAMBDA[arn].tags = tags
-        lambda_api.ARN_TO_LAMBDA[arn].envvars = {}
-        lambda_api.ARN_TO_LAMBDA[arn].last_modified = self.LAST_MODIFIED
-        lambda_api.ARN_TO_LAMBDA[arn].role = self.ROLE
-        lambda_api.ARN_TO_LAMBDA[arn].memory_size = self.MEMORY_SIZE
+        region.lambdas[arn].handler = self.HANDLER
+        region.lambdas[arn].runtime = self.RUNTIME
+        region.lambdas[arn].timeout = self.TIMEOUT
+        region.lambdas[arn].tags = tags
+        region.lambdas[arn].envvars = {}
+        region.lambdas[arn].last_modified = self.LAST_MODIFIED
+        region.lambdas[arn].role = self.ROLE
+        region.lambdas[arn].memory_size = self.MEMORY_SIZE
+
+    def _update_function_code(self, function_name, tags={}):
+        region = lambda_api.LambdaRegion.get()
+        arn = lambda_api.func_arn(function_name)
+        region.lambdas[arn].versions.update({
+            '$LATEST': {'CodeSize': self.CODE_SIZE,
+            'CodeSha256': self.UPDATED_CODE_SHA_256,
+            'RevisionId': self.REVISION_ID}
+        })
 
     def _assert_contained(self, child, parent):
         self.assertTrue(set(child.items()).issubset(set(parent.items())))
@@ -678,7 +788,7 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
     CODE_SHA_256 = '/u60ZpAA9bzZPVwb8d4390i5oqP1YAObUwV03CZvsWA='
     MEMORY_SIZE = 128
     ROLE = LAMBDA_TEST_ROLE
-    LAST_MODIFIED = '2019-05-25T17:00:48.260+0000'
+    LAST_MODIFIED = datetime.datetime.utcnow()
     REVISION_ID = 'e54dbcf8-e3ef-44ab-9af7-8dbef510608a'
     HANDLER = 'index.handler'
     RUNTIME = 'node.js4.3'
@@ -702,6 +812,7 @@ class TestLambdaEventInvokeConfig(unittest.TestCase):
         self.LAMBDA_OBJ.role = self.ROLE
         self.LAMBDA_OBJ.memory_size = self.MEMORY_SIZE
 
+    # TODO: remove this test case. Already added it in integration test case
     def test_put_function_event_invoke_config(self):
         # creating a lambda function
         self._create_function(self.FUNCTION_NAME)

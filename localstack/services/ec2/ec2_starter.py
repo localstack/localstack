@@ -1,8 +1,12 @@
+import re
 from moto.ec2 import models as ec2_models
+from moto.ec2.responses import security_groups
 from moto.ec2.exceptions import InvalidPermissionNotFoundError
 from moto.ec2.responses.reserved_instances import ReservedInstances
 from localstack import config
 from localstack.services.infra import start_moto_server
+
+REGEX_FLAGS = re.IGNORECASE | re.MULTILINE | re.DOTALL
 
 
 def patch_ec2():
@@ -47,6 +51,12 @@ def patch_ec2():
     ReservedInstances.describe_reserved_instances_offerings = describe_reserved_instances_offerings
     ReservedInstances.purchase_reserved_instances_offering = purchase_reserved_instances_offering
     ReservedInstances.describe_reserved_instances = describe_reserved_instances
+
+    # make sure we report groupName only for default VPCs (i.e., omit for custom VPCs with vpc_id)
+    search = r'</groupId>\s*<groupName>\{\{\s*source_group.name\s*\}\}</groupName>'
+    replace = r'</groupId>{% if not group.vpc_id %}<groupName>{{ source_group.name }}</groupName>{% endif %}'
+    security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE = re.sub(search, replace,
+        security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE, flags=REGEX_FLAGS)
 
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):

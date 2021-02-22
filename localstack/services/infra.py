@@ -10,36 +10,40 @@ import boto3
 import subprocess
 from moto import core as moto_core
 from requests.models import Response
-from localstack import constants, config
+from localstack import config, constants
+from localstack.utils import common, persistence
 from localstack.constants import (
     ENV_DEV, LOCALSTACK_VENV_FOLDER, LOCALSTACK_INFRA_PROCESS, DEFAULT_SERVICE_PORTS)
-from localstack.utils import common, persistence
 from localstack.utils.common import (TMP_THREADS, run, get_free_tcp_port, is_linux, start_thread,
-    ShellCommandThread, get_service_protocol, in_docker, is_port_open, sleep_forever, print_debug)
+    ShellCommandThread, in_docker, is_port_open, sleep_forever, print_debug, edge_ports_info)
 from localstack.utils.server import multiserver
 from localstack.utils.testutil import is_local_test_mode
 from localstack.utils.bootstrap import (
-    setup_logging, is_debug, canonicalize_api_names, load_plugins, in_ci)
+    setup_logging, canonicalize_api_names, load_plugins, in_ci)
 from localstack.utils.analytics import event_publisher
 from localstack.services import generic_proxy, install
-from localstack.services.es import es_api
 from localstack.services.plugins import SERVICE_PLUGINS, record_service_health, check_infra
 from localstack.services.firehose import firehose_api
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener, start_proxy_server
+from localstack.services.cloudformation import cloudformation_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
+from localstack.utils.analytics.profiler import log_duration
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
 
+# output string that indicates that the stack is ready
+READY_MARKER_OUTPUT = 'Ready.'
+
 # default backend host address
 DEFAULT_BACKEND_HOST = '127.0.0.1'
 
+# maps ports to proxy listener details
+PROXY_LISTENERS = {}
+
 # set up logger
 LOG = logging.getLogger(__name__)
-
-# fix moto account ID - note: keep this at the top level here
-moto_core.ACCOUNT_ID = constants.TEST_AWS_ACCOUNT_ID
 
 
 # -----------------------
@@ -87,54 +91,31 @@ def start_sns(port=None, asynchronous=False, update_listener=None):
         update_listener=update_listener)
 
 
-def start_cloudwatch(port=None, asynchronous=False):
-    port = port or config.PORT_CLOUDWATCH
-    return start_moto_server('cloudwatch', port, name='CloudWatch', asynchronous=asynchronous)
-
-
 def start_sts(port=None, asynchronous=False):
     port = port or config.PORT_STS
     return start_moto_server('sts', port, name='STS', asynchronous=asynchronous)
 
 
-def start_redshift(port=None, asynchronous=False):
-    port = port or config.PORT_REDSHIFT
-    return start_moto_server('redshift', port, name='Redshift', asynchronous=asynchronous)
-
-
-def start_route53(port=None, asynchronous=False):
-    port = port or config.PORT_ROUTE53
-    return start_moto_server('route53', port, name='Route53', asynchronous=asynchronous)
-
-
-def start_acm(port=None, asynchronous=False):
-    port = port or config.PORT_ACM
-    return start_moto_server('acm', port, name='ACM', asynchronous=asynchronous)
-
-
-def start_ses(port=None, asynchronous=False):
-    port = port or config.PORT_SES
-    return start_moto_server('ses', port, name='SES', asynchronous=asynchronous)
-
-
-def start_elasticsearch_service(port=None, asynchronous=False):
-    port = port or config.PORT_ES
-    return start_local_api('ES', port, method=es_api.serve, asynchronous=asynchronous)
-
-
 def start_firehose(port=None, asynchronous=False):
     port = port or config.PORT_FIREHOSE
-    return start_local_api('Firehose', port, method=firehose_api.serve, asynchronous=asynchronous)
+    return start_local_api('Firehose', port, api='firehose', method=firehose_api.serve, asynchronous=asynchronous)
 
 
 def start_dynamodbstreams(port=None, asynchronous=False):
     port = port or config.PORT_DYNAMODBSTREAMS
-    return start_local_api('DynamoDB Streams', port, method=dynamodbstreams_api.serve, asynchronous=asynchronous)
+    return start_local_api('DynamoDB Streams', port, api='dynamodbstreams',
+        method=dynamodbstreams_api.serve, asynchronous=asynchronous)
 
 
 def start_lambda(port=None, asynchronous=False):
     port = port or config.PORT_LAMBDA
-    return start_local_api('Lambda', port, method=lambda_api.serve, asynchronous=asynchronous)
+    return start_local_api('Lambda', port, api='lambda', method=lambda_api.serve, asynchronous=asynchronous)
+
+
+def start_cloudformation(port=None, asynchronous=False):
+    port = port or config.PORT_CLOUDFORMATION
+    return start_local_api('CloudFormation', port, api='cloudformation',
+        method=cloudformation_api.serve, asynchronous=asynchronous)
 
 
 def start_ssm(port=None, asynchronous=False, update_listener=None):
@@ -167,6 +148,26 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
         poolmanager.pool_classes_by_scheme['http'] = MyHTTPConnectionPool
     except Exception:
         pass
+
+
+def patch_instance_tracker_meta():
+    """
+    Avoid instance collection for moto dashboard
+    """
+    def new_intance(meta, name, bases, dct):
+        cls = super(moto_core.models.InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
+        if name == 'BaseModel':
+            return cls
+        cls.instances = []
+        return cls
+
+    moto_core.models.InstanceTrackerMeta.__new__ = new_intance
+
+    def new_basemodel(cls, *args, **kwargs):
+        instance = super(moto_core.models.BaseModel, cls).__new__(cls)
+        return instance
+
+    moto_core.models.BaseModel.__new__ = new_basemodel
 
 
 def set_service_status(data):
@@ -213,6 +214,12 @@ def get_service_status(service, port=None):
     return status
 
 
+def get_multiserver_or_free_service_port():
+    if config.FORWARD_EDGE_INMEM:
+        return multiserver.get_moto_server_port()
+    return get_free_tcp_port()
+
+
 def register_signal_handlers():
     global SIGNAL_HANDLERS_SETUP
     if SIGNAL_HANDLERS_SETUP:
@@ -230,7 +237,7 @@ def register_signal_handlers():
 def do_run(cmd, asynchronous, print_output=None, env_vars={}):
     sys.stdout.flush()
     if asynchronous:
-        if is_debug() and print_output is None:
+        if config.DEBUG and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
         t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)
@@ -241,6 +248,11 @@ def do_run(cmd, asynchronous, print_output=None, env_vars={}):
 
 
 def start_proxy_for_service(service_name, port, backend_port, update_listener, quiet=False, params={}):
+    # TODO: remove special switch for Elasticsearch (see also note in service_port(...) in config.py)
+    if config.FORWARD_EDGE_INMEM and service_name != 'elasticsearch':
+        if backend_port:
+            PROXY_LISTENERS[service_name] = (service_name, backend_port, update_listener)
+        return
     # check if we have a custom backend configured
     custom_backend_url = os.environ.get('%s_BACKEND' % service_name.upper())
     backend_url = custom_backend_url or ('http://%s:%s' % (DEFAULT_BACKEND_HOST, backend_port))
@@ -257,11 +269,13 @@ def start_proxy(port, backend_url, update_listener=None, quiet=False, params={},
 def start_moto_server(key, port, name=None, backend_port=None, asynchronous=False, update_listener=None):
     if not name:
         name = key
-    print('Starting mock %s service on %s ports %s (recommended) and %s (deprecated)...' % (
-        name, get_service_protocol(), config.EDGE_PORT, port))
-    if not backend_port and (config.USE_SSL or update_listener):
-        backend_port = get_free_tcp_port()
-    if backend_port:
+    log_startup_message(name)
+    if not backend_port:
+        if config.FORWARD_EDGE_INMEM:
+            backend_port = multiserver.get_moto_server_port()
+        elif config.USE_SSL or update_listener:
+            backend_port = get_free_tcp_port()
+    if backend_port or config.FORWARD_EDGE_INMEM:
         start_proxy_for_service(key, port, backend_port, update_listener)
     if config.BUNDLE_API_PROCESSES:
         return multiserver.start_api_server(key, backend_port or port)
@@ -276,9 +290,11 @@ def start_moto_server_separate(key, port, name=None, backend_port=None, asynchro
     return do_run(cmd, asynchronous)
 
 
-def start_local_api(name, port, method, asynchronous=False):
-    print('Starting mock %s service on %s ports %s (recommended) and %s (deprecated)...' % (
-        name, get_service_protocol(), config.EDGE_PORT, port))
+def start_local_api(name, port, api, method, asynchronous=False):
+    log_startup_message(name)
+    if config.FORWARD_EDGE_INMEM:
+        port = get_free_tcp_port()
+        PROXY_LISTENERS[api] = (api, port, None)
     if asynchronous:
         thread = start_thread(method, port, quiet=True)
         return thread
@@ -305,17 +321,20 @@ def stop_infra(debug=False):
     # check_infra(retries=2, expect_shutdown=True)
 
 
+def log_startup_message(service):
+    print('Starting mock %s service on %s ...' % (service, edge_ports_info()))
+
+
 def check_aws_credentials():
     session = boto3.Session()
     credentials = None
+    # hardcode credentials here, to allow us to determine internal API calls made via boto3
+    os.environ['AWS_ACCESS_KEY_ID'] = constants.INTERNAL_AWS_ACCESS_KEY_ID
+    os.environ['AWS_SECRET_ACCESS_KEY'] = constants.INTERNAL_AWS_ACCESS_KEY_ID
     try:
         credentials = session.get_credentials()
     except Exception:
         pass
-    if not credentials:
-        # set temporary dummy credentials
-        os.environ['AWS_ACCESS_KEY_ID'] = 'LocalStackDummyAccessKey'
-        os.environ['AWS_SECRET_ACCESS_KEY'] = 'LocalStackDummySecretKey'
     session = boto3.Session()
     credentials = session.get_credentials()
     assert credentials
@@ -324,7 +343,6 @@ def check_aws_credentials():
 # -------------
 # MAIN STARTUP
 # -------------
-
 
 def start_infra(asynchronous=False, apis=None):
     try:
@@ -337,18 +355,26 @@ def start_infra(asynchronous=False, apis=None):
                    'problems on your OS. The environment variable $LOCALSTACK_HOSTNAME may not '
                    'be properly set in your Lambdas.') % config.LAMBDA_EXECUTOR)
 
-        if is_in_docker and config.LAMBDA_REMOTE_DOCKER and not os.environ.get('HOST_TMP_FOLDER'):
-            print('!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=1 - '
+        if is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not os.environ.get('HOST_TMP_FOLDER'):
+            print('!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - '
                   "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR")
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
+        patch_instance_tracker_meta()
 
         # load plugins
         load_plugins()
 
         # with plugins loaded, now start the infrastructure
-        do_start_infra(asynchronous, apis, is_in_docker)
+        thread = do_start_infra(asynchronous, apis, is_in_docker)
+
+        if not asynchronous and thread:
+            # this is a bit of an ugly hack, but we need to make sure that we
+            # stay in the execution context of the main thread, otherwise our
+            # signal handlers don't work
+            sleep_forever()
+        return thread
 
     except KeyboardInterrupt:
         print('Shutdown')
@@ -362,6 +388,9 @@ def start_infra(asynchronous=False, apis=None):
 
 
 def do_start_infra(asynchronous, apis, is_in_docker):
+    # import to avoid cyclic dependency
+    from localstack.services.edge import BOOTSTRAP_LOCK
+
     event_publisher.fire_event(event_publisher.EVENT_START_INFRA,
         {'d': is_in_docker and 1 or 0, 'c': in_ci() and 1 or 0})
 
@@ -370,38 +399,50 @@ def do_start_infra(asynchronous, apis, is_in_docker):
 
     # prepare APIs
     apis = canonicalize_api_names(apis)
-    # set environment
-    os.environ['AWS_REGION'] = config.DEFAULT_REGION
-    os.environ['ENV'] = ENV_DEV
-    # register signal handlers
-    if not is_local_test_mode():
-        register_signal_handlers()
-    # make sure AWS credentials are configured, otherwise boto3 bails on us
-    check_aws_credentials()
-    # install libs if not present
-    install.install_components(apis)
-    # Some services take a bit to come up
-    sleep_time = 5
-    # start services
-    thread = None
 
-    # loop through plugins and start each service
-    for name, plugin in SERVICE_PLUGINS.items():
-        if plugin.is_enabled(api_names=apis):
-            record_service_health(name, 'starting')
-            t1 = plugin.start(asynchronous=True)
-            thread = thread or t1
+    @log_duration()
+    def prepare_environment():
+        # set environment
+        os.environ['AWS_REGION'] = config.DEFAULT_REGION
+        os.environ['ENV'] = ENV_DEV
+        # register signal handlers
+        if not is_local_test_mode():
+            register_signal_handlers()
+        # make sure AWS credentials are configured, otherwise boto3 bails on us
+        check_aws_credentials()
 
-    time.sleep(sleep_time)
-    # ensure that all infra components are up and running
-    check_infra(apis=apis)
-    # restore persisted data
-    persistence.restore_persisted_data(apis=apis)
-    print('Ready.')
+    @log_duration()
+    def prepare_installation():
+        # install libs if not present
+        install.install_components(apis)
+
+    @log_duration()
+    def start_api_services():
+
+        # Some services take a bit to come up
+        sleep_time = 5
+        # start services
+        thread = None
+
+        # loop through plugins and start each service
+        for name, plugin in SERVICE_PLUGINS.items():
+            if plugin.is_enabled(api_names=apis):
+                record_service_health(name, 'starting')
+                t1 = plugin.start(asynchronous=True)
+                thread = thread or t1
+
+        time.sleep(sleep_time)
+        # ensure that all infra components are up and running
+        check_infra(apis=apis)
+        # restore persisted data
+        persistence.restore_persisted_data(apis=apis)
+        return thread
+
+    prepare_environment()
+    prepare_installation()
+    with BOOTSTRAP_LOCK:
+        thread = start_api_services()
+    print(READY_MARKER_OUTPUT)
     sys.stdout.flush()
-    if not asynchronous and thread:
-        # this is a bit of an ugly hack, but we need to make sure that we
-        # stay in the execution context of the main thread, otherwise our
-        # signal handlers don't work
-        sleep_forever()
+
     return thread

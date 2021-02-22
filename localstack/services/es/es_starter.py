@@ -1,12 +1,14 @@
 import os
-import six
+import json
 import logging
+import requests
 import traceback
 from localstack import config
+from localstack import constants
 from localstack.services import install
-from localstack.utils.aws import aws_stack
-from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port
-from localstack.services.infra import get_service_protocol, start_proxy_for_service, do_run
+from localstack.services.es import es_api
+from localstack.utils.common import is_root, mkdir, chmod_r, rm_rf, get_free_tcp_port, get_service_protocol
+from localstack.services.infra import start_proxy_for_service, do_run, start_local_api
 
 LOG = logging.getLogger(__name__)
 
@@ -26,7 +28,8 @@ def stop_elasticsearch():
         return
     LOG.info('Terminating Elasticsearch instance, as all clusters have been removed')
     thread.stop()
-    STATE['_proxy_'].stop()
+    if STATE['_proxy_']:
+        STATE['_proxy_'].stop()
     del STATE['_thread_']
     del STATE['_proxy_']
 
@@ -81,16 +84,22 @@ def start_elasticsearch(port=None, version=None, delete_data=True, asynchronous=
     return thread
 
 
-def check_elasticsearch(expect_shutdown=False, print_error=False):
-    out = None
+def check_elasticsearch(expect_shutdown=False, print_error=True):
+    # Check internal endpoint for health
+    endpoint = '%s://%s:%s' % (get_service_protocol(), constants.LOCALHOST, config.PORT_ELASTICSEARCH)
     try:
-        # check Elasticsearch
-        es = aws_stack.connect_elasticsearch()
-        out = es.cat.aliases()
-    except Exception as e:
+        req = requests.get(endpoint + '/_cluster/health')
+        es_status = json.loads(req.text)
+        es_status = es_status['status']
+        return es_status == 'green' or es_status == 'yellow'
+    except ValueError as e:
         if print_error:
-            LOG.error('Elasticsearch health check failed (retrying...): %s %s' % (e, traceback.format_exc()))
-    if expect_shutdown:
-        assert out is None
-    else:
-        assert isinstance(out, six.string_types)
+            LOG.error(
+                'Elasticsearch health check to endpoint %s failed (retrying...): %s %s' % (
+                    endpoint, e, traceback.format_exc()))
+        pass
+
+
+def start_elasticsearch_service(port=None, asynchronous=False):
+    port = port or config.PORT_ES
+    return start_local_api('ES', port, api='es', method=es_api.serve, asynchronous=asynchronous)

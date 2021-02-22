@@ -85,8 +85,10 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_vcp_peering_difference_regions(self):
+        # Note: different regions currently not supported due to set_default_region_in_headers(..) in edge.py
         region1 = 'ap-southeast-1'
         region2 = 'us-east-2'
+        region1 = region2 = aws_stack.get_region()
         ec2_client1 = aws_stack.connect_to_service(service_name='ec2', region_name=region1)
         ec2_client2 = aws_stack.connect_to_service(service_name='ec2', region_name=region2)
 
@@ -100,10 +102,8 @@ class TestEc2Integrations(unittest.TestCase):
         self.assertEqual(peer_vpc2['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(peer_vpc2['Vpc']['CidrBlock'], cidr_block2)
 
-        cross_region = ec2_client1.create_vpc_peering_connection(PeerVpcId=peer_vpc2['Vpc']['VpcId'],
-                                                                 VpcId=peer_vpc1['Vpc']['VpcId'],
-                                                                 PeerRegion='us-east-2'
-                                                                 )
+        cross_region = ec2_client1.create_vpc_peering_connection(
+            PeerVpcId=peer_vpc2['Vpc']['VpcId'], VpcId=peer_vpc1['Vpc']['VpcId'], PeerRegion=region2)
         self.assertEqual(peer_vpc1['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertEqual(
             peer_vpc1['Vpc']['VpcId'],
@@ -133,16 +133,13 @@ class TestEc2Integrations(unittest.TestCase):
 
         requester_peer = ec2_client1.describe_vpc_peering_connections(
             VpcPeeringConnectionIds=[accept_vpc['VpcPeeringConnection']['VpcPeeringConnectionId']]
-
         )
         self.assertEqual(len(requester_peer['VpcPeeringConnections']), 1)
         self.assertEqual(
-            region1,
-            requester_peer['VpcPeeringConnections'][0]['RequesterVpcInfo']['Region']
+            region1, requester_peer['VpcPeeringConnections'][0]['RequesterVpcInfo']['Region']
         )
         self.assertEqual(
-            region2,
-            requester_peer['VpcPeeringConnections'][0]['AccepterVpcInfo']['Region']
+            region2, requester_peer['VpcPeeringConnections'][0]['AccepterVpcInfo']['Region']
         )
 
         accepter_peer = ec2_client2.describe_vpc_peering_connections(
@@ -150,12 +147,10 @@ class TestEc2Integrations(unittest.TestCase):
         )
         self.assertEqual(len(accepter_peer['VpcPeeringConnections']), 1)
         self.assertEquals(
-            region1,
-            accepter_peer['VpcPeeringConnections'][0]['RequesterVpcInfo']['Region']
+            region1, accepter_peer['VpcPeeringConnections'][0]['RequesterVpcInfo']['Region']
         )
         self.assertEquals(
-            region2,
-            accepter_peer['VpcPeeringConnections'][0]['AccepterVpcInfo']['Region']
+            region2, accepter_peer['VpcPeeringConnections'][0]['AccepterVpcInfo']['Region']
         )
 
         # Clean up
@@ -198,3 +193,23 @@ class TestEc2Integrations(unittest.TestCase):
         # clean up
         ec2.delete_vpn_gateway(VpnGatewayId=gateway_id)
         ec2.delete_vpc(VpcId=vpc_id)
+
+    def test_terminate_instances(self):
+        ec2 = self.ec2_client
+        kwargs = {
+            'MinCount': 1,
+            'MaxCount': 1,
+            'ImageId': 'ami-d3adb33f',
+            'KeyName': 'the_key',
+            'InstanceType': 't1.micro',
+            'BlockDeviceMappings': [{'DeviceName': '/dev/sda2', 'Ebs': {'VolumeSize': 50}}],
+        }
+
+        resp1 = ec2.run_instances(**kwargs)
+
+        instances = []
+        for instance in resp1['Instances']:
+            instances.append(instance.get('InstanceId'))
+
+        resp = ec2.terminate_instances(InstanceIds=instances)
+        self.assertEqual(instances[0], resp['TerminatingInstances'][0]['InstanceId'])

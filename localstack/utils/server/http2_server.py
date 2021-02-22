@@ -3,12 +3,15 @@ import asyncio
 import logging
 import threading
 import traceback
+import collections.abc
 import h11
 from quart import make_response, request, Quart
 from quart.app import _cancel_all_tasks
+from hypercorn import utils as hypercorn_utils
 from hypercorn.config import Config
 from hypercorn.events import Closed
 from hypercorn.asyncio import serve, tcp_server
+from hypercorn.protocol import http_stream
 from localstack import config
 from localstack.utils.common import TMP_THREADS, FuncThread, load_file, retry
 from localstack.utils.http_utils import uses_chunked_encoding
@@ -69,6 +72,32 @@ def apply_patches():
     create_ssl_context_orig = Config.create_ssl_context
     Config.create_ssl_context = create_ssl_context
 
+    # avoid "h11._util.LocalProtocolError: Too little data for declared Content-Length" for certain status codes
+
+    def suppress_body(method, status_code):
+        if status_code == 412:
+            return False
+        return suppress_body_orig(method, status_code)
+
+    suppress_body_orig = hypercorn_utils.suppress_body
+    hypercorn_utils.suppress_body = suppress_body
+    http_stream.suppress_body = suppress_body
+
+
+class HTTPErrorResponse(Exception):
+    def __init__(self, *args, code=None, **kwargs):
+        super(HTTPErrorResponse, self).__init__(*args, **kwargs)
+        self.code = code
+
+
+def get_async_generator_result(result):
+    gen, headers = result, {}
+    if isinstance(result, tuple) and len(result) >= 2:
+        gen, headers = result[:2]
+    if not isinstance(gen, (collections.abc.Generator, collections.abc.AsyncGenerator)):
+        return
+    return gen, headers
+
 
 def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
 
@@ -84,12 +113,21 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
             data = await request.get_data()
             try:
                 result = await run_sync(handler, request, data)
+                if isinstance(result, Exception):
+                    raise result
             except Exception as e:
                 LOG.warning('Error in proxy handler for request %s %s: %s %s' %
                     (request.method, request.url, e, traceback.format_exc()))
                 response.status_code = 500
+                if isinstance(e, HTTPErrorResponse):
+                    response.status_code = e.code or response.status_code
                 return response
             if result is not None:
+                # check if this is an async generator (for HTTP2 push event responses)
+                async_gen = get_async_generator_result(result)
+                if async_gen:
+                    return async_gen
+                # prepare and return regular response
                 is_chunked = uses_chunked_encoding(result)
                 result_content = result.content or ''
                 response = await make_response(result_content)
@@ -98,15 +136,17 @@ def run_server(port, handler=None, asynchronous=True, ssl_creds=None):
                     response.headers.pop('Content-Length', None)
                 result.headers.pop('Server', None)
                 result.headers.pop('Date', None)
-                response.headers.update(dict(result.headers))
+                headers = {k: str(v).replace('\n', r'\n') for k, v in result.headers.items()}
+                response.headers.update(headers)
                 # set multi-value headers
                 multi_value_headers = getattr(result, 'multi_value_headers', {})
                 for key, values in multi_value_headers.items():
                     for value in values:
                         response.headers.add_header(key, value)
                 # set default headers, if required
-                if 'Content-Length' not in response.headers and not is_chunked:
-                    response.headers['Content-Length'] = str(len(result_content) if result_content else 0)
+                if not is_chunked and request.method not in ['OPTIONS', 'HEAD']:
+                    response_data = await response.get_data()
+                    response.headers['Content-Length'] = str(len(response_data or ''))
                 if 'Connection' not in response.headers:
                     response.headers['Connection'] = 'close'
         return response

@@ -4,8 +4,8 @@ MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 
 # install some common libs
-RUN apk add --no-cache autoconf automake build-base ca-certificates curl cyrus-sasl-dev g++ gcc git \
-        groff iputils libffi-dev libtool linux-headers make openssl openssl-dev postgresql-dev \
+RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates curl cyrus-sasl-dev g++ gcc \
+        git groff iputils libffi-dev libtool linux-headers make nss openssl openssl-dev postgresql-dev \
         py3-pip python3 python3-dev tar xz zip && \
     update-ca-certificates
 
@@ -16,21 +16,39 @@ RUN docker_version=17.05.0-ce; \
   && mv docker/docker /usr/local/bin \
   && rm -r docker docker-$docker_version.tgz
 
-# Install Java - taken from official repo:
-# https://github.com/docker-library/openjdk/blob/master/8-jdk/alpine/Dockerfile)
+# Install Java 11
 ENV LANG C.UTF-8
 RUN { \
         echo '#!/bin/sh'; echo 'set -e'; echo; \
         echo 'dirname "$(dirname "$(readlink -f "$(which javac || which java)")")"'; \
     } > /usr/local/bin/docker-java-home \
     && chmod +x /usr/local/bin/docker-java-home
-ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
-ENV PATH $PATH:/usr/lib/jvm/java-1.8-openjdk/jre/bin:/usr/lib/jvm/java-1.8-openjdk/bin
-RUN set -x && apk add --no-cache openjdk8 && [ "$JAVA_HOME" = "$(docker-java-home)" ]
-RUN apk add --no-cache nss
+RUN set -x \
+  # Install JDK 11.0.8 due to JDK-8165852.
+  && apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community openjdk11
+
+# create a custom, minimized JRE via jlink
+RUN /usr/lib/jvm/java-11-openjdk/bin/jlink --add-modules \
+# include required modules
+java.base,java.desktop,java.instrument,java.management,java.naming,java.scripting,java.sql,java.xml,jdk.compiler,\
+# jdk.unsupported contains sun.misc.Unsafe which is required by certain dependencies
+jdk.unsupported,\
+# add ability to open ZIP/JAR files
+jdk.zipfs,\
+# Elasticsearch 7+ crashes without Thai Segmentation support
+jdk.localedata --include-locales en,th \
+    --compress 2 --strip-debug --no-header-files --no-man-pages --output /usr/lib/jvm/java-11 && \
+  cp /usr/lib/jvm/java-11-openjdk/bin/javac /usr/lib/jvm/java-11/bin/javac && \
+  cp -r /usr/lib/jvm/java-11-openjdk/include /usr/lib/jvm/java-11/include && \
+  mv /usr/lib/jvm/java-11/lib/modules /usr/lib/jvm/java-11/lib/modules.bk; \
+  cp -r /usr/lib/jvm/java-11-openjdk/lib/* /usr/lib/jvm/java-11/lib/; \
+  mv /usr/lib/jvm/java-11/lib/modules.bk /usr/lib/jvm/java-11/lib/modules; \
+  rm -rf /usr/bin/java /usr/lib/jvm/java-11-openjdk && ln -s /usr/lib/jvm/java-11/bin/java /usr/bin/java
+ENV JAVA_HOME /usr/lib/jvm/java-11
+ENV PATH "${PATH}:${JAVA_HOME}/bin"
 
 # Install Maven - taken from official repo:
-# https://github.com/carlossg/docker-maven/blob/master/openjdk-8/Dockerfile)
+# https://github.com/carlossg/docker-maven/blob/master/openjdk-11/Dockerfile)
 ARG MAVEN_VERSION=3.6.3
 ARG USER_HOME_DIR="/root"
 ARG SHA=26ad91d751b3a9a53087aefa743f4e16a17741d3915b219cf74112bf87a438c5
@@ -43,7 +61,7 @@ RUN mkdir -p /usr/share/maven /usr/share/maven/ref \
   && ln -s /usr/share/maven/bin/mvn /usr/bin/mvn
 ENV MAVEN_HOME /usr/share/maven
 ENV MAVEN_CONFIG "$USER_HOME_DIR/.m2"
-ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/openjdk-8/settings-docker.xml /usr/share/maven/ref/
+ADD https://raw.githubusercontent.com/carlossg/docker-maven/master/openjdk-11/settings-docker.xml /usr/share/maven/ref/
 
 # set workdir
 RUN mkdir -p /opt/code/localstack
@@ -71,7 +89,7 @@ RUN mkdir -p /opt/code/localstack/localstack/infra && \
       curl -L -o /tmp/localstack.ddb.zip ${DYNAMODB_ZIP_URL} && \
       (cd localstack/infra/dynamodb && unzip -q /tmp/localstack.ddb.zip && rm /tmp/localstack.ddb.zip) && \
     curl -L -o /tmp/localstack.es.tar.gz \
-        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.1.0-linux-x86_64.tar.gz && \
+        https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.7.0-linux-x86_64.tar.gz && \
     curl -L -o /tmp/elasticmq-server.jar \
         https://s3-eu-west-1.amazonaws.com/softwaremill-public/elasticmq-server-0.15.7.jar && \
     (cd localstack/infra/ && tar -xf /tmp/localstack.es.tar.gz && \
@@ -86,11 +104,21 @@ RUN mkdir -p /opt/code/localstack/localstack/infra && \
         bin/elasticsearch-plugin install analysis-smartcn && \
         bin/elasticsearch-plugin install analysis-stempel && \
         bin/elasticsearch-plugin install analysis-ukrainian)
+
+# installing terraform temporary - removed in the final docker image
+# TODO: Remove $PATH variable from the final docker image
+ARG TERRAFORM_ZIP_URL=https://releases.hashicorp.com/terraform/0.13.4/terraform_0.13.4_linux_amd64.zip
+RUN mkdir -p /opt/terraform && \
+    curl -L -o /opt/terraform/terraform.zip ${TERRAFORM_ZIP_URL} && \
+    (cd /opt/terraform && unzip -q /opt/terraform/terraform.zip && rm /opt/terraform/terraform.zip)
+ENV PATH="${PATH}:/opt/terraform"
+
 ADD requirements.txt .
 RUN (pip install --upgrade pip) && \
     (test `which virtualenv` || pip install virtualenv || sudo pip install virtualenv) && \
     (virtualenv .testvenv && source .testvenv/bin/activate && \
-        pip install -q 'localstack-ext[full]' && pip install -q -r requirements.txt && rm -rf .testvenv) || exit 1
+        pip install Cython && export CPATH=/usr/include/python3.8 && \
+        pip install -q -r requirements.txt && rm -rf .testvenv) || exit 1
 
 # add files required to run "make install-web"
 ADD Makefile .
@@ -100,10 +128,13 @@ ADD localstack/dashboard/web/package.json localstack/dashboard/web/package.json
 RUN make install-web
 
 # install libs that require dependencies cleaned up below (e.g., gcc)
-RUN (virtualenv .venv && source .venv/bin/activate && pip install cryptography)
+RUN (virtualenv .venv && source .venv/bin/activate && pip install 'cryptography<3.4')
 
 # clean up (layers are later squashed into a single one)
 RUN rm -rf localstack/infra/elasticsearch/jdk/
 RUN rm -rf /root/.npm; \
-  apk del --purge autoconf automake build-base g++ gcc giflib krb5-conf krb5-libs libc-dev \
+  apk del --purge autoconf automake boost-dev build-base g++ gcc giflib krb5-conf krb5-libs libc-dev \
   libffi-dev libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev
+
+# final fixes
+RUN which python || ln -s /usr/bin/python3 /usr/bin/python

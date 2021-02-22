@@ -1,8 +1,8 @@
+from localstack.utils.common import timestamp_millis
 import time
 import json
 import six
 from datetime import datetime
-from localstack.utils.common import isoformat_milliseconds
 
 if six.PY3:
     long = int
@@ -156,6 +156,16 @@ class FirehoseStream(KinesisStream):
         return self.id.split(':deliverystream/')[-1]
 
 
+class CodeSigningConfig():
+    def __init__(self, arn, id, signing_profile_version_arns):
+        self.arn = arn
+        self.id = id
+        self.signing_profile_version_arns = signing_profile_version_arns
+        self.description = ''
+        self.untrusted_artifact_on_deployment = 'Warn'
+        self.last_modified = None
+
+
 class LambdaFunction(Component):
     def __init__(self, arn):
         super(LambdaFunction, self).__init__(arn)
@@ -178,9 +188,12 @@ class LambdaFunction(Component):
         self.code = None
         self.dead_letter_config = None
         self.on_successful_invocation = None
+        self.on_failed_invocation = None
         self.max_retry_attempts = None
         self.max_event_age = None
         self.description = ''
+        self.code_signing_config_arn = None
+        self.package_type = None
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')
@@ -193,7 +206,7 @@ class LambdaFunction(Component):
 
     def get_function_event_invoke_config(self):
         response = {
-            'LastModified': str(self.last_modified),
+            'LastModified': timestamp_millis(self.last_modified),
             'FunctionArn': str(self.id),
         }
 
@@ -203,7 +216,7 @@ class LambdaFunction(Component):
         if self.max_event_age:
             response.update({'MaximumEventAgeInSeconds': self.max_event_age})
 
-        if self.on_successful_invocation or self.dead_letter_config:
+        if self.on_successful_invocation or self.on_failed_invocation:
             response.update({'DestinationConfig': {}})
             if self.on_successful_invocation:
                 response['DestinationConfig'].update({
@@ -211,32 +224,44 @@ class LambdaFunction(Component):
                         'Destination': self.on_successful_invocation
                     }
                 })
-            if self.dead_letter_config:
+            if self.on_failed_invocation:
                 response['DestinationConfig'].update({
                     'OnFailure': {
-                        'Destination': self.dead_letter_config
+                        'Destination': self.on_failed_invocation
                     }
                 })
 
         return response
+
+    def clear_function_event_invoke_config(self):
+        if hasattr(self, 'dead_letter_config'):
+            self.dead_letter_config = None
+        if hasattr(self, 'on_successful_invocation'):
+            self.on_successful_invocation = None
+        if hasattr(self, 'on_failed_invocation'):
+            self.on_failed_invocation = None
+        if hasattr(self, 'max_retry_attempts'):
+            self.max_retry_attempts = None
+        if hasattr(self, 'max_event_age'):
+            self.max_event_age = None
 
     def put_function_event_invoke_config(self, data):
         if not isinstance(data, dict):
             return
 
         updated = False
-        if 'DestinationConfig' in data.keys():
-            if 'OnFailure' in data['DestinationConfig'].keys():
+        if 'DestinationConfig' in data:
+            if 'OnFailure' in data['DestinationConfig']:
                 dlq_arn = data['DestinationConfig']['OnFailure']['Destination']
-                self.dead_letter_config = dlq_arn
+                self.on_failed_invocation = dlq_arn
                 updated = True
 
-            if 'OnSuccess' in data['DestinationConfig'].keys():
+            if 'OnSuccess' in data['DestinationConfig']:
                 sq_arn = data['DestinationConfig']['OnSuccess']['Destination']
                 self.on_successful_invocation = sq_arn
                 updated = True
 
-        if 'MaximumRetryAttempts' in data.keys():
+        if 'MaximumRetryAttempts' in data:
             try:
                 max_retry_attempts = int(data['MaximumRetryAttempts'])
             except Exception:
@@ -245,7 +270,7 @@ class LambdaFunction(Component):
             self.max_retry_attempts = max_retry_attempts
             updated = True
 
-        if 'MaximumEventAgeInSeconds' in data.keys():
+        if 'MaximumEventAgeInSeconds' in data:
             try:
                 max_event_age = int(data['MaximumEventAgeInSeconds'])
             except Exception:
@@ -255,9 +280,12 @@ class LambdaFunction(Component):
             updated = True
 
         if updated:
-            self.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+            self.last_modified = datetime.utcnow()
 
         return self
+
+    def destination_enabled(self):
+        return self.on_successful_invocation is not None or self.on_failed_invocation is not None
 
     def get_version(self, version):
         return self.versions.get(version)
@@ -269,6 +297,9 @@ class LambdaFunction(Component):
     def name(self):
         # Example ARN: arn:aws:lambda:aws-region:acct-id:function:helloworld:1
         return self.id.split(':')[6]
+
+    def region(self):
+        return self.id.split(':')[3]
 
     def arn(self):
         return self.id

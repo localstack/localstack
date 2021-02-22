@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import json
 import time
 import select
 import pkgutil
@@ -13,7 +14,9 @@ import six
 import shutil
 import pip as pip_mod
 from datetime import datetime
+from concurrent.futures._base import Future
 from localstack import constants, config
+from localstack.utils.analytics.profiler import log_duration
 
 # set up logger
 LOG = logging.getLogger(os.path.basename(__file__))
@@ -42,18 +45,18 @@ PLUGIN_SCOPE_COMMANDS = 'commands'
 
 # maps from API names to list of other API names that they depend on
 API_DEPENDENCIES = {
+    'dynamodb': ['dynamodbstreams'],
     'dynamodbstreams': ['kinesis'],
     'es': ['elasticsearch'],
-    'lambda': ['logs']
+    'lambda': ['logs', 'cloudwatch'],
+    'kinesis': ['dynamodb'],
+    'firehose': ['kinesis']
 }
 # composites define an abstract name like "serverless" that maps to a set of services
 API_COMPOSITES = {
-    'serverless': ['cloudformation', 'iam', 'sts', 'lambda', 'dynamodb', 'apigateway', 's3'],
+    'serverless': ['cloudformation', 'cloudwatch', 'iam', 'sts', 'lambda', 'dynamodb', 'apigateway', 's3'],
     'cognito': ['cognito-idp', 'cognito-identity']
 }
-
-# name of main Docker container
-MAIN_CONTAINER_NAME = 'localstack_main'
 
 # environment variable that indicates that we're executing in
 # the context of the script that starts the Docker container
@@ -99,6 +102,7 @@ def run_pip_main(args):
     return pip._internal.main.main(args)
 
 
+@log_duration()
 def load_plugin_from_path(file_path, scope=None):
     if os.path.exists(file_path):
         module = re.sub(r'(^|.+/)([^/]+)/plugins.py', r'\2', file_path)
@@ -123,13 +127,22 @@ def load_plugin_from_path(file_path, scope=None):
                 LOG.warning('Unable to load plugins from file %s: %s' % (file_path, e))
 
 
+def should_load_module(module, scope):
+    if module == 'localstack_ext' and not os.environ.get('LOCALSTACK_API_KEY'):
+        return False
+    return True
+
+
+@log_duration()
 def load_plugins(scope=None):
     scope = scope or PLUGIN_SCOPE_SERVICES
     if PLUGINS_LOADED.get(scope):
         return PLUGINS_LOADED[scope]
 
     t1 = now_utc()
-    setup_logging()
+    is_infra_process = os.environ.get(constants.LOCALSTACK_INFRA_PROCESS) in ['1', 'true'] or '--host' in sys.argv
+    log_level = logging.WARNING if scope == PLUGIN_SCOPE_COMMANDS and not is_infra_process else None
+    setup_logging(log_level=log_level)
 
     loaded_files = []
     result = []
@@ -139,6 +152,8 @@ def load_plugins(scope=None):
     search_modules = PLUGIN_MODULES
 
     for module in search_modules:
+        if not should_load_module(module, scope):
+            continue
         file_path = None
         if isinstance(module, six.string_types):
             loader = pkgutil.get_loader(module)
@@ -173,8 +188,27 @@ def docker_container_running(container_name):
     return container_name in container_names
 
 
+def get_docker_image_details(image_name=None):
+    image_name = image_name or get_docker_image_to_start()
+    try:
+        result = run('%s inspect %s' % (config.DOCKER_CMD, image_name), print_error=False)
+        result = json.loads(to_str(result))
+        assert len(result)
+    except Exception:
+        return {}
+    if len(result) > 1:
+        LOG.warning('Found multiple images (%s) named "%s"' % (len(result), image_name))
+    result = result[0]
+    result = {
+        'id': result['Id'].replace('sha256:', '')[:12],
+        'tag': (result.get('RepoTags') or ['latest'])[0].split(':')[-1],
+        'created': result['Created'].split('.')[0]
+    }
+    return result
+
+
 def get_docker_container_names():
-    cmd = "docker ps --format '{{.Names}}'"
+    cmd = "%s ps --format '{{.Names}}'" % config.DOCKER_CMD
     try:
         output = to_str(run(cmd))
         container_names = re.split(r'\s+', output.strip().replace('\n', ' '))
@@ -185,13 +219,58 @@ def get_docker_container_names():
 
 
 def get_main_container_ip():
-    cmd = "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" % MAIN_CONTAINER_NAME
+    container_name = get_main_container_name()
+    cmd = ("%s inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' %s" %
+        (config.DOCKER_CMD, container_name))
     return run(cmd).strip()
 
 
-def setup_logging():
-    # determine and set log level
-    log_level = logging.DEBUG if is_debug() else logging.INFO
+def get_main_container_name():
+    cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
+    try:
+        return run(cmd, print_error=False).strip().lstrip('/')
+    except Exception:
+        return config.MAIN_CONTAINER_NAME
+
+
+def get_server_version():
+    docker_cmd = config.DOCKER_CMD
+    try:
+        # try to extract from existing running container
+        container_name = get_main_container_name()
+        version = run('%s exec -it %s bin/localstack --version' % (docker_cmd, container_name), print_error=False)
+        version = version.strip().split('\n')[-1]
+        return version
+    except Exception:
+        try:
+            # try to extract by starting a new container
+            img_name = get_docker_image_to_start()
+            version = run('%s run --entrypoint= -it %s bin/localstack --version' % (docker_cmd, img_name))
+            version = version.strip().split('\n')[-1]
+            return version
+        except Exception:
+            # fall back to default constant
+            return constants.VERSION
+
+
+def setup_logging(log_level=None):
+    """ Determine and set log level """
+
+    if PLUGINS_LOADED.get('_logging_'):
+        return
+    PLUGINS_LOADED['_logging_'] = True
+
+    # log level set by DEBUG env variable
+    log_level = log_level or (logging.DEBUG if config.DEBUG else logging.INFO)
+
+    # overriding the log level if LS_LOG has been set
+    if config.LS_LOG:
+        LS_LOG = str(config.LS_LOG).upper()
+        LS_LOG = 'WARNING' if LS_LOG == 'WARN' else LS_LOG
+        log_level = getattr(logging, LS_LOG)
+        logging.getLogger('').setLevel(log_level)
+        logging.getLogger('localstack').setLevel(log_level)
+
     logging.basicConfig(level=log_level, format=LOG_FORMAT, datefmt=LOG_DATE_FORMAT)
 
     # set up werkzeug logger
@@ -203,7 +282,7 @@ def setup_logging():
     root_handlers = logging.getLogger().handlers
     if len(root_handlers) > 0:
         root_handlers[0].addFilter(WerkzeugLogFilter())
-        if is_debug():
+        if config.DEBUG:
             format = '%(asctime)s:API: %(message)s'
             handler = logging.StreamHandler()
             handler.setLevel(logging.INFO)
@@ -234,6 +313,8 @@ def canonicalize_api_names(apis=None):
         (2) resolving and adding composites (e.g., "serverless" describes an ensemble
                 including "iam", "lambda", "dynamodb", "apigateway", "s3", "sns", and "logs"), and
         (3) removing duplicates from the list. """
+
+    # TODO: cache the result, as the code below is a relatively expensive operation!
 
     apis = apis or list(config.SERVICE_PORTS.keys())
 
@@ -298,7 +379,7 @@ class PortMappings(object):
             for i in range(port[1] - port[0] + 1):
                 self.add(port[0] + i, mapped[0] + i)
             return
-        if int(port) <= 0:
+        if port is None or int(port) <= 0:
             raise Exception('Unable to add mapping for invalid port: %s' % port)
         if self.contains(port):
             return
@@ -368,7 +449,7 @@ def extract_port_flags(user_flags, port_mappings):
 
 def start_infra_in_docker():
 
-    container_name = MAIN_CONTAINER_NAME
+    container_name = config.MAIN_CONTAINER_NAME
 
     if docker_container_running(container_name):
         raise Exception('LocalStack container named "%s" is already running' % container_name)
@@ -444,7 +525,7 @@ def start_infra_in_docker():
 
     mkdir(config.TMP_FOLDER)
     try:
-        run('chmod -R 777 "%s"' % config.TMP_FOLDER)
+        run('chmod -R 777 "%s"' % config.TMP_FOLDER, print_error=False)
     except Exception:
         pass
 
@@ -504,14 +585,23 @@ class FuncThread(threading.Thread):
         self.params = params
         self.func = func
         self.quiet = quiet
+        self.result_future = Future()
 
     def run(self):
+        result = None
         try:
-            self.func(self.params)
-        except Exception:
+            result = self.func(self.params)
+        except Exception as e:
+            result = e
             if not self.quiet:
-                LOG.warning('Thread run method %s(%s) failed: %s' %
-                    (self.func, self.params, traceback.format_exc()))
+                LOG.warning('Thread run method %s(%s) failed: %s %s' %
+                    (self.func, self.params, e, traceback.format_exc()))
+        finally:
+            try:
+                self.result_future.set_result(result)
+            except Exception:
+                # this can happen as InvalidStateError on shutdown, if the task is already canceled
+                pass
 
     def stop(self, quiet=False):
         if not quiet and not self.quiet:
@@ -601,7 +691,3 @@ def mkdir(folder):
             # Ignore rare 'File exists' race conditions.
             if err.errno != 17:
                 raise
-
-
-def is_debug():
-    return os.environ.get('DEBUG', '').strip() not in ['', '0', 'false']

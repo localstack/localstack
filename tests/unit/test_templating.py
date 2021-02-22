@@ -84,16 +84,20 @@ class TestMessageTransformation(unittest.TestCase):
         result = render_velocity_template(template, context, as_json=True)
         self.assertEqual([], result['Records'])
 
-    def test_special_chars(self):
-        template1 = 'test#${foo.bar}'
-        template2 = 'test#$foo.bar'
+    def test_array_in_set_expr(self):
+        template = "#set ($bar = $input.path('$.foo')[1]) \n $bar"
         context = {
-            'foo': {'bar': 'baz'}
+            'foo': ['e1', 'e2', 'e3', 'e4']
         }
-        result = render_velocity_template(template1, {}, variables=context)
-        self.assertEqual('test#baz', result)
-        result = render_velocity_template(template2, {}, variables=context)
-        self.assertEqual('test#baz', result)
+        result = render_velocity_template(template, context).strip()
+        self.assertEqual('e2', result)
+
+        template = "#set ($bar = $input.path('$.foo')[1][1][1]) $bar"
+        context = {
+            'foo': [['e1'], ['e2', ['e3', 'e4']]]
+        }
+        result = render_velocity_template(template, context).strip()
+        self.assertEqual('e4', result)
 
     def test_string_methods(self):
         context = {

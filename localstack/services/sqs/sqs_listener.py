@@ -3,26 +3,25 @@ import json
 import xmltodict
 from moto.sqs.utils import parse_message_attributes
 from moto.sqs.models import Message, TRANSPORT_TYPE_ENCODINGS
-from six.moves.urllib import parse as urlparse
-from six.moves.urllib.parse import urlencode
 from requests.models import Request
+from six.moves.urllib.parse import urlencode
 from localstack import config, constants
-from localstack.config import HOSTNAME_EXTERNAL, SQS_PORT_EXTERNAL
+from localstack.config import SQS_PORT_EXTERNAL
 from localstack.utils.aws import aws_stack
 from localstack.services.sns import sns_listener
-from localstack.utils.common import to_str, clone, path_from_url, get_service_protocol
+from localstack.utils.common import to_str, clone, path_from_url, get_service_protocol, parse_request_data
 from localstack.utils.analytics import event_publisher
 from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.persistence import PersistingProxyListener
 from localstack.services.awslambda import lambda_api
-from localstack.utils.aws.aws_responses import requests_response, make_requests_error
+from localstack.utils.aws.aws_responses import requests_response, make_requests_error, calculate_crc32
 
 API_VERSION = '2012-11-05'
 XMLNS_SQS = 'http://queue.amazonaws.com/doc/%s/' % API_VERSION
 
 # Valid unicode values: #x9 | #xA | #xD | #x20 to #xD7FF | #xE000 to #xFFFD | #x10000 to #x10FFFF
 # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_SendMessage.html
-MSG_CONTENT_REGEX = '^[\u0009\u000A\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$'
+MSG_CONTENT_REGEX = '^[\u0009\u000A\u000D\u0020-\uD7FF\uE000-\uFFFD\U00010000-\U0010FFFF]*$'
 
 UNSUPPORTED_ATTRIBUTE_NAMES = [
     # elasticmq store 'FifoQueue', 'ContentBasedDeduplication' as queue's properties
@@ -35,19 +34,6 @@ UNSUPPORTED_ATTRIBUTE_NAMES = [
 # maps queue URLs to attributes set via the API
 # TODO: add region as first level in the map
 QUEUE_ATTRIBUTES = {}
-
-
-def parse_request_data(method, path, data):
-    """ Extract request data either from query string (for GET) or request body (for POST). """
-    if method == 'POST':
-        result = urlparse.parse_qs(to_str(data))
-    elif method == 'GET':
-        parsed_path = urlparse.urlparse(path)
-        result = urlparse.parse_qs(parsed_path.query)
-    else:
-        return {}
-    result = dict([(k, v[0]) for k, v in result.items()])
-    return result
 
 
 # Format attributes as a list. Example input:
@@ -112,6 +98,24 @@ def _set_queue_attributes(queue_url, req_data):
     QUEUE_ATTRIBUTES[queue_url].update(local_attrs)
     forward_attrs = dict([(k, v) for k, v in attrs.items() if k not in UNSUPPORTED_ATTRIBUTE_NAMES])
     return forward_attrs
+
+
+def _fix_dlq_arn_in_attributes(req_data):
+    """ Convert queue URL to ARN for DLQ in redrive policy config. """
+    attrs = _format_attributes(req_data)
+    policy = json.loads(attrs.get('RedrivePolicy') or '{}')
+    dlq_arn = policy.get('deadLetterTargetArn', '')
+    if '://' in dlq_arn:
+        # convert queue URL to queue ARN
+        policy['deadLetterTargetArn'] = aws_stack.sqs_queue_arn(dlq_arn)
+        attrs['RedrivePolicy'] = json.dumps(policy)
+        return attrs
+
+
+def _fix_redrive_policy(match):
+    result = '<Attribute><Name>RedrivePolicy</Name><Value>{%s}</Value></Attribute>' % (
+        match.group(1).replace(' ', ''))
+    return result
 
 
 def _add_queue_attributes(path, req_data, content_str, headers):
@@ -260,6 +264,11 @@ class ProxyListenerSQS(PersistingProxyListener):
                         # make sure we only forward the supported attributes to the backend
                         return _get_attributes_forward_request(method, path, headers, req_data, forward_attrs)
 
+            elif action == 'CreateQueue':
+                changed_attrs = _fix_dlq_arn_in_attributes(req_data)
+                if changed_attrs:
+                    return _get_attributes_forward_request(method, path, headers, req_data, changed_attrs)
+
             elif action == 'DeleteQueue':
                 queue_url = _queue_url(path, req_data, headers)
                 QUEUE_ATTRIBUTES.pop(queue_url, None)
@@ -310,6 +319,11 @@ class ProxyListenerSQS(PersistingProxyListener):
         if action == 'GetQueueAttributes':
             content_str = _add_queue_attributes(path, req_data, content_str, headers)
 
+        name = r'<Name>\s*RedrivePolicy\s*<\/Name>'
+        value = r'<Value>\s*{(.*)}\s*<\/Value>'
+        for p1, p2 in ((name, value), (value, name)):
+            content_str = re.sub(r'<Attribute>\s*%s\s*%s\s*<\/Attribute>' % (p1, p2), _fix_redrive_policy, content_str)
+
         # patch the response and return the correct endpoint URLs / ARNs
         if action in ('CreateQueue', 'GetQueueUrl', 'ListQueues', 'GetQueueAttributes', 'ListDeadLetterSourceQueues'):
             if config.USE_SSL and '<QueueUrl>http://' in content_str:
@@ -318,7 +332,7 @@ class ProxyListenerSQS(PersistingProxyListener):
             # expose external hostname:port
             external_port = SQS_PORT_EXTERNAL or get_external_port(headers, request_handler)
             content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://[^<]*:([0-9]+)/([^<]*)\s*</QueueUrl>',
-                                 r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (HOSTNAME_EXTERNAL, external_port),
+                                 r'<QueueUrl>\1://%s:%s/\3</QueueUrl>' % (config.HOSTNAME_EXTERNAL, external_port),
                                  content_str)
             # encode account ID in queue URL
             content_str = re.sub(r'<QueueUrl>\s*([a-z]+)://([^/]+)/queue/([^<]*)\s*</QueueUrl>',
@@ -344,7 +358,8 @@ class ProxyListenerSQS(PersistingProxyListener):
 
         if content_str_original != content_str:
             # if changes have been made, return patched response
-            response.headers['content-length'] = len(content_str)
+            response.headers['Content-Length'] = len(content_str)
+            response.headers['x-amz-crc32'] = calculate_crc32(content_str)
             return requests_response(content_str, headers=response.headers, status_code=response.status_code)
 
     @classmethod

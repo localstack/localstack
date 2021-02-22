@@ -1,5 +1,6 @@
+import yaml
 import unittest
-from datetime import datetime
+from datetime import datetime, date
 from localstack.utils import common
 from localstack.utils.bootstrap import extract_port_flags, PortMappings
 
@@ -44,6 +45,43 @@ class TestCommon(unittest.TestCase):
     def test_mktime(self):
         env = common.mktime(datetime(2010, 3, 20, 7, 24, 00, 0), True)
         self.assertEqual(env, 1269069840.0)
+
+    def test_timestamp_millis(self):
+        result = common.timestamp_millis(datetime.now())
+        self.assertIn('T', result)
+        result = common.timestamp_millis(date.today())
+        self.assertIn('00:00:00', result)
+        self.assertIn('T', result)
+
+    def test_extract_jsonpath(self):
+        obj = {'a': {'b': [{'c': 123}, 'foo']}, 'e': 234}
+        result = common.extract_jsonpath(obj, '$.a.b')
+        self.assertEqual(result, [{'c': 123}, 'foo'])
+        result = common.extract_jsonpath(obj, '$.a.b.c')
+        self.assertFalse(result)
+        result = common.extract_jsonpath(obj, '$.foobar')
+        self.assertFalse(result)
+        result = common.extract_jsonpath(obj, '$.e')
+        self.assertEqual(result, 234)
+        result = common.extract_jsonpath(obj, '$.a.b[0]')
+        self.assertEqual(result, {'c': 123})
+        result = common.extract_jsonpath(obj, '$.a.b[0].c')
+        self.assertEqual(result, 123)
+        result = common.extract_jsonpath(obj, '$.a.b[1]')
+        self.assertEqual(result, 'foo')
+
+    def test_parse_yaml_nodes(self):
+        obj = {'test': yaml.ScalarNode('tag:yaml.org,2002:int', '123')}
+        result = common.clone_safe(obj)
+        self.assertEqual(result, {'test': 123})
+        obj = {'foo': [
+            yaml.ScalarNode('tag:yaml.org,2002:str', 'value'),
+            yaml.ScalarNode('tag:yaml.org,2002:int', '123'),
+            yaml.ScalarNode('tag:yaml.org,2002:float', '1.23'),
+            yaml.ScalarNode('tag:yaml.org,2002:bool', 'true')
+        ]}
+        result = common.clone_safe(obj)
+        self.assertEqual(result, {'foo': ['value', 123, 1.23, True]})
 
 
 class TestCommandLine(unittest.TestCase):

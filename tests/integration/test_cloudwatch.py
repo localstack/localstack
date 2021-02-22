@@ -1,8 +1,14 @@
+import json
+import gzip
 import unittest
-from localstack.utils.aws import aws_stack
+import requests
 from datetime import datetime, timedelta
 from dateutil.tz import tzutc
-from localstack.utils.common import short_uid
+from six.moves.urllib.request import Request, urlopen
+from localstack import config
+from localstack.utils.aws import aws_stack
+from localstack.utils.common import short_uid, to_str
+from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
 
 
 class CloudWatchTest(unittest.TestCase):
@@ -46,6 +52,44 @@ class CloudWatchTest(unittest.TestCase):
         self.assertEqual(len(rs['Datapoints']), 1)
         self.assertEqual(rs['Datapoints'][0]['Timestamp'], data[0]['Timestamp'])
 
+        rs = client.list_metrics(
+            Namespace=namespace,
+            MetricName=metric_name
+        )
+        self.assertEqual(len(rs['Metrics']), 1)
+        self.assertEqual(rs['Metrics'][0]['Namespace'], namespace)
+
+    def test_put_metric_data_gzip(self):
+        metric_name = 'test-metric'
+        namespace = 'namespace'
+        data = 'Action=PutMetricData&MetricData.member.1.' \
+            'MetricName=%s&MetricData.member.1.Value=1&' \
+            'Namespace=%s&Version=2010-08-01' \
+            % (metric_name, namespace)
+        bytes_data = bytes(data, encoding='utf-8')
+        encoded_data = gzip.compress(bytes_data)
+
+        url = config.get_edge_url()
+        headers = aws_stack.mock_aws_request_headers('cloudwatch')
+
+        authorization = 'AWS4-HMAC-SHA256 Credential=test/20201230/' \
+            'us-east-1/monitoring/aws4_request, ' \
+            'SignedHeaders=content-encoding;host;' \
+            'x-amz-content-sha256;x-amz-date, Signature='\
+            'bb31fc5f4e58040ede9ed751133fe'\
+            '839668b27290bc1406b6ffadc4945c705dc'
+
+        headers.update({
+            'Content-Type': 'application/x-www-form-urlencoded; charset=utf-8',
+            'Content-Length': len(encoded_data),
+            'Content-Encoding': 'GZIP',
+            'User-Agent': 'aws-sdk-nodejs/2.819.0 linux/v12.18.2 callback',
+            'Authorization': authorization,
+        })
+        request = Request(url, encoded_data, headers, method='POST')
+        urlopen(request)
+
+        client = aws_stack.connect_to_service('cloudwatch')
         rs = client.list_metrics(
             Namespace=namespace,
             MetricName=metric_name
@@ -100,3 +144,34 @@ class CloudWatchTest(unittest.TestCase):
                 self.assertEquals(len(data_metric['Values']), 0)
             if data_metric['Id'] == 'part':
                 self.assertEquals(len(data_metric['Values']), 0)
+
+        # get raw metric data
+        url = '%s%s' % (config.get_edge_url(), PATH_GET_RAW_METRICS)
+        result = requests.get(url)
+        self.assertEqual(result.status_code, 200)
+        result = json.loads(to_str(result.content))
+        self.assertGreaterEqual(len(result['metrics']), 3)
+
+    def test_store_tags(self):
+        cloudwatch = aws_stack.connect_to_service('cloudwatch')
+
+        alarm_name = 'a-%s' % short_uid()
+        response = cloudwatch.put_metric_alarm(AlarmName=alarm_name,
+            EvaluationPeriods=1, ComparisonOperator='GreaterThanThreshold')
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        alarm_arn = aws_stack.cloudwatch_alarm_arn(alarm_name)
+
+        tags = [{'Key': 'tag1', 'Value': 'foo'}, {'Key': 'tag2', 'Value': 'bar'}]
+        response = cloudwatch.tag_resource(ResourceARN=alarm_arn, Tags=tags)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(response['Tags'], tags)
+        response = cloudwatch.untag_resource(ResourceARN=alarm_arn, TagKeys=['tag1'])
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(response['Tags'], [{'Key': 'tag2', 'Value': 'bar'}])
+
+        # clean up
+        cloudwatch.delete_alarms(AlarmNames=[alarm_name])

@@ -3,10 +3,10 @@ import json
 import base64
 from six.moves.urllib.parse import quote_plus, unquote_plus
 from localstack import config
-from localstack.utils.common import recurse_object
+from localstack.utils.common import recurse_object, extract_jsonpath
 
 
-class VelocityInput:
+class VelocityInput(object):
     """Simple class to mimick the behavior of variable '$input' in AWS API Gateway integration velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
 
@@ -14,21 +14,20 @@ class VelocityInput:
         self.value = value
 
     def path(self, path):
-        from jsonpath_rw import parse
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
-        jsonpath_expr = parse(path)
-        result = [match.value for match in jsonpath_expr.find(value)]
-        result = result[0] if len(result) == 1 else result
-        return result
+        return extract_jsonpath(value, path)
 
     def json(self, path):
         return json.dumps(self.path(path))
+
+    def __getattr__(self, name):
+        return self.value.get(name)
 
     def __repr__(self):
         return '$input'
 
 
-class VelocityUtil:
+class VelocityUtil(object):
     """Simple class to mimick the behavior of variable '$util' in AWS API Gateway integration velocity templates.
     See: http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html"""
 
@@ -54,13 +53,41 @@ class VelocityUtil:
         return unquote_plus(s)
 
     def escapeJavaScript(self, s):
-        return str(s).replace("'", r"\'")
+        return str(str(s).replace('"', r'\"')).replace("'", r"\'")
 
 
 def render_velocity_template(template, context, variables={}, as_json=False):
     import airspeed
 
     # Apply a few fixes below, to properly prepare the template...
+
+    # TODO: remove once this PR is merged: https://github.com/purcell/airspeed/pull/48
+    def expr_parse(self):
+        try:
+            self.identity_match(self.DOT)
+            self.expression = self.next_element(airspeed.VariableExpression)
+        except airspeed.NoMatch:
+            self.expression = self.next_element(airspeed.ArrayIndex)
+            self.subexpression = None
+            try:
+                self.subexpression = self.next_element(airspeed.SubExpression)
+            except airspeed.NoMatch:
+                pass
+
+    airspeed.SubExpression.parse = expr_parse
+
+    # TODO: remove once this PR is merged: https://github.com/purcell/airspeed/pull/48
+    def expr_calculate(self, current_object, loader, global_namespace):
+        args = [current_object, loader]
+        if not isinstance(self.expression, airspeed.ArrayIndex):
+            return self.expression.calculate(*(args + [global_namespace]))
+        index = self.expression.calculate(*args)
+        result = current_object[index]
+        if self.subexpression:
+            result = self.subexpression.calculate(result, loader, global_namespace)
+        return result
+
+    airspeed.SubExpression.calculate = expr_calculate
 
     # fix "#set" commands
     template = re.sub(r'(^|\n)#\s+set(.*)', r'\1#set\2', template, re.MULTILINE)

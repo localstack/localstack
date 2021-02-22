@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  GlobalParam:
+    Description: Global stack parameter
+    Type: String
+Resources:
+  NestedStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: http://localhost:4566/%s/%s
+      Parameters:
+        LocalParam: !Ref GlobalParam

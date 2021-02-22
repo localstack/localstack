@@ -6,87 +6,59 @@ import json
 import uuid
 import time
 import base64
+import hashlib
 import logging
+import functools
 import threading
 import traceback
-import hashlib
-import functools
 from io import BytesIO
 from datetime import datetime
+from flask import Flask, Response, jsonify, request
 from six.moves import cStringIO as StringIO
 from six.moves.urllib.parse import urlparse
-from flask import Flask, Response, jsonify, request
 from localstack import config
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
-from localstack.services.awslambda import lambda_executors
-from localstack.services.awslambda.lambda_executors import (
-    LAMBDA_RUNTIME_PYTHON27,
-    LAMBDA_RUNTIME_PYTHON36,
-    LAMBDA_RUNTIME_PYTHON37,
-    LAMBDA_RUNTIME_PYTHON38,
-    LAMBDA_RUNTIME_NODEJS,
-    LAMBDA_RUNTIME_NODEJS610,
-    LAMBDA_RUNTIME_NODEJS810,
-    LAMBDA_RUNTIME_JAVA8,
-    LAMBDA_RUNTIME_JAVA11,
-    LAMBDA_RUNTIME_DOTNETCORE2,
-    LAMBDA_RUNTIME_DOTNETCORE21,
-    LAMBDA_RUNTIME_DOTNETCORE31,
-    LAMBDA_RUNTIME_GOLANG,
-    LAMBDA_RUNTIME_RUBY,
-    LAMBDA_RUNTIME_RUBY25,
-    LAMBDA_RUNTIME_PROVIDED)
-from localstack.services.awslambda.multivalue_transformer import multi_value_dict_for_list
 from localstack.utils.common import (
-    to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, json_safe,
-    mkdir, unzip, is_zip_file, zip_contains_jar_entries, run, first_char_to_lower,
+    to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
+    mkdir, unzip, is_zip_file, run, first_char_to_lower, run_for_max_seconds,
     timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
+from localstack.services.awslambda import lambda_executors
+from localstack.services.generic_proxy import RegionBackend
+from localstack.services.awslambda.lambda_utils import (
+    DOTNET_LAMBDA_RUNTIMES, multi_value_dict_for_list, get_handler_file_from_name,
+    LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 from localstack.utils.analytics import event_publisher
 from localstack.utils.http_utils import parse_chunked_data
-from localstack.utils.aws.aws_models import LambdaFunction
+from localstack.utils.aws.aws_models import LambdaFunction, CodeSigningConfig
+from localstack.services.cloudformation.service_models import LAMBDA_POLICY_NAME_PATTERN
 
 # logger
 LOG = logging.getLogger(__name__)
 
+# constants
 APP_NAME = 'lambda_api'
 PATH_ROOT = '/2015-03-31'
 ARCHIVE_FILE_PATTERN = '%s/lambda.handler.*.jar' % config.TMP_FOLDER
 LAMBDA_SCRIPT_PATTERN = '%s/lambda_script_*.py' % config.TMP_FOLDER
-
-# List of Lambda runtime names. Keep them in this list, mainly to silence the linter
-LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_PYTHON27, LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_PYTHON37,
-    LAMBDA_RUNTIME_PYTHON38, LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21, LAMBDA_RUNTIME_DOTNETCORE31,
-    LAMBDA_RUNTIME_NODEJS, LAMBDA_RUNTIME_NODEJS610, LAMBDA_RUNTIME_NODEJS810,
-    LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_RUBY, LAMBDA_RUNTIME_RUBY25]
-
-DOTNET_LAMBDA_RUNTIMES = [LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE21, LAMBDA_RUNTIME_DOTNETCORE31]
-# default timeout in seconds
-LAMBDA_DEFAULT_TIMEOUT = 3
-# default handler and runtime
-LAMBDA_DEFAULT_HANDLER = 'handler.handler'
-LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON38
-LAMBDA_DEFAULT_STARTING_POSITION = 'LATEST'
 LAMBDA_ZIP_FILE_NAME = 'original_lambda_archive.zip'
 LAMBDA_JAR_FILE_NAME = 'original_lambda_archive.jar'
 
-INVALID_PARAMETER_VALUE_EXCEPTION = 'InvalidParameterValueException'
+# default timeout in seconds
+LAMBDA_DEFAULT_TIMEOUT = 3
 
+INVALID_PARAMETER_VALUE_EXCEPTION = 'InvalidParameterValueException'
 VERSION_LATEST = '$LATEST'
+FUNCTION_MAX_SIZE = 69905067
 
 BATCH_SIZE_RANGES = {
+    'kafka': (100, 10000),
     'kinesis': (100, 10000),
     'dynamodb': (100, 1000),
     'sqs': (10, 10)
 }
 
 app = Flask(APP_NAME)
-
-# map ARN strings to lambda function objects
-ARN_TO_LAMBDA = {}
-
-# list of event source mappings for the API
-EVENT_SOURCE_MAPPINGS = []
 
 # mutex for access to CWD and ENV
 EXEC_MUTEX = threading.RLock(1)
@@ -119,11 +91,23 @@ LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(config.LAMBDA_EXECUTO
 
 # IAM policy constants
 IAM_POLICY_VERSION = '2012-10-17'
-POLICY_NAME_PATTERN = 'lambda_policy_%s_%s'
+
+# Whether to check if the handler function exists while creating lambda function
+CHECK_HANDLER_ON_CREATION = False
 
 # Marker name to indicate that a bucket represents the local file system. This is used for testing
 # Serverless applications where we mount the Lambda code directly into the container from the host OS.
 BUCKET_MARKER_LOCAL = '__local__'
+
+
+class LambdaRegion(RegionBackend):
+    def __init__(self):
+        # map ARN strings to lambda function objects
+        self.lambdas = {}
+        # map ARN strings to CodeSigningConfig object
+        self.code_signing_configs = {}
+        # list of event source mappings for the API
+        self.event_source_mappings = []
 
 
 class ClientError(Exception):
@@ -139,14 +123,15 @@ class ClientError(Exception):
 
 
 class LambdaContext(object):
-    def __init__(self, func_details, qualifier=None, client_context=None):
+
+    def __init__(self, func_details, qualifier=None, context=None):
         self.function_name = func_details.name()
         self.function_version = func_details.get_qualifier_version(qualifier)
-        if client_context:
-            self.client_context = client_context
+        self.client_context = context.get('client_context')
         self.invoked_function_arn = func_details.arn()
         if qualifier:
             self.invoked_function_arn += ':' + qualifier
+        self.cognito_identity = context.get('identity')
 
     def get_remaining_time_in_millis(self):
         # TODO implement!
@@ -154,9 +139,9 @@ class LambdaContext(object):
 
 
 def cleanup():
-    global EVENT_SOURCE_MAPPINGS, ARN_TO_LAMBDA
-    ARN_TO_LAMBDA = {}
-    EVENT_SOURCE_MAPPINGS = []
+    region = LambdaRegion.get()
+    region.lambdas = {}
+    region.event_source_mappings = []
     LAMBDA_EXECUTOR.cleanup()
 
 
@@ -164,8 +149,21 @@ def func_arn(function_name):
     return aws_stack.lambda_function_arn(function_name)
 
 
+def func_qualifier(function_name, qualifier=None):
+    region = LambdaRegion.get()
+    arn = aws_stack.lambda_function_arn(function_name)
+    details = region.lambdas.get(arn)
+    if not details:
+        return details
+    if details.qualifier_exists(qualifier):
+        return '{}:{}'.format(arn, qualifier)
+    return arn
+
+
 def check_batch_size_range(source_arn, batch_size=None):
-    batch_size_entry = BATCH_SIZE_RANGES.get(source_arn.split(':')[2].lower())
+    source = source_arn.split(':')[2].lower()
+    source = 'kafka' if 'secretsmanager' in source else source
+    batch_size_entry = BATCH_SIZE_RANGES.get(source)
     if not batch_size_entry:
         raise ValueError(
             INVALID_PARAMETER_VALUE_EXCEPTION, 'Unsupported event source type'
@@ -182,50 +180,75 @@ def check_batch_size_range(source_arn, batch_size=None):
 
 
 def add_function_mapping(lambda_name, lambda_handler, lambda_cwd=None):
+    region = LambdaRegion.get()
     arn = func_arn(lambda_name)
-    ARN_TO_LAMBDA[arn].versions.get(VERSION_LATEST)['Function'] = lambda_handler
-    ARN_TO_LAMBDA[arn].cwd = lambda_cwd
+    lambda_details = region.lambdas[arn]
+    lambda_details.versions.get(VERSION_LATEST)['Function'] = lambda_handler
+    lambda_details.cwd = lambda_cwd or lambda_details.cwd
 
 
-def add_event_source(function_name, source_arn, enabled, batch_size=None):
+def build_mapping_obj(data):
+    mapping = {}
+    function_name = data['FunctionName']
+    enabled = data.get('Enabled', True)
+    batch_size = data.get('BatchSize')
+    mapping['UUID'] = str(uuid.uuid4())
+    mapping['FunctionArn'] = func_arn(function_name)
+    mapping['LastProcessingResult'] = 'OK'
+    mapping['StateTransitionReason'] = 'User action'
+    mapping['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
+    mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
+    if 'SelfManagedEventSource' in data:
+        source_arn = data['SourceAccessConfigurations'][0]['URI']
+        mapping['SelfManagedEventSource'] = data['SelfManagedEventSource']
+        mapping['Topics'] = data['Topics']
+        mapping['SourceAccessConfigurations'] = data['SourceAccessConfigurations']
+    else:
+        source_arn = data['EventSourceArn']
+        mapping['EventSourceArn'] = source_arn
+        mapping['StartingPosition'] = LAMBDA_DEFAULT_STARTING_POSITION
     batch_size = check_batch_size_range(source_arn, batch_size)
-
-    mapping = {
-        'UUID': str(uuid.uuid4()),
-        'StateTransitionReason': 'User action',
-        'LastModified': float(time.mktime(datetime.utcnow().timetuple())),
-        'BatchSize': batch_size,
-        'State': 'Enabled' if enabled in [True, None] else 'Disabled',
-        'FunctionArn': func_arn(function_name),
-        'EventSourceArn': source_arn,
-        'LastProcessingResult': 'OK',
-        'StartingPosition': LAMBDA_DEFAULT_STARTING_POSITION
-    }
-    EVENT_SOURCE_MAPPINGS.append(mapping)
+    mapping['BatchSize'] = batch_size
     return mapping
 
 
-def update_event_source(uuid_value, function_name, enabled, batch_size):
-    for m in EVENT_SOURCE_MAPPINGS:
-        if uuid_value == m['UUID']:
+def add_event_source(data):
+    region = LambdaRegion.get()
+    mapping = build_mapping_obj(data)
+    region.event_source_mappings.append(mapping)
+    return mapping
+
+
+def update_event_source(uuid_value, data):
+    region = LambdaRegion.get()
+    function_name = data.get('FunctionName') or ''
+    batch_size = None
+    enabled = data.get('Enabled', True)
+    for mapping in region.event_source_mappings:
+        if uuid_value == mapping['UUID']:
             if function_name:
-                m['FunctionArn'] = func_arn(function_name)
-
-            batch_size = check_batch_size_range(m['EventSourceArn'], batch_size or m['BatchSize'])
-
-            m['BatchSize'] = batch_size
-            m['State'] = 'Enabled' if enabled is True else 'Disabled'
-            m['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
-
-            return m
-
+                mapping['FunctionArn'] = func_arn(function_name)
+            batch_size = data.get('BatchSize')
+            if 'SelfManagedEventSource' in mapping:
+                batch_size = check_batch_size_range(
+                    mapping['SourceAccessConfigurations'][0]['URI'],
+                    batch_size or mapping['BatchSize'])
+            else:
+                batch_size = check_batch_size_range(mapping['EventSourceArn'], batch_size or mapping['BatchSize'])
+            mapping['State'] = 'Enabled' if enabled in [True, None] else 'Disabled'
+            mapping['LastModified'] = float(time.mktime(datetime.utcnow().timetuple()))
+            mapping['BatchSize'] = batch_size
+            if 'SourceAccessConfigurations' in (mapping and data):
+                mapping['SourceAccessConfigurations'] = data['SourceAccessConfigurations']
+            return mapping
     return {}
 
 
 def delete_event_source(uuid_value):
-    for i, m in enumerate(EVENT_SOURCE_MAPPINGS):
+    region = LambdaRegion.get()
+    for i, m in enumerate(region.event_source_mappings):
         if uuid_value == m['UUID']:
-            return EVENT_SOURCE_MAPPINGS.pop(i)
+            return region.event_source_mappings.pop(i)
     return {}
 
 
@@ -241,12 +264,6 @@ def use_docker():
             except Exception:
                 pass
     return DO_USE_DOCKER
-
-
-def get_stage_variables(api_id, stage):
-    api_gateway_client = aws_stack.connect_to_service('apigateway')
-    response = api_gateway_client.get_stage(restApiId=api_id, stageName=stage)
-    return response.get('variables', None)
 
 
 def fix_proxy_path_params(path_params):
@@ -269,8 +286,8 @@ def message_attributes_to_lower(message_attrs):
 
 
 def process_apigateway_invocation(func_arn, path, payload, stage, api_id, headers={},
-                                  resource_path=None, method=None, path_params={},
-                                  query_string_params=None, request_context={}):
+                                  resource_path=None, method=None, path_params={}, query_string_params=None,
+                                  stage_variables={}, request_context={}, event_context={}):
     try:
         resource_path = resource_path or path
         path_params = dict(path_params)
@@ -287,15 +304,17 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
             'queryStringParameters': query_string_params,
             'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params),
             'requestContext': request_context,
-            'stageVariables': get_stage_variables(api_id, stage),
+            'stageVariables': stage_variables,
         }
-        return run_lambda(event=event, context={}, func_arn=func_arn,
-            asynchronous=not config.SYNCHRONOUS_API_GATEWAY_EVENTS)
+        LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
+        asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
+        inv_result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
+        return inv_result.result
     except Exception as e:
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
 
 
-def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
+def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_id,
         message_attributes, unsubscribe_url, subject='',):
     event = {
         'Records': [{
@@ -304,7 +323,7 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
             'EventSubscriptionArn': subscription_arn,
             'Sns': {
                 'Type': 'Notification',
-                'MessageId': str(uuid.uuid4()),
+                'MessageId': message_id,
                 'TopicArn': topic_arn,
                 'Subject': subject,
                 'Message': message,
@@ -319,7 +338,8 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message,
             }
         }]
     }
-    return run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
+    inv_result = run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
+    return inv_result.result
 
 
 def process_kinesis_records(records, stream_name):
@@ -340,6 +360,11 @@ def process_kinesis_records(records, stream_name):
                         {
                             'eventID': 'shardId-000000000000:{0}'.format(rec['sequenceNumber']),
                             'eventSourceARN': stream_arn,
+                            'eventSource': 'aws:kinesis',
+                            'eventVersion': '1.0',
+                            'eventName': 'aws:kinesis:record',
+                            'invokeIdentityArn': 'arn:aws:iam::{0}:role/lambda-role'.format(TEST_AWS_ACCOUNT_ID),
+                            'awsRegion': aws_stack.get_region(),
                             'kinesis': rec
                         }
                         for rec in chunk
@@ -451,8 +476,9 @@ def process_sqs_message(queue_name, region_name=None):
 
 
 def get_event_sources(func_name=None, source_arn=None):
+    region = LambdaRegion.get()
     result = []
-    for m in EVENT_SOURCE_MAPPINGS:
+    for m in region.event_source_mappings:
         if not func_name or (m['FunctionArn'] in [func_name, func_arn(func_name)]):
             if _arn_match(mapped=m['EventSourceArn'], searched=source_arn):
                 result.append(m)
@@ -477,29 +503,40 @@ def _arn_match(mapped, searched):
 
 
 def get_function_version(arn, version):
-    func = ARN_TO_LAMBDA.get(arn)
+    region = LambdaRegion.get()
+    func = region.lambdas.get(arn)
     return format_func_details(func, version=version, always_add_version=True)
 
 
 def publish_new_function_version(arn):
-    func_details = ARN_TO_LAMBDA.get(arn)
+    region = LambdaRegion.get()
+    func_details = region.lambdas.get(arn)
     versions = func_details.versions
-    last_version = func_details.max_version()
-    versions[str(last_version + 1)] = {
-        'CodeSize': versions.get(VERSION_LATEST).get('CodeSize'),
-        'CodeSha256': versions.get(VERSION_LATEST).get('CodeSha256'),
-        'Function': versions.get(VERSION_LATEST).get('Function'),
-        'RevisionId': str(uuid.uuid4())
-    }
-    return get_function_version(arn, str(last_version + 1))
+    max_version_number = func_details.max_version()
+    next_version_number = max_version_number + 1
+    latest_hash = versions.get(VERSION_LATEST).get('CodeSha256')
+    max_version = versions.get(str(max_version_number))
+    max_version_hash = max_version.get('CodeSha256') if max_version else ''
+
+    if latest_hash != max_version_hash:
+        versions[str(next_version_number)] = {
+            'CodeSize': versions.get(VERSION_LATEST).get('CodeSize'),
+            'CodeSha256': versions.get(VERSION_LATEST).get('CodeSha256'),
+            'Function': versions.get(VERSION_LATEST).get('Function'),
+            'RevisionId': str(uuid.uuid4())
+        }
+        max_version_number = next_version_number
+    return get_function_version(arn, str(max_version_number))
 
 
 def do_list_versions(arn):
-    return sorted([get_function_version(arn, version) for version in
-                   ARN_TO_LAMBDA.get(arn).versions.keys()], key=lambda k: str(k.get('Version')))
+    region = LambdaRegion.get()
+    versions = [get_function_version(arn, version) for version in region.lambdas.get(arn).versions.keys()]
+    return sorted(versions, key=lambda k: str(k.get('Version')))
 
 
 def do_update_alias(arn, alias, version, description=None):
+    region = LambdaRegion.get()
     new_alias = {
         'AliasArn': arn + ':' + alias,
         'FunctionVersion': version,
@@ -507,11 +544,13 @@ def do_update_alias(arn, alias, version, description=None):
         'Description': description or '',
         'RevisionId': str(uuid.uuid4())
     }
-    ARN_TO_LAMBDA.get(arn).aliases[alias] = new_alias
+    region.lambdas.get(arn).aliases[alias] = new_alias
     return new_alias
 
 
 def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False, callback=None):
+    region_name = func_arn.split(':')[3]
+    region = LambdaRegion.get(region_name)
     if suppress_output:
         stdout_ = sys.stdout
         stderr_ = sys.stderr
@@ -520,14 +559,20 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
         sys.stderr = stream
     try:
         func_arn = aws_stack.fix_arn(func_arn)
-        func_details = ARN_TO_LAMBDA.get(func_arn)
+        func_details = region.lambdas.get(func_arn)
         if not func_details:
-            return not_found_error(msg='The resource specified in the request does not exist.')
+            result = not_found_error(msg='The resource specified in the request does not exist.')
+            return lambda_executors.InvocationResult(result)
+
+        # forward invocation to external endpoint, if configured
+        invocation_type = 'Event' if asynchronous else 'RequestResponse'
+        invoke_result = forward_to_external_url(func_details, event, context, invocation_type)
+        if invoke_result is not None:
+            return invoke_result
 
         context = LambdaContext(func_details, version, context)
-
         result = LAMBDA_EXECUTOR.execute(func_arn, func_details, event, context=context,
-                                         version=version, asynchronous=asynchronous, callback=callback)
+            version=version, asynchronous=asynchronous, callback=callback)
 
     except Exception as e:
         exc_type, exc_value, exc_traceback = sys.exc_info()
@@ -537,7 +582,8 @@ def run_lambda(event, context, func_arn, version=None, suppress_output=False, as
             'stackTrace': traceback.format_tb(exc_traceback)
         }
         LOG.info('Error executing Lambda function %s: %s %s' % (func_arn, e, traceback.format_exc()))
-        return Response(json.dumps(response), status=500)
+        log_output = e.log_output if isinstance(e, lambda_executors.InvocationException) else ''
+        return lambda_executors.InvocationResult(Response(json.dumps(response), status=500), log_output)
     finally:
         if suppress_output:
             sys.stdout = stdout_
@@ -590,37 +636,15 @@ def exec_lambda_code(script, handler_function='handler', lambda_cwd=None, lambda
     return module_vars[handler_function]
 
 
-def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
-    # TODO: support Java Lambdas in the future
-    if runtime.startswith(LAMBDA_RUNTIME_PROVIDED):
-        return 'bootstrap'
-    delimiter = '.'
-    if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
-        file_ext = '.js'
-    elif runtime.startswith(LAMBDA_RUNTIME_GOLANG):
-        file_ext = ''
-    elif runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
-        file_ext = '.dll'
-        delimiter = ':'
-    elif runtime.startswith(LAMBDA_RUNTIME_RUBY):
-        file_ext = '.rb'
-    else:
-        handler_name = handler_name.rpartition(delimiter)[0].replace(delimiter, os.path.sep)
-        file_ext = '.py'
-    return '%s%s' % (handler_name.split(delimiter)[0], file_ext)
-
-
 def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
-    # TODO: support Java Lambdas in the future
     if runtime.startswith(tuple(DOTNET_LAMBDA_RUNTIMES)):
         return handler_name.split(':')[-1]
-    else:
-        return handler_name.split('.')[-1]
+    return handler_name.split('.')[-1]
 
 
 def error_response(msg, code=500, error_type='InternalFailure'):
-    LOG.warning(msg)
-    return aws_responses.flask_error_response(msg, code=code, error_type=error_type)
+    LOG.info(msg)
+    return aws_responses.flask_error_response_json(msg, code=code, error_type=error_type)
 
 
 def get_zip_bytes(function_code):
@@ -630,6 +654,7 @@ def get_zip_bytes(function_code):
     :param function_code: https://docs.aws.amazon.com/lambda/latest/dg/API_FunctionCode.html
     :returns: bytes of the Zip file.
     """
+    function_code = function_code or {}
     if 'S3Bucket' in function_code:
         s3_client = aws_stack.connect_to_service('s3')
         bytes_io = BytesIO()
@@ -641,8 +666,10 @@ def get_zip_bytes(function_code):
     elif 'ZipFile' in function_code:
         zip_file_content = function_code['ZipFile']
         zip_file_content = base64.b64decode(zip_file_content)
+    elif 'ImageUri' in function_code:
+        zip_file_content = None
     else:
-        raise ClientError('No valid Lambda archive specified.')
+        raise ClientError('No valid Lambda archive specified: %s' % list(function_code.keys()))
     return zip_file_content
 
 
@@ -669,9 +696,10 @@ def get_java_handler(zip_file_content, main_file, func_details=None):
 
 
 def set_archive_code(code, lambda_name, zip_file_content=None):
+    region = LambdaRegion.get()
     # get metadata
     lambda_arn = func_arn(lambda_name)
-    lambda_details = ARN_TO_LAMBDA[lambda_arn]
+    lambda_details = region.lambdas[lambda_arn]
     is_local_mount = code.get('S3Bucket') == BUCKET_MARKER_LOCAL
 
     if is_local_mount and config.LAMBDA_REMOTE_DOCKER:
@@ -686,10 +714,14 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
         # WARNING: this means we're pointing lambda_cwd to a local path in the user's
         # file system! We must ensure that there is no data loss (i.e., we must *not* add
         # this folder to TMP_FILES or similar).
+        lambda_details.cwd = code.get('S3Key')
         return code['S3Key']
 
     # get file content
     zip_file_content = zip_file_content or get_zip_bytes(code)
+
+    if not zip_file_content:
+        return
 
     # Save the zip file to a temporary file that the lambda executors can reference
     code_sha_256 = base64.standard_b64encode(hashlib.sha256(zip_file_content).digest())
@@ -706,12 +738,22 @@ def set_archive_code(code, lambda_name, zip_file_content=None):
 
 
 def set_function_code(code, lambda_name, lambda_cwd=None):
+    def _set_and_configure():
+        lambda_handler = do_set_function_code(code, lambda_name, lambda_cwd=lambda_cwd)
+        add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
+    # unzipping can take some time - limit the execution time to avoid client/network timeout issues
+    run_for_max_seconds(25, _set_and_configure)
+    return {'FunctionName': lambda_name}
+
+
+def do_set_function_code(code, lambda_name, lambda_cwd=None):
     def generic_handler(event, context):
         raise ClientError(('Unable to find executor for Lambda function "%s". Note that ' +
             'Node.js, Golang, and .Net Core Lambdas currently require LAMBDA_EXECUTOR=docker') % lambda_name)
 
+    region = LambdaRegion.get()
     arn = func_arn(lambda_name)
-    lambda_details = ARN_TO_LAMBDA[arn]
+    lambda_details = region.lambdas[arn]
     runtime = lambda_details.runtime
     lambda_environment = lambda_details.envvars
     handler_name = lambda_details.handler = lambda_details.handler or LAMBDA_DEFAULT_HANDLER
@@ -728,8 +770,11 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
     else:
         lambda_cwd = lambda_cwd or lambda_details.cwd
 
+    if not lambda_cwd:
+        return
+
     # get local lambda working directory
-    tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
+    tmp_file = os.path.join(lambda_cwd, LAMBDA_ZIP_FILE_NAME)
 
     if not zip_file_content:
         zip_file_content = load_file(tmp_file, mode='rb')
@@ -749,9 +794,8 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         if not is_zip_file(zip_file_content):
             raise ClientError(
                 'Uploaded Lambda code for runtime ({}) is not in Zip format'.format(runtime))
-        # Unzipping should only be required for (1) non-Java Lambdas, or (2) zip files containing JAR files
-        if not is_java or zip_contains_jar_entries(zip_file_content, 'lib/'):
-            unzip(tmp_file, lambda_cwd)
+        # Unzip the Lambda archive contents
+        unzip(tmp_file, lambda_cwd)
 
     # Obtain handler details for any non-Java Lambda function
     if not is_java:
@@ -759,7 +803,8 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
         handler_function = get_handler_function_from_name(handler_name, runtime=runtime)
 
         main_file = '%s/%s' % (lambda_cwd, handler_file)
-        if not os.path.exists(main_file):
+
+        if CHECK_HANDLER_ON_CREATION and not os.path.exists(main_file):
             # Raise an error if (1) this is not a local mount lambda, or (2) we're
             # running Lambdas locally (not in Docker), or (3) we're using remote Docker.
             # -> We do *not* want to raise an error if we're using local mount in non-remote Docker
@@ -786,14 +831,14 @@ def set_function_code(code, lambda_name, lambda_cwd=None):
             except Exception as e:
                 raise ClientError('Unable to get handler function from lambda code.', e)
 
-    add_function_mapping(lambda_name, lambda_handler, lambda_cwd)
-    return {'FunctionName': lambda_name}
+    return lambda_handler
 
 
 def do_list_functions():
     funcs = []
+    region = LambdaRegion.get()
     this_region = aws_stack.get_region()
-    for f_arn, func in ARN_TO_LAMBDA.items():
+    for f_arn, func in region.lambdas.items():
         if type(func) != LambdaFunction:
             continue
 
@@ -804,7 +849,7 @@ def do_list_functions():
 
         func_name = f_arn.split(':function:')[-1]
         arn = func_arn(func_name)
-        func_details = ARN_TO_LAMBDA.get(arn)
+        func_details = region.lambdas.get(arn)
         if not func_details:
             # this can happen if we're accessing Lambdas from a different region (ARN mismatch)
             continue
@@ -833,11 +878,12 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'Timeout': func_details.timeout,
         'Description': func_details.description,
         'MemorySize': func_details.memory_size,
-        'LastModified': func_details.last_modified,
+        'LastModified': isoformat_milliseconds(func_details.last_modified) + '+0000',
         'TracingConfig': {'Mode': 'PassThrough'},
         'RevisionId': func_version.get('RevisionId'),
         'State': 'Active',
-        'LastUpdateStatus': 'Successful'
+        'LastUpdateStatus': 'Successful',
+        'PackageType': func_details.package_type
     }
     if func_details.dead_letter_config:
         result['DeadLetterConfig'] = func_details.dead_letter_config
@@ -851,11 +897,32 @@ def format_func_details(func_details, version=None, always_add_version=False):
     return result
 
 
+def forward_to_external_url(func_details, event, context, invocation_type):
+    """ If LAMBDA_FORWARD_URL is configured, forward the invocation of this Lambda to the configured URL. """
+    if not config.LAMBDA_FORWARD_URL:
+        return
+    func_name = func_details.name()
+    url = '%s%s/functions/%s/invocations' % (config.LAMBDA_FORWARD_URL, PATH_ROOT, func_name)
+    headers = aws_stack.mock_aws_request_headers('lambda')
+    headers['X-Amz-Invocation-Type'] = invocation_type
+    headers['X-Amz-Log-Type'] = 'Tail'
+    client_context = context.get('client_context')
+    if client_context:
+        headers['X-Amz-Client-Context'] = client_context
+    data = json.dumps(event) if isinstance(event, dict) else str(event)
+    LOG.debug('Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s' % config.LAMBDA_FORWARD_URL)
+    result = safe_requests.post(url, data, headers=headers)
+    LOG.debug('Received result from external Lambda endpoint (status %s): %s' % (
+        result.status_code, result.content))
+    result = lambda_executors.InvocationResult(result)
+    return result
+
+
 def forward_to_fallback_url(func_arn, data):
     """ If LAMBDA_FALLBACK_URL is configured, forward the invocation of this non-existing
         Lambda to the configured URL. """
     if not config.LAMBDA_FALLBACK_URL:
-        return None
+        return
 
     lambda_name = aws_stack.lambda_function_name(func_arn)
     if config.LAMBDA_FALLBACK_URL.startswith('dynamodb://'):
@@ -873,11 +940,19 @@ def forward_to_fallback_url(func_arn, data):
     if re.match(r'^https?://.+', config.LAMBDA_FALLBACK_URL):
         headers = {'lambda-function-name': lambda_name}
         response = safe_requests.post(config.LAMBDA_FALLBACK_URL, data, headers=headers)
-        return response.content
+        content = response.content
+        try:
+            # parse the response into a dictionary to get details
+            # like function error etc.
+            content = json.loads(content)
+        except Exception:
+            pass
+
+        return content
     raise ClientError('Unexpected value for LAMBDA_FALLBACK_URL: %s' % config.LAMBDA_FALLBACK_URL)
 
 
-def get_lambda_policy(function):
+def get_lambda_policy(function, qualifier=None):
     iam_client = aws_stack.connect_to_service('iam')
     policies = iam_client.list_policies(Scope='Local', MaxItems=500)['Policies']
     docs = []
@@ -895,7 +970,8 @@ def get_lambda_policy(function):
         doc['PolicyArn'] = p['Arn']
         doc['Id'] = 'default'
         docs.append(doc)
-    policy = [d for d in docs if d['Statement'][0]['Resource'] == func_arn(function)]
+    res_qualifier = func_qualifier(function, qualifier)
+    policy = [d for d in docs if d['Statement'][0]['Resource'] == res_qualifier]
     return (policy or [None])[0]
 
 
@@ -929,34 +1005,40 @@ def create_function():
             - name: 'request'
               in: body
     """
+    region = LambdaRegion.get()
     arn = 'n/a'
     try:
+        if len(request.data) > FUNCTION_MAX_SIZE:
+            return error_response('Request size (%s) must be smaller than %s bytes for the CreateFunction operation' %
+                (len(request.data), FUNCTION_MAX_SIZE), 413, error_type='RequestEntityTooLargeException')
         data = json.loads(to_str(request.data))
         lambda_name = data['FunctionName']
         event_publisher.fire_event(event_publisher.EVENT_LAMBDA_CREATE_FUNC,
             payload={'n': event_publisher.get_hash(lambda_name)})
         arn = func_arn(lambda_name)
-        if arn in ARN_TO_LAMBDA:
+        if arn in region.lambdas:
             return error_response('Function already exist: %s' %
                 lambda_name, 409, error_type='ResourceConflictException')
-        ARN_TO_LAMBDA[arn] = func_details = LambdaFunction(arn)
+        region.lambdas[arn] = func_details = LambdaFunction(arn)
         func_details.versions = {VERSION_LATEST: {'RevisionId': str(uuid.uuid4())}}
         func_details.vpc_config = data.get('VpcConfig', {})
-        func_details.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+        func_details.last_modified = datetime.utcnow()
         func_details.description = data.get('Description', '')
-        func_details.handler = data['Handler']
-        func_details.runtime = data['Runtime']
+        func_details.handler = data.get('Handler')
+        func_details.runtime = data.get('Runtime')
         func_details.envvars = data.get('Environment', {}).get('Variables', {})
         func_details.tags = data.get('Tags', {})
         func_details.timeout = data.get('Timeout', LAMBDA_DEFAULT_TIMEOUT)
         func_details.role = data['Role']
         func_details.kms_key_arn = data.get('KMSKeyArn')
         func_details.memory_size = data.get('MemorySize')
+        func_details.code_signing_config_arn = data.get('CodeSigningConfigArn')
         func_details.code = data['Code']
+        func_details.package_type = 'Zip'
         func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
         if isinstance(result, Response):
-            del ARN_TO_LAMBDA[arn]
+            del region.lambdas[arn]
             return result
         # remove content from code attribute, if present
         func_details.code.pop('ZipFile', None)
@@ -966,7 +1048,7 @@ def create_function():
             result['Version'] = publish_new_function_version(arn)['Version']
         return jsonify(result or {})
     except Exception as e:
-        ARN_TO_LAMBDA.pop(arn, None)
+        region.lambdas.pop(arn, None)
         if isinstance(e, ClientError):
             return e.get_response()
         return error_response('Unknown error: %s %s' % (e, traceback.format_exc()))
@@ -983,6 +1065,7 @@ def get_function(function):
             - name: 'function'
               in: path
     """
+    region = LambdaRegion.get()
     funcs = do_list_functions()
     for func in funcs:
         if func['FunctionName'] == function:
@@ -993,7 +1076,7 @@ def get_function(function):
                 },
                 'Tags': func['Tags']
             }
-            lambda_details = ARN_TO_LAMBDA.get(func['FunctionArn'])
+            lambda_details = region.lambdas.get(func['FunctionArn'])
             if lambda_details.concurrency is not None:
                 result['Concurrency'] = lambda_details.concurrency
             return jsonify(result)
@@ -1025,23 +1108,24 @@ def delete_function(function):
             - name: 'request'
               in: body
     """
+    region = LambdaRegion.get()
     arn = func_arn(function)
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
 
     try:
-        ARN_TO_LAMBDA.pop(arn)
+        region.lambdas.pop(arn)
     except KeyError:
         return not_found_error(func_arn(function))
 
     event_publisher.fire_event(event_publisher.EVENT_LAMBDA_DELETE_FUNC,
         payload={'n': event_publisher.get_hash(function)})
     i = 0
-    while i < len(EVENT_SOURCE_MAPPINGS):
-        mapping = EVENT_SOURCE_MAPPINGS[i]
+    while i < len(region.event_source_mappings):
+        mapping = region.event_source_mappings[i]
         if mapping['FunctionArn'] == arn:
-            del EVENT_SOURCE_MAPPINGS[i]
+            del region.event_source_mappings[i]
             i -= 1
         i += 1
     result = {}
@@ -1057,11 +1141,17 @@ def update_function_code(function):
             - name: 'request'
               in: body
     """
+    region = LambdaRegion.get()
+    arn = func_arn(function)
+    if arn not in region.lambdas:
+        return error_response('Function not found: %s' %
+                arn, 400, error_type='ResourceNotFoundException')
     data = json.loads(to_str(request.data))
     result = set_function_code(data, function)
-    arn = func_arn(function)
-    func_details = ARN_TO_LAMBDA.get(arn)
+    func_details = region.lambdas.get(arn)
     result.update(format_func_details(func_details))
+    if data.get('Publish'):
+        result['Version'] = publish_new_function_version(arn)['Version']
     if isinstance(result, Response):
         return result
     return jsonify(result or {})
@@ -1074,8 +1164,9 @@ def get_function_code(function):
         operationId: 'getFunctionCode'
         parameters:
     """
+    region = LambdaRegion.get()
     arn = func_arn(function)
-    lambda_cwd = ARN_TO_LAMBDA[arn].cwd
+    lambda_cwd = region.lambdas[arn].cwd
     tmp_file = '%s/%s' % (lambda_cwd, LAMBDA_ZIP_FILE_NAME)
     return Response(load_file(tmp_file, mode='rb'),
             mimetype='application/zip',
@@ -1089,8 +1180,9 @@ def get_function_configuration(function):
         operationId: 'getFunctionConfiguration'
         parameters:
     """
+    region = LambdaRegion.get()
     arn = func_arn(function)
-    lambda_details = ARN_TO_LAMBDA.get(arn)
+    lambda_details = region.lambdas.get(arn)
     if not lambda_details:
         return not_found_error(arn)
     result = format_func_details(lambda_details)
@@ -1106,13 +1198,14 @@ def update_function_configuration(function):
             - name: 'request'
               in: body
     """
+    region = LambdaRegion.get()
     data = json.loads(to_str(request.data))
     arn = func_arn(function)
 
     # Stop/remove any containers that this arn uses.
     LAMBDA_EXECUTOR.cleanup(arn)
 
-    lambda_details = ARN_TO_LAMBDA.get(arn)
+    lambda_details = region.lambdas.get(arn)
     if not lambda_details:
         return error_response('Unable to find Lambda function ARN "%s"' % arn,
             404, error_type='ResourceNotFoundException')
@@ -1127,30 +1220,98 @@ def update_function_configuration(function):
         lambda_details.envvars = env_vars
     if data.get('Timeout'):
         lambda_details.timeout = data['Timeout']
+    if data.get('Role'):
+        lambda_details.role = data['Role']
+    if data.get('MemorySize'):
+        lambda_details.memory_size = data['MemorySize']
+    if data.get('Description'):
+        lambda_details.description = data['Description']
+    if data.get('VpcConfig'):
+        lambda_details.vpc_config = data['VpcConfig']
+    if data.get('KMSKeyArn'):
+        lambda_details.kms_key_arn = data['KMSKeyArn']
+
     return jsonify(data)
+
+
+def generate_policy_statement(sid, action, arn, sourcearn, principal):
+    statement = {
+        'Sid': sid,
+        'Effect': 'Allow',
+        'Action': action,
+        'Resource': arn,
+    }
+
+    # Adds SourceArn only if SourceArn is present
+    if sourcearn:
+        condition = {
+            'ArnLike': {
+                'AWS:SourceArn': sourcearn
+            }
+        }
+        statement['Condition'] = condition
+
+    # Adds Principal only if Principal is present
+    if principal:
+        principal = {
+            'Service': principal
+        }
+        statement['Principal'] = principal
+
+    return statement
+
+
+def generate_policy(sid, action, arn, sourcearn, principal):
+    new_statement = generate_policy_statement(sid, action, arn, sourcearn, principal)
+    policy = {
+        'Version': IAM_POLICY_VERSION,
+        'Id': 'LambdaFuncAccess-%s' % sid,
+        'Statement': [new_statement]
+    }
+
+    return policy
 
 
 @app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['POST'])
 def add_permission(function):
+    region = LambdaRegion.get()
+
     data = json.loads(to_str(request.data))
     iam_client = aws_stack.connect_to_service('iam')
     sid = data.get('StatementId')
-    policy = {
-        'Version': IAM_POLICY_VERSION,
-        'Id': 'LambdaFuncAccess-%s' % sid,
-        'Statement': [{
-            'Sid': sid,
-            'Effect': 'Allow',
-            # TODO: 'Principal' in policies not yet supported in upstream moto
-            # 'Principal': data.get('Principal') or {'AWS': TEST_AWS_ACCOUNT_ID},
-            'Action': data.get('Action'),
-            'Resource': func_arn(function)
-        }]
-    }
-    iam_client.create_policy(PolicyName=POLICY_NAME_PATTERN % (function, sid),
-                             PolicyDocument=json.dumps(policy),
-                             Description='Policy for Lambda function "%s"' % function)
-    result = {'Statement': sid}
+    action = data.get('Action')
+    principal = data.get('Principal')
+    sourcearn = data.get('SourceArn')
+    qualifier = request.args.get('Qualifier')
+    arn = func_arn(function)
+    previous_policy = get_lambda_policy(function)
+
+    if arn not in region.lambdas:
+        return not_found_error(func_arn(function))
+
+    if not re.match(r'lambda:[*]|lambda:[a-zA-Z]+|[*]', action):
+        return error_response('1 validation error detected: Value "%s" at "action" failed to satisfy '
+                              'constraint: Member must satisfy regular expression pattern: '
+                              '(lambda:[*]|lambda:[a-zA-Z]+|[*])' % action,
+                              400, error_type='ValidationException')
+
+    q_arn = func_qualifier(function, qualifier)
+    new_policy = generate_policy(sid, action, q_arn, sourcearn, principal)
+
+    if previous_policy:
+        statment_with_sid = next((statement for statement in previous_policy['Statement'] if statement['Sid'] == sid),
+            None)
+        if statment_with_sid:
+            return error_response('The statement id (%s) provided already exists. Please provide a new statement id,'
+                        ' or remove the existing statement.' % sid, 400, error_type='ResourceConflictException')
+
+        new_policy['Statement'].extend(previous_policy['Statement'])
+        iam_client.delete_policy(PolicyArn=previous_policy['PolicyArn'])
+
+    iam_client.create_policy(PolicyName=LAMBDA_POLICY_NAME_PATTERN % function,
+        PolicyDocument=json.dumps(new_policy), Description='Policy for Lambda function "%s"' % function)
+
+    result = {'Statement': json.dumps(new_policy['Statement'][0])}
     return jsonify(result)
 
 
@@ -1173,7 +1334,8 @@ def remove_permission(function, statement):
 
 @app.route('%s/functions/<function>/policy' % PATH_ROOT, methods=['GET'])
 def get_policy(function):
-    policy = get_lambda_policy(function)
+    qualifier = request.args.get('Qualifier')
+    policy = get_lambda_policy(function, qualifier)
     if not policy:
         return error_response('The resource you requested does not exist.',
             404, error_type='ResourceNotFoundException')
@@ -1213,10 +1375,15 @@ def invoke_function(function):
                                       error_type='UnsupportedMediaTypeException')
 
     # Default invocation type is RequestResponse
-    invocation_type = request.environ.get('HTTP_X_AMZ_INVOCATION_TYPE', 'RequestResponse')
+    invocation_type = request.headers.get('X-Amz-Invocation-Type', 'RequestResponse')
+    log_type = request.headers.get('X-Amz-Log-Type')
 
-    def _create_response(result, status_code=200, headers={}):
+    def _create_response(invocation_result, status_code=200, headers={}):
         """ Create the final response for the given invocation result. """
+        if not isinstance(invocation_result, lambda_executors.InvocationResult):
+            invocation_result = lambda_executors.InvocationResult(invocation_result)
+        result = invocation_result.result
+        log_output = invocation_result.log_output
         details = {
             'StatusCode': status_code,
             'Payload': result,
@@ -1242,7 +1409,9 @@ def invoke_function(function):
         # Set error headers
         if details.get('FunctionError'):
             details['Headers']['X-Amz-Function-Error'] = str(details['FunctionError'])
-        details['Headers']['X-Amz-Log-Result'] = base64.b64encode(to_bytes(''))  # TODO add logs!
+        # LogResult contains the last 4KB (~4k characters) of log outputs
+        logs = log_output[-4000:] if log_type == 'Tail' else ''
+        details['Headers']['X-Amz-Log-Result'] = base64.b64encode(to_bytes(logs))
         details['Headers']['X-Amz-Executed-Version'] = str(qualifier or VERSION_LATEST)
         # Construct response object
         response_obj = details['Payload']
@@ -1257,9 +1426,10 @@ def invoke_function(function):
 
     # check if this lambda function exists
     not_found = None
-    if arn not in ARN_TO_LAMBDA:
+    region = LambdaRegion.get()
+    if arn not in region.lambdas:
         not_found = not_found_error(arn)
-    elif qualifier and not ARN_TO_LAMBDA.get(arn).qualifier_exists(qualifier):
+    elif qualifier and not region.lambdas.get(arn).qualifier_exists(qualifier):
         not_found = not_found_error('{0}:{1}'.format(arn, qualifier))
 
     if not_found:
@@ -1269,8 +1439,8 @@ def invoke_function(function):
         return not_found
 
     if invocation_type == 'RequestResponse':
-        result = run_lambda(asynchronous=False, func_arn=arn, event=data,
-                            context=request.headers.get('X-Amz-Client-Context'), version=qualifier)
+        context = {'client_context': request.headers.get('X-Amz-Client-Context')}
+        result = run_lambda(asynchronous=False, func_arn=arn, event=data, context=context, version=qualifier)
         return _create_response(result)
     elif invocation_type == 'Event':
         run_lambda(asynchronous=True, func_arn=arn, event=data, context={}, version=qualifier)
@@ -1283,15 +1453,16 @@ def invoke_function(function):
 
 
 @app.route('%s/event-source-mappings/' % PATH_ROOT, methods=['GET'])
-def list_EVENT_SOURCE_MAPPINGS():
+def get_event_source_mappings():
     """ List event source mappings
         ---
         operationId: 'listEventSourceMappings'
     """
+    region = LambdaRegion.get()
     event_source_arn = request.args.get('EventSourceArn')
     function_name = request.args.get('FunctionName')
 
-    mappings = EVENT_SOURCE_MAPPINGS
+    mappings = region.event_source_mappings
     if event_source_arn:
         mappings = [m for m in mappings if event_source_arn == m.get('EventSourceArn')]
     if function_name:
@@ -1313,7 +1484,8 @@ def get_event_source_mapping(mapping_uuid):
             - name: 'request'
               in: body
     """
-    mappings = EVENT_SOURCE_MAPPINGS
+    region = LambdaRegion.get()
+    mappings = region.event_source_mappings
     mappings = [m for m in mappings if mapping_uuid == m.get('UUID')]
 
     if len(mappings) == 0:
@@ -1332,9 +1504,7 @@ def create_event_source_mapping():
     """
     data = json.loads(to_str(request.data))
     try:
-        mapping = add_event_source(
-            data['FunctionName'], data['EventSourceArn'], data.get('Enabled'), data.get('BatchSize')
-        )
+        mapping = add_event_source(data)
         return jsonify(mapping)
     except ValueError as error:
         error_type, message = error.args
@@ -1350,16 +1520,12 @@ def update_event_source_mapping(mapping_uuid):
             - name: 'request'
               in: body
     """
-    data = json.loads(request.data)
+    data = json.loads(to_str(request.data))
     if not mapping_uuid:
         return jsonify({})
 
-    function_name = data.get('FunctionName') or ''
-    enabled = data.get('Enabled', True)
-    batch_size = data.get('BatchSize')
-
     try:
-        mapping = update_event_source(mapping_uuid, function_name, enabled, batch_size)
+        mapping = update_event_source(mapping_uuid, data)
         return jsonify(mapping)
     except ValueError as error:
         error_type, message = error.args
@@ -1381,28 +1547,31 @@ def delete_event_source_mapping(mapping_uuid):
 
 @app.route('%s/functions/<function>/versions' % PATH_ROOT, methods=['POST'])
 def publish_version(function):
+    region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in ARN_TO_LAMBDA:
+    if arn not in region.lambdas:
         return not_found_error(arn)
     return jsonify(publish_new_function_version(arn))
 
 
 @app.route('%s/functions/<function>/versions' % PATH_ROOT, methods=['GET'])
 def list_versions(function):
+    region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in ARN_TO_LAMBDA:
+    if arn not in region.lambdas:
         return not_found_error(arn)
     return jsonify({'Versions': do_list_versions(arn)})
 
 
 @app.route('%s/functions/<function>/aliases' % PATH_ROOT, methods=['POST'])
 def create_alias(function):
+    region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in ARN_TO_LAMBDA:
+    if arn not in region.lambdas:
         return not_found_error(arn)
     data = json.loads(request.data)
     alias = data.get('Name')
-    if alias in ARN_TO_LAMBDA.get(arn).aliases:
+    if alias in region.lambdas.get(arn).aliases:
         return error_response('Alias already exists: %s' % arn + ':' + alias, 404,
                               error_type='ResourceConflictException')
     version = data.get('FunctionVersion')
@@ -1412,12 +1581,13 @@ def create_alias(function):
 
 @app.route('%s/functions/<function>/aliases/<name>' % PATH_ROOT, methods=['PUT'])
 def update_alias(function, name):
+    region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in ARN_TO_LAMBDA:
+    if arn not in region.lambdas:
         return not_found_error(arn)
-    if name not in ARN_TO_LAMBDA.get(arn).aliases:
+    if name not in region.lambdas.get(arn).aliases:
         return not_found_error(msg='Alias not found: %s:%s' % (arn, name))
-    current_alias = ARN_TO_LAMBDA.get(arn).aliases.get(name)
+    current_alias = region.lambdas.get(arn).aliases.get(name)
     data = json.loads(request.data)
     version = data.get('FunctionVersion') or current_alias.get('FunctionVersion')
     description = data.get('Description') or current_alias.get('Description')
@@ -1426,40 +1596,50 @@ def update_alias(function, name):
 
 @app.route('%s/functions/<function>/aliases/<name>' % PATH_ROOT, methods=['GET'])
 def get_alias(function, name):
+    region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in ARN_TO_LAMBDA:
+    if arn not in region.lambdas:
         return not_found_error(arn)
-    if name not in ARN_TO_LAMBDA.get(arn).aliases:
+    if name not in region.lambdas.get(arn).aliases:
         return not_found_error(msg='Alias not found: %s:%s' % (arn, name))
-    return jsonify(ARN_TO_LAMBDA.get(arn).aliases.get(name))
+    return jsonify(region.lambdas.get(arn).aliases.get(name))
 
 
 @app.route('%s/functions/<function>/aliases' % PATH_ROOT, methods=['GET'])
 def list_aliases(function):
+    region = LambdaRegion.get()
     arn = func_arn(function)
-    if arn not in ARN_TO_LAMBDA:
+    if arn not in region.lambdas:
         return not_found_error(arn)
-    return jsonify({'Aliases': sorted(ARN_TO_LAMBDA.get(arn).aliases.values(),
+    return jsonify({'Aliases': sorted(region.lambdas.get(arn).aliases.values(),
                                       key=lambda x: x['Name'])})
 
 
-@app.route('/<version>/functions/<function>/concurrency', methods=['PUT'])
-def put_concurrency(version, function):
+@app.route('/<version>/functions/<function>/concurrency', methods=['GET', 'PUT', 'DELETE'])
+def function_concurrency(version, function):
+    region = LambdaRegion.get()
     # the version for put_concurrency != PATH_ROOT, at the time of this
     # writing it's: /2017-10-31 for this endpoint
     # https://docs.aws.amazon.com/lambda/latest/dg/API_PutFunctionConcurrency.html
     arn = func_arn(function)
-    data = json.loads(request.data)
-    lambda_details = ARN_TO_LAMBDA.get(arn)
+    lambda_details = region.lambdas.get(arn)
     if not lambda_details:
         return not_found_error(arn)
-    lambda_details.concurrency = data
+    if request.method == 'GET':
+        data = lambda_details.concurrency
+    if request.method == 'PUT':
+        data = json.loads(request.data)
+        lambda_details.concurrency = data
+    if request.method == 'DELETE':
+        lambda_details.concurrency = None
+        return Response('', status=204)
     return jsonify(data)
 
 
 @app.route('/<version>/tags/<arn>', methods=['GET'])
 def list_tags(version, arn):
-    func_details = ARN_TO_LAMBDA.get(arn)
+    region = LambdaRegion.get()
+    func_details = region.lambdas.get(arn)
     if not func_details:
         return not_found_error(arn)
     result = {'Tags': func_details.tags}
@@ -1468,10 +1648,11 @@ def list_tags(version, arn):
 
 @app.route('/<version>/tags/<arn>', methods=['POST'])
 def tag_resource(version, arn):
+    region = LambdaRegion.get()
     data = json.loads(request.data)
     tags = data.get('Tags', {})
     if tags:
-        func_details = ARN_TO_LAMBDA.get(arn)
+        func_details = region.lambdas.get(arn)
         if not func_details:
             return not_found_error(arn)
         if func_details:
@@ -1481,8 +1662,9 @@ def tag_resource(version, arn):
 
 @app.route('/<version>/tags/<arn>', methods=['DELETE'])
 def untag_resource(version, arn):
+    region = LambdaRegion.get()
     tag_keys = request.args.getlist('tagKeys')
-    func_details = ARN_TO_LAMBDA.get(arn)
+    func_details = region.lambdas.get(arn)
     if not func_details:
         return not_found_error(arn)
     for tag_key in tag_keys:
@@ -1490,11 +1672,12 @@ def untag_resource(version, arn):
     return jsonify({})
 
 
-@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['PUT'])
+@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['PUT', 'POST'])
 def put_function_event_invoke_config(function):
-    """ Updates the configuration for asynchronous invocation for a function
+    # TODO: resouce validation required to check if resource exists
+    """ Add/Updates the configuration for asynchronous invocation for a function
         ---
-        operationId: PutFunctionEventInvokeConfig
+        operationId: PutFunctionEventInvokeConfig | UpdateFunctionEventInvokeConfig
         parameters:
             - name: 'function'
               in: path
@@ -1503,13 +1686,17 @@ def put_function_event_invoke_config(function):
             - name: 'request'
               in: body
     """
+    region = LambdaRegion.get()
     data = json.loads(to_str(request.data))
     function_arn = func_arn(function)
-    lambda_obj = ARN_TO_LAMBDA[function_arn]
+    lambda_obj = region.lambdas[function_arn]
+
+    if request.method == 'PUT':
+        response = lambda_obj.clear_function_event_invoke_config()
     response = lambda_obj.put_function_event_invoke_config(data)
 
     return jsonify({
-        'LastModified': response.last_modified,
+        'LastModified': timestamp_millis(response.last_modified),
         'FunctionArn': str(function_arn),
         'MaximumRetryAttempts': response.max_retry_attempts,
         'MaximumEventAgeInSeconds': response.max_event_age,
@@ -1518,7 +1705,7 @@ def put_function_event_invoke_config(function):
                 'Destination': str(response.on_successful_invocation)
             },
             'OnFailure': {
-                'Destination': str(response.dead_letter_config)
+                'Destination': str(response.on_failed_invocation)
             }
         }
     })
@@ -1537,14 +1724,211 @@ def get_function_event_invoke_config(function):
             - name: 'request'
               in: body
     """
+    region = LambdaRegion.get()
     try:
         function_arn = func_arn(function)
-        lambda_obj = ARN_TO_LAMBDA[function_arn]
+        lambda_obj = region.lambdas[function_arn]
     except Exception as e:
         return error_response(str(e), 400)
 
     response = lambda_obj.get_function_event_invoke_config()
     return jsonify(response)
+
+
+@app.route('/2019-09-25/functions/<function>/event-invoke-config', methods=['DELETE'])
+def delete_function_event_invoke_config(function):
+    region = LambdaRegion.get()
+    try:
+        function_arn = func_arn(function)
+        lambda_obj = region.lambdas[function_arn]
+    except Exception as e:
+        return error_response(str(e), 400)
+
+    lambda_obj.clear_function_event_invoke_config()
+    return Response('', status=204)
+
+
+@app.route('/2020-06-30/functions/<function>/code-signing-config', methods=['GET'])
+def get_function_code_signing_config(function):
+    region = LambdaRegion.get()
+    function_arn = func_arn(function)
+    if function_arn not in region.lambdas:
+        msg = 'Function not found: %s' % (function_arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+    lambda_obj = region.lambdas[function_arn]
+
+    if not lambda_obj.code_signing_config_arn:
+        arn = None
+        function = None
+    else:
+        arn = lambda_obj.code_signing_config_arn
+
+    result = {
+        'CodeSigningConfigArn': arn,
+        'FunctionName': function
+    }
+    return Response(json.dumps(result), status=200)
+
+
+@app.route('/2020-06-30/functions/<function>/code-signing-config', methods=['PUT'])
+def put_function_code_signing_config(function):
+    region = LambdaRegion.get()
+    data = json.loads(request.data)
+
+    arn = data.get('CodeSigningConfigArn')
+    if arn not in region.code_signing_configs:
+        msg = """The code signing configuration cannot be found.
+        Check that the provided configuration is not deleted: %s.""" % (arn)
+        return error_response(msg, 404, error_type='CodeSigningConfigNotFoundException')
+
+    function_arn = func_arn(function)
+    if function_arn not in region.lambdas:
+        msg = 'Function not found: %s' % (function_arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+    lambda_obj = region.lambdas[function_arn]
+
+    if data.get('CodeSigningConfigArn'):
+        lambda_obj.code_signing_config_arn = arn
+
+    result = {
+        'CodeSigningConfigArn': arn,
+        'FunctionName': function
+    }
+
+    return Response(json.dumps(result), status=200)
+
+
+@app.route('/2020-06-30/functions/<function>/code-signing-config', methods=['DELETE'])
+def delete_function_code_signing_config(function):
+    region = LambdaRegion.get()
+    function_arn = func_arn(function)
+    if function_arn not in region.lambdas:
+        msg = 'Function not found: %s' % (function_arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+    lambda_obj = region.lambdas[function_arn]
+
+    lambda_obj.code_signing_config_arn = None
+
+    return Response('', status=204)
+
+
+@app.route('/2020-04-22/code-signing-configs/', methods=['POST'])
+def create_code_signing_config():
+    region = LambdaRegion.get()
+    data = json.loads(request.data)
+    signing_profile_version_arns = data.get('AllowedPublishers').get('SigningProfileVersionArns')
+
+    code_signing_id = 'csc-%s' % long_uid().replace('-', '')[0:17]
+    arn = aws_stack.code_signing_arn(code_signing_id)
+
+    region.code_signing_configs[arn] = CodeSigningConfig(arn, code_signing_id, signing_profile_version_arns)
+
+    code_signing_obj = region.code_signing_configs[arn]
+
+    if data.get('Description'):
+        code_signing_obj.description = data['Description']
+    if data.get('CodeSigningPolicies', {}).get('UntrustedArtifactOnDeployment'):
+        code_signing_obj.untrusted_artifact_on_deployment = data['CodeSigningPolicies']['UntrustedArtifactOnDeployment']
+    code_signing_obj.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+
+    result = {
+        'CodeSigningConfig': {
+            'AllowedPublishers': {
+                'SigningProfileVersionArns': code_signing_obj.signing_profile_version_arns
+            },
+            'CodeSigningConfigArn': code_signing_obj.arn,
+            'CodeSigningConfigId': code_signing_obj.id,
+            'CodeSigningPolicies': {
+                'UntrustedArtifactOnDeployment': code_signing_obj.untrusted_artifact_on_deployment
+            },
+            'Description': code_signing_obj.description,
+            'LastModified': code_signing_obj.last_modified
+        }
+    }
+
+    return Response(json.dumps(result), status=201)
+
+
+@app.route('/2020-04-22/code-signing-configs/<arn>', methods=['GET'])
+def get_code_signing_config(arn):
+    region = LambdaRegion.get()
+    try:
+        code_signing_obj = region.code_signing_configs[arn]
+    except KeyError:
+        msg = 'The Lambda code signing configuration %s can not be found.' % arn
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+    result = {
+        'CodeSigningConfig': {
+            'AllowedPublishers': {
+                'SigningProfileVersionArns': code_signing_obj.signing_profile_version_arns
+            },
+            'CodeSigningConfigArn': code_signing_obj.arn,
+            'CodeSigningConfigId': code_signing_obj.id,
+            'CodeSigningPolicies': {
+                'UntrustedArtifactOnDeployment': code_signing_obj.untrusted_artifact_on_deployment
+            },
+            'Description': code_signing_obj.description,
+            'LastModified': code_signing_obj.last_modified
+        }
+    }
+
+    return Response(json.dumps(result), status=200)
+
+
+@app.route('/2020-04-22/code-signing-configs/<arn>', methods=['DELETE'])
+def delete_code_signing_config(arn):
+    region = LambdaRegion.get()
+    try:
+        region.code_signing_configs.pop(arn)
+    except KeyError:
+        msg = 'The Lambda code signing configuration %s can not be found.' % (arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+    return Response('', status=204)
+
+
+@app.route('/2020-04-22/code-signing-configs/<arn>', methods=['PUT'])
+def update_code_signing_config(arn):
+    region = LambdaRegion.get()
+    try:
+        code_signing_obj = region.code_signing_configs[arn]
+    except KeyError:
+        msg = 'The Lambda code signing configuration %s can not be found.' % (arn)
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
+
+    data = json.loads(request.data)
+    is_updated = False
+    if data.get('Description'):
+        code_signing_obj.description = data['Description']
+        is_updated = True
+    if data.get('AllowedPublishers', {}).get('SigningProfileVersionArns'):
+        code_signing_obj.signing_profile_version_arns = data['AllowedPublishers']['SigningProfileVersionArns']
+        is_updated = True
+    if data.get('CodeSigningPolicies', {}).get('UntrustedArtifactOnDeployment'):
+        code_signing_obj.untrusted_artifact_on_deployment = data['CodeSigningPolicies']['UntrustedArtifactOnDeployment']
+        is_updated = True
+
+    if is_updated:
+        code_signing_obj.last_modified = isoformat_milliseconds(datetime.utcnow()) + '+0000'
+
+    result = {
+        'CodeSigningConfig': {
+            'AllowedPublishers': {
+                'SigningProfileVersionArns': code_signing_obj.signing_profile_version_arns
+            },
+            'CodeSigningConfigArn': code_signing_obj.arn,
+            'CodeSigningConfigId': code_signing_obj.id,
+            'CodeSigningPolicies': {
+                'UntrustedArtifactOnDeployment': code_signing_obj.untrusted_artifact_on_deployment
+            },
+            'Description': code_signing_obj.description,
+            'LastModified': code_signing_obj.last_modified
+        }
+    }
+
+    return Response(json.dumps(result), status=200)
 
 
 def serve(port, quiet=True):

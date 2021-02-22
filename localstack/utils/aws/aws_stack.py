@@ -5,13 +5,15 @@ import time
 import boto3
 import logging
 import six
+import botocore
 from localstack import config
 from localstack.constants import (
-    REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
-    APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID)
+    INTERNAL_AWS_ACCESS_KEY_ID, REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
+    APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
+    MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
 from localstack.utils.aws import templating
 from localstack.utils.common import (
-    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol)
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol, retry)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -144,13 +146,16 @@ def get_boto3_credentials():
         return CUSTOM_BOTO3_SESSION.get_credentials()
     if not INITIAL_BOTO3_SESSION:
         INITIAL_BOTO3_SESSION = boto3.session.Session()
-    return INITIAL_BOTO3_SESSION.get_credentials()
+    try:
+        return INITIAL_BOTO3_SESSION.get_credentials()
+    except Exception:
+        return boto3.session.Session().get_credentials()
 
 
-def get_boto3_session():
-    if CUSTOM_BOTO3_SESSION:
+def get_boto3_session(cache=True):
+    if cache and CUSTOM_BOTO3_SESSION:
         return CUSTOM_BOTO3_SESSION
-    if CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
+    if not cache or CREATE_NEW_SESSION_PER_BOTO3_CONNECTION:
         return boto3.session.Session()
     # return default session
     return boto3
@@ -166,7 +171,22 @@ def get_local_region():
     if LOCAL_REGION is None:
         session = boto3.session.Session()
         LOCAL_REGION = session.region_name or ''
-    return LOCAL_REGION or config.DEFAULT_REGION
+    return config.DEFAULT_REGION or LOCAL_REGION
+
+
+def is_internal_call_context(headers):
+    """ Return whether we are executing in the context of an internal API call, i.e.,
+        the case where one API uses a boto3 client to call another API internally. """
+    auth_header = headers.get('Authorization') or ''
+    header_value = 'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID
+    return header_value in auth_header
+
+
+def set_internal_auth(headers):
+    authorization = headers.get('Authorization') or ''
+    authorization = re.sub(r'Credential=[^/]+/', 'Credential=%s/' % INTERNAL_AWS_ACCESS_KEY_ID, authorization)
+    headers['Authorization'] = authorization
+    return headers
 
 
 def get_local_service_url(service_name_or_port):
@@ -200,7 +220,7 @@ def connect_to_resource(service_name, env=None, region_name=None, endpoint_url=N
 
 
 def connect_to_service(service_name, client=True, env=None, region_name=None, endpoint_url=None,
-        config=None, verify=False, *args, **kwargs):
+        config=None, verify=False, cache=True, *args, **kwargs):
     """
     Generic method to obtain an AWS service client using boto3, based on environment, region, or custom endpoint_url.
     """
@@ -209,16 +229,30 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     region = env.region if env.region != REGION_LOCAL else region_name
     key_elements = [service_name, client, env, region, endpoint_url, config]
     cache_key = '/'.join([str(k) for k in key_elements])
-    if cache_key not in BOTO_CLIENTS_CACHE:
+    if not cache or cache_key not in BOTO_CLIENTS_CACHE:
         # Cache clients, as this is a relatively expensive operation
-        my_session = get_boto3_session()
+        my_session = get_boto3_session(cache=cache)
         method = my_session.client if client else my_session.resource
         if not endpoint_url:
             if is_local_env(env):
                 endpoint_url = get_local_service_url(service_name)
                 verify = False
-        BOTO_CLIENTS_CACHE[cache_key] = method(service_name, region_name=region,
+            backend_env_name = '%s_BACKEND' % service_name.upper()
+            backend_url = os.environ.get(backend_env_name, '').strip()
+            if backend_url:
+                endpoint_url = backend_url
+        config = config or botocore.client.Config()
+        # configure S3 path style addressing
+        if service_name == 's3':
+            config.s3 = {'addressing_style': 'path'}
+        # To, prevent error "Connection pool is full, discarding connection ...",
+        # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
+        config.max_pool_connections = MAX_POOL_CONNECTIONS
+        result = method(service_name, region_name=region,
             endpoint_url=endpoint_url, verify=verify, config=config)
+        if not cache:
+            return result
+        BOTO_CLIENTS_CACHE[cache_key] = result
 
     return BOTO_CLIENTS_CACHE[cache_key]
 
@@ -226,6 +260,22 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
 # TODO remove from here in the future
 def render_velocity_template(*args, **kwargs):
     return templating.render_velocity_template(*args, **kwargs)
+
+
+def generate_presigned_url(*args, **kwargs):
+    id_before = os.environ.get(ENV_ACCESS_KEY)
+    key_before = os.environ.get(ENV_SECRET_KEY)
+    try:
+        # Note: presigned URL needs to be created with test credentials
+        os.environ[ENV_ACCESS_KEY] = TEST_AWS_ACCESS_KEY_ID
+        os.environ[ENV_SECRET_KEY] = TEST_AWS_SECRET_ACCESS_KEY
+        s3_client = connect_to_service('s3', cache=False)
+        return s3_client.generate_presigned_url(*args, **kwargs)
+    finally:
+        if id_before:
+            os.environ[ENV_ACCESS_KEY] = id_before
+        if key_before:
+            os.environ[ENV_SECRET_KEY] = key_before
 
 
 def check_valid_region(headers):
@@ -244,17 +294,20 @@ def check_valid_region(headers):
         raise Exception('Invalid region specified in "Authorization" header: "%s"' % region)
 
 
-def set_default_region_in_headers(headers):
+def set_default_region_in_headers(headers, service=None, region=None):
     auth_header = headers.get('Authorization')
+    region = region or get_region()
     if not auth_header:
+        if service:
+            headers['Authorization'] = mock_aws_request_headers(service, region_name=region)['Authorization']
         return
-    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % get_region(), auth_header)
+    replaced = re.sub(r'(.*Credential=[^/]+/[^/]+/)([^/])+/', r'\1%s/' % region, auth_header)
     headers['Authorization'] = replaced
 
 
 def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace=None):
     """ Fix the account ID in the ARNs returned in the given Flask response or string """
-    existing = existing or ['123456789', '1234567890', MOTO_ACCOUNT_ID]
+    existing = existing or ['123456789', '1234567890', '123456789012', MOTO_ACCOUNT_ID]
     existing = existing if isinstance(existing, list) else [existing]
     replace = replace or TEST_AWS_ACCOUNT_ID
     is_str_obj = is_string_or_bytes(response)
@@ -267,16 +320,20 @@ def fix_account_id_in_arns(response, colon_delimiter=':', existing=None, replace
 
     if not is_str_obj:
         response._content = content
-        response.headers['content-length'] = len(response._content)
+        response.headers['Content-Length'] = len(response._content)
         return response
     return content
 
 
-def get_s3_client():
-    return boto3.resource('s3',
-        endpoint_url=config.TEST_S3_URL,
-        config=boto3.session.Config(s3={'addressing_style': 'path'}),
-        verify=False)
+def inject_test_credentials_into_env(env):
+    env = env or {}
+    if ENV_ACCESS_KEY not in env and ENV_SECRET_KEY not in env:
+        env[ENV_ACCESS_KEY] = 'test'
+        env[ENV_SECRET_KEY] = 'test'
+
+
+def inject_region_into_env(env, region):
+    env['AWS_REGION'] = region
 
 
 def sqs_queue_url_for_arn(queue_arn):
@@ -303,6 +360,11 @@ def extract_region_from_arn(arn):
     return parts[3] if len(parts) > 1 else None
 
 
+def extract_service_from_arn(arn):
+    parts = arn.split(':')
+    return parts[2] if len(parts) > 1 else None
+
+
 def get_account_id(account_id=None, env=None):
     if account_id:
         return account_id
@@ -322,6 +384,13 @@ def role_arn(role_name, account_id=None, env=None):
     return 'arn:aws:iam::%s:role/%s' % (account_id, role_name)
 
 
+def policy_arn(policy_name, account_id=None):
+    if ':policy/' in policy_name:
+        return policy_name
+    account_id = account_id or TEST_AWS_ACCOUNT_ID
+    return 'arn:aws:iam::{}:policy/{}'.format(account_id, policy_name)
+
+
 def iam_resource_arn(resource, role=None, env=None):
     env = get_environment(env)
     if not role:
@@ -339,12 +408,20 @@ def secretsmanager_secret_arn(secret_name, account_id=None, region_name=None):
     return _resource_arn(secret_name, pattern, account_id=account_id, region_name=region_name)
 
 
-def cloudformation_stack_arn(stack_name, account_id=None, region_name=None):
-    pattern = 'arn:aws:cloudformation:%s:%s:stack/%s/id-1234'
+def cloudformation_stack_arn(stack_name, stack_id=None, account_id=None, region_name=None):
+    stack_id = stack_id or 'id-123'
+    pattern = 'arn:aws:cloudformation:%s:%s:stack/%s/{stack_id}'.format(stack_id=stack_id)
     return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def cf_change_set_arn(change_set_name, change_set_id=None, account_id=None, region_name=None):
+    change_set_id = change_set_id or 'id-456'
+    pattern = 'arn:aws:cloudformation:%s:%s:changeSet/%s/{cs_id}'.format(cs_id=change_set_id)
+    return _resource_arn(change_set_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def dynamodb_table_arn(table_name, account_id=None, region_name=None):
+    table_name = table_name.split(':table/')[-1]
     pattern = 'arn:aws:dynamodb:%s:%s:table/%s'
     return _resource_arn(table_name, pattern, account_id=account_id, region_name=region_name)
 
@@ -353,6 +430,11 @@ def dynamodb_stream_arn(table_name, latest_stream_label, account_id=None):
     account_id = get_account_id(account_id)
     return ('arn:aws:dynamodb:%s:%s:table/%s/stream/%s' %
         (get_region(), account_id, table_name, latest_stream_label))
+
+
+def cloudwatch_alarm_arn(alarm_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:cloudwatch:%s:%s:alarm:%s'
+    return _resource_arn(alarm_name, pattern, account_id=account_id, region_name=region_name)
 
 
 def log_group_arn(group_name, account_id=None, region_name=None):
@@ -427,6 +509,11 @@ def kinesis_stream_arn(stream_name, account_id=None, region_name=None):
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
 
 
+def elasticsearch_domain_arn(domain_name, account_id=None, region_name=None):
+    pattern = 'arn:aws:es:%s:%s:domain/%s'
+    return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
+
+
 def firehose_stream_arn(stream_name, account_id=None, region_name=None):
     pattern = 'arn:aws:firehose:%s:%s:deliverystream/%s'
     return _resource_arn(stream_name, pattern, account_id=account_id, region_name=region_name)
@@ -435,6 +522,11 @@ def firehose_stream_arn(stream_name, account_id=None, region_name=None):
 def es_domain_arn(domain_name, account_id=None, region_name=None):
     pattern = 'arn:aws:es:%s:%s:domain/%s'
     return _resource_arn(domain_name, pattern, account_id=account_id, region_name=region_name)
+
+
+def code_signing_arn(code_signing_id, account_id=None, region_name=None):
+    pattern = 'arn:aws:lambda:%s:%s:code-signing-config:%s'
+    return _resource_arn(code_signing_id, pattern, account_id=account_id, region_name=region_name)
 
 
 def s3_bucket_arn(bucket_name, account_id=None):
@@ -449,6 +541,37 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
     return pattern % (region_name, account_id, name)
 
 
+def send_event_to_target(arn, event, target_attributes=None):
+    if ':lambda:' in arn:
+        from localstack.services.awslambda import lambda_api
+        lambda_api.run_lambda(event=event, context={}, func_arn=arn)
+
+    elif ':sns:' in arn:
+        sns_client = connect_to_service('sns')
+        sns_client.publish(TopicArn=arn, Message=json.dumps(event))
+
+    elif ':sqs:' in arn:
+        sqs_client = connect_to_service('sqs')
+        queue_url = get_sqs_queue_url(arn)
+
+        msg_group_id = (target_attributes or {}).get('MessageGroupId')
+        kwargs = {'MessageGroupId': msg_group_id} if msg_group_id else {}
+        sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
+
+    elif ':states' in arn:
+        stepfunctions_client = connect_to_service('stepfunctions')
+        stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
+
+    else:
+        LOG.info('Unsupported Events rule target ARN "%s"' % arn)
+
+
+def get_events_target_attributes(target):
+    # added for sqs, if needed can be moved to an if else
+    # block for multiple targets
+    return target.get('SqsParameters')
+
+
 def create_sqs_queue(queue_name, env=None):
     env = get_environment(env)
     # queue
@@ -459,6 +582,7 @@ def create_sqs_queue(queue_name, env=None):
 def sqs_queue_arn(queue_name, account_id=None, region_name=None):
     account_id = get_account_id(account_id)
     region_name = region_name or get_region()
+    queue_name = queue_name.split('/')[-1]
     return ('arn:aws:sqs:%s:%s:%s' % (region_name, account_id, queue_name))
 
 
@@ -498,6 +622,10 @@ def firehose_name(firehose_arn):
     return firehose_arn.split('/')[-1]
 
 
+def kinesis_stream_name(kinesis_arn):
+    return kinesis_arn.split(':stream/')[-1]
+
+
 def mock_aws_request_headers(service='dynamodb', region_name=None):
     ctype = APPLICATION_AMZ_JSON_1_0
     if service == 'kinesis':
@@ -529,10 +657,10 @@ def dynamodb_get_item_raw(request):
     return new_item
 
 
-def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None):
-    """Utility method to create a DynamoDB table"""
+def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=None, region_name=None, client=None):
+    """ Utility method to create a DynamoDB table """
 
-    dynamodb = connect_to_service('dynamodb', env=env, client=True)
+    dynamodb = client or connect_to_service('dynamodb', env=env, client=True, region_name=region_name)
     stream_spec = {'StreamEnabled': False}
     key_schema = [{
         'AttributeName': partition_key,
@@ -558,7 +686,9 @@ def create_dynamodb_table(table_name, partition_key, env=None, stream_view_type=
     except Exception as e:
         if 'ResourceInUseException' in str(e):
             # Table already exists -> return table reference
-            return connect_to_resource('dynamodb', env=env).Table(table_name)
+            return connect_to_resource('dynamodb', env=env, region_name=region_name).Table(table_name)
+        if 'AccessDeniedException' in str(e):
+            raise
     time.sleep(2)
     return table
 
@@ -780,3 +910,47 @@ def kinesis_get_latest_records(stream_name, shard_id, count=10, env=None):
         while len(result) > count:
             result.pop(0)
     return result
+
+
+def get_stack_details(stack_name):
+    cloudformation = connect_to_service('cloudformation')
+    stacks = cloudformation.describe_stacks(StackName=stack_name)
+    for stack in stacks['Stacks']:
+        if stack['StackName'] == stack_name:
+            return stack
+
+
+def deploy_cf_stack(stack_name, template_body):
+    cfn = connect_to_service('cloudformation')
+    cfn.create_stack(StackName=stack_name, TemplateBody=template_body)
+    # wait for deployment to finish
+    return await_stack_completion(stack_name)
+
+
+def await_stack_status(stack_name, expected_statuses, retries=3, sleep=2):
+    def check_stack():
+        stack = get_stack_details(stack_name)
+        assert stack['StackStatus'] in expected_statuses
+        return stack
+
+    expected_statuses = expected_statuses if isinstance(expected_statuses, list) else [expected_statuses]
+    return retry(check_stack, retries, sleep)
+
+
+def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
+    statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
+    return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
+
+
+# TODO: move to aws_responses.py?
+def extract_tags(req_data):
+    tags = []
+    for i in range(1, 200):
+        k1 = 'Tags.member.%s.Key' % i
+        k2 = 'Tags.member.%s.Value' % i
+        key = req_data.get(k1)
+        value = req_data.get(k2, '')
+        if key is None:
+            break
+        tags.append({'Key': key, 'Value': value})
+    return tags

@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.11.3'
+VERSION = '0.12.6'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -20,9 +20,10 @@ DEFAULT_PORT_WEB_UI = 8080
 
 # host name for localhost
 LOCALHOST = 'localhost'
+LOCALHOST_IP = '127.0.0.1'
 
 # version of the Maven dependency with Java utility code
-LOCALSTACK_MAVEN_VERSION = '0.2.1'
+LOCALSTACK_MAVEN_VERSION = '0.2.5'
 
 # map of default service APIs and ports to be spun up (fetch map from localstack_client)
 DEFAULT_SERVICE_PORTS = localstack_client.config.get_service_ports()
@@ -60,6 +61,8 @@ ENV_INTERNAL_TEST_RUN = 'LOCALSTACK_INTERNAL_TEST_RUN'
 # content types
 APPLICATION_AMZ_JSON_1_0 = 'application/x-amz-json-1.0'
 APPLICATION_AMZ_JSON_1_1 = 'application/x-amz-json-1.1'
+APPLICATION_AMZ_CBOR_1_1 = 'application/x-amz-cbor-1.1'
+APPLICATION_CBOR = 'application/cbor'
 APPLICATION_JSON = 'application/json'
 APPLICATION_XML = 'application/xml'
 APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
@@ -67,17 +70,19 @@ APPLICATION_X_WWW_FORM_URLENCODED = 'application/x-www-form-urlencoded'
 # strings to indicate truthy/falsy values
 TRUE_STRINGS = ('1', 'true', 'True')
 FALSE_STRINGS = ('0', 'false', 'False')
+LOG_LEVELS = ('debug', 'info', 'warn', 'error', 'warning')
 
 # Lambda defaults
 LAMBDA_TEST_ROLE = 'arn:aws:iam::%s:role/lambda-test-role' % TEST_AWS_ACCOUNT_ID
 
 # installation constants
 ELASTICSEARCH_URLS = {
+    '7.7.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.7.0-linux-x86_64.tar.gz',
     '7.4.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.4.0-linux-x86_64.tar.gz',
     '7.1.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.1.0-linux-x86_64.tar.gz',
     '6.7.0': 'https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.zip'
 }
-ELASTICSEARCH_DEFAULT_VERSION = '7.1.0'
+ELASTICSEARCH_DEFAULT_VERSION = '7.7.0'
 # See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
 ELASTICSEARCH_PLUGIN_LIST = ['analysis-icu', 'ingest-attachment', 'analysis-kuromoji',
  'mapper-murmur3', 'mapper-size', 'analysis-phonetic', 'analysis-smartcn', 'analysis-stempel', 'analysis-ukrainian']
@@ -99,11 +104,33 @@ API_ENDPOINT = os.environ.get('API_ENDPOINT') or 'https://api.localstack.cloud/v
 LOCALSTACK_WEB_PROCESS = 'LOCALSTACK_WEB_PROCESS'
 LOCALSTACK_INFRA_PROCESS = 'LOCALSTACK_INFRA_PROCESS'
 
-# Hardcoded AWS account ID used by moto
+# hardcoded AWS account ID used by moto
 MOTO_ACCOUNT_ID = TEST_AWS_ACCOUNT_ID
+# fix moto account ID - note: keep this at the top level here
+try:
+    from moto import core as moto_core
+    from moto.core import models as moto_core_models
+    moto_core.ACCOUNT_ID = moto_core_models.ACCOUNT_ID = MOTO_ACCOUNT_ID
+except Exception:
+    # ignore import errors
+    pass
 
 # default AWS region us-east-1
 AWS_REGION_US_EAST_1 = 'us-east-1'
 
-# Default lambda registry
+# default lambda registry
 DEFAULT_LAMBDA_CONTAINER_REGISTRY = 'lambci/lambda'
+
+# environment variable to override max pool connections
+try:
+    MAX_POOL_CONNECTIONS = int(os.environ['MAX_POOL_CONNECTIONS'])
+except Exception:
+    MAX_POOL_CONNECTIONS = 150
+
+# test credentials used for generating signature for S3 presigned URLs (to be used by external clients)
+TEST_AWS_ACCESS_KEY_ID = 'test'
+TEST_AWS_SECRET_ACCESS_KEY = 'test'
+
+# credentials being used for internal calls
+INTERNAL_AWS_ACCESS_KEY_ID = '__internal_call__'
+INTERNAL_AWS_SECRET_ACCESS_KEY = '__internal_call__'

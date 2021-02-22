@@ -1,4 +1,5 @@
 import json
+import time
 from flask import Flask, jsonify, request, make_response
 from localstack.services import generic_proxy
 from localstack.utils.aws import aws_stack
@@ -40,6 +41,10 @@ def add_dynamodb_stream(table_name, latest_stream_label=None, view_type='NEW_AND
             payload={'n': event_publisher.get_hash(table_name)})
 
 
+def get_stream_for_table(table_arn):
+    return DDB_STREAMS.get(table_arn)
+
+
 def forward_events(records):
     global SEQUENCE_NUMBER_COUNTER
     kinesis = aws_stack.connect_to_service('kinesis')
@@ -48,24 +53,40 @@ def forward_events(records):
             record['dynamodb']['SequenceNumber'] = str(SEQUENCE_NUMBER_COUNTER)
             SEQUENCE_NUMBER_COUNTER += 1
         table_arn = record['eventSourceARN']
-        stream = DDB_STREAMS.get(table_arn)
+        stream = get_stream_for_table(table_arn)
         if stream:
             table_name = table_name_from_stream_arn(stream['StreamArn'])
             stream_name = get_kinesis_stream_name(table_name)
             kinesis.put_record(StreamName=stream_name, Data=json.dumps(record), PartitionKey='TODO')
 
 
+def delete_streams(table_arn):
+    table_arn = aws_stack.dynamodb_table_arn(table_arn)
+    stream = DDB_STREAMS.pop(table_arn, None)
+    if stream:
+        table_name = table_arn.split('/')[-1]
+        stream_name = get_kinesis_stream_name(table_name)
+        try:
+            aws_stack.connect_to_service('kinesis').delete_stream(StreamName=stream_name)
+            # sleep a bit, as stream deletion can take some time ...
+            time.sleep(1)
+        except Exception:
+            pass  # ignore "stream not found" errors
+
+
 @app.route('/', methods=['POST'])
 def post_request():
-    action = request.headers.get('x-amz-target')
+    action = request.headers.get('x-amz-target', '')
+    action = action.split('.')[-1]
     data = json.loads(to_str(request.data))
     result = {}
     kinesis = aws_stack.connect_to_service('kinesis')
-    if action == '%s.ListStreams' % ACTION_HEADER_PREFIX:
+    if action == 'ListStreams':
         result = {
             'Streams': list(DDB_STREAMS.values())
         }
-    elif action == '%s.DescribeStream' % ACTION_HEADER_PREFIX:
+
+    elif action == 'DescribeStream':
         for stream in DDB_STREAMS.values():
             if stream['StreamArn'] == data['StreamArn']:
                 result = {
@@ -88,7 +109,8 @@ def post_request():
                 break
         if not result:
             return error_response('Requested resource not found', error_type='ResourceNotFoundException')
-    elif action == '%s.GetShardIterator' % ACTION_HEADER_PREFIX:
+
+    elif action == 'GetShardIterator':
         # forward request to Kinesis API
         stream_name = stream_name_from_stream_arn(data['StreamArn'])
         stream_shard_id = kinesis_shard_id(data['ShardId'])
@@ -97,11 +119,13 @@ def post_request():
         result = kinesis.get_shard_iterator(StreamName=stream_name, ShardId=stream_shard_id,
                                             ShardIteratorType=data['ShardIteratorType'], **kwargs)
 
-    elif action == '%s.GetRecords' % ACTION_HEADER_PREFIX:
+    elif action == 'GetRecords':
         kinesis_records = kinesis.get_records(**data)
         result = {'Records': [], 'NextShardIterator': kinesis_records.get('NextShardIterator')}
         for record in kinesis_records['Records']:
-            result['Records'].append(json.loads(to_str(record['Data'])))
+            record_data = json.loads(to_str(record['Data']))
+            record_data['dynamodb']['SequenceNumber'] = record['SequenceNumber']
+            result['Records'].append(record_data)
     else:
         print('WARNING: Unknown operation "%s"' % action)
     return jsonify(result)

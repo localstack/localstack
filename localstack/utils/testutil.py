@@ -12,7 +12,7 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, ENV_INTERNAL_TEST_RUN)
 from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
-from localstack.services.awslambda.lambda_api import (
+from localstack.services.awslambda.lambda_utils import (
     get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
 ARCHIVE_DIR_PREFIX = 'lambda.archive.'
@@ -105,15 +105,17 @@ def create_zip_file_python(source_path, base_dir, zip_file):
                 zip_file.write(full_name, dest)
 
 
-def create_zip_file(file_path, get_content=False):
+def create_zip_file(file_path, zip_file=None, get_content=False):
     base_dir = file_path
     if not os.path.isdir(file_path):
         base_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
         shutil.copy(file_path, base_dir)
         TMP_FILES.append(base_dir)
     tmp_dir = tempfile.mkdtemp(prefix=ARCHIVE_DIR_PREFIX)
-    zip_file_name = 'archive.zip'
-    full_zip_file = os.path.join(tmp_dir, zip_file_name)
+    full_zip_file = zip_file
+    if not full_zip_file:
+        zip_file_name = 'archive.zip'
+        full_zip_file = os.path.join(tmp_dir, zip_file_name)
     # create zip file
     if is_alpine():
         create_zip_file_cli(file_path, base_dir, zip_file=full_zip_file)
@@ -190,6 +192,34 @@ def create_lambda_function(func_name, zip_file=None, event_source_arn=None, hand
     return resp
 
 
+def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_uri,
+        stage_name=None, methods=[], path=None, auth_type=None, http_method=None):
+    if not methods:
+        methods = ['GET', 'POST', 'DELETE']
+    if not path:
+        path = '/'
+    stage_name = stage_name or 'test'
+    resources = {}
+    resource_path = path.lstrip('/')
+    resources[resource_path] = []
+    for method in methods:
+        int_meth = http_method or method
+        resources[resource_path].append({
+            'httpMethod': method,
+            'authorizationType': auth_type,
+            'integrations': [{
+                'type': 'AWS_PROXY',
+                'uri': target_uri,
+                'httpMethod': int_meth
+            }]
+        })
+    return aws_stack.create_api_gateway(
+        name=gateway_name,
+        resources=resources,
+        stage_name=stage_name
+    )
+
+
 def assert_objects(asserts, all_objects):
     if type(asserts) is not list:
         asserts = [asserts]
@@ -250,6 +280,16 @@ def list_all_s3_objects():
     return map_all_s3_objects().values()
 
 
+def delete_all_s3_objects(buckets):
+    s3_client = aws_stack.connect_to_service('s3')
+    buckets = buckets if isinstance(buckets, list) else [buckets]
+    for bucket in buckets:
+        keys = all_s3_object_keys(bucket)
+        deletes = [{'Key': key} for key in keys]
+        if deletes:
+            s3_client.delete_objects(Bucket=bucket, Delete={'Objects': deletes})
+
+
 def download_s3_object(s3, bucket, path):
     with tempfile.SpooledTemporaryFile() as tmpfile:
         s3.Bucket(bucket).download_fileobj(path, tmpfile)
@@ -262,9 +302,17 @@ def download_s3_object(s3, bucket, path):
         return result
 
 
+def all_s3_object_keys(bucket):
+    s3_client = aws_stack.connect_to_resource('s3')
+    bucket = s3_client.Bucket(bucket) if isinstance(bucket, str) else bucket
+    keys = [key for key in bucket.objects.all()]
+    return keys
+
+
 def map_all_s3_objects(to_json=True, buckets=None):
-    s3_client = aws_stack.get_s3_client()
+    s3_client = aws_stack.connect_to_resource('s3')
     result = {}
+    buckets = buckets if not buckets or isinstance(buckets, list) else [buckets]
     buckets = [s3_client.Bucket(b) for b in buckets] if buckets else s3_client.buckets.all()
     for bucket in buckets:
         for key in bucket.objects.all():
@@ -332,6 +380,15 @@ def get_lambda_log_group_name(function_name):
     return '/aws/lambda/{}'.format(function_name)
 
 
+def check_expected_lambda_log_events_length(expected_length, function_name):
+    events = get_lambda_log_events(function_name)
+    events = [line for line in events if line not in ['\x1b[0m', '\\x1b[0m']]
+    if len(events) != expected_length:
+        print('Invalid # of Lambda %s log events: %s / %s: %s' % (function_name, len(events), expected_length, events))
+    assert len(events) == expected_length
+    return events
+
+
 def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY):
     def get_log_events(function_name, delay_time):
         time.sleep(delay_time)
@@ -353,6 +410,8 @@ def get_lambda_log_events(function_name, delay_time=DEFAULT_GET_LOG_EVENTS_DELAY
     for event in events:
         raw_message = event['message']
         if not raw_message or 'START' in raw_message or 'END' in raw_message or 'REPORT' in raw_message:
+            continue
+        if raw_message in ['\x1b[0m', '\\x1b[0m']:
             continue
 
         try:

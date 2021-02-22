@@ -17,7 +17,7 @@ from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
 from localstack.utils.aws.dead_letter_queue import sns_error_to_dead_letter_queue
-from localstack.utils.common import timestamp_millis, short_uid, to_str, to_bytes
+from localstack.utils.common import parse_request_data, timestamp_millis, short_uid, to_str, to_bytes, start_thread
 from localstack.utils.persistence import PersistingProxyListener
 
 # set up logger
@@ -31,6 +31,15 @@ SUBSCRIPTION_STATUS = {}
 
 # mappings for SNS tags
 SNS_TAGS = {}
+
+# cache of platform endpoint messages (used primarily for testing)
+PLATFORM_ENDPOINT_MESSAGES = {}
+
+# maps phone numbers to list of sent messages
+SMS_MESSAGES = []
+
+# actions to be skipped from persistence
+SKIP_PERSISTENCE_ACTIONS = ['Subscribe', 'ConfirmSubscription', 'Unsubscribe']
 
 
 class ProxyListenerSNS(PersistingProxyListener):
@@ -114,13 +123,13 @@ class ProxyListenerSNS(PersistingProxyListener):
                 # No need to create a topic to send SMS or single push notifications with SNS
                 # but we can't mock a sending so we only return that it went well
                 if 'PhoneNumber' not in req_data and 'TargetArn' not in req_data:
-                    if topic_arn not in SNS_SUBSCRIPTIONS.keys():
+                    if topic_arn not in SNS_SUBSCRIPTIONS:
                         return make_error(code=404, code_string='NotFound', message='Topic does not exist')
 
-                publish_message(topic_arn, req_data)
+                message_id = publish_message(topic_arn, req_data)
 
                 # return response here because we do not want the request to be forwarded to SNS backend
-                return make_response(req_action)
+                return make_response(req_action, message_id=message_id)
 
             elif req_action == 'ListTagsForResource':
                 tags = do_list_tags_for_resource(topic_arn)
@@ -138,6 +147,7 @@ class ProxyListenerSNS(PersistingProxyListener):
             elif req_action == 'CreateTopic':
                 topic_arn = aws_stack.sns_topic_arn(req_data['Name'][0])
                 tag_resource_success = self._extract_tags(topic_arn, req_data, True)
+                SNS_SUBSCRIPTIONS[topic_arn] = SNS_SUBSCRIPTIONS.get(topic_arn) or []
                 # in case if there is an error it returns an error , other wise it will continue as expected.
                 if not tag_resource_success:
                     return make_error(code=400, code_string='InvalidParameter',
@@ -222,7 +232,6 @@ class ProxyListenerSNS(PersistingProxyListener):
             if req_action == 'CreateTopic' and response.status_code < 400:
                 response_data = xmltodict.parse(response.content)
                 topic_arn = response_data['CreateTopicResponse']['CreateTopicResult']['TopicArn']
-                do_create_topic(topic_arn)
                 # publish event
                 event_publisher.fire_event(
                     event_publisher.EVENT_SNS_CREATE_TOPIC,
@@ -235,6 +244,13 @@ class ProxyListenerSNS(PersistingProxyListener):
                     event_publisher.EVENT_SNS_DELETE_TOPIC,
                     payload={'t': event_publisher.get_hash(topic_arn)}
                 )
+
+    def should_persist(self, method, path, data, headers, response):
+        req_params = parse_request_data(method, path, data)
+        action = req_params.get('Action', '')
+        if action in SKIP_PERSISTENCE_ACTIONS:
+            return False
+        return super(ProxyListenerSNS, self).should_persist(method, path, data, headers, response)
 
 
 # instantiate listener
@@ -251,23 +267,28 @@ def unsubscribe_sqs_queue(queue_url):
                 subscriptions.remove(subscriber)
 
 
-def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
-    message = req_data['Message'][0]
-    sqs_client = aws_stack.connect_to_service('sqs')
-
-    LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
-
+def message_to_subscribers(message_id, message, topic_arn, req_data, subscription_arn=None, skip_checks=False):
     subscriptions = SNS_SUBSCRIPTIONS.get(topic_arn, [])
     for subscriber in list(subscriptions):
         if subscription_arn not in [None, subscriber['SubscriptionArn']]:
             continue
+
         filter_policy = json.loads(subscriber.get('FilterPolicy') or '{}')
         message_attributes = get_message_attributes(req_data)
         if not skip_checks and not check_filter_policy(filter_policy, message_attributes):
             LOG.info('SNS filter policy %s does not match attributes %s' % (filter_policy, message_attributes))
             continue
 
-        if subscriber['Protocol'] == 'sqs':
+        if subscriber['Protocol'] == 'sms':
+            event = {
+                'topic_arn': topic_arn,
+                'endpoint': subscriber['Endpoint'],
+                'message_content': req_data['Message'][0]
+            }
+            SMS_MESSAGES.append(event)
+            LOG.info('Delivering SMS message to %s: %s', subscriber['Endpoint'], req_data['Message'][0])
+
+        elif subscriber['Protocol'] == 'sqs':
             queue_url = None
             try:
                 endpoint = subscriber['Endpoint']
@@ -280,12 +301,17 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
                     queue_url = aws_stack.get_sqs_queue_url(queue_name)
                     subscriber['sqs_queue_url'] = queue_url
 
+                message_group_id = req_data.get('MessageGroupId')[0] if req_data.get('MessageGroupId') else ''
+
+                sqs_client = aws_stack.connect_to_service('sqs')
                 sqs_client.send_message(
                     QueueUrl=queue_url,
-                    MessageBody=create_sns_message_body(subscriber, req_data),
-                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes)
+                    MessageBody=create_sns_message_body(subscriber, req_data, message_id),
+                    MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
+                    MessageGroupId=message_group_id
                 )
             except Exception as exc:
+                LOG.warning('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
                 if 'NonExistentQueue' in str(exc):
                     LOG.info('Removing non-existent queue "%s" subscribed to topic "%s"' % (queue_url, topic_arn))
@@ -301,6 +327,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
                     topic_arn,
                     subscriber['SubscriptionArn'],
                     message,
+                    message_id,
                     message_attributes,
                     unsubscribe_url,
                     subject=req_data.get('Subject', [None])[0]
@@ -317,7 +344,7 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
         elif subscriber['Protocol'] in ['http', 'https']:
             msg_type = (req_data.get('Type') or ['Notification'])[0]
             try:
-                message_body = create_sns_message_body(subscriber, req_data)
+                message_body = create_sns_message_body(subscriber, req_data, message_id)
             except Exception:
                 continue
             try:
@@ -339,17 +366,47 @@ def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=Fals
             except Exception as exc:
                 LOG.info('Received error on sending SNS message, putting to DLQ (if configured): %s' % exc)
                 sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+
+        elif subscriber['Protocol'] == 'application':
+            try:
+                sns_client = aws_stack.connect_to_service('sns')
+                sns_client.publish(TargetArn=subscriber['Endpoint'], Message=message)
+            except Exception as exc:
+                LOG.warning('Unable to forward SNS message to SNS platform app: %s %s' % (exc, traceback.format_exc()))
+                sns_error_to_dead_letter_queue(subscriber['SubscriptionArn'], req_data, str(exc))
+
+        elif subscriber['Protocol'] == 'email':
+            ses_client = aws_stack.connect_to_service('ses')
+            if subscriber.get('Endpoint'):
+                ses_client.verify_email_address(EmailAddress=subscriber.get('Endpoint'))
+                ses_client.verify_email_address(EmailAddress='admin@localstack.com')
+
+                ses_client.send_email(Source='admin@localstack.com',
+                                      Message={'Body': {'Text': {'Data': message}},
+                                               'Subject': {'Data': 'SNS-Subscriber-Endpoint'}},
+                                      Destination={'ToAddresses': [subscriber.get('Endpoint')]})
         else:
             LOG.warning('Unexpected protocol "%s" for SNS subscription' % subscriber['Protocol'])
 
 
-def do_create_topic(topic_arn):
-    if topic_arn not in SNS_SUBSCRIPTIONS:
-        SNS_SUBSCRIPTIONS[topic_arn] = []
+def publish_message(topic_arn, req_data, subscription_arn=None, skip_checks=False):
+    message = req_data['Message'][0]
+    message_id = str(uuid.uuid4())
+
+    if topic_arn and ':endpoint/' in topic_arn:
+        # cache messages published to platform endpoints
+        cache = PLATFORM_ENDPOINT_MESSAGES[topic_arn] = PLATFORM_ENDPOINT_MESSAGES.get(topic_arn) or []
+        cache.append(req_data)
+
+    LOG.debug('Publishing message to TopicArn: %s | Message: %s' % (topic_arn, message))
+    start_thread(
+        lambda _: message_to_subscribers(message_id, message, topic_arn, req_data, subscription_arn, skip_checks))
+    return message_id
 
 
 def do_delete_topic(topic_arn):
     SNS_SUBSCRIPTIONS.pop(topic_arn, None)
+    SNS_TAGS.pop(topic_arn, None)
 
 
 def do_confirm_subscription(topic_arn, token):
@@ -359,9 +416,11 @@ def do_confirm_subscription(topic_arn, token):
 
 
 def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, filter_policy=None):
+    topic_subs = SNS_SUBSCRIPTIONS[topic_arn] = SNS_SUBSCRIPTIONS.get(topic_arn) or []
+
     # An endpoint may only be subscribed to a topic once. Subsequent
     # subscribe calls do nothing (subscribe is idempotent).
-    for existing_topic_subscription in SNS_SUBSCRIPTIONS.get(topic_arn, []):
+    for existing_topic_subscription in topic_subs:
         if existing_topic_subscription.get('Endpoint') == endpoint:
             return
 
@@ -374,9 +433,9 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
         'FilterPolicy': filter_policy
     }
     subscription.update(attributes)
-    SNS_SUBSCRIPTIONS[topic_arn].append(subscription)
+    topic_subs.append(subscription)
 
-    if subscription_arn not in SUBSCRIPTION_STATUS.keys():
+    if subscription_arn not in SUBSCRIPTION_STATUS:
         SUBSCRIPTION_STATUS[subscription_arn] = {}
 
     SUBSCRIPTION_STATUS[subscription_arn].update(
@@ -401,9 +460,9 @@ def do_subscribe(topic_arn, endpoint, protocol, subscription_arn, attributes, fi
 
 
 def do_unsubscribe(subscription_arn):
-    for topic_arn in SNS_SUBSCRIPTIONS:
+    for topic_arn, existing_subs in SNS_SUBSCRIPTIONS.items():
         SNS_SUBSCRIPTIONS[topic_arn] = [
-            sub for sub in SNS_SUBSCRIPTIONS[topic_arn]
+            sub for sub in existing_subs
             if sub['SubscriptionArn'] != subscription_arn
         ]
 
@@ -451,10 +510,6 @@ def do_untag_resource(topic_arn, tag_keys):
 # ---------------
 
 
-def get_topic_by_arn(topic_arn):
-    return SNS_SUBSCRIPTIONS.get(topic_arn)
-
-
 def get_subscription_by_arn(sub_arn):
     # TODO maintain separate map instead of traversing all items
     for key, subscriptions in SNS_SUBSCRIPTIONS.items():
@@ -463,10 +518,12 @@ def get_subscription_by_arn(sub_arn):
                 return sub
 
 
-def make_response(op_name, content=''):
+def make_response(op_name, content='', message_id=None):
     response = Response()
     if not content:
-        content = '<MessageId>%s</MessageId>' % short_uid()
+        message_id = message_id or str(uuid.uuid4())
+        content = '<MessageId>%s</MessageId>' % message_id
+
     response._content = """<{op_name}Response xmlns="http://sns.amazonaws.com/doc/2010-03-31/">
         <{op_name}Result>
             {content}
@@ -490,9 +547,8 @@ def make_error(message, code=400, code_string='InvalidParameter'):
     return response
 
 
-def create_sns_message_body(subscriber, req_data):
+def create_sns_message_body(subscriber, req_data, message_id=None):
     message = req_data['Message'][0]
-    subject = req_data.get('Subject', [None])[0]
     protocol = subscriber['Protocol']
 
     if six.PY2 and type(message).__name__ == 'unicode':
@@ -511,11 +567,9 @@ def create_sns_message_body(subscriber, req_data):
 
     data = {
         'Type': req_data.get('Type', ['Notification'])[0],
-        'MessageId': str(uuid.uuid4()),
-        'Token': req_data.get('Token', [None])[0],
+        'MessageId': message_id,
         'TopicArn': subscriber['TopicArn'],
         'Message': message,
-        'SubscribeURL': req_data.get('SubscribeURL', [None])[0],
         'Timestamp': timestamp_millis(),
         'SignatureVersion': '1',
         # TODO Add a more sophisticated solution with an actual signature
@@ -524,8 +578,9 @@ def create_sns_message_body(subscriber, req_data):
         'SigningCertURL': 'https://sns.us-east-1.amazonaws.com/SimpleNotificationService-0000000000000000000000.pem'
     }
 
-    if subject is not None:
-        data['Subject'] = subject
+    for key in ['Subject', 'SubscribeURL', 'Token']:
+        if req_data.get(key):
+            data[key] = req_data[key][0]
 
     attributes = get_message_attributes(req_data)
     if attributes:

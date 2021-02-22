@@ -3,14 +3,45 @@ import asyncio
 import concurrent.futures
 from contextvars import copy_context
 from localstack.utils import common
-from localstack.utils.common import FuncThread, TMP_THREADS
-
-# thread pool executor for running sync functions in async context
-THREAD_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=30)
-TMP_THREADS.append(THREAD_POOL)
+from localstack.utils.common import FuncThread, TMP_THREADS, start_worker_thread
 
 # reference to named event loop instances
 EVENT_LOOPS = {}
+
+
+class AdaptiveThreadPool(concurrent.futures.ThreadPoolExecutor):
+    """ Thread pool executor that maintains a maximum of 'core_size' reusable threads in
+        the core pool, and creates new thread instances as needed (if the core pool is full). """
+
+    DEFAULT_CORE_POOL_SIZE = 30
+
+    def __init__(self, core_size=None):
+        self.core_size = core_size or self.DEFAULT_CORE_POOL_SIZE
+        super(AdaptiveThreadPool, self).__init__(max_workers=self.core_size)
+
+    def submit(self, fn, *args, **kwargs):
+        # if idle threads are available, don't spin new threads
+        if self.has_idle_threads():
+            return super(AdaptiveThreadPool, self).submit(fn, *args, **kwargs)
+
+        def _run(*tmpargs):
+            return fn(*args, **kwargs)
+        thread = start_worker_thread(_run)
+        return thread.result_future
+
+    def has_idle_threads(self):
+        if hasattr(self, '_idle_semaphore'):
+            return self._idle_semaphore.acquire(timeout=0)
+        num_threads = len(self._threads)
+        return num_threads < self._max_workers
+
+
+# Thread pool executor for running sync functions in async context.
+# Note: For certain APIs like DynamoDB, we need 3x threads for each parallel request,
+# as during request processing the API calls out to the DynamoDB API again (recursively).
+# (TODO: This could potentially be improved if we move entirely to asyncio functions.)
+THREAD_POOL = AdaptiveThreadPool()
+TMP_THREADS.append(THREAD_POOL)
 
 
 class AsyncThread(FuncThread):
@@ -45,18 +76,31 @@ class AsyncThread(FuncThread):
         return thread
 
 
-async def run_sync(func, *args):
+async def run_sync(func, *args, thread_pool=None):
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(THREAD_POOL, copy_context().run, func, *args)
+    thread_pool = thread_pool or THREAD_POOL
+    return await loop.run_in_executor(thread_pool, copy_context().run, func, *args)
+
+
+def run_coroutine(coroutine, loop=None):
+    """ Run an async coroutine in a threadsafe way in the main event loop """
+    loop = loop or get_main_event_loop()
+    future = asyncio.run_coroutine_threadsafe(coroutine, loop)
+    return future.result()
 
 
 def ensure_event_loop():
+    """ Ensure that an event loop is defined for the currently running thread """
     try:
         return asyncio.get_event_loop()
     except Exception:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         return loop
+
+
+def get_main_event_loop():
+    return get_named_event_loop('_main_')
 
 
 def get_named_event_loop(name):

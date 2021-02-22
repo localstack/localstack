@@ -5,8 +5,9 @@ import logging
 import threading
 import time
 from binascii import crc32
+from cachetools import TTLCache
 from requests.models import Request, Response
-from localstack import config
+from localstack import config, constants
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import to_bytes, to_str, clone, select_attributes
 from localstack.utils.analytics import event_publisher
@@ -17,6 +18,9 @@ from localstack.services.dynamodbstreams import dynamodbstreams_api
 
 # set up logger
 LOGGER = logging.getLogger(__name__)
+
+# cache schema definitions
+SCHEMA_CACHE = TTLCache(maxsize=50, ttl=20)
 
 # cache table definitions - used for testing
 TABLE_DEFINITIONS = {}
@@ -31,10 +35,13 @@ ACTION_PREFIX = 'DynamoDB_20120810'
 GLOBAL_TABLES = {}
 
 # list of actions subject to throughput limitations
-THROTTLED_ACTIONS = [
-    'PutItem', 'BatchWriteItem', 'UpdateItem', 'DeleteItem', 'TransactWriteItems',
+READ_THROTTLED_ACTIONS = [
     'GetItem', 'Query', 'Scan', 'TransactGetItems', 'BatchGetItem'
 ]
+WRITE_THROTTLED_ACTIONS = [
+    'PutItem', 'BatchWriteItem', 'UpdateItem', 'DeleteItem', 'TransactWriteItems',
+]
+THROTTLED_ACTIONS = READ_THROTTLED_ACTIONS + WRITE_THROTTLED_ACTIONS
 
 
 class ProxyListenerDynamoDB(ProxyListener):
@@ -43,33 +50,60 @@ class ProxyListenerDynamoDB(ProxyListener):
     def __init__(self):
         self._table_ttl_map = {}
 
-    def forward_request(self, method, path, data, headers):
-        if path.startswith('/shell') or method == 'GET':
-            if path == '/shell':
-                headers = {'Refresh': '0; url=%s/shell/' % config.TEST_DYNAMODB_URL}
-                return aws_responses.requests_response('', headers=headers)
+    @staticmethod
+    def table_exists(ddb_client, table_name):
+        paginator = ddb_client.get_paginator('list_tables')
+        pages = paginator.paginate(
+            PaginationConfig={
+                'PageSize': 100
+            }
+        )
+        for page in pages:
+            table_names = page['TableNames']
+            if to_str(table_name) in table_names:
+                return True
+        return False
+
+    def action_should_throttle(self, action, actions):
+        throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in actions]
+        return action in throttled
+
+    def should_throttle(self, action):
+        rand = random.random()
+        if (rand < config.DYNAMODB_READ_ERROR_PROBABILITY and
+                self.action_should_throttle(action, READ_THROTTLED_ACTIONS)):
             return True
+        elif (rand < config.DYNAMODB_WRITE_ERROR_PROBABILITY and
+                self.action_should_throttle(action, WRITE_THROTTLED_ACTIONS)):
+            return True
+        elif (rand < config.DYNAMODB_ERROR_PROBABILITY and
+                self.action_should_throttle(action, THROTTLED_ACTIONS)):
+            return True
+        else:
+            return False
 
-        if method == 'OPTIONS':
-            return 200
+    def forward_request(self, method, path, data, headers):
+        result = handle_special_request(method, path, data, headers)
+        if result is not None:
+            return result
 
-        if not data:
-            data = '{}'
+        # prepare request headers
+        self.prepare_request_headers(headers)
+
+        data_orig = data
+        data = data or '{}'
         data = json.loads(to_str(data))
         ddb_client = aws_stack.connect_to_service('dynamodb')
         action = headers.get('X-Amz-Target')
 
-        if random.random() < config.DYNAMODB_ERROR_PROBABILITY:
-            throttled = ['%s.%s' % (ACTION_PREFIX, a) for a in THROTTLED_ACTIONS]
-            if action in throttled:
-                return error_response_throughput()
+        if self.should_throttle(action):
+            return error_response_throughput()
 
         ProxyListenerDynamoDB.thread_local.existing_item = None
 
         if action == '%s.CreateTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) in table_names:
+            if self.table_exists(ddb_client, data['TableName']):
                 return error_response(message='Table already created',
                                       error_type='ResourceInUseException', code=400)
 
@@ -89,7 +123,8 @@ class ProxyListenerDynamoDB(ProxyListener):
             # find an existing item and store it in a thread-local, so we can access it in return_response,
             # in order to determine whether an item already existed (MODIFY) or not (INSERT)
             try:
-                ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)
+                if has_event_sources_or_streams_enabled(data['TableName']):
+                    ProxyListenerDynamoDB.thread_local.existing_item = find_existing_item(data)
             except Exception as e:
                 if 'ResourceNotFoundException' in str(e):
                     return get_table_not_found_error()
@@ -104,14 +139,12 @@ class ProxyListenerDynamoDB(ProxyListener):
 
         elif action == '%s.DescribeTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) not in table_names:
+            if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
 
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
             # Check if table exists, to avoid error log output from DynamoDBLocal
-            table_names = ddb_client.list_tables()['TableNames']
-            if to_str(data['TableName']) not in table_names:
+            if not self.table_exists(ddb_client, data['TableName']):
                 return get_table_not_found_error()
 
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
@@ -123,6 +156,14 @@ class ProxyListenerDynamoDB(ProxyListener):
                         if inner_request:
                             existing_items.append(find_existing_item(inner_request, table_name))
             ProxyListenerDynamoDB.thread_local.existing_items = existing_items
+
+        elif action == '%s.Query' % ACTION_PREFIX:
+            if data.get('IndexName'):
+                if not is_index_query_valid(to_str(data['TableName']), data.get('Select')):
+                    return error_response(
+                        message='One or more parameter values were invalid: Select type ALL_ATTRIBUTES '
+                                'is not supported for global secondary index id-index because its projection '
+                                'type is not ALL', error_type='ValidationException', code=400)
 
         elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
             existing_items = []
@@ -184,7 +225,7 @@ class ProxyListenerDynamoDB(ProxyListener):
             fix_headers_for_updated_response(response)
             return response
 
-        return True
+        return Request(data=data_orig, method=method, headers=headers)
 
     def return_response(self, method, path, data, headers, response):
         if path.startswith('/shell') or method == 'GET':
@@ -225,8 +266,12 @@ class ProxyListenerDynamoDB(ProxyListener):
         }
         records = [record]
 
+        streams_enabled_cache = {}
+        table_name = data.get('TableName')
+        event_sources_or_streams_enabled = has_event_sources_or_streams_enabled(table_name, streams_enabled_cache)
+
         if action == '%s.UpdateItem' % ACTION_PREFIX:
-            if response.status_code == 200:
+            if response.status_code == 200 and event_sources_or_streams_enabled:
                 existing_item = self._thread_local('existing_item')
                 record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
 
@@ -238,29 +283,37 @@ class ProxyListenerDynamoDB(ProxyListener):
                     record['dynamodb']['OldImage'] = existing_item
                 record['dynamodb']['NewImage'] = updated_item
                 record['dynamodb']['SizeBytes'] = len(json.dumps(updated_item))
+
         elif action == '%s.BatchWriteItem' % ACTION_PREFIX:
             records = self.prepare_batch_write_item_records(record, data)
+            for record in records:
+                event_sources_or_streams_enabled = (event_sources_or_streams_enabled or
+                    has_event_sources_or_streams_enabled(record['eventSourceARN'], streams_enabled_cache))
 
         elif action == '%s.TransactWriteItems' % ACTION_PREFIX:
             records = self.prepare_transact_write_item_records(record, data)
+            for record in records:
+                event_sources_or_streams_enabled = (event_sources_or_streams_enabled or
+                    has_event_sources_or_streams_enabled(record['eventSourceARN'], streams_enabled_cache))
 
         elif action == '%s.PutItem' % ACTION_PREFIX:
             if response.status_code == 200:
-                existing_item = self._thread_local('existing_item')
-                record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
-                keys = dynamodb_extract_keys(item=data['Item'], table_name=data['TableName'])
+                keys = dynamodb_extract_keys(item=data['Item'], table_name=table_name)
                 if isinstance(keys, Response):
                     return keys
                 # fix response
                 if response._content == '{}':
                     response._content = update_put_item_response_content(data, response._content)
                     fix_headers_for_updated_response(response)
-                # prepare record keys
-                record['dynamodb']['Keys'] = keys
-                record['dynamodb']['NewImage'] = data['Item']
-                record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
-                if existing_item:
-                    record['dynamodb']['OldImage'] = existing_item
+                if event_sources_or_streams_enabled:
+                    existing_item = self._thread_local('existing_item')
+                    record['eventName'] = 'INSERT' if not existing_item else 'MODIFY'
+                    # prepare record keys
+                    record['dynamodb']['Keys'] = keys
+                    record['dynamodb']['NewImage'] = data['Item']
+                    record['dynamodb']['SizeBytes'] = len(json.dumps(data['Item']))
+                    if existing_item:
+                        record['dynamodb']['OldImage'] = existing_item
 
         elif action in ['%s.GetItem' % ACTION_PREFIX, '%s.Query' % ACTION_PREFIX]:
             if response.status_code == 200:
@@ -269,7 +322,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                 # returned by dynalite, but not by AWS's DynamoDBLocal
                 if 'ConsumedCapacity' not in content and data.get('ReturnConsumedCapacity') in ['TOTAL', 'INDEXES']:
                     content['ConsumedCapacity'] = {
-                        'TableName': data['TableName'],
+                        'TableName': table_name,
                         'CapacityUnits': 5,             # TODO hardcoded
                         'ReadCapacityUnits': 2,
                         'WriteCapacityUnits': 3
@@ -278,7 +331,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     fix_headers_for_updated_response(response)
 
         elif action == '%s.DeleteItem' % ACTION_PREFIX:
-            if response.status_code == 200:
+            if response.status_code == 200 and event_sources_or_streams_enabled:
                 old_item = self._thread_local('existing_item')
                 record['eventName'] = 'REMOVE'
                 record['dynamodb']['Keys'] = data['Key']
@@ -291,7 +344,7 @@ class ProxyListenerDynamoDB(ProxyListener):
                     create_dynamodb_stream(data, content['TableDescription'].get('LatestStreamLabel'))
 
             event_publisher.fire_event(event_publisher.EVENT_DYNAMODB_CREATE_TABLE,
-                payload={'n': event_publisher.get_hash(data['TableName'])})
+                payload={'n': event_publisher.get_hash(table_name)})
 
             if data.get('Tags') and response.status_code == 200:
                 table_arn = json.loads(response._content)['TableDescription']['TableArn']
@@ -300,14 +353,15 @@ class ProxyListenerDynamoDB(ProxyListener):
             return
 
         elif action == '%s.DeleteTable' % ACTION_PREFIX:
-            table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn')
-            event_publisher.fire_event(
-                event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
-                payload={'n': event_publisher.get_hash(data['TableName'])}
-            )
-            self.delete_all_event_source_mappings(table_arn)
-            TABLE_TAGS.pop(table_arn, None)
-
+            if response.status_code == 200:
+                table_arn = json.loads(response._content).get('TableDescription', {}).get('TableArn')
+                event_publisher.fire_event(
+                    event_publisher.EVENT_DYNAMODB_DELETE_TABLE,
+                    payload={'n': event_publisher.get_hash(table_name)}
+                )
+                self.delete_all_event_source_mappings(table_arn)
+                dynamodbstreams_api.delete_streams(table_arn)
+                TABLE_TAGS.pop(table_arn, None)
             return
 
         elif action == '%s.UpdateTable' % ACTION_PREFIX:
@@ -321,25 +375,22 @@ class ProxyListenerDynamoDB(ProxyListener):
             table_arn = data['ResourceArn']
             if table_arn not in TABLE_TAGS:
                 TABLE_TAGS[table_arn] = {}
-
             TABLE_TAGS[table_arn].update({tag['Key']: tag['Value'] for tag in data.get('Tags', [])})
-
             return
 
         elif action == '%s.UntagResource' % ACTION_PREFIX:
             table_arn = data['ResourceArn']
             for tag_key in data.get('TagKeys', []):
                 TABLE_TAGS.get(table_arn, {}).pop(tag_key, None)
-
             return
 
         else:
             # nothing to do
             return
 
-        if len(records) > 0 and 'eventName' in records[0]:
+        if event_sources_or_streams_enabled and records and 'eventName' in records[0]:
             if 'TableName' in data:
-                records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(data['TableName'])
+                records[0]['eventSourceARN'] = aws_stack.dynamodb_table_arn(table_name)
 
             forward_to_lambda(records)
             forward_to_ddb_stream(records)
@@ -347,6 +398,12 @@ class ProxyListenerDynamoDB(ProxyListener):
     # -------------
     # UTIL METHODS
     # -------------
+
+    def prepare_request_headers(self, headers):
+        # Note: We need to ensure that the same access key is used here for all requests,
+        # otherwise DynamoDBLocal stores tables/items in separate namespaces
+        headers['Authorization'] = re.sub(r'Credential=[^/]+/',
+            r'Credential=%s/' % constants.TEST_AWS_ACCESS_KEY_ID, headers.get('Authorization') or '')
 
     def prepare_batch_write_item_records(self, record, data):
         records = []
@@ -455,6 +512,17 @@ class ProxyListenerDynamoDB(ProxyListener):
             return default
 
 
+def handle_special_request(method, path, data, headers):
+    if path.startswith('/shell') or method == 'GET':
+        if path == '/shell':
+            headers = {'Refresh': '0; url=%s/shell/' % config.TEST_DYNAMODB_URL}
+            return aws_responses.requests_response('', headers=headers)
+        return True
+
+    if method == 'OPTIONS':
+        return 200
+
+
 def create_global_table(data):
     table_name = data['GlobalTableName']
     if table_name in GLOBAL_TABLES:
@@ -508,6 +576,42 @@ def update_global_table(data):
     return result
 
 
+def is_index_query_valid(table_name, index_query_type):
+    schema = get_table_schema(table_name)
+    for index in schema['Table'].get('GlobalSecondaryIndexes', []):
+        index_projection_type = index.get('Projection').get('ProjectionType')
+        if index_query_type == 'ALL_ATTRIBUTES' and index_projection_type != 'ALL':
+            return False
+    return True
+
+
+def has_event_sources_or_streams_enabled(table_name, cache={}):
+    if not table_name:
+        return
+    table_arn = aws_stack.dynamodb_table_arn(table_name)
+    cached = cache.get(table_arn)
+    if isinstance(cached, bool):
+        return cached
+    sources = lambda_api.get_event_sources(source_arn=table_arn)
+    result = False
+    if sources:
+        result = True
+    if not result and dynamodbstreams_api.get_stream_for_table(table_arn):
+        result = True
+    cache[table_arn] = result
+    return result
+
+
+def get_table_schema(table_name):
+    key = '%s/%s' % (aws_stack.get_region(), table_name)
+    schema = SCHEMA_CACHE.get(key)
+    if not schema:
+        ddb_client = aws_stack.connect_to_service('dynamodb')
+        schema = ddb_client.describe_table(TableName=table_name)
+        SCHEMA_CACHE[key] = schema
+    return schema
+
+
 def find_existing_item(put_item, table_name=None):
     table_name = table_name or put_item['TableName']
     ddb_client = aws_stack.connect_to_service('dynamodb')
@@ -516,9 +620,10 @@ def find_existing_item(put_item, table_name=None):
     if 'Key' in put_item:
         search_key = put_item['Key']
     else:
-        schema = ddb_client.describe_table(TableName=table_name)
+        schema = get_table_schema(table_name)
         schemas = [schema['Table']['KeySchema']]
         for index in schema['Table'].get('GlobalSecondaryIndexes', []):
+            # TODO
             # schemas.append(index['KeySchema'])
             pass
         for schema in schemas:
@@ -535,7 +640,7 @@ def find_existing_item(put_item, table_name=None):
     if 'Item' not in existing_item:
         if 'message' in existing_item:
             table_names = ddb_client.list_tables()['TableNames']
-            msg = ('Unable to get item from DynamoDB (existing tables: %s): %s' %
+            msg = ('Unable to get item from DynamoDB (existing tables: %s ...truncated if >100 tables): %s' %
                 (table_names, existing_item['message']))
             LOGGER.warning(msg)
         return
@@ -554,7 +659,7 @@ def get_table_not_found_error():
 
 
 def fix_headers_for_updated_response(response):
-    response.headers['content-length'] = len(to_bytes(response.content))
+    response.headers['Content-Length'] = len(to_bytes(response.content))
     response.headers['x-amz-crc32'] = calculate_crc32(response)
 
 
@@ -596,7 +701,6 @@ def forward_to_lambda(records):
         for src in sources:
             if src.get('State') != 'Enabled':
                 continue
-
             lambda_api.run_lambda(event=event, context={}, func_arn=src['FunctionArn'],
                 asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS)
 

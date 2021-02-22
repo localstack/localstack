@@ -17,8 +17,8 @@ if __name__ == '__main__':
     bootstrap.bootstrap_installation()
 # flake8: noqa: E402
 from localstack.utils.common import (
-    download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf, chmod_r, is_alpine,
-    in_docker, get_arch)
+    download, parallelize, run, mkdir, load_file, save_file, unzip, untar, rm_rf,
+    chmod_r, is_alpine, in_docker, get_arch)
 
 THIS_PATH = os.path.dirname(os.path.realpath(__file__))
 ROOT_PATH = os.path.realpath(os.path.join(THIS_PATH, '..'))
@@ -146,11 +146,12 @@ def install_kinesalite():
 
 
 def install_local_kms():
-    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', get_arch())
+    local_arch = get_arch()
+    binary_path = INSTALL_PATH_KMS_BINARY_PATTERN.replace('<arch>', local_arch)
     if not os.path.exists(binary_path):
         log_install_msg('KMS')
         mkdir(INSTALL_DIR_KMS)
-        kms_url = KMS_URL_PATTERN.replace('<arch>', get_arch())
+        kms_url = KMS_URL_PATTERN.replace('<arch>', local_arch)
         download(kms_url, binary_path)
         chmod_r(binary_path, 0o777)
 
@@ -268,6 +269,8 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 
     def download_and_extract():
         if not os.path.exists(tmp_archive):
+            # create temporary placeholder file, to avoid duplicate parallel downloads
+            save_file(tmp_archive, '')
             download(archive_url, tmp_archive)
 
         _, ext = os.path.splitext(tmp_archive)
@@ -290,6 +293,7 @@ def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
 if __name__ == '__main__':
 
     if len(sys.argv) > 1:
+        os.environ['LOCALSTACK_API_KEY'] = os.environ.get('LOCALSTACK_API_KEY') or 'test'
         if sys.argv[1] == 'libs':
             print('Initializing installation.')
             logging.basicConfig(level=logging.INFO)

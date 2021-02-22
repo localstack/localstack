@@ -1,6 +1,7 @@
 import io
 import os
 import ssl
+import boto3
 import gzip
 import json
 import time
@@ -9,21 +10,19 @@ import unittest
 import datetime
 import requests
 from io import BytesIO
-
-from localstack.services.awslambda.lambda_executors import LAMBDA_RUNTIME_PYTHON36
-
-from localstack.utils import testutil
 from pytz import timezone
+from botocore.exceptions import ClientError
 from six.moves.urllib.request import Request, urlopen
 from localstack import config
-from botocore.exceptions import ClientError
+from localstack.utils import testutil
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    short_uid, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf)
+    short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, load_file)
+from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 
 TEST_BUCKET_NAME_WITH_POLICY = 'test-bucket-policy-1'
-TEST_BUCKET_WITH_NOTIFICATION = 'test-bucket-notification-1'
 TEST_QUEUE_FOR_BUCKET_WITH_NOTIFICATION = 'test_queue_for_bucket_notification_1'
 TEST_BUCKET_WITH_VERSIONING = 'test-bucket-versioning-1'
 
@@ -33,6 +32,19 @@ TEST_GET_OBJECT_RANGE = 17
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_triggered_by_s3.py')
+TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3 = os.path.join(THIS_FOLDER, 'lambdas',
+                                                   'lambda_triggered_by_sqs_download_s3_file.py')
+
+BATCH_DELETE_BODY = """
+<Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Object>
+    <Key>%s</Key>
+  </Object>
+  <Object>
+    <Key>%s</Key>
+  </Object>
+</Delete>
+"""
 
 
 class PutRequest(Request):
@@ -44,7 +56,7 @@ class PutRequest(Request):
         return 'PUT'
 
 
-class S3ListenerTest(unittest.TestCase):
+class TestS3(unittest.TestCase):
     def setUp(self):
         self.s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
@@ -90,19 +102,19 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual(json.loads(saved_policy), policy)
 
     def test_s3_put_object_notification(self):
+        bucket_name = 'notif-%s' % short_uid()
         key_by_path = 'key-by-hostname'
         key_by_host = 'key-by-host'
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                             VersioningConfiguration={'Status': 'Enabled'})
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Enabled'})
 
         # put an object where the bucket_name is in the path
-        obj = self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body='something')
+        obj = self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body='something')
 
         # put an object where the bucket_name is in the host
         # it doesn't care about the authorization header as long as it's present
-        headers = {'Host': '{}.s3.amazonaws.com'.format(TEST_BUCKET_WITH_NOTIFICATION), 'authorization': 'some_token'}
+        headers = {'Host': '{}.s3.amazonaws.com'.format(bucket_name), 'authorization': 'some_token'}
         url = '{}/{}'.format(config.TEST_S3_URL, key_by_host)
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data='something else', headers=headers, verify=False)
@@ -117,22 +129,21 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEquals(record['s3']['object']['versionId'], obj['VersionId'])
 
         # clean up
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                             VersioningConfiguration={'Status': 'Disabled'})
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Disabled'})
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path, key_by_host])
+        self._delete_bucket(bucket_name, [key_by_path, key_by_host])
 
     def test_s3_upload_fileobj_with_large_file_notification(self):
+        bucket_name = 'notif-large-%s' % short_uid()
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
 
         # has to be larger than 64MB to be broken up into a multipart upload
         file_size = 75000000
         large_file = self.generate_large_file(file_size)
         download_file = new_tmp_file()
         try:
-            self.s3_client.upload_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                       Key=large_file.name, Filename=large_file.name)
+            self.s3_client.upload_file(Bucket=bucket_name, Key=large_file.name, Filename=large_file.name)
 
             self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
@@ -142,13 +153,12 @@ class S3ListenerTest(unittest.TestCase):
             self.assertEqual(message['Records'][0]['eventName'], 'ObjectCreated:CompleteMultipartUpload')
 
             # download the file, check file size
-            self.s3_client.download_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                         Key=large_file.name, Filename=download_file)
+            self.s3_client.download_file(Bucket=bucket_name, Key=large_file.name, Filename=download_file)
             self.assertEqual(os.path.getsize(download_file), file_size)
 
             # clean up
             self.sqs_client.delete_queue(QueueUrl=queue_url)
-            self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, large_file.name)
+            self._delete_bucket(bucket_name, large_file.name)
         finally:
             # clean up large files
             large_file.close()
@@ -159,21 +169,22 @@ class S3ListenerTest(unittest.TestCase):
         # In a multipart upload "Each part must be at least 5 MB in size, except the last part."
         # https://docs.aws.amazon.com/AmazonS3/latest/API/mpUploadComplete.html
 
+        bucket_name = 'notif-large-%s' % short_uid()
         key_by_path = 'key-by-hostname'
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
 
         # perform upload
-        self._perform_multipart_upload(bucket=TEST_BUCKET_WITH_NOTIFICATION, key=key_by_path, zip=True)
+        self._perform_multipart_upload(bucket=bucket_name, key=key_by_path, zip=True)
 
         self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+        self._delete_bucket(bucket_name, [key_by_path])
 
     def test_invalid_range_error(self):
-        bucket_name = 'myBucket'
+        bucket_name = 'range-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         self.s3_client.create_bucket(Bucket=bucket_name)
@@ -183,6 +194,39 @@ class S3ListenerTest(unittest.TestCase):
             self.s3_client.get_object(Bucket=bucket_name, Key='steve', Range='bytes=1024-4096')
         except ClientError as e:
             self.assertEqual(e.response['Error']['Code'], 'InvalidRange')
+
+        # clean up
+        self._delete_bucket(bucket_name, ['steve'])
+
+    def test_range_key_not_exists(self):
+        bucket_name = 'range-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.get_object(Bucket=bucket_name, Key='key', Range='bytes=1024-4096')
+
+        self.assertIn('NoSuchKey', str(ctx.exception))
+
+        # clean up
+        self._delete_bucket(bucket_name)
+
+    def test_upload_key_with_hash_prefix(self):
+        bucket_name = 'hash-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        key_name = '#key-with-hash-prefix'
+        content = b'test 123'
+        self.s3_client.put_object(Bucket=bucket_name, Key=key_name, Body=content)
+
+        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=key_name)
+        downloaded_content = to_str(downloaded_object['Body'].read())
+        self.assertEqual(to_str(downloaded_content), to_str(content))
+
+        # clean up
+        self._delete_bucket(bucket_name, [key_name])
+        with self.assertRaises(Exception):
+            self.s3_client.head_object(Bucket=bucket_name, Key=key_name)
 
     def test_s3_multipart_upload_acls(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -206,16 +250,17 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_url_upload(self):
         key_by_path = 'key-by-hostname'
+        bucket_name = 'notif-large-%s' % short_uid()
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
 
-        self._perform_presigned_url_upload(bucket=TEST_BUCKET_WITH_NOTIFICATION, key=key_by_path)
+        self._perform_presigned_url_upload(bucket=bucket_name, key=key_by_path)
 
         self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
         # clean up
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+        self._delete_bucket(bucket_name, [key_by_path])
 
     def test_s3_get_response_default_content_type(self):
         # When no content type is provided by a PUT request
@@ -223,12 +268,13 @@ class S3ListenerTest(unittest.TestCase):
         # src: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectPUT.html
 
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
-        url = self.s3_client.generate_presigned_url(
+        client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key})
 
         # get object and assert headers
@@ -241,22 +287,26 @@ class S3ListenerTest(unittest.TestCase):
         # Object metadata should be passed as query params via presigned URL
         # https://github.com/localstack/localstack/issues/544
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
+
+        metadata = {
+            'foo': 'bar'
+        }
 
         # put object
         object_key = 'key-by-hostname'
-        url = self.s3_client.generate_presigned_url(
-            'put_object', Params={'Bucket': bucket_name, 'Key': object_key})
+        url = client.generate_presigned_url(
+            'put_object', Params={'Bucket': bucket_name, 'Key': object_key, 'Metadata': metadata})
         # append metadata manually to URL (this is not easily possible with boto3, as "Metadata" cannot
         # be passed to generate_presigned_url, and generate_presigned_post works differently)
-        url += '&x-amz-meta-foo=bar'
 
         # get object and assert metadata is present
         response = requests.put(url, data='content 123', verify=False)
         self.assertLess(response.status_code, 400)
         # response body should be empty, see https://github.com/localstack/localstack/issues/1317
         self.assertEqual('', to_str(response.content))
-        response = self.s3_client.head_object(Bucket=bucket_name, Key=object_key)
+        response = client.head_object(Bucket=bucket_name, Key=object_key)
         self.assertEquals('bar', response.get('Metadata', {}).get('foo'))
 
         # clean up
@@ -304,16 +354,16 @@ class S3ListenerTest(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_presigned_url_expired(self):
-
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object and CORS configuration
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
 
         # get object and assert headers
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=2
         )
         # retrieving it before expiry
@@ -324,9 +374,9 @@ class S3ListenerTest(unittest.TestCase):
         # waiting for the url to expire
         time.sleep(3)
         resp = requests.get(url, verify=False)
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 403)
 
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}, ExpiresIn=120
         )
 
@@ -375,16 +425,18 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_get_response_content_type_same_as_upload_and_range(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         object_key = '/foo/bar/key-by-hostname'
         content_type = 'foo/bar; charset=utf-8'
-        self.s3_client.put_object(Bucket=bucket_name,
-                                  Key=object_key,
-                                  Body='something ' * 20,
-                                  ContentType=content_type)
-        url = self.s3_client.generate_presigned_url(
+        client.put_object(Bucket=bucket_name,
+            Key=object_key,
+            Body='something ' * 20,
+            ContentType=content_type)
+
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
 
@@ -426,12 +478,13 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_head_response_content_length_same_as_upload(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
         body = 'something body \n \n\r'
         # put object
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body=body, ContentType='text/html; charset=utf-8')
-        url = self.s3_client.generate_presigned_url(
+        client.put_object(Bucket=bucket_name, Key=object_key, Body=body, ContentType='text/html; charset=utf-8')
+        url = client.generate_presigned_url(
             'head_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         # get object and assert headers
@@ -447,12 +500,12 @@ class S3ListenerTest(unittest.TestCase):
         self.s3_client.create_bucket(Bucket=bucket_name)
         body = 'Hello\r\n\r\n\r\n\r\n'
         headers = """
-            Authorization: foobar
+            Authorization: %s
             Content-Type: audio/mpeg
             X-Amz-Content-Sha256: STREAMING-AWS4-HMAC-SHA256-PAYLOAD
             X-Amz-Date: 20190918T051509Z
             X-Amz-Decoded-Content-Length: %s
-        """ % len(body)
+        """ % (aws_stack.mock_aws_request_headers('s3')['Authorization'], len(body))
         headers = dict([[field.strip() for field in pair.strip().split(':', 1)]
             for pair in headers.strip().split('\n')])
         data = ('d;chunk-signature=af5e6c0a698b0192e9aa5d9083553d4d241d81f69ec62b184d05c509ad5166af\r\n' +
@@ -471,18 +524,19 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_put_object_on_presigned_url(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
         object_key = 'test-presigned-key'
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'put_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         # put object
         response = requests.put(url, data=body, verify=False)
         self.assertEqual(response.status_code, 200)
         # get object and compare results
-        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        downloaded_object = client.get_object(Bucket=bucket_name, Key=object_key)
         download_object = downloaded_object['Body'].read()
         self.assertEqual(to_str(body), to_str(download_object))
         # clean up
@@ -490,18 +544,19 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_post_object_on_presigned_post(self):
         bucket_name = 'test-presigned-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
         object_key = 'test-presigned-post-key'
-        presigned_request = self.s3_client.generate_presigned_post(
+        presigned_request = client.generate_presigned_post(
             Bucket=bucket_name, Key=object_key, ExpiresIn=60)
         # put object
         files = {'file': body}
         response = requests.post(presigned_request['url'], data=presigned_request['fields'], files=files, verify=False)
         self.assertIn(response.status_code, [200, 204])
         # get object and compare results
-        downloaded_object = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        downloaded_object = client.get_object(Bucket=bucket_name, Key=object_key)
         download_object = downloaded_object['Body'].read()
         self.assertEqual(to_str(body), to_str(download_object))
         # clean up
@@ -509,11 +564,12 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_post_success_action_status_201_response(self):
         bucket_name = 'test-presigned-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
         body = 'something body'
         # get presigned URL
         object_key = 'key-${filename}'
-        presigned_request = self.s3_client.generate_presigned_post(
+        presigned_request = client.generate_presigned_post(
             Bucket=bucket_name,
             Key=object_key,
             Fields={'success_action_status': 201},
@@ -542,11 +598,12 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_presigned_post_expires(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # presign a post with a short expiry time
         object_key = 'test-presigned-post-key'
-        presigned_request = self.s3_client.generate_presigned_post(
+        presigned_request = client.generate_presigned_post(
             Bucket=bucket_name,
             Key=object_key,
             ExpiresIn=2
@@ -567,22 +624,31 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_delete_response_content_length_zero(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
-        # put object
-        object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name,
-                                  Key=object_key,
-                                  Body='something',
-                                  ContentType='text/html; charset=utf-8')
-        url = self.s3_client.generate_presigned_url(
-            'delete_object', Params={'Bucket': bucket_name, 'Key': object_key}
-        )
+        for encoding in None, 'gzip':
+            # put object
+            object_key = 'key-by-hostname'
+            client.put_object(Bucket=bucket_name,
+                Key=object_key,
+                Body='something',
+                ContentType='text/html; charset=utf-8')
+            url = client.generate_presigned_url(
+                'delete_object',
+                Params={'Bucket': bucket_name, 'Key': object_key}
+            )
 
-        # get object and assert headers
-        response = requests.delete(url, verify=False)
+            # get object and assert headers
+            headers = {}
+            if encoding:
+                headers['Accept-Encoding'] = encoding
+            response = requests.delete(url, headers=headers, verify=False)
 
-        self.assertEqual(response.headers['content-length'], '0')
+            self.assertEqual(response.headers['content-length'],
+                '0',
+                f'Unexpected response Content-Length for encoding {encoding}')
+
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
@@ -648,12 +714,13 @@ class S3ListenerTest(unittest.TestCase):
 
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object and CORS configuration
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
-        self.s3_client.put_bucket_cors(Bucket=bucket_name,
+        client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        client.put_bucket_cors(Bucket=bucket_name,
             CORSConfiguration={
                 'CORSRules': [{
                     'AllowedMethods': ['GET', 'PUT', 'POST'],
@@ -666,7 +733,7 @@ class S3ListenerTest(unittest.TestCase):
         )
 
         # get object and assert headers
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': object_key}
         )
         response = requests.get(url, verify=False)
@@ -679,14 +746,16 @@ class S3ListenerTest(unittest.TestCase):
         # https://docs.aws.amazon.com/AmazonS3/latest/API/RESTObjectGET.html
 
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         object_key = 'key-by-hostname'
-        self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
+        client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
 
         # get object and assert headers
-        url = self.s3_client.generate_presigned_url(
+        expiry_date = 'Wed, 21 Oct 2015 07:28:00 GMT'
+        url = client.generate_presigned_url(
             'get_object', Params={
                 'Bucket': bucket_name,
                 'Key': object_key,
@@ -695,7 +764,7 @@ class S3ListenerTest(unittest.TestCase):
                 'ResponseContentEncoding': 'identity',
                 'ResponseContentLanguage': 'de-DE',
                 'ResponseContentType': 'image/jpeg',
-                'ResponseExpires': 'Wed, 21 Oct 2015 07:28:00 GMT'}
+                'ResponseExpires': expiry_date}
         )
         response = requests.get(url, verify=False)
 
@@ -704,32 +773,41 @@ class S3ListenerTest(unittest.TestCase):
         self.assertEqual(response.headers['content-encoding'], 'identity')
         self.assertEqual(response.headers['content-language'], 'de-DE')
         self.assertEqual(response.headers['content-type'], 'image/jpeg')
-        self.assertEqual(response.headers['expires'], '2015-10-21T07:28:00Z')
+        # Note: looks like depending on the environment/libraries, we can get different date formats...
+        possible_date_formats = ['2015-10-21T07:28:00Z', expiry_date]
+        self.assertIn(response.headers['expires'], possible_date_formats)
         # clean up
         self._delete_bucket(bucket_name, [object_key])
 
     def test_s3_copy_md5(self):
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
 
         # put object
         src_key = 'src'
-        self.s3_client.put_object(Bucket=bucket_name, Key=src_key, Body='something')
+        client.put_object(Bucket=bucket_name, Key=src_key, Body='something')
 
         # copy object
         dest_key = 'dest'
-        response = self.s3_client.copy_object(Bucket=bucket_name, CopySource={'Bucket': bucket_name, 'Key': src_key},
-                                              Key=dest_key)
+        response = client.copy_object(
+            Bucket=bucket_name,
+            CopySource={
+                'Bucket': bucket_name,
+                'Key': src_key
+            },
+            Key=dest_key
+        )
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
 
         # Create copy object to try to match s3a setting Content-MD5
         dest_key2 = 'dest'
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'copy_object', Params={'Bucket': bucket_name, 'CopySource': {'Bucket': bucket_name, 'Key': src_key},
                                    'Key': dest_key2}
         )
-        # Set a Content-MD5 header that should be ignored on a copy request
-        request_response = requests.put(url, verify=False, headers={'Content-MD5': 'ignored_md5'})
+
+        request_response = requests.put(url, verify=False)
         self.assertEqual(request_response.status_code, 200)
 
         # Cleanup
@@ -808,60 +886,80 @@ class S3ListenerTest(unittest.TestCase):
     def test_s3_website_errordocument(self):
         # check that the error document is returned when configured
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
-        self.s3_client.put_bucket_website(
+        client = self._get_test_client()
+
+        client.create_bucket(Bucket=bucket_name)
+        client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
+        client.put_bucket_website(
             Bucket=bucket_name,
             WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
         )
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
         )
         response = requests.get(url, verify=False)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, 'This is the error document')
         # cleanup
-        self.s3_client.delete_object(Bucket=bucket_name, Key='error.html')
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        client.delete_object(Bucket=bucket_name, Key='error.html')
+        client.delete_bucket(Bucket=bucket_name)
 
         # check that normal responses are returned for bucket with index configuration, but not error document
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        self.s3_client.put_bucket_website(
+        client.create_bucket(Bucket=bucket_name)
+        client.put_bucket_website(
             Bucket=bucket_name,
             WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'}}
         )
-        url = self.s3_client.generate_presigned_url(
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
         )
         response = requests.get(url, verify=False)
         self.assertEqual(response.status_code, 404)
         # cleanup
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        client.delete_bucket(Bucket=bucket_name)
 
         # check that normal responses are returned for bucket without configuration
         bucket_name = 'test-bucket-%s' % short_uid()
-        self.s3_client.create_bucket(Bucket=bucket_name)
-        url = self.s3_client.generate_presigned_url(
+        client.create_bucket(Bucket=bucket_name)
+        url = client.generate_presigned_url(
             'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
         )
         response = requests.get(url, verify=False)
         self.assertEqual(response.status_code, 404)
         # cleanup
-        self.s3_client.delete_bucket(Bucket=bucket_name)
+        client.delete_bucket(Bucket=bucket_name)
+
+    def test_s3_website_errordocument_missing(self):
+        # check that 404 is returned when error document is configured but missing
+        bucket_name = 'test-bucket-%s' % short_uid()
+        client = self._get_test_client()
+
+        client.create_bucket(Bucket=bucket_name)
+        client.put_bucket_website(
+            Bucket=bucket_name,
+            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
+        )
+        url = client.generate_presigned_url(
+            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
+        )
+        response = requests.get(url, verify=False)
+        self.assertEqual(response.status_code, 404)
+
+        client.delete_bucket(Bucket=bucket_name)
 
     def test_s3_event_notification_with_sqs(self):
         key_by_path = 'aws/bucket=2020/test1.txt'
+        bucket_name = 'notif-sqs-%s' % short_uid()
 
         queue_url, queue_attributes = self._create_test_queue()
-        self._create_test_notification_bucket(queue_attributes)
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                             VersioningConfiguration={'Status': 'Enabled'})
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Enabled'})
 
         body = 'Lorem ipsum dolor sit amet, ... ' * 30
 
         # put an object
-        self.s3_client.put_object(Bucket=TEST_BUCKET_WITH_NOTIFICATION, Key=key_by_path, Body=body)
+        self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body=body)
 
         self.assertEqual(self._get_test_queue_message_count(queue_url), '1')
 
@@ -869,17 +967,14 @@ class S3ListenerTest(unittest.TestCase):
         record = [json.loads(to_str(m['Body'])) for m in rs['Messages']][0]['Records'][0]
 
         download_file = new_tmp_file()
-        self.s3_client.download_file(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                     Key=key_by_path, Filename=download_file)
+        self.s3_client.download_file(Bucket=bucket_name, Key=key_by_path, Filename=download_file)
 
         self.assertEqual(record['s3']['object']['size'], os.path.getsize(download_file))
 
         # clean up
-        self.s3_client.put_bucket_versioning(Bucket=TEST_BUCKET_WITH_NOTIFICATION,
-                                             VersioningConfiguration={'Status': 'Disabled'})
-
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name, VersioningConfiguration={'Status': 'Disabled'})
         self.sqs_client.delete_queue(QueueUrl=queue_url)
-        self._delete_bucket(TEST_BUCKET_WITH_NOTIFICATION, [key_by_path])
+        self._delete_bucket(bucket_name, [key_by_path])
 
     def test_s3_delete_object_with_version_id(self):
         test_1st_key = 'aws/s3/testkey1.txt'
@@ -965,6 +1060,23 @@ class S3ListenerTest(unittest.TestCase):
         result = self.s3_client.get_bucket_versioning(Bucket=TEST_BUCKET_WITH_VERSIONING)
         self.assertEqual(result['Status'], 'Enabled')
 
+    def test_get_bucket_versioning_order(self):
+        bucket_name = 'version-order-%s' % short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_bucket_versioning(Bucket=bucket_name,
+                                             VersioningConfiguration={'Status': 'Enabled'})
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test', Body='body')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test2', Body='body')
+        rs = self.s3_client.list_object_versions(
+            Bucket=bucket_name,
+        )
+
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+        self.assertEqual(rs['Name'], bucket_name)
+        self.assertEqual(rs['Versions'][0]['IsLatest'], True)
+        self.assertEqual(rs['Versions'][2]['IsLatest'], True)
+
     def test_upload_big_file(self):
         bucket_name = 'bucket-big-file-%s' % short_uid()
         key1 = 'test_key1'
@@ -1015,6 +1127,12 @@ class S3ListenerTest(unittest.TestCase):
         resp = self.s3_client.list_objects(Bucket=TEST_BUCKET_NAME_2, Marker=next_marker)
         self.assertEqual(len(resp['Contents']), 10)
 
+    def test_s3_list_objects_empty_marker(self):
+        bucket_name = 'test' + short_uid()
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        resp = self.s3_client.list_objects(Bucket=bucket_name, Marker='')
+        self.assertEqual(resp['Marker'], '')
+
     def test_s3_multipart_upload_file(self):
         def upload(size_in_mb, bucket):
             file_name = '{}.tmp'.format(short_uid())
@@ -1049,7 +1167,7 @@ class S3ListenerTest(unittest.TestCase):
         self._delete_bucket(bucket_name, keys)
 
     def test_cors_with_single_origin_error(self):
-        client = self.s3_client
+        client = self._get_test_client()
 
         BUCKET_CORS_CONFIG = {
             'CORSRules': [{
@@ -1146,9 +1264,14 @@ class S3ListenerTest(unittest.TestCase):
         time.sleep(2)
 
         table = aws_stack.connect_to_resource('dynamodb').Table(table_name)
-        rs = table.scan()
 
-        self.assertEqual(len(rs['Items']), 1)
+        def check_table():
+            rs = table.scan()
+            self.assertEqual(len(rs['Items']), 1)
+            return rs
+
+        rs = retry(check_table, retries=4, sleep=3)
+
         record = rs['Items'][0]
         self.assertEqual(record['data']['s3']['bucket']['name'], bucket_name)
         self.assertEqual(record['data']['s3']['object']['eTag'], etag)
@@ -1161,6 +1284,335 @@ class S3ListenerTest(unittest.TestCase):
 
         dynamodb_client = aws_stack.connect_to_service('dynamodb')
         dynamodb_client.delete_table(TableName=table_name)
+
+    def test_s3_put_object_notification_with_sns_topic(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        topic_name = 'topic-%s' % short_uid()
+        queue_name = 'queue-%s' % short_uid()
+        key_name = 'bucket-key-%s' % short_uid()
+
+        sns_client = aws_stack.connect_to_service('sns')
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        queue_url = self.sqs_client.create_queue(QueueName=queue_name)['QueueUrl']
+
+        topic_arn = sns_client.create_topic(Name=topic_name)['TopicArn']
+
+        sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=aws_stack.sqs_queue_arn(queue_name))
+
+        self.s3_client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                'TopicConfigurations': [
+                    {
+                        'TopicArn': topic_arn,
+                        'Events': ['s3:ObjectCreated:*']
+                    }
+                ]
+            }
+        )
+
+        # Put an object
+        # This will trigger an event to sns topic, sqs queue will get a message since it's a subscriber of topic
+        self.s3_client.put_object(Bucket=bucket_name, Key=key_name, Body='body content...')
+        time.sleep(2)
+
+        def get_message(q_url):
+            resp = self.sqs_client.receive_message(QueueUrl=q_url)
+            m = resp['Messages'][0]
+            self.sqs_client.delete_message(
+                QueueUrl=q_url,
+                ReceiptHandle=m['ReceiptHandle']
+            )
+            return json.loads(m['Body'])
+
+        message = retry(get_message, retries=3, sleep=2, q_url=queue_url)
+        # We got a notification message in sqs queue (from s3 source)
+        self.assertEqual(message['Type'], 'Notification')
+        self.assertEqual(message['TopicArn'], topic_arn)
+        self.assertEqual(message['Subject'], 'Amazon S3 Notification')
+
+        r = json.loads(message['Message'])['Records'][0]
+        self.assertEqual(r['eventSource'], 'aws:s3')
+        self.assertEqual(r['s3']['bucket']['name'], bucket_name)
+        self.assertEqual(r['s3']['object']['key'], key_name)
+
+        # clean up
+        self._delete_bucket(bucket_name, [key_name])
+        self.sqs_client.delete_queue(QueueUrl=queue_url)
+        sns_client.delete_topic(TopicArn=topic_arn)
+
+    def test_s3_get_deep_archive_object(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        object_key = 'key-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put DEEP_ARCHIVE object
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='body data',
+            StorageClass='DEEP_ARCHIVE'
+        )
+
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.get_object(
+                Bucket=bucket_name,
+                Key=object_key
+            )
+
+        self.assertIn('InvalidObjectState', str(ctx.exception))
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_s3_get_deep_archive_object_restore(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        object_key = 'key-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+
+        # put DEEP_ARCHIVE object
+        self.s3_client.put_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            Body='body data',
+            StorageClass='DEEP_ARCHIVE'
+        )
+
+        with self.assertRaises(ClientError) as ctx:
+            self.s3_client.get_object(
+                Bucket=bucket_name,
+                Key=object_key
+            )
+
+        self.assertIn('InvalidObjectState', str(ctx.exception))
+
+        # put DEEP_ARCHIVE object
+        self.s3_client.restore_object(
+            Bucket=bucket_name,
+            Key=object_key,
+            RestoreRequest={
+                'Days': 30,
+                'GlacierJobParameters': {
+                    'Tier': 'Bulk'
+                },
+                'Tier': 'Bulk',
+            },
+        )
+
+        response = self.s3_client.get_object(
+            Bucket=bucket_name,
+            Key=object_key
+        )
+
+        self.assertIn('etag', response.get('ResponseMetadata').get('HTTPHeaders'))
+
+        # clean up
+        self._delete_bucket(bucket_name, [object_key])
+
+    def test_encoding_notification_messages(self):
+        key = 'a@b'
+        bucket_name = 'notif-enc-%s' % short_uid()
+        queue_url = self.sqs_client.create_queue(QueueName='testQueue')['QueueUrl']
+        queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
+
+        self._create_test_notification_bucket(queue_attributes, bucket_name=bucket_name)
+
+        # put an object where the bucket_name is in the path
+        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body='something')
+
+        response = self.sqs_client.receive_message(QueueUrl=queue_url)
+        self.assertEqual(json.loads(response['Messages'][0]['Body'])['Records'][0]['s3']['object']['key'], 'a%40b')
+        # clean up
+        self.s3_client.delete_objects(Bucket=bucket_name, Delete={'Objects': [{'Key': key}]})
+
+    def test_s3_batch_delete_objects_using_requests(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        object_key_1 = 'key-%s' % short_uid()
+        object_key_2 = 'key-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key_1, Body='This body document')
+        self.s3_client.put_object(Bucket=bucket_name, Key=object_key_2, Body='This body document')
+
+        base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_S3)
+        url = '{}/{}?delete='.format(base_url, bucket_name)
+        r = requests.post(url=url, data=BATCH_DELETE_BODY % (object_key_1, object_key_2))
+
+        self.assertEqual(r.status_code, 200)
+
+        s3_resource = aws_stack.connect_to_resource('s3')
+        bucket = s3_resource.Bucket(bucket_name)
+
+        total_keys = sum(1 for _ in bucket.objects.all())
+        self.assertEqual(total_keys, 0)
+
+        # clean up
+        self._delete_bucket(bucket_name, [])
+
+    def test_presigned_url_signature_authentication(self):
+        client = self._get_test_client()
+
+        OBJECT_KEY = 'test.txt'
+        OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
+        BUCKET = 'presign-testing'
+
+        client.create_bucket(Bucket=BUCKET)
+        presign_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=3
+        )
+
+        # Valid request
+        response = requests.put(presign_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        response = requests.put(presign_url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # Expired request
+        time.sleep(3)
+        response = requests.put(presign_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 403)
+
+        client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
+        client.delete_bucket(Bucket=BUCKET)
+
+    def test_precondition_failed_error(self):
+        bucket = 'bucket-%s' % short_uid()
+        client = self._get_test_client()
+
+        client.create_bucket(Bucket=bucket)
+        client.put_object(Bucket=bucket, Key='foo', Body=b'{"foo": "bar"}')
+
+        # this line makes localstack crash:
+        try:
+            client.get_object(Bucket=bucket, Key='foo', IfMatch='"not good etag"')
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'PreconditionFailed')
+            self.assertEqual(e.response['Error']['Message'], 'At least one of the pre-conditions you '
+                                                             'specified did not hold')
+
+        client.delete_object(Bucket=bucket, Key='foo')
+        client.delete_bucket(Bucket=bucket)
+
+    def test_cors_configurtaions(self):
+        client = self._get_test_client()
+        bucket = 'test-cors'
+        object_key = 'index.html'
+        url = '{}/{}/{}'.format(config.get_edge_url(), bucket, object_key)
+
+        BUCKET_CORS_CONFIG = {
+            'CORSRules': [{
+                'AllowedOrigins': [config.get_edge_url()],
+                'AllowedMethods': ['GET', 'PUT'],
+                'MaxAgeSeconds': 3000,
+                'AllowedHeaders': ['x-amz-tagging'],
+            }]
+        }
+
+        client.create_bucket(Bucket=bucket)
+        client.put_bucket_cors(Bucket=bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
+
+        client.put_object(Bucket=bucket, Key=object_key, Body='<h1>Index</html>')
+
+        response = requests.get(url,
+                              headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Access-Control-Allow-Origin'.lower(), response.headers)
+        self.assertEqual(response.headers['Access-Control-Allow-Origin'], config.get_edge_url())
+        self.assertIn('Access-Control-Allow-Methods'.lower(), response.headers)
+        self.assertIn('GET', response.headers['Access-Control-Allow-Methods'])
+        self.assertIn('Access-Control-Allow-Headers', response.headers)
+        self.assertEqual(response.headers['Access-Control-Allow-Headers'], 'x-amz-tagging')
+        self.assertIn('Access-Control-Max-Age'.lower(), response.headers)
+        self.assertEqual(response.headers['Access-Control-Max-Age'], '3000')
+        self.assertIn('Access-Control-Allow-Credentials'.lower(), response.headers)
+        self.assertEqual(response.headers['Access-Control-Allow-Credentials'].lower(), 'true')
+
+        BUCKET_CORS_CONFIG = {
+            'CORSRules': [{
+                'AllowedOrigins': ['https://anydomain.com'],
+                'AllowedMethods': ['GET', 'PUT'],
+                'MaxAgeSeconds': 3000,
+                'AllowedHeaders': ['x-amz-tagging'],
+            }]
+        }
+
+        client.put_bucket_cors(Bucket=bucket, CORSConfiguration=BUCKET_CORS_CONFIG)
+        response = requests.get(url,
+                              headers={'Origin': config.get_edge_url(), 'Content-Type': 'text/html'})
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('Access-Control-Allow-Origin'.lower(), response.headers)
+        self.assertNotIn('Access-Control-Allow-Methods'.lower(), response.headers)
+        self.assertNotIn('Access-Control-Allow-Headers', response.headers)
+        self.assertNotIn('Access-Control-MaxAge', response.headers)
+
+        # cleaning
+        client.delete_object(Bucket=bucket, Key=object_key)
+        client.delete_bucket(Bucket=bucket)
+
+    def test_s3_download_object_with_lambda(self):
+        bucket_name = 'bucket-%s' % short_uid()
+        function_name = 'func-%s' % short_uid()
+        key = 'key-%s' % short_uid()
+
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key=key, Body='something..')
+
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_PYTHON_DOWNLOAD_FROM_S3,
+            func_name=function_name,
+            runtime=LAMBDA_RUNTIME_PYTHON36,
+            envvars=dict({
+                'BUCKET_NAME': bucket_name,
+                'OBJECT_NAME': key,
+                'LOCAL_FILE_NAME': '/tmp/' + key,
+            })
+        )
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+        lambda_client.invoke(FunctionName=function_name, InvocationType='Event')
+
+        retry(testutil.check_expected_lambda_log_events_length, retries=10,
+              sleep=3, function_name=function_name, expected_length=1)
+
+        # clean up
+        self._delete_bucket(bucket_name, [key])
+        lambda_client.delete_function(FunctionName=function_name)
+
+    def test_putobject_with_multiple_keys(self):
+        client = self._get_test_client()
+        bucket = 'bucket-%s' % short_uid()
+        key_by_path = 'aws/key1/key2/key3'
+
+        client.create_bucket(Bucket=bucket)
+        client.put_object(
+            Body=b'test',
+            Bucket=bucket,
+            Key=key_by_path
+        )
+
+        # Cleanup
+        self._delete_bucket(bucket, key_by_path)
+
+    def test_terraform_request_sequence(self):
+
+        reqs = load_file(os.path.join(os.path.dirname(__file__), 'files', 's3.requests.txt'))
+        reqs = reqs.split('---')
+
+        for req in reqs:
+            header, _, body = req.strip().partition('\n\n')
+            req, _, headers = header.strip().partition('\n')
+            headers = {h.split(':')[0]: h.partition(':')[2].strip() for h in headers.split('\n')}
+            method, path, _ = req.split(' ')
+            url = '%s%s' % (config.get_edge_url(), path)
+            result = getattr(requests, method.lower())(url, data=body, headers=headers)
+            self.assertLess(result.status_code, 400)
 
     # ---------------
     # HELPER METHODS
@@ -1181,10 +1633,10 @@ class S3ListenerTest(unittest.TestCase):
         queue_attributes = self.sqs_client.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['QueueArn'])
         return queue_url, queue_attributes
 
-    def _create_test_notification_bucket(self, queue_attributes):
-        self.s3_client.create_bucket(Bucket=TEST_BUCKET_WITH_NOTIFICATION)
+    def _create_test_notification_bucket(self, queue_attributes, bucket_name):
+        self.s3_client.create_bucket(Bucket=bucket_name)
         self.s3_client.put_bucket_notification_configuration(
-            Bucket=TEST_BUCKET_WITH_NOTIFICATION,
+            Bucket=bucket_name,
             NotificationConfiguration={
                 'QueueConfigurations': [
                     {
@@ -1232,8 +1684,17 @@ class S3ListenerTest(unittest.TestCase):
         )
 
     def _perform_presigned_url_upload(self, bucket, key):
-        url = self.s3_client.generate_presigned_url(
+        client = self._get_test_client()
+        url = client.generate_presigned_url(
             'put_object', Params={'Bucket': bucket, 'Key': key}
         )
         url = url + '&X-Amz-Credential=x&X-Amz-Signature=y'
         requests.put(url, data='something', verify=False)
+
+    def _get_test_client(self):
+        return boto3.client(
+            's3',
+            endpoint_url=config.get_edge_url(),
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY
+        )
