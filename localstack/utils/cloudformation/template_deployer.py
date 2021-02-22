@@ -78,17 +78,6 @@ def rename_params(func, rename_map):
     return do_rename
 
 
-def params_dict_to_list(param_name, key_attr_name='Key', value_attr_name='Value', wrapper=None):
-    def do_replace(params, **kwargs):
-        result = []
-        for key, value in params.get(param_name, {}).items():
-            result.append({key_attr_name: key, value_attr_name: value})
-        if wrapper:
-            result = {wrapper: result}
-        return result
-    return do_replace
-
-
 def get_lambda_code_param(params, **kwargs):
     code = params.get('Code', {})
     zip_file = code.get('ZipFile')
@@ -137,10 +126,6 @@ def es_add_tags_params(params, **kwargs):
     es_arn = aws_stack.es_domain_arn(params.get('DomainName'))
     tags = params.get('Tags', [])
     return {'ARN': es_arn, 'TagList': tags}
-
-
-def merge_parameters(func1, func2):
-    return lambda params, **kwargs: common.merge_dicts(func1(params, **kwargs), func2(params, **kwargs))
 
 
 def lambda_permission_params(params, **kwargs):
@@ -230,13 +215,6 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'TopicArn': 'PhysicalResourceId'
             }
-        }
-    },
-    'SSM::Parameter': {
-        'create': {
-            'function': 'put_parameter',
-            'parameters': merge_parameters(params_dict_to_list('Tags', wrapper='Tags'), params_select_attributes(
-                'Name', 'Type', 'Value', 'Description', 'AllowedPattern', 'Policies', 'Tier'))
         }
     },
     'SecretsManager::Secret': {

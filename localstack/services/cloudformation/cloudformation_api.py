@@ -436,6 +436,8 @@ def execute_change_set(req_params):
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
     change_set.stack.metadata['ChangeSetId'] = change_set.change_set_id
+    stack = find_stack(stack_name)
+    stack.set_stack_status('CREATE_COMPLETE')
     return {}
 
 
