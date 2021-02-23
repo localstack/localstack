@@ -2,7 +2,8 @@ import os
 import json
 import unittest
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import run
+from localstack.utils.common import run, retry
+from localstack.utils.testutil import get_lambda_log_events
 
 
 class TestServerless(unittest.TestCase):
@@ -21,6 +22,11 @@ class TestServerless(unittest.TestCase):
 
         # deploy serverless app
         run('cd %s; npm run serverless -- --region=%s' % (base_dir, aws_stack.get_region()))
+
+    @classmethod
+    def tearDownClass(cls):
+        # TODO: add cleanup logic
+        pass
 
     def test_event_rules_deployed(self):
         events = aws_stack.connect_to_service('events')
@@ -53,6 +59,7 @@ class TestServerless(unittest.TestCase):
 
     def test_kinesis_stream_handler_deployed(self):
         function_name = 'sls-test-local-kinesisStreamHandler'
+        function_name2 = 'sls-test-local-kinesisConsumerHandler'
         stream_name = 'KinesisTestStream'
 
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -70,6 +77,13 @@ class TestServerless(unittest.TestCase):
         resp = kinesis_client.describe_stream(StreamName=stream_name)
         self.assertEqual(resp['StreamDescription']['StreamARN'], event_source_arn)
 
+        # assert that stream consumer is properly connected and Lambda gets invoked
+        def assert_invocations():
+            events = get_lambda_log_events(function_name2)
+            self.assertEqual(len(events), 1)
+        kinesis_client.put_record(StreamName=stream_name, Data=b'test123', PartitionKey='key1')
+        retry(assert_invocations, sleep=1, retries=5)
+
     def test_queue_handler_deployed(self):
         function_name = 'sls-test-local-queueHandler'
         queue_name = 'sls-test-local-CreateQueue'
@@ -80,9 +94,7 @@ class TestServerless(unittest.TestCase):
         function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
         self.assertEqual(function['Handler'], 'src/sqs.create')
 
-        resp = lambda_client.list_event_source_mappings(
-            FunctionName=function_name,
-        )
+        resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
         events = resp['EventSourceMappings']
         self.assertEqual(len(events), 1)
         event_source_arn = events[0]['EventSourceArn']
