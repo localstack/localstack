@@ -160,6 +160,7 @@ functions:
           startingPosition: TRIM_HORIZON
   kinesisConsumerHandler:
     handler: handler.processKinesis
+    runtime: python3.8
     events:
       - stream:
           type: kinesis
