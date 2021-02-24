@@ -4,6 +4,7 @@ import re
 import os
 import sys
 import glob
+import time
 import shutil
 import logging
 import tempfile
@@ -40,6 +41,7 @@ INSTALL_PATH_KINESALITE_CLI = os.path.join(INSTALL_DIR_NPM, 'kinesalite', 'cli.j
 URL_LOCALSTACK_FAT_JAR = ('https://repo1.maven.org/maven2/' +
     'cloud/localstack/localstack-utils/{v}/localstack-utils-{v}-fat.jar').format(v=LOCALSTACK_MAVEN_VERSION)
 MARKER_FILE_LIGHT_VERSION = '%s/.light-version' % INSTALL_DIR_INFRA
+IMAGE_NAME_SFN_LOCAL = 'amazon/aws-stepfunctions-local'
 
 # Target version for javac, to ensure compatibility with earlier JREs
 JAVAC_TARGET_VERSION = '1.8'
@@ -158,10 +160,18 @@ def install_local_kms():
 
 def install_stepfunctions_local():
     if not os.path.exists(INSTALL_PATH_STEPFUNCTIONS_JAR):
+        # pull the JAR file from the Docker image, which is more up-to-date than the downloadable JAR file
         log_install_msg('Step Functions')
-        tmp_archive = os.path.join(tempfile.gettempdir(), 'stepfunctions.zip')
-        download_and_extract_with_retry(
-            STEPFUNCTIONS_ZIP_URL, tmp_archive, INSTALL_DIR_STEPFUNCTIONS)
+        mkdir(INSTALL_DIR_STEPFUNCTIONS)
+        run('{dc} pull {img}'.format(dc=config.DOCKER_CMD, img=IMAGE_NAME_SFN_LOCAL))
+        docker_name = 'tmp-ls-sfn'
+        run(('{dc} run --name={dn} --entrypoint= -d --rm {img} sleep 15').format(
+                dc=config.DOCKER_CMD, dn=docker_name, img=IMAGE_NAME_SFN_LOCAL))
+        time.sleep(5)
+        run('{dc} cp {dn}:/home/stepfunctionslocal/ {tgt}'.format(dc=config.DOCKER_CMD,
+            dn=docker_name, tgt=INSTALL_DIR_INFRA))
+        run('mv %s/stepfunctionslocal/*.jar %s' % (INSTALL_DIR_INFRA, INSTALL_DIR_STEPFUNCTIONS))
+        rm_rf('%s/stepfunctionslocal' % INSTALL_DIR_INFRA)
 
 
 def install_dynamodb_local():

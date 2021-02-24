@@ -32,6 +32,7 @@ ADD localstack/services/__init__.py localstack/services/install.py localstack/se
 
 # initialize installation (downloads remaining dependencies)
 RUN make init-testlibs
+ADD localstack/infra/stepfunctions localstack/infra/stepfunctions
 RUN make init
 
 # (re-)install web dashboard dependencies (already installed in base image)
