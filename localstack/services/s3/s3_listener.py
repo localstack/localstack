@@ -730,6 +730,15 @@ def set_lifecycle(bucket_name, lifecycle):
     return 200
 
 
+def delete_lifecycle(bucket_name):
+    bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
+    BUCKET_LIFECYCLE.pop(bucket_name)
+
+
 def set_replication(bucket_name, replication):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
@@ -1181,6 +1190,8 @@ class ProxyListenerS3(PersistingProxyListener):
                 return get_lifecycle(bucket)
             if method == 'PUT':
                 return set_lifecycle(bucket, data)
+            if method == 'DELETE':
+                delete_lifecycle(bucket)
 
         if query == 'replication' or 'replication' in query_map:
             if method == 'GET':
