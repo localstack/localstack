@@ -154,7 +154,7 @@ STATE_MACHINE_INTRINSIC_FUNCS = {
             'Type': 'Task',
             'Resource': '__tbd__',
             'ResultSelector': {
-                'payload.$': '$.Payload'
+                'payload.$': '$'
             },
             'ResultPath': '$.result_value',
             'End': True
