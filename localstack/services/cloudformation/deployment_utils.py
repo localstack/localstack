@@ -61,3 +61,18 @@ def params_list_to_dict(param_name, key_attr_name='Key', value_attr_name='Value'
 
 def lambda_keys_to_lower(key=None):
     return lambda params, **kwargs: common.keys_to_lower(params.get(key) if key else params)
+
+
+def merge_parameters(func1, func2):
+    return lambda params, **kwargs: common.merge_dicts(func1(params, **kwargs), func2(params, **kwargs))
+
+
+def params_dict_to_list(param_name, key_attr_name='Key', value_attr_name='Value', wrapper=None):
+    def do_replace(params, **kwargs):
+        result = []
+        for key, value in params.get(param_name, {}).items():
+            result.append({key_attr_name: key, value_attr_name: value})
+        if wrapper:
+            result = {wrapper: result}
+        return result
+    return do_replace
