@@ -730,13 +730,15 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     return None
 
 
-def check_not_found_exception(e, resource_type, resource, resource_status):
+def check_not_found_exception(e, resource_type, resource, resource_status=None):
     # we expect this to be a "not found" exception
     markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException',
         '404', 'not found', 'not exist']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
             (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
+        return False
+    return True
 
 
 def extract_resource_attribute(resource_type, resource_state, attribute, resource_id=None,
@@ -1331,6 +1333,8 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
             resource_type, aws_stack.get_region(), func_details['function'], params))
         result = function(**params)
     except Exception as e:
+        if action_name == 'delete' and check_not_found_exception(e, resource_type, resource):
+            return
         LOG.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
         raise e
 

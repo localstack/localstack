@@ -1737,6 +1737,9 @@ def get_function_event_invoke_config(function):
         return error_response(str(e), 400)
 
     response = lambda_obj.get_function_event_invoke_config()
+    if not response:
+        msg = "The function %s doesn't have an EventInvokeConfig" % function_arn
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
     return jsonify(response)
 
 

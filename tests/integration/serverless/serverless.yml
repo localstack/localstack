@@ -125,6 +125,8 @@ resources:
 functions:
   test:
     handler: "handler.test"
+    maximumEventAge: 7200
+    maximumRetryAttempts: 2
     events:
       - cloudwatchEvent:
           name: sls-test-cf-event
@@ -167,7 +169,7 @@ functions:
           arn: !GetAtt 'KinesisStream.Arn'
           batchWindow: 10
           parallelizationFactor: 2
-          maximumRetryAttempts: 10
+          maximumRetryAttempts: 2
           consumer:
             Fn::GetAtt:
               - KinesisStreamConsumer
