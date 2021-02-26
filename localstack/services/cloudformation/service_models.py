@@ -324,6 +324,9 @@ class LambdaEventSourceMapping(GenericBaseModel):
             raise Exception('ResourceNotFound')
         return mapping[0]
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('UUID')
+
 
 class LambdaPermission(GenericBaseModel):
     @staticmethod
@@ -350,6 +353,37 @@ class LambdaPermission(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         # return statement ID here to indicate that the resource has been deployed
         return self.props.get('Sid')
+
+
+class LambdaEventInvokeConfig(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Lambda::EventInvokeConfig'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('lambda')
+        props = self.props
+        result = client.get_function_event_invoke_config(
+            FunctionName=props.get('FunctionName'), Qualifier=props.get('FunctionName', '$LATEST'))
+        return result
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        props = self.props
+        return 'lambdaconfig-%s-%s' % (props.get('FunctionName'), props.get('Qualifier'))
+
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'put_function_event_invoke_config'
+            },
+            'delete': {
+                'function': 'delete_function_event_invoke_config',
+                'parameters': {
+                    'FunctionName': 'FunctionName',
+                    'Qualifier': 'Qualifier'
+                }
+            }
+        }
 
 
 class ElasticsearchDomain(GenericBaseModel):
