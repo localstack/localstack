@@ -13,6 +13,7 @@ from six.moves.urllib import parse as urlparse
 from localstack.config import external_service_url
 from localstack.constants import TEST_AWS_ACCOUNT_ID, MOTO_ACCOUNT_ID
 from localstack.services.awslambda import lambda_api
+from localstack.services.install import SQS_BACKEND_IMPL
 from localstack.utils.analytics import event_publisher
 from localstack.utils.aws import aws_stack
 from localstack.utils.aws.aws_responses import response_regex_replace
@@ -304,11 +305,14 @@ def message_to_subscribers(message_id, message, topic_arn, req_data, subscriptio
                 message_group_id = req_data.get('MessageGroupId')[0] if req_data.get('MessageGroupId') else ''
 
                 sqs_client = aws_stack.connect_to_service('sqs')
+
+                # TODO remove this kwargs if we stop using ElasticMQ entirely
+                kwargs = {'MessageGroupId': message_group_id} if SQS_BACKEND_IMPL == 'moto' else {}
                 sqs_client.send_message(
                     QueueUrl=queue_url,
                     MessageBody=create_sns_message_body(subscriber, req_data, message_id),
                     MessageAttributes=create_sqs_message_attributes(subscriber, message_attributes),
-                    MessageGroupId=message_group_id
+                    **kwargs
                 )
             except Exception as exc:
                 LOG.warning('Unable to forward SNS message to SQS: %s %s' % (exc, traceback.format_exc()))
