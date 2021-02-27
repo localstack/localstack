@@ -1893,15 +1893,15 @@ class TemplateDeployer(object):
             for k, v in parameters.items() if v
         ]
 
-    def apply_changes(self, old_stack, new_stack, stack_name, change_set_id=None, initialize=False):
-        old_resources = old_stack.template['Resources']
+    def apply_changes(self, existing_stack, new_stack, stack_name, change_set_id=None, initialize=False):
+        old_resources = existing_stack.template['Resources']
         new_resources = new_stack.template['Resources']
         self.init_resource_status(old_resources, action='UPDATE')
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
         adds = [val for key, val in new_resources.items() if initialize or key not in old_resources]
         modifies = [val for key, val in new_resources.items() if key in old_resources]
 
-        self.apply_parameter_changes(old_stack, new_stack)
+        self.apply_parameter_changes(existing_stack, new_stack)
 
         # construct changes
         changes = []
@@ -1914,12 +1914,15 @@ class TemplateDeployer(object):
                 change = self.get_change_config(action, item, change_set_id=change_set_id)
                 changes.append(change)
                 if action in ['Modify', 'Add']:
-                    self.merge_properties(item['LogicalResourceId'], old_stack, new_stack)
+                    self.merge_properties(item['LogicalResourceId'], existing_stack, new_stack)
         if not contains_changes:
             raise NoStackUpdates('No updates are to be performed.')
 
+        # merge stack outputs
+        existing_stack.template['Outputs'].update(new_stack.template.get('Outputs', {}))
+
         # start deployment loop
-        return self.apply_changes_in_loop(changes, old_stack, stack_name)
+        return self.apply_changes_in_loop(changes, existing_stack, stack_name)
 
     def apply_changes_in_loop(self, changes, stack, stack_name):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state

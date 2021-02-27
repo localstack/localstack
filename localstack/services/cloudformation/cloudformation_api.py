@@ -64,6 +64,7 @@ class Stack(object):
         self.template['StackId'] = self.metadata['StackId'] = (self.metadata.get('StackId') or
             aws_stack.cloudformation_stack_arn(self.stack_name, short_uid()))
         self.template['Parameters'] = self.template.get('Parameters') or {}
+        self.template['Outputs'] = self.template.get('Outputs') or {}
         # initialize metadata
         self.metadata['Parameters'] = self.metadata.get('Parameters') or []
         self.metadata['StackStatus'] = 'CREATE_IN_PROGRESS'

@@ -468,6 +468,27 @@ Outputs:
     Value: !Ref MessageQueue
 """
 
+TEST_TEMPLATE_27_1 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MyQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: %s
+"""
+TEST_TEMPLATE_27_2 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MessageQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: %s
+      DelaySeconds: 5
+Outputs:
+  MessageQueueUrl:
+    Value: !Ref MessageQueue
+"""
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -1918,6 +1939,8 @@ class CloudFormationTest(unittest.TestCase):
         template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml'))
 
         cfn = aws_stack.connect_to_service('cloudformation')
+        ec2_client = aws_stack.connect_to_service('ec2')
+
         cfn.create_stack(
             StackName=stack_name,
             TemplateBody=template,
@@ -1934,20 +1957,17 @@ class CloudFormationTest(unittest.TestCase):
         instances = [res for res in resources if res['ResourceType'] == 'AWS::EC2::Instance']
         self.assertEqual(len(instances), 1)
 
-        ec2_client = aws_stack.connect_to_service('ec2')
-
         resp = ec2_client.describe_instances(
             InstanceIds=[
                 instances[0]['PhysicalResourceId']
             ]
         )
         self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
-
         self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.nano')
 
         cfn.update_stack(
             StackName=stack_name,
-            TemplateBody=load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml')),
+            TemplateBody=template,
             Parameters=[
                 {
                     'ParameterKey': 'InstanceType',
@@ -1962,7 +1982,31 @@ class CloudFormationTest(unittest.TestCase):
                 instances[0]['PhysicalResourceId']
             ]
         )
-
         self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.medium')
 
+        # clean up
         self.cleanup(stack_name)
+
+    def test_cfn_update_different_stack(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        sqs = aws_stack.connect_to_service('sqs')
+
+        queue_name = 'q-%s' % short_uid()
+        template1 = TEST_TEMPLATE_27_1 % queue_name
+        template2 = TEST_TEMPLATE_27_2 % queue_name
+        stack_name = 'stack-%s' % short_uid()
+        deploy_cf_stack(stack_name=stack_name, template_body=template1)
+        queue_url = sqs.get_queue_url(QueueName=queue_name)['QueueUrl']
+
+        cloudformation.update_stack(StackName=stack_name, TemplateBody=template2)
+        status = await_stack_completion(stack_name)
+        self.assertEqual(status['StackStatus'], 'UPDATE_COMPLETE')
+
+        queues = sqs.list_queues().get('QueueUrls', [])
+        self.assertIn(queue_url, queues)
+        result = sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
+        self.assertEqual(result['Attributes']['DelaySeconds'], '5')
+
+        outputs = cloudformation.describe_stacks(StackName=stack_name)['Stacks'][0]['Outputs']
+        output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl'][0]
+        self.assertEqual(output, queue_url)
