@@ -385,6 +385,7 @@ def validate_localstack_config(name):
 
     network_mode = compose_content['services'][localstack_service]['network_mode']
     image_name = compose_content['services'][localstack_service]['image']
+    container_name = compose_content['services'][localstack_service].get('container_name')
     docker_ports = (port.split(':')[0] for port in compose_content['services'][localstack_service]['ports'])
     docker_env = dict((env.split('=')[0], env.split('=')[1])
         for env in compose_content['services'][localstack_service]['environment'])
@@ -397,6 +398,9 @@ def validate_localstack_config(name):
     if docker_env.get('PORT_WEB_UI') != '${PORT_WEB_UI- }' and image_name == 'localstack/localstack':
         LOG.warning('"PORT_WEB_UI" Web UI is now deprecated, '
                     'and requires to use the "localstack/localstack-full" image.')
+    if ((container_name != '${LOCALSTACK_DOCKER_NAME-localstack_main}' or container_name != 'localstack_main') or
+            docker_env.get('MAIN_CONTAINER_NAME')):
+        LOG.warning('Please use "container_name: localstack_main" or add "MAIN_CONTAINER_NAME" in "environment".')
     if docker_env.get('EDGE_PORT') and docker_env.get('EDGE_PORT') not in docker_ports:
         LOG.warning('Using a custom edge port which is not exposed. '
                     'You may have to add the entry to the "ports" section of the docker-compose file.')
