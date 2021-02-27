@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import json
+import yaml
 import time
 import select
 import pkgutil
@@ -358,6 +359,52 @@ def start_infra_locally():
     bootstrap_installation()
     from localstack.services import infra
     return infra.start_infra()
+
+
+def validate_localstack_config(name):
+    dirname = os.getcwd()
+    compose_file_name = '%s/%s' % (dirname, name)
+
+    # validating docker-compose file
+    cmd = "docker-compose -f '%s' config" % (compose_file_name)
+    try:
+        run(cmd)
+    except Exception:
+        return 'docker-compose file is not valid'
+
+    # validating docker-compose variable
+    with open(compose_file_name) as file:
+        compose_content = yaml.full_load(file)
+        localstack_service = [service for service in compose_content['services']
+            if compose_content['services'][service]['image'] in constants.OFFICIAL_IMAGES]
+        if len(localstack_service) > 0:
+            localstack_service = localstack_service[0]
+        else:
+            raise Exception('No official docker image found. Please use one of this image: %s'
+                % (constants.OFFICIAL_IMAGES))
+
+    network_mode = compose_content['services'][localstack_service]['network_mode']
+    image_name = compose_content['services'][localstack_service]['image']
+    docker_ports = (port.split(':')[0] for port in compose_content['services'][localstack_service]['ports'])
+    docker_env = dict((env.split('=')[0], env.split('=')[1])
+        for env in compose_content['services'][localstack_service]['environment'])
+
+    # docker-compose file validation cases
+    if (docker_env.get('LAMBDA_REMOTE_DOCKER') == constants.FALSE_STRINGS and
+            docker_env.get('HOST_TMP_FOLDER') == '${TMPDIR}'):
+        LOG.warning('Make sure to properly set the "HOST_TMP_FOLDER" environment variable for the '
+                    'LocalStack container when using "LAMBDA_REMOTE_DOCKER=false"')
+    if docker_env.get('PORT_WEB_UI') != '${PORT_WEB_UI- }' and image_name == 'localstack/localstack':
+        LOG.warning('"PORT_WEB_UI" Web UI is now deprecated, '
+                    'and requires to use the "localstack/localstack-full" image.')
+    if docker_env.get('EDGE_PORT') and docker_env.get('EDGE_PORT') not in docker_ports:
+        LOG.warning('Using a custom edge port which is not exposed. '
+                    'You may have to add the entry to the "ports" section of the docker-compose file.')
+    if network_mode != 'bridge':
+        LOG.warning('Network mode is not set to bridge which may cause networking issues in lambda containers. '
+                    'Consider adding "network_mode: bridge" to you docker-compose file.')
+
+    return True
 
 
 class PortMappings(object):
