@@ -12,7 +12,7 @@ from moto.cloudformation.models import cloudformation_backends
 from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r, prevent_stack_overflow)
@@ -1075,7 +1075,7 @@ def evaluate_resource_condition(resource, stack_name, resources):
     condition = resource.get('Condition')
     if condition:
         condition = evaluate_condition(stack_name, condition, resources)
-        if is_none_or_empty_value(condition):
+        if condition is False or condition in FALSE_STRINGS or is_none_or_empty_value(condition):
             return False
     return True
 
@@ -1984,6 +1984,11 @@ class TemplateDeployer(object):
 
         # resolve refs in resource details
         resolve_refs_recursively(stack.stack_name, resource, new_resources)
+
+        # check resource condition, if present
+        if not evaluate_resource_condition(resource, stack.stack_name, new_resources):
+            LOG.debug('Skipping deployment of "%s", as resource condition evaluates to false' % resource_id)
+            return
 
         if action in ['Add', 'Modify']:
             is_deployed = self.is_deployed(resource)
