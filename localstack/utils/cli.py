@@ -71,15 +71,12 @@ Commands:
   config validate       Validate local configurations (e.g. docker-compose)
 
 Options:
-  --file=<>          Run the infrastructure in a Docker container (default)
-  --
+  --file=<>          Use custom docker compose file (default: docker-compose.yml)
     """
     args.update(docopt(cmd_config.__doc__.strip(), argv=argv))
 
     if args['<subcommand>'] == 'validate':
-        docker_compose_file_name = args.get('--file')
-        if docker_compose_file_name is None:
-            docker_compose_file_name = 'docker-compose.yml'
+        docker_compose_file_name = args.get('--file') or 'docker-compose.yml'
         validate_localstack_config(docker_compose_file_name)
     else:
         raise Exception('Please specify a valid command')
