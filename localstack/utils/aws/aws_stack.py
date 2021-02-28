@@ -13,7 +13,8 @@ from localstack.constants import (
     MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
 from localstack.utils.aws import templating
 from localstack.utils.common import (
-    run_safe, to_str, is_string, is_string_or_bytes, make_http_request, is_port_open, get_service_protocol, retry)
+    run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
+    is_port_open, get_service_protocol, retry, to_bytes)
 from localstack.utils.aws.aws_models import KinesisStream
 
 # AWS environment variable names
@@ -541,34 +542,53 @@ def _resource_arn(name, pattern, account_id=None, region_name=None):
     return pattern % (region_name, account_id, name)
 
 
-def send_event_to_target(arn, event, target_attributes=None):
+def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
+    region = arn.split(':')[3]
+
     if ':lambda:' in arn:
         from localstack.services.awslambda import lambda_api
-        lambda_api.run_lambda(event=event, context={}, func_arn=arn)
+        lambda_api.run_lambda(event=event, context={}, func_arn=arn, asynchronous=asynchronous)
 
     elif ':sns:' in arn:
-        sns_client = connect_to_service('sns')
+        sns_client = connect_to_service('sns', region_name=region)
         sns_client.publish(TopicArn=arn, Message=json.dumps(event))
 
     elif ':sqs:' in arn:
-        sqs_client = connect_to_service('sqs')
+        sqs_client = connect_to_service('sqs', region_name=region)
         queue_url = get_sqs_queue_url(arn)
-
         msg_group_id = (target_attributes or {}).get('MessageGroupId')
         kwargs = {'MessageGroupId': msg_group_id} if msg_group_id else {}
         sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event), **kwargs)
 
-    elif ':states' in arn:
-        stepfunctions_client = connect_to_service('stepfunctions')
+    elif ':states:' in arn:
+        stepfunctions_client = connect_to_service('stepfunctions', region_name=region)
         stepfunctions_client.start_execution(stateMachineArn=arn, input=json.dumps(event))
 
+    elif ':firehose:' in arn:
+        delivery_stream_name = firehose_name(arn)
+        firehose_client = connect_to_service('firehose', region_name=region)
+        firehose_client.put_record(
+            DeliveryStreamName=delivery_stream_name,
+            Record={'Data': to_bytes(json.dumps(event))})
+
+    elif ':events:' in arn:
+        bus_name = arn.split(':')[-1].split('/')[-1]
+        events_client = connect_to_service('events', region_name=region)
+        events_client.put_events(
+            Entries=[{
+                'EventBusName': bus_name,
+                'Source': event.get('source'),
+                'DetailType': event.get('detail-type'),
+                'Detail': event.get('detail')
+            }]
+        )
+
     else:
-        LOG.info('Unsupported Events rule target ARN "%s"' % arn)
+        LOG.warning('Unsupported Events rule target ARN: "%s"' % arn)
 
 
 def get_events_target_attributes(target):
-    # added for sqs, if needed can be moved to an if else
-    # block for multiple targets
+    # TODO: add support for other target types
     return target.get('SqsParameters')
 
 

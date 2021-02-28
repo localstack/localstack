@@ -7,13 +7,11 @@ import ipaddress
 from moto.events.models import Rule as rule_model
 from moto.events.responses import EventsHandler as events_handler
 from localstack import config
-from localstack.constants import (
-    APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID)
+from localstack.constants import APPLICATION_AMZ_JSON_1_1, TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import short_uid, to_bytes, extract_jsonpath
+from localstack.utils.common import short_uid, extract_jsonpath
 from localstack.services.infra import start_moto_server
 from localstack.services.events.scheduler import JobScheduler
-from localstack.services.awslambda.lambda_api import run_lambda
 from localstack.services.events.events_listener import _create_and_register_temp_dir, _dump_events_to_files
 
 
@@ -29,44 +27,6 @@ EVENT_RULES = {
 CONTENT_BASE_FILTER_KEYWORDS = [
     'prefix', 'anything-but', 'numeric', 'cidr', 'exists'
 ]
-
-
-def send_event_to_sqs(event, arn):
-    region = arn.split(':')[3]
-    queue_url = aws_stack.get_sqs_queue_url(arn)
-    sqs_client = aws_stack.connect_to_service('sqs', region_name=region)
-    sqs_client.send_message(QueueUrl=queue_url, MessageBody=json.dumps(event))
-
-
-def send_event_to_sns(event, arn):
-    region = arn.split(':')[3]
-    sns_client = aws_stack.connect_to_service('sns', region_name=region)
-    sns_client.publish(TopicArn=arn, Message=json.dumps(event))
-
-
-def send_event_to_lambda(event, arn):
-    run_lambda(event=event, context={}, func_arn=arn, asynchronous=True)
-
-
-def send_event_to_firehose(event, arn):
-    delivery_stream_name = aws_stack.firehose_name(arn)
-    firehose_client = aws_stack.connect_to_service('firehose')
-    firehose_client.put_record(
-        DeliveryStreamName=delivery_stream_name,
-        Record={'Data': to_bytes(json.dumps(event))})
-
-
-def send_event_to_event_bus(event, arn):
-    bus_name = arn.split(':')[-1].split('/')[-1]
-    events_client = aws_stack.connect_to_service('events')
-    events_client.put_events(
-        Entries=[{
-            'EventBusName': bus_name,
-            'Source': event.get('source'),
-            'DetailType': event.get('detail-type'),
-            'Detail': event.get('detail')
-        }]
-    )
 
 
 def filter_event_with_target_input_path(target, event):
@@ -116,25 +76,8 @@ def filter_event_based_on_event_format(self, rule, event):
 def process_events(event, targets):
     for target in targets:
         arn = target['Arn']
-        service = arn.split(':')[2]
         changed_event = filter_event_with_target_input_path(target, event)
-        if service == 'sqs':
-            send_event_to_sqs(changed_event, arn)
-
-        elif service == 'sns':
-            send_event_to_sns(changed_event, arn)
-
-        elif service == 'lambda':
-            send_event_to_lambda(changed_event, arn)
-
-        elif service == 'firehose':
-            send_event_to_firehose(changed_event, arn)
-
-        elif service == 'events':
-            send_event_to_event_bus(changed_event, arn)
-
-        else:
-            LOG.warning('Unsupported Events target service type "%s"' % service)
+        aws_stack.send_event_to_target(arn, changed_event)
 
 
 def apply_patches():
@@ -163,7 +106,10 @@ def apply_patches():
         name = self._get_param('Name')
         event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
-        EVENT_RULES.get(event_bus, set()).remove(name)
+        rules_set = EVENT_RULES.get(event_bus, set())
+        if name not in rules_set:
+            return self.error('ValidationException', 'Rule "%s" not found for event bus "%s"' % (name, event_bus))
+        rules_set.remove(name)
 
         return events_handler_delete_rule_orig(self)
 
