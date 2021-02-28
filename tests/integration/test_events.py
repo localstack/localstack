@@ -268,7 +268,7 @@ class EventsTest(unittest.TestCase):
 
         # clean up
         self.cleanup(bus_name_1, rule_name, target_id)
-        self.cleanup(bus_name_2, rule_name)
+        self.cleanup(bus_name_2)
         sqs_client.delete_queue(QueueUrl=queue_url)
 
     def test_put_events_with_target_lambda(self):
@@ -277,9 +277,9 @@ class EventsTest(unittest.TestCase):
         target_id = 'target-{}'.format(short_uid())
         bus_name = 'bus-{}'.format(short_uid())
 
-        rs = testutil.create_lambda_function(handler_file=os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py'),
-                                             func_name=function_name,
-                                             runtime=LAMBDA_RUNTIME_PYTHON36)
+        handler_file = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
+        rs = testutil.create_lambda_function(
+            handler_file=handler_file, func_name=function_name, runtime=LAMBDA_RUNTIME_PYTHON36)
 
         func_arn = rs['CreateFunctionResponse']['FunctionArn']
 
@@ -801,12 +801,13 @@ class EventsTest(unittest.TestCase):
         # clean up
         self.cleanup(TEST_EVENT_BUS_NAME, rule_name, target_id, queue_url=queue_url)
 
-    def cleanup(self, bus_name, rule_name, target_ids=None, queue_url=None):
+    def cleanup(self, bus_name, rule_name=None, target_ids=None, queue_url=None):
         kwargs = {'EventBusName': bus_name} if bus_name else {}
         if target_ids:
             target_ids = target_ids if isinstance(target_ids, list) else [target_ids]
             self.events_client.remove_targets(Rule=rule_name, Ids=target_ids, Force=True, **kwargs)
-        self.events_client.delete_rule(Name=rule_name, Force=True, **kwargs)
+        if rule_name:
+            self.events_client.delete_rule(Name=rule_name, Force=True, **kwargs)
         if bus_name:
             self.events_client.delete_event_bus(Name=bus_name)
         if queue_url:
