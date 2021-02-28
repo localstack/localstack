@@ -268,7 +268,7 @@ class EventsTest(unittest.TestCase):
 
         # clean up
         self.cleanup(bus_name_1, rule_name, target_id)
-        self.cleanup(bus_name_2, rule_name, target_id)
+        self.cleanup(bus_name_2, rule_name)
         sqs_client.delete_queue(QueueUrl=queue_url)
 
     def test_put_events_with_target_lambda(self):
