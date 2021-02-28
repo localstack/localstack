@@ -360,6 +360,57 @@ def start_infra_locally():
     return infra.start_infra()
 
 
+def validate_localstack_config(name):
+    dirname = os.getcwd()
+    compose_file_name = name if os.path.isabs(name) else os.path.join(dirname, name)
+
+    # validating docker-compose file
+    cmd = "docker-compose -f '%s' config" % (compose_file_name)
+    try:
+        run(cmd)
+    except Exception as e:
+        LOG.warning('Looks like the docker-compose file is not valid: %s' % e)
+        return False
+
+    # validating docker-compose variable
+    import yaml
+    with open(compose_file_name) as file:
+        compose_content = yaml.full_load(file)
+    localstack_service = [service for service in compose_content['services']
+        if compose_content['services'][service]['image'] in constants.OFFICIAL_IMAGES]
+    if len(localstack_service) > 0:
+        localstack_service = localstack_service[0]
+    else:
+        raise Exception('No official docker image found. Please use one of this image: %s'
+            % (constants.OFFICIAL_IMAGES))
+
+    network_mode = compose_content['services'][localstack_service].get('network_mode')
+    image_name = compose_content['services'][localstack_service]['image']
+    container_name = compose_content['services'][localstack_service].get('container_name') or ''
+    docker_ports = (port.split(':')[0] for port in compose_content['services'][localstack_service].get('ports', []))
+    docker_env = dict((env.split('=')[0], env.split('=')[1])
+        for env in compose_content['services'][localstack_service]['environment'])
+
+    # docker-compose file validation cases
+    if (docker_env.get('LAMBDA_REMOTE_DOCKER') in constants.FALSE_STRINGS and
+            docker_env.get('HOST_TMP_FOLDER') in ['${TMPDIR}', None, '']):
+        LOG.warning('Make sure to properly set the "HOST_TMP_FOLDER" environment variable for the '
+                    'LocalStack container when using "LAMBDA_REMOTE_DOCKER=false"')
+    if docker_env.get('PORT_WEB_UI') not in ['${PORT_WEB_UI- }', None, ''] and image_name == 'localstack/localstack':
+        LOG.warning('"PORT_WEB_UI" Web UI is now deprecated, '
+                    'and requires to use the "localstack/localstack-full" image.')
+    if ('localstack_main' not in container_name) and not docker_env.get('MAIN_CONTAINER_NAME'):
+        LOG.warning('Please use "container_name: localstack_main" or add "MAIN_CONTAINER_NAME" in "environment".')
+    if docker_env.get('EDGE_PORT') and docker_env.get('EDGE_PORT') not in docker_ports:
+        LOG.warning('Using a custom edge port which is not exposed. '
+                    'You may have to add the entry to the "ports" section of the docker-compose file.')
+    if network_mode != 'bridge':
+        LOG.warning('Network mode is not set to bridge which may cause networking issues in lambda containers. '
+                    'Consider adding "network_mode: bridge" to you docker-compose file.')
+
+    return True
+
+
 class PortMappings(object):
     """ Maps source to target port ranges for Docker port mappings. """
 

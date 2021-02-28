@@ -134,3 +134,6 @@ TEST_AWS_SECRET_ACCESS_KEY = 'test'
 # credentials being used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = '__internal_call__'
 INTERNAL_AWS_SECRET_ACCESS_KEY = '__internal_call__'
+
+# list of official docker images
+OFFICIAL_IMAGES = ['localstack/localstack', 'localstack/localstack-light', 'localstack/localstack-full']

@@ -270,6 +270,17 @@ An example passing the above environment variables to LocalStack to start Kinesi
 SERVICES=kinesis,lambda,sqs,dynamodb localstack start
 ```
 
+### Verifying your docker-compose configuration using the command line
+
+You can use `localstack config validate` command to validate for common mis-configuration.
+
+By `default` it validates `docker-compose.yml`. You can override it using `--file` argument.
+
+For example
+```
+localstack config validate --file=localstack-docker-compose.yml
+```
+
 ### Dynamically updating configuration at runtime
 
 Each of the service APIs listed [above](https://github.com/localstack/localstack#overview) defines
