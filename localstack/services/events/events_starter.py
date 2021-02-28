@@ -106,7 +106,10 @@ def apply_patches():
         name = self._get_param('Name')
         event_bus = self._get_param('EventBusName') or DEFAULT_EVENT_BUS_NAME
 
-        EVENT_RULES.get(event_bus, set()).remove(name)
+        rules_set = EVENT_RULES.get(event_bus, set())
+        if name not in rules_set:
+            return self.error('ValidationException', 'Rule "%s" not found for event bus "%s"' % (name, event_bus))
+        rules_set.remove(name)
 
         return events_handler_delete_rule_orig(self)
 
