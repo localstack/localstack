@@ -109,12 +109,14 @@ class GenericBaseModel(CloudFormationModel):
     # ----------------------
 
     def fetch_and_update_state(self, *args, **kwargs):
+        from localstack.utils.cloudformation import template_deployer
         try:
             state = self.fetch_state(*args, **kwargs)
             self.update_state(state)
             return state
         except Exception as e:
-            LOG.debug('Unable to fetch state for resource %s: %s' % (self, e))
+            if not template_deployer.check_not_found_exception(e, self.resource_type, self.properties):
+                LOG.debug('Unable to fetch state for resource %s: %s' % (self, e))
 
     def fetch_state_if_missing(self, *args, **kwargs):
         if not self.state:
