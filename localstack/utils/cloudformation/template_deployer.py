@@ -350,6 +350,20 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
+    'Events::EventBus': {
+        'create': {
+            'function': 'create_event_bus',
+            'parameters': {
+                'Name': 'Name'
+            }
+        },
+        'delete': {
+            'function': 'delete_event_bus',
+            'parameters': {
+                'Name': 'Name'
+            }
+        }
+    },
     'Events::Rule': {
         'create': [{
             'function': 'put_rule',
@@ -1579,6 +1593,9 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == 'IAM::InstanceProfile':
         stack.resources[resource_id]['PhysicalResourceId'] = details['InstanceProfile']['InstanceProfileName']
+
+    if resource_type == 'Events::EventBus':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['EventBusArn']
 
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
