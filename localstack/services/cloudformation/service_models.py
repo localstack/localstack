@@ -1259,3 +1259,19 @@ class InstanceProfile(GenericBaseModel):
         )
 
         return resp['InstanceProfile']
+
+
+class EventBus(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Events::EventBus'
+
+    def fetch_state(self, stack_name, resources):
+        event_bus_arn = resources[self.resource_id].get('PhysicalResourceId')
+        if not event_bus_arn:
+            return None
+
+        client = aws_stack.connect_to_service('events')
+        return client.describe_event_bus(
+            Name=event_bus_arn.split('/')[1]
+        )

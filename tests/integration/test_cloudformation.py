@@ -2010,3 +2010,21 @@ class CloudFormationTest(unittest.TestCase):
         outputs = cloudformation.describe_stacks(StackName=stack_name)['Stacks'][0]['Outputs']
         output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl'][0]
         self.assertEqual(output, queue_url)
+
+    def test_cfn_event_bus_resource(self):
+        stack_name = 'stack-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template31.yaml'))
+        deploy_cf_stack(stack_name=stack_name, template_body=template)
+
+        event_client = aws_stack.connect_to_service('events')
+
+        rs = event_client.list_event_buses()
+        event_buses = [eb for eb in rs['EventBuses'] if eb['Name'] == 'my-testing']
+        self.assertEqual(len(event_buses), 1)
+
+        # clean up
+        self.cleanup(stack_name)
+
+        rs = event_client.list_event_buses()
+        event_buses = [eb for eb in rs['EventBuses'] if eb['Name'] == 'my-testing']
+        self.assertEqual(len(event_buses), 0)
