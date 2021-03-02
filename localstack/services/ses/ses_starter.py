@@ -10,6 +10,13 @@ from localstack.services.infra import start_moto_server
 
 LOGGER = logging.getLogger(__name__)
 
+DELETE_IDENTITY_RESPONSE = """<DeleteTemplateResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+    <DeleteTemplateResult/>
+    <ResponseMetadata>
+      <RequestId>d96bd875-9bf2-11e1-8ee7-c98a0037a2b6</RequestId>
+    </ResponseMetadata>
+</DeleteTemplateResponse>"""
+
 
 def apply_patches():
     def get_source_from_raw(raw_data):
@@ -87,12 +94,6 @@ def apply_patches():
         if template_name in templates:
             del templates[template_name]
         ses_backend.templates = templates
-        DELETE_IDENTITY_RESPONSE = """<DeleteTemplateResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
-            <DeleteTemplateResult/>
-            <ResponseMetadata>
-              <RequestId>d96bd875-9bf2-11e1-8ee7-c98a0037a2b6</RequestId>
-            </ResponseMetadata>
-        </DeleteTemplateResponse>"""
         template = self.response_template(DELETE_IDENTITY_RESPONSE)
         return template.render()
 

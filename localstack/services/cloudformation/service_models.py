@@ -199,6 +199,19 @@ class EventsRule(GenericBaseModel):
         return result if result.get('Name') else None
 
 
+class EventBus(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Events::EventBus'
+
+    def fetch_state(self, stack_name, resources):
+        event_bus_arn = self.physical_resource_id
+        if not event_bus_arn:
+            return None
+        client = aws_stack.connect_to_service('events')
+        return client.describe_event_bus(Name=event_bus_arn.split('/')[1])
+
+
 class LogsLogGroup(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -1259,19 +1272,3 @@ class InstanceProfile(GenericBaseModel):
         )
 
         return resp['InstanceProfile']
-
-
-class EventBus(GenericBaseModel):
-    @staticmethod
-    def cloudformation_type():
-        return 'AWS::Events::EventBus'
-
-    def fetch_state(self, stack_name, resources):
-        event_bus_arn = resources[self.resource_id].get('PhysicalResourceId')
-        if not event_bus_arn:
-            return None
-
-        client = aws_stack.connect_to_service('events')
-        return client.describe_event_bus(
-            Name=event_bus_arn.split('/')[1]
-        )

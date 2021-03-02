@@ -25,7 +25,7 @@ from localstack.utils import bootstrap
 from localstack.utils.bootstrap import (
     get_main_container_id, start_infra_in_docker, start_infra_locally, run, docker_container_running,
     get_main_container_ip, get_main_container_name, get_docker_image_details, get_server_version,
-    validate_localstack_config)
+    validate_localstack_config, setup_logging)
 
 # Note: make sure we don't have other imports at the root level here
 
@@ -209,7 +209,11 @@ def main():
         sys.exit(0)
 
     if args['--debug']:
+        config.DEBUG = True
         os.environ['DEBUG'] = '1'
+
+    # set up logging (after DEBUG has been configured)
+    setup_logging()
 
     # invoke subcommand
     argv = [args['<command>']] + args['<args>']
