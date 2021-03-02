@@ -3,6 +3,12 @@ FROM localstack/java-maven-node-python
 MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="LocalStack Contributors"
 
+ARG LOCALSTACK_BUILD_DATE
+ARG LOCALSTACK_BUILD_GIT_HASH
+
+ENV LOCALSTACK_BUILD_DATE=${LOCALSTACK_BUILD_DATE} 
+ENV LOCALSTACK_BUILD_GIT_HASH=${LOCALSTACK_BUILD_GIT_HASH}
+
 # set library path and default LocalStack hostname
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-11/lib:/usr/lib/jvm/java-11/lib/server
 ENV LOCALSTACK_HOSTNAME=localhost

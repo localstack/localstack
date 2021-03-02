@@ -7,6 +7,8 @@ DOCKER_SQUASH ?= --squash
 VENV_DIR ?= .venv
 PIP_CMD ?= pip
 TEST_PATH ?= .
+LOCALSTACK_BUILD_GIT_HASH ?= $(shell git rev-parse --short HEAD)
+LOCALSTACK_BUILD_DATE ?= $(shell date -u +"%Y%m%d")
 
 ifeq ($(OS), Windows_NT)
 	VENV_RUN = . $(VENV_DIR)/Scripts/activate
@@ -57,7 +59,9 @@ docker-build:      ## Build Docker image
 	# prepare
 	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
 	# start build
-	docker build -t $(IMAGE_NAME) .
+	echo $(git rev-parse --short HEAD)
+	docker build --build-arg LOCALSTACK_BUILD_GIT_HASH=$(LOCALSTACK_BUILD_GIT_HASH) \
+	--build-arg=LOCALSTACK_BUILD_DATE=$(LOCALSTACK_BUILD_DATE) -t $(IMAGE_NAME) .
 
 docker-squash:
 	# squash entire image
