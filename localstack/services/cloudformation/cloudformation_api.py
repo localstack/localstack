@@ -64,6 +64,7 @@ class Stack(object):
         self.template['StackId'] = self.metadata['StackId'] = (self.metadata.get('StackId') or
             aws_stack.cloudformation_stack_arn(self.stack_name, short_uid()))
         self.template['Parameters'] = self.template.get('Parameters') or {}
+        self.template['Outputs'] = self.template.get('Outputs') or {}
         # initialize metadata
         self.metadata['Parameters'] = self.metadata.get('Parameters') or []
         self.metadata['StackStatus'] = 'CREATE_IN_PROGRESS'
@@ -436,6 +437,8 @@ def execute_change_set(req_params):
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
     change_set.stack.metadata['ChangeSetId'] = change_set.change_set_id
+    stack = find_stack(stack_name)
+    stack.set_stack_status('CREATE_COMPLETE')
     return {}
 
 

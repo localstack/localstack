@@ -54,6 +54,9 @@ infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
 
 docker-build:      ## Build Docker image
+	# prepare
+	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
+	# start build
 	docker build -t $(IMAGE_NAME) .
 
 docker-squash:

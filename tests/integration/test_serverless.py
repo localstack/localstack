@@ -2,25 +2,34 @@ import os
 import json
 import unittest
 from localstack.utils.aws import aws_stack
-from localstack.utils.common import run
+from localstack.utils.common import run, retry
+from localstack.utils.testutil import get_lambda_log_events
 
 
 class TestServerless(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        base_dir = os.path.join(os.path.dirname(__file__), 'serverless')
-
+        base_dir = cls.get_base_dir()
         if not os.path.exists(os.path.join(base_dir, 'node_modules')):
             # install dependencies
             run('cd %s; npm install' % base_dir)
-
         # list apigateway before sls deployment
         apigw_client = aws_stack.connect_to_service('apigateway')
         apis = apigw_client.get_rest_apis()['items']
         cls.api_ids = [api['id'] for api in apis]
 
         # deploy serverless app
-        run('cd %s; npm run serverless -- --region=%s' % (base_dir, aws_stack.get_region()))
+        run('cd %s; npm run deploy -- --region=%s' % (base_dir, aws_stack.get_region()))
+
+    @classmethod
+    def tearDownClass(cls):
+        # TODO uncomment once removal via the sls plugin is fixed
+        # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
+        pass
+
+    @classmethod
+    def get_base_dir(cls):
+        return os.path.join(os.path.dirname(__file__), 'serverless')
 
     def test_event_rules_deployed(self):
         events = aws_stack.connect_to_service('events')
@@ -53,6 +62,7 @@ class TestServerless(unittest.TestCase):
 
     def test_kinesis_stream_handler_deployed(self):
         function_name = 'sls-test-local-kinesisStreamHandler'
+        function_name2 = 'sls-test-local-kinesisConsumerHandler'
         stream_name = 'KinesisTestStream'
 
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -70,6 +80,13 @@ class TestServerless(unittest.TestCase):
         resp = kinesis_client.describe_stream(StreamName=stream_name)
         self.assertEqual(resp['StreamDescription']['StreamARN'], event_source_arn)
 
+        # assert that stream consumer is properly connected and Lambda gets invoked
+        def assert_invocations():
+            events = get_lambda_log_events(function_name2)
+            self.assertEqual(len(events), 1)
+        kinesis_client.put_record(StreamName=stream_name, Data=b'test123', PartitionKey='key1')
+        retry(assert_invocations, sleep=1, retries=5)
+
     def test_queue_handler_deployed(self):
         function_name = 'sls-test-local-queueHandler'
         queue_name = 'sls-test-local-CreateQueue'
@@ -80,14 +97,26 @@ class TestServerless(unittest.TestCase):
         function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
         self.assertEqual(function['Handler'], 'src/sqs.create')
 
-        resp = lambda_client.list_event_source_mappings(
-            FunctionName=function_name,
-        )
+        resp = lambda_client.list_event_source_mappings(FunctionName=function_name)
         events = resp['EventSourceMappings']
         self.assertEqual(len(events), 1)
         event_source_arn = events[0]['EventSourceArn']
 
         self.assertEqual(aws_stack.sqs_queue_arn(queue_name), event_source_arn)
+
+    def test_lambda_with_configs_deployed(self):
+        function_name = 'sls-test-local-test'
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        resp = lambda_client.list_functions()
+        function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
+        self.assertIn('Version', function)
+        version = function['Version']
+
+        resp = lambda_client.get_function_event_invoke_config(FunctionName=function_name, Qualifier=version)
+        self.assertEqual(resp.get('MaximumRetryAttempts'), 2)
+        self.assertEqual(resp.get('MaximumEventAgeInSeconds'), 7200)
 
     def test_apigateway_deployed(self):
         function_name = 'sls-test-local-router'

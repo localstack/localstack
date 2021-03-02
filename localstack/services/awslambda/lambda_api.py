@@ -1393,11 +1393,16 @@ def invoke_function(function):
             details['Payload'] = to_str(result.data)
             if result.status_code >= 400:
                 details['FunctionError'] = 'Unhandled'
-        elif isinstance(result, dict):
+        if isinstance(result, (str, bytes)):
+            try:
+                result = json.loads(to_str(result))
+            except Exception:
+                pass
+        if isinstance(result, dict):
             for key in ('StatusCode', 'Payload', 'FunctionError'):
                 if result.get(key):
                     details[key] = result[key]
-        # Try to parse parse payload as JSON
+        # Try to parse payload as JSON
         was_json = False
         payload = details['Payload']
         if payload and isinstance(payload, POSSIBLE_JSON_TYPES) and payload[0] in JSON_START_CHARS:
@@ -1732,6 +1737,9 @@ def get_function_event_invoke_config(function):
         return error_response(str(e), 400)
 
     response = lambda_obj.get_function_event_invoke_config()
+    if not response:
+        msg = "The function %s doesn't have an EventInvokeConfig" % function_arn
+        return error_response(msg, 404, error_type='ResourceNotFoundException')
     return jsonify(response)
 
 

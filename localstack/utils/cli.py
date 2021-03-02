@@ -24,7 +24,8 @@ from localstack import config, constants
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import (
     start_infra_in_docker, start_infra_locally, run, docker_container_running,
-    get_main_container_ip, get_main_container_name, get_docker_image_details, get_server_version)
+    get_main_container_ip, get_main_container_name, get_docker_image_details, get_server_version,
+    validate_localstack_config)
 
 # Note: make sure we don't have other imports at the root level here
 
@@ -59,6 +60,26 @@ Options:
         else:
             print_version()
             start_infra_locally()
+
+
+def cmd_config(argv, args):
+    """
+Usage:
+  localstack config <subcommand> [options]
+
+Commands:
+  config validate       Validate local configurations (e.g. docker-compose)
+
+Options:
+  --file=<>          Use custom docker compose file (default: docker-compose.yml)
+    """
+    args.update(docopt(cmd_config.__doc__.strip(), argv=argv))
+
+    if args['<subcommand>'] == 'validate':
+        docker_compose_file_name = args.get('--file') or 'docker-compose.yml'
+        validate_localstack_config(docker_compose_file_name)
+    else:
+        raise Exception('Please specify a valid command')
 
 
 def cmd_web(argv, args):
@@ -150,6 +171,10 @@ def main():
     config.CLI_COMMANDS['status'] = {
         'description': 'Obtain status details about the installation',
         'function': cmd_status
+    }
+    config.CLI_COMMANDS['config'] = {
+        'description': 'Validate docker configurations',
+        'function': cmd_config
     }
 
     # load CLI plugins

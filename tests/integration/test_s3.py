@@ -401,6 +401,66 @@ class TestS3(unittest.TestCase):
         response = s3_listener.get_object_lock(bucket_name)
         self.assertRegexpMatches(response._content, r'The bucket does not exist')
 
+    def test_delete_bucket_lifecycle_configuration(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
+        lfc = {
+            'Rules': [
+                {
+                    'Expiration': {'Days': 7},
+                    'ID': 'wholebucket',
+                    'Filter': {'Prefix': ''},
+                    'Status': 'Enabled',
+                }
+            ]
+        }
+        client.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name, LifecycleConfiguration=lfc
+        )
+        result = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        self.assertIn('Rules', result)
+        client.delete_bucket_lifecycle(Bucket=bucket_name)
+
+        try:
+            client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NoSuchLifecycleConfiguration')
+
+        # clean up
+        client.delete_bucket(Bucket=bucket_name)
+
+    def test_delete_lifecycle_configuration_on_bucket_deletion(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
+        lfc = {
+            'Rules': [
+                {
+                    'Expiration': {'Days': 7},
+                    'ID': 'wholebucket',
+                    'Filter': {'Prefix': ''},
+                    'Status': 'Enabled',
+                }
+            ]
+        }
+        client.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name, LifecycleConfiguration=lfc
+        )
+        result = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        self.assertIn('Rules', result)
+
+        client.delete_bucket(Bucket=bucket_name)
+
+        client.create_bucket(Bucket=bucket_name)
+        try:
+            client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NoSuchLifecycleConfiguration')
+
+        # clean up
+        client.delete_bucket(Bucket=bucket_name)
+
     def test_range_header_body_length(self):
         # Test for https://github.com/localstack/localstack/issues/1952
 

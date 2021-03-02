@@ -516,11 +516,8 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         queue_arn_1 = aws_stack.sqs_queue_arn(queue_name_1)
 
         rs = lambda_client.create_event_source_mapping(
-            EventSourceArn=queue_arn_1,
-            FunctionName=function_name
-        )
+            EventSourceArn=queue_arn_1, FunctionName=function_name)
         self.assertEqual(rs['BatchSize'], BATCH_SIZE_RANGES['sqs'][0])
-
         uuid = rs['UUID']
 
         try:
@@ -599,10 +596,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         self.assertEqual(len(events[0]['Records']), 1)
 
         # disable event source mapping
-        lambda_client.update_event_source_mapping(
-            UUID=uuid,
-            Enabled=False
-        )
+        lambda_client.update_event_source_mapping(UUID=uuid, Enabled=False)
 
         table.put_item(Item=items[1])
         events = get_lambda_log_events(function_name)

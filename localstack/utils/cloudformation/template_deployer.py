@@ -12,7 +12,7 @@ from moto.cloudformation.models import cloudformation_backends
 from localstack import config
 from localstack.utils import common
 from localstack.utils.aws import aws_stack
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
     json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r, prevent_stack_overflow)
@@ -78,17 +78,6 @@ def rename_params(func, rename_map):
     return do_rename
 
 
-def params_dict_to_list(param_name, key_attr_name='Key', value_attr_name='Value', wrapper=None):
-    def do_replace(params, **kwargs):
-        result = []
-        for key, value in params.get(param_name, {}).items():
-            result.append({key_attr_name: key, value_attr_name: value})
-        if wrapper:
-            result = {wrapper: result}
-        return result
-    return do_replace
-
-
 def get_lambda_code_param(params, **kwargs):
     code = params.get('Code', {})
     zip_file = code.get('ZipFile')
@@ -137,10 +126,6 @@ def es_add_tags_params(params, **kwargs):
     es_arn = aws_stack.es_domain_arn(params.get('DomainName'))
     tags = params.get('Tags', [])
     return {'ARN': es_arn, 'TagList': tags}
-
-
-def merge_parameters(func1, func2):
-    return lambda params, **kwargs: common.merge_dicts(func1(params, **kwargs), func2(params, **kwargs))
 
 
 def lambda_permission_params(params, **kwargs):
@@ -230,13 +215,6 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'TopicArn': 'PhysicalResourceId'
             }
-        }
-    },
-    'SSM::Parameter': {
-        'create': {
-            'function': 'put_parameter',
-            'parameters': merge_parameters(params_dict_to_list('Tags', wrapper='Tags'), params_select_attributes(
-                'Name', 'Type', 'Value', 'Description', 'AllowedPattern', 'Policies', 'Tier'))
         }
     },
     'SecretsManager::Secret': {
@@ -369,6 +347,20 @@ RESOURCE_TO_FUNCTION = {
             'function': 'delete_table',
             'parameters': {
                 'TableName': 'TableName'
+            }
+        }
+    },
+    'Events::EventBus': {
+        'create': {
+            'function': 'create_event_bus',
+            'parameters': {
+                'Name': 'Name'
+            }
+        },
+        'delete': {
+            'function': 'delete_event_bus',
+            'parameters': {
+                'Name': 'Name'
             }
         }
     },
@@ -752,13 +744,15 @@ def retrieve_resource_details(resource_id, resource_status, resources, stack_nam
     return None
 
 
-def check_not_found_exception(e, resource_type, resource, resource_status):
+def check_not_found_exception(e, resource_type, resource, resource_status=None):
     # we expect this to be a "not found" exception
     markers = ['NoSuchBucket', 'ResourceNotFound', 'NoSuchEntity', 'NotFoundException',
         '404', 'not found', 'not exist']
     if not list(filter(lambda marker, e=e: marker in str(e), markers)):
         LOG.warning('Unexpected error retrieving details for resource %s: %s %s - %s %s' %
             (resource_type, e, ''.join(traceback.format_stack()), resource, resource_status))
+        return False
+    return True
 
 
 def extract_resource_attribute(resource_type, resource_state, attribute, resource_id=None,
@@ -1095,7 +1089,7 @@ def evaluate_resource_condition(resource, stack_name, resources):
     condition = resource.get('Condition')
     if condition:
         condition = evaluate_condition(stack_name, condition, resources)
-        if is_none_or_empty_value(condition):
+        if condition is False or condition in FALSE_STRINGS or is_none_or_empty_value(condition):
             return False
     return True
 
@@ -1353,6 +1347,8 @@ def configure_resource_via_sdk(resource_id, resources, resource_type, func_detai
             resource_type, aws_stack.get_region(), func_details['function'], params))
         result = function(**params)
     except Exception as e:
+        if action_name == 'delete' and check_not_found_exception(e, resource_type, resource):
+            return
         LOG.warning('Error calling %s with params: %s for resource: %s' % (function, params, resource))
         raise e
 
@@ -1597,6 +1593,9 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == 'IAM::InstanceProfile':
         stack.resources[resource_id]['PhysicalResourceId'] = details['InstanceProfile']['InstanceProfileName']
+
+    if resource_type == 'Events::EventBus':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['EventBusArn']
 
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
@@ -1911,15 +1910,15 @@ class TemplateDeployer(object):
             for k, v in parameters.items() if v
         ]
 
-    def apply_changes(self, old_stack, new_stack, stack_name, change_set_id=None, initialize=False):
-        old_resources = old_stack.template['Resources']
+    def apply_changes(self, existing_stack, new_stack, stack_name, change_set_id=None, initialize=False):
+        old_resources = existing_stack.template['Resources']
         new_resources = new_stack.template['Resources']
         self.init_resource_status(old_resources, action='UPDATE')
         deletes = [val for key, val in old_resources.items() if key not in new_resources]
         adds = [val for key, val in new_resources.items() if initialize or key not in old_resources]
         modifies = [val for key, val in new_resources.items() if key in old_resources]
 
-        self.apply_parameter_changes(old_stack, new_stack)
+        self.apply_parameter_changes(existing_stack, new_stack)
 
         # construct changes
         changes = []
@@ -1932,12 +1931,15 @@ class TemplateDeployer(object):
                 change = self.get_change_config(action, item, change_set_id=change_set_id)
                 changes.append(change)
                 if action in ['Modify', 'Add']:
-                    self.merge_properties(item['LogicalResourceId'], old_stack, new_stack)
+                    self.merge_properties(item['LogicalResourceId'], existing_stack, new_stack)
         if not contains_changes:
             raise NoStackUpdates('No updates are to be performed.')
 
+        # merge stack outputs
+        existing_stack.template['Outputs'].update(new_stack.template.get('Outputs', {}))
+
         # start deployment loop
-        return self.apply_changes_in_loop(changes, old_stack, stack_name)
+        return self.apply_changes_in_loop(changes, existing_stack, stack_name)
 
     def apply_changes_in_loop(self, changes, stack, stack_name):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
@@ -1999,6 +2001,11 @@ class TemplateDeployer(object):
 
         # resolve refs in resource details
         resolve_refs_recursively(stack.stack_name, resource, new_resources)
+
+        # check resource condition, if present
+        if not evaluate_resource_condition(resource, stack.stack_name, new_resources):
+            LOG.debug('Skipping deployment of "%s", as resource condition evaluates to false' % resource_id)
+            return
 
         if action in ['Add', 'Modify']:
             is_deployed = self.is_deployed(resource)
