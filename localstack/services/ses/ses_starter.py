@@ -81,6 +81,15 @@ def apply_patches():
 
     email_responses.list_templates = list_templates
 
+    def delete_template(self):
+        email_templates = ses_backend.list_templates()
+        for template in email_templates:
+            if template["template_name"] == template_data.get("._name", ""):
+                ses_backend.list_templates().remove(template)
+        return email_templates(self)
+
+    email_responses.delete_template = delete_template
+
 
 def start_ses(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_SES
