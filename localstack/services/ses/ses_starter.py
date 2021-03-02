@@ -81,6 +81,23 @@ def apply_patches():
 
     email_responses.list_templates = list_templates
 
+    def delete_template(self):
+        template_name = self._get_param('TemplateName')
+        templates = ses_backend.templates
+        if template_name in templates:
+            del templates[template_name]
+        ses_backend.templates = templates
+        DELETE_IDENTITY_RESPONSE = """<DeleteTemplateResponse xmlns="http://ses.amazonaws.com/doc/2010-12-01/">
+            <DeleteTemplateResult/>
+            <ResponseMetadata>
+              <RequestId>d96bd875-9bf2-11e1-8ee7-c98a0037a2b6</RequestId>
+            </ResponseMetadata>
+        </DeleteTemplateResponse>"""
+        template = self.response_template(DELETE_IDENTITY_RESPONSE)
+        return template.render()
+
+    email_responses.delete_template = delete_template
+
 
 def start_ses(port=None, backend_port=None, asynchronous=None, update_listener=None):
     port = port or config.PORT_SES
