@@ -23,7 +23,7 @@ from docopt import docopt
 from localstack import config, constants
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import (
-    start_infra_in_docker, start_infra_locally, run, docker_container_running,
+    get_main_container_id, start_infra_in_docker, start_infra_locally, run, docker_container_running,
     get_main_container_ip, get_main_container_name, get_docker_image_details, get_server_version,
     validate_localstack_config)
 
@@ -58,7 +58,6 @@ Options:
         if in_docker:
             start_infra_in_docker()
         else:
-            print_version()
             start_infra_locally()
 
 
@@ -93,7 +92,6 @@ Commands:
 Options:
   --port=<>           Network port for running the Web server (default: 8080)
     """
-    print_version()
     if len(argv) <= 1 or argv[1] != 'start':
         argv = ['web', 'start'] + argv[1:]
         args['<args>'] = ['start'] + args['<args>']
@@ -145,8 +143,21 @@ def print_status():
     print('Container status:\t%s' % cont_status)
 
 
-def print_version():
+def print_version(in_docker=False):
+    print()
     print('LocalStack version: %s' % constants.VERSION)
+    if in_docker:
+        id = get_main_container_id()
+        if id:
+            print('LocalStack docker image id: %s' % id[:12])
+
+    if config.LOCALSTACK_BUILD_DATE:
+        print('LocalStack build date: %s' % config.LOCALSTACK_BUILD_DATE)
+
+    if config.LOCALSTACK_BUILD_GIT_HASH:
+        print('LocalStack build git hash: %s' % config.LOCALSTACK_BUILD_GIT_HASH)
+
+    print()
 
 
 def main():
