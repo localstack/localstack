@@ -1,3 +1,4 @@
+from localstack.services.apigateway.helpers import make_error_response
 import re
 import json
 import time
@@ -52,14 +53,31 @@ class ProxyListenerKinesis(ProxyListener):
             }
             return result
         elif action == 'DescribeStreamConsumer':
-            consumer_arn = data.get('ConsumerARN') or data['ConsumerName']
-            consumer_name = data.get('ConsumerName') or data['ConsumerARN']
+            consumer_arn = data.get('ConsumerARN', '')
+            consumer_name = data.get('ConsumerName', '')
+            stream_arn = data.get('StreamArn', '')
+
             creation_timestamp = data.get('ConsumerCreationTimestamp')
+
+            consumer_to_locate = None
+            for consumer in STREAM_CONSUMERS:
+                if consumer_arn and consumer_arn == consumer.get('ConsumerArn'):
+                    consumer_to_locate = consumer
+                    break
+                elif consumer_name == consumer.get('ConsumerName') and stream_arn == consumer.get('StreamArn'):
+                    consumer_to_locate = consumer
+                    break
+
+            if(not consumer_to_locate):
+                error_msg = 'An error occurred (ResourceNotFoundException) when calling the'
+                'DescribeStreamConsumer operation: Consumer %s not found.' % consumer_arn or consumer_name
+                return make_error_response(error_msg, 404)
+
             result = {
                 'ConsumerDescription': {
-                    'ConsumerARN': consumer_arn,
+                    'ConsumerARN': consumer_to_locate.get('ConsumerArn'),
                     'ConsumerCreationTimestamp': creation_timestamp,
-                    'ConsumerName': consumer_name,
+                    'ConsumerName': consumer_to_locate.get('ConsumerName'),
                     'ConsumerStatus': 'ACTIVE',
                     'StreamARN': data.get('StreamARN')
                 }
