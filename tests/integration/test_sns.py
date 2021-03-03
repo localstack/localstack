@@ -786,6 +786,38 @@ class SNSTest(unittest.TestCase):
         )
         self.assertEqual(len(response['Messages']), 1)
 
+    def add_xray_header(self, request, **kwargs):
+        request.headers['X-Amzn-Trace-Id'] = \
+            'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1'
+
+    def test_publish_sqs_from_sns_with_xray_propagation(self):
+
+        self.sns_client.meta.events.register('before-send.sns.Publish', self.add_xray_header)
+
+        topic = self.sns_client.create_topic(Name='test_topic4')
+        topic_arn = topic['TopicArn']
+        test_queue = self.sqs_client.create_queue(QueueName='test_queue4')
+
+        queue_url = test_queue['QueueUrl']
+        self.sns_client.subscribe(TopicArn=topic_arn, Protocol='sqs', Endpoint=queue_url)
+        self.sns_client.publish(TargetArn=topic_arn, Message='X-Ray propagation test msg')
+
+        response = self.sqs_client.receive_message(
+            QueueUrl=queue_url,
+            AttributeNames=['SentTimestamp', 'AWSTraceHeader'],
+            MaxNumberOfMessages=1,
+            MessageAttributeNames=['All'],
+            VisibilityTimeout=2,
+            WaitTimeSeconds=2,
+        )
+
+        self.assertEqual(len(response['Messages']), 1)
+        message = response['Messages'][0]
+        self.assertTrue('Attributes' in message)
+        self.assertTrue('AWSTraceHeader' in message['Attributes'])
+        self.assertEqual(message['Attributes']['AWSTraceHeader'],
+                         'Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1')
+
     def test_create_topic_after_delete_with_new_tags(self):
         topic_name = 'test-%s' % short_uid()
         topic = self.sns_client.create_topic(Name=topic_name, Tags=[{'Key': 'Name', 'Value': 'pqr'}])
