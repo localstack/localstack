@@ -244,8 +244,8 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
                 endpoint_url = backend_url
         config = config or botocore.client.Config()
         # configure S3 path style addressing
-        if service_name == 's3':
-            config.s3 = {'addressing_style': 'path'}
+        # if service_name == 's3':
+        #     config.s3 = {'addressing_style': 'path'}
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         config.max_pool_connections = MAX_POOL_CONNECTIONS

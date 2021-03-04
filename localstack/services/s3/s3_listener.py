@@ -915,12 +915,9 @@ def uses_path_addressing(headers):
 def get_bucket_name(path, headers):
     parsed = urlparse.urlparse(path)
 
-    # try pick the bucket_name from the path
-    bucket_name = parsed.path.split('/')[1]
-
-    # is the hostname not starting with a bucket name?
-    if uses_path_addressing(headers):
-        return normalize_bucket_name(bucket_name)
+    # matches the common endpoints like
+    #     - '<bucket_name>.s3.<region>.*'
+    localstack_pattern = re.compile(r'^(.+)\.s3[.\-][a-z]{2}-[a-z]+-[0-9]{1,}.*')
 
     # matches the common endpoints like
     #     - '<bucket_name>.s3.<region>.amazonaws.com'
@@ -940,11 +937,13 @@ def get_bucket_name(path, headers):
     # if any of the above patterns match, the first captured group
     # will be returned as the bucket name
     host = headers['host']
-    for pattern in [common_pattern, dualstack_pattern, legacy_patterns]:
+    for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
         match = pattern.match(host)
         if match:
             bucket_name = match.groups()[0]
             break
+    else:
+        bucket_name = parsed.path.split('/')[1]
 
     # we're either returning the original bucket_name,
     # or a pattern matched the host and we're returning that name instead
@@ -1092,8 +1091,6 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
         # Note that all S3 clients using LocalStack need to enable path style addressing.
-        if 's3.amazonaws.com' not in headers.get('host', ''):
-            headers['host'] = 'localhost'
 
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
@@ -1147,7 +1144,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # parse query params
         query = parsed_path.query
         path = parsed_path.path
-        bucket = path.split('/')[1]
+        bucket = bucket_name
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
 
         # remap metadata query params (not supported in moto) to request headers
@@ -1246,9 +1243,6 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # No path-name based bucket name? Try host-based
         bucket_name = get_bucket_name(path, headers)
-        hostname_parts = headers['host'].split('.')
-        if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
-            bucket_name = hostname_parts[0]
 
         # POST requests to S3 may include a success_action_redirect or
         # success_action_status field, which should be used to redirect a
