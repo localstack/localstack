@@ -53,7 +53,7 @@ MAX_DEPENDENCY_DEPTH = 40
 
 # map of additional model classes
 MODEL_MAP = {
-    'AWS::StepFunctions::Activity': service_models.StepFunctionsActivity,
+    'AWS::StepFunctions::Activity': service_models.SFNActivity,
     'AWS::SNS::Subscription': service_models.SNSSubscription,
     'AWS::ApiGateway::GatewayResponse': service_models.GatewayResponse,
     'AWS::ApiGateway::Deployment': apigw_models.Deployment,
