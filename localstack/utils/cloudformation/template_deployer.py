@@ -444,6 +444,18 @@ RESOURCE_TO_FUNCTION = {
             'parameters': lambda_keys_to_lower()
         }
     },
+    'ApiGateway::Model': {
+        'create': {
+            'function': 'create_model',
+            'parameters': {
+                'name': 'Name',
+                'restApiId': 'RestApiId',
+            },
+            'defaults': {
+                'contentType': 'application/json'
+            }
+        }
+    },
     'ApiGateway::Deployment': {
         'create': {
             'function': 'create_deployment',
@@ -513,6 +525,12 @@ RESOURCE_TO_FUNCTION = {
             'parameters': {
                 'name': ['Name', PLACEHOLDER_RESOURCE_NAME],
                 'tags': 'Tags'
+            }
+        },
+        'delete': {
+            'function': 'delete_activity',
+            'parameters': {
+                'activityArn': 'PhysicalResourceId'
             }
         }
     },
@@ -1578,6 +1596,7 @@ def update_resource_details(stack, resource_id, details, action=None):
     resource_type = resource.get('Type') or ''
     resource_type = re.sub('^AWS::', '', resource_type)
     resource_props = resource.get('Properties', {})
+
     if resource_type == 'ApiGateway::RestApi':
         resource_props['id'] = details['id']
 
@@ -1596,6 +1615,12 @@ def update_resource_details(stack, resource_id, details, action=None):
 
     if resource_type == 'Events::EventBus':
         stack.resources[resource_id]['PhysicalResourceId'] = details['EventBusArn']
+
+    if resource_type == 'StepFunctions::Activity':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['activityArn']
+
+    if resource_type == 'ApiGateway::Model':
+        stack.resources[resource_id]['PhysicalResourceId'] = details['id']
 
     if isinstance(details, MotoCloudFormationModel):
         # fallback: keep track of moto resource status
@@ -1647,6 +1672,9 @@ def add_default_resource_props(resource, stack_name, resource_name=None,
 
     elif res_type == 'AWS::ApiGateway::UsagePlan' and not props.get('UsagePlanName'):
         props['UsagePlanName'] = _generate_res_name()
+
+    elif res_type == 'AWS::ApiGateway::Model' and not props.get('Name'):
+        props['Name'] = _generate_res_name()
 
     elif res_type == 'AWS::DynamoDB::Table':
         update_dynamodb_index_resource(resource)
@@ -1999,13 +2027,13 @@ class TemplateDeployer(object):
         res_change = change['ResourceChange']
         action = res_change['Action']
 
-        # resolve refs in resource details
-        resolve_refs_recursively(stack.stack_name, resource, new_resources)
-
         # check resource condition, if present
         if not evaluate_resource_condition(resource, stack.stack_name, new_resources):
             LOG.debug('Skipping deployment of "%s", as resource condition evaluates to false' % resource_id)
             return
+
+        # resolve refs in resource details
+        resolve_refs_recursively(stack.stack_name, resource, new_resources)
 
         if action in ['Add', 'Modify']:
             is_deployed = self.is_deployed(resource)

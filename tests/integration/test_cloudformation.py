@@ -2028,3 +2028,69 @@ class CloudFormationTest(unittest.TestCase):
         rs = event_client.list_event_buses()
         event_buses = [eb for eb in rs['EventBuses'] if eb['Name'] == 'my-testing']
         self.assertEqual(len(event_buses), 0)
+
+    def test_cfn_statemachine_with_dependencies(self):
+        stack_name = 'stack-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'statemachine_test.json'))
+        deploy_cf_stack(stack_name=stack_name, template_body=template)
+
+        sfn_client = aws_stack.connect_to_service('stepfunctions')
+
+        rs = sfn_client.list_state_machines()
+        statemachines = [sm for sm in rs['stateMachines'] if '{}-SFSM22S5Y'.format(stack_name) in sm['name']]
+        self.assertEqual(len(statemachines), 1)
+
+        # clean up
+        self.cleanup(stack_name)
+        time.sleep(2)
+
+        rs = sfn_client.list_state_machines()
+        statemachines = [sm for sm in rs['stateMachines'] if '{}-SFSM22S5Y'.format(stack_name) in sm['name']]
+        self.assertEqual(len(statemachines), 0)
+
+    def test_cfn_apigateway_rest_api(self):
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'apigateway.json'))
+        cfn = aws_stack.connect_to_service('cloudformation')
+
+        stack_name = 'stack-%s' % short_uid()
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template
+        )
+        await_stack_completion(stack_name)
+
+        apigw_client = aws_stack.connect_to_service('apigateway')
+
+        rs = apigw_client.get_rest_apis()
+        apis = [item for item in rs['items'] if item['name'] == 'DemoApi_dev']
+        self.assertEqual(len(apis), 0)
+
+        # clean up
+        self.cleanup(stack_name)
+
+        stack_name = 'stack-%s' % short_uid()
+
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'Create',
+                    'ParameterValue': 'True'
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+
+        rs = apigw_client.get_rest_apis()
+        apis = [item for item in rs['items'] if item['name'] == 'DemoApi_dev']
+        self.assertEqual(len(apis), 1)
+
+        rs = apigw_client.get_models(restApiId=apis[0]['id'])
+        self.assertEqual(len(rs['items']), 1)
+
+        # clean up
+        self.cleanup(stack_name)
+
+        apis = [item for item in rs['items'] if item['name'] == 'DemoApi_dev']
+        self.assertEqual(len(apis), 0)
