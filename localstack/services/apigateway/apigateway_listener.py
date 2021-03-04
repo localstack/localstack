@@ -327,7 +327,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                 stage, api_id, headers, path_params=path_params, query_string_params=query_string_params,
-                method=method, resource_path=path, request_context=request_context,
+                method=method, resource_path=resource_path, request_context=request_context,
                 event_context=context, stage_variables=stage_variables)
 
             if isinstance(result, FlaskResponse):
