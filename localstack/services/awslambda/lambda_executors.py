@@ -862,6 +862,9 @@ class Util:
         lambdas_to_add_prefix = ['dotnetcore2.0', 'dotnetcore2.1', 'python2.7', 'python3.6', 'python3.7']
         if docker_image == 'lambci/lambda' and any(img in docker_tag for img in lambdas_to_add_prefix):
             docker_tag = '20191117-%s' % docker_tag
+        if runtime == 'nodejs14.x':
+            # TODO temporary fix until lambci image for nodejs14.x becomes available
+            docker_image = 'localstack/lambda-js'
         return '"%s:%s"' % (docker_image, docker_tag)
 
     @classmethod

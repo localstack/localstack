@@ -30,7 +30,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_NODEJS810,
-    LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X)
+    LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS14X)
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -1281,7 +1281,7 @@ class TestNodeJSRuntimes(LambdaTestBase):
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
             zip_file=testutil.create_zip_file(handler_file, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS12X,
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
             handler='lambda_handler.handler'
         )
 
