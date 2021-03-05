@@ -155,7 +155,7 @@ def apply_patches():
                 'time': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'region': self.region,
                 'resources': event.get('Resources', []),
-                'detail': json.loads(event.get('Detail')),
+                'detail': json.loads(event.get('Detail', '{}')),
             }
 
             targets = []
