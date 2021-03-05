@@ -73,6 +73,9 @@ XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
+# S3 hostname regex
+S3_HOSTNAME_PATTERN = r'^(.+)\.s3[.\-]([^.]+)\..*'
+
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
 
@@ -917,7 +920,7 @@ def get_bucket_name(path, headers):
 
     # matches the common endpoints like
     #     - '<bucket_name>.s3.<region>.*'
-    localstack_pattern = re.compile(r'^(.+)\.s3[.\-][a-z]{2}-[a-z]+-[0-9]{1,}.*')
+    localstack_pattern = re.compile(S3_HOSTNAME_PATTERN)
 
     # matches the common endpoints like
     #     - '<bucket_name>.s3.<region>.amazonaws.com'
@@ -1088,9 +1091,6 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # parse path and query params
         parsed_path = urlparse.urlparse(path)
-
-        # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
-        # Note that all S3 clients using LocalStack need to enable path style addressing.
 
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \

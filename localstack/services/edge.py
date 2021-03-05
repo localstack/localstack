@@ -24,6 +24,7 @@ from localstack.services.generic_proxy import ProxyListener, start_proxy_server,
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
+from localstack.services.s3.s3_listener import S3_HOSTNAME_PATTERN
 
 LOG = logging.getLogger(__name__)
 
@@ -177,7 +178,7 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = 'cognito-idp', config.PORT_COGNITO_IDP
     elif target.startswith('AWSCognitoIdentityService') or 'cognito-identity.' in host:
         result = 'cognito-identity', config.PORT_COGNITO_IDENTITY
-    elif result[0] == 's3' or re.match(r'^(.+)\.s3[.\-][a-z]{2}-[a-z]+-[0-9]{1,}.*', host):
+    elif result[0] == 's3' or re.match(S3_HOSTNAME_PATTERN, host):
         result = 's3', config.PORT_S3
     elif result[0] == 'states' in auth_header or host.startswith('states.'):
         result = 'stepfunctions', config.PORT_STEPFUNCTIONS
