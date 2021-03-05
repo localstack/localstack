@@ -197,7 +197,7 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = result_before = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
     elif ls_target == 'web':
         result = 'web', config.PORT_WEB_UI
-    elif result[0] == 'EventBridge':
+    elif result[0] == 'EventBridge' or target.startswith('AWSEvents'):
         result = 'events', config.PORT_EVENTS
 
     return result[0], result_before[1] or result[1], path, host
