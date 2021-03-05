@@ -701,6 +701,18 @@ class EventsTest(unittest.TestCase):
         )
         self.assertIn('Entries', response)
 
+    def test_put_event_without_detail(self):
+        self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
+
+        response = self.events_client.put_events(
+            Entries=[
+                {
+                    'DetailType': 'Test',
+                }
+            ]
+        )
+        self.assertIn('Entries', response)
+
     def test_put_event_with_content_base_rule_in_pattern(self):
         queue_name = 'queue-{}'.format(short_uid())
         rule_name = 'rule-{}'.format(short_uid())
