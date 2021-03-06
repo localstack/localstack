@@ -1,8 +1,10 @@
+import re
 import types
 import logging
 import traceback
 from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
-from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys
+from moto.s3.responses import (minidom, MalformedXML, undo_clean_key_name, is_delete_keys,
+    bucketpath_bucket_name_from_url)
 from moto.s3.exceptions import S3ClientError
 from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
@@ -291,3 +293,17 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance.is_delete_keys = types.MethodType(
         s3_response_is_delete_keys, s3_responses.S3ResponseInstance)
+
+    def parse_bucket_name_from_url(self, request, url):
+        localstack_pattern = re.compile(r'^(.+).s3.localhost.localstack.cloud:4566')
+        host = request.headers.get('host', request.headers.get('Host'))
+
+        match = localstack_pattern.match(host)
+        if match:
+            bucket_name = match.groups()[0]
+            return bucket_name
+        else:
+            return bucketpath_bucket_name_from_url(url)
+
+    s3_responses.S3ResponseInstance.parse_bucket_name_from_url = types.MethodType(
+        parse_bucket_name_from_url, s3_responses.S3ResponseInstance)

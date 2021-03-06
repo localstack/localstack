@@ -74,6 +74,9 @@ XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
+# s3 hostname pattern
+S3_HOSTNAME_PATTERN = r'^(.+).s3.localhost.localstack.cloud:4566'
+
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
 
@@ -917,14 +920,18 @@ def uses_path_addressing(headers):
 
 
 def get_bucket_name(path, headers):
+    # LOGGER.error('path: %s, headers: %s' % (path, headers))
+
     parsed = urlparse.urlparse(path)
 
     # try pick the bucket_name from the path
     bucket_name = parsed.path.split('/')[1]
 
     # is the hostname not starting with a bucket name?
-    if uses_path_addressing(headers):
-        return normalize_bucket_name(bucket_name)
+    # if uses_path_addressing(headers):
+    #     return normalize_bucket_name(bucket_name)
+
+    localstack_pattern = re.compile(S3_HOSTNAME_PATTERN)
 
     # matches the common endpoints like
     #     - '<bucket_name>.s3.<region>.amazonaws.com'
@@ -944,12 +951,16 @@ def get_bucket_name(path, headers):
     # if any of the above patterns match, the first captured group
     # will be returned as the bucket name
     host = headers['host']
-    for pattern in [common_pattern, dualstack_pattern, legacy_patterns]:
+    for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
         match = pattern.match(host)
+        # LOGGER.error('match: %s' % match)
         if match:
             bucket_name = match.groups()[0]
             break
+        else:
+            bucket_name = parsed.path.split('/')[1]
 
+    # LOGGER.error('Returning Bucket Name: %s' % bucket_name)
     # we're either returning the original bucket_name,
     # or a pattern matched the host and we're returning that name instead
     return normalize_bucket_name(bucket_name)
@@ -1078,6 +1089,7 @@ class ProxyListenerS3(PersistingProxyListener):
             return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
     def forward_request(self, method, path, data, headers):
+        # LOGGER.error('Method: %s\nPath: %s\nHeaders: %s' % (method, path, headers))
 
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
@@ -1097,8 +1109,8 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
         # Note that all S3 clients using LocalStack need to enable path style addressing.
-        if 's3.amazonaws.com' not in headers.get('host', ''):
-            headers['host'] = 'localhost'
+        # if 's3.amazonaws.com' not in headers.get('host', ''):
+        #     headers['host'] = 'localhost'
 
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
@@ -1111,6 +1123,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # check bucket name
         bucket_name = get_bucket_name(path, headers)
+        # LOGGER.error('Bucket name: %s' % bucket_name)
         if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
             if len(parsed_path.path) <= 1:
                 return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
@@ -1152,7 +1165,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # parse query params
         query = parsed_path.query
         path = parsed_path.path
-        bucket = path.split('/')[1]
+        bucket = bucket_name
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
 
         # remap metadata query params (not supported in moto) to request headers

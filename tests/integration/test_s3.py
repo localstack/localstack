@@ -72,7 +72,7 @@ class TestS3(unittest.TestCase):
             </CreateBucketConfiguration>"""
         headers = aws_stack.mock_aws_request_headers('s3')
         bucket_name = 'test-%s' % short_uid()
-        headers['Host'] = '%s.s3.amazonaws.com' % bucket_name
+        headers['Host'] = '%s.s3.localhost.localstack.cloud' % bucket_name
         response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
         self.assertEquals(response.status_code, 200)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
@@ -392,7 +392,7 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     def test_bucket_availability(self):
-        bucket_name = 'test_bucket_lifecycle'
+        bucket_name = 'test-bucket-lifecycle'
         returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
         self.assertRegexpMatches(returned_empty_lifecycle._content, r'The bucket does not exist')
 
