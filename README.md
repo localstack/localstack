@@ -66,6 +66,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **API Gateway V2 (WebSockets support)**
 * **AppSync**
 * **Athena**
+* **Batch**
 * **CloudFront**
 * **CloudTrail**
 * **Cognito**
@@ -129,7 +130,7 @@ pip install localstack
 should be installed and started entirely under a local non-root user. If you have problems
 with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
-## Running 
+## Running
 
 By default, LocalStack gets started inside a Docker container using this command:
 
