@@ -927,10 +927,6 @@ def get_bucket_name(path, headers):
     # try pick the bucket_name from the path
     bucket_name = parsed.path.split('/')[1]
 
-    # is the hostname not starting with a bucket name?
-    # if uses_path_addressing(headers):
-    #     return normalize_bucket_name(bucket_name)
-
     localstack_pattern = re.compile(S3_HOSTNAME_PATTERN)
 
     # matches the common endpoints like
@@ -953,7 +949,6 @@ def get_bucket_name(path, headers):
     host = headers['host']
     for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
         match = pattern.match(host)
-        # LOGGER.error('match: %s' % match)
         if match:
             bucket_name = match.groups()[0]
             break
@@ -1089,8 +1084,6 @@ class ProxyListenerS3(PersistingProxyListener):
             return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
     def forward_request(self, method, path, data, headers):
-        # LOGGER.error('Method: %s\nPath: %s\nHeaders: %s' % (method, path, headers))
-
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
@@ -1107,11 +1100,6 @@ class ProxyListenerS3(PersistingProxyListener):
         # parse path and query params
         parsed_path = urlparse.urlparse(path)
 
-        # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
-        # Note that all S3 clients using LocalStack need to enable path style addressing.
-        # if 's3.amazonaws.com' not in headers.get('host', ''):
-        #     headers['host'] = 'localhost'
-
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
                 and not self.is_create_multipart_request(parsed_path.query):
@@ -1123,7 +1111,6 @@ class ProxyListenerS3(PersistingProxyListener):
 
         # check bucket name
         bucket_name = get_bucket_name(path, headers)
-        # LOGGER.error('Bucket name: %s' % bucket_name)
         if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
             if len(parsed_path.path) <= 1:
                 return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +

@@ -246,9 +246,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         # configure S3 path style addressing
         if service_name == 's3':
             if re.match(r'https?://localhost(:[0-9]+)?', endpoint_url):
-                LOG.error('----------------Host Header: %s' % endpoint_url)
                 endpoint_url = endpoint_url.replace('localhost', 's3.localhost.localstack.cloud')
-                LOG.error('^^^^^^^^^^^^^^^^Host Header: %s' % endpoint_url)
                 config.s3 = {'addressing_style': 'virtual'}
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
