@@ -946,7 +946,6 @@ def get_bucket_name(path, headers):
     host = headers['host']
     for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
         match = pattern.match(host)
-        # LOGGER.error('match: %s' % match)
         if match:
             bucket_name = match.groups()[0]
             break
