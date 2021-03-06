@@ -523,12 +523,12 @@ class EventsTest(unittest.TestCase):
         self.cleanup(bus_name, rule_name, target_id)
 
     def test_put_events_with_target_sqs_new_region(self):
-        self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
+        self.events_client = aws_stack.connect_to_service('events', region_name='eu-west-1')
         queue_name = 'queue-{}'.format(short_uid())
         rule_name = 'rule-{}'.format(short_uid())
         target_id = 'target-{}'.format(short_uid())
 
-        sqs_client = aws_stack.connect_to_service('sqs', Region='eu-west-1')
+        sqs_client = aws_stack.connect_to_service('sqs', region_name='eu-west-1')
         sqs_client.create_queue(QueueName=queue_name)
         queue_arn = aws_stack.sqs_queue_arn(queue_name)
 
@@ -689,20 +689,13 @@ class EventsTest(unittest.TestCase):
         self.cleanup(bus_name, rule_name, target_id, queue_url=queue_url)
 
     def test_put_event_without_source(self):
-        self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
+        self.events_client = aws_stack.connect_to_service('events', region_name='eu-west-1')
 
-        response = self.events_client.put_events(
-            Entries=[
-                {
-                    'DetailType': 'Test',
-                    'Detail': '{}'
-                }
-            ]
-        )
+        response = self.events_client.put_events(Entries=[{'DetailType': 'Test', 'Detail': '{}'}])
         self.assertIn('Entries', response)
 
     def test_put_event_without_detail(self):
-        self.events_client = aws_stack.connect_to_service('events', Region='eu-west-1')
+        self.events_client = aws_stack.connect_to_service('events', region_name='eu-west-1')
 
         response = self.events_client.put_events(
             Entries=[
