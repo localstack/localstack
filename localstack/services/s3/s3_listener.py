@@ -920,6 +920,8 @@ def uses_path_addressing(headers):
 
 
 def get_bucket_name(path, headers):
+    # LOGGER.error('path: %s, headers: %s' % (path, headers))
+
     parsed = urlparse.urlparse(path)
 
     localstack_pattern = re.compile(S3_HOSTNAME_PATTERN)
@@ -944,12 +946,14 @@ def get_bucket_name(path, headers):
     host = headers['host']
     for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
         match = pattern.match(host)
+        # LOGGER.error('match: %s' % match)
         if match:
             bucket_name = match.groups()[0]
             break
         else:
             bucket_name = parsed.path.split('/')[1]
 
+    # LOGGER.error('Returning Bucket Name: %s' % bucket_name)
     # we're either returning the original bucket_name,
     # or a pattern matched the host and we're returning that name instead
     return normalize_bucket_name(bucket_name)
