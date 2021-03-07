@@ -1492,18 +1492,15 @@ def authenticate_presign_url(method, path, headers, data=None):
     }
 
     if not is_v2 and any([p in query_params for p in PRESIGN_QUERY_PARAMS]):
-        LOGGER.debug('URL is kind of version 2 but it does not contains all required query parameters.')
         response = requests_error_response_xml_signature_calculation(
             code=403,
             message='Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters',
             code_string='AccessDenied'
         )
     elif is_v2 and not is_v4:
-        LOGGER.debug('Valid version 2 presign URL.')
         response = authenticate_presign_url_signv2(method, path, headers, data, url, query_params, request_dict)
 
     if not is_v4 and any([p in query_params for p in SIGNATURE_V4_PARAMS]):
-        LOGGER.debug('URL is kind of version 4 but it does not contains all required query parameters.')
         response = requests_error_response_xml_signature_calculation(
             code=403,
             message='Query-string authentication requires the X-Amz-Algorithm, \
@@ -1512,7 +1509,6 @@ def authenticate_presign_url(method, path, headers, data=None):
             code_string='AccessDenied'
         )
     elif is_v4 and not is_v2:
-        LOGGER.debug('Valid version 4 presign URL.')
         response = authenticate_presign_url_signv4(method, path, headers, data, url, query_params, request_dict)
 
     if response is not None:
@@ -1534,7 +1530,6 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
     query_sig = urlparse.unquote(query_params['Signature'][0])
     if query_sig != signature:
 
-        LOGGER.debug('Signatures do not match: received "%s", calculated "%s"' % (query_sig, signature))
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',
@@ -1546,7 +1541,6 @@ def authenticate_presign_url_signv2(method, path, headers, data, url, query_para
 
     # Checking whether the url is expired or not
     if int(query_params['Expires'][0]) < time.time():
-        LOGGER.debug('Signature matched. But it already expired.')
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='AccessDenied',
@@ -1573,7 +1567,6 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
     query_sig = urlparse.unquote(query_params['X-Amz-Signature'][0])
     if query_sig != signature:
 
-        LOGGER.debug('Signatures do not match: received "%s", calculated "%s"' % (query_sig, signature))
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='SignatureDoesNotMatch',
@@ -1584,7 +1577,6 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
 
     # Checking whether the url is expired or not
     if expiration_time < datetime.datetime.utcnow():
-        LOGGER.debug('Signature matched. But it already expired.')
         return requests_error_response_xml_signature_calculation(
             code=403,
             code_string='AccessDenied',
