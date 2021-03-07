@@ -66,6 +66,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **API Gateway V2 (WebSockets support)**
 * **AppSync**
 * **Athena**
+* **Batch**
 * **CloudFront**
 * **CloudTrail**
 * **Cognito**
@@ -129,7 +130,7 @@ pip install localstack
 should be installed and started entirely under a local non-root user. If you have problems
 with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
-## Running in Docker
+## Running
 
 By default, LocalStack gets started inside a Docker container using this command:
 
@@ -145,6 +146,16 @@ localstack start
 **Note**: By default, LocalStack uses the image tagged `latest` that is cached on your machine, and will **not** pull the latest image automatically from Docker Hub (i.e., the image needs to be pulled manually if needed).
 
 (**Note**: Although it is strongly recommended to use Docker, the infrastructure can also be spun up directly on the host machine using the `--host` startup flag. Note that this will require [additional dependencies](#Developing), and is not supported on some operating systems, including Windows.)
+
+### Using `docker`
+
+You can also use docker directly and use the following command to get started with localstack
+
+```
+docker run --rm -p 4566:4566 -p 4571:4571 localstack/localstack
+```
+
+to run a throw-away container without any external volumes. To start a subset of services use `-e "SERVICES=dynamodb,s3"`.
 
 ### Using `docker-compose`
 
@@ -235,6 +246,7 @@ You can pass the following environment variables to LocalStack:
 * `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
 * `START_WEB`: Flag to control whether the Web UI should be started in Docker (values: `0`/`1`; default: `1`).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
+* `LAMBDA_FORWARD_URL`: URL used to forward all Lambda invocations (useful to run Lambdas via an external service).
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
 * `EXTRA_CORS_EXPOSE_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Expose-Headers` CORS header
 * `LAMBDA_JAVA_OPTS`: Allow passing custom JVM options (e.g., `-Xmx512M`) to Java Lambdas executed in Docker. Use `_debug_port_` placeholder to configure the debug port (e.g., `-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=_debug_port_`).
@@ -257,6 +269,17 @@ An example passing the above environment variables to LocalStack to start Kinesi
 
 ```
 SERVICES=kinesis,lambda,sqs,dynamodb localstack start
+```
+
+### Verifying your docker-compose configuration using the command line
+
+You can use `localstack config validate` command to validate for common mis-configuration.
+
+By `default` it validates `docker-compose.yml`. You can override it using `--file` argument.
+
+For example
+```
+localstack config validate --file=localstack-docker-compose.yml
 ```
 
 ### Dynamically updating configuration at runtime

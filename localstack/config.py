@@ -175,6 +175,12 @@ USE_HTTP2_SERVER = os.environ.get('USE_HTTP2_SERVER', '').strip() not in FALSE_S
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get('MAIN_CONTAINER_NAME', '').strip() or 'localstack_main'
 
+# the latest commit id of the repository when the docker image was created
+LOCALSTACK_BUILD_GIT_HASH = os.environ.get('LOCALSTACK_BUILD_GIT_HASH', '').strip() or None
+
+# the date on which the docker image was created
+LOCALSTACK_BUILD_DATE = os.environ.get('LOCALSTACK_BUILD_DATE', '').strip() or None
+
 
 def has_docker():
     try:
@@ -206,6 +212,9 @@ if not LAMBDA_EXECUTOR:
 # DynamoDB table. If this matches `http(s)://...`, then the Lambda invocation is
 # forwarded as a POST request to that URL.
 LAMBDA_FALLBACK_URL = os.environ.get('LAMBDA_FALLBACK_URL', '').strip()
+# Forward URL used to forward any Lambda invocations to an external
+# endpoint (can use useful for advanced test setups)
+LAMBDA_FORWARD_URL = os.environ.get('LAMBDA_FORWARD_URL', '').strip()
 
 # list of environment variable names used for configuration.
 # Make sure to keep this in sync with the above!

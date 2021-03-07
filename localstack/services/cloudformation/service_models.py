@@ -10,7 +10,8 @@ from localstack.constants import AWS_REGION_US_EAST_1, LOCALHOST
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case, select_attributes
 from localstack.services.cloudformation.deployment_utils import (
-    PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower)
+    PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower,
+    merge_parameters, params_dict_to_list, select_parameters)
 
 LOG = logging.getLogger(__name__)
 
@@ -108,12 +109,14 @@ class GenericBaseModel(CloudFormationModel):
     # ----------------------
 
     def fetch_and_update_state(self, *args, **kwargs):
+        from localstack.utils.cloudformation import template_deployer
         try:
             state = self.fetch_state(*args, **kwargs)
             self.update_state(state)
             return state
         except Exception as e:
-            LOG.debug('Unable to fetch state for resource %s: %s' % (self, e))
+            if not template_deployer.check_not_found_exception(e, self.resource_type, self.properties):
+                LOG.debug('Unable to fetch state for resource %s: %s' % (self, e))
 
     def fetch_state_if_missing(self, *args, **kwargs):
         if not self.state:
@@ -194,6 +197,19 @@ class EventsRule(GenericBaseModel):
         rule_name = self.resolve_refs_recursively(stack_name, self.props.get('Name'), resources)
         result = aws_stack.connect_to_service('events').describe_rule(Name=rule_name) or {}
         return result if result.get('Name') else None
+
+
+class EventBus(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Events::EventBus'
+
+    def fetch_state(self, stack_name, resources):
+        event_bus_arn = self.physical_resource_id
+        if not event_bus_arn:
+            return None
+        client = aws_stack.connect_to_service('events')
+        return client.describe_event_bus(Name=event_bus_arn.split('/')[1])
 
 
 class LogsLogGroup(GenericBaseModel):
@@ -323,6 +339,9 @@ class LambdaEventSourceMapping(GenericBaseModel):
             raise Exception('ResourceNotFound')
         return mapping[0]
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('UUID')
+
 
 class LambdaPermission(GenericBaseModel):
     @staticmethod
@@ -349,6 +368,37 @@ class LambdaPermission(GenericBaseModel):
     def get_physical_resource_id(self, attribute=None, **kwargs):
         # return statement ID here to indicate that the resource has been deployed
         return self.props.get('Sid')
+
+
+class LambdaEventInvokeConfig(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Lambda::EventInvokeConfig'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('lambda')
+        props = self.props
+        result = client.get_function_event_invoke_config(
+            FunctionName=props.get('FunctionName'), Qualifier=props.get('FunctionName', '$LATEST'))
+        return result
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        props = self.props
+        return 'lambdaconfig-%s-%s' % (props.get('FunctionName'), props.get('Qualifier'))
+
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'put_function_event_invoke_config'
+            },
+            'delete': {
+                'function': 'delete_function_event_invoke_config',
+                'parameters': {
+                    'FunctionName': 'FunctionName',
+                    'Qualifier': 'Qualifier'
+                }
+            }
+        }
 
 
 class ElasticsearchDomain(GenericBaseModel):
@@ -394,6 +444,32 @@ class KinesisStream(GenericBaseModel):
         stream_name = self.resolve_refs_recursively(stack_name, self.props['Name'], resources)
         result = aws_stack.connect_to_service('kinesis').describe_stream(StreamName=stream_name)
         return result
+
+
+class KinesisStreamConsumer(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Kinesis::StreamConsumer'
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('ConsumerARN')
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        stream_arn = self.resolve_refs_recursively(stack_name, props['StreamARN'], resources)
+        result = aws_stack.connect_to_service('kinesis').list_stream_consumers(StreamARN=stream_arn)
+        result = [r for r in result['Consumers'] if r['ConsumerName'] == props['ConsumerName']]
+        return (result or [None])[0]
+
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'register_stream_consumer'
+            },
+            'delete': {
+                'function': 'deregister_stream_consumer'
+            }
+        }
 
 
 class Route53RecordSet(GenericBaseModel):
@@ -475,14 +551,14 @@ class SFNActivity(GenericBaseModel):
         return 'AWS::StepFunctions::Activity'
 
     def fetch_state(self, stack_name, resources):
-        act_name = self.props.get('Name') or self.resource_id
-        act_name = self.resolve_refs_recursively(stack_name, act_name, resources)
-        sfn_client = aws_stack.connect_to_service('stepfunctions')
-        activities = sfn_client.list_activities()['activities']
-        result = [a['activityArn'] for a in activities if a['name'] == act_name]
-        if not result:
+        activity_arn = resources[self.resource_id].get('PhysicalResourceId')
+        if not activity_arn:
             return None
-        return result[0]
+
+        client = aws_stack.connect_to_service('stepfunctions')
+        return client.describe_activity(
+            activityArn=activity_arn
+        )
 
 
 class IAMRole(GenericBaseModel, MotoRole):
@@ -821,6 +897,12 @@ class GatewayUsagePlanKey(GenericBaseModel):
         return self.props.get('id')
 
 
+class GatewayModel(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::Model'
+
+
 class S3Bucket(GenericBaseModel, FakeBucket):
     def get_resource_name(self):
         return self.normalize_bucket_name(self.props.get('BucketName'))
@@ -936,12 +1018,6 @@ class S3BucketPolicy(GenericBaseModel):
         bucket_name = self.props.get('Bucket') or self.resource_id
         bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
         return aws_stack.connect_to_service('s3').get_bucket_policy(Bucket=bucket_name)
-
-
-class StepFunctionsActivity(GenericBaseModel):
-    @staticmethod
-    def cloudformation_type():
-        return 'AWS::StepFunctions::Activity'
 
 
 class SQSQueue(GenericBaseModel, MotoQueue):
@@ -1074,10 +1150,23 @@ class SSMParameter(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::SSM::Parameter'
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('Name') or self.resource_id
+
     def fetch_state(self, stack_name, resources):
         param_name = self.props.get('Name') or self.resource_id
         param_name = self.resolve_refs_recursively(stack_name, param_name, resources)
         return aws_stack.connect_to_service('ssm').get_parameter(Name=param_name)['Parameter']
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'put_parameter',
+                'parameters': merge_parameters(params_dict_to_list('Tags', wrapper='Tags'), select_parameters(
+                    'Name', 'Type', 'Value', 'Description', 'AllowedPattern', 'Policies', 'Tier'))
+            }
+        }
 
 
 class SecretsManagerSecret(GenericBaseModel):

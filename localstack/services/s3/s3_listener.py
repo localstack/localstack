@@ -160,7 +160,7 @@ def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag=''
     bucket_name = normalize_bucket_name(bucket_name)
     return {
         'Records': [{
-            'eventVersion': '2.0',
+            'eventVersion': '2.1',
             'eventSource': 'aws:s3',
             'awsRegion': aws_stack.get_region(),
             'eventTime': timestamp_millis(),
@@ -734,6 +734,16 @@ def set_lifecycle(bucket_name, lifecycle):
     return 200
 
 
+def delete_lifecycle(bucket_name):
+    bucket_name = normalize_bucket_name(bucket_name)
+    exists, code, body = is_bucket_available(bucket_name)
+    if not exists:
+        return requests_response(body, status_code=code)
+
+    if BUCKET_LIFECYCLE.get(bucket_name):
+        BUCKET_LIFECYCLE.pop(bucket_name)
+
+
 def set_replication(bucket_name, replication):
     bucket_name = normalize_bucket_name(bucket_name)
     exists, code, body = is_bucket_available(bucket_name)
@@ -1186,6 +1196,8 @@ class ProxyListenerS3(PersistingProxyListener):
                 return get_lifecycle(bucket)
             if method == 'PUT':
                 return set_lifecycle(bucket, data)
+            if method == 'DELETE':
+                delete_lifecycle(bucket)
 
         if query == 'replication' or 'replication' in query_map:
             if method == 'GET':
@@ -1204,6 +1216,9 @@ class ProxyListenerS3(PersistingProxyListener):
                 return get_object_lock(bucket)
             if method == 'PUT':
                 return set_object_lock(bucket, data)
+
+        if method == 'DELETE' and re.match(BUCKET_NAME_REGEX, bucket_name):
+            delete_lifecycle(bucket_name)
 
         path_orig_escaped = path_orig.replace('#', '%23')
         if modified_data is not None or headers_changed or path_orig != path_orig_escaped:
@@ -1308,7 +1323,7 @@ class ProxyListenerS3(PersistingProxyListener):
             s3_client = aws_stack.connect_to_service('s3')
 
             try:
-                # Verify the bucket exists in the first place--if not, we want normal processing of the 404
+                # Verify the bucket exists in the first place - if not, we want normal processing of the 404
                 s3_client.head_bucket(Bucket=bucket_name)
                 website_config = s3_client.get_bucket_website(Bucket=bucket_name)
                 error_doc_key = website_config.get('ErrorDocument', {}).get('Key')

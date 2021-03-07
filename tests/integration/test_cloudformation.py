@@ -468,6 +468,27 @@ Outputs:
     Value: !Ref MessageQueue
 """
 
+TEST_TEMPLATE_27_1 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MyQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: %s
+"""
+TEST_TEMPLATE_27_2 = """
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  MessageQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      QueueName: %s
+      DelaySeconds: 5
+Outputs:
+  MessageQueueUrl:
+    Value: !Ref MessageQueue
+"""
+
 
 def bucket_exists(name):
     s3_client = aws_stack.connect_to_service('s3')
@@ -508,6 +529,13 @@ def stream_exists(name):
     kinesis_client = aws_stack.connect_to_service('kinesis')
     streams = kinesis_client.list_streams()
     return name in streams['StreamNames']
+
+
+def stream_consumer_exists(stream_name, consumer_name):
+    kinesis_client = aws_stack.connect_to_service('kinesis')
+    consumers = kinesis_client.list_stream_consumers(StreamARN=aws_stack.kinesis_stream_arn(stream_name))
+    consumers = [c['ConsumerName'] for c in consumers['Consumers']]
+    return consumer_name in consumers
 
 
 def ssm_param_exists(name):
@@ -578,6 +606,7 @@ class CloudFormationTest(unittest.TestCase):
         topic_arn = topic_exists('%s-test-topic-1-1' % stack_name)
         self.assertTrue(topic_arn)
         self.assertTrue(stream_exists('cf-test-stream-1'))
+        self.assertTrue(stream_consumer_exists('cf-test-stream-1', 'c1'))
         resource = describe_stack_resource(stack_name, 'SQSQueueNoNameProperty')
         self.assertTrue(queue_exists(resource['PhysicalResourceId']))
         self.assertTrue(ssm_param_exists('cf-test-param-1'))
@@ -613,9 +642,10 @@ class CloudFormationTest(unittest.TestCase):
         self.assertIn(':%s:%s-test-topic-1-1' % (TEST_AWS_ACCOUNT_ID, stack_name), subs[0]['TopicArn'])
         # assert that subscription attributes are added properly
         attrs = sns.get_subscription_attributes(SubscriptionArn=subs[0]['SubscriptionArn'])['Attributes']
-        self.assertEqual(attrs, {'Endpoint': subs[0]['Endpoint'], 'Protocol': 'sqs',
-                                 'SubscriptionArn': subs[0]['SubscriptionArn'], 'TopicArn': subs[0]['TopicArn'],
-                                 'FilterPolicy': json.dumps({'eventType': ['created']})})
+        expected = {'Endpoint': subs[0]['Endpoint'], 'Protocol': 'sqs',
+            'SubscriptionArn': subs[0]['SubscriptionArn'], 'TopicArn': subs[0]['TopicArn'],
+            'FilterPolicy': json.dumps({'eventType': ['created']}), 'PendingConfirmation': 'false'}
+        self.assertEqual(attrs, expected)
 
         # assert that Gateway responses have been created
         test_api_name = 'test-api'
@@ -633,6 +663,7 @@ class CloudFormationTest(unittest.TestCase):
         self.assertFalse(queue_exists('cf-test-queue-1'))
         self.assertFalse(topic_exists('%s-test-topic-1-1' % stack_name))
         retry(lambda: self.assertFalse(stream_exists('cf-test-stream-1')))
+        self.assertFalse(stream_consumer_exists('cf-test-stream-1', 'c1'))
 
     def test_list_stack_events(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
@@ -1909,6 +1940,8 @@ class CloudFormationTest(unittest.TestCase):
         template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml'))
 
         cfn = aws_stack.connect_to_service('cloudformation')
+        ec2_client = aws_stack.connect_to_service('ec2')
+
         cfn.create_stack(
             StackName=stack_name,
             TemplateBody=template,
@@ -1925,20 +1958,17 @@ class CloudFormationTest(unittest.TestCase):
         instances = [res for res in resources if res['ResourceType'] == 'AWS::EC2::Instance']
         self.assertEqual(len(instances), 1)
 
-        ec2_client = aws_stack.connect_to_service('ec2')
-
         resp = ec2_client.describe_instances(
             InstanceIds=[
                 instances[0]['PhysicalResourceId']
             ]
         )
         self.assertEqual(len(resp['Reservations'][0]['Instances']), 1)
-
         self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.nano')
 
         cfn.update_stack(
             StackName=stack_name,
-            TemplateBody=load_file(os.path.join(THIS_FOLDER, 'templates', 'template30.yaml')),
+            TemplateBody=template,
             Parameters=[
                 {
                     'ParameterKey': 'InstanceType',
@@ -1953,7 +1983,115 @@ class CloudFormationTest(unittest.TestCase):
                 instances[0]['PhysicalResourceId']
             ]
         )
-
         self.assertEqual(resp['Reservations'][0]['Instances'][0]['InstanceType'], 't2.medium')
 
+        # clean up
         self.cleanup(stack_name)
+
+    def test_cfn_update_different_stack(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+        sqs = aws_stack.connect_to_service('sqs')
+
+        queue_name = 'q-%s' % short_uid()
+        template1 = TEST_TEMPLATE_27_1 % queue_name
+        template2 = TEST_TEMPLATE_27_2 % queue_name
+        stack_name = 'stack-%s' % short_uid()
+        deploy_cf_stack(stack_name=stack_name, template_body=template1)
+        queue_url = sqs.get_queue_url(QueueName=queue_name)['QueueUrl']
+
+        cloudformation.update_stack(StackName=stack_name, TemplateBody=template2)
+        status = await_stack_completion(stack_name)
+        self.assertEqual(status['StackStatus'], 'UPDATE_COMPLETE')
+
+        queues = sqs.list_queues().get('QueueUrls', [])
+        self.assertIn(queue_url, queues)
+        result = sqs.get_queue_attributes(QueueUrl=queue_url, AttributeNames=['All'])
+        self.assertEqual(result['Attributes']['DelaySeconds'], '5')
+
+        outputs = cloudformation.describe_stacks(StackName=stack_name)['Stacks'][0]['Outputs']
+        output = [out['OutputValue'] for out in outputs if out['OutputKey'] == 'MessageQueueUrl'][0]
+        self.assertEqual(output, queue_url)
+
+    def test_cfn_event_bus_resource(self):
+        stack_name = 'stack-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template31.yaml'))
+        deploy_cf_stack(stack_name=stack_name, template_body=template)
+
+        event_client = aws_stack.connect_to_service('events')
+
+        rs = event_client.list_event_buses()
+        event_buses = [eb for eb in rs['EventBuses'] if eb['Name'] == 'my-testing']
+        self.assertEqual(len(event_buses), 1)
+
+        # clean up
+        self.cleanup(stack_name)
+
+        rs = event_client.list_event_buses()
+        event_buses = [eb for eb in rs['EventBuses'] if eb['Name'] == 'my-testing']
+        self.assertEqual(len(event_buses), 0)
+
+    def test_cfn_statemachine_with_dependencies(self):
+        stack_name = 'stack-%s' % short_uid()
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'statemachine_test.json'))
+        deploy_cf_stack(stack_name=stack_name, template_body=template)
+
+        sfn_client = aws_stack.connect_to_service('stepfunctions')
+
+        rs = sfn_client.list_state_machines()
+        statemachines = [sm for sm in rs['stateMachines'] if '{}-SFSM22S5Y'.format(stack_name) in sm['name']]
+        self.assertEqual(len(statemachines), 1)
+
+        # clean up
+        self.cleanup(stack_name)
+        time.sleep(2)
+
+        rs = sfn_client.list_state_machines()
+        statemachines = [sm for sm in rs['stateMachines'] if '{}-SFSM22S5Y'.format(stack_name) in sm['name']]
+        self.assertEqual(len(statemachines), 0)
+
+    def test_cfn_apigateway_rest_api(self):
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'apigateway.json'))
+        cfn = aws_stack.connect_to_service('cloudformation')
+
+        stack_name = 'stack-%s' % short_uid()
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template
+        )
+        await_stack_completion(stack_name)
+
+        apigw_client = aws_stack.connect_to_service('apigateway')
+
+        rs = apigw_client.get_rest_apis()
+        apis = [item for item in rs['items'] if item['name'] == 'DemoApi_dev']
+        self.assertEqual(len(apis), 0)
+
+        # clean up
+        self.cleanup(stack_name)
+
+        stack_name = 'stack-%s' % short_uid()
+
+        cfn.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Parameters=[
+                {
+                    'ParameterKey': 'Create',
+                    'ParameterValue': 'True'
+                }
+            ]
+        )
+        await_stack_completion(stack_name)
+
+        rs = apigw_client.get_rest_apis()
+        apis = [item for item in rs['items'] if item['name'] == 'DemoApi_dev']
+        self.assertEqual(len(apis), 1)
+
+        rs = apigw_client.get_models(restApiId=apis[0]['id'])
+        self.assertEqual(len(rs['items']), 1)
+
+        # clean up
+        self.cleanup(stack_name)
+
+        apis = [item for item in rs['items'] if item['name'] == 'DemoApi_dev']
+        self.assertEqual(len(apis), 0)

@@ -389,6 +389,8 @@ def modify_and_forward(method=None, path=None, data_bytes=None, headers=None, fo
             data = modified_request.data
             headers = modified_request.headers
             break
+        elif http2_server.get_async_generator_result(listener_result):
+            return listener_result
         elif listener_result is not True:
             # get status code from response, or use Bad Gateway status code
             code = listener_result if isinstance(listener_result, int) else 503

@@ -54,7 +54,11 @@ infra:             ## Manually start the local infrastructure for testing
 	($(VENV_RUN); exec bin/localstack start --host)
 
 docker-build:      ## Build Docker image
-	docker build -t $(IMAGE_NAME) .
+	# prepare
+	test -e 'localstack/infra/stepfunctions/StepFunctionsLocal.jar' || make init
+	# start build
+	docker build --build-arg LOCALSTACK_BUILD_GIT_HASH=$(shell git rev-parse --short HEAD) \
+	--build-arg=LOCALSTACK_BUILD_DATE=$(shell date -u +"%Y%m%d") -t $(IMAGE_NAME) .
 
 docker-squash:
 	# squash entire image
@@ -105,6 +109,9 @@ docker-run:        ## Run Docker image locally
 docker-mount-run:
 	MOTO_DIR=$$(echo $$(pwd)/.venv/lib/python*/site-packages/moto | awk '{print $$NF}'); echo MOTO_DIR $$MOTO_DIR; \
 		ENTRYPOINT="-v `pwd`/localstack/constants.py:/opt/code/localstack/localstack/constants.py -v `pwd`/localstack/config.py:/opt/code/localstack/localstack/config.py -v `pwd`/localstack/plugins.py:/opt/code/localstack/localstack/plugins.py -v `pwd`/localstack/utils:/opt/code/localstack/localstack/utils -v `pwd`/localstack/services:/opt/code/localstack/localstack/services -v `pwd`/localstack/dashboard:/opt/code/localstack/localstack/dashboard -v `pwd`/tests:/opt/code/localstack/tests -v $$MOTO_DIR:/opt/code/localstack/.venv/lib/python3.8/site-packages/moto/" make docker-run
+
+docker-build-lambdas:
+	docker build -t localstack/lambda-js:nodejs14.x -f bin/lambda/Dockerfile.nodejs14x .
 
 vagrant-start:
 	@vagrant up || EXIT_CODE=$$? ;\

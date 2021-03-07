@@ -64,11 +64,17 @@ resources:
           WriteCapacityUnits: 1
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+
     KinesisStream:
       Type: AWS::Kinesis::Stream
       Properties:
         Name: KinesisTestStream
         ShardCount: 1
+    KinesisStreamConsumer:
+      Type: AWS::Kinesis::StreamConsumer
+      Properties:
+        ConsumerName: stream-consumer1
+        StreamARN: !Ref KinesisStream
 
     # DynamoDB configuration
     loginsTable:
@@ -119,6 +125,8 @@ resources:
 functions:
   test:
     handler: "handler.test"
+    maximumEventAge: 7200
+    maximumRetryAttempts: 2
     events:
       - cloudwatchEvent:
           name: sls-test-cf-event
@@ -133,7 +141,6 @@ functions:
           path: /test/v1
           method: get
           integration: lambda-proxy
-
   dynamodbStreamHandler:
     handler: handler.processItem
     events:
@@ -150,12 +157,26 @@ functions:
     events:
       - stream:
           type: kinesis
-          arn:
-            Fn::GetAtt:
-              - KinesisStream
-              - Arn
+          arn: !GetAtt 'KinesisStream.Arn'
           batchSize: 10
           startingPosition: TRIM_HORIZON
+  kinesisConsumerHandler:
+    handler: handler.processKinesis
+    runtime: python3.8
+    events:
+      - stream:
+          type: kinesis
+          arn: !GetAtt 'KinesisStream.Arn'
+          batchWindow: 10
+          parallelizationFactor: 2
+          maximumRetryAttempts: 2
+          consumer:
+            Fn::GetAtt:
+              - KinesisStreamConsumer
+              - ConsumerARN
+          maximumRecordAgeInSeconds: 120
+          startingPosition: LATEST
+          enabled: true
   queueHandler:
     handler: src/sqs.create
     description: "To handle create new login"

@@ -29,6 +29,7 @@ from localstack.services.generic_proxy import GenericProxyHandler, ProxyListener
 from localstack.services.cloudformation import cloudformation_api
 from localstack.services.dynamodbstreams import dynamodbstreams_api
 from localstack.utils.analytics.profiler import log_duration
+from localstack.utils.cli import print_version
 
 # flag to indicate whether signal handlers have been set up already
 SIGNAL_HANDLERS_SETUP = False
@@ -358,6 +359,8 @@ def start_infra(asynchronous=False, apis=None):
         if is_in_docker and not config.LAMBDA_REMOTE_DOCKER and not os.environ.get('HOST_TMP_FOLDER'):
             print('!WARNING! - Looks like you have configured $LAMBDA_REMOTE_DOCKER=0 - '
                   "please make sure to configure $HOST_TMP_FOLDER to point to your host's $TMPDIR")
+
+        print_version(is_in_docker)
 
         # apply patches
         patch_urllib3_connection_pool(maxsize=128)
