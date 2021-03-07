@@ -1,4 +1,3 @@
-from localstack.services.apigateway.helpers import make_error_response
 import re
 import json
 import time
@@ -12,7 +11,7 @@ from localstack.utils.common import to_str, json_safe, clone, epoch_timestamp, n
 from localstack.utils.analytics import event_publisher
 from localstack.services.awslambda import lambda_api
 from localstack.services.generic_proxy import ProxyListener
-from localstack.utils.aws.aws_responses import convert_to_binary_event_payload, flask_error_response_json
+from localstack.utils.aws.aws_responses import convert_to_binary_event_payload
 
 # action headers (should be left here - imported/required by other files)
 ACTION_PREFIX = 'Kinesis_20131202'
