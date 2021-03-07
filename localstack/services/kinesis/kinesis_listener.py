@@ -68,7 +68,7 @@ class ProxyListenerKinesis(ProxyListener):
             consumer_to_locate = find_consumer(consumer_arn, consumer_name, stream_arn)
 
             if(not consumer_to_locate):
-                error_msg = 'Consumer %s not found.' % consumer_arn or consumer_name
+                error_msg = 'Consumer %s not found.' % (consumer_arn or consumer_name)
 
                 return simple_error_response(error_msg, 400, 'ResourceNotFoundException')
 
