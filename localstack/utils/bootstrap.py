@@ -225,6 +225,15 @@ def get_main_container_ip():
     return run(cmd).strip()
 
 
+def get_main_container_id():
+    container_name = get_main_container_name()
+    try:
+        cmd = "%s inspect -f '{{ .Id }}' %s" % (config.DOCKER_CMD, container_name)
+        return run(cmd, print_error=False).strip()
+    except Exception:
+        return None
+
+
 def get_main_container_name():
     cmd = "%s inspect -f '{{ .Name }}' %s" % (config.DOCKER_CMD, config.HOSTNAME)
     try:

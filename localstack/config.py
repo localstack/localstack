@@ -175,6 +175,12 @@ USE_HTTP2_SERVER = os.environ.get('USE_HTTP2_SERVER', '').strip() not in FALSE_S
 # name of the main Docker container
 MAIN_CONTAINER_NAME = os.environ.get('MAIN_CONTAINER_NAME', '').strip() or 'localstack_main'
 
+# the latest commit id of the repository when the docker image was created
+LOCALSTACK_BUILD_GIT_HASH = os.environ.get('LOCALSTACK_BUILD_GIT_HASH', '').strip() or None
+
+# the date on which the docker image was created
+LOCALSTACK_BUILD_DATE = os.environ.get('LOCALSTACK_BUILD_DATE', '').strip() or None
+
 
 def has_docker():
     try:

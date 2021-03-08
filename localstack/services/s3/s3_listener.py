@@ -1318,7 +1318,7 @@ class ProxyListenerS3(PersistingProxyListener):
             s3_client = aws_stack.connect_to_service('s3')
 
             try:
-                # Verify the bucket exists in the first place--if not, we want normal processing of the 404
+                # Verify the bucket exists in the first place - if not, we want normal processing of the 404
                 s3_client.head_bucket(Bucket=bucket_name)
                 website_config = s3_client.get_bucket_website(Bucket=bucket_name)
                 error_doc_key = website_config.get('ErrorDocument', {}).get('Key')

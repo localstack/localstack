@@ -228,7 +228,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
     region_name = region_name or get_region()
     env = get_environment(env, region_name=region_name)
     region = env.region if env.region != REGION_LOCAL else region_name
-    key_elements = [service_name, client, env, region, endpoint_url, config]
+    key_elements = [service_name, client, env, region, endpoint_url, config, kwargs]
     cache_key = '/'.join([str(k) for k in key_elements])
     if not cache or cache_key not in BOTO_CLIENTS_CACHE:
         # Cache clients, as this is a relatively expensive operation
@@ -250,7 +250,7 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         config.max_pool_connections = MAX_POOL_CONNECTIONS
         result = method(service_name, region_name=region,
-            endpoint_url=endpoint_url, verify=verify, config=config)
+            endpoint_url=endpoint_url, verify=verify, config=config, **kwargs)
         if not cache:
             return result
         BOTO_CLIENTS_CACHE[cache_key] = result
@@ -590,6 +590,14 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
 def get_events_target_attributes(target):
     # TODO: add support for other target types
     return target.get('SqsParameters')
+
+
+def get_or_create_bucket(bucket_name):
+    s3_client = connect_to_service('s3')
+    try:
+        return s3_client.head_bucket(Bucket=bucket_name)
+    except Exception:
+        return s3_client.create_bucket(Bucket=bucket_name)
 
 
 def create_sqs_queue(queue_name, env=None):

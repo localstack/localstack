@@ -30,6 +30,13 @@ class ProxyListenerKinesis(ProxyListener):
         action = headers.get('X-Amz-Target', '').split('.')[-1]
 
         if action == 'RegisterStreamConsumer':
+            prev_consumer = find_consumer(data.get('ConsumerARN', ''),
+                data.get('ConsumerName', ''), data.get('StreamARN', ''))
+
+            if prev_consumer:
+                msg = 'Consumer %s already exists' % prev_consumer.get('ConsumerARN')
+                return simple_error_response(msg, 400, 'ResourceAlreadyExists')
+
             consumer = clone(data)
             consumer['ConsumerStatus'] = 'ACTIVE'
             consumer['ConsumerARN'] = '%s/consumer/%s' % (data['StreamARN'], data['ConsumerName'])
@@ -52,14 +59,24 @@ class ProxyListenerKinesis(ProxyListener):
             }
             return result
         elif action == 'DescribeStreamConsumer':
-            consumer_arn = data.get('ConsumerARN') or data['ConsumerName']
-            consumer_name = data.get('ConsumerName') or data['ConsumerARN']
+            consumer_arn = data.get('ConsumerARN', '')
+            consumer_name = data.get('ConsumerName', '')
+            stream_arn = data.get('StreamArn', '')
+
             creation_timestamp = data.get('ConsumerCreationTimestamp')
+
+            consumer_to_locate = find_consumer(consumer_arn, consumer_name, stream_arn)
+
+            if(not consumer_to_locate):
+                error_msg = 'Consumer %s not found.' % (consumer_arn or consumer_name)
+
+                return simple_error_response(error_msg, 400, 'ResourceNotFoundException')
+
             result = {
                 'ConsumerDescription': {
-                    'ConsumerARN': consumer_arn,
+                    'ConsumerARN': consumer_to_locate.get('ConsumerArn'),
                     'ConsumerCreationTimestamp': creation_timestamp,
-                    'ConsumerName': consumer_name,
+                    'ConsumerName': consumer_to_locate.get('ConsumerName'),
                     'ConsumerStatus': 'ACTIVE',
                     'StreamARN': data.get('StreamARN')
                 }
@@ -218,6 +235,14 @@ def subscribe_to_shard(data):
     return send_events(), headers
 
 
+def find_consumer(consumer_arn='', consumer_name='', stream_arn=''):
+    for consumer in STREAM_CONSUMERS:
+        if consumer_arn and consumer_arn == consumer.get('ConsumerARN'):
+            return consumer
+        elif consumer_name == consumer.get('ConsumerName') and stream_arn == consumer.get('StreamArn'):
+            return consumer
+
+
 def find_stream_for_consumer(consumer_arn):
     kinesis = aws_stack.connect_to_service('kinesis')
     for stream_name in kinesis.list_streams()['StreamNames']:
@@ -226,6 +251,14 @@ def find_stream_for_consumer(consumer_arn):
             if cons['ConsumerARN'] == consumer_arn:
                 return stream_name
     raise Exception('Unable to find stream for stream consumer %s' % consumer_arn)
+
+
+def simple_error_response(msg, code, type_error):
+    error_response = Response()
+    error_response.status_code = code
+    error_response._content = json.dumps({'message': msg,
+        '__type': type_error})
+    return error_response
 
 
 def kinesis_error_response(data, action):

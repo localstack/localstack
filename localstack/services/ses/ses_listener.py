@@ -8,7 +8,7 @@ class ProxyListenerSES(ProxyListener):
     def return_response(self, method, path, data, headers, response):
         xml = to_str(response.content)
         has_xmlns = self.response_has_xmlns(xml)
-        if len(xml) > 0 and not has_xmlns:
+        if xml and xml[0] == '<' and not has_xmlns:
             xmlns = 'http://ses.amazonaws.com/doc/2010-01-31/'
             response_type = re.findall(r'<(\w+)\s?>', xml)[0]
             response_xmlns = '%s xmlns="%s"' % (response_type, xmlns)

@@ -14,6 +14,8 @@ from localstack.utils.common import short_uid, to_str, to_bytes, json_safe, repl
 
 REGEX_FLAGS = re.MULTILINE | re.DOTALL
 
+AWS_BINARY_DATA_TYPE_STRING = 7
+
 
 class ErrorResponse(Exception):
     def __init__(self, response):
@@ -170,20 +172,25 @@ def calculate_crc32(content):
     return crc32(to_bytes(content)) & 0xffffffff
 
 
-def convert_to_binary_event_payload(result, event_type=None):
+def convert_to_binary_event_payload(result, event_type=None, message_type=None):
     # e.g.: https://docs.aws.amazon.com/AmazonS3/latest/API/RESTSelectObjectAppendix.html
     # e.g.: https://docs.aws.amazon.com/transcribe/latest/dg/event-stream.html
 
-    event_type = event_type or 'Records'
+    header_descriptors = {
+        ':event-type': event_type or 'Records',
+        ':message-type': message_type or 'event'
+    }
+
     # construct headers
     headers = b''
-    header_name = b':event-type'
-    header_value = to_bytes(event_type)
-    headers += pack('!B', len(header_name))
-    headers += header_name
-    headers += pack('!B', 7)
-    headers += pack('!H', len(header_value))
-    headers += header_value
+    for key, value in header_descriptors.items():
+        header_name = key.encode(DEFAULT_ENCODING)
+        header_value = to_bytes(value)
+        headers += pack('!B', len(header_name))
+        headers += header_name
+        headers += pack('!B', AWS_BINARY_DATA_TYPE_STRING)
+        headers += pack('!H', len(header_value))
+        headers += header_value
 
     # construct body
     body = bytes(result, DEFAULT_ENCODING)

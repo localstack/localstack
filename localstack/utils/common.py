@@ -730,11 +730,20 @@ def rm_rf(path):
         shutil.rmtree(path)
 
 
-def cp_r(src, dst):
+def cp_r(src, dst, rm_dest_on_conflict=False):
     """Recursively copies file/directory"""
     if os.path.isfile(src):
         return shutil.copy(src, dst)
-    return shutil.copytree(src, dst, dirs_exist_ok=True)
+    kwargs = {}
+    if 'dirs_exist_ok' in inspect.getargspec(shutil.copytree)[0]:
+        kwargs['dirs_exist_ok'] = True
+    try:
+        return shutil.copytree(src, dst, **kwargs)
+    except FileExistsError:
+        if rm_dest_on_conflict:
+            rm_rf(dst)
+            return shutil.copytree(src, dst, **kwargs)
+        raise
 
 
 def disk_usage(path, include_hidden=False):

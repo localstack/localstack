@@ -199,6 +199,19 @@ class EventsRule(GenericBaseModel):
         return result if result.get('Name') else None
 
 
+class EventBus(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::Events::EventBus'
+
+    def fetch_state(self, stack_name, resources):
+        event_bus_arn = self.physical_resource_id
+        if not event_bus_arn:
+            return None
+        client = aws_stack.connect_to_service('events')
+        return client.describe_event_bus(Name=event_bus_arn.split('/')[1])
+
+
 class LogsLogGroup(GenericBaseModel):
     @staticmethod
     def cloudformation_type():
@@ -538,14 +551,14 @@ class SFNActivity(GenericBaseModel):
         return 'AWS::StepFunctions::Activity'
 
     def fetch_state(self, stack_name, resources):
-        act_name = self.props.get('Name') or self.resource_id
-        act_name = self.resolve_refs_recursively(stack_name, act_name, resources)
-        sfn_client = aws_stack.connect_to_service('stepfunctions')
-        activities = sfn_client.list_activities()['activities']
-        result = [a['activityArn'] for a in activities if a['name'] == act_name]
-        if not result:
+        activity_arn = resources[self.resource_id].get('PhysicalResourceId')
+        if not activity_arn:
             return None
-        return result[0]
+
+        client = aws_stack.connect_to_service('stepfunctions')
+        return client.describe_activity(
+            activityArn=activity_arn
+        )
 
 
 class IAMRole(GenericBaseModel, MotoRole):
@@ -884,6 +897,12 @@ class GatewayUsagePlanKey(GenericBaseModel):
         return self.props.get('id')
 
 
+class GatewayModel(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::Model'
+
+
 class S3Bucket(GenericBaseModel, FakeBucket):
     def get_resource_name(self):
         return self.normalize_bucket_name(self.props.get('BucketName'))
@@ -999,12 +1018,6 @@ class S3BucketPolicy(GenericBaseModel):
         bucket_name = self.props.get('Bucket') or self.resource_id
         bucket_name = self.resolve_refs_recursively(stack_name, bucket_name, resources)
         return aws_stack.connect_to_service('s3').get_bucket_policy(Bucket=bucket_name)
-
-
-class StepFunctionsActivity(GenericBaseModel):
-    @staticmethod
-    def cloudformation_type():
-        return 'AWS::StepFunctions::Activity'
 
 
 class SQSQueue(GenericBaseModel, MotoQueue):
@@ -1259,19 +1272,3 @@ class InstanceProfile(GenericBaseModel):
         )
 
         return resp['InstanceProfile']
-
-
-class EventBus(GenericBaseModel):
-    @staticmethod
-    def cloudformation_type():
-        return 'AWS::Events::EventBus'
-
-    def fetch_state(self, stack_name, resources):
-        event_bus_arn = resources[self.resource_id].get('PhysicalResourceId')
-        if not event_bus_arn:
-            return None
-
-        client = aws_stack.connect_to_service('events')
-        return client.describe_event_bus(
-            Name=event_bus_arn.split('/')[1]
-        )
