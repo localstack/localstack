@@ -307,3 +307,12 @@ def apply_patches():
 
     s3_responses.S3ResponseInstance.parse_bucket_name_from_url = types.MethodType(
         parse_bucket_name_from_url, s3_responses.S3ResponseInstance)
+
+    subdomain_based_buckets_orig = s3_responses.S3ResponseInstance.subdomain_based_buckets
+
+    def subdomain_based_buckets(self, request):
+        if subdomain_based_buckets_orig(self, request):
+            s3_listener.uses_path_addressing(request.headers.get('host', request.headers.get('Host')))
+
+    s3_responses.S3ResponseInstance.parse_bucket_name_from_url = types.MethodType(
+        parse_bucket_name_from_url, s3_responses.S3ResponseInstance)

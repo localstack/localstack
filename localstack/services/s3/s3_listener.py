@@ -24,7 +24,6 @@ from botocore.awsrequest import create_request_object
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack import config, constants
-from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
@@ -75,7 +74,7 @@ BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
 # s3 hostname pattern
-S3_HOSTNAME_PATTERN = r'^(.+).s3.localhost.localstack.cloud:4566'
+S3_HOSTNAME_PATTERN = r'^(.+).s3(-website)?.localhost.localstack.cloud:4566'
 
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
@@ -908,15 +907,17 @@ def get_key_name(path, headers):
     path_parts = parsed.path.lstrip('/').split('/', 1)
 
     if uses_path_addressing(headers):
-        return path_parts[1]
-    return path_parts[0]
+        return path_parts[0]
+    return path_parts[1]
 
 
 def uses_path_addressing(headers):
-    # we can assume that the host header we are receiving here is actually the header we originally recieved
-    # from the client (because the edge service is forwarding the request in memory)
-    host = headers.get('host') or headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1]
-    return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL) or host.startswith(LOCALHOST_IP)
+    localstack_pattern = re.compile(S3_HOSTNAME_PATTERN)
+    match = localstack_pattern.match(headers.get('host'))
+    if match:
+        return True
+    else:
+        return False
 
 
 def get_bucket_name(path, headers):
@@ -941,9 +942,8 @@ def get_bucket_name(path, headers):
 
     # if any of the above patterns match, the first captured group
     # will be returned as the bucket name
-    host = headers['host']
     for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
-        match = pattern.match(host)
+        match = pattern.match(headers.get('host'))
         if match:
             bucket_name = match.groups()[0]
             break
@@ -1108,7 +1108,8 @@ class ProxyListenerS3(PersistingProxyListener):
         if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
             if len(parsed_path.path) <= 1:
                 return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
-                    'configured to use path style addressing, or send a valid <Bucket>.s3.amazonaws.com "Host" header',
+                    'configured to use path style addressing, or send a valid ' +
+                    '<Bucket>.s3.localhost.localstack.cloud "Host" header',
                     'InvalidBucketName', status_code=400)
 
             return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
@@ -1312,8 +1313,8 @@ class ProxyListenerS3(PersistingProxyListener):
             response.status_code = 204
             return response
 
-        # emulate ErrorDocument functionality if a website is configured
-        if method == 'GET' and response.status_code == 404 and parsed.query != 'website':
+        # s3-website hosting
+        if method == 'GET' and response.status_code == 404 and 's3-website' in headers.get('host'):
             s3_client = aws_stack.connect_to_service('s3')
 
             try:
@@ -1323,14 +1324,18 @@ class ProxyListenerS3(PersistingProxyListener):
                 error_doc_key = website_config.get('ErrorDocument', {}).get('Key')
 
                 if error_doc_key:
-                    error_doc_path = '/' + bucket_name + '/' + error_doc_key
-                    if parsed.path != error_doc_path:
-                        error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
-                        response.status_code = 200
-                        response._content = error_object['Body'].read()
-                        response.headers['Content-Length'] = str(len(response._content))
+                    error_doc_path = '/' + error_doc_key
+                if parsed.path != error_doc_path:
+                    error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
+                    response.status_code = 200
+                    response._content = error_object['Body'].read()
+                    response.headers['Content-Length'] = str(len(response._content))
+                else:
+                    response.status_code = 404
+                    response._content = ''
+                    response.headers['Content-Length'] = str(len(response._content))
             except ClientError:
-                # Pass on the 404 as usual
+                LOGGER.debug('Bucket Does not Exsists.')
                 pass
 
         if response is not None:

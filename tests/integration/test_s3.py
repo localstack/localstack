@@ -72,7 +72,7 @@ class TestS3(unittest.TestCase):
             </CreateBucketConfiguration>"""
         headers = aws_stack.mock_aws_request_headers('s3')
         bucket_name = 'test-%s' % short_uid()
-        headers['Host'] = '%s.s3.localhost.localstack.cloud' % bucket_name
+        headers['Host'] = '%s.s3.localhost.localstack.cloud:4566' % bucket_name
         response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
         self.assertEquals(response.status_code, 200)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
@@ -117,8 +117,8 @@ class TestS3(unittest.TestCase):
         obj = self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body='something')
 
         # put an object where the bucket_name is in the host
-        # it doesn't care about the authorization header as long as it's present
-        headers = {'Host': '{}.s3.amazonaws.com'.format(bucket_name), 'authorization': 'some_token'}
+        headers = aws_stack.mock_aws_request_headers('s3')
+        headers['Host'] = '%s.s3.localhost.localstack.cloud:4566' % bucket_name
         url = '{}/{}'.format(config.TEST_S3_URL, key_by_host)
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data='something else', headers=headers, verify=False)
@@ -958,10 +958,10 @@ class TestS3(unittest.TestCase):
             Bucket=bucket_name,
             WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
         )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+        url = 'http://{}.s3-website.localhost.localstack.cloud:4566/{}'.format(bucket_name, 'something')
+        headers = aws_stack.mock_aws_request_headers('s3')
+        headers['Host'] = '{}.s3-website.localhost.localstack.cloud:4566'.format(bucket_name)
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, 'This is the error document')
         # cleanup
