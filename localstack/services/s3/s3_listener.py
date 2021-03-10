@@ -942,7 +942,6 @@ def get_bucket_name(path, headers):
 
     # if any of the above patterns match, the first captured group
     # will be returned as the bucket name
-    print('headers.get(host)', headers.get('host'))
     for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
         match = pattern.match(headers.get('host'))
         if match:
