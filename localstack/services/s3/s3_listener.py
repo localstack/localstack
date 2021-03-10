@@ -942,13 +942,17 @@ def get_bucket_name(path, headers):
 
     # if any of the above patterns match, the first captured group
     # will be returned as the bucket name
+    print('headers.get(host)', headers.get('host'))
     for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
         match = pattern.match(headers.get('host'))
         if match:
             bucket_name = match.groups()[0]
             break
         else:
-            bucket_name = parsed.path.split('/')[1]
+            if len(parsed.path) > 0:
+                bucket_name = parsed.path.split('/')[1]
+            else:
+                bucket_name = ''
 
     # we're either returning the original bucket_name,
     # or a pattern matched the host and we're returning that name instead
@@ -1292,7 +1296,7 @@ class ProxyListenerS3(PersistingProxyListener):
             # if we already have a good key, use it, otherwise examine the path
             if key:
                 object_path = '/' + key
-            elif bucket_name_in_host:
+            elif uses_path_addressing(headers):
                 object_path = parsed.path
             else:
                 parts = parsed.path[1:].split('/', 1)

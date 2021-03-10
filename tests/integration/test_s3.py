@@ -60,10 +60,32 @@ class PutRequest(Request):
         return 'PUT'
 
 
+# def test_host_and_path_addressing(wrapped):
+#     """ Decorator that runs a test method with both - path and host style addressing. """
+#     # TODO - needs to be fixed below!
+#     def wrapper(self):
+#         try:
+#             # test via path based addressing
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'virtual'})
+#             wrapped()
+#             # test via host based addressing
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'path'})
+#             wrapped()
+#         finally:
+#             # reset client
+#             TestS3.OVERWRITTEN_CLIENT = None
+#     return
+
 class TestS3(unittest.TestCase):
+    OVERWRITTEN_CLIENT = None
+
     def setUp(self):
-        self.s3_client = aws_stack.connect_to_service('s3')
+        self._s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
+
+    @property
+    def s3_client(self):
+        return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
     def test_create_bucket_via_host_name(self):
         body = """<?xml version="1.0" encoding="UTF-8"?>
@@ -79,6 +101,7 @@ class TestS3(unittest.TestCase):
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('LocationConstraint', response)
 
+    # @test_host_and_path_addressing
     def test_bucket_policy(self):
         # create test bucket
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_WITH_POLICY)
@@ -493,7 +516,7 @@ class TestS3(unittest.TestCase):
         client.create_bucket(Bucket=bucket_name)
 
         # put object
-        object_key = '/foo/bar/key-by-hostname'
+        object_key = 'foo/bar/key-by-hostname'
         content_type = 'foo/bar; charset=utf-8'
         client.put_object(Bucket=bucket_name,
             Key=object_key,
