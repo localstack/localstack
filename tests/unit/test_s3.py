@@ -237,16 +237,21 @@ class S3ListenerTest (unittest.TestCase):
 
     def test_path_addressing_enabled_hosts(self):
         headers = [
-            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{HOSTNAME}:12345'}, True),
-            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{HOSTNAME_EXTERNAL}:12345'}, True),
-            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{LOCALHOST_IP}:12345'}, True),
-            ({'host': f'{HOSTNAME}:12345'}, True),
-            ({'host': f'{HOSTNAME_EXTERNAL}:12345'}, True),
-            ({'host': f'{LOCALHOST_IP}:12345'}, True),
+            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{HOSTNAME}:12345'}, False),
+            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{HOSTNAME_EXTERNAL}:12345'}, False),
+            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{LOCALHOST_IP}:12345'}, False),
+            ({'host': f'{HOSTNAME}:12345'}, False),
+            ({'host': f'{HOSTNAME_EXTERNAL}:12345'}, False),
+            ({'host': f'{LOCALHOST_IP}:12345'}, False),
             ({'host': f'https://{HOSTNAME}:12345'}, False),
             ({'host': f'https://{HOSTNAME_EXTERNAL}:12345'}, False),
             ({'host': f'https://{LOCALHOST_IP}:12345'}, False),
+            ({'host': 'test.s3.localhost.localstack.cloud:12345'}, True),
+            ({'host': 'test-bucket.s3.localhost.localstack.cloud:12345'}, True),
+            ({'host': 'test.s3-website.localhost.localstack.cloud:12345'}, True),
+            ({'host': 'test-bucket.s3-website.localhost.localstack.cloud:12345'}, True)
         ]
+
         for example_header, expected_result in headers:
             assert expected_result == s3_listener.uses_path_addressing(example_header)
 

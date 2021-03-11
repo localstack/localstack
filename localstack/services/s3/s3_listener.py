@@ -74,7 +74,7 @@ BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
 # s3 hostname pattern
-S3_HOSTNAME_PATTERN = r'^(.+).s3(-website)?.localhost.localstack.cloud:4566'
+S3_HOSTNAME_PATTERN = r'^(.+).s3(-website)?.localhost.localstack.cloud(:.*\d)?'
 
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
