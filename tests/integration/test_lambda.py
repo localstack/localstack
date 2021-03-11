@@ -1486,7 +1486,11 @@ class TestJavaRuntimes(LambdaTestBase):
         shutil.copy(jar_without_libs_file, os.path.join(zip_lib_dir, 'lambda.jar'))
         java_zip_with_lib = testutil.create_zip_file(zip_dir, get_content=True)
 
-        for archive in [java_jar_with_lib, java_zip_with_lib]:
+        java_zip_with_lib_gradle = load_file(os.path.join(
+            THIS_FOLDER, 'lambdas', 'java', 'build', 'distributions', 'lambda-function-built-by-gradle.zip'
+        ), mode='rb')
+
+        for archive in [java_jar_with_lib, java_zip_with_lib, java_zip_with_lib_gradle]:
             lambda_name = 'test-%s' % short_uid()
             testutil.create_lambda_function(func_name=lambda_name,
                                             zip_file=archive, runtime=LAMBDA_RUNTIME_JAVA11,
@@ -1497,6 +1501,7 @@ class TestJavaRuntimes(LambdaTestBase):
 
             self.assertEqual(result['StatusCode'], 200)
             self.assertIn('echo', to_str(result_data))
+
             # clean up
             testutil.delete_lambda_function(lambda_name)
 
