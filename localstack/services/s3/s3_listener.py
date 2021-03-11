@@ -1081,6 +1081,7 @@ class ProxyListenerS3(PersistingProxyListener):
             return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
     def forward_request(self, method, path, data, headers):
+        LOGGER.error('Method: %s, Path: %s, Headers: %s' % (method, path, headers.get('host')))
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
