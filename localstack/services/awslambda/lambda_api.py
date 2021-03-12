@@ -21,7 +21,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
     to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
-    mkdir, unzip, is_zip_file, run, first_char_to_lower, run_for_max_seconds,
+    mkdir, unzip, is_zip_file, run, run_safe, first_char_to_lower, run_for_max_seconds,
     timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.services.awslambda import lambda_executors
 from localstack.services.generic_proxy import RegionBackend
@@ -912,8 +912,9 @@ def forward_to_external_url(func_details, event, context, invocation_type):
     data = json.dumps(event) if isinstance(event, dict) else str(event)
     LOG.debug('Forwarding Lambda invocation to LAMBDA_FORWARD_URL: %s' % config.LAMBDA_FORWARD_URL)
     result = safe_requests.post(url, data, headers=headers)
-    LOG.debug('Received result from external Lambda endpoint (status %s): %s' % (
-        result.status_code, result.content))
+    content = run_safe(lambda: to_str(result.content)) or result.content
+    LOG.debug('Received result from external Lambda endpoint (status %s): %s' % (result.status_code, content))
+    result = aws_responses.requests_to_flask_response(result)
     result = lambda_executors.InvocationResult(result)
     return result
 
