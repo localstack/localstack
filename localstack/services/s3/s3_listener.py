@@ -27,6 +27,7 @@ from localstack import config, constants
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
+from localstack.services.s3.s3_utils import (is_static_website, extract_bucket_name)
 from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
 )
@@ -925,24 +926,9 @@ def get_bucket_name(path, headers):
 
     localstack_pattern = re.compile(S3_HOSTNAME_PATTERN)
 
-    # matches the common endpoints like
-    #     - '<bucket_name>.s3.<region>.amazonaws.com'
-    #     - '<bucket_name>.s3-<region>.amazonaws.com.cn'
-    common_pattern = re.compile(r'^(.+)\.s3[.\-][a-z]{2}-[a-z]+-[0-9]{1,}'
-                                r'\.amazonaws\.com(\.[a-z]+)?$')
-    # matches dualstack endpoints like
-    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com'
-    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com.cn'
-    dualstack_pattern = re.compile(r'^(.+)\.s3\.dualstack\.[a-z]{2}-[a-z]+-[0-9]{1,}'
-                                   r'\.amazonaws\.com(\.[a-z]+)?$')
-    # matches legacy endpoints like
-    #     - '<bucket_name>.s3.amazonaws.com'
-    #     - '<bucket_name>.s3-external-1.amazonaws.com.cn'
-    legacy_patterns = re.compile(r'^(.+)\.s3\.?(-external-1)?\.amazonaws\.com(\.[a-z]+)?$')
-
     # if any of the above patterns match, the first captured group
     # will be returned as the bucket name
-    for pattern in [common_pattern, dualstack_pattern, legacy_patterns, localstack_pattern]:
+    for pattern in [localstack_pattern]:
         match = pattern.match(headers.get('host'))
         if match:
             bucket_name = match.groups()[0]
@@ -1081,12 +1067,16 @@ class ProxyListenerS3(PersistingProxyListener):
             return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
     def forward_request(self, method, path, data, headers):
-        LOGGER.error('Method: %s, Path: %s, Headers: %s' % (method, path, headers.get('host')))
+        # print('Method:', method, 'Path:', path, 'Headers:', headers)
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
         path_orig = path
         path = path.replace('#', '%23')  # support key names containing hashes (e.g., required by Amplify)
+        # print('------path:', path, '\npath_orig:', path_orig)
+        # extracting bucket name from the request
+        bucket_name = extract_bucket_name(headers, path)
+        # key_name = extract_key_name(headers, path)
 
         # Detecting pre-sign url and checking signature
         if (any([p in query_params for p in PRESIGN_QUERY_PARAMS]) or
@@ -1095,8 +1085,53 @@ class ProxyListenerS3(PersistingProxyListener):
             if response is not None:
                 return response
 
+        # handling s3 website hosting requests
+        if is_static_website(headers):
+            if method == 'GET':
+                s3_client = aws_stack.connect_to_service('s3')
+                try:
+                    s3_client.head_bucket(Bucket=bucket_name)
+                    website_config = s3_client.get_bucket_website(Bucket=bucket_name)
+                    index_document = path + '/' + website_config.get('IndexDocument', {}).get('Key').lstrip('/')
+                    res = s3_client.head_object(
+                        Bucket=bucket_name,
+                        key=index_document
+                    )
+                    if res['ResponseMetadata']['HTTPStatusCode'] == 200:
+                        response.status_code = 302
+                        response._content = s3_client.get_object(
+                            Bucket=bucket_name,
+                            Key=index_document
+                        )['Body'].read()
+                        response.headers['Content-Length'] = str(len(response._content))
+                        return response
+                    elif res['ResponseMetadata']['HTTPStatusCode'] == 404:
+                        error_document = path + '/' + website_config.get('ErrorDocument', {}).get('Key').lstrip('/')
+                        res = s3_client.head_object(
+                            Bucket=bucket_name,
+                            key=error_document
+                        )
+                        if res['ResponseMetadata']['HTTPStatusCode'] in 200:
+                            response.status_code = 404
+                            response._content = s3_client.get_object(
+                                Bucket=bucket_name,
+                                Key=error_document
+                            )['Body'].read()
+                            response.headers['Content-Length'] = str(len(response._content))
+                            return response
+                    else:
+                        response.status_code = 404
+                        response._content = ''
+                        response.headers['Content-Length'] = str(len(response._content))
+                except ClientError:
+                    LOGGER.debug('Error in website hosting.')
+                    pass
+
+        # fetch bucketname and keyname form the request
+
         # parse path and query params
         parsed_path = urlparse.urlparse(path)
+        # print('-----------------------parsed path:', parsed_path)
 
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
