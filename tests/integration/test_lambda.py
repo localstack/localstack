@@ -86,12 +86,15 @@ def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_reque
     else:
         config.LAMBDA_FORWARD_URL = url
     try:
+        result = []
         for i in range(num_requests):
             lambda_name = lambda_name or 'non-existing-lambda-%s' % i
             ctx = {'env': 'test'}
-            lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"foo":"bar"}',
+            tmp = lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"foo":"bar"}',
                 InvocationType='RequestResponse',
                 ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))))
+        result.append(tmp)
+        return result
     finally:
         if fallback:
             config.LAMBDA_FALLBACK_URL = ''
@@ -176,8 +179,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 records.append({'data': data, 'headers': headers, 'method': method, 'path': path})
-                return 200
+                return lambda_result
 
+        lambda_result = {'result': 'test123'}
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
 
@@ -198,7 +202,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # test 2: forward to LAMBDA_FORWARD_URL
         records = []
-        _run_forward_to_fallback_url(local_url, lambda_name=lambda_name, fallback=False)
+        inv_results = _run_forward_to_fallback_url(local_url, lambda_name=lambda_name, fallback=False)
         items_after = len(records)
         for record in records:
             headers = record['headers']
@@ -209,6 +213,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             self.assertEqual(headers.get('X-Amz-Invocation-Type'), 'RequestResponse')
             self.assertEqual(json.loads(to_str(record['data'])), {'foo': 'bar'})
         self.assertEqual(items_after, 3)
+        # assert result payload matches
+        response_payload = inv_results[0]['Payload'].read()
+        self.assertEqual(json.loads(response_payload), lambda_result)
 
         # clean up / shutdown
         lambda_client = aws_stack.connect_to_service('lambda')
