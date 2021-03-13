@@ -632,6 +632,13 @@ def camel_to_snake_case(string):
     return re.sub(r'(?<!^)(?=[A-Z])', '_', string).replace('__', '_').lower()
 
 
+def snake_to_camel_case(string, capitalize_first=True):
+    components = string.split('_')
+    start_idx = 0 if capitalize_first else 1
+    components = [x.title() for x in components[start_idx:]]
+    return ''.join(components)
+
+
 def base64_to_hex(b64_string):
     return binascii.hexlify(base64.b64decode(b64_string))
 

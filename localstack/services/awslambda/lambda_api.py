@@ -883,7 +883,8 @@ def format_func_details(func_details, version=None, always_add_version=False):
         'RevisionId': func_version.get('RevisionId'),
         'State': 'Active',
         'LastUpdateStatus': 'Successful',
-        'PackageType': func_details.package_type
+        'PackageType': func_details.package_type,
+        'ImageConfig': func_details.image_config
     }
     if func_details.dead_letter_config:
         result['DeadLetterConfig'] = func_details.dead_letter_config
@@ -1035,7 +1036,8 @@ def create_function():
         func_details.memory_size = data.get('MemorySize')
         func_details.code_signing_config_arn = data.get('CodeSigningConfigArn')
         func_details.code = data['Code']
-        func_details.package_type = 'Zip'
+        func_details.package_type = data.get('PackageType') or 'Zip'
+        func_details.image_config = data.get('ImageConfig', {})
         func_details.set_dead_letter_config(data)
         result = set_function_code(func_details.code, lambda_name)
         if isinstance(result, Response):
