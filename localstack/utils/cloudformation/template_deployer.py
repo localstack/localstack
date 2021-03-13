@@ -987,10 +987,11 @@ def resolve_refs_recursively(stack_name, value, resources):
         if stripped_fn_lower == 'sub':
             item_to_sub = value[keys_list[0]]
 
+            attr_refs = dict([(r, {'Ref': r}) for r in STATIC_REFS])
             if not isinstance(item_to_sub, list):
-                attr_refs = dict([(r, {'Ref': r}) for r in STATIC_REFS])
-                item_to_sub = [item_to_sub, attr_refs]
+                item_to_sub = [item_to_sub, {}]
             result = item_to_sub[0]
+            item_to_sub[1].update(attr_refs)
 
             for key, val in item_to_sub[1].items():
                 val = resolve_refs_recursively(stack_name, val, resources)
@@ -1747,7 +1748,7 @@ class TemplateDeployer(object):
     def apply_change_set(self, change_set):
         change_set.stack.set_stack_status('UPDATE_IN_PROGRESS')
         try:
-            change_set.changes = self.apply_changes(change_set.stack, change_set, stack_name=change_set.stack_name)
+            self.apply_changes(change_set.stack, change_set, stack_name=change_set.stack_name)
             change_set.metadata['Status'] = 'UPDATE_COMPLETE'
             self.stack.set_stack_status('UPDATE_COMPLETE')
         except Exception as e:
@@ -1931,35 +1932,54 @@ class TemplateDeployer(object):
             parameters.update({p['ParameterKey']: p for p in change_set.metadata['Parameters']})
 
         old_stack.metadata['Parameters'] = [
-            {
-                'ParameterKey': k,
-                'ParameterValue': v
-            }
+            {'ParameterKey': k, 'ParameterValue': v}
             for k, v in parameters.items() if v
         ]
+
+    def construct_changes(self, existing_stack, new_stack, initialize=False,
+            change_set_id=None, append_to_changeset=False):
+        from localstack.services.cloudformation.cloudformation_api import StackChangeSet
+
+        old_resources = existing_stack.template['Resources']
+        new_resources = new_stack.template['Resources']
+        deletes = [val for key, val in old_resources.items() if key not in new_resources]
+        adds = [val for key, val in new_resources.items() if initialize or key not in old_resources]
+        modifies = [val for key, val in new_resources.items() if key in old_resources]
+
+        changes = []
+        for action, items in (('Remove', deletes), ('Add', adds), ('Modify', modifies)):
+            for item in items:
+                item['Properties'] = item.get('Properties', {})
+                change = self.get_change_config(action, item, change_set_id=change_set_id)
+                changes.append(change)
+
+        # append changes to change set
+        if append_to_changeset and isinstance(new_stack, StackChangeSet):
+            new_stack.changes.extend(changes)
+
+        return changes
 
     def apply_changes(self, existing_stack, new_stack, stack_name, change_set_id=None, initialize=False):
         old_resources = existing_stack.template['Resources']
         new_resources = new_stack.template['Resources']
         self.init_resource_status(old_resources, action='UPDATE')
-        deletes = [val for key, val in old_resources.items() if key not in new_resources]
-        adds = [val for key, val in new_resources.items() if initialize or key not in old_resources]
-        modifies = [val for key, val in new_resources.items() if key in old_resources]
 
+        # apply parameter changes to existing stack
         self.apply_parameter_changes(existing_stack, new_stack)
 
         # construct changes
-        changes = []
+        changes = self.construct_changes(existing_stack, new_stack,
+            initialize=initialize, change_set_id=change_set_id)
+
+        # check if we have actual changes in the stack, and prepare properties
         contains_changes = False
-        for action, items in (('Remove', deletes), ('Add', adds), ('Modify', modifies)):
-            for item in items:
-                item['Properties'] = item.get('Properties', {})
-                if action != 'Modify' or self.resource_config_differs(item):
-                    contains_changes = True
-                change = self.get_change_config(action, item, change_set_id=change_set_id)
-                changes.append(change)
-                if action in ['Modify', 'Add']:
-                    self.merge_properties(item['LogicalResourceId'], existing_stack, new_stack)
+        for change in changes:
+            action = change['ResourceChange']['Action']
+            resource = new_resources.get(change['ResourceChange']['LogicalResourceId'])
+            if action != 'Modify' or self.resource_config_differs(resource):
+                contains_changes = True
+            if action in ['Modify', 'Add']:
+                self.merge_properties(resource['LogicalResourceId'], existing_stack, new_stack)
         if not contains_changes:
             raise NoStackUpdates('No updates are to be performed.')
 

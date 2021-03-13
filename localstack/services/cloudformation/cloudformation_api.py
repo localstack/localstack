@@ -294,6 +294,11 @@ class StackChangeSet(Stack):
         result.update(self.resources)
         return result
 
+    @property
+    def changes(self):
+        result = self.metadata['Changes'] = self.metadata.get('Changes', [])
+        return result
+
 
 # --------------
 # API ENDPOINTS
@@ -421,6 +426,8 @@ def create_change_set(req_params):
         state.stacks[stack.stack_id] = stack
         stack.set_stack_status('CREATE_COMPLETE')
     change_set = StackChangeSet(req_params, template)
+    deployer = template_deployer.TemplateDeployer(stack)
+    deployer.construct_changes(stack, change_set, change_set_id=change_set.change_set_id, append_to_changeset=True)
     stack.change_sets.append(change_set)
     change_set.metadata['Status'] = 'CREATE_COMPLETE'
     return {'StackId': change_set.stack_id, 'Id': change_set.change_set_id}
@@ -440,6 +447,16 @@ def execute_change_set(req_params):
     stack = find_stack(stack_name)
     stack.set_stack_status('CREATE_COMPLETE')
     return {}
+
+
+def list_change_sets(req_params):
+    stack_name = req_params.get('StackName')
+    stack = find_stack(stack_name)
+    if not stack:
+        return error_response('Unable to find stack "%s"' % stack_name)
+    result = [cs.metadata for cs in stack.change_sets]
+    result = {'Summaries': {'member': result}}
+    return result
 
 
 def describe_change_set(req_params):
@@ -565,6 +582,7 @@ ENDPOINTS = {
     'ExecuteChangeSet': execute_change_set,
     'GetTemplate': get_template,
     'GetTemplateSummary': get_template_summary,
+    'ListChangeSets': list_change_sets,
     'ListExports': list_exports,
     'ListImports': list_imports,
     'ListStacks': list_stacks,
