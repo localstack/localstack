@@ -27,7 +27,9 @@ from localstack import config, constants
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
-from localstack.services.s3.s3_utils import (is_static_website, extract_bucket_name, validate_bucket_name)
+from localstack.services.s3.s3_utils import (
+    is_static_website, extract_bucket_name, validate_bucket_name, uses_host_addressing
+)
 from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
 )
@@ -1067,18 +1069,16 @@ class ProxyListenerS3(PersistingProxyListener):
             return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
     def forward_request(self, method, path, data, headers):
-        # print('Method:', method, 'Path:', path, 'Headers:', headers)
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
         path_orig = path
         path = path.replace('#', '%23')  # support key names containing hashes (e.g., required by Amplify)
         # extracting bucket name from the request
-        bucket_name = extract_bucket_name(headers, path)
-
         parsed_path = urlparse.urlparse(path)
-        # print('------path:', path, '\npath_orig:', path_orig, '\nParsedPath: ', parsed_path)
-        if method == 'PUT' and bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
+        bucket_name = extract_bucket_name(headers, parsed_path.path)
+
+        if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
             if len(parsed_path.path) <= 1:
                 return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
                     'configured to use path style addressing, or send a valid ' +
@@ -1277,7 +1277,7 @@ class ProxyListenerS3(PersistingProxyListener):
         super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
         # No path-name based bucket name? Try host-based
-        bucket_name = get_bucket_name(path, headers)
+        bucket_name = extract_bucket_name(headers, path)
         hostname_parts = headers['host'].split('.')
         if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
             bucket_name = hostname_parts[0]
@@ -1288,7 +1288,6 @@ class ProxyListenerS3(PersistingProxyListener):
         key = None
         if method == 'POST':
             key, redirect_url = multipart_content.find_multipart_key_value(data, headers)
-
             if key and redirect_url:
                 response.status_code = 303
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
@@ -1308,8 +1307,7 @@ class ProxyListenerS3(PersistingProxyListener):
             return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
 
         parsed = urlparse.urlparse(path)
-        bucket_name_in_host = headers['host'].startswith(bucket_name)
-
+        bucket_name_in_host = uses_host_addressing(headers)
         should_send_notifications = all([
             method in ('PUT', 'POST', 'DELETE'),
             '/' in path[1:] or bucket_name_in_host or key,

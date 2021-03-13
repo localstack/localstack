@@ -1,19 +1,18 @@
-import re
 import types
 import logging
 import traceback
 from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
-from moto.s3.responses import (minidom, MalformedXML, undo_clean_key_name, is_delete_keys,
-    bucketpath_bucket_name_from_url)
+from moto.s3.responses import (minidom, MalformedXML, undo_clean_key_name, is_delete_keys)
 from moto.s3.exceptions import S3ClientError
 from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config
 from localstack.utils.aws import aws_stack
-from localstack.services.s3 import s3_listener
+from localstack.services.s3 import s3_listener, s3_utils
 from localstack.utils.server import multiserver
 from localstack.utils.common import wait_for_port_open, get_free_tcp_port
 from localstack.services.infra import start_moto_server
 from localstack.services.awslambda.lambda_api import BUCKET_MARKER_LOCAL
+from urllib.parse import urlparse
 
 LOG = logging.getLogger(__name__)
 
@@ -295,24 +294,14 @@ def apply_patches():
         s3_response_is_delete_keys, s3_responses.S3ResponseInstance)
 
     def parse_bucket_name_from_url(self, request, url):
-        localstack_pattern = re.compile(r'^(.+).s3.localhost.localstack.cloud:4566')
-        host = request.headers.get('host', request.headers.get('Host'))
-
-        match = localstack_pattern.match(host)
-        if match:
-            bucket_name = match.groups()[0]
-            return bucket_name
-        else:
-            return bucketpath_bucket_name_from_url(url)
+        path = urlparse(url).path
+        return s3_utils.extract_bucket_name(request.headers, path)
 
     s3_responses.S3ResponseInstance.parse_bucket_name_from_url = types.MethodType(
         parse_bucket_name_from_url, s3_responses.S3ResponseInstance)
-
-    subdomain_based_buckets_orig = s3_responses.S3ResponseInstance.subdomain_based_buckets
 
     def subdomain_based_buckets(self, request):
-        if subdomain_based_buckets_orig(self, request):
-            s3_listener.uses_path_addressing(request.headers.get('host', request.headers.get('Host')))
+        return s3_utils.uses_host_addressing(request.headers)
 
-    s3_responses.S3ResponseInstance.parse_bucket_name_from_url = types.MethodType(
-        parse_bucket_name_from_url, s3_responses.S3ResponseInstance)
+    s3_responses.S3ResponseInstance.subdomain_based_buckets = types.MethodType(
+        subdomain_based_buckets, s3_responses.S3ResponseInstance)

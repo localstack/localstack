@@ -1,7 +1,7 @@
 import re
 
 S3_STATIC_WEBSITE_HOST_REGEX = r'^(.+).s3-website.localhost.localstack.cloud(:[\d]{0,6})?$'
-S3_VIRTUAL_HOSTNAME_REGEX = r'^(.+).s3.localhost.localstack.cloud(:[\d]{0,6})?$'
+S3_VIRTUAL_HOSTNAME_REGEX = r'^(http(s)?:\/\/)?([^.]+)\.s3\.localhost\.localstack\.cloud(:[\d]{0,6})?$'
 
 BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
@@ -27,7 +27,7 @@ def uses_host_addressing(headers):
     """
     pattern = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
     match = pattern.match(headers.get('host', ''))
-    if match and match.group(1):
+    if match and match.group(3):
         return True
     else:
         return False
@@ -44,8 +44,8 @@ def extract_bucket_name(headers, path):
         pattern = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
         match = pattern.match(headers.get('host', ''))
 
-        if match and match.group(1):
-            bucket_name = match.group(1)
+        if match and match.group(3):
+            bucket_name = match.group(3)
     else:
         bucket_name = path.split('/', 2)[1]
     return bucket_name if bucket_name else None
