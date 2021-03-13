@@ -1097,44 +1097,7 @@ class ProxyListenerS3(PersistingProxyListener):
         # handling s3 website hosting requests
         if is_static_website(headers):
             if method == 'GET':
-                s3_client = aws_stack.connect_to_service('s3')
-                try:
-                    s3_client.head_bucket(Bucket=bucket_name)
-                    website_config = s3_client.get_bucket_website(Bucket=bucket_name)
-                    index_document = path + '/' + website_config.get('IndexDocument', {}).get('Key').lstrip('/')
-                    res = s3_client.head_object(
-                        Bucket=bucket_name,
-                        key=index_document
-                    )
-                    if res['ResponseMetadata']['HTTPStatusCode'] == 200:
-                        response.status_code = 302
-                        response._content = s3_client.get_object(
-                            Bucket=bucket_name,
-                            Key=index_document
-                        )['Body'].read()
-                        response.headers['Content-Length'] = str(len(response._content))
-                        return response
-                    elif res['ResponseMetadata']['HTTPStatusCode'] == 404:
-                        error_document = path + '/' + website_config.get('ErrorDocument', {}).get('Key').lstrip('/')
-                        res = s3_client.head_object(
-                            Bucket=bucket_name,
-                            key=error_document
-                        )
-                        if res['ResponseMetadata']['HTTPStatusCode'] in 200:
-                            response.status_code = 404
-                            response._content = s3_client.get_object(
-                                Bucket=bucket_name,
-                                Key=error_document
-                            )['Body'].read()
-                            response.headers['Content-Length'] = str(len(response._content))
-                            return response
-                    else:
-                        response.status_code = 404
-                        response._content = ''
-                        response.headers['Content-Length'] = str(len(response._content))
-                except ClientError:
-                    LOGGER.debug('Error in website hosting.')
-                    pass
+                return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
 
         # parse path and query params
 
@@ -1342,31 +1305,6 @@ class ProxyListenerS3(PersistingProxyListener):
             response._content = ''
             response.status_code = 204
             return response
-
-        # s3-website hosting
-        if method == 'GET' and response.status_code == 404 and 's3-website' in headers.get('host'):
-            s3_client = aws_stack.connect_to_service('s3')
-
-            try:
-                # Verify the bucket exists in the first place - if not, we want normal processing of the 404
-                s3_client.head_bucket(Bucket=bucket_name)
-                website_config = s3_client.get_bucket_website(Bucket=bucket_name)
-                error_doc_key = website_config.get('ErrorDocument', {}).get('Key')
-
-                if error_doc_key:
-                    error_doc_path = '/' + error_doc_key
-                if parsed.path != error_doc_path:
-                    error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
-                    response.status_code = 200
-                    response._content = error_object['Body'].read()
-                    response.headers['Content-Length'] = str(len(response._content))
-                else:
-                    response.status_code = 404
-                    response._content = ''
-                    response.headers['Content-Length'] = str(len(response._content))
-            except ClientError:
-                LOGGER.debug('Bucket Does not Exsists.')
-                pass
 
         if response is not None:
             reset_content_length = False
@@ -1612,6 +1550,48 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
             message='Request has expired',
             expires=query_params['X-Amz-Expires'][0]
         )
+
+
+def serve_static_website(headers, path, bucket_name):
+    s3_client = aws_stack.connect_to_service('s3')
+
+    # check if bucket exsists
+    try:
+        s3_client.head_bucket(Bucket=bucket_name)
+    except ClientError:
+        LOGGER.debug('No such bucket exists. %s' % bucket_name)
+
+    try:
+        if path != '/':
+            res = s3_client.head_object(Bucket=bucket_name, Key=path)
+            if res['ResponseMetadata']['HTTPStatusCode'] == 200:
+                content = s3_client.get_object(Bucket=bucket_name, Key=path)['Body'].read()
+                return requests_response(status_code=200, content=content)
+    except ClientError:
+        LOGGER.debug('No such key found. %s' % path)
+        pass
+
+    website_config = s3_client.get_bucket_website(Bucket=bucket_name)
+    if path == '/':
+        index_document = '/' + website_config.get('IndexDocument', {}).get('Suffix').lstrip('/')
+    else:
+        index_document = path + '/' + website_config.get('IndexDocument', {}).get('Suffix').lstrip('/')
+
+    try:
+        res = s3_client.head_object(Bucket=bucket_name, Key=index_document)
+        if res['ResponseMetadata']['HTTPStatusCode'] == 200:
+            content = s3_client.get_object(Bucket=bucket_name, Key=index_document)['Body'].read()
+            return requests_response(status_code=302, content=content)
+    except ClientError:
+        # if error.response['ResponseMetadata']['HTTPStatusCode'] == 404:
+        error_document = website_config.get('ErrorDocument', {}).get('Key').lstrip('/')
+        try:
+            res = s3_client.head_object(Bucket=bucket_name, Key=error_document)
+            if res['ResponseMetadata']['HTTPStatusCode'] == 200:
+                content = s3_client.get_object(Bucket=bucket_name, Key=error_document)['Body'].read()
+                return requests_response(status_code=404, content=content)
+        except ClientError:
+            return requests_response(status_code=404, content='')
 
 
 # instantiate listener

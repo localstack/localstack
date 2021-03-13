@@ -15,7 +15,7 @@ from urllib.parse import parse_qs, quote
 from botocore.exceptions import ClientError
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.request import Request, urlopen
-from localstack import config
+from localstack import config, constants
 from botocore.client import Config
 from localstack.utils import testutil
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
@@ -788,9 +788,9 @@ class TestS3(unittest.TestCase):
         # Cleanup
         s3_client.delete_bucket(Bucket=bucket)
 
-    def test_s3_uppercase_names(self):
-        # bucket name should be case-insensitive
-        bucket_name = 'TestUpperCase-%s' % short_uid()
+    def test_s3_uppercase_key_names(self):
+        # bucket name should be case-sensitive
+        bucket_name = 'testuppercase-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         # key name should be case-sensitive
@@ -970,70 +970,45 @@ class TestS3(unittest.TestCase):
         finally:
             config.HOSTNAME_EXTERNAL = hostname_before
 
-    def test_s3_website_errordocument(self):
-        # check that the error document is returned when configured
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client = self._get_test_client()
+    def test_s3_static_website_hosting(self):
+        bucket_name = 'test-%s' % short_uid()
 
-        client.create_bucket(Bucket=bucket_name)
-        client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
-        client.put_bucket_website(
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key='test/index.html', Body='index')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test/error.html', Body='error')
+        self.s3_client.put_object(Bucket=bucket_name, Key='actual/key.html', Body='key')
+        self.s3_client.put_bucket_website(
             Bucket=bucket_name,
-            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
+            WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'},
+                'ErrorDocument': {'Key': 'test/error.html'}}
         )
-        url = 'http://{}.s3-website.localhost.localstack.cloud:4566/{}'.format(bucket_name, 'something')
+
         headers = aws_stack.mock_aws_request_headers('s3')
-        headers['Host'] = '{}.s3-website.localhost.localstack.cloud:4566'.format(bucket_name)
+        headers['Host'] = '{}.{}:4566'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME)
+
+        # actual key
+        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'actual/key.html')
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.text, 'This is the error document')
-        # cleanup
-        client.delete_object(Bucket=bucket_name, Key='error.html')
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'key')
 
-        # check that normal responses are returned for bucket with index configuration, but not error document
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client.create_bucket(Bucket=bucket_name)
-        client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'}}
-        )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+        # index document
+        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'test')
+        response = requests.get(url, headers=headers, verify=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.text, 'index')
+
+        # root path test
+        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, '')
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 404)
-        # cleanup
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'error')
 
-        # check that normal responses are returned for bucket without configuration
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client.create_bucket(Bucket=bucket_name)
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+        # error document
+        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'something')
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 404)
-        # cleanup
-        client.delete_bucket(Bucket=bucket_name)
-
-    def test_s3_website_errordocument_missing(self):
-        # check that 404 is returned when error document is configured but missing
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client = self._get_test_client()
-
-        client.create_bucket(Bucket=bucket_name)
-        client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
-        )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
-        self.assertEqual(response.status_code, 404)
-
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'error')
 
     def test_s3_event_notification_with_sqs(self):
         key_by_path = 'aws/bucket=2020/test1.txt'

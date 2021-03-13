@@ -140,3 +140,4 @@ OFFICIAL_IMAGES = ['localstack/localstack', 'localstack/localstack-light', 'loca
 
 # s3 virtual host name
 S3_VIRTUAL_HOSTNAME = 's3.localhost.localstack.cloud'
+S3_STATIC_WEBSITE_HOSTNAME = 's3-website.localhost.localstack.cloud'

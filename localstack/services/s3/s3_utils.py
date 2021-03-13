@@ -1,7 +1,7 @@
 import re
 
 S3_STATIC_WEBSITE_HOST_REGEX = r'^(.+).s3-website.localhost.localstack.cloud(:[\d]{0,6})?$'
-S3_VIRTUAL_HOSTNAME_REGEX = r'^(http(s)?:\/\/)?([^.]+)\.s3\.localhost\.localstack\.cloud(:[\d]{0,6})?$'
+S3_VIRTUAL_HOSTNAME_REGEX = r'^(http(s)?:\/\/)?([^.]+)\.s3(-website)?\.localhost\.localstack\.cloud(:[\d]{0,6})?$'
 
 BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
