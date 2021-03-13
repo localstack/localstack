@@ -1,9 +1,10 @@
 import re
 
 S3_STATIC_WEBSITE_HOST_REGEX = r'^(.+).s3-website.localhost.localstack.cloud(:[\d]{0,6})?$'
-S3_VIRTUAL_HOSTNAME_PATTERN = r'^(.+).s3-website.localhost.localstack.cloud(:[\d]{0,6})?$'
+S3_VIRTUAL_HOSTNAME_REGEX = r'^(.+).s3.localhost.localstack.cloud(:[\d]{0,6})?$'
 
-VALID_S3_NAME = r'^[a-zA-Z0-9-.]*$ | ^[\w\d].*[\w\d]$ | ^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$'
+BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
+    r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
 
 
 def is_static_website(headers):
@@ -24,9 +25,9 @@ def uses_host_addressing(headers):
     """
     Determines if the bucket is using host based addressing style or path based
     """
-    pattern = re.compile(S3_VIRTUAL_HOSTNAME_PATTERN)
+    pattern = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
     match = pattern.match(headers.get('host', ''))
-    if match:
+    if match and match.group(1):
         return True
     else:
         return False
@@ -40,15 +41,13 @@ def extract_bucket_name(headers, path):
     """
     bucket_name = None
     if uses_host_addressing(headers):
-        pattern = re.compile(S3_VIRTUAL_HOSTNAME_PATTERN)
+        pattern = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
         match = pattern.match(headers.get('host', ''))
-        if match:
-            bucket_name = match[0]
+
+        if match and match.group(1):
+            bucket_name = match.group(1)
     else:
         bucket_name = path.split('/', 2)[1]
-    # print('==========bucket name', bucket_name)
-    # if not validate_bucket_name(bucket_name):
-        # raise Exception('The specified bucket name is not valid.')
     return bucket_name if bucket_name else None
 
 
@@ -74,10 +73,4 @@ def validate_bucket_name(bucket_name):
     Validate s3 bucket name based on the documentation
     ref. https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
     """
-    if (
-        not 3 <= len(bucket_name) <= 63 or
-        not re.match(VALID_S3_NAME, bucket_name) or
-        not bucket_name.islower()
-    ):
-        return False
-    return True
+    return True if re.match(BUCKET_NAME_REGEX, bucket_name) else False

@@ -27,7 +27,7 @@ from localstack import config, constants
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
-from localstack.services.s3.s3_utils import (is_static_website, extract_bucket_name)
+from localstack.services.s3.s3_utils import (is_static_website, extract_bucket_name, validate_bucket_name)
 from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
 )
@@ -1073,10 +1073,19 @@ class ProxyListenerS3(PersistingProxyListener):
         query_params = parse_qs(parsed.query)
         path_orig = path
         path = path.replace('#', '%23')  # support key names containing hashes (e.g., required by Amplify)
-        # print('------path:', path, '\npath_orig:', path_orig)
         # extracting bucket name from the request
         bucket_name = extract_bucket_name(headers, path)
-        # key_name = extract_key_name(headers, path)
+
+        parsed_path = urlparse.urlparse(path)
+        # print('------path:', path, '\npath_orig:', path_orig, '\nParsedPath: ', parsed_path)
+        if method == 'PUT' and bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
+            if len(parsed_path.path) <= 1:
+                return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
+                    'configured to use path style addressing, or send a valid ' +
+                    '<Bucket>.s3.localhost.localstack.cloud "Host" header',
+                    'InvalidBucketName', status_code=400)
+
+            return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # Detecting pre-sign url and checking signature
         if (any([p in query_params for p in PRESIGN_QUERY_PARAMS]) or
@@ -1127,11 +1136,7 @@ class ProxyListenerS3(PersistingProxyListener):
                     LOGGER.debug('Error in website hosting.')
                     pass
 
-        # fetch bucketname and keyname form the request
-
         # parse path and query params
-        parsed_path = urlparse.urlparse(path)
-        # print('-----------------------parsed path:', parsed_path)
 
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
@@ -1141,17 +1146,6 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
 
         modified_data = None
-
-        # check bucket name
-        bucket_name = get_bucket_name(path, headers)
-        if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
-            if len(parsed_path.path) <= 1:
-                return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
-                    'configured to use path style addressing, or send a valid ' +
-                    '<Bucket>.s3.localhost.localstack.cloud "Host" header',
-                    'InvalidBucketName', status_code=400)
-
-            return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
         to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
@@ -1186,7 +1180,6 @@ class ProxyListenerS3(PersistingProxyListener):
         # parse query params
         query = parsed_path.query
         path = parsed_path.path
-        bucket = bucket_name
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
 
         # remap metadata query params (not supported in moto) to request headers
@@ -1197,7 +1190,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
         if query == 'notification' or 'notification' in query_map:
             # handle and return response for ?notification request
-            response = handle_notification_request(bucket, method, data)
+            response = handle_notification_request(bucket_name, method, data)
             return response
 
         # if the Expires key in the url is already expired then return error
@@ -1219,39 +1212,39 @@ class ProxyListenerS3(PersistingProxyListener):
 
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
-                return get_cors(bucket)
+                return get_cors(bucket_name)
             if method == 'PUT':
-                return set_cors(bucket, data)
+                return set_cors(bucket_name, data)
             if method == 'DELETE':
-                return delete_cors(bucket)
+                return delete_cors(bucket_name)
 
         if query == 'lifecycle' or 'lifecycle' in query_map:
             if method == 'GET':
-                return get_lifecycle(bucket)
+                return get_lifecycle(bucket_name)
             if method == 'PUT':
-                return set_lifecycle(bucket, data)
+                return set_lifecycle(bucket_name, data)
             if method == 'DELETE':
-                delete_lifecycle(bucket)
+                delete_lifecycle(bucket_name)
 
         if query == 'replication' or 'replication' in query_map:
             if method == 'GET':
-                return get_replication(bucket)
+                return get_replication(bucket_name)
             if method == 'PUT':
-                return set_replication(bucket, data)
+                return set_replication(bucket_name, data)
 
         if query == 'encryption' or 'encryption' in query_map:
             if method == 'GET':
-                return get_encryption(bucket)
+                return get_encryption(bucket_name)
             if method == 'PUT':
-                return set_encryption(bucket, data)
+                return set_encryption(bucket_name, data)
 
         if query == 'object-lock' or 'object-lock' in query_map:
             if method == 'GET':
-                return get_object_lock(bucket)
+                return get_object_lock(bucket_name)
             if method == 'PUT':
-                return set_object_lock(bucket, data)
+                return set_object_lock(bucket_name, data)
 
-        if method == 'DELETE' and re.match(BUCKET_NAME_REGEX, bucket_name):
+        if method == 'DELETE' and validate_bucket_name(bucket_name):
             delete_lifecycle(bucket_name)
 
         path_orig_escaped = path_orig.replace('#', '%23')

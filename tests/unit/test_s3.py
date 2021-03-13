@@ -1,8 +1,9 @@
 import unittest
 from moto.s3 import models as s3_models
-from localstack.services.s3 import s3_listener, s3_starter, multipart_content
+from localstack.services.s3 import s3_listener, s3_starter, multipart_content, s3_utils
 from requests.models import CaseInsensitiveDict, Response
 from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
+from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
 from localstack.services.infra import patch_instance_tracker_meta
 
@@ -254,6 +255,51 @@ class S3ListenerTest (unittest.TestCase):
 
         for example_header, expected_result in headers:
             assert expected_result == s3_listener.uses_path_addressing(example_header)
+
+
+class S3UtilsTest (unittest.TestCase):
+
+    def test_s3_bucket_name(self):
+        # array description : 'bucket_name', 'expected_ouput'
+        bucket_names = [
+            ('docexamplebucket1', True),
+            ('log-delivery-march-2020', True),
+            ('my-hosted-content', True),
+            ('docexamplewebsite.com', True),
+            ('www.docexamplewebsite.com', True),
+            ('my.example.s3.bucket', True),
+            ('doc_example_bucket', False),
+            ('DocExampleBucket', False),
+            ('doc-example-bucket-', False)
+        ]
+
+        for bucket_name, expected_result in bucket_names:
+            assert expected_result == s3_utils.validate_bucket_name(bucket_name)
+
+    def test_bucket_name(self):
+        # array description : 'path', 'header', 'expected_ouput'
+        bucket_names = [
+            ('/bucket/keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
+            ('/bucket//keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
+            ('/keyname', {'host': f'bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'bucket'),
+            ('//keyname', {'host': f'bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'bucket'),
+            ('/', {'host': f'{S3_VIRTUAL_HOSTNAME}:4566'}, None)
+        ]
+
+        for path, headers, expected_result in bucket_names:
+            assert expected_result == s3_utils.extract_bucket_name(headers, path)
+
+    def test_s3_keyname_name(self):
+        # array description : 'path', 'header', 'expected_ouput'
+        key_names = [
+            ('/bucket/keyname', {'host': f'https://{HOSTNAME}:4566'}, 'keyname'),
+            ('/bucket//keyname', {'host': f'https://{HOSTNAME}:4566'}, '/keyname'),
+            ('/keyname', {'host': f'https://bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'keyname'),
+            ('//keyname', {'host': f'https://bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, '/keyname'),
+        ]
+
+        for path, headers, expected_result in key_names:
+            assert expected_result == s3_utils.extract_key_name(headers, path)
 
 
 class S3BackendTest (unittest.TestCase):
