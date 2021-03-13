@@ -63,7 +63,7 @@ def apply_patches():
     async def _close(self) -> None:
         try:
             return await _close_orig(self)
-        except ssl.SSLError as e:
+        except ssl.SSLError:
             return
 
     _close_orig = tcp_server.TCPServer._close
