@@ -987,10 +987,11 @@ def resolve_refs_recursively(stack_name, value, resources):
         if stripped_fn_lower == 'sub':
             item_to_sub = value[keys_list[0]]
 
+            attr_refs = dict([(r, {'Ref': r}) for r in STATIC_REFS])
             if not isinstance(item_to_sub, list):
-                attr_refs = dict([(r, {'Ref': r}) for r in STATIC_REFS])
-                item_to_sub = [item_to_sub, attr_refs]
+                item_to_sub = [item_to_sub, {}]
             result = item_to_sub[0]
+            item_to_sub[1].update(attr_refs)
 
             for key, val in item_to_sub[1].items():
                 val = resolve_refs_recursively(stack_name, val, resources)
