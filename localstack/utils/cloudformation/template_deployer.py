@@ -22,7 +22,7 @@ from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
 from localstack.services.cloudformation.service_models import GenericBaseModel, DependencyNotYetSatisfied
 from localstack.services.cloudformation.deployment_utils import (
-    dump_json_params, select_parameters, param_defaults, remove_none_values, params_list_to_dict,
+    dump_json_params, select_parameters, param_defaults, remove_none_values,
     lambda_keys_to_lower, PLACEHOLDER_AWS_NO_VALUE, PLACEHOLDER_RESOURCE_NAME)
 
 ACTION_CREATE = 'create'
@@ -50,20 +50,6 @@ CFN_RESPONSE_MODULE_URL = 'https://raw.githubusercontent.com/LukeMizuhashi/cfn-r
 class NoStackUpdates(Exception):
     """ Exception indicating that no actions are to be performed in a stack update (which is not allowed) """
     pass
-
-
-def str_or_none(o):
-    return o if o is None else json.dumps(o) if isinstance(o, (dict, list)) else str(o)
-
-
-def params_select_attributes(*attrs):
-    def do_select(params, **kwargs):
-        result = {}
-        for attr in attrs:
-            if params.get(attr) is not None:
-                result[attr] = str_or_none(params.get(attr))
-        return result
-    return do_select
 
 
 def lambda_get_params():
@@ -182,25 +168,6 @@ RESOURCE_TO_FUNCTION = {
         'create': {
             'function': 'put_bucket_policy',
             'parameters': rename_params(dump_json_params(None, 'PolicyDocument'), {'PolicyDocument': 'Policy'})
-        }
-    },
-    'SQS::Queue': {
-        'create': {
-            'function': 'create_queue',
-            'parameters': {
-                'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME],
-                'Attributes': params_select_attributes(
-                    'ContentBasedDeduplication', 'DelaySeconds', 'FifoQueue', 'MaximumMessageSize',
-                    'MessageRetentionPeriod', 'VisibilityTimeout', 'RedrivePolicy', 'ReceiveMessageWaitTimeSeconds'
-                ),
-                'tags': params_list_to_dict('Tags')
-            }
-        },
-        'delete': {
-            'function': 'delete_queue',
-            'parameters': {
-                'QueueUrl': 'PhysicalResourceId'
-            }
         }
     },
     'SNS::Topic': {

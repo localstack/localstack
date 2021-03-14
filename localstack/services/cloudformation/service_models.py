@@ -11,7 +11,7 @@ from localstack.utils.aws import aws_stack
 from localstack.utils.common import camel_to_snake_case, select_attributes
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_RESOURCE_NAME, remove_none_values, params_list_to_dict, lambda_keys_to_lower,
-    merge_parameters, params_dict_to_list, select_parameters)
+    merge_parameters, params_dict_to_list, select_parameters, params_select_attributes)
 
 LOG = logging.getLogger(__name__)
 
@@ -903,6 +903,12 @@ class GatewayModel(GenericBaseModel):
         return 'AWS::ApiGateway::Model'
 
 
+class GatewayAccount(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::ApiGateway::Account'
+
+
 class S3Bucket(GenericBaseModel, FakeBucket):
     def get_resource_name(self):
         return self.normalize_bucket_name(self.props.get('BucketName'))
@@ -1052,6 +1058,35 @@ class SQSQueue(GenericBaseModel, MotoQueue):
         result = sqs_client.get_queue_attributes(QueueUrl=result[0], AttributeNames=['All'])['Attributes']
         result['Arn'] = result['QueueArn']
         return result
+
+    @staticmethod
+    def get_deploy_templates():
+        def _queue_url(params, resources, resource_id, **kwargs):
+            resource = resources[resource_id]
+            queue_url = resource.get('PhysicalResourceId') or resource.get('QueueUrl')
+            if queue_url:
+                return queue_url
+            return aws_stack.sqs_queue_url_for_arn(resource['QueueArn'])
+
+        return {
+            'create': {
+                'function': 'create_queue',
+                'parameters': {
+                    'QueueName': ['QueueName', PLACEHOLDER_RESOURCE_NAME],
+                    'Attributes': params_select_attributes(
+                        'ContentBasedDeduplication', 'DelaySeconds', 'FifoQueue', 'MaximumMessageSize',
+                        'MessageRetentionPeriod', 'VisibilityTimeout', 'RedrivePolicy', 'ReceiveMessageWaitTimeSeconds'
+                    ),
+                    'tags': params_list_to_dict('Tags')
+                }
+            },
+            'delete': {
+                'function': 'delete_queue',
+                'parameters': {
+                    'QueueUrl': _queue_url
+                }
+            }
+        }
 
 
 class SNSTopic(GenericBaseModel):
