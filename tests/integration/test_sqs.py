@@ -9,7 +9,11 @@ from botocore.exceptions import ClientError
 from botocore.awsrequest import AWSRequest
 from botocore.credentials import Credentials
 from botocore.auth import SigV4Auth, SIGV4_TIMESTAMP
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from localstack.constants import (
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_SECRET_ACCESS_KEY
+)
 from six.moves.urllib.parse import urlencode
 
 from localstack import config
@@ -879,7 +883,11 @@ class SQSTest(unittest.TestCase):
         # method.
         datetime_now = datetime.datetime.utcnow()
         req.context['timestamp'] = datetime_now.strftime(SIGV4_TIMESTAMP)
-        signer = SigV4Auth(Credentials('test', 'test'), 'sqs', 'us-east-1')
+        signer = SigV4Auth(
+            Credentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY),
+            'sqs',
+            aws_stack.get_region()
+        )
         canonical_request = signer.canonical_request(req)
         string_to_sign = signer.string_to_sign(req, canonical_request)
 
