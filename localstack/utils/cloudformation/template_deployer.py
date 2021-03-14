@@ -547,22 +547,6 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'EC2::SecurityGroup': {
-        'create': {
-            'function': 'create_security_group',
-            'parameters': {
-                'GroupName': 'GroupName',
-                'VpcId': 'VpcId',
-                'Description': 'GroupDescription'
-            }
-        },
-        'delete': {
-            'function': 'delete_security_group',
-            'parameters': {
-                'GroupId': 'PhysicalResourceId'
-            }
-        }
-    },
     'IAM::InstanceProfile': {
         'create': {
             'function': 'create_instance_profile',

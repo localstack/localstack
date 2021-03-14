@@ -551,14 +551,12 @@ class SFNActivity(GenericBaseModel):
         return 'AWS::StepFunctions::Activity'
 
     def fetch_state(self, stack_name, resources):
-        activity_arn = resources[self.resource_id].get('PhysicalResourceId')
+        activity_arn = self.physical_resource_id
         if not activity_arn:
             return None
-
         client = aws_stack.connect_to_service('stepfunctions')
-        return client.describe_activity(
-            activityArn=activity_arn
-        )
+        result = client.describe_activity(activityArn=activity_arn)
+        return result
 
 
 class IAMRole(GenericBaseModel, MotoRole):
@@ -1222,11 +1220,10 @@ class KMSKey(GenericBaseModel):
         return 'AWS::KMS::Key'
 
     def fetch_state(self, stack_name, resources):
-        resource = resources[self.resource_id]
-        if not resource['PhysicalResourceId']:
+        physical_res_id = self.physical_resource_id
+        if not physical_res_id:
             return None
-
-        return aws_stack.connect_to_service('kms').describe_key(KeyId=resource['PhysicalResourceId'])
+        return aws_stack.connect_to_service('kms').describe_key(KeyId=physical_res_id)
 
 
 class EC2Instance(GenericBaseModel):
@@ -1235,17 +1232,11 @@ class EC2Instance(GenericBaseModel):
         return 'AWS::EC2::Instance'
 
     def fetch_state(self, stack_name, resources):
-        instance_id = resources[self.resource_id].get('PhysicalResourceId')
+        instance_id = self.physical_resource_id
         if not instance_id:
             return None
-
         client = aws_stack.connect_to_service('ec2')
-        resp = client.describe_instances(
-            InstanceIds=[
-                instance_id
-            ]
-        )
-
+        resp = client.describe_instances(InstanceIds=[instance_id])
         return resp['Reservations'][0]['Instances'][0]
 
     def update_resource(self, new_resource, stack_name, resources):
@@ -1277,18 +1268,62 @@ class SecurityGroup(GenericBaseModel):
         return 'AWS::EC2::SecurityGroup'
 
     def fetch_state(self, stack_name, resources):
-        group_id = resources[self.resource_id].get('PhysicalResourceId')
+        group_id = self.physical_resource_id
         if not group_id:
             return None
-
         client = aws_stack.connect_to_service('ec2')
-        resp = client.describe_security_groups(
-            GroupIds=[
-                group_id
-            ]
-        )
-
+        resp = client.describe_security_groups(GroupIds=[group_id])
         return resp['SecurityGroups'][0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_security_group',
+                'parameters': {
+                    'GroupName': 'GroupName',
+                    'VpcId': 'VpcId',
+                    'Description': 'GroupDescription'
+                }
+            },
+            'delete': {
+                'function': 'delete_security_group',
+                'parameters': {
+                    'GroupId': 'PhysicalResourceId'
+                }
+            }
+        }
+
+
+class EC2Subnet(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::Subnet'
+
+    def fetch_state(self, stack_name, resources):
+        props = self.props
+        client = aws_stack.connect_to_service('ec2')
+        filters = [
+            {'Name': 'cidr-block', 'Values': [props['CidrBlock']]},
+            {'Name': 'vpc-id', 'Values': [props['VpcId']]}
+        ]
+        subnets = client.describe_subnets(Filters=filters)['Subnets']
+        return (subnets or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_subnet',
+                'parameters': {
+                    'VpcId': 'VpcId',
+                    'CidrBlock': 'CidrBlock',
+                    'OutpostArn': 'OutpostArn',
+                    'Ipv6CidrBlock': 'Ipv6CidrBlock',
+                    'AvailabilityZone': 'AvailabilityZone'
+                }
+            }
+        }
 
 
 class InstanceProfile(GenericBaseModel):
@@ -1297,13 +1332,9 @@ class InstanceProfile(GenericBaseModel):
         return 'AWS::IAM::InstanceProfile'
 
     def fetch_state(self, stack_name, resources):
-        instance_profile_name = resources[self.resource_id].get('PhysicalResourceId')
+        instance_profile_name = self.physical_resource_id
         if not instance_profile_name:
             return None
-
         client = aws_stack.connect_to_service('iam')
-        resp = client.get_instance_profile(
-            InstanceProfileName=instance_profile_name
-        )
-
+        resp = client.get_instance_profile(InstanceProfileName=instance_profile_name)
         return resp['InstanceProfile']
