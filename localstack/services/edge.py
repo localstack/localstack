@@ -54,7 +54,7 @@ class ProxyListenerEdge(ProxyListener):
 
         target = headers.get('x-amz-target', '')
         auth_header = get_auth_string(method, path, headers, data)
-        if auth_header and not headers.get('authorization', ''):
+        if auth_header and not headers.get('authorization'):
             headers['authorization'] = auth_header
         host = headers.get('host', '')
         headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
@@ -177,9 +177,6 @@ def get_auth_string(method, path, headers, data=None):
 
     if auth_header:
         return auth_header
-
-    if not data:
-        return ''
 
     data_components = parse_request_data(method, path, data)
     algorithm = data_components.get('X-Amz-Algorithm')

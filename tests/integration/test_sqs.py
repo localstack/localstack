@@ -869,10 +869,10 @@ class SQSTest(unittest.TestCase):
         result = self.client.list_queues()
         self.assertNotIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
 
-    def test_list_queue_with_auth_in_presigned_url(self):
+    def test_post_list_queue_with_auth_in_presigned_url(self):
         base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
 
-        req = AWSRequest(method='GET', url=base_url, params={
+        req = AWSRequest(method='POST', url=base_url, data={
             'Action': 'ListQueues',
             'Version': '2012-11-05'
         })
@@ -903,6 +903,40 @@ class SQSTest(unittest.TestCase):
         })
 
         res = requests.post(url=base_url, data=encoded_url)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(b'<ListQueuesResponse>' in res.content)
+
+    def test_get_list_queue_with_auth_in_presigned_url(self):
+        base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
+
+        req = AWSRequest(method='GET', url=base_url, params={
+            'Action': 'ListQueues',
+            'Version': '2012-11-05'
+        })
+
+        # manually construct signed parameters
+        datetime_now = datetime.datetime.utcnow()
+        req.context['timestamp'] = datetime_now.strftime(SIGV4_TIMESTAMP)
+        signer = SigV4Auth(
+            Credentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY),
+            'sqs',
+            aws_stack.get_region()
+        )
+        canonical_request = signer.canonical_request(req)
+        string_to_sign = signer.string_to_sign(req, canonical_request)
+
+        params_with_auth = {
+            'Action': 'ListQueues',
+            'Version': '2012-11-05',
+            'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+            'X-Amz-Credential': signer.scope(req),
+            'X-Amz-SignedHeaders': ';'.join(
+                signer.headers_to_sign(req).keys()
+            ),
+            'X-Amz-Signature': signer.signature(string_to_sign, req)
+        }
+
+        res = requests.get(url=base_url, params=params_with_auth)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(b'<ListQueuesResponse>' in res.content)
 
