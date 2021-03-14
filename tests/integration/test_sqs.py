@@ -873,13 +873,13 @@ class SQSTest(unittest.TestCase):
             'Version': '2012-11-05'
         })
 
-        # boto doesn't support querystring-style auth, so we'll have to do some weird logic
-        # to use boto's signing functions, to understand what's going on here look at the
-        # internals of the SigV4Auth.add_auth method. It mainly operates by mutating a request,
-        # but we don't want it to mutate our request and add any headers.
+        # boto doesn't support querystring-style auth, so we have to do some
+        # weird logic to use boto's signing functions, to understand what's
+        # going on here look at the internals of the SigV4Auth.add_auth
+        # method.
         datetime_now = datetime.datetime.utcnow()
         req.context['timestamp'] = datetime_now.strftime(SIGV4_TIMESTAMP)
-        signer = SigV4Auth(Credentials("test", "test"), "sqs", "us-east-1")
+        signer = SigV4Auth(Credentials('test', 'test'), 'sqs', 'us-east-1')
         canonical_request = signer.canonical_request(req)
         string_to_sign = signer.string_to_sign(req, canonical_request)
 
@@ -887,16 +887,17 @@ class SQSTest(unittest.TestCase):
             'Action': 'ListQueues',
             'Version': '2012-11-05',
             'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
-            "X-Amz-Credential": signer.scope(req),
-            "X-Amz-SignedHeaders": ";".join(signer.headers_to_sign(req).keys()),
-            "X-Amz-Signature": signer.signature(string_to_sign, req)
+            'X-Amz-Credential': signer.scope(req),
+            'X-Amz-SignedHeaders': ';'.join(
+                signer.headers_to_sign(req).keys()
+            ),
+            'X-Amz-Signature': signer.signature(string_to_sign, req)
         })
 
         res = requests.get(url=base_url, data=encoded_url)
         self.assertEqual(res.status_code, 200)
-        self.assertTrue(b"<ListQueuesResponse>" in res.content)
+        self.assertTrue(b'<ListQueuesResponse>' in res.content)
 
-    
     # ---------------
     # HELPER METHODS
     # ---------------

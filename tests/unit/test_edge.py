@@ -66,7 +66,14 @@ class EdgeServiceTest(unittest.TestCase):
                 ('X-Amz-Date', '20210313T160953Z'),
                 (
                     'Authorization',
-                    'AWS4-HMAC-SHA256 Credential=test/20210313/us-east-1/sqs/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=3cba88ae6cbb8036126d2ba18ba8ded5eea9e5484d70822affce9dad03be5993',
+                    (
+                        'AWS4-HMAC-SHA256 Credential='
+                        'test/20210313/us-east-1/sqs/aws4_request, '
+                        'SignedHeaders=content-type;host;x-amz-date, '
+                        'Signature='
+                        '3cba88ae6cbb8036126d2ba18ba8ded5'
+                        'eea9e5484d70822affce9dad03be5993'
+                    )
                 ),
             ]
         )

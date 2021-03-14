@@ -149,11 +149,13 @@ def do_forward_request_network(port, method, path, data, headers):
     response = function(url, data=data, headers=headers, verify=False, stream=True)
     return response
 
+
 def get_auth_string(headers, data=None):
     """
     Get Auth header from Header (this is how aws client's like boto typically
     provide it) or from query string or url encoded parameters (sometimes
-    happens with presigned requests. Always return in the Authorization Header form.
+    happens with presigned requests. Always return in the Authorization Header
+    form.
 
     Typically an auth string comes in as a header:
 
@@ -162,7 +164,6 @@ def get_auth_string(headers, data=None):
         SignedHeaders=content-type;host;x-amz-date, \
         Signature=9277c941f4ecafcc0f290728e50cd7a3fa0e41763fbd2373fcdd3faf2dbddc2e
 
-    
     Here's what Authorization looks like as part of an presigned GET request:
 
        &X-Amz-Algorithm=AWS4-HMAC-SHA256\
@@ -174,12 +175,12 @@ def get_auth_string(headers, data=None):
 
     auth_header = headers.get('authorization', '')
 
-    if auth_header is not '':
+    if auth_header != '':
         return auth_header
-    
+
     if data is None:
         return ''
-    
+
     data_components = urllib.parse.parse_qs(data)
     algorithm = data_components.get(b'X-Amz-Algorithm', [None])[0]
     credential = data_components.get(b'X-Amz-Credential', [None])[0]
@@ -187,7 +188,11 @@ def get_auth_string(headers, data=None):
     signed_headers = data_components.get(b'X-Amz-SignedHeaders', [None])[0]
 
     if algorithm and credential and signature and signed_headers:
-        return f"{algorithm.decode()} Credential={credential.decode()}, SignedHeaders={signed_headers.decode()}, Signature={signature.decode()}"
+        return (
+            f'{algorithm.decode()} Credential={credential.decode()}, ' +
+            f'SignedHeaders={signed_headers.decode()}, ' +
+            f'Signature={signature.decode()}'
+        )
 
     return ''
 
