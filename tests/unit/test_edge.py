@@ -1,5 +1,6 @@
 import unittest
-from localstack.services.edge import is_s3_form_data
+from localstack.services.edge import is_s3_form_data, get_auth_string
+from werkzeug.datastructures import Headers
 
 
 class EdgeServiceTest(unittest.TestCase):
@@ -57,3 +58,42 @@ class EdgeServiceTest(unittest.TestCase):
         --28f72589b2be0c9de84386b52c615990--
         """
         self.assertEqual(is_s3_form_data(data_bytes), False)
+
+    def test_get_auth_string(self):
+        # Typical Header with Authorization
+        headers_with_auth = Headers(
+            [
+                ('X-Amz-Date', '20210313T160953Z'),
+                (
+                    'Authorization',
+                    (
+                        'AWS4-HMAC-SHA256 Credential='
+                        'test/20210313/us-east-1/sqs/aws4_request, '
+                        'SignedHeaders=content-type;host;x-amz-date, '
+                        'Signature='
+                        '3cba88ae6cbb8036126d2ba18ba8ded5'
+                        'eea9e5484d70822affce9dad03be5993'
+                    )
+                ),
+            ]
+        )
+
+        body_with_auth = (
+            b'X-Amz-Algorithm=AWS4-HMAC-SHA256&' +
+            b'X-Amz-Credential=' +
+            b'test%2F20210313%2Fus-east-1%2Fsqs%2Faws4_request&' +
+            b'X-Amz-Date=20210313T011059Z&' +
+            b'X-Amz-Expires=86400000&' +
+            b'X-Amz-SignedHeaders=content-type%3Bhost%3Bx-amz-date&' +
+            b'X-Amz-Signature=' +
+            b'3cba88ae6cbb8036126d2ba18ba8ded5eea9e5484d70822affce9dad03be5993'
+        )
+
+        self.assertEqual(
+            get_auth_string('POST', '/', headers_with_auth, b''),
+            headers_with_auth.get('authorization')
+        )
+        self.assertEqual(
+            get_auth_string('POST', '/', Headers(), body_with_auth),
+            headers_with_auth.get('authorization')
+        )

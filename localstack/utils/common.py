@@ -491,7 +491,7 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
         If 'http_path' is set, make a GET request to this path and assert a non-error response. """
     def check():
         if not is_port_open(port, http_path=http_path, expect_success=expect_success):
-            raise Exception()
+            raise Exception('Port %s (path: %s) was not open' % (port, http_path))
 
     return retry(check, sleep=sleep_time, retries=retries)
 
