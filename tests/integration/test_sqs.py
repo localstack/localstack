@@ -3,8 +3,12 @@ import json
 import time
 import unittest
 import requests
+import datetime
 
 from botocore.exceptions import ClientError
+from botocore.awsrequest import AWSRequest
+from botocore.credentials import Credentials
+from botocore.auth import SigV4Auth, SIGV4_TIMESTAMP
 from localstack.constants import TEST_AWS_ACCOUNT_ID
 from six.moves.urllib.parse import urlencode
 
@@ -861,6 +865,38 @@ class SQSTest(unittest.TestCase):
         result = self.client.list_queues()
         self.assertNotIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
 
+    def test_list_queue_with_auth_in_presigned_url(self):
+        base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
+        # encoded_url = urlencode()
+        req  = AWSRequest(method="GET", url=base_url, params={
+            'Action': 'ListQueues',
+            'Version': '2012-11-05'
+        })
+
+        # boto doesn't support querystring-style auth, so we'll have to do some weird logic
+        # to use boto's signing functions, to understand what's going on here look at the
+        # internals of the SigV4Auth.add_auth method. It mainly operates by mutating a request,
+        # but we don't want it to mutate our request and add any headers.
+        datetime_now = datetime.datetime.utcnow()
+        req.context['timestamp'] = datetime_now.strftime(SIGV4_TIMESTAMP)
+        signer = SigV4Auth(Credentials("test", "test"), "sqs", "us-east-1")
+        canonical_request = signer.canonical_request(req)
+        string_to_sign = signer.string_to_sign(req, canonical_request)
+
+        encoded_url = urlencode({
+            'Action': 'ListQueues',
+            'Version': '2012-11-05',
+            'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+            "X-Amz-Credential": signer.scope(req),
+            "X-Amz-SignedHeaders": ";".join(signer.headers_to_sign(req).keys()),
+            "X-Amz-Signature": signer.signature(string_to_sign, req)
+        })
+
+        res = requests.get(url=base_url, data=encoded_url)
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(b"<ListQueuesResponse>" in res.content)
+
+    
     # ---------------
     # HELPER METHODS
     # ---------------

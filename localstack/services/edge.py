@@ -6,6 +6,7 @@ import json
 import signal
 import logging
 import threading
+import urllib.parse
 from requests.models import Response
 from localstack import config
 from localstack.utils import persistence
@@ -52,7 +53,9 @@ class ProxyListenerEdge(ProxyListener):
         headers.get(HEADER_KILL_SIGNAL) and os._exit(0)
 
         target = headers.get('x-amz-target', '')
-        auth_header = headers.get('authorization', '')
+        auth_header = get_auth_string(headers, data)
+        if auth_header and not headers.get('authorization', ''):
+            headers['authorization'] = auth_header
         host = headers.get('host', '')
         headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
 
@@ -145,6 +148,48 @@ def do_forward_request_network(port, method, path, data, headers):
     function = getattr(requests, method.lower())
     response = function(url, data=data, headers=headers, verify=False, stream=True)
     return response
+
+def get_auth_string(headers, data=None):
+    """
+    Get Auth header from Header (this is how aws client's like boto typically
+    provide it) or from query string or url encoded parameters (sometimes
+    happens with presigned requests. Always return in the Authorization Header form.
+
+    Typically an auth string comes in as a header:
+
+        Authorization: AWS4-HMAC-SHA256 \
+        Credential=_not_needed_locally_/20210312/us-east-1/sqs/aws4_request, \
+        SignedHeaders=content-type;host;x-amz-date, \
+        Signature=9277c941f4ecafcc0f290728e50cd7a3fa0e41763fbd2373fcdd3faf2dbddc2e
+
+    
+    Here's what Authorization looks like as part of an presigned GET request:
+
+       &X-Amz-Algorithm=AWS4-HMAC-SHA256\
+       &X-Amz-Credential=test%2F20210313%2Fus-east-1%2Fsqs%2Faws4_request\
+       &X-Amz-Date=20210313T011059Z&X-Amz-Expires=86400000&X-Amz-SignedHeaders=host\
+       &X-Amz-Signature=2c652c7bc9a3b75579db3d987d1e6dd056f0ac776c1e1d4ec91e2ce84e5ad3ae
+
+    """
+
+    auth_header = headers.get('authorization', '')
+
+    if auth_header is not '':
+        return auth_header
+    
+    if data is None:
+        return ''
+    
+    data_components = urllib.parse.parse_qs(data)
+    algorithm = data_components.get(b'X-Amz-Algorithm', [None])[0]
+    credential = data_components.get(b'X-Amz-Credential', [None])[0]
+    signature = data_components.get(b'X-Amz-Signature', [None])[0]
+    signed_headers = data_components.get(b'X-Amz-SignedHeaders', [None])[0]
+
+    if algorithm and credential and signature and signed_headers:
+        return f"{algorithm.decode()} Credential={credential.decode()}, SignedHeaders={signed_headers.decode()}, Signature={signature.decode()}"
+
+    return ''
 
 
 def get_api_from_headers(headers, method=None, path=None, data=None):
