@@ -2005,10 +2005,7 @@ class TemplateDeployer(object):
                 new_stack.metadata['Status'] = status
 
         # run deployment in background loop, to avoid client network timeouts
-        run_thread = True
-        if run_thread:
-            return start_worker_thread(_run)
-        return _run()
+        return start_worker_thread(_run)
 
     def do_apply_changes_in_loop(self, changes, stack, stack_name):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
