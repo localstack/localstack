@@ -1325,6 +1325,9 @@ class EC2Subnet(GenericBaseModel):
             }
         }
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('SubnetId')
+
 
 class InstanceProfile(GenericBaseModel):
     @staticmethod
