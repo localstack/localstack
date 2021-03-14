@@ -902,7 +902,7 @@ class SQSTest(unittest.TestCase):
             'X-Amz-Signature': signer.signature(string_to_sign, req)
         })
 
-        res = requests.get(url=base_url, data=encoded_url)
+        res = requests.post(url=base_url, data=encoded_url)
         self.assertEqual(res.status_code, 200)
         self.assertTrue(b'<ListQueuesResponse>' in res.content)
 

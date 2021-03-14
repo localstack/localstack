@@ -84,16 +84,16 @@ class EdgeServiceTest(unittest.TestCase):
             b'test%2F20210313%2Fus-east-1%2Fsqs%2Faws4_request&' +
             b'X-Amz-Date=20210313T011059Z&' +
             b'X-Amz-Expires=86400000&' +
-            b'X-Amz-SignedHeaders=content-type;host;x-amz-date&' +
+            b'X-Amz-SignedHeaders=content-type%3Bhost%3Bx-amz-date&' +
             b'X-Amz-Signature=' +
             b'3cba88ae6cbb8036126d2ba18ba8ded5eea9e5484d70822affce9dad03be5993'
         )
 
         self.assertEqual(
-            get_auth_string(headers_with_auth, b''),
+            get_auth_string('POST', '/', headers_with_auth, b''),
             headers_with_auth.get('authorization')
         )
         self.assertEqual(
-            get_auth_string(Headers(), body_with_auth),
+            get_auth_string('POST', '/', Headers(), body_with_auth),
             headers_with_auth.get('authorization')
         )

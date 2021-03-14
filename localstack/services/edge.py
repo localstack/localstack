@@ -6,7 +6,6 @@ import json
 import signal
 import logging
 import threading
-import urllib.parse
 from requests.models import Response
 from localstack import config
 from localstack.utils import persistence
@@ -18,7 +17,8 @@ from localstack.constants import (
     PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
 from localstack.utils.common import (
     empty_context_manager, run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
-    get_service_protocol, in_docker, safe_requests as requests)
+    get_service_protocol, in_docker, safe_requests as requests,
+    parse_request_data)
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.utils.aws.aws_stack import Environment, is_internal_call_context, set_default_region_in_headers
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
@@ -53,7 +53,7 @@ class ProxyListenerEdge(ProxyListener):
         headers.get(HEADER_KILL_SIGNAL) and os._exit(0)
 
         target = headers.get('x-amz-target', '')
-        auth_header = get_auth_string(headers, data)
+        auth_header = get_auth_string(method, path, headers, data)
         if auth_header and not headers.get('authorization', ''):
             headers['authorization'] = auth_header
         host = headers.get('host', '')
@@ -150,7 +150,7 @@ def do_forward_request_network(port, method, path, data, headers):
     return response
 
 
-def get_auth_string(headers, data=None):
+def get_auth_string(method, path, headers, data=None):
     """
     Get Auth header from Header (this is how aws client's like boto typically
     provide it) or from query string or url encoded parameters (sometimes
@@ -181,17 +181,17 @@ def get_auth_string(headers, data=None):
     if not data:
         return ''
 
-    data_components = urllib.parse.parse_qs(data)
-    algorithm = data_components.get(b'X-Amz-Algorithm', [None])[0]
-    credential = data_components.get(b'X-Amz-Credential', [None])[0]
-    signature = data_components.get(b'X-Amz-Signature', [None])[0]
-    signed_headers = data_components.get(b'X-Amz-SignedHeaders', [None])[0]
+    data_components = parse_request_data(method, path, data)
+    algorithm = data_components.get('X-Amz-Algorithm')
+    credential = data_components.get('X-Amz-Credential')
+    signature = data_components.get('X-Amz-Signature')
+    signed_headers = data_components.get('X-Amz-SignedHeaders')
 
     if algorithm and credential and signature and signed_headers:
         return (
-            f'{algorithm.decode()} Credential={credential.decode()}, ' +
-            f'SignedHeaders={signed_headers.decode()}, ' +
-            f'Signature={signature.decode()}'
+            f'{algorithm} Credential={credential}, ' +
+            f'SignedHeaders={signed_headers}, ' +
+            f'Signature={signature}'
         )
 
     return ''
