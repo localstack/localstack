@@ -67,6 +67,10 @@ def merge_parameters(func1, func2):
     return lambda params, **kwargs: common.merge_dicts(func1(params, **kwargs), func2(params, **kwargs))
 
 
+def str_or_none(o):
+    return o if o is None else json.dumps(o) if isinstance(o, (dict, list)) else str(o)
+
+
 def params_dict_to_list(param_name, key_attr_name='Key', value_attr_name='Value', wrapper=None):
     def do_replace(params, **kwargs):
         result = []
@@ -76,3 +80,13 @@ def params_dict_to_list(param_name, key_attr_name='Key', value_attr_name='Value'
             result = {wrapper: result}
         return result
     return do_replace
+
+
+def params_select_attributes(*attrs):
+    def do_select(params, **kwargs):
+        result = {}
+        for attr in attrs:
+            if params.get(attr) is not None:
+                result[attr] = str_or_none(params.get(attr))
+        return result
+    return do_select

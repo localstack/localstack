@@ -21,7 +21,7 @@ from localstack.constants import TEST_AWS_ACCOUNT_ID
 from localstack.utils.aws import aws_stack, aws_responses
 from localstack.utils.common import (
     to_str, to_bytes, load_file, save_file, TMP_FILES, ensure_readable, short_uid, long_uid, json_safe,
-    mkdir, unzip, is_zip_file, run, run_safe, first_char_to_lower, run_for_max_seconds,
+    mkdir, unzip, is_zip_file, run, run_safe, first_char_to_lower, run_for_max_seconds, parse_request_data,
     timestamp_millis, now_utc, safe_requests, FuncThread, isoformat_milliseconds, synchronized)
 from localstack.services.awslambda import lambda_executors
 from localstack.services.generic_proxy import RegionBackend
@@ -290,28 +290,34 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
                                   stage_variables={}, request_context={}, event_context={}):
     try:
         resource_path = resource_path or path
+        event = construct_invocation_event(method, resource_path, headers, payload, query_string_params)
         path_params = dict(path_params)
         fix_proxy_path_params(path_params)
-        event = {
-            'path': path,
-            'headers': dict(headers),
-            'multiValueHeaders': multi_value_dict_for_list(headers),
-            'pathParameters': path_params,
-            'body': payload,
-            'isBase64Encoded': False,
-            'resource': resource_path,
-            'httpMethod': method,
-            'queryStringParameters': query_string_params,
-            'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params),
-            'requestContext': request_context,
-            'stageVariables': stage_variables,
-        }
+        event['pathParameters'] = path_params
+        event['resource'] = resource_path
+        event['requestContext'] = request_context
+        event['stageVariables'] = stage_variables
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
         asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
         inv_result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
         return inv_result.result
     except Exception as e:
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
+
+
+def construct_invocation_event(method, path, headers, data, query_string_params={}):
+    query_string_params = query_string_params or parse_request_data(method, path, '')
+    event = {
+        'path': path,
+        'headers': dict(headers),
+        'multiValueHeaders': multi_value_dict_for_list(headers),
+        'body': data,
+        'isBase64Encoded': False,
+        'httpMethod': method,
+        'queryStringParameters': query_string_params,
+        'multiValueQueryStringParameters': multi_value_dict_for_list(query_string_params)
+    }
+    return event
 
 
 def process_sns_notification(func_arn, topic_arn, subscription_arn, message, message_id,
