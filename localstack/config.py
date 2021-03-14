@@ -259,7 +259,7 @@ def in_docker():
             any(['docker-' in file_names for file_names in os.listdir('/sys/fs/cgroup/system.slice/')]),
         ]):
             return False
-    except FileNotFoundError:
+    except Exception:
         pass
     with open('/proc/1/cgroup', 'rt') as ifh:
         os_hostname = open('/etc/hostname', 'rt').read().strip()
