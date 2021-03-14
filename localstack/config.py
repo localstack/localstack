@@ -263,8 +263,8 @@ def in_docker():
         pass
     with open('/proc/1/cgroup', 'rt') as ifh:
         os_hostname = open('/etc/hostname', 'rt').read().strip()
-        lines_list = ifh.read().split('\n')
-        if any([os_hostname in element for element in lines_list]) or 'docker' in ifh.read():
+        content = ifh.read()
+        if os_hostname in content or 'docker' in content:
             return True
     return False
 
