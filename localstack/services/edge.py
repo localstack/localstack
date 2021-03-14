@@ -175,10 +175,10 @@ def get_auth_string(headers, data=None):
 
     auth_header = headers.get('authorization', '')
 
-    if auth_header != '':
+    if auth_header:
         return auth_header
 
-    if data is None:
+    if not data:
         return ''
 
     data_components = urllib.parse.parse_qs(data)
