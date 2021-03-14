@@ -955,7 +955,7 @@ def deploy_cf_stack(stack_name, template_body):
     return await_stack_completion(stack_name)
 
 
-def await_stack_status(stack_name, expected_statuses, retries=10, sleep=2):
+def await_stack_status(stack_name, expected_statuses, retries=15, sleep=2):
     def check_stack():
         stack = get_stack_details(stack_name)
         if stack['StackStatus'] not in expected_statuses:
@@ -967,7 +967,7 @@ def await_stack_status(stack_name, expected_statuses, retries=10, sleep=2):
     return retry(check_stack, retries, sleep)
 
 
-def await_stack_completion(stack_name, retries=10, sleep=2, statuses=None):
+def await_stack_completion(stack_name, retries=15, sleep=2, statuses=None):
     statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
     return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
 
