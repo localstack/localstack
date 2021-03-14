@@ -797,7 +797,9 @@ class TestS3(unittest.TestCase):
         object_key = 'camelCaseKey'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        self.assertRaises(Exception, self.s3_client.get_object, Bucket=bucket_name, Key=object_key.lower())
+        res = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        print('Response:::', res['ResponseMetadata']['HTTPStatusCode'])
+        self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
