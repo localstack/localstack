@@ -82,5 +82,11 @@ class EdgeServiceTest(unittest.TestCase):
             b'3cba88ae6cbb8036126d2ba18ba8ded5eea9e5484d70822affce9dad03be5993'
         )
 
-        assert get_auth_string(headers_with_auth, b"") == headers_with_auth.get("authorization")
-        assert get_auth_string(Headers(), body_with_auth) == headers_with_auth.get("authorization")
+        self.assertEqual(
+            get_auth_string(headers_with_auth, b''),
+            headers_with_auth.get('authorization')
+        )
+        self.assertEqual(
+            get_auth_string(Headers(), body_with_auth),
+            headers_with_auth.get('authorization')
+        )
