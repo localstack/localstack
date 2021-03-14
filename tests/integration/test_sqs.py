@@ -871,7 +871,7 @@ class SQSTest(unittest.TestCase):
 
     def test_list_queue_with_auth_in_presigned_url(self):
         base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
-        # encoded_url = urlencode()
+
         req = AWSRequest(method='GET', url=base_url, params={
             'Action': 'ListQueues',
             'Version': '2012-11-05'
