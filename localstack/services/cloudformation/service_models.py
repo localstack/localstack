@@ -1275,6 +1275,13 @@ class SecurityGroup(GenericBaseModel):
         resp = client.describe_security_groups(GroupIds=[group_id])
         return resp['SecurityGroups'][0]
 
+    def get_physical_resource_id(self, attribute, **kwargs):
+        if not self.state:
+            return
+        if attribute in REF_ID_ATTRS:
+            props = self.props
+            return props.get('GroupId') or props.get('GroupName')
+
     @staticmethod
     def get_deploy_templates():
         return {
@@ -1327,6 +1334,33 @@ class EC2Subnet(GenericBaseModel):
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
         return self.props.get('SubnetId')
+
+
+class EC2VPC(GenericBaseModel):
+    @staticmethod
+    def cloudformation_type():
+        return 'AWS::EC2::VPC'
+
+    def fetch_state(self, stack_name, resources):
+        client = aws_stack.connect_to_service('ec2')
+        filters = [{'Name': 'cidr', 'Values': [self.props['CidrBlock']]}]
+        vpcs = client.describe_vpcs(Filters=filters)['Vpcs']
+        return (vpcs or [None])[0]
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_vpc',
+                'parameters': {
+                    'CidrBlock': 'CidrBlock',
+                    'InstanceTenancy': 'InstanceTenancy'
+                }
+            }
+        }
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('VpcId')
 
 
 class InstanceProfile(GenericBaseModel):
