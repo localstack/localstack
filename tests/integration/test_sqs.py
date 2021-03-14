@@ -869,7 +869,7 @@ class SQSTest(unittest.TestCase):
         result = self.client.list_queues()
         self.assertNotIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
 
-    def test_post_list_queue_with_auth_in_presigned_url(self):
+    def test_post_list_queues_with_auth_in_presigned_url(self):
         base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
 
         req = AWSRequest(method='POST', url=base_url, data={
@@ -906,7 +906,7 @@ class SQSTest(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(b'<ListQueuesResponse>' in res.content)
 
-    def test_get_list_queue_with_auth_in_presigned_url(self):
+    def test_get_list_queues_with_auth_in_presigned_url(self):
         base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
 
         req = AWSRequest(method='GET', url=base_url, params={
