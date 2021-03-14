@@ -15,7 +15,8 @@ from localstack.utils.aws import aws_stack
 from localstack.constants import TEST_AWS_ACCOUNT_ID, FALSE_STRINGS
 from localstack.services.s3 import s3_listener
 from localstack.utils.common import (
-    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download, mkdir, cp_r, prevent_stack_overflow)
+    json_safe, md5, canonical_json, short_uid, to_str, to_bytes, download,
+    mkdir, cp_r, prevent_stack_overflow, start_worker_thread)
 from localstack.utils.testutil import create_zip_file, delete_all_s3_objects
 from localstack.utils.cloudformation import template_preparer
 from localstack.services.awslambda.lambda_api import get_handler_file_from_name
@@ -1063,7 +1064,7 @@ def resolve_refs_recursively(stack_name, value, resources):
             value_to_encode = resolve_refs_recursively(stack_name, value_to_encode, resources)
             return to_str(base64.b64encode(to_bytes(value_to_encode)))
 
-        for key, val in value.items():
+        for key, val in dict(value).items():
             value[key] = resolve_refs_recursively(stack_name, val, resources)
 
     if isinstance(value, list):
@@ -1738,31 +1739,28 @@ class TemplateDeployer(object):
     def deploy_stack(self):
         self.stack.set_stack_status('CREATE_IN_PROGRESS')
         try:
-            self.apply_changes(self.stack, self.stack, stack_name=self.stack.stack_name, initialize=True)
-            self.stack.set_stack_status('CREATE_COMPLETE')
+            self.apply_changes(self.stack, self.stack, stack_name=self.stack.stack_name,
+                initialize=True, action='CREATE')
         except Exception as e:
             LOG.info('Unable to create stack %s: %s' % (self.stack.stack_name, e))
             self.stack.set_stack_status('CREATE_FAILED')
             raise
 
     def apply_change_set(self, change_set):
-        change_set.stack.set_stack_status('UPDATE_IN_PROGRESS')
+        action = 'CREATE'
+        change_set.stack.set_stack_status('%s_IN_PROGRESS' % action)
         try:
-            self.apply_changes(change_set.stack, change_set, stack_name=change_set.stack_name)
-            change_set.metadata['Status'] = 'UPDATE_COMPLETE'
-            self.stack.set_stack_status('UPDATE_COMPLETE')
+            self.apply_changes(change_set.stack, change_set, stack_name=change_set.stack_name, action=action)
         except Exception as e:
             LOG.info('Unable to apply change set %s: %s' % (change_set.metadata.get('ChangeSetName'), e))
-            change_set.metadata['Status'] = 'UPDATE_FAILED'
-            self.stack.set_stack_status('UPDATE_FAILED')
+            change_set.metadata['Status'] = '%s_FAILED' % action
+            self.stack.set_stack_status('%s_FAILED' % action)
             raise
 
     def update_stack(self, new_stack):
         self.stack.set_stack_status('UPDATE_IN_PROGRESS')
         # apply changes
-        self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name)
-        # update status
-        self.stack.set_stack_status('UPDATE_COMPLETE')
+        self.apply_changes(self.stack, new_stack, stack_name=self.stack.stack_name, action='UPDATE')
 
     def delete_stack(self):
         self.stack.set_stack_status('DELETE_IN_PROGRESS')
@@ -1959,9 +1957,11 @@ class TemplateDeployer(object):
 
         return changes
 
-    def apply_changes(self, existing_stack, new_stack, stack_name, change_set_id=None, initialize=False):
+    def apply_changes(self, existing_stack, new_stack, stack_name,
+            change_set_id=None, initialize=False, action=None):
         old_resources = existing_stack.template['Resources']
         new_resources = new_stack.template['Resources']
+        action = action or 'CREATE'
         self.init_resource_status(old_resources, action='UPDATE')
 
         # apply parameter changes to existing stack
@@ -1974,11 +1974,11 @@ class TemplateDeployer(object):
         # check if we have actual changes in the stack, and prepare properties
         contains_changes = False
         for change in changes:
-            action = change['ResourceChange']['Action']
+            res_action = change['ResourceChange']['Action']
             resource = new_resources.get(change['ResourceChange']['LogicalResourceId'])
-            if action != 'Modify' or self.resource_config_differs(resource):
+            if res_action != 'Modify' or self.resource_config_differs(resource):
                 contains_changes = True
-            if action in ['Modify', 'Add']:
+            if res_action in ['Modify', 'Add']:
                 self.merge_properties(resource['LogicalResourceId'], existing_stack, new_stack)
         if not contains_changes:
             raise NoStackUpdates('No updates are to be performed.')
@@ -1987,9 +1987,30 @@ class TemplateDeployer(object):
         existing_stack.template['Outputs'].update(new_stack.template.get('Outputs', {}))
 
         # start deployment loop
-        return self.apply_changes_in_loop(changes, existing_stack, stack_name)
+        return self.apply_changes_in_loop(changes, existing_stack, stack_name, action=action, new_stack=new_stack)
 
-    def apply_changes_in_loop(self, changes, stack, stack_name):
+    def apply_changes_in_loop(self, changes, stack, stack_name, action=None, new_stack=None):
+        from localstack.services.cloudformation.cloudformation_api import StackChangeSet
+
+        def _run(*args):
+            try:
+                self.do_apply_changes_in_loop(changes, stack, stack_name)
+                status = '%s_COMPLETE' % action
+            except Exception as e:
+                LOG.debug('Error applying changes for CloudFormation stack "%s": %s %s' % (
+                    stack.stack_name, e, traceback.format_exc()))
+                status = '%s_FAILED' % action
+            stack.set_stack_status(status)
+            if isinstance(new_stack, StackChangeSet):
+                new_stack.metadata['Status'] = status
+
+        # run deployment in background loop, to avoid client network timeouts
+        run_thread = True
+        if run_thread:
+            return start_worker_thread(_run)
+        return _run()
+
+    def do_apply_changes_in_loop(self, changes, stack, stack_name):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
         changes_done = []
         max_iters = 30

@@ -101,13 +101,16 @@ class Stack(object):
 
     def set_stack_status(self, status):
         self.metadata['StackStatus'] = status
+        self.add_stack_event(self.stack_name, self.stack_id, status)
+
+    def add_stack_event(self, resource_id, physical_res_id, status):
         event = {
             'EventId': long_uid(),
             'Timestamp': timestamp_millis(),
             'StackId': self.stack_id,
             'StackName': self.stack_name,
-            'LogicalResourceId': self.stack_name,
-            'PhysicalResourceId': self.stack_id,
+            'LogicalResourceId': resource_id,
+            'PhysicalResourceId': physical_res_id,
             'ResourceStatus': status,
             'ResourceType': 'AWS::CloudFormation::Stack'
         }
@@ -124,6 +127,7 @@ class Stack(object):
         state['StackName'] = state.get('StackName') or self.stack_name
         state['StackId'] = state.get('StackId') or self.stack_id
         state['ResourceType'] = state.get('ResourceType') or self.resources[resource_id].get('Type')
+        self.add_stack_event(resource_id, physical_res_id, status)
 
     def resource_status(self, resource_id):
         result = self._lookup(self.resource_states, resource_id)
@@ -308,8 +312,17 @@ def create_stack(req_params):
     state = CloudFormationRegion.get()
     template_deployer.prepare_template_body(req_params)
     template = template_preparer.parse_template(req_params['TemplateBody'])
-    template['StackName'] = req_params.get('StackName')
+    stack_name = template['StackName'] = req_params.get('StackName')
     stack = Stack(req_params, template)
+
+    # find existing stack with same name, and remove it if this stack is in DELETED state
+    existing = ([s for s in state.stacks.values() if s.stack_name == stack_name] or [None])[0]
+    if existing:
+        if 'DELETE' not in existing.status:
+            return error_response('Stack named "%s" already exists with status "%s"' % (
+                stack_name, existing.status), code=400, code_string='ValidationError')
+        state.stacks.pop(existing.stack_id)
+
     state.stacks[stack.stack_id] = stack
     LOG.debug('Creating stack "%s" with %s resources ...' % (stack.stack_name, len(stack.template_resources)))
     deployer = template_deployer.TemplateDeployer(stack)
@@ -444,8 +457,6 @@ def execute_change_set(req_params):
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
     change_set.stack.metadata['ChangeSetId'] = change_set.change_set_id
-    stack = find_stack(stack_name)
-    stack.set_stack_status('CREATE_COMPLETE')
     return {}
 
 
@@ -534,10 +545,11 @@ def get_template_summary(req_params):
         stack = find_stack(stack_name)
         if not stack:
             return stack_not_found_error(stack_name)
-    template_deployer.prepare_template_body(req_params)
-    template = template_preparer.parse_template(req_params['TemplateBody'])
-    req_params['StackName'] = 'tmp-stack'
-    stack = Stack(req_params, template)
+    else:
+        template_deployer.prepare_template_body(req_params)
+        template = template_preparer.parse_template(req_params['TemplateBody'])
+        req_params['StackName'] = 'tmp-stack'
+        stack = Stack(req_params, template)
     result = stack.describe_details()
     id_summaries = {}
     for resource_id, resource in stack.template_resources.items():

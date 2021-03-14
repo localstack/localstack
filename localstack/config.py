@@ -76,7 +76,7 @@ SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
 
-# whether to remotely copy the lambda or locally mount a volume
+# whether to remotely copy the lambda code or locally mount a volume
 LAMBDA_REMOTE_DOCKER = is_env_true('LAMBDA_REMOTE_DOCKER')
 
 # network that the docker lambda container will be joining
@@ -134,7 +134,7 @@ DOCKER_FLAGS = os.environ.get('DOCKER_FLAGS', '').strip()
 DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 
 # whether to start the web API
-START_WEB = os.environ.get('START_WEB', '').strip() not in FALSE_STRINGS
+START_WEB = os.environ.get('START_WEB', '').strip() in TRUE_STRINGS
 
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future

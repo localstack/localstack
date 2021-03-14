@@ -87,7 +87,7 @@ Usage:
   localstack web <subcommand> [options]
 
 Commands:
-  web start           Start the Web dashboard
+  web start           Start the Web dashboard (Note: deprecated and no longer supported!)
 
 Options:
   --port=<>           Network port for running the Web server (default: 8080)
