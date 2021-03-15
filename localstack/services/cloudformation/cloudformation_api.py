@@ -33,9 +33,9 @@ class CloudFormationRegion(RegionBackend):
         output_keys = {}
         for stack_id, stack in self.stacks.items():
             for output in stack.outputs:
-                if 'ExportName' not in output:
+                export_name = output.get('ExportName')
+                if not export_name:
                     continue
-                export_name = output['ExportName']
                 if export_name in output_keys:
                     # TODO: raise exception on stack creation in case of duplicate exports
                     LOG.warning('Found duplicate export name %s in stacks: %s %s' % (

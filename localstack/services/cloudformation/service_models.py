@@ -1060,11 +1060,12 @@ class SQSQueue(GenericBaseModel, MotoQueue):
     @staticmethod
     def get_deploy_templates():
         def _queue_url(params, resources, resource_id, **kwargs):
-            resource = resources[resource_id]
-            queue_url = resource.get('PhysicalResourceId') or resource.get('QueueUrl')
+            resource = SQSQueue(resources[resource_id])
+            props = resource.props
+            queue_url = resource.physical_resource_id or props.get('QueueUrl')
             if queue_url:
                 return queue_url
-            return aws_stack.sqs_queue_url_for_arn(resource['QueueArn'])
+            return aws_stack.sqs_queue_url_for_arn(props['QueueArn'])
 
         return {
             'create': {
@@ -1328,6 +1329,7 @@ class EC2Subnet(GenericBaseModel):
                     'OutpostArn': 'OutpostArn',
                     'Ipv6CidrBlock': 'Ipv6CidrBlock',
                     'AvailabilityZone': 'AvailabilityZone'
+                    # TODO: add TagSpecifications
                 }
             }
         }
@@ -1355,6 +1357,7 @@ class EC2VPC(GenericBaseModel):
                 'parameters': {
                     'CidrBlock': 'CidrBlock',
                     'InstanceTenancy': 'InstanceTenancy'
+                    # TODO: add TagSpecifications
                 }
             }
         }
