@@ -20,7 +20,7 @@ from botocore.client import Config
 from localstack.utils import testutil
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
-from localstack.services.s3 import s3_listener
+from localstack.services.s3 import s3_listener, s3_utils
 
 from localstack.utils.common import (
     short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, load_file)
@@ -94,7 +94,7 @@ class TestS3(unittest.TestCase):
             </CreateBucketConfiguration>"""
         headers = aws_stack.mock_aws_request_headers('s3')
         bucket_name = 'test-%s' % short_uid()
-        headers['Host'] = '%s.s3.localhost.localstack.cloud:4566' % bucket_name
+        headers['Host'] = s3_utils.get_bucket_hostname(bucket_name)
         response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
         self.assertEquals(response.status_code, 200)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
@@ -141,7 +141,7 @@ class TestS3(unittest.TestCase):
 
         # put an object where the bucket_name is in the host
         headers = aws_stack.mock_aws_request_headers('s3')
-        headers['Host'] = '%s.s3.localhost.localstack.cloud:4566' % bucket_name
+        headers['Host'] = s3_utils.get_bucket_hostname(bucket_name)
         url = '{}/{}'.format(config.TEST_S3_URL, key_by_host)
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data='something else', headers=headers, verify=False)
@@ -798,7 +798,6 @@ class TestS3(unittest.TestCase):
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
         res = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        print('Response:::', res['ResponseMetadata']['HTTPStatusCode'])
         self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_s3_get_response_headers(self):
@@ -986,7 +985,7 @@ class TestS3(unittest.TestCase):
         )
 
         headers = aws_stack.mock_aws_request_headers('s3')
-        headers['Host'] = '{}.{}:4566'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME)
+        headers['Host'] = s3_utils.get_bucket_website_hostname(bucket_name)
 
         # actual key
         url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'actual/key.html')

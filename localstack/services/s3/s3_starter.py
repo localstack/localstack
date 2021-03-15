@@ -2,7 +2,7 @@ import types
 import logging
 import traceback
 from moto.s3 import models as s3_models, responses as s3_responses, exceptions as s3_exceptions
-from moto.s3.responses import (minidom, MalformedXML, undo_clean_key_name, is_delete_keys)
+from moto.s3.responses import minidom, MalformedXML, undo_clean_key_name, is_delete_keys
 from moto.s3.exceptions import S3ClientError
 from moto.s3bucket_path import utils as s3bucket_path_utils
 from localstack import config

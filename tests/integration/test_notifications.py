@@ -102,7 +102,7 @@ class TestNotifications(unittest.TestCase):
         self.assertEqual(filter_rules, config['Filter']['Key'])
 
         # upload file to S3 (this should NOT trigger a notification)
-        test_key1 = 'testdata'
+        test_key1 = '/testdata'
         test_data1 = b'{"test": "bucket_notification1"}'
         s3_client.upload_fileobj(BytesIO(test_data1), TEST_BUCKET_NAME_WITH_NOTIFICATIONS, test_key1)
 

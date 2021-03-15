@@ -28,7 +28,7 @@ from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
 from localstack.services.s3.s3_utils import (
-    is_static_website, extract_bucket_name, validate_bucket_name, uses_host_addressing
+    is_static_website, extract_bucket_name, extract_key_name, validate_bucket_name, uses_host_addressing
 )
 from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
@@ -75,9 +75,6 @@ XMLNS_S3 = 'http://s3.amazonaws.com/doc/2006-03-01/'
 # see https://stackoverflow.com/questions/50480924/regex-for-s3-bucket-name#50484916
 BUCKET_NAME_REGEX = (r'(?=^.{3,63}$)(?!^(\d+\.)+\d+$)' +
     r'(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)')
-
-# s3 hostname pattern
-S3_HOSTNAME_PATTERN = r'^(.+).s3(-website)?.localhost.localstack.cloud(:.*\d)?'
 
 # list of destination types for bucket notifications
 NOTIFICATION_DESTINATION_TYPES = ('Queue', 'Topic', 'CloudFunction', 'LambdaFunction')
@@ -525,7 +522,7 @@ def fix_range_content_type(bucket_name, path, headers, response):
 
     s3_client = aws_stack.connect_to_service('s3')
     path = urlparse.unquote(path)
-    key_name = get_key_name(path, headers)
+    key_name = extract_key_name(headers, path)
     result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
     content_type = result['ContentType']
     if response.headers.get('Content-Type') == 'text/html; charset=utf-8':
@@ -865,6 +862,18 @@ def no_such_key_error(resource, requestId=None, status_code=400):
     return requests_response(content, status_code=status_code, headers=headers)
 
 
+def no_such_bucket(bucket_name, requestId=None, status_code=404):
+    # TODO: fix the response to match AWS bucket response when the webconfig is not set and bucket not exists
+    result = {'Error': {'Code': 'NoSuchBucket',
+            'Message': 'The specified bucket does not exist',
+            'BucketName': bucket_name,
+            'RequestId': requestId,
+            'HostId': short_uid()}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
 def token_expired_error(resource, requestId=None, status_code=400):
     result = {'Error': {'Code': 'ExpiredToken',
             'Message': 'The provided token has expired.',
@@ -903,47 +912,6 @@ def is_object_specific_request(path, headers):
 
 def normalize_bucket_name(bucket_name):
     return S3Bucket.normalize_bucket_name(bucket_name)
-
-
-def get_key_name(path, headers):
-    parsed = urlparse.urlparse(path)
-    path_parts = parsed.path.lstrip('/').split('/', 1)
-
-    if uses_path_addressing(headers):
-        return path_parts[0]
-    return path_parts[1]
-
-
-def uses_path_addressing(headers):
-    localstack_pattern = re.compile(S3_HOSTNAME_PATTERN)
-    match = localstack_pattern.match(headers.get('host'))
-    if match:
-        return True
-    else:
-        return False
-
-
-def get_bucket_name(path, headers):
-    parsed = urlparse.urlparse(path)
-
-    localstack_pattern = re.compile(S3_HOSTNAME_PATTERN)
-
-    # if any of the above patterns match, the first captured group
-    # will be returned as the bucket name
-    for pattern in [localstack_pattern]:
-        match = pattern.match(headers.get('host'))
-        if match:
-            bucket_name = match.groups()[0]
-            break
-        else:
-            if len(parsed.path) > 0:
-                bucket_name = parsed.path.split('/')[1]
-            else:
-                bucket_name = ''
-
-    # we're either returning the original bucket_name,
-    # or a pattern matched the host and we're returning that name instead
-    return normalize_bucket_name(bucket_name)
 
 
 def handle_notification_request(bucket, method, data):
@@ -1095,9 +1063,8 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
 
         # handling s3 website hosting requests
-        if is_static_website(headers):
-            if method == 'GET':
-                return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
+        if is_static_website(headers) and method == 'GET':
+            return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
 
         # parse path and query params
 
@@ -1285,7 +1252,7 @@ class ProxyListenerS3(PersistingProxyListener):
             # if we already have a good key, use it, otherwise examine the path
             if key:
                 object_path = '/' + key
-            elif uses_path_addressing(headers):
+            elif uses_host_addressing(headers):
                 object_path = parsed.path
             else:
                 parts = parsed.path[1:].split('/', 1)
@@ -1555,11 +1522,11 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
 def serve_static_website(headers, path, bucket_name):
     s3_client = aws_stack.connect_to_service('s3')
 
-    # check if bucket exsists
+    # check if bucket exists
     try:
         s3_client.head_bucket(Bucket=bucket_name)
     except ClientError:
-        LOGGER.debug('No such bucket exists. %s' % bucket_name)
+        return no_such_bucket(bucket_name, headers.get('x-amz-request-id'), 404)
 
     try:
         if path != '/':
@@ -1569,22 +1536,17 @@ def serve_static_website(headers, path, bucket_name):
                 return requests_response(status_code=200, content=content)
     except ClientError:
         LOGGER.debug('No such key found. %s' % path)
-        pass
 
     website_config = s3_client.get_bucket_website(Bucket=bucket_name)
-    if path == '/':
-        index_document = '/' + website_config.get('IndexDocument', {}).get('Suffix').lstrip('/')
-    else:
-        index_document = path + '/' + website_config.get('IndexDocument', {}).get('Suffix').lstrip('/')
-
+    path_suffix = website_config.get('IndexDocument', {}).get('Suffix', '').lstrip('/')
+    index_document = '%s/%s' % (path.rstrip('/'), path_suffix)
     try:
         res = s3_client.head_object(Bucket=bucket_name, Key=index_document)
         if res['ResponseMetadata']['HTTPStatusCode'] == 200:
             content = s3_client.get_object(Bucket=bucket_name, Key=index_document)['Body'].read()
             return requests_response(status_code=302, content=content)
     except ClientError:
-        # if error.response['ResponseMetadata']['HTTPStatusCode'] == 404:
-        error_document = website_config.get('ErrorDocument', {}).get('Key').lstrip('/')
+        error_document = website_config.get('ErrorDocument', {}).get('Key', '').lstrip('/')
         try:
             res = s3_client.head_object(Bucket=bucket_name, Key=error_document)
             if res['ResponseMetadata']['HTTPStatusCode'] == 200:
