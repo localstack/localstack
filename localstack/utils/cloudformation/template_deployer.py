@@ -546,21 +546,6 @@ RESOURCE_TO_FUNCTION = {
                 'InstanceIds': lambda params, **kw: [kw['resources'][kw['resource_id']]['PhysicalResourceId']]
             }
         }
-    },
-    'IAM::InstanceProfile': {
-        'create': {
-            'function': 'create_instance_profile',
-            'parameters': {
-                'InstanceProfileName': 'InstanceProfileName',
-                'Path': 'Path'
-            }
-        },
-        'delete': {
-            'function': 'delete_instance_profile',
-            'parameters': {
-                'InstanceProfileName': 'InstanceProfileName'
-            }
-        }
     }
 }
 

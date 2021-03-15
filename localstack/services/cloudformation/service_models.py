@@ -1378,3 +1378,21 @@ class InstanceProfile(GenericBaseModel):
         client = aws_stack.connect_to_service('iam')
         resp = client.get_instance_profile(InstanceProfileName=instance_profile_name)
         return resp['InstanceProfile']
+
+    @staticmethod
+    def get_deploy_templates():
+        return {
+            'create': {
+                'function': 'create_instance_profile',
+                'parameters': {
+                    'InstanceProfileName': 'InstanceProfileName',
+                    'Path': 'Path'
+                }
+            },
+            'delete': {
+                'function': 'delete_instance_profile',
+                'parameters': {
+                    'InstanceProfileName': 'InstanceProfileName'
+                }
+            }
+        }

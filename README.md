@@ -91,27 +91,6 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Test report dashboards**
 * ...and much, much more to come! (Check out our **feature roadmap** here: https://roadmap.localstack.cloud)
 
-## Why LocalStack?
-
-LocalStack builds on existing best-of-breed mocking/testing tools, notably
-[kinesalite](https://github.com/mhart/kinesalite)/[dynalite](https://github.com/mhart/dynalite)
-and [moto](https://github.com/spulec/moto), [ElasticMQ](https://github.com/softwaremill/elasticmq),
-and others. While these tools are *awesome* (!), they lack functionality for certain use cases.
-LocalStack combines the tools, makes them interoperable, and adds important missing functionality
-on top of them:
-
-* **Error injection:** LocalStack allows to inject errors frequently occurring in real Cloud environments,
-  for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
-  read/write throughput is exceeded.
-* **Isolated processes**: Services in LocalStack can be run in separate processes.
-  In moto, components are often hard-wired in memory (e.g., when forwarding a message on an SNS topic to an
-  SQS queue, the queue endpoint is looked up in a local hash map). In contrast, LocalStack services live in
-  isolation (separate processes/threads communicating via HTTP), which fosters true decoupling and more closely
-  resembles the real cloud environment.
-* **Pluggable services**: All services in LocalStack are easily pluggable (and replaceable), due to the fact that
-  we are using isolated processes for each service. This allows us to keep the framework up-to-date and select
-  best-of-breed mocks for each individual service.
-
 ## Requirements
 
 * `python` (both Python 2.x and 3.x supported)
@@ -273,11 +252,9 @@ SERVICES=kinesis,lambda,sqs,dynamodb localstack start
 
 ### Verifying your docker-compose configuration using the command line
 
-You can use `localstack config validate` command to validate for common mis-configuration.
+You can use the `localstack config validate` command to check for common mis-configurations.
 
-By `default` it validates `docker-compose.yml`. You can override it using `--file` argument.
-
-For example
+By default it validates `docker-compose.yml`, the target file can be specified using the `--file` argument, e.g.,:
 ```
 localstack config validate --file=localstack-docker-compose.yml
 ```
