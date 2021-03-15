@@ -107,7 +107,7 @@ class CustomEncoder(json.JSONEncoder):
 class ShellCommandThread(FuncThread):
     """ Helper class to run a shell command in a background thread. """
 
-    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
+    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False, auto_restart=False,
             quiet=True, inherit_cwd=False, inherit_env=True, log_listener=None):
         self.cmd = cmd
         self.process = None
@@ -117,10 +117,17 @@ class ShellCommandThread(FuncThread):
         self.inherit_cwd = inherit_cwd
         self.inherit_env = inherit_env
         self.log_listener = log_listener
+        self.auto_restart = auto_restart
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
+        while True:
+            self.do_run_cmd()
+            if INFRA_STOPPED or not self.auto_restart or not self.process or self.process.returncode == 0:
+                return
+            LOG.info('Restarting process (received exit code %s): %s' % (self.process.returncode, self.cmd))
 
+    def do_run_cmd(self):
         def convert_line(line):
             line = to_str(line or '')
             return '%s\r\n' % line.strip()
@@ -140,6 +147,8 @@ class ShellCommandThread(FuncThread):
                     # get stdout/stderr from child process and write to parent output
                     streams = ((self.process.stdout, sys.stdout), (self.process.stderr, sys.stderr))
                     for instream, outstream in streams:
+                        if not instream:
+                            continue
                         for line in iter(instream.readline, None):
                             # `line` should contain a newline at the end as we're iterating,
                             # hence we can safely break the loop if `line` is None or empty string

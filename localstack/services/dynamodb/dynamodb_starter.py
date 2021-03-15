@@ -48,4 +48,4 @@ def start_dynamodb(port=None, asynchronous=False, update_listener=None):
         ROOT_PATH, config.DYNAMODB_HEAP_SIZE, PORT_DYNAMODB_BACKEND, ddb_data_dir_param)
     log_startup_message('DynamoDB')
     start_proxy_for_service('dynamodb', port, backend_port=PORT_DYNAMODB_BACKEND, update_listener=update_listener)
-    return do_run(cmd, asynchronous)
+    return do_run(cmd, asynchronous, auto_restart=True)
