@@ -191,7 +191,6 @@ class S3UtilsTest (unittest.TestCase):
 
     def test_bucket_name(self):
         # array description : 'path', 'header', 'expected_ouput'
-        from localstack.services.s3.s3_utils import S3_VIRTUAL_HOSTNAME_REGEX
         bucket_names = [
             ('/bucket/keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
             ('/bucket//keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
