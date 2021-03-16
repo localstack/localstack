@@ -1,5 +1,4 @@
 import re
-from six.moves.urllib import parse
 from localstack.constants import S3_VIRTUAL_HOSTNAME, S3_STATIC_WEBSITE_HOSTNAME
 from localstack import config
 
@@ -54,14 +53,13 @@ def extract_key_name(headers, path):
     """
     Extract the key name from the path depending on addressing_style
     """
-    parsed_path = parse.urlparse(path).path
     key_name = None
     if uses_host_addressing(headers):
-        split = parsed_path.split('/', 1)
+        split = path.split('/', 1)
         if len(split) > 1:
             key_name = split[1]
     else:
-        split = parsed_path.split('/', 2)
+        split = path.split('/', 2)
         if len(split) > 2:
             key_name = split[2]
 
