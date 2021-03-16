@@ -30,6 +30,9 @@ install:
   # install under python 3
   - PIP_CMD=pip3 VENV_OPTS="-p '`which python3`'" make install-basic
   - make init
+  - make docker-build
+  # TODO remove
+  - return
   - nohup docker pull lambci/lambda:20191117-nodejs8.10 > /dev/null &
   - nohup docker pull lambci/lambda:20191117-ruby2.5 > /dev/null &
   - nohup docker pull lambci/lambda:20191117-python2.7 > /dev/null &

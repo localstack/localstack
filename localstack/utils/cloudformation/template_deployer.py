@@ -46,9 +46,6 @@ RESOURCE_MODELS = {model.cloudformation_type(): model for model in GenericBaseMo
 
 CFN_RESPONSE_MODULE_URL = 'https://raw.githubusercontent.com/LukeMizuhashi/cfn-response/master/index.js'
 
-# TODO: set to True once CI tests have been fixed!
-DEPLOY_ASYNCHRONOUSLY = False
-
 
 class NoStackUpdates(Exception):
     """ Exception indicating that no actions are to be performed in a stack update (which is not allowed) """
@@ -1944,9 +1941,7 @@ class TemplateDeployer(object):
                 new_stack.metadata['Status'] = status
 
         # run deployment in background loop, to avoid client network timeouts
-        if DEPLOY_ASYNCHRONOUSLY:
-            return start_worker_thread(_run)
-        return _run()
+        return start_worker_thread(_run)
 
     def do_apply_changes_in_loop(self, changes, stack, stack_name):
         # apply changes in a retry loop, to resolve resource dependencies and converge to the target state
