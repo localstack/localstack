@@ -192,7 +192,6 @@ class S3UtilsTest (unittest.TestCase):
     def test_bucket_name(self):
         # array description : 'path', 'header', 'expected_ouput'
         from localstack.services.s3.s3_utils import S3_VIRTUAL_HOSTNAME_REGEX
-        print('-----------', S3_VIRTUAL_HOSTNAME_REGEX)
         bucket_names = [
             ('/bucket/keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
             ('/bucket//keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
@@ -250,7 +249,6 @@ class S3UtilsTest (unittest.TestCase):
         ]
 
         for path, headers, expected_result in bucket_names:
-            print(expected_result, s3_utils.extract_bucket_name(headers, path))
             self.assertEqual(expected_result, s3_utils.extract_bucket_name(headers, path))
 
     def test_s3_keyname_name(self):
