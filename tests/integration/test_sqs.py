@@ -869,10 +869,10 @@ class SQSTest(unittest.TestCase):
         result = self.client.list_queues()
         self.assertNotIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
 
-    def test_list_queue_with_auth_in_presigned_url(self):
+    def list_queues_with_auth_in_presigned_url(self, method):
         base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
 
-        req = AWSRequest(method='GET', url=base_url, params={
+        req = AWSRequest(method=method, url=base_url, data={
             'Action': 'ListQueues',
             'Version': '2012-11-05'
         })
@@ -891,7 +891,7 @@ class SQSTest(unittest.TestCase):
         canonical_request = signer.canonical_request(req)
         string_to_sign = signer.string_to_sign(req, canonical_request)
 
-        encoded_url = urlencode({
+        payload = {
             'Action': 'ListQueues',
             'Version': '2012-11-05',
             'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
@@ -900,9 +900,20 @@ class SQSTest(unittest.TestCase):
                 signer.headers_to_sign(req).keys()
             ),
             'X-Amz-Signature': signer.signature(string_to_sign, req)
-        })
+        }
 
-        res = requests.post(url=base_url, data=encoded_url)
+        if method == 'GET':
+            return requests.get(url=base_url, params=payload)
+        else:
+            return requests.post(url=base_url, data=urlencode(payload))
+
+    def test_post_list_queues_with_auth_in_presigned_url(self):
+        res = self.list_queues_with_auth_in_presigned_url(method='POST')
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(b'<ListQueuesResponse>' in res.content)
+
+    def test_get_list_queues_with_auth_in_presigned_url(self):
+        res = self.list_queues_with_auth_in_presigned_url(method='GET')
         self.assertEqual(res.status_code, 200)
         self.assertTrue(b'<ListQueuesResponse>' in res.content)
 
