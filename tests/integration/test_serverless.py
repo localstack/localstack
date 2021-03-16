@@ -19,7 +19,12 @@ class TestServerless(unittest.TestCase):
         cls.api_ids = [api['id'] for api in apis]
 
         # deploy serverless app
-        run('cd %s; npm run deploy -- --region=%s' % (base_dir, aws_stack.get_region()))
+        print('!!START')
+        try:
+            result = run('cd %s; npm run deploy -- --region=%s' % (base_dir, aws_stack.get_region()))
+            print(result)
+        except Exception as e:
+            print('!!EXC', e)
 
     @classmethod
     def tearDownClass(cls):
