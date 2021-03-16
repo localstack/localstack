@@ -1046,7 +1046,7 @@ class ProxyListenerS3(PersistingProxyListener):
         parsed_path = urlparse.urlparse(path)
         bucket_name = extract_bucket_name(headers, parsed_path.path)
 
-        if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
+        if method == 'PUT' and bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
             if len(parsed_path.path) <= 1:
                 return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
                     'configured to use path style addressing, or send a valid ' +
