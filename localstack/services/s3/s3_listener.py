@@ -154,7 +154,7 @@ def _get_s3_filter(filters):
 
 
 def prefix_with_slash(s):
-    return s if s[0] == '/' else '/%s' % s
+    return s if s and s[0] == '/' else '/%s' % s
 
 
 def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag='', version_id=None, file_size=0):
