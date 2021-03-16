@@ -90,3 +90,12 @@ def params_select_attributes(*attrs):
                 result[attr] = str_or_none(params.get(attr))
         return result
     return do_select
+
+
+def param_json_to_str(name):
+    def _convert(params, **kwargs):
+        result = params.get(name)
+        if result:
+            result = json.dumps(result)
+        return result
+    return _convert
