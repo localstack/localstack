@@ -44,7 +44,7 @@ psutil>=5.4.8,<6.0.0
 pympler>=0.6
 pyopenssl==17.5.0
 python-coveralls>=2.9.1
-pyyaml>=3.13,<=5.1
+pyyaml>=3.13,<=5.1             #basic-lib
 Quart>=0.6.15
 requests>=2.20.0               #basic-lib
 requests-aws4auth==0.9

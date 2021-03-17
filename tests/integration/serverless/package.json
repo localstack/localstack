@@ -4,7 +4,8 @@
   "description": "Simple Serverless tests for LocalStack",
   "scripts": {
     "deploy": "serverless deploy --stage local",
-    "undeploy": "serverless remove --stage local"
+    "undeploy": "serverless remove --stage local",
+    "version": "serverless --version"
   },
   "devDependencies": {
     "serverless": "^2.20.0",
