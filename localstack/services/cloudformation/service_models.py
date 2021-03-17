@@ -1401,6 +1401,10 @@ class InstanceProfile(GenericBaseModel):
         resp = client.get_instance_profile(InstanceProfileName=instance_profile_name)
         return resp['InstanceProfile']
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if attribute in REF_ID_ATTRS:
+            return self.props.get('InstanceProfileName')
+
     @staticmethod
     def get_deploy_templates():
         return {
