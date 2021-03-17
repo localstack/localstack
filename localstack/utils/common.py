@@ -1208,6 +1208,7 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     def store_cert_key_files(base_filename):
         key_file_name = '%s.key' % base_filename
         cert_file_name = '%s.crt' % base_filename
+        # TODO: Cleaner code to load the cert dinamically
         # extract key and cert from target_file and store into separate files
         content = load_file(target_file)
         key_start = '-----BEGIN PRIVATE KEY-----'
