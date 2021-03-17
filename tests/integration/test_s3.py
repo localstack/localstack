@@ -1720,7 +1720,7 @@ class TestS3(unittest.TestCase):
         # DELETE
         response = requests.delete(presign_delete_url)
         self.assertEqual(response.status_code, 403)
-        print(response.content)
+
         response = requests.delete(presign_delete_url_v4)
         self.assertEqual(response.status_code, 403)
 
