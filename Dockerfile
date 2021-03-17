@@ -93,7 +93,7 @@ RUN echo "127.0.0.1 localhost.localdomain" >> /etc/hosts
 
 # run tests (to verify the build before pushing the image)
 ADD tests/ tests/
-RUN LAMBDA_EXECUTOR=local TEST_PATH=tests/integration/test_serverless.py make test
+RUN LAMBDA_EXECUTOR=local make test
 
 # clean up temporary files created during test execution
 RUN apk del --purge git cmake gcc musl-dev libc-dev; \
