@@ -33,6 +33,8 @@ PATH_REGEX_RESPONSES = r'^/restapis/([A-Za-z0-9_\-]+)/gatewayresponses(/[A-Za-z0
 PATH_REGEX_USER_REQUEST = r'^/restapis/([A-Za-z0-9_\-]+)/([A-Za-z0-9_\-]+)/%s/(.*)$' % PATH_USER_REQUEST
 PATH_REGEX_PATH_MAPPINGS = r'/domainnames/([^/]+)/basepathmappings(/.*)?'
 HOST_REGEX_EXECUTE_API = r'(.*://)?([a-zA-Z0-9-]+)\.execute-api\..*'
+PATH_REGEX_TEST_INVOKE_API = \
+    r'^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za-z0-9_\-]+)\/methods\/([A-Za-z0-9_\-]+)/?(\?.*)?'
 
 # Maps API IDs to list of gateway responses
 GATEWAY_RESPONSES = {}
@@ -65,6 +67,21 @@ class ProxyListenerApiGateway(ProxyListener):
                 return get_gateway_responses(api_id)
             if method == 'PUT':
                 return put_gateway_response(api_id, response_type, data)
+
+        if is_test_invoke_method(path) and method == 'POST':
+            kwargs = {}
+
+            # if call is from test_invoke_api then use http_method to find the integration,
+            # as test_invoke_api make POST call to interect
+            match = re.match(PATH_REGEX_TEST_INVOKE_API, path)
+            method = match[3]
+            if data:
+                orig_data = data
+                path_with_query_string = orig_data.get('pathWithQueryString', None)
+                data = data.get('body', None)
+                headers = orig_data.get('headers', {})
+                kwargs = {'path_with_query_string': path_with_query_string} if path_with_query_string else {}
+            return invoke_rest_api_from_request(method=method, path=path, data=data, headers=headers, **kwargs)
 
         return True
 
@@ -239,6 +256,7 @@ def get_api_id_stage_invocation_path(path, headers):
     path_match = re.search(PATH_REGEX_USER_REQUEST, path)
     host_header = headers.get('Host', '')
     host_match = re.search(HOST_REGEX_EXECUTE_API, host_header)
+    test_invoke_match = re.search(PATH_REGEX_TEST_INVOKE_API, path)
     if path_match:
         api_id = path_match.group(1)
         stage = path_match.group(2)
@@ -247,11 +265,17 @@ def get_api_id_stage_invocation_path(path, headers):
         api_id = host_match.group(1)
         stage = path.strip('/').split('/')[0]
         relative_path_w_query_params = '/%s' % path.lstrip('/').partition('/')[2]
+    elif test_invoke_match:
+        api_id = test_invoke_match.group(1)
+        stage = None
+        relative_path_w_query_params = '/%s' % test_invoke_match.group(4)
     return api_id, stage, relative_path_w_query_params
 
 
-def invoke_rest_api_from_request(method, path, data, headers, context={}):
+def invoke_rest_api_from_request(method, path, data, headers, context={}, path_with_query_string=None):
     api_id, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
+    if path_with_query_string:
+        relative_path_w_query_params = path_with_query_string
     try:
         return invoke_rest_api(api_id, stage, method, relative_path_w_query_params,
             data, headers, path=path, context=context)
@@ -324,7 +348,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
             # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-create-api-as-simple-proxy-for-lambda.html#api-gateway-create-api-as-simple-proxy-for-lambda-test
             request_context = get_lambda_event_request_context(method, path, data, headers,
                 integration_uri=uri, resource_id=resource_id)
-            stage_variables = get_stage_variables(api_id, stage)
+            stage_variables = \
+                (get_stage_variables(api_id, stage) if not is_test_invoke_method(path) else None)
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                 stage, api_id, headers, path_params=path_params, query_string_params=query_string_params,
@@ -494,18 +519,14 @@ def get_stage_variables(api_id, stage):
 
 
 def get_lambda_event_request_context(method, path, data, headers, integration_uri=None, resource_id=None):
-    _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
-    relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
     source_ip = headers.get('X-Forwarded-For', ',').split(',')[-2].strip()
     integration_uri = integration_uri or ''
     account_id = integration_uri.split(':lambda:path')[-1].split(':function:')[0].split(':')[-1]
     request_context = {
         # adding stage to the request context path.
         # https://github.com/localstack/localstack/issues/2210
-        'path': '/' + stage + relative_path,
         'accountId': account_id,
         'resourceId': resource_id,
-        'stage': stage,
         'identity': {
             'accountId': account_id,
             'sourceIp': source_ip,
@@ -516,7 +537,17 @@ def get_lambda_event_request_context(method, path, data, headers, integration_ur
         'requestTime': datetime.datetime.utcnow(),
         'requestTimeEpoch': int(time.time() * 1000),
     }
+
+    if not is_test_invoke_method(path):
+        _, stage, relative_path_w_query_params = get_api_id_stage_invocation_path(path, headers)
+        relative_path, query_string_params = extract_query_string_params(path=relative_path_w_query_params)
+        request_context['path'] = '/' + stage + relative_path
+        request_context['stage'] = stage
     return request_context
+
+
+def is_test_invoke_method(path):
+    return bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
 
 
 # instantiate listener

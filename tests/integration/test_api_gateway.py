@@ -25,6 +25,7 @@ from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, 'files', 'swagger.json')
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
+TEST_LAMBDA_EVENT_LOG_NODE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_integration.js')
 
 
 class TestAPIGateway(unittest.TestCase):
@@ -961,6 +962,75 @@ class TestAPIGateway(unittest.TestCase):
         # Clean up
         lambda_client.delete_function(FunctionName=fn_name)
         sfn_client.delete_state_machine(stateMachineArn=sm_arn)
+        client.delete_rest_api(restApiId=rest_api['id'])
+
+    def test_apigw_test_invoke_method_api(self):
+        client = aws_stack.connect_to_service('apigateway')
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        fn_name = 'test-invoke-method-apigw'
+
+        # create state machine
+        testutil.create_lambda_function(
+            handler_file=TEST_LAMBDA_EVENT_LOG_NODE,
+            func_name=fn_name,
+            runtime='nodejs8.10'
+        )
+
+        lambda_arn_1 = aws_stack.lambda_function_arn(fn_name)
+
+        rest_api = client.create_rest_api(
+            name='test',
+            description='test'
+        )
+
+        root_resource = client.get_resources(
+            restApiId=rest_api['id']
+        )
+
+        resource = client.create_resource(
+            restApiId=rest_api['id'],
+            parentId=root_resource['items'][0]['id'],
+            pathPart='foo'
+        )
+
+        client.put_method(
+            restApiId=rest_api['id'],
+            resourceId=resource['id'],
+            httpMethod='GET',
+            authorizationType='NONE'
+        )
+
+        client.put_integration(
+            restApiId=rest_api['id'],
+            resourceId=resource['id'],
+            httpMethod='GET',
+            type='AWS',
+            uri='arn:aws:apigateway:{}:lambda:path//2015-03-31/functions/{}/invocations'.format(
+                aws_stack.get_region(), lambda_arn_1
+            )
+        )
+
+        response = client.test_invoke_method(
+            restApiId=rest_api['id'],
+            resourceId=resource['id'],
+            httpMethod='GET',
+            pathWithQueryString='/foo'
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        response = client.test_invoke_method(
+            restApiId=rest_api['id'],
+            resourceId=resource['id'],
+            httpMethod='GET',
+            pathWithQueryString='/foo',
+            body='{"test": "val"}',
+            headers={
+                'content-type': 'application/json'
+            }
+        )
+        self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
+        # Clean up
+        lambda_client.delete_function(FunctionName=fn_name)
         client.delete_rest_api(restApiId=rest_api['id'])
 
     # =====================================================================

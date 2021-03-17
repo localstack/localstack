@@ -297,6 +297,8 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
         event['resource'] = resource_path
         event['requestContext'] = request_context
         event['stageVariables'] = stage_variables
+        if stage_variables:
+            event['stageVariables'] = stage_variables
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
         asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
         inv_result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
