@@ -1212,9 +1212,14 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
         content = load_file(target_file)
         key_start = '-----BEGIN PRIVATE KEY-----'
         key_end = '-----END PRIVATE KEY-----'
+        rsa_key_start = '-----BEGIN RSA PRIVATE KEY-----'
+        rsa_key_end = '-----END RSA PRIVATE KEY-----'
         cert_start = '-----BEGIN CERTIFICATE-----'
         cert_end = '-----END CERTIFICATE-----'
-        key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
+        if rsa_key_start in content:
+            key_content = content[content.index(rsa_key_start): content.index(rsa_key_end) + len(rsa_key_end)]
+        else:
+            key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
         cert_content = content[content.index(cert_start): content.rindex(cert_end) + len(cert_end)]
         save_file(key_file_name, key_content)
         save_file(cert_file_name, cert_content)
