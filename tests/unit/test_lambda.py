@@ -336,6 +336,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['State'] = 'Active'
             expected_result['LastUpdateStatus'] = 'Successful'
             expected_result['PackageType'] = None
+            expected_result['ImageConfig'] = {}
             self.assertDictEqual(expected_result, result)
 
     def test_publish_update_version_increment(self):
@@ -366,6 +367,7 @@ class TestLambdaAPI(unittest.TestCase):
             expected_result['State'] = 'Active'
             expected_result['LastUpdateStatus'] = 'Successful'
             expected_result['PackageType'] = None
+            expected_result['ImageConfig'] = {}
             self.assertDictEqual(expected_result, result)
 
     def test_publish_non_existant_function_version_returns_error(self):
@@ -405,6 +407,7 @@ class TestLambdaAPI(unittest.TestCase):
             latest_version['State'] = 'Active'
             latest_version['LastUpdateStatus'] = 'Successful'
             latest_version['PackageType'] = None
+            latest_version['ImageConfig'] = {}
             version1 = dict(latest_version)
             version1['FunctionArn'] = str(lambda_api.func_arn(self.FUNCTION_NAME)) + ':1'
             version1['Version'] = '1'

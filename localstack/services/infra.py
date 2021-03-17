@@ -235,13 +235,13 @@ def register_signal_handlers():
     SIGNAL_HANDLERS_SETUP = True
 
 
-def do_run(cmd, asynchronous, print_output=None, env_vars={}):
+def do_run(cmd, asynchronous, print_output=None, env_vars={}, auto_restart=False):
     sys.stdout.flush()
     if asynchronous:
         if config.DEBUG and print_output is None:
             print_output = True
         outfile = subprocess.PIPE if print_output else None
-        t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars)
+        t = ShellCommandThread(cmd, outfile=outfile, env_vars=env_vars, auto_restart=auto_restart)
         t.start()
         TMP_THREADS.append(t)
         return t

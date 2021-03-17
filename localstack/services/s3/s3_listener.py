@@ -24,10 +24,12 @@ from botocore.awsrequest import create_request_object
 from requests.models import Response, Request
 from six.moves.urllib import parse as urlparse
 from localstack import config, constants
-from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import multipart_content
+from localstack.services.s3.s3_utils import (
+    is_static_website, extract_bucket_name, extract_key_name, validate_bucket_name, uses_host_addressing
+)
 from localstack.utils.common import (
     short_uid, timestamp_millis, to_str, to_bytes, clone, md5, get_service_protocol, now_utc, is_base64
 )
@@ -152,7 +154,7 @@ def _get_s3_filter(filters):
 
 
 def prefix_with_slash(s):
-    return s if s[0] == '/' else '/%s' % s
+    return s if s and s[0] == '/' else '/%s' % s
 
 
 def get_event_message(event_name, bucket_name, file_name='testfile.txt', etag='', version_id=None, file_size=0):
@@ -519,8 +521,8 @@ def fix_range_content_type(bucket_name, path, headers, response):
         return
 
     s3_client = aws_stack.connect_to_service('s3')
-    path = urlparse.unquote(path)
-    key_name = get_key_name(path, headers)
+    path = urlparse.urlparse(urlparse.unquote(path)).path
+    key_name = extract_key_name(headers, path)
     result = s3_client.head_object(Bucket=bucket_name, Key=key_name)
     content_type = result['ContentType']
     if response.headers.get('Content-Type') == 'text/html; charset=utf-8':
@@ -860,6 +862,18 @@ def no_such_key_error(resource, requestId=None, status_code=400):
     return requests_response(content, status_code=status_code, headers=headers)
 
 
+def no_such_bucket(bucket_name, requestId=None, status_code=404):
+    # TODO: fix the response to match AWS bucket response when the webconfig is not set and bucket not exists
+    result = {'Error': {'Code': 'NoSuchBucket',
+            'Message': 'The specified bucket does not exist',
+            'BucketName': bucket_name,
+            'RequestId': requestId,
+            'HostId': short_uid()}}
+    content = xmltodict.unparse(result)
+    headers = {'content-type': 'application/xml'}
+    return requests_response(content, status_code=status_code, headers=headers)
+
+
 def token_expired_error(resource, requestId=None, status_code=400):
     result = {'Error': {'Code': 'ExpiredToken',
             'Message': 'The provided token has expired.',
@@ -898,61 +912,6 @@ def is_object_specific_request(path, headers):
 
 def normalize_bucket_name(bucket_name):
     return S3Bucket.normalize_bucket_name(bucket_name)
-
-
-def get_key_name(path, headers):
-    parsed = urlparse.urlparse(path)
-    path_parts = parsed.path.lstrip('/').split('/', 1)
-
-    if uses_path_addressing(headers):
-        return path_parts[1]
-    return path_parts[0]
-
-
-def uses_path_addressing(headers):
-    # we can assume that the host header we are receiving here is actually the header we originally recieved
-    # from the client (because the edge service is forwarding the request in memory)
-    host = headers.get('host') or headers.get(constants.HEADER_LOCALSTACK_EDGE_URL, '').split('://')[-1]
-    return host.startswith(HOSTNAME) or host.startswith(HOSTNAME_EXTERNAL) or host.startswith(LOCALHOST_IP)
-
-
-def get_bucket_name(path, headers):
-    parsed = urlparse.urlparse(path)
-
-    # try pick the bucket_name from the path
-    bucket_name = parsed.path.split('/')[1]
-
-    # is the hostname not starting with a bucket name?
-    if uses_path_addressing(headers):
-        return normalize_bucket_name(bucket_name)
-
-    # matches the common endpoints like
-    #     - '<bucket_name>.s3.<region>.amazonaws.com'
-    #     - '<bucket_name>.s3-<region>.amazonaws.com.cn'
-    common_pattern = re.compile(r'^(.+)\.s3[.\-][a-z]{2}-[a-z]+-[0-9]{1,}'
-                                r'\.amazonaws\.com(\.[a-z]+)?$')
-    # matches dualstack endpoints like
-    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com'
-    #     - <bucket_name>.s3.dualstack.<region>.amazonaws.com.cn'
-    dualstack_pattern = re.compile(r'^(.+)\.s3\.dualstack\.[a-z]{2}-[a-z]+-[0-9]{1,}'
-                                   r'\.amazonaws\.com(\.[a-z]+)?$')
-    # matches legacy endpoints like
-    #     - '<bucket_name>.s3.amazonaws.com'
-    #     - '<bucket_name>.s3-external-1.amazonaws.com.cn'
-    legacy_patterns = re.compile(r'^(.+)\.s3\.?(-external-1)?\.amazonaws\.com(\.[a-z]+)?$')
-
-    # if any of the above patterns match, the first captured group
-    # will be returned as the bucket name
-    host = headers['host']
-    for pattern in [common_pattern, dualstack_pattern, legacy_patterns]:
-        match = pattern.match(host)
-        if match:
-            bucket_name = match.groups()[0]
-            break
-
-    # we're either returning the original bucket_name,
-    # or a pattern matched the host and we're returning that name instead
-    return normalize_bucket_name(bucket_name)
 
 
 def handle_notification_request(bucket, method, data):
@@ -1078,12 +1037,23 @@ class ProxyListenerS3(PersistingProxyListener):
             return datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
     def forward_request(self, method, path, data, headers):
-
         # Create list of query parameteres from the url
         parsed = urlparse.urlparse('{}{}'.format(config.get_edge_url(), path))
         query_params = parse_qs(parsed.query)
         path_orig = path
         path = path.replace('#', '%23')  # support key names containing hashes (e.g., required by Amplify)
+        # extracting bucket name from the request
+        parsed_path = urlparse.urlparse(path)
+        bucket_name = extract_bucket_name(headers, parsed_path.path)
+
+        if method == 'PUT' and bucket_name and not re.match(BUCKET_NAME_REGEX, bucket_name):
+            if len(parsed_path.path) <= 1:
+                return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
+                    'configured to use path style addressing, or send a valid ' +
+                    '<Bucket>.s3.localhost.localstack.cloud "Host" header',
+                    'InvalidBucketName', status_code=400)
+
+            return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # Detecting pre-sign url and checking signature
         if (any([p in query_params for p in PRESIGN_QUERY_PARAMS]) or
@@ -1092,13 +1062,11 @@ class ProxyListenerS3(PersistingProxyListener):
             if response is not None:
                 return response
 
-        # parse path and query params
-        parsed_path = urlparse.urlparse(path)
+        # handling s3 website hosting requests
+        if is_static_website(headers) and method == 'GET':
+            return serve_static_website(headers=headers, path=path, bucket_name=bucket_name)
 
-        # Make sure we use 'localhost' as forward host, to ensure moto uses path style addressing.
-        # Note that all S3 clients using LocalStack need to enable path style addressing.
-        if 's3.amazonaws.com' not in headers.get('host', ''):
-            headers['host'] = 'localhost'
+        # parse path and query params
 
         # check content md5 hash integrity if not a copy request or multipart initialization
         if 'Content-MD5' in headers and not self.is_s3_copy_request(headers, path) \
@@ -1108,16 +1076,6 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
 
         modified_data = None
-
-        # check bucket name
-        bucket_name = get_bucket_name(path, headers)
-        if method == 'PUT' and not re.match(BUCKET_NAME_REGEX, bucket_name):
-            if len(parsed_path.path) <= 1:
-                return error_response('Unable to extract valid bucket name. Please ensure that your AWS SDK is ' +
-                    'configured to use path style addressing, or send a valid <Bucket>.s3.amazonaws.com "Host" header',
-                    'InvalidBucketName', status_code=400)
-
-            return error_response('The specified bucket is not valid.', 'InvalidBucketName', status_code=400)
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
         to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
@@ -1152,7 +1110,6 @@ class ProxyListenerS3(PersistingProxyListener):
         # parse query params
         query = parsed_path.query
         path = parsed_path.path
-        bucket = path.split('/')[1]
         query_map = urlparse.parse_qs(query, keep_blank_values=True)
 
         # remap metadata query params (not supported in moto) to request headers
@@ -1163,7 +1120,7 @@ class ProxyListenerS3(PersistingProxyListener):
 
         if query == 'notification' or 'notification' in query_map:
             # handle and return response for ?notification request
-            response = handle_notification_request(bucket, method, data)
+            response = handle_notification_request(bucket_name, method, data)
             return response
 
         # if the Expires key in the url is already expired then return error
@@ -1185,39 +1142,39 @@ class ProxyListenerS3(PersistingProxyListener):
 
         if query == 'cors' or 'cors' in query_map:
             if method == 'GET':
-                return get_cors(bucket)
+                return get_cors(bucket_name)
             if method == 'PUT':
-                return set_cors(bucket, data)
+                return set_cors(bucket_name, data)
             if method == 'DELETE':
-                return delete_cors(bucket)
+                return delete_cors(bucket_name)
 
         if query == 'lifecycle' or 'lifecycle' in query_map:
             if method == 'GET':
-                return get_lifecycle(bucket)
+                return get_lifecycle(bucket_name)
             if method == 'PUT':
-                return set_lifecycle(bucket, data)
+                return set_lifecycle(bucket_name, data)
             if method == 'DELETE':
-                delete_lifecycle(bucket)
+                delete_lifecycle(bucket_name)
 
         if query == 'replication' or 'replication' in query_map:
             if method == 'GET':
-                return get_replication(bucket)
+                return get_replication(bucket_name)
             if method == 'PUT':
-                return set_replication(bucket, data)
+                return set_replication(bucket_name, data)
 
         if query == 'encryption' or 'encryption' in query_map:
             if method == 'GET':
-                return get_encryption(bucket)
+                return get_encryption(bucket_name)
             if method == 'PUT':
-                return set_encryption(bucket, data)
+                return set_encryption(bucket_name, data)
 
         if query == 'object-lock' or 'object-lock' in query_map:
             if method == 'GET':
-                return get_object_lock(bucket)
+                return get_object_lock(bucket_name)
             if method == 'PUT':
-                return set_object_lock(bucket, data)
+                return set_object_lock(bucket_name, data)
 
-        if method == 'DELETE' and re.match(BUCKET_NAME_REGEX, bucket_name):
+        if method == 'DELETE' and validate_bucket_name(bucket_name):
             delete_lifecycle(bucket_name)
 
         path_orig_escaped = path_orig.replace('#', '%23')
@@ -1250,7 +1207,7 @@ class ProxyListenerS3(PersistingProxyListener):
         super(ProxyListenerS3, self).return_response(method, path, data, headers, response, request_handler)
 
         # No path-name based bucket name? Try host-based
-        bucket_name = get_bucket_name(path, headers)
+        bucket_name = extract_bucket_name(headers, path)
         hostname_parts = headers['host'].split('.')
         if (not bucket_name or len(bucket_name) == 0) and len(hostname_parts) > 1:
             bucket_name = hostname_parts[0]
@@ -1261,7 +1218,6 @@ class ProxyListenerS3(PersistingProxyListener):
         key = None
         if method == 'POST':
             key, redirect_url = multipart_content.find_multipart_key_value(data, headers)
-
             if key and redirect_url:
                 response.status_code = 303
                 response.headers['Location'] = expand_redirect_url(redirect_url, key, bucket_name)
@@ -1281,8 +1237,7 @@ class ProxyListenerS3(PersistingProxyListener):
             return error_response('The requested range cannot be satisfied.', 'InvalidRange', 416)
 
         parsed = urlparse.urlparse(path)
-        bucket_name_in_host = headers['host'].startswith(bucket_name)
-
+        bucket_name_in_host = uses_host_addressing(headers)
         should_send_notifications = all([
             method in ('PUT', 'POST', 'DELETE'),
             '/' in path[1:] or bucket_name_in_host or key,
@@ -1297,7 +1252,7 @@ class ProxyListenerS3(PersistingProxyListener):
             # if we already have a good key, use it, otherwise examine the path
             if key:
                 object_path = '/' + key
-            elif bucket_name_in_host:
+            elif uses_host_addressing(headers):
                 object_path = parsed.path
             else:
                 parts = parsed.path[1:].split('/', 1)
@@ -1317,27 +1272,6 @@ class ProxyListenerS3(PersistingProxyListener):
             response._content = ''
             response.status_code = 204
             return response
-
-        # emulate ErrorDocument functionality if a website is configured
-        if method == 'GET' and response.status_code == 404 and parsed.query != 'website':
-            s3_client = aws_stack.connect_to_service('s3')
-
-            try:
-                # Verify the bucket exists in the first place - if not, we want normal processing of the 404
-                s3_client.head_bucket(Bucket=bucket_name)
-                website_config = s3_client.get_bucket_website(Bucket=bucket_name)
-                error_doc_key = website_config.get('ErrorDocument', {}).get('Key')
-
-                if error_doc_key:
-                    error_doc_path = '/' + bucket_name + '/' + error_doc_key
-                    if parsed.path != error_doc_path:
-                        error_object = s3_client.get_object(Bucket=bucket_name, Key=error_doc_key)
-                        response.status_code = 200
-                        response._content = error_object['Body'].read()
-                        response.headers['Content-Length'] = str(len(response._content))
-            except ClientError:
-                # Pass on the 404 as usual
-                pass
 
         if response is not None:
             reset_content_length = False
@@ -1583,6 +1517,43 @@ def authenticate_presign_url_signv4(method, path, headers, data, url, query_para
             message='Request has expired',
             expires=query_params['X-Amz-Expires'][0]
         )
+
+
+def serve_static_website(headers, path, bucket_name):
+    s3_client = aws_stack.connect_to_service('s3')
+
+    # check if bucket exists
+    try:
+        s3_client.head_bucket(Bucket=bucket_name)
+    except ClientError:
+        return no_such_bucket(bucket_name, headers.get('x-amz-request-id'), 404)
+
+    try:
+        if path != '/':
+            res = s3_client.head_object(Bucket=bucket_name, Key=path)
+            if res['ResponseMetadata']['HTTPStatusCode'] == 200:
+                content = s3_client.get_object(Bucket=bucket_name, Key=path)['Body'].read()
+                return requests_response(status_code=200, content=content)
+    except ClientError:
+        LOGGER.debug('No such key found. %s' % path)
+
+    website_config = s3_client.get_bucket_website(Bucket=bucket_name)
+    path_suffix = website_config.get('IndexDocument', {}).get('Suffix', '').lstrip('/')
+    index_document = '%s/%s' % (path.rstrip('/'), path_suffix)
+    try:
+        res = s3_client.head_object(Bucket=bucket_name, Key=index_document)
+        if res['ResponseMetadata']['HTTPStatusCode'] == 200:
+            content = s3_client.get_object(Bucket=bucket_name, Key=index_document)['Body'].read()
+            return requests_response(status_code=302, content=content)
+    except ClientError:
+        error_document = website_config.get('ErrorDocument', {}).get('Key', '').lstrip('/')
+        try:
+            res = s3_client.head_object(Bucket=bucket_name, Key=error_document)
+            if res['ResponseMetadata']['HTTPStatusCode'] == 200:
+                content = s3_client.get_object(Bucket=bucket_name, Key=error_document)['Body'].read()
+                return requests_response(status_code=404, content=content)
+        except ClientError:
+            return requests_response(status_code=404, content='')
 
 
 # instantiate listener

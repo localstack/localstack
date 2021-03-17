@@ -194,6 +194,7 @@ class LambdaFunction(Component):
         self.description = ''
         self.code_signing_config_arn = None
         self.package_type = None
+        self.image_config = {}
 
     def set_dead_letter_config(self, data):
         config = data.get('DeadLetterConfig')

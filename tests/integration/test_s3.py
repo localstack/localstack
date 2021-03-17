@@ -15,12 +15,12 @@ from urllib.parse import parse_qs, quote
 from botocore.exceptions import ClientError
 from six.moves.urllib import parse as urlparse
 from six.moves.urllib.request import Request, urlopen
-from localstack import config
+from localstack import config, constants
 from botocore.client import Config
 from localstack.utils import testutil
 from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
 from localstack.utils.aws import aws_stack
-from localstack.services.s3 import s3_listener
+from localstack.services.s3 import s3_listener, s3_utils
 
 from localstack.utils.common import (
     short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, load_file)
@@ -60,10 +60,32 @@ class PutRequest(Request):
         return 'PUT'
 
 
+# def test_host_and_path_addressing(wrapped):
+#     """ Decorator that runs a test method with both - path and host style addressing. """
+#     # TODO - needs to be fixed below!
+#     def wrapper(self):
+#         try:
+#             # test via path based addressing
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'virtual'})
+#             wrapped()
+#             # test via host based addressing
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'path'})
+#             wrapped()
+#         finally:
+#             # reset client
+#             TestS3.OVERWRITTEN_CLIENT = None
+#     return
+
 class TestS3(unittest.TestCase):
+    OVERWRITTEN_CLIENT = None
+
     def setUp(self):
-        self.s3_client = aws_stack.connect_to_service('s3')
+        self._s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
+
+    @property
+    def s3_client(self):
+        return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
     def test_create_bucket_via_host_name(self):
         body = """<?xml version="1.0" encoding="UTF-8"?>
@@ -72,13 +94,14 @@ class TestS3(unittest.TestCase):
             </CreateBucketConfiguration>"""
         headers = aws_stack.mock_aws_request_headers('s3')
         bucket_name = 'test-%s' % short_uid()
-        headers['Host'] = '%s.s3.amazonaws.com' % bucket_name
+        headers['Host'] = s3_utils.get_bucket_hostname(bucket_name)
         response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
         self.assertEquals(response.status_code, 200)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('LocationConstraint', response)
 
+    # @test_host_and_path_addressing
     def test_bucket_policy(self):
         # create test bucket
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_WITH_POLICY)
@@ -117,8 +140,8 @@ class TestS3(unittest.TestCase):
         obj = self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body='something')
 
         # put an object where the bucket_name is in the host
-        # it doesn't care about the authorization header as long as it's present
-        headers = {'Host': '{}.s3.amazonaws.com'.format(bucket_name), 'authorization': 'some_token'}
+        headers = aws_stack.mock_aws_request_headers('s3')
+        headers['Host'] = s3_utils.get_bucket_hostname(bucket_name)
         url = '{}/{}'.format(config.TEST_S3_URL, key_by_host)
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data='something else', headers=headers, verify=False)
@@ -392,7 +415,7 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     def test_bucket_availability(self):
-        bucket_name = 'test_bucket_lifecycle'
+        bucket_name = 'test-bucket-lifecycle'
         returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
         self.assertRegexpMatches(returned_empty_lifecycle._content, r'The bucket does not exist')
 
@@ -493,7 +516,7 @@ class TestS3(unittest.TestCase):
         client.create_bucket(Bucket=bucket_name)
 
         # put object
-        object_key = '/foo/bar/key-by-hostname'
+        object_key = 'foo/bar/key-by-hostname'
         content_type = 'foo/bar; charset=utf-8'
         client.put_object(Bucket=bucket_name,
             Key=object_key,
@@ -765,16 +788,17 @@ class TestS3(unittest.TestCase):
         # Cleanup
         s3_client.delete_bucket(Bucket=bucket)
 
-    def test_s3_uppercase_names(self):
-        # bucket name should be case-insensitive
-        bucket_name = 'TestUpperCase-%s' % short_uid()
+    def test_s3_uppercase_key_names(self):
+        # bucket name should be case-sensitive
+        bucket_name = 'testuppercase-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         # key name should be case-sensitive
         object_key = 'camelCaseKey'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        self.assertRaises(Exception, self.s3_client.get_object, Bucket=bucket_name, Key=object_key.lower())
+        res = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -947,70 +971,45 @@ class TestS3(unittest.TestCase):
         finally:
             config.HOSTNAME_EXTERNAL = hostname_before
 
-    def test_s3_website_errordocument(self):
-        # check that the error document is returned when configured
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client = self._get_test_client()
+    def test_s3_static_website_hosting(self):
+        bucket_name = 'test-%s' % short_uid()
 
-        client.create_bucket(Bucket=bucket_name)
-        client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
-        client.put_bucket_website(
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key='test/index.html', Body='index')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test/error.html', Body='error')
+        self.s3_client.put_object(Bucket=bucket_name, Key='actual/key.html', Body='key')
+        self.s3_client.put_bucket_website(
             Bucket=bucket_name,
-            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
+            WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'},
+                'ErrorDocument': {'Key': 'test/error.html'}}
         )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+
+        headers = aws_stack.mock_aws_request_headers('s3')
+        headers['Host'] = s3_utils.get_bucket_website_hostname(bucket_name)
+
+        # actual key
+        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'actual/key.html')
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.text, 'This is the error document')
-        # cleanup
-        client.delete_object(Bucket=bucket_name, Key='error.html')
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'key')
 
-        # check that normal responses are returned for bucket with index configuration, but not error document
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client.create_bucket(Bucket=bucket_name)
-        client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'}}
-        )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+        # index document
+        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'test')
+        response = requests.get(url, headers=headers, verify=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.text, 'index')
+
+        # root path test
+        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, '')
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 404)
-        # cleanup
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'error')
 
-        # check that normal responses are returned for bucket without configuration
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client.create_bucket(Bucket=bucket_name)
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+        # error document
+        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'something')
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 404)
-        # cleanup
-        client.delete_bucket(Bucket=bucket_name)
-
-    def test_s3_website_errordocument_missing(self):
-        # check that 404 is returned when error document is configured but missing
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client = self._get_test_client()
-
-        client.create_bucket(Bucket=bucket_name)
-        client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
-        )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
-        self.assertEqual(response.status_code, 404)
-
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'error')
 
     def test_s3_event_notification_with_sqs(self):
         key_by_path = 'aws/bucket=2020/test1.txt'

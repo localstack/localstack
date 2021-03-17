@@ -1,4 +1,5 @@
 import os
+import ssl
 import asyncio
 import logging
 import threading
@@ -46,7 +47,7 @@ def apply_patches():
     InformationalResponse_init_orig = h11.InformationalResponse.__init__
     h11.InformationalResponse.__init__ = InformationalResponse_init
 
-    # skip error logging for ssl.SSLError in hypercorn tcp_server.py
+    # skip error logging for ssl.SSLError in hypercorn tcp_server.py _read_data()
 
     async def _read_data(self) -> None:
         try:
@@ -56,6 +57,17 @@ def apply_patches():
 
     _read_data_orig = tcp_server.TCPServer._read_data
     tcp_server.TCPServer._read_data = _read_data
+
+    # skip error logging for ssl.SSLError in hypercorn tcp_server.py _close()
+
+    async def _close(self) -> None:
+        try:
+            return await _close_orig(self)
+        except ssl.SSLError:
+            return
+
+    _close_orig = tcp_server.TCPServer._close
+    tcp_server.TCPServer._close = _close
 
     # avoid SSL context initialization errors when running multiple server threads in parallel
 
