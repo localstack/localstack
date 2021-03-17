@@ -190,6 +190,12 @@ functions:
     - http:
         path: foo/bar
         method: post
+    - http:
+        path: foo/bar
+        method: put
+    - http:
+        path: foo/bar
+        method: delete
 
 plugins:
   - serverless-localstack
