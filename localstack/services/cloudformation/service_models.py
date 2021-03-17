@@ -1094,13 +1094,35 @@ class SNSTopic(GenericBaseModel):
         return 'AWS::SNS::Topic'
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.sns_topic_arn(self.props.get('TopicName'))
+        return aws_stack.sns_topic_arn(self.props['TopicName'])
 
     def fetch_state(self, stack_name, resources):
         topic_name = self.resolve_refs_recursively(stack_name, self.props['TopicName'], resources)
         topics = aws_stack.connect_to_service('sns').list_topics()
         result = list(filter(lambda item: item['TopicArn'].split(':')[-1] == topic_name, topics.get('Topics', [])))
         return result[0] if result else None
+
+    @staticmethod
+    def get_deploy_templates():
+        def _topic_arn(params, resources, resource_id, **kwargs):
+            resource = SNSTopic(resources[resource_id])
+            return resource.physical_resource_id or resource.get_physical_resource_id()
+
+        return {
+            'create': {
+                'function': 'create_topic',
+                'parameters': {
+                    'Name': 'TopicName',
+                    'Tags': 'Tags'
+                }
+            },
+            'delete': {
+                'function': 'delete_topic',
+                'parameters': {
+                    'TopicArn': _topic_arn
+                }
+            }
+        }
 
 
 class SNSSubscription(GenericBaseModel):

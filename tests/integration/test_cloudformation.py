@@ -1784,16 +1784,12 @@ class CloudFormationTest(unittest.TestCase):
         environment = 'env-%s' % short_uid()
         template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template26.yaml'))
         cfn = aws_stack.connect_to_service('cloudformation')
+        sns = aws_stack.connect_to_service('sns')
 
         create_and_await_stack(
             StackName=stack_name,
             TemplateBody=template,
-            Parameters=[
-                {
-                    'ParameterKey': 'Environment',
-                    'ParameterValue': environment
-                }
-            ]
+            Parameters=[{'ParameterKey': 'Environment', 'ParameterValue': environment}]
         )
 
         resp = cfn.describe_stacks(StackName=stack_name)
@@ -1811,6 +1807,8 @@ class CloudFormationTest(unittest.TestCase):
 
         # clean up
         self.cleanup(stack_name)
+        topic_arns = [t['TopicArn'] for t in sns.list_topics()['Topics']]
+        self.assertNotIn(topic_arn, topic_arns)
 
     def test_list_exports_correctly_returns_exports(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')

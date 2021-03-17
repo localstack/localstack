@@ -170,21 +170,6 @@ RESOURCE_TO_FUNCTION = {
             'parameters': rename_params(dump_json_params(None, 'PolicyDocument'), {'PolicyDocument': 'Policy'})
         }
     },
-    'SNS::Topic': {
-        'create': {
-            'function': 'create_topic',
-            'parameters': {
-                'Name': 'TopicName',
-                'Tags': 'Tags'
-            }
-        },
-        'delete': {
-            'function': 'delete_topic',
-            'parameters': {
-                'TopicArn': 'PhysicalResourceId'
-            }
-        }
-    },
     'SecretsManager::Secret': {
         'create': {
             'function': 'create_secret',
