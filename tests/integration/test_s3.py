@@ -1748,7 +1748,7 @@ class TestS3(unittest.TestCase):
             parsed = urlparse.urlparse(url)
             query_params = parse_qs(parsed.query)
             url = '{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}'.format(
-                config.get_edge_url(), OBJECT_KEY,
+                virtual_endpoint, OBJECT_KEY,
                 'test', query_params['Signature'][0], query_params['Expires'][0]
             )
             return url
@@ -1760,7 +1760,7 @@ class TestS3(unittest.TestCase):
                    'X-Amz-Credential={}&X-Amz-Date={}&' +
                    'X-Amz-Expires={}&X-Amz-SignedHeaders=host&' +
                    'X-Amz-Signature={}').format(
-                config.get_edge_url(), OBJECT_KEY,
+                virtual_endpoint, OBJECT_KEY,
                 quote(query_params['X-Amz-Credential'][0]).replace('/', '%2F'),
                 query_params['X-Amz-Date'][0], query_params['X-Amz-Expires'][0], query_params['X-Amz-Signature'][0]
             )
