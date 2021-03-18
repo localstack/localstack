@@ -988,25 +988,26 @@ class TestS3(unittest.TestCase):
         headers['Host'] = s3_utils.get_bucket_website_hostname(bucket_name)
 
         # actual key
-        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'actual/key.html')
+        url = 'https://{}.{}:{}/actual/key.html'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME,
+            config.EDGE_PORT)
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.text, 'key')
 
         # index document
-        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'test')
+        url = 'https://{}.{}:{}/test'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.text, 'index')
 
         # root path test
-        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, '')
+        url = 'https://{}.{}:{}/'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.text, 'error')
 
         # error document
-        url = 'https://{}.{}:4566/{}'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, 'something')
+        url = 'https://{}.{}:{}/something'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
         response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.text, 'error')
