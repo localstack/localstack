@@ -11,7 +11,7 @@ from six import iteritems
 from localstack.utils.aws import aws_stack
 from localstack.constants import (
     LOCALSTACK_ROOT_FOLDER, LOCALSTACK_VENV_FOLDER, LAMBDA_TEST_ROLE, TEST_AWS_ACCOUNT_ID, ENV_INTERNAL_TEST_RUN)
-from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine
+from localstack.utils.common import TMP_FILES, run, mkdir, to_str, load_file, save_file, is_alpine, chmod_r
 from localstack.services.awslambda.lambda_utils import (
     get_handler_file_from_name, LAMBDA_DEFAULT_HANDLER, LAMBDA_DEFAULT_RUNTIME, LAMBDA_DEFAULT_STARTING_POSITION)
 
@@ -54,6 +54,7 @@ def create_lambda_archive(script, get_content=False, libs=[], runtime=None, file
         for i in range(1, len(path)):
             save_file(os.path.join(tmp_dir, *(path[:i] + ['__init__.py'])), '')
     save_file(script_file, script)
+    chmod_r(script_file, 0o777)
     # copy libs
     for lib in libs:
         paths = [lib, '%s.py' % lib]

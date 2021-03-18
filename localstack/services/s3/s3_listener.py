@@ -1341,10 +1341,8 @@ def serve_static_website(headers, path, bucket_name):
 
     try:
         if path != '/':
-            res = s3_client.head_object(Bucket=bucket_name, Key=path)
-            if res['ResponseMetadata']['HTTPStatusCode'] == 200:
-                content = s3_client.get_object(Bucket=bucket_name, Key=path)['Body'].read()
-                return requests_response(status_code=200, content=content)
+            content = s3_client.get_object(Bucket=bucket_name, Key=path)['Body'].read()
+            return requests_response(status_code=200, content=content)
     except ClientError:
         LOGGER.debug('No such key found. %s' % path)
 
@@ -1352,17 +1350,13 @@ def serve_static_website(headers, path, bucket_name):
     path_suffix = website_config.get('IndexDocument', {}).get('Suffix', '').lstrip('/')
     index_document = '%s/%s' % (path.rstrip('/'), path_suffix)
     try:
-        res = s3_client.head_object(Bucket=bucket_name, Key=index_document)
-        if res['ResponseMetadata']['HTTPStatusCode'] == 200:
-            content = s3_client.get_object(Bucket=bucket_name, Key=index_document)['Body'].read()
-            return requests_response(status_code=302, content=content)
+        content = s3_client.get_object(Bucket=bucket_name, Key=index_document)['Body'].read()
+        return requests_response(status_code=302, content=content)
     except ClientError:
         error_document = website_config.get('ErrorDocument', {}).get('Key', '').lstrip('/')
         try:
-            res = s3_client.head_object(Bucket=bucket_name, Key=error_document)
-            if res['ResponseMetadata']['HTTPStatusCode'] == 200:
-                content = s3_client.get_object(Bucket=bucket_name, Key=error_document)['Body'].read()
-                return requests_response(status_code=404, content=content)
+            content = s3_client.get_object(Bucket=bucket_name, Key=error_document)['Body'].read()
+            return requests_response(status_code=404, content=content)
         except ClientError:
             return requests_response(status_code=404, content='')
 
