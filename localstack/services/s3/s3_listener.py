@@ -1049,12 +1049,12 @@ class ProxyListenerS3(PersistingProxyListener):
         modified_data = None
 
         # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
-        to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
-        to_find2 = to_bytes('<CreateBucketConfiguration')
-        if data and data.startswith(to_bytes('<')) and to_find1 in data and to_find2 in data:
-            # Note: with the latest version, <CreateBucketConfiguration> must either
-            # contain a valid <LocationConstraint>, or not be present at all in the body.
-            modified_data = b''
+        # to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
+        # to_find2 = to_bytes('<CreateBucketConfiguration')
+        # if data and data.startswith(to_bytes('<')) and to_find1 in data and to_find2 in data:
+        #     # Note: with the latest version, <CreateBucketConfiguration> must either
+        #     # contain a valid <LocationConstraint>, or not be present at all in the body.
+        #     modified_data = b''
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98
@@ -1250,7 +1250,7 @@ class ProxyListenerS3(PersistingProxyListener):
             append_cors_headers(bucket_name, request_method=method, request_headers=headers, response=response)
             append_last_modified_headers(response=response)
             append_list_objects_marker(method, path, data, response)
-            fix_location_constraint(response)
+            # fix_location_constraint(response)
             fix_range_content_type(bucket_name, path, headers, response)
             fix_delete_objects_response(bucket_name, method, parsed, data, headers, response)
             fix_metadata_key_underscores(response=response)
