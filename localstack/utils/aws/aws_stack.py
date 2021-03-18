@@ -10,7 +10,7 @@ from localstack import config
 from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID, REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
-    MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
+    MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, S3_VIRTUAL_HOSTNAME)
 from localstack.utils.aws import templating
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
@@ -245,7 +245,9 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         config = config or botocore.client.Config()
         # configure S3 path style addressing
         if service_name == 's3':
-            config.s3 = {'addressing_style': 'path'}
+            if re.match(r'https?://localhost(:[0-9]+)?', endpoint_url):
+                endpoint_url = endpoint_url.replace('localhost', S3_VIRTUAL_HOSTNAME)
+                config.s3 = {'addressing_style': 'virtual'}
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         config.max_pool_connections = MAX_POOL_CONNECTIONS
@@ -342,11 +344,17 @@ def sqs_queue_url_for_arn(queue_arn):
         return queue_arn
     if queue_arn in SQS_ARN_TO_URL_CACHE:
         return SQS_ARN_TO_URL_CACHE[queue_arn]
-    sqs_client = connect_to_service('sqs')
-    parts = queue_arn.split(':')
-    result = sqs_client.get_queue_url(QueueName=parts[5], QueueOwnerAWSAccountId=parts[4])['QueueUrl']
+    region_name = extract_region_from_arn(queue_arn)
+    sqs_client = connect_to_service('sqs', region_name=region_name)
+    queue_name = sqs_queue_name(queue_arn)
+    result = sqs_client.get_queue_url(QueueName=queue_name)['QueueUrl']
     SQS_ARN_TO_URL_CACHE[queue_arn] = result
     return result
+
+
+# TODO: remove and merge with sqs_queue_url_for_arn(..) above!!
+def get_sqs_queue_url(queue_arn):
+    return sqs_queue_url_for_arn(queue_arn)
 
 
 def extract_region_from_auth_header(headers):
@@ -628,14 +636,6 @@ def sqs_queue_name(queue_arn):
 def sns_topic_arn(topic_name, account_id=None):
     account_id = get_account_id(account_id)
     return ('arn:aws:sns:%s:%s:%s' % (get_region(), account_id, topic_name))
-
-
-def get_sqs_queue_url(queue_arn):
-    region_name = extract_region_from_arn(queue_arn)
-    queue_name = sqs_queue_name(queue_arn)
-    client = connect_to_service('sqs', region_name=region_name)
-    response = client.get_queue_url(QueueName=queue_name)
-    return response['QueueUrl']
 
 
 def sqs_receive_message(queue_arn):
@@ -955,17 +955,19 @@ def deploy_cf_stack(stack_name, template_body):
     return await_stack_completion(stack_name)
 
 
-def await_stack_status(stack_name, expected_statuses, retries=3, sleep=2):
+def await_stack_status(stack_name, expected_statuses, retries=20, sleep=2):
     def check_stack():
         stack = get_stack_details(stack_name)
-        assert stack['StackStatus'] in expected_statuses
+        if stack['StackStatus'] not in expected_statuses:
+            raise Exception('Status "%s" for stack "%s" not in expected list: %s' % (
+                stack['StackStatus'], stack_name, expected_statuses))
         return stack
 
     expected_statuses = expected_statuses if isinstance(expected_statuses, list) else [expected_statuses]
     return retry(check_stack, retries, sleep)
 
 
-def await_stack_completion(stack_name, retries=3, sleep=2, statuses=None):
+def await_stack_completion(stack_name, retries=20, sleep=2, statuses=None):
     statuses = statuses or ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
     return await_stack_status(stack_name, statuses, retries=retries, sleep=sleep)
 

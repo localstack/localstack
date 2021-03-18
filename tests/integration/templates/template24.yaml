@@ -10,14 +10,14 @@ Resources:
   TestBucket1:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub test-${Environment}-connectionHandler1
+      BucketName: !Sub test-${Environment}-connectionhandler1
       Tags:
         - Key: func-ref
           Value: !Ref func1
   TestBucket2:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub test-${Environment}-connectionHandler2
+      BucketName: !Sub test-${Environment}-connectionhandler2
       Tags:
         - Key: func-ref
           Value: !Ref func2

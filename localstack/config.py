@@ -76,7 +76,7 @@ SQS_PORT_EXTERNAL = int(os.environ.get('SQS_PORT_EXTERNAL') or 0)
 # name of the host under which the LocalStack services are available
 LOCALSTACK_HOSTNAME = os.environ.get('LOCALSTACK_HOSTNAME', '').strip() or HOSTNAME
 
-# whether to remotely copy the lambda or locally mount a volume
+# whether to remotely copy the lambda code or locally mount a volume
 LAMBDA_REMOTE_DOCKER = is_env_true('LAMBDA_REMOTE_DOCKER')
 
 # network that the docker lambda container will be joining
@@ -134,7 +134,7 @@ DOCKER_FLAGS = os.environ.get('DOCKER_FLAGS', '').strip()
 DOCKER_CMD = os.environ.get('DOCKER_CMD', '').strip() or 'docker'
 
 # whether to start the web API
-START_WEB = os.environ.get('START_WEB', '').strip() not in FALSE_STRINGS
+START_WEB = os.environ.get('START_WEB', '').strip() in TRUE_STRINGS
 
 # whether to forward edge requests in-memory (instead of via proxy servers listening on backend ports)
 # TODO: this will likely become the default and may get removed in the future
@@ -245,11 +245,28 @@ def ping(host):
 
 
 def in_docker():
-    """ Returns True if running in a docker container, else False """
+    """
+    Returns True if running in a docker container, else False
+    Ref. https://docs.docker.com/config/containers/runmetrics/#control-groups
+    """
     if not os.path.exists('/proc/1/cgroup'):
         return False
+    try:
+        if any([
+            os.path.exists('/sys/fs/cgroup/memory/docker/'),
+            any(['docker-' in file_names for file_names in os.listdir('/sys/fs/cgroup/memory/system.slice')]),
+            os.path.exists('/sys/fs/cgroup/docker/'),
+            any(['docker-' in file_names for file_names in os.listdir('/sys/fs/cgroup/system.slice/')]),
+        ]):
+            return False
+    except Exception:
+        pass
     with open('/proc/1/cgroup', 'rt') as ifh:
-        return 'docker' in ifh.read()
+        os_hostname = open('/etc/hostname', 'rt').read().strip()
+        content = ifh.read()
+        if os_hostname in content or 'docker' in content:
+            return True
+    return False
 
 
 is_in_docker = in_docker()

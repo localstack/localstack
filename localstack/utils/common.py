@@ -107,7 +107,7 @@ class CustomEncoder(json.JSONEncoder):
 class ShellCommandThread(FuncThread):
     """ Helper class to run a shell command in a background thread. """
 
-    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False,
+    def __init__(self, cmd, params={}, outfile=None, env_vars={}, stdin=False, auto_restart=False,
             quiet=True, inherit_cwd=False, inherit_env=True, log_listener=None):
         self.cmd = cmd
         self.process = None
@@ -117,10 +117,17 @@ class ShellCommandThread(FuncThread):
         self.inherit_cwd = inherit_cwd
         self.inherit_env = inherit_env
         self.log_listener = log_listener
+        self.auto_restart = auto_restart
         FuncThread.__init__(self, self.run_cmd, params, quiet=quiet)
 
     def run_cmd(self, params):
+        while True:
+            self.do_run_cmd()
+            if INFRA_STOPPED or not self.auto_restart or not self.process or self.process.returncode == 0:
+                return
+            LOG.info('Restarting process (received exit code %s): %s' % (self.process.returncode, self.cmd))
 
+    def do_run_cmd(self):
         def convert_line(line):
             line = to_str(line or '')
             return '%s\r\n' % line.strip()
@@ -140,6 +147,8 @@ class ShellCommandThread(FuncThread):
                     # get stdout/stderr from child process and write to parent output
                     streams = ((self.process.stdout, sys.stdout), (self.process.stderr, sys.stderr))
                     for instream, outstream in streams:
+                        if not instream:
+                            continue
                         for line in iter(instream.readline, None):
                             # `line` should contain a newline at the end as we're iterating,
                             # hence we can safely break the loop if `line` is None or empty string
@@ -491,7 +500,7 @@ def wait_for_port_open(port, http_path=None, expect_success=True, retries=10, sl
         If 'http_path' is set, make a GET request to this path and assert a non-error response. """
     def check():
         if not is_port_open(port, http_path=http_path, expect_success=expect_success):
-            raise Exception()
+            raise Exception('Port %s (path: %s) was not open' % (port, http_path))
 
     return retry(check, sleep=sleep_time, retries=retries)
 
@@ -630,6 +639,13 @@ def keys_to_lower(obj):
 
 def camel_to_snake_case(string):
     return re.sub(r'(?<!^)(?=[A-Z])', '_', string).replace('__', '_').lower()
+
+
+def snake_to_camel_case(string, capitalize_first=True):
+    components = string.split('_')
+    start_idx = 0 if capitalize_first else 1
+    components = [x.title() for x in components[start_idx:]]
+    return ''.join(components)
 
 
 def base64_to_hex(b64_string):
@@ -1192,13 +1208,19 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
     def store_cert_key_files(base_filename):
         key_file_name = '%s.key' % base_filename
         cert_file_name = '%s.crt' % base_filename
+        # TODO: Cleaner code to load the cert dinamically
         # extract key and cert from target_file and store into separate files
         content = load_file(target_file)
         key_start = '-----BEGIN PRIVATE KEY-----'
         key_end = '-----END PRIVATE KEY-----'
+        rsa_key_start = '-----BEGIN RSA PRIVATE KEY-----'
+        rsa_key_end = '-----END RSA PRIVATE KEY-----'
         cert_start = '-----BEGIN CERTIFICATE-----'
         cert_end = '-----END CERTIFICATE-----'
-        key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
+        if rsa_key_start in content:
+            key_content = content[content.index(rsa_key_start): content.index(rsa_key_end) + len(rsa_key_end)]
+        else:
+            key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
         cert_content = content[content.index(cert_start): content.rindex(cert_end) + len(cert_end)]
         save_file(key_file_name, key_content)
         save_file(cert_file_name, cert_content)

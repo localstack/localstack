@@ -133,11 +133,11 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(len(api_ids), 1)
 
         resources = apigw_client.get_resources(restApiId=api_ids[0])['items']
-        proxy_resources = [res for res in resources if res['path'] == '/{proxy+}']
+        proxy_resources = [res for res in resources if res['path'] == '/foo/bar']
         self.assertEqual(len(proxy_resources), 1)
 
         proxy_resource = proxy_resources[0]
-        for method in ['DELETE', 'OPTIONS', 'GET', 'POST', 'PUT', 'PATCH', 'HEAD']:
+        for method in ['DELETE', 'POST', 'PUT']:
             self.assertIn(method, proxy_resource['resourceMethods'])
             resource_method = proxy_resource['resourceMethods'][method]
             self.assertIn(aws_stack.lambda_function_arn(function_name), resource_method['methodIntegration']['uri'])

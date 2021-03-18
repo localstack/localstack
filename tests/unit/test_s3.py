@@ -1,9 +1,9 @@
 import unittest
 from moto.s3 import models as s3_models
-from localstack.services.s3 import s3_listener, s3_starter, multipart_content
-from requests.models import CaseInsensitiveDict, Response
-from localstack.config import HOSTNAME, HOSTNAME_EXTERNAL, LOCALHOST_IP
-from localstack.constants import HEADER_LOCALSTACK_EDGE_URL
+from localstack.services.s3 import s3_listener, s3_starter, multipart_content, s3_utils
+from requests.models import Response
+from localstack.config import HOSTNAME
+from localstack.constants import S3_VIRTUAL_HOSTNAME
 from localstack.services.infra import patch_instance_tracker_meta
 
 
@@ -116,72 +116,6 @@ class S3ListenerTest (unittest.TestCase):
         self.assertIn(b'uploads/20170826T181315.679087009Z/upload/pixel.txt', expanded3,
             'Should see the interpolated filename')
 
-    def test_get_bucket_name(self):
-        bucket_name = 'test-bucket'
-        s3_key = '/some-folder/some-key.txt'
-
-        hosts = ['s3-ap-northeast-1.amazonaws.com',
-                 's3-ap-northeast-2.amazonaws.com',
-                 's3-ap-south-1.amazonaws.com',
-                 's3-ap-southeast-1.amazonaws.com',
-                 's3-ap-southeast-2.amazonaws.com',
-                 's3-ca-central-1.amazonaws.com',
-                 's3-eu-central-1.amazonaws.com',
-                 's3-eu-west-1.amazonaws.com',
-                 's3-eu-west-2.amazonaws.com',
-                 's3-eu-west-3.amazonaws.com',
-                 's3-external-1.amazonaws.com',
-                 's3-sa-east-1.amazonaws.com',
-                 's3-us-east-2.amazonaws.com',
-                 's3-us-west-1.amazonaws.com',
-                 's3-us-west-2.amazonaws.com',
-                 's3.amazonaws.com',
-                 's3.ap-northeast-1.amazonaws.com',
-                 's3.ap-northeast-2.amazonaws.com',
-                 's3.ap-south-1.amazonaws.com',
-                 's3.ap-southeast-1.amazonaws.com',
-                 's3.ap-southeast-2.amazonaws.com',
-                 's3.ca-central-1.amazonaws.com',
-                 's3.cn-north-1.amazonaws.com.cn',
-                 's3.cn-northwest-1.amazonaws.com.cn',
-                 's3.dualstack.ap-northeast-1.amazonaws.com',
-                 's3.dualstack.ap-northeast-2.amazonaws.com',
-                 's3.dualstack.ap-south-1.amazonaws.com',
-                 's3.dualstack.ap-southeast-1.amazonaws.com',
-                 's3.dualstack.ap-southeast-2.amazonaws.com',
-                 's3.dualstack.ca-central-1.amazonaws.com',
-                 's3.dualstack.eu-central-1.amazonaws.com',
-                 's3.dualstack.eu-west-1.amazonaws.com',
-                 's3.dualstack.eu-west-2.amazonaws.com',
-                 's3.dualstack.eu-west-3.amazonaws.com',
-                 's3.dualstack.sa-east-1.amazonaws.com',
-                 's3.dualstack.us-east-1.amazonaws.com',
-                 's3.dualstack.us-east-2.amazonaws.com',
-                 's3.dualstack.us-west-1.amazonaws.com',
-                 's3.dualstack.us-west-2.amazonaws.com',
-                 's3.eu-central-1.amazonaws.com',
-                 's3.eu-west-1.amazonaws.com',
-                 's3.eu-west-2.amazonaws.com',
-                 's3.eu-west-3.amazonaws.com',
-                 's3.sa-east-1.amazonaws.com',
-                 's3.us-east-1.amazonaws.com',
-                 's3.us-east-2.amazonaws.com',
-                 's3.us-west-1.amazonaws.com',
-                 's3.us-west-2.amazonaws.com']
-
-        # test all available hosts with the bucket_name in the path
-        bucket_path = '/{}/{}'.format(bucket_name, s3_key)
-        for host in hosts:
-            headers = CaseInsensitiveDict({'Host': hosts[0]})
-            returned_bucket_name = s3_listener.get_bucket_name(bucket_path, headers)
-            self.assertEqual(returned_bucket_name, bucket_name, 'Should match when bucket_name is in path')
-
-        # test all available hosts with the bucket_name in the host and the path is only the s3_key
-        for host in hosts:
-            headers = CaseInsensitiveDict({'Host': '{}.{}'.format(bucket_name, host)})
-            returned_bucket_name = s3_listener.get_bucket_name(s3_key, headers)
-            self.assertEqual(returned_bucket_name, bucket_name, 'Should match when bucket_name is in the host')
-
     def test_event_type_matching(self):
         match = s3_listener.event_type_matches
         self.assertTrue(match(['s3:ObjectCreated:*'], 'ObjectCreated', 'Put'))
@@ -235,20 +169,98 @@ class S3ListenerTest (unittest.TestCase):
         s3_listener.append_last_modified_headers(response)
         self.assertNotEqual('No header', response.headers.get('Last-Modified', 'No header'))
 
-    def test_path_addressing_enabled_hosts(self):
-        headers = [
-            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{HOSTNAME}:12345'}, True),
-            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{HOSTNAME_EXTERNAL}:12345'}, True),
-            ({HEADER_LOCALSTACK_EDGE_URL: f'https://{LOCALHOST_IP}:12345'}, True),
-            ({'host': f'{HOSTNAME}:12345'}, True),
-            ({'host': f'{HOSTNAME_EXTERNAL}:12345'}, True),
-            ({'host': f'{LOCALHOST_IP}:12345'}, True),
-            ({'host': f'https://{HOSTNAME}:12345'}, False),
-            ({'host': f'https://{HOSTNAME_EXTERNAL}:12345'}, False),
-            ({'host': f'https://{LOCALHOST_IP}:12345'}, False),
+
+class S3UtilsTest (unittest.TestCase):
+
+    def test_s3_bucket_name(self):
+        # array description : 'bucket_name', 'expected_ouput'
+        bucket_names = [
+            ('docexamplebucket1', True),
+            ('log-delivery-march-2020', True),
+            ('my-hosted-content', True),
+            ('docexamplewebsite.com', True),
+            ('www.docexamplewebsite.com', True),
+            ('my.example.s3.bucket', True),
+            ('doc_example_bucket', False),
+            ('DocExampleBucket', False),
+            ('doc-example-bucket-', False)
         ]
-        for example_header, expected_result in headers:
-            assert expected_result == s3_listener.uses_path_addressing(example_header)
+
+        for bucket_name, expected_result in bucket_names:
+            self.assertEqual(expected_result, s3_utils.validate_bucket_name(bucket_name))
+
+    def test_bucket_name(self):
+        # array description : 'path', 'header', 'expected_ouput'
+        bucket_names = [
+            ('/bucket/keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
+            ('/bucket//keyname', {'host': f'https://{HOSTNAME}:4566'}, 'bucket'),
+            ('/keyname', {'host': f'bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'bucket'),
+            ('//keyname', {'host': f'bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'bucket'),
+            ('/', {'host': f'{S3_VIRTUAL_HOSTNAME}:4566'}, None),
+            ('/', {'host': 'bucket.s3-ap-northeast-1.amazonaws.com:4566'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-ap-northeast-2.amazonaws.com:4566'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-ap-south-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-ap-southeast-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-ap-southeast-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-ca-central-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-eu-central-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'http://bucket.s3-eu-west-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'http://bucket.s3-eu-west-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'http://bucket.s3-eu-west-3.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'http://bucket.s3-external-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'http://bucket.s3-sa-east-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-us-east-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-us-west-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3-us-west-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.ap-northeast-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.ap-northeast-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.ap-south-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.ap-southeast-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.ap-southeast-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.ca-central-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.cn-north-1.amazonaws.com.cn'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.cn-northwest-1.amazonaws.com.cn'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.ap-northeast-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'https://bucket.s3.dualstack.ap-northeast-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'https://bucket.s3.dualstack.ap-south-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'https://bucket.s3.dualstack.ap-southeast-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'https://bucket.s3.dualstack.ap-southeast-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'https://bucket.s3.dualstack.ca-central-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'https://bucket.s3.dualstack.eu-central-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.eu-west-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.eu-west-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.eu-west-3.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.sa-east-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.us-east-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.us-east-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.us-west-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.dualstack.us-west-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.eu-central-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.eu-west-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.eu-west-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.eu-west-3.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.sa-east-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.us-east-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.us-east-2.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.us-west-1.amazonaws.com'}, 'bucket'),
+            ('/', {'host': 'bucket.s3.us-west-2.amazonaws.com'}, 'bucket')
+        ]
+
+        for path, headers, expected_result in bucket_names:
+            self.assertEqual(expected_result, s3_utils.extract_bucket_name(headers, path))
+
+    def test_s3_keyname_name(self):
+        # array description : 'path', 'header', 'expected_ouput'
+        key_names = [
+            ('/bucket/keyname', {'host': f'https://{HOSTNAME}:4566'}, 'keyname'),
+            ('/bucket//keyname', {'host': f'https://{HOSTNAME}:4566'}, '/keyname'),
+            ('/keyname', {'host': f'https://bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, 'keyname'),
+            ('//keyname', {'host': f'https://bucket.{S3_VIRTUAL_HOSTNAME}:4566'}, '/keyname'),
+        ]
+
+        for path, headers, expected_result in key_names:
+            self.assertEqual(expected_result, s3_utils.extract_key_name(headers, path))
 
 
 class S3BackendTest (unittest.TestCase):

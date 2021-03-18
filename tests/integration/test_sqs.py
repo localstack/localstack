@@ -3,9 +3,17 @@ import json
 import time
 import unittest
 import requests
+import datetime
 
 from botocore.exceptions import ClientError
-from localstack.constants import TEST_AWS_ACCOUNT_ID
+from botocore.awsrequest import AWSRequest
+from botocore.credentials import Credentials
+from botocore.auth import SigV4Auth, SIGV4_TIMESTAMP
+from localstack.constants import (
+    TEST_AWS_ACCOUNT_ID,
+    TEST_AWS_ACCESS_KEY_ID,
+    TEST_AWS_SECRET_ACCESS_KEY
+)
 from six.moves.urllib.parse import urlencode
 
 from localstack import config
@@ -860,6 +868,54 @@ class SQSTest(unittest.TestCase):
 
         result = self.client.list_queues()
         self.assertNotIn(queue_url.get('QueueUrl'), result.get('QueueUrls'))
+
+    def list_queues_with_auth_in_presigned_url(self, method):
+        base_url = '{}://{}:{}'.format(get_service_protocol(), config.LOCALSTACK_HOSTNAME, config.PORT_SQS)
+
+        req = AWSRequest(method=method, url=base_url, data={
+            'Action': 'ListQueues',
+            'Version': '2012-11-05'
+        })
+
+        # boto doesn't support querystring-style auth, so we have to do some
+        # weird logic to use boto's signing functions, to understand what's
+        # going on here look at the internals of the SigV4Auth.add_auth
+        # method.
+        datetime_now = datetime.datetime.utcnow()
+        req.context['timestamp'] = datetime_now.strftime(SIGV4_TIMESTAMP)
+        signer = SigV4Auth(
+            Credentials(TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY),
+            'sqs',
+            aws_stack.get_region()
+        )
+        canonical_request = signer.canonical_request(req)
+        string_to_sign = signer.string_to_sign(req, canonical_request)
+
+        payload = {
+            'Action': 'ListQueues',
+            'Version': '2012-11-05',
+            'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+            'X-Amz-Credential': signer.scope(req),
+            'X-Amz-SignedHeaders': ';'.join(
+                signer.headers_to_sign(req).keys()
+            ),
+            'X-Amz-Signature': signer.signature(string_to_sign, req)
+        }
+
+        if method == 'GET':
+            return requests.get(url=base_url, params=payload)
+        else:
+            return requests.post(url=base_url, data=urlencode(payload))
+
+    def test_post_list_queues_with_auth_in_presigned_url(self):
+        res = self.list_queues_with_auth_in_presigned_url(method='POST')
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(b'<ListQueuesResponse>' in res.content)
+
+    def test_get_list_queues_with_auth_in_presigned_url(self):
+        res = self.list_queues_with_auth_in_presigned_url(method='GET')
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(b'<ListQueuesResponse>' in res.content)
 
     # ---------------
     # HELPER METHODS
