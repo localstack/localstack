@@ -10,7 +10,7 @@ from localstack import config
 from localstack.constants import (
     INTERNAL_AWS_ACCESS_KEY_ID, REGION_LOCAL, LOCALHOST, MOTO_ACCOUNT_ID, ENV_DEV, APPLICATION_AMZ_JSON_1_1,
     APPLICATION_AMZ_JSON_1_0, APPLICATION_X_WWW_FORM_URLENCODED, TEST_AWS_ACCOUNT_ID,
-    MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY)
+    MAX_POOL_CONNECTIONS, TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, S3_VIRTUAL_HOSTNAME)
 from localstack.utils.aws import templating
 from localstack.utils.common import (
     run_safe, to_str, is_string, is_string_or_bytes, make_http_request,
@@ -245,7 +245,9 @@ def connect_to_service(service_name, client=True, env=None, region_name=None, en
         config = config or botocore.client.Config()
         # configure S3 path style addressing
         if service_name == 's3':
-            config.s3 = {'addressing_style': 'path'}
+            if re.match(r'https?://localhost(:[0-9]+)?', endpoint_url):
+                endpoint_url = endpoint_url.replace('localhost', S3_VIRTUAL_HOSTNAME)
+                config.s3 = {'addressing_style': 'virtual'}
         # To, prevent error "Connection pool is full, discarding connection ...",
         # set the environment variable MAX_POOL_CONNECTIONS. Default is 150.
         config.max_pool_connections = MAX_POOL_CONNECTIONS

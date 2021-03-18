@@ -1094,13 +1094,35 @@ class SNSTopic(GenericBaseModel):
         return 'AWS::SNS::Topic'
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        return aws_stack.sns_topic_arn(self.props.get('TopicName'))
+        return aws_stack.sns_topic_arn(self.props['TopicName'])
 
     def fetch_state(self, stack_name, resources):
         topic_name = self.resolve_refs_recursively(stack_name, self.props['TopicName'], resources)
         topics = aws_stack.connect_to_service('sns').list_topics()
         result = list(filter(lambda item: item['TopicArn'].split(':')[-1] == topic_name, topics.get('Topics', [])))
         return result[0] if result else None
+
+    @staticmethod
+    def get_deploy_templates():
+        def _topic_arn(params, resources, resource_id, **kwargs):
+            resource = SNSTopic(resources[resource_id])
+            return resource.physical_resource_id or resource.get_physical_resource_id()
+
+        return {
+            'create': {
+                'function': 'create_topic',
+                'parameters': {
+                    'Name': 'TopicName',
+                    'Tags': 'Tags'
+                }
+            },
+            'delete': {
+                'function': 'delete_topic',
+                'parameters': {
+                    'TopicArn': _topic_arn
+                }
+            }
+        }
 
 
 class SNSSubscription(GenericBaseModel):
@@ -1269,16 +1291,19 @@ class SecurityGroup(GenericBaseModel):
         return 'AWS::EC2::SecurityGroup'
 
     def fetch_state(self, stack_name, resources):
-        group_id = self.physical_resource_id
-        if not group_id:
-            return None
+        props = self.props
+        group_id = props.get('GroupId')
+        group_name = props.get('GroupName')
         client = aws_stack.connect_to_service('ec2')
-        resp = client.describe_security_groups(GroupIds=[group_id])
-        return resp['SecurityGroups'][0]
+        if group_id:
+            resp = client.describe_security_groups(GroupIds=[group_id])
+        else:
+            resp = client.describe_security_groups(GroupNames=[group_name])
+        return (resp['SecurityGroups'] or [None])[0]
 
-    def get_physical_resource_id(self, attribute, **kwargs):
-        if not self.state:
-            return
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        if self.physical_resource_id:
+            return self.physical_resource_id
         if attribute in REF_ID_ATTRS:
             props = self.props
             return props.get('GroupId') or props.get('GroupName')
@@ -1372,12 +1397,15 @@ class InstanceProfile(GenericBaseModel):
         return 'AWS::IAM::InstanceProfile'
 
     def fetch_state(self, stack_name, resources):
-        instance_profile_name = self.physical_resource_id
+        instance_profile_name = self.get_physical_resource_id()
         if not instance_profile_name:
             return None
         client = aws_stack.connect_to_service('iam')
         resp = client.get_instance_profile(InstanceProfileName=instance_profile_name)
         return resp['InstanceProfile']
+
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.physical_resource_id or self.props.get('InstanceProfileName')
 
     @staticmethod
     def get_deploy_templates():
