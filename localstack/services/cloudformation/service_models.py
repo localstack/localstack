@@ -1397,7 +1397,7 @@ class InstanceProfile(GenericBaseModel):
         return 'AWS::IAM::InstanceProfile'
 
     def fetch_state(self, stack_name, resources):
-        instance_profile_name = self.physical_resource_id
+        instance_profile_name = self.get_physical_resource_id()
         if not instance_profile_name:
             return None
         client = aws_stack.connect_to_service('iam')
@@ -1405,8 +1405,7 @@ class InstanceProfile(GenericBaseModel):
         return resp['InstanceProfile']
 
     def get_physical_resource_id(self, attribute=None, **kwargs):
-        if attribute in REF_ID_ATTRS:
-            return self.props.get('InstanceProfileName')
+        return self.physical_resource_id or self.props.get('InstanceProfileName')
 
     @staticmethod
     def get_deploy_templates():
