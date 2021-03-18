@@ -1747,8 +1747,8 @@ class TestS3(unittest.TestCase):
         def make_v2_url_invalid(url):
             parsed = urlparse.urlparse(url)
             query_params = parse_qs(parsed.query)
-            url = '{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}'.format(
-                virtual_endpoint, OBJECT_KEY,
+            url = '{}://{}.{}:{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}'.format(
+                config.get_protocol(), BUCKET, S3_VIRTUAL_HOSTNAME, config.EDGE_PORT, OBJECT_KEY,
                 'test', query_params['Signature'][0], query_params['Expires'][0]
             )
             return url
@@ -1756,11 +1756,11 @@ class TestS3(unittest.TestCase):
         def make_v4_url_invalid(url):
             parsed = urlparse.urlparse(url)
             query_params = parse_qs(parsed.query)
-            url = ('{}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&' +
+            url = ('{}://{}.{}:{}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&' +
                    'X-Amz-Credential={}&X-Amz-Date={}&' +
                    'X-Amz-Expires={}&X-Amz-SignedHeaders=host&' +
                    'X-Amz-Signature={}').format(
-                virtual_endpoint, OBJECT_KEY,
+                config.get_protocol(), BUCKET, S3_VIRTUAL_HOSTNAME, config.EDGE_PORT, OBJECT_KEY,
                 quote(query_params['X-Amz-Credential'][0]).replace('/', '%2F'),
                 query_params['X-Amz-Date'][0], query_params['X-Amz-Expires'][0], query_params['X-Amz-Signature'][0]
             )
@@ -1794,7 +1794,7 @@ class TestS3(unittest.TestCase):
         response = requests.get(presign_get_url_v4)
         self.assertEqual(response.status_code, 200)
 
-        presign_get_url_get = client.generate_presigned_url(
+        presign_get_url = client.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
             ExpiresIn=EXPIRES
@@ -1807,7 +1807,7 @@ class TestS3(unittest.TestCase):
         )
 
         # Valid request
-        response = requests.get(presign_get_url_get)
+        response = requests.get(presign_get_url)
         self.assertEqual(response.status_code, 200)
 
         response = requests.get(presign_get_url_v4)
