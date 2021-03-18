@@ -1212,9 +1212,9 @@ def generate_ssl_cert(target_file=None, overwrite=False, random=False, return_co
         # extract key and cert from target_file and store into separate files
         content = load_file(target_file)
         key_start = re.search(r'-----BEGIN(.*)PRIVATE KEY-----', content)
-        key_start = key_start.get(0)
+        key_start = key_start.group(0)
         key_end = re.search(r'-----END(.*)PRIVATE KEY-----', content)
-        key_end = key_end.get(0)
+        key_end = key_end.group(0)
         cert_start = '-----BEGIN CERTIFICATE-----'
         cert_end = '-----END CERTIFICATE-----'
         key_content = content[content.index(key_start): content.index(key_end) + len(key_end)]
