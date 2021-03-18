@@ -18,7 +18,7 @@ from six.moves.urllib.request import Request, urlopen
 from localstack import config, constants
 from botocore.client import Config
 from localstack.utils import testutil
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, S3_VIRTUAL_HOSTNAME
 from localstack.utils.aws import aws_stack
 from localstack.services.s3 import s3_listener, s3_utils
 
@@ -1532,7 +1532,7 @@ class TestS3(unittest.TestCase):
             parsed = urlparse.urlparse(url)
             query_params = parse_qs(parsed.query)
             url = '{}/{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}'.format(
-                'http://localhost:4566', BUCKET, OBJECT_KEY,
+                config.get_edge_url(), BUCKET, OBJECT_KEY,
                 'test', query_params['Signature'][0], query_params['Expires'][0]
             )
             return url
@@ -1544,7 +1544,7 @@ class TestS3(unittest.TestCase):
                    'X-Amz-Credential={}&X-Amz-Date={}&' +
                    'X-Amz-Expires={}&X-Amz-SignedHeaders=host&' +
                    'X-Amz-Signature={}').format(
-                'http://localhost:4566', BUCKET, OBJECT_KEY,
+                config.get_edge_url(), BUCKET, OBJECT_KEY,
                 quote(query_params['X-Amz-Credential'][0]).replace('/', '%2F'),
                 query_params['X-Amz-Date'][0], query_params['X-Amz-Expires'][0], query_params['X-Amz-Signature'][0]
             )
@@ -1558,124 +1558,109 @@ class TestS3(unittest.TestCase):
             Body='123'
         )
 
-        presign_url = client.generate_presigned_url(
+        presign_get_url = client.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
             ExpiresIn=EXPIRES
         )
 
-        presign_url_v4 = client_v4.generate_presigned_url(
+        presign_get_url_v4 = client_v4.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
             ExpiresIn=EXPIRES
         )
 
         # Valid request
-        response = requests.get(presign_url)
+        response = requests.get(presign_get_url)
         self.assertEqual(response.status_code, 200)
 
-        response = requests.get(presign_url_v4)
+        response = requests.get(presign_get_url_v4)
         self.assertEqual(response.status_code, 200)
 
-        presign_url = client.generate_presigned_url(
+        presign_get_url = client.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
             ExpiresIn=EXPIRES
         )
 
-        presign_url_v4 = client_v4.generate_presigned_url(
+        presign_get_url_v4 = client_v4.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
             ExpiresIn=EXPIRES
         )
 
         # Valid request
-        response = requests.get(presign_url)
+        response = requests.get(presign_get_url)
         self.assertEqual(response.status_code, 200)
 
-        response = requests.get(presign_url_v4)
+        response = requests.get(presign_get_url_v4)
         self.assertEqual(response.status_code, 200)
 
         # Invalid request
-        url = make_v2_url_invalid(presign_url)
+        url = make_v2_url_invalid(presign_get_url)
         response = requests.get(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
         self.assertEqual(response.status_code, 403)
 
-        url = make_v4_url_invalid(presign_url_v4)
+        url = make_v4_url_invalid(presign_get_url_v4)
         response = requests.get(url, headers={'Content-Type': 'my-fake-content/type'})
         self.assertEqual(response.status_code, 403)
 
-        # Expired request
-        time.sleep(4)
-        response = requests.get(presign_url)
-        self.assertEqual(response.status_code, 403)
-
-        response = requests.get(presign_url_v4)
-        self.assertEqual(response.status_code, 403)
-
         # PUT Requests
-        presign_url = client.generate_presigned_url(
+        presign_put_url = client.generate_presigned_url(
             'put_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
             ExpiresIn=EXPIRES
         )
 
-        presign_url_v4 = client_v4.generate_presigned_url(
+        presign_put_url_v4 = client_v4.generate_presigned_url(
             'put_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
             ExpiresIn=EXPIRES
         )
 
         # Valid request
-        response = requests.put(presign_url, data=OBJECT_DATA)
+        response = requests.put(presign_put_url, data=OBJECT_DATA)
         self.assertEqual(response.status_code, 200)
 
-        response = requests.put(presign_url_v4, data=OBJECT_DATA)
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA)
         self.assertEqual(response.status_code, 200)
 
-        presign_url = client.generate_presigned_url(
+        presign_put_url = client.generate_presigned_url(
             'put_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
             ExpiresIn=EXPIRES
         )
 
-        presign_url_v4 = client_v4.generate_presigned_url(
+        presign_put_url_v4 = client_v4.generate_presigned_url(
             'put_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
             ExpiresIn=EXPIRES
         )
 
         # Valid request
-        response = requests.put(presign_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
         self.assertEqual(response.status_code, 200)
 
-        response = requests.put(presign_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
         self.assertEqual(response.status_code, 200)
 
         # Invalid request
-        url = make_v2_url_invalid(presign_url)
+        url = make_v2_url_invalid(presign_put_url)
         response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
         self.assertEqual(response.status_code, 403)
 
-        url = make_v4_url_invalid(presign_url_v4)
-        response = requests.put(presign_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
-        self.assertEqual(response.status_code, 403)
-
-        # Expired request
-        time.sleep(4)
-        response = requests.put(presign_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
-        self.assertEqual(response.status_code, 403)
-        response = requests.put(presign_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        url = make_v4_url_invalid(presign_put_url_v4)
+        response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
         self.assertEqual(response.status_code, 403)
 
         # DELETE Requests
-        presign_url = client.generate_presigned_url(
+        presign_delete_url = client.generate_presigned_url(
             'delete_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
             ExpiresIn=EXPIRES
         )
 
-        presign_url_v4 = client_v4.generate_presigned_url(
+        presign_delete_url_v4 = client_v4.generate_presigned_url(
             'delete_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
             ExpiresIn=EXPIRES
@@ -1683,45 +1668,276 @@ class TestS3(unittest.TestCase):
 
         # Valid request
 
-        response = requests.delete(presign_url)
+        response = requests.delete(presign_delete_url)
         self.assertEqual(response.status_code, 204)
 
-        response = requests.delete(presign_url_v4)
+        response = requests.delete(presign_delete_url_v4)
         self.assertEqual(response.status_code, 204)
 
-        presign_url = client.generate_presigned_url(
+        presign_delete_url = client.generate_presigned_url(
             'delete_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
             ExpiresIn=EXPIRES
         )
 
-        presign_url_v4 = client_v4.generate_presigned_url(
+        presign_delete_url_v4 = client_v4.generate_presigned_url(
             'delete_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
             ExpiresIn=EXPIRES
         )
 
         # Valid request
-        response = requests.delete(presign_url)
+        response = requests.delete(presign_delete_url)
         self.assertEqual(response.status_code, 204)
 
-        response = requests.delete(presign_url_v4)
+        response = requests.delete(presign_delete_url_v4)
         self.assertEqual(response.status_code, 204)
 
         # Invalid request
-        url = make_v2_url_invalid(presign_url)
+        url = make_v2_url_invalid(presign_delete_url)
         response = requests.delete(url)
         self.assertEqual(response.status_code, 403)
 
-        url = make_v4_url_invalid(presign_url_v4)
+        url = make_v4_url_invalid(presign_delete_url_v4)
         response = requests.delete(url)
         self.assertEqual(response.status_code, 403)
 
-        # Expired request
+        # Expired requests
         time.sleep(4)
-        response = requests.delete(presign_url)
+
+        # GET
+        response = requests.get(presign_get_url)
         self.assertEqual(response.status_code, 403)
-        response = requests.delete(presign_url_v4)
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 403)
+
+        # PUT
+        response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 403)
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 403)
+
+        # DELETE
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 403)
+
+        response = requests.delete(presign_delete_url_v4)
+        self.assertEqual(response.status_code, 403)
+
+        client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
+        client.delete_bucket(Bucket=BUCKET)
+
+    def test_presigned_url_signature_authentication_virtual_host_addressing(self):
+        virtual_endpoint = '{}://{}:{}'.format(
+            config.get_protocol(), S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
+        client = boto3.client('s3', endpoint_url=virtual_endpoint,
+            config=Config(s3={'addressing_style': 'virtual'}),
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
+        client_v4 = boto3.client('s3', endpoint_url=virtual_endpoint,
+            config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'}),
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
+
+        OBJECT_KEY = 'temp.txt'
+        OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
+        BUCKET = 'test'
+        EXPIRES = 4
+
+        def make_v2_url_invalid(url):
+            parsed = urlparse.urlparse(url)
+            query_params = parse_qs(parsed.query)
+            url = '{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}'.format(
+                virtual_endpoint, OBJECT_KEY,
+                'test', query_params['Signature'][0], query_params['Expires'][0]
+            )
+            return url
+
+        def make_v4_url_invalid(url):
+            parsed = urlparse.urlparse(url)
+            query_params = parse_qs(parsed.query)
+            url = ('{}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&' +
+                   'X-Amz-Credential={}&X-Amz-Date={}&' +
+                   'X-Amz-Expires={}&X-Amz-SignedHeaders=host&' +
+                   'X-Amz-Signature={}').format(
+                virtual_endpoint, OBJECT_KEY,
+                quote(query_params['X-Amz-Credential'][0]).replace('/', '%2F'),
+                query_params['X-Amz-Date'][0], query_params['X-Amz-Expires'][0], query_params['X-Amz-Signature'][0]
+            )
+            return url
+
+        self.s3_client.create_bucket(Bucket=BUCKET)
+
+        self.s3_client.put_object(
+            Key=OBJECT_KEY,
+            Bucket=BUCKET,
+            Body='123'
+        )
+
+        # GET requests
+        presign_get_url = client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_get_url_v4 = client_v4.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.get(presign_get_url)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 200)
+
+        presign_get_url_get = client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_get_url_v4 = client_v4.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.get(presign_get_url_get)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        url = make_v2_url_invalid(presign_get_url)
+        response = requests.get(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        url = make_v4_url_invalid(presign_get_url_v4)
+        response = requests.get(url, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # PUT Requests
+        presign_put_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_put_url_v4 = client_v4.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.put(presign_put_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        presign_put_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_put_url_v4 = client_v4.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        url = make_v2_url_invalid(presign_put_url)
+        response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        url = make_v4_url_invalid(presign_put_url_v4)
+        response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # DELETE Requests
+        presign_delete_url = client.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_delete_url_v4 = client_v4.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 204)
+
+        response = requests.delete(presign_delete_url_v4)
+        self.assertEqual(response.status_code, 204)
+
+        presign_delete_url = client.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_delete_url_v4 = client_v4.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 204)
+
+        response = requests.delete(presign_delete_url_v4)
+        self.assertEqual(response.status_code, 204)
+
+        # Invalid request
+        url = make_v2_url_invalid(presign_delete_url)
+        response = requests.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+        url = make_v4_url_invalid(presign_delete_url_v4)
+        response = requests.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+        # Expired requests
+        time.sleep(4)
+
+        # GET
+        response = requests.get(presign_get_url)
+        self.assertEqual(response.status_code, 403)
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 403)
+
+        # PUT
+        response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 403)
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 403)
+
+        # DELETE
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 403)
+        response = requests.delete(presign_delete_url_v4)
         self.assertEqual(response.status_code, 403)
 
         client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
