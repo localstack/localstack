@@ -4,9 +4,9 @@ MAINTAINER Waldemar Hummer (waldemar.hummer@gmail.com)
 LABEL authors="Waldemar Hummer (waldemar.hummer@gmail.com)"
 
 # install some common libs
-RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates curl cyrus-sasl-dev g++ gcc \
-        git groff iputils libffi-dev libtool linux-headers make nss openssl openssl-dev postgresql-dev \
-        py3-pip python3 python3-dev tar xz zip && \
+RUN apk add --no-cache autoconf automake boost-dev build-base ca-certificates cmake curl cyrus-sasl-dev \
+        g++ gcc git groff iputils libffi-dev libtool linux-headers make nss openssl openssl-dev \
+        postgresql-dev py3-pip python3 python3-dev tar xz zip && \
     update-ca-certificates
 
 # install Docker (CLI only)
@@ -128,13 +128,13 @@ ADD localstack/dashboard/web/package.json localstack/dashboard/web/package.json
 RUN make install-web
 
 # install libs that require dependencies cleaned up below (e.g., gcc)
-RUN (virtualenv .venv && source .venv/bin/activate && pip install 'cryptography<3.4')
+RUN (virtualenv .venv && source .venv/bin/activate && pip install 'cryptography<3.4' 'uamqp>=1.2.14')
 
 # clean up (layers are later squashed into a single one)
 RUN rm -rf localstack/infra/elasticsearch/jdk/
 RUN rm -rf /root/.npm; \
-  apk del --purge autoconf automake boost-dev build-base g++ gcc giflib krb5-conf krb5-libs libc-dev \
-  libffi-dev libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev
+  apk del --purge autoconf automake boost-dev build-base cmake g++ gcc giflib krb5-conf krb5-libs \
+  libc-dev libffi-dev libjpeg-turbo libmagic libpng linux-headers musl-dev openssl-dev python3-dev
 
 # final fixes
 RUN which python || ln -s /usr/bin/python3 /usr/bin/python
