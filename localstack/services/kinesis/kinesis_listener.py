@@ -4,6 +4,7 @@ import time
 import base64
 import random
 import cbor2
+import base64
 from requests.models import Response
 from localstack import config
 from localstack.constants import APPLICATION_JSON, APPLICATION_CBOR
@@ -64,7 +65,7 @@ class ProxyListenerKinesis(ProxyListener):
             result = {
                 'Consumers': [c for c in STREAM_CONSUMERS if c.get('StreamARN') == data.get('StreamARN')]
             }
-            return result
+            return encoded_response(result, encoding_type)
 
         elif action == 'DescribeStreamConsumer':
             consumer_arn = data.get('ConsumerARN', '')
@@ -256,7 +257,7 @@ def subscribe_to_shard(data):
             records = result.get('Records', [])
             for record in records:
                 record['ApproximateArrivalTimestamp'] = record['ApproximateArrivalTimestamp'].timestamp()
-                record['Data'] = to_str(record['Data'])
+                record['Data'] = to_str(base64.b64encode(record['Data']))
             if not records:
                 time.sleep(1)
                 continue
