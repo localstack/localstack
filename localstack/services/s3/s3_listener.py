@@ -267,11 +267,17 @@ def get_cors(bucket_name):
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
         cors = {
-            'CORSConfiguration': []
+            'Error': {
+                'Code': 'NoSuchCORSConfiguration',
+                'Message': 'The CORS configuration does not exist',
+                'BucketName': bucket_name,
+                'RequestId': short_uid(),
+                'HostId': short_uid()
+            }
         }
     body = xmltodict.unparse(cors)
     response._content = body
-    response.status_code = 200
+    response.status_code = 404
     return response
 
 
