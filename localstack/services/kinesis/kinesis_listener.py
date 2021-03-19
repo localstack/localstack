@@ -77,13 +77,13 @@ class ProxyListenerKinesis(ProxyListener):
                 error_msg = 'Consumer %s not found.' % (consumer_arn or consumer_name)
                 return simple_error_response(error_msg, 400, 'ResourceNotFoundException', encoding_type)
 
-            creation_timestamp = consumer_to_locate.get('ConsumerCreationTimestamp') 
-            timestamp_formated = int(creation_timestamp) if encoding_type is not APPLICATION_JSON else creation_timestamp
+            creation_timestamp = consumer_to_locate.get('ConsumerCreationTimestamp')
+            time_formated = int(creation_timestamp) if encoding_type is not APPLICATION_JSON else creation_timestamp
 
             result = {
                 'ConsumerDescription': {
                     'ConsumerARN': consumer_to_locate.get('ConsumerArn'),
-                    'ConsumerCreationTimestamp': timestamp_formated,
+                    'ConsumerCreationTimestamp': time_formated,
                     'ConsumerName': consumer_to_locate.get('ConsumerName'),
                     'ConsumerStatus': 'ACTIVE',
                     'StreamARN': data.get('StreamARN')
