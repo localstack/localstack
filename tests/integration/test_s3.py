@@ -1743,7 +1743,7 @@ class TestS3(unittest.TestCase):
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
 
-        OBJECT_KEY = 'temp .txt'
+        OBJECT_KEY = 'temp.txt'
         OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
         BUCKET = 'test'
         EXPIRES = 4
