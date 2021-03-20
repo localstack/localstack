@@ -127,6 +127,7 @@ class Stack(object):
         state['StackName'] = state.get('StackName') or self.stack_name
         state['StackId'] = state.get('StackId') or self.stack_id
         state['ResourceType'] = state.get('ResourceType') or self.resources[resource_id].get('Type')
+        state['LastUpdatedTimestamp'] = timestamp_millis()
         self.add_stack_event(resource_id, physical_res_id, status)
 
     def resource_status(self, resource_id):
