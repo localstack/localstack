@@ -721,7 +721,7 @@ class LambdaExecutorSeparateContainers(LambdaExecutorContainers):
                 '%s '
                 '%s start -ai "$CONTAINER_ID";'
             ) % (docker_cmd, entrypoint, debug_docker_java_port,
-                env_vars_string, network_str, dns_str, rm_flag,
+                 env_vars_string, network_str, dns_str, rm_flag,
                  docker_image, command,
                  cp_cmd,
                  docker_cmd)
