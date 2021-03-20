@@ -1524,7 +1524,7 @@ class TestS3(unittest.TestCase):
             config=Config(signature_version='s3v4'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
 
-        OBJECT_KEY = 'temp.txt'
+        OBJECT_KEY = 'temp 1.txt'
         OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
         BUCKET = 'test'
         EXPIRES = 4
@@ -1555,6 +1555,7 @@ class TestS3(unittest.TestCase):
 
         client.put_object(Key=OBJECT_KEY, Bucket=BUCKET, Body='123')
 
+        # GET requests
         presign_get_url = client.generate_presigned_url(
             'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
@@ -1736,7 +1737,7 @@ class TestS3(unittest.TestCase):
             aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
 
-        OBJECT_KEY = 'temp.txt'
+        OBJECT_KEY = 'temp .txt'
         OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
         BUCKET = 'test'
         EXPIRES = 4

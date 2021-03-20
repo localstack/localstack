@@ -183,7 +183,7 @@ def authenticate_presign_url(method, path, headers, data=None):
                 sign_headers[header_name] = header_value
 
     # Preparnig dictionary of request to build AWSRequest's object of the botocore
-    request_url = '{}://{}{}'.format(parsed.scheme, parsed.netloc, parsed.path)
+    request_url = '{}://{}{}'.format(parsed.scheme, parsed.netloc, urlparse.quote(parsed.path))
     request_url = \
         ('%s?%s' % (request_url, urlencode(query_string)) if query_string else request_url)
 
@@ -193,7 +193,7 @@ def authenticate_presign_url(method, path, headers, data=None):
     bucket_name = extract_bucket_name(headers, parsed.path)
 
     request_dict = {
-        'url_path': parsed.path,
+        'url_path': urlparse.quote(parsed.path),
         'query_string': query_string,
         'method': method,
         'headers': sign_headers,
