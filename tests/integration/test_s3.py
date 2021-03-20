@@ -1518,7 +1518,7 @@ class TestS3(unittest.TestCase):
 
     def test_presigned_url_signature_authentication(self):
         client = boto3.client('s3', endpoint_url=config.get_edge_url(),
-            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            config=Config(signature_version='s3'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
             aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
         client_v4 = boto3.client('s3', endpoint_url=config.get_edge_url(),
             config=Config(signature_version='s3v4'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
@@ -1553,11 +1553,7 @@ class TestS3(unittest.TestCase):
 
         client.create_bucket(Bucket=BUCKET)
 
-        client.put_object(
-            Key=OBJECT_KEY,
-            Bucket=BUCKET,
-            Body='123'
-        )
+        client.put_object(Key=OBJECT_KEY, Bucket=BUCKET, Body='123')
 
         presign_get_url = client.generate_presigned_url(
             'get_object',

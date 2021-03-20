@@ -379,6 +379,12 @@ def get_api_from_custom_rules(method, path, data, headers):
         # or `/<bucket>/object/object1/+`
         return 's3', config.PORT_S3
 
+    auth_header = headers.get('Authorization') or ''
+
+    # detect S3 requests with "AWS id:key" Auth headers
+    if auth_header.startswith('AWS '):
+        return 's3', config.PORT_S3
+
 
 def get_service_port_for_account(service, headers):
     # assume we're only using a single account, hence return the static port mapping from config.py
