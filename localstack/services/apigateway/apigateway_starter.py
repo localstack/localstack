@@ -1,6 +1,8 @@
 import re
 import json
 import logging
+from urllib.parse import parse_qs, urlparse
+
 from jsonpatch import apply_patch
 from moto.core.utils import camelcase_to_underscores
 from moto.apigateway import models as apigateway_models
@@ -32,7 +34,6 @@ def apply_json_patch_safe(subject, patch_operations, in_place=True):
 
 
 def apply_patches():
-
     def apigateway_models_Stage_init(self, cacheClusterEnabled=False, cacheClusterSize=None, **kwargs):
         apigateway_models_Stage_init_orig(self, cacheClusterEnabled=cacheClusterEnabled,
             cacheClusterSize=cacheClusterSize, **kwargs)
@@ -130,7 +131,6 @@ def apply_patches():
     # Implement import rest_api
     # https://github.com/localstack/localstack/issues/2763
     def apigateway_response_restapis_individual(self, request, full_url, headers):
-
         if request.method in ['GET', 'DELETE']:
             return apigateway_response_restapis_individual_orig(self, request, full_url, headers)
 
@@ -267,6 +267,24 @@ def apply_patches():
 
         return resp
 
+    apigateway_response_restapis_orig = APIGatewayResponse.restapis
+
+    # https://github.com/localstack/localstack/issues/171
+    def apigateway_response_restapis(self, request, full_url, headers):
+        parsed_qs = parse_qs(urlparse(full_url).query)
+        modes = parsed_qs.get('mode', [])
+
+        status, _, rest_api = apigateway_response_restapis_orig(self, request, full_url, headers)
+
+        if 'import' not in modes:
+            return status, _, rest_api
+
+        function_id = json.loads(rest_api)['id']
+        body = json.loads(request.data.decode('utf-8'))
+        self.backend.put_rest_api(function_id, body)
+
+        return 200, {}, rest_api
+
     apigateway_models.Resource.get_method = apigateway_models_resource_get_method
     apigateway_models.Resource.get_integration = apigateway_models_resource_get_integration
     apigateway_models.Resource.delete_integration = apigateway_models_resource_delete_integration
@@ -281,6 +299,7 @@ def apply_patches():
     apigateway_models_Integration_init_orig = apigateway_models.Integration.__init__
     apigateway_models.Integration.__init__ = apigateway_models_Integration_init
     apigateway_models.RestAPI.to_dict = apigateway_models_RestAPI_to_dict
+    APIGatewayResponse.restapis = apigateway_response_restapis
 
 
 def start_apigateway(port=None, backend_port=None, asynchronous=None, update_listener=None):
