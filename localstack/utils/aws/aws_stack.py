@@ -555,7 +555,7 @@ def send_event_to_target(arn, event, target_attributes=None, asynchronous=True):
 
     if ':lambda:' in arn:
         from localstack.services.awslambda import lambda_api
-        lambda_api.run_lambda(event=event, context={}, func_arn=arn, asynchronous=asynchronous)
+        lambda_api.run_lambda(func_arn=arn, event=event, context={}, asynchronous=asynchronous)
 
     elif ':sns:' in arn:
         sns_client = connect_to_service('sns', region_name=region)

@@ -299,7 +299,7 @@ def process_apigateway_invocation(func_arn, path, payload, stage, api_id, header
         event['stageVariables'] = stage_variables
         LOG.debug('Running Lambda function %s from API Gateway invocation: %s %s' % (func_arn, method or 'GET', path))
         asynchronous = not config.SYNCHRONOUS_API_GATEWAY_EVENTS
-        inv_result = run_lambda(event=event, context=event_context, func_arn=func_arn, asynchronous=asynchronous)
+        inv_result = run_lambda(func_arn=func_arn, event=event, context=event_context, asynchronous=asynchronous)
         return inv_result.result
     except Exception as e:
         LOG.warning('Unable to run Lambda function on API Gateway message: %s %s' % (e, traceback.format_exc()))
@@ -344,7 +344,7 @@ def process_sns_notification(func_arn, topic_arn, subscription_arn, message, mes
             }
         }]
     }
-    inv_result = run_lambda(event=event, context={}, func_arn=func_arn, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
+    inv_result = run_lambda(func_arn=func_arn, event=event, context={}, asynchronous=not config.SYNCHRONOUS_SNS_EVENTS)
     return inv_result.result
 
 
@@ -376,7 +376,7 @@ def process_kinesis_records(records, stream_name):
                         for rec in chunk
                     ]
                 }
-                run_lambda(event=event, context={}, func_arn=arn, asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS)
+                run_lambda(func_arn=arn, event=event, context={}, asynchronous=not config.SYNCHRONOUS_KINESIS_EVENTS)
     except Exception as e:
         LOG.warning('Unable to run Lambda function on Kinesis records: %s %s' % (e, traceback.format_exc()))
 
@@ -417,7 +417,7 @@ def start_lambda_sqs_listener():
         event = {'Records': records}
 
         # TODO implement retries, based on "RedrivePolicy.maxReceiveCount" in the queue settings
-        run_lambda(event=event, context={}, func_arn=lambda_arn, asynchronous=True, callback=delete_messages)
+        run_lambda(func_arn=lambda_arn, event=event, context={}, asynchronous=True, callback=delete_messages)
 
     def listener_loop(*args):
         while True:
@@ -554,7 +554,8 @@ def do_update_alias(arn, alias, version, description=None):
     return new_alias
 
 
-def run_lambda(event, context, func_arn, version=None, suppress_output=False, asynchronous=False, callback=None):
+def run_lambda(func_arn, event, context={}, version=None,
+        suppress_output=False, asynchronous=False, callback=None):
     region_name = func_arn.split(':')[3]
     region = LambdaRegion.get(region_name)
     if suppress_output:
@@ -1454,10 +1455,10 @@ def invoke_function(function):
 
     if invocation_type == 'RequestResponse':
         context = {'client_context': request.headers.get('X-Amz-Client-Context')}
-        result = run_lambda(asynchronous=False, func_arn=arn, event=data, context=context, version=qualifier)
+        result = run_lambda(func_arn=arn, event=data, context=context, asynchronous=False, version=qualifier)
         return _create_response(result)
     elif invocation_type == 'Event':
-        run_lambda(asynchronous=True, func_arn=arn, event=data, context={}, version=qualifier)
+        run_lambda(func_arn=arn, event=data, context={}, asynchronous=True, version=qualifier)
         return _create_response('', status_code=202)
     elif invocation_type == 'DryRun':
         # Assume the dry run always passes.
