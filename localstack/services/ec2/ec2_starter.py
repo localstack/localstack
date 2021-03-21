@@ -1,12 +1,21 @@
 import re
+import logging
+import xmltodict
 from moto.ec2 import models as ec2_models
-from moto.ec2.responses import security_groups
+from moto.ec2.responses import security_groups, vpcs
 from moto.ec2.exceptions import InvalidPermissionNotFoundError
 from moto.ec2.responses.reserved_instances import ReservedInstances
 from localstack import config
+from localstack.utils.common import short_uid, long_uid
 from localstack.services.infra import start_moto_server
 
+LOG = logging.getLogger(__name__)
+
 REGEX_FLAGS = re.IGNORECASE | re.MULTILINE | re.DOTALL
+
+GATEWAY_SERVICES = ['s3', 'dynamodb']
+
+XMLNS_EC2 = 'http://ec2.amazonaws.com/doc/2016-11-15/'
 
 
 def patch_ec2():
@@ -58,6 +67,147 @@ def patch_ec2():
     security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE = re.sub(search, replace,
         security_groups.DESCRIBE_SECURITY_GROUPS_RESPONSE, flags=REGEX_FLAGS)
 
+    # bootstrap default VPC endpoint services
+    def describe_vpc_endpoint_services(self):
+        if not hasattr(self.ec2_backend, '_vpc_endpoint_services'):
+            service_entries = []
+            region = self.ec2_backend.region_name
+            availability_zones = ec2_models.EC2Backend.describe_availability_zones(self.ec2_backend)
+            for service_id, _ in config.SERVICE_PORTS.items():
+                service_name = 'com.amazonaws.%s.%s' % (region, service_id)
+                dns_name = '%s.%s.amazonaws.com' % (service_id, region)
+                stypes = ['Interface'] + (['Gateway'] if service_id in GATEWAY_SERVICES else [])
+                entry = {
+                    'serviceName': service_name,
+                    'serviceId': 'vpce-svc-%s' % short_uid(),
+                    'serviceType': [{'serviceType': stype} for stype in stypes],
+                    'availabilityZones': [z.name for z in availability_zones],
+                    'owner': 'amazon',
+                    'baseEndpointDnsNames': [],
+                    'privateDnsName': dns_name,
+                    'privateDnsNames': [{'PrivateDnsName': dns_name}],
+                    'vpcEndpointPolicySupported': True,
+                    'acceptanceRequired': False,
+                    'managesVpcEndpoints': False,
+                    'tags': [],
+                    'privateDnsNameVerificationState': 'verified'
+                }
+                service_entries.append(entry)
+            self.ec2_backend._vpc_endpoint_services = service_entries
+
+        # construct result
+        search_filters = self._parse_search_filters()
+        search_names = self._get_multi_param('ServiceName')
+        services = self.ec2_backend._vpc_endpoint_services
+        if search_names:
+            services = [s for s in services if s['serviceName'] in search_names]
+        for filter in search_filters:
+            if filter['Name'] == 'service-name':
+                services = [s for s in services if s['serviceName'] in filter['Values']]
+            elif filter['Name'] == 'service-type':
+                services = [s for s in services if any(
+                    v in [stype['serviceType'] for stype in s['serviceType']] for v in filter['Values']
+                )]
+            else:
+                LOG.debug('Unsupported VPC endpoint service filter "%s"' % filter['Name'])
+        service_names = [s['serviceName'] for s in services]
+        services = [{**s, 'serviceType': {'item': s['serviceType']}} for s in services]
+        services = [{**s, 'availabilityZones': {'item': s['availabilityZones']}} for s in services]
+        services = [{**s, 'tagSet': {'item': s['tags']}} for s in services]
+        result = {
+            'DescribeVpcEndpointServicesResponse': {
+                '@xmlns': XMLNS_EC2,
+                'serviceNameSet': {'item': service_names},
+                'serviceDetailSet': {'item': services},
+                'requestId': long_uid()
+            }
+        }
+        result = xmltodict.unparse(result)
+        return result
+
+    vpcs.VPCs.describe_vpc_endpoint_services = describe_vpc_endpoint_services
+
+    # DescribePrefixLists API
+
+    def describe_prefix_lists(self):
+        if not hasattr(self.ec2_backend, '_prefix_lists'):
+            entries = self.ec2_backend._prefix_lists = []
+            for service_id in GATEWAY_SERVICES:
+                region = self.ec2_backend.region_name
+                service_name = 'com.amazonaws.%s.%s' % (region, service_id)
+                entry = {'prefixListName': service_name, 'prefixListId': 'pl-%s' % short_uid(),
+                    'cidrSet': {'item': ['52.219.80.0/20']}}
+                entries.append(entry)
+        entries = self.ec2_backend._prefix_lists
+        search_filters = self._parse_search_filters()
+        for filter in search_filters:
+            if filter['Name'] == 'prefix-list-name':
+                entries = [s for s in entries if s['prefixListName'] in filter['Values']]
+            else:
+                LOG.debug('Unsupported VPC endpoint service filter "%s"' % filter['Name'])
+        result = {
+            'DescribePrefixListsResponse': {
+                '@xmlns': XMLNS_EC2,
+                'prefixListSet': {'item': entries},
+                'requestId': long_uid()
+            }
+        }
+        result = xmltodict.unparse(result)
+        return result
+
+    if not hasattr(vpcs.VPCs, 'describe_prefix_lists'):
+        vpcs.VPCs.describe_prefix_lists = describe_prefix_lists
+
+    # util function to parse search filter params
+
+    def _parse_search_filters(self):
+        search_filters = self._get_multi_param('Filter')
+        for filter in search_filters:
+            filter['Values'] = []
+            for i in range(1, 100):
+                val = filter.get('Value.%s' % i)
+                if val is None:
+                    break
+                filter['Values'].append(val)
+        return search_filters
+
+    vpcs.VPCs._parse_search_filters = _parse_search_filters
+
+    # add ability to modify VPC endpoints
+
+    def modify_vpc_endpoint(self):
+        endpoint_id = self._get_param('VpcEndpointId')
+        endpoint = self.ec2_backend.vpc_end_points.get(endpoint_id)
+        if not endpoint:
+            return '', 404
+
+        policy_doc = self._get_param('PolicyDocument')
+        dns_enabled = self._get_bool_param('PrivateDnsEnabled')
+        add_table_ids = self._get_multi_param('AddRouteTableId')
+        remove_table_ids = self._get_multi_param('RemoveRouteTableId')
+        add_subnet_ids = self._get_multi_param('AddSubnetId')
+        remove_subnet_ids = self._get_multi_param('RemoveSubnetId')
+        # TODO: fix SecurityGroupIds in backend model!
+        # add_secgrp_ids = self._get_multi_param('AddSecurityGroupId')
+        # remove_secgrp_ids = self._get_multi_param('RemoveSecurityGroupId')
+        endpoint.route_table_ids.extend(add_table_ids)
+        endpoint.route_table_ids = [i for i in endpoint.route_table_ids if i not in remove_table_ids]
+        endpoint.subnet_ids.extend(add_subnet_ids)
+        endpoint.subnet_ids = [i for i in endpoint.subnet_ids if i not in remove_subnet_ids]
+        endpoint.policy_document = policy_doc or endpoint.policy_document
+        endpoint.private_dns_enabled = endpoint.private_dns_enabled if dns_enabled is None else dns_enabled
+        result = {
+            'ModifyVpcEndpointResponse': {
+                '@xmlns': XMLNS_EC2,
+                'return': 'true',
+                'requestId': long_uid()
+            }
+        }
+        result = xmltodict.unparse(result)
+        return result
+
+    vpcs.VPCs.modify_vpc_endpoint = modify_vpc_endpoint
+
 
 def start_ec2(port=None, asynchronous=False, update_listener=None):
     patch_ec2()
@@ -67,7 +217,7 @@ def start_ec2(port=None, asynchronous=False, update_listener=None):
 
 
 DESCRIBE_RESERVED_INSTANCES_OFFERINGS_RESPONSE = """
-<DescribeReservedInstancesOfferingsResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
+<DescribeReservedInstancesOfferingsResponse xmlns="%s">
   <requestId>2bc7dafa-dafd-4257-bdf9-c0814EXAMPLE</requestId>
   <reservedInstancesOfferingsSet>
     <item>
@@ -98,16 +248,16 @@ DESCRIBE_RESERVED_INSTANCES_OFFERINGS_RESPONSE = """
       <scope>Availability Zone</scope>
     </item>
   </reservedInstancesOfferingsSet>
-</DescribeReservedInstancesOfferingsResponse>"""
+</DescribeReservedInstancesOfferingsResponse>""" % XMLNS_EC2
 
 PURCHASE_RESERVED_INSTANCES_OFFERINGS_RESPONSE = """
-<PurchaseReservedInstancesOfferingResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
+<PurchaseReservedInstancesOfferingResponse xmlns="%s">
   <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
   <reservedInstancesId>e5a2ff3b-7d14-494f-90af-0b5d0EXAMPLE</reservedInstancesId>
-</PurchaseReservedInstancesOfferingResponse>"""
+</PurchaseReservedInstancesOfferingResponse>""" % XMLNS_EC2
 
 DESCRIBE_RESERVED_INSTANCES_RESPONSE = """
-<DescribeReservedInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/">
+<DescribeReservedInstancesResponse xmlns="%s">
    <requestId>59dbff89-35bd-4eac-99ed-be587EXAMPLE</requestId>
    <reservedInstancesSet>
       <item>
@@ -135,4 +285,4 @@ DESCRIBE_RESERVED_INSTANCES_RESPONSE = """
          <scope>AvailabilityZone</scope>
       </item>
    </reservedInstancesSet>
-</DescribeReservedInstancesResponse>"""
+</DescribeReservedInstancesResponse>""" % XMLNS_EC2
