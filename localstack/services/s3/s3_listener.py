@@ -95,11 +95,6 @@ CORS_HEADERS = [
     'Access-Control-Request-Headers', 'Access-Control-Request-Method'
 ]
 
-LOCATION_CONSTRAINT_VALID_REGION = ['af-south-1', 'ap-east-1', 'ap-northeast-1', 'ap-northeast-2', 'ap-northeast-3',
-    'ap-south-1', 'ap-southeast-1', 'ap-southeast-2', 'ca-central-1', 'cn-north-1', 'cn-northwest-1, EU',
-    'eu-central-1', 'eu-north-1', 'eu-south-1', 'eu-west-1', 'eu-west-2', 'eu-west-3', 'me-south-1', 'sa-east-1',
-    'us-east-2', 'us-gov-east-1', 'us-gov-west-1', 'us-west-1', 'us-west-2']
-
 
 def event_type_matches(events, action, api_method):
     """ check whether any of the event types in `events` matches the
@@ -481,7 +476,7 @@ def fix_location_constraint(response):
         content = to_str(response.content or '') or ''
     except Exception:
         content = ''
-    if aws_stack.get_region() in LOCATION_CONSTRAINT_VALID_REGION and 'LocationConstraint' in content:
+    if aws_stack.get_region() != 'us-east-1' and 'LocationConstraint' in content:
         pattern = r'<LocationConstraint([^>]*)>\s*</LocationConstraint>'
         replace = r'<LocationConstraint\1>%s</LocationConstraint>' % aws_stack.get_region()
         response._content = re.sub(pattern, replace, content)
