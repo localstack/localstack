@@ -700,9 +700,8 @@ class CloudFormationTest(unittest.TestCase):
                 self.assertEqual(err.response['Error']['Message'], 'Template Validation Error')
 
     def test_list_stack_resources_returns_queue_urls(self):
-        template = template_preparer.template_to_json(load_file(TEST_TEMPLATE_2))
         stack_name = 'stack-%s' % short_uid()
-        details = create_and_await_stack(StackName=stack_name, TemplateBody=template)
+        details = create_and_await_stack(StackName=stack_name, TemplateBody=load_file(TEST_TEMPLATE_27))
 
         stack_summaries = list_stack_resources(stack_name)
         queue_urls = get_queue_urls()
@@ -719,7 +718,11 @@ class CloudFormationTest(unittest.TestCase):
         # assert that stack outputs are returned properly
         outputs = details.get('Outputs', [])
         self.assertEqual(len(outputs), 1)
-        self.assertEqual(outputs[0]['ExportName'], 'SQSQueue1-URL')
+        self.assertEqual(outputs[0]['ExportName'], 'T27SQSQueue-URL')
+        self.assertIn(config.DEFAULT_REGION, outputs[0]['OutputValue'])
+
+        # clean up
+        self.cleanup(stack_name)
 
     def test_create_change_set(self):
         cloudformation = aws_stack.connect_to_service('cloudformation')
@@ -1809,26 +1812,6 @@ class CloudFormationTest(unittest.TestCase):
         self.cleanup(stack_name)
         topic_arns = [t['TopicArn'] for t in sns.list_topics()['Topics']]
         self.assertNotIn(topic_arn, topic_arns)
-
-    def test_list_exports_correctly_returns_exports(self):
-        cloudformation = aws_stack.connect_to_service('cloudformation')
-
-        # fetch initial list of exports
-        exports_before = cloudformation.list_exports()['Exports']
-
-        template = load_file(TEST_TEMPLATE_27)
-        stack_name = 'stack-%s' % short_uid()
-        deploy_cf_stack(stack_name, template_body=template)
-
-        response = cloudformation.list_exports()
-
-        exports = response['Exports']
-        self.assertEqual(len(exports), len(exports_before) + 1)
-        export_names = [e['Name'] for e in exports]
-        self.assertIn('T27SQSQueue1-URL', export_names)
-
-        # clean up
-        self.cleanup(stack_name)
 
     def test_deploy_stack_with_kms(self):
         stack_name = 'stack-%s' % short_uid()
