@@ -2,7 +2,7 @@ import os
 import localstack_client.config
 
 # LocalStack version
-VERSION = '0.12.6'
+VERSION = '0.12.8'
 
 # constant to represent the "local" region, i.e., local machine
 REGION_LOCAL = 'local'
@@ -21,6 +21,7 @@ DEFAULT_PORT_WEB_UI = 8080
 # host name for localhost
 LOCALHOST = 'localhost'
 LOCALHOST_IP = '127.0.0.1'
+LOCALHOST_HOSTNAME = 'localhost.localstack.cloud'
 
 # version of the Maven dependency with Java utility code
 LOCALSTACK_MAVEN_VERSION = '0.2.5'
@@ -134,3 +135,10 @@ TEST_AWS_SECRET_ACCESS_KEY = 'test'
 # credentials being used for internal calls
 INTERNAL_AWS_ACCESS_KEY_ID = '__internal_call__'
 INTERNAL_AWS_SECRET_ACCESS_KEY = '__internal_call__'
+
+# list of official docker images
+OFFICIAL_IMAGES = ['localstack/localstack', 'localstack/localstack-light', 'localstack/localstack-full']
+
+# s3 virtual host name
+S3_VIRTUAL_HOSTNAME = 's3.%s' % LOCALHOST_HOSTNAME
+S3_STATIC_WEBSITE_HOSTNAME = 's3-website.%s' % LOCALHOST_HOSTNAME

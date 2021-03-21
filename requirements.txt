@@ -37,14 +37,14 @@ jsonpath-rw>=1.4.0,<2.0.0
 localstack-ext[full]>=0.12.5
 localstack-ext>=0.12.5         #basic-lib
 localstack-client>=1.12        #basic-lib
-moto-ext[all]>=1.3.15.12
+moto-ext[all]>=2.0.0
 nose>=1.3.7
 nose-timer>=0.7.5
 psutil>=5.4.8,<6.0.0
 pympler>=0.6
 pyopenssl==17.5.0
 python-coveralls>=2.9.1
-pyyaml>=3.13,<=5.1
+pyyaml>=3.13,<=5.1             #basic-lib
 Quart>=0.6.15
 requests>=2.20.0               #basic-lib
 requests-aws4auth==0.9

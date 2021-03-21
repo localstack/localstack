@@ -59,6 +59,9 @@ class VelocityUtil(object):
 def render_velocity_template(template, context, variables={}, as_json=False):
     import airspeed
 
+    if not template:
+        return template
+
     # Apply a few fixes below, to properly prepare the template...
 
     # TODO: remove once this PR is merged: https://github.com/purcell/airspeed/pull/48

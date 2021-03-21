@@ -11,13 +11,17 @@ import datetime
 import requests
 from io import BytesIO
 from pytz import timezone
+from urllib.parse import parse_qs, quote
 from botocore.exceptions import ClientError
+from six.moves.urllib import parse as urlparse
 from six.moves.urllib.request import Request, urlopen
-from localstack import config
+from localstack import config, constants
+from botocore.client import Config
 from localstack.utils import testutil
-from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY
+from localstack.constants import TEST_AWS_ACCESS_KEY_ID, TEST_AWS_SECRET_ACCESS_KEY, S3_VIRTUAL_HOSTNAME
 from localstack.utils.aws import aws_stack
-from localstack.services.s3 import s3_listener
+from localstack.services.s3 import s3_listener, s3_utils
+
 from localstack.utils.common import (
     short_uid, retry, get_service_protocol, to_bytes, safe_requests, to_str, new_tmp_file, rm_rf, load_file)
 from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
@@ -56,10 +60,32 @@ class PutRequest(Request):
         return 'PUT'
 
 
+# def test_host_and_path_addressing(wrapped):
+#     """ Decorator that runs a test method with both - path and host style addressing. """
+#     # TODO - needs to be fixed below!
+#     def wrapper(self):
+#         try:
+#             # test via path based addressing
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'virtual'})
+#             wrapped()
+#             # test via host based addressing
+#             TestS3.OVERWRITTEN_CLIENT = aws_stack.connect_to_service('s3', config={'addressing_style': 'path'})
+#             wrapped()
+#         finally:
+#             # reset client
+#             TestS3.OVERWRITTEN_CLIENT = None
+#     return
+
 class TestS3(unittest.TestCase):
+    OVERWRITTEN_CLIENT = None
+
     def setUp(self):
-        self.s3_client = aws_stack.connect_to_service('s3')
+        self._s3_client = aws_stack.connect_to_service('s3')
         self.sqs_client = aws_stack.connect_to_service('sqs')
+
+    @property
+    def s3_client(self):
+        return TestS3.OVERWRITTEN_CLIENT or self._s3_client
 
     def test_create_bucket_via_host_name(self):
         body = """<?xml version="1.0" encoding="UTF-8"?>
@@ -68,13 +94,14 @@ class TestS3(unittest.TestCase):
             </CreateBucketConfiguration>"""
         headers = aws_stack.mock_aws_request_headers('s3')
         bucket_name = 'test-%s' % short_uid()
-        headers['Host'] = '%s.s3.amazonaws.com' % bucket_name
+        headers['Host'] = s3_utils.get_bucket_hostname(bucket_name)
         response = requests.put(config.TEST_S3_URL, data=body, headers=headers, verify=False)
         self.assertEquals(response.status_code, 200)
         response = self.s3_client.get_bucket_location(Bucket=bucket_name)
         self.assertEqual(response['ResponseMetadata']['HTTPStatusCode'], 200)
         self.assertIn('LocationConstraint', response)
 
+    # @test_host_and_path_addressing
     def test_bucket_policy(self):
         # create test bucket
         self.s3_client.create_bucket(Bucket=TEST_BUCKET_NAME_WITH_POLICY)
@@ -113,8 +140,8 @@ class TestS3(unittest.TestCase):
         obj = self.s3_client.put_object(Bucket=bucket_name, Key=key_by_path, Body='something')
 
         # put an object where the bucket_name is in the host
-        # it doesn't care about the authorization header as long as it's present
-        headers = {'Host': '{}.s3.amazonaws.com'.format(bucket_name), 'authorization': 'some_token'}
+        headers = aws_stack.mock_aws_request_headers('s3')
+        headers['Host'] = s3_utils.get_bucket_hostname(bucket_name)
         url = '{}/{}'.format(config.TEST_S3_URL, key_by_host)
         # verify=False must be set as this test fails on travis because of an SSL error non-existent locally
         response = requests.put(url, data='something else', headers=headers, verify=False)
@@ -388,7 +415,7 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [object_key])
 
     def test_bucket_availability(self):
-        bucket_name = 'test_bucket_lifecycle'
+        bucket_name = 'test-bucket-lifecycle'
         returned_empty_lifecycle = s3_listener.get_lifecycle(bucket_name)
         self.assertRegexpMatches(returned_empty_lifecycle._content, r'The bucket does not exist')
 
@@ -400,6 +427,66 @@ class TestS3(unittest.TestCase):
 
         response = s3_listener.get_object_lock(bucket_name)
         self.assertRegexpMatches(response._content, r'The bucket does not exist')
+
+    def test_delete_bucket_lifecycle_configuration(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
+        lfc = {
+            'Rules': [
+                {
+                    'Expiration': {'Days': 7},
+                    'ID': 'wholebucket',
+                    'Filter': {'Prefix': ''},
+                    'Status': 'Enabled',
+                }
+            ]
+        }
+        client.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name, LifecycleConfiguration=lfc
+        )
+        result = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        self.assertIn('Rules', result)
+        client.delete_bucket_lifecycle(Bucket=bucket_name)
+
+        try:
+            client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NoSuchLifecycleConfiguration')
+
+        # clean up
+        client.delete_bucket(Bucket=bucket_name)
+
+    def test_delete_lifecycle_configuration_on_bucket_deletion(self):
+        bucket_name = 'test-bucket-%s' % short_uid()
+        client = self._get_test_client()
+        client.create_bucket(Bucket=bucket_name)
+        lfc = {
+            'Rules': [
+                {
+                    'Expiration': {'Days': 7},
+                    'ID': 'wholebucket',
+                    'Filter': {'Prefix': ''},
+                    'Status': 'Enabled',
+                }
+            ]
+        }
+        client.put_bucket_lifecycle_configuration(
+            Bucket=bucket_name, LifecycleConfiguration=lfc
+        )
+        result = client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        self.assertIn('Rules', result)
+
+        client.delete_bucket(Bucket=bucket_name)
+
+        client.create_bucket(Bucket=bucket_name)
+        try:
+            client.get_bucket_lifecycle_configuration(Bucket=bucket_name)
+        except ClientError as e:
+            self.assertEqual(e.response['Error']['Code'], 'NoSuchLifecycleConfiguration')
+
+        # clean up
+        client.delete_bucket(Bucket=bucket_name)
 
     def test_range_header_body_length(self):
         # Test for https://github.com/localstack/localstack/issues/1952
@@ -429,7 +516,7 @@ class TestS3(unittest.TestCase):
         client.create_bucket(Bucket=bucket_name)
 
         # put object
-        object_key = '/foo/bar/key-by-hostname'
+        object_key = 'foo/bar/key-by-hostname'
         content_type = 'foo/bar; charset=utf-8'
         client.put_object(Bucket=bucket_name,
             Key=object_key,
@@ -701,16 +788,17 @@ class TestS3(unittest.TestCase):
         # Cleanup
         s3_client.delete_bucket(Bucket=bucket)
 
-    def test_s3_uppercase_names(self):
-        # bucket name should be case-insensitive
-        bucket_name = 'TestUpperCase-%s' % short_uid()
+    def test_s3_uppercase_key_names(self):
+        # bucket name should be case-sensitive
+        bucket_name = 'testuppercase-%s' % short_uid()
         self.s3_client.create_bucket(Bucket=bucket_name)
 
         # key name should be case-sensitive
         object_key = 'camelCaseKey'
         self.s3_client.put_object(Bucket=bucket_name, Key=object_key, Body='something')
         self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
-        self.assertRaises(Exception, self.s3_client.get_object, Bucket=bucket_name, Key=object_key.lower())
+        res = self.s3_client.get_object(Bucket=bucket_name, Key=object_key)
+        self.assertEqual(res['ResponseMetadata']['HTTPStatusCode'], 200)
 
     def test_s3_get_response_headers(self):
         bucket_name = 'test-bucket-%s' % short_uid()
@@ -883,70 +971,46 @@ class TestS3(unittest.TestCase):
         finally:
             config.HOSTNAME_EXTERNAL = hostname_before
 
-    def test_s3_website_errordocument(self):
-        # check that the error document is returned when configured
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client = self._get_test_client()
+    def test_s3_static_website_hosting(self):
+        bucket_name = 'test-%s' % short_uid()
 
-        client.create_bucket(Bucket=bucket_name)
-        client.put_object(Bucket=bucket_name, Key='error.html', Body='This is the error document')
-        client.put_bucket_website(
+        self.s3_client.create_bucket(Bucket=bucket_name)
+        self.s3_client.put_object(Bucket=bucket_name, Key='test/index.html', Body='index')
+        self.s3_client.put_object(Bucket=bucket_name, Key='test/error.html', Body='error')
+        self.s3_client.put_object(Bucket=bucket_name, Key='actual/key.html', Body='key')
+        self.s3_client.put_bucket_website(
             Bucket=bucket_name,
-            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
+            WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'},
+                'ErrorDocument': {'Key': 'test/error.html'}}
         )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+
+        headers = aws_stack.mock_aws_request_headers('s3')
+        headers['Host'] = s3_utils.get_bucket_website_hostname(bucket_name)
+
+        # actual key
+        url = 'https://{}.{}:{}/actual/key.html'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME,
+            config.EDGE_PORT)
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.text, 'This is the error document')
-        # cleanup
-        client.delete_object(Bucket=bucket_name, Key='error.html')
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'key')
 
-        # check that normal responses are returned for bucket with index configuration, but not error document
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client.create_bucket(Bucket=bucket_name)
-        client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={'IndexDocument': {'Suffix': 'index.html'}}
-        )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+        # index document
+        url = 'https://{}.{}:{}/test'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
+        response = requests.get(url, headers=headers, verify=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.text, 'index')
+
+        # root path test
+        url = 'https://{}.{}:{}/'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 404)
-        # cleanup
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'error')
 
-        # check that normal responses are returned for bucket without configuration
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client.create_bucket(Bucket=bucket_name)
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
+        # error document
+        url = 'https://{}.{}:{}/something'.format(bucket_name, constants.S3_STATIC_WEBSITE_HOSTNAME, config.EDGE_PORT)
+        response = requests.get(url, headers=headers, verify=False)
         self.assertEqual(response.status_code, 404)
-        # cleanup
-        client.delete_bucket(Bucket=bucket_name)
-
-    def test_s3_website_errordocument_missing(self):
-        # check that 404 is returned when error document is configured but missing
-        bucket_name = 'test-bucket-%s' % short_uid()
-        client = self._get_test_client()
-
-        client.create_bucket(Bucket=bucket_name)
-        client.put_bucket_website(
-            Bucket=bucket_name,
-            WebsiteConfiguration={'ErrorDocument': {'Key': 'error.html'}}
-        )
-        url = client.generate_presigned_url(
-            'get_object', Params={'Bucket': bucket_name, 'Key': 'nonexistent'}
-        )
-        response = requests.get(url, verify=False)
-        self.assertEqual(response.status_code, 404)
-
-        client.delete_bucket(Bucket=bucket_name)
+        self.assertEqual(response.text, 'error')
 
     def test_s3_event_notification_with_sqs(self):
         key_by_path = 'aws/bucket=2020/test1.txt'
@@ -1453,30 +1517,424 @@ class TestS3(unittest.TestCase):
         self._delete_bucket(bucket_name, [])
 
     def test_presigned_url_signature_authentication(self):
-        client = self._get_test_client()
+        client = boto3.client('s3', endpoint_url=config.get_edge_url(),
+            config=Config(signature_version='s3'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
+        client_v4 = boto3.client('s3', endpoint_url=config.get_edge_url(),
+            config=Config(signature_version='s3v4'), aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
 
-        OBJECT_KEY = 'test.txt'
+        OBJECT_KEY = 'temp.txt'
         OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
-        BUCKET = 'presign-testing'
+        BUCKET = 'test'
+        EXPIRES = 4
+
+        def make_v2_url_invalid(url):
+            parsed = urlparse.urlparse(url)
+            query_params = parse_qs(parsed.query)
+            url = '{}/{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}'.format(
+                config.get_edge_url(), BUCKET, OBJECT_KEY,
+                'test', query_params['Signature'][0], query_params['Expires'][0]
+            )
+            return url
+
+        def make_v4_url_invalid(url):
+            parsed = urlparse.urlparse(url)
+            query_params = parse_qs(parsed.query)
+            url = ('{}/{}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&' +
+                   'X-Amz-Credential={}&X-Amz-Date={}&' +
+                   'X-Amz-Expires={}&X-Amz-SignedHeaders=host&' +
+                   'X-Amz-Signature={}').format(
+                config.get_edge_url(), BUCKET, OBJECT_KEY,
+                quote(query_params['X-Amz-Credential'][0]).replace('/', '%2F'),
+                query_params['X-Amz-Date'][0], query_params['X-Amz-Expires'][0], query_params['X-Amz-Signature'][0]
+            )
+            return url
 
         client.create_bucket(Bucket=BUCKET)
-        presign_url = client.generate_presigned_url(
-            'put_object',
+
+        client.put_object(Key=OBJECT_KEY, Bucket=BUCKET, Body='123')
+
+        presign_get_url = client.generate_presigned_url(
+            'get_object',
             Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
-            ExpiresIn=3
+            ExpiresIn=EXPIRES
+        )
+
+        presign_get_url_v4 = client_v4.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
         )
 
         # Valid request
-        response = requests.put(presign_url, data=OBJECT_DATA)
+        response = requests.get(presign_get_url)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 200)
+
+        presign_get_url = client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_get_url_v4 = client_v4.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.get(presign_get_url)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.get(presign_get_url_v4)
         self.assertEqual(response.status_code, 200)
 
         # Invalid request
-        response = requests.put(presign_url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        url = make_v2_url_invalid(presign_get_url)
+        response = requests.get(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
         self.assertEqual(response.status_code, 403)
 
-        # Expired request
-        time.sleep(3)
-        response = requests.put(presign_url, data=OBJECT_DATA)
+        url = make_v4_url_invalid(presign_get_url_v4)
+        response = requests.get(url, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # PUT Requests
+        presign_put_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_put_url_v4 = client_v4.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.put(presign_put_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        presign_put_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_put_url_v4 = client_v4.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        url = make_v2_url_invalid(presign_put_url)
+        response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        url = make_v4_url_invalid(presign_put_url_v4)
+        response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # DELETE Requests
+        presign_delete_url = client.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_delete_url_v4 = client_v4.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 204)
+
+        response = requests.delete(presign_delete_url_v4)
+        self.assertEqual(response.status_code, 204)
+
+        presign_delete_url = client.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_delete_url_v4 = client_v4.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 204)
+
+        response = requests.delete(presign_delete_url_v4)
+        self.assertEqual(response.status_code, 204)
+
+        # Invalid request
+        url = make_v2_url_invalid(presign_delete_url)
+        response = requests.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+        url = make_v4_url_invalid(presign_delete_url_v4)
+        response = requests.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+        # Expired requests
+        time.sleep(4)
+
+        # GET
+        response = requests.get(presign_get_url)
+        self.assertEqual(response.status_code, 403)
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 403)
+
+        # PUT
+        response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 403)
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 403)
+
+        # DELETE
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 403)
+
+        response = requests.delete(presign_delete_url_v4)
+        self.assertEqual(response.status_code, 403)
+
+        client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)
+        client.delete_bucket(Bucket=BUCKET)
+
+    def test_presigned_url_signature_authentication_virtual_host_addressing(self):
+        virtual_endpoint = '{}://{}:{}'.format(
+            config.get_protocol(), S3_VIRTUAL_HOSTNAME, config.EDGE_PORT)
+        client = boto3.client('s3', endpoint_url=virtual_endpoint,
+            config=Config(s3={'addressing_style': 'virtual'}),
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
+        client_v4 = boto3.client('s3', endpoint_url=virtual_endpoint,
+            config=Config(signature_version='s3v4', s3={'addressing_style': 'virtual'}),
+            aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=TEST_AWS_SECRET_ACCESS_KEY)
+
+        OBJECT_KEY = 'temp.txt'
+        OBJECT_DATA = 'this should be found in when you download {}.'.format(OBJECT_KEY)
+        BUCKET = 'test'
+        EXPIRES = 4
+
+        def make_v2_url_invalid(url):
+            parsed = urlparse.urlparse(url)
+            query_params = parse_qs(parsed.query)
+            url = '{}://{}.{}:{}/{}?AWSAccessKeyId={}&Signature={}&Expires={}'.format(
+                config.get_protocol(), BUCKET, S3_VIRTUAL_HOSTNAME, config.EDGE_PORT, OBJECT_KEY,
+                'test', query_params['Signature'][0], query_params['Expires'][0]
+            )
+            return url
+
+        def make_v4_url_invalid(url):
+            parsed = urlparse.urlparse(url)
+            query_params = parse_qs(parsed.query)
+            url = ('{}://{}.{}:{}/{}?X-Amz-Algorithm=AWS4-HMAC-SHA256&' +
+                   'X-Amz-Credential={}&X-Amz-Date={}&' +
+                   'X-Amz-Expires={}&X-Amz-SignedHeaders=host&' +
+                   'X-Amz-Signature={}').format(
+                config.get_protocol(), BUCKET, S3_VIRTUAL_HOSTNAME, config.EDGE_PORT, OBJECT_KEY,
+                quote(query_params['X-Amz-Credential'][0]).replace('/', '%2F'),
+                query_params['X-Amz-Date'][0], query_params['X-Amz-Expires'][0], query_params['X-Amz-Signature'][0]
+            )
+            return url
+
+        self.s3_client.create_bucket(Bucket=BUCKET)
+
+        self.s3_client.put_object(
+            Key=OBJECT_KEY,
+            Bucket=BUCKET,
+            Body='123'
+        )
+
+        # GET requests
+        presign_get_url = client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_get_url_v4 = client_v4.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.get(presign_get_url)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 200)
+
+        presign_get_url = client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_get_url_v4 = client_v4.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ResponseContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.get(presign_get_url)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        url = make_v2_url_invalid(presign_get_url)
+        response = requests.get(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        url = make_v4_url_invalid(presign_get_url_v4)
+        response = requests.get(url, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # PUT Requests
+        presign_put_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_put_url_v4 = client_v4.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.put(presign_put_url, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA)
+        self.assertEqual(response.status_code, 200)
+
+        presign_put_url = client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_put_url_v4 = client_v4.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'ContentType': 'text/plain'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 200)
+
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 200)
+
+        # Invalid request
+        url = make_v2_url_invalid(presign_put_url)
+        response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        url = make_v4_url_invalid(presign_put_url_v4)
+        response = requests.put(url, data=OBJECT_DATA, headers={'Content-Type': 'my-fake-content/type'})
+        self.assertEqual(response.status_code, 403)
+
+        # DELETE Requests
+        presign_delete_url = client.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_delete_url_v4 = client_v4.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 204)
+
+        response = requests.delete(presign_delete_url_v4)
+        self.assertEqual(response.status_code, 204)
+
+        presign_delete_url = client.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
+            ExpiresIn=EXPIRES
+        )
+
+        presign_delete_url_v4 = client_v4.generate_presigned_url(
+            'delete_object',
+            Params={'Bucket': BUCKET, 'Key': OBJECT_KEY, 'VersionId': '1'},
+            ExpiresIn=EXPIRES
+        )
+
+        # Valid request
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 204)
+
+        response = requests.delete(presign_delete_url_v4)
+        self.assertEqual(response.status_code, 204)
+
+        # Invalid request
+        url = make_v2_url_invalid(presign_delete_url)
+        response = requests.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+        url = make_v4_url_invalid(presign_delete_url_v4)
+        response = requests.delete(url)
+        self.assertEqual(response.status_code, 403)
+
+        # Expired requests
+        time.sleep(4)
+
+        # GET
+        response = requests.get(presign_get_url)
+        self.assertEqual(response.status_code, 403)
+        response = requests.get(presign_get_url_v4)
+        self.assertEqual(response.status_code, 403)
+
+        # PUT
+        response = requests.put(presign_put_url, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 403)
+        response = requests.put(presign_put_url_v4, data=OBJECT_DATA, headers={'Content-Type': 'text/plain'})
+        self.assertEqual(response.status_code, 403)
+
+        # DELETE
+        response = requests.delete(presign_delete_url)
+        self.assertEqual(response.status_code, 403)
+        response = requests.delete(presign_delete_url_v4)
         self.assertEqual(response.status_code, 403)
 
         client.delete_object(Bucket=BUCKET, Key=OBJECT_KEY)

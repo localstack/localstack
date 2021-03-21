@@ -23,8 +23,9 @@ from docopt import docopt
 from localstack import config, constants
 from localstack.utils import bootstrap
 from localstack.utils.bootstrap import (
-    start_infra_in_docker, start_infra_locally, run, docker_container_running,
-    get_main_container_ip, get_main_container_name, get_docker_image_details, get_server_version)
+    get_main_container_id, start_infra_in_docker, start_infra_locally, run, docker_container_running,
+    get_main_container_ip, get_main_container_name, get_docker_image_details, get_server_version,
+    validate_localstack_config, setup_logging)
 
 # Note: make sure we don't have other imports at the root level here
 
@@ -57,8 +58,27 @@ Options:
         if in_docker:
             start_infra_in_docker()
         else:
-            print_version()
             start_infra_locally()
+
+
+def cmd_config(argv, args):
+    """
+Usage:
+  localstack config <subcommand> [options]
+
+Commands:
+  config validate       Validate local configurations (e.g. docker-compose)
+
+Options:
+  --file=<>          Use custom docker compose file (default: docker-compose.yml)
+    """
+    args.update(docopt(cmd_config.__doc__.strip(), argv=argv))
+
+    if args['<subcommand>'] == 'validate':
+        docker_compose_file_name = args.get('--file') or 'docker-compose.yml'
+        validate_localstack_config(docker_compose_file_name)
+    else:
+        raise Exception('Please specify a valid command')
 
 
 def cmd_web(argv, args):
@@ -67,12 +87,11 @@ Usage:
   localstack web <subcommand> [options]
 
 Commands:
-  web start           Start the Web dashboard
+  web start           Start the Web dashboard (Note: deprecated and no longer supported!)
 
 Options:
   --port=<>           Network port for running the Web server (default: 8080)
     """
-    print_version()
     if len(argv) <= 1 or argv[1] != 'start':
         argv = ['web', 'start'] + argv[1:]
         args['<args>'] = ['start'] + args['<args>']
@@ -124,8 +143,21 @@ def print_status():
     print('Container status:\t%s' % cont_status)
 
 
-def print_version():
+def print_version(in_docker=False):
+    print()
     print('LocalStack version: %s' % constants.VERSION)
+    if in_docker:
+        id = get_main_container_id()
+        if id:
+            print('LocalStack Docker image id: %s' % id[:12])
+
+    if config.LOCALSTACK_BUILD_DATE:
+        print('LocalStack build date: %s' % config.LOCALSTACK_BUILD_DATE)
+
+    if config.LOCALSTACK_BUILD_GIT_HASH:
+        print('LocalStack build git hash: %s' % config.LOCALSTACK_BUILD_GIT_HASH)
+
+    print()
 
 
 def main():
@@ -151,6 +183,10 @@ def main():
         'description': 'Obtain status details about the installation',
         'function': cmd_status
     }
+    config.CLI_COMMANDS['config'] = {
+        'description': 'Validate docker configurations',
+        'function': cmd_config
+    }
 
     # load CLI plugins
     bootstrap.load_plugins(scope=bootstrap.PLUGIN_SCOPE_COMMANDS)
@@ -173,7 +209,11 @@ def main():
         sys.exit(0)
 
     if args['--debug']:
+        config.DEBUG = True
         os.environ['DEBUG'] = '1'
+
+    # set up logging (after DEBUG has been configured)
+    setup_logging()
 
     # invoke subcommand
     argv = [args['<command>']] + args['<args>']

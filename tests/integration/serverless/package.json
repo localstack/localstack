@@ -3,10 +3,12 @@
   "version": "0.0.1",
   "description": "Simple Serverless tests for LocalStack",
   "scripts": {
-    "serverless": "serverless deploy --stage local"
+    "deploy": "serverless deploy --stage local",
+    "undeploy": "serverless remove --stage local",
+    "version": "serverless --version"
   },
   "devDependencies": {
-    "serverless": "^1.67.1",
+    "serverless": "^2.15.0 <2.30",
     "serverless-localstack": "^0.4.28"
   }
 }

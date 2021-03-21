@@ -9,24 +9,27 @@ from localstack.utils.testutil import get_lambda_log_events
 class TestServerless(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        base_dir = os.path.join(os.path.dirname(__file__), 'serverless')
-
+        base_dir = cls.get_base_dir()
         if not os.path.exists(os.path.join(base_dir, 'node_modules')):
             # install dependencies
             run('cd %s; npm install' % base_dir)
-
         # list apigateway before sls deployment
         apigw_client = aws_stack.connect_to_service('apigateway')
         apis = apigw_client.get_rest_apis()['items']
         cls.api_ids = [api['id'] for api in apis]
 
         # deploy serverless app
-        run('cd %s; npm run serverless -- --region=%s' % (base_dir, aws_stack.get_region()))
+        run('cd %s; npm run deploy -- --region=%s' % (base_dir, aws_stack.get_region()))
 
     @classmethod
     def tearDownClass(cls):
-        # TODO: add cleanup logic
+        # TODO uncomment once removal via the sls plugin is fixed
+        # run('cd %s; npm run undeploy -- --region=%s' % (cls.get_base_dir(), aws_stack.get_region()))
         pass
+
+    @classmethod
+    def get_base_dir(cls):
+        return os.path.join(os.path.dirname(__file__), 'serverless')
 
     def test_event_rules_deployed(self):
         events = aws_stack.connect_to_service('events')
@@ -101,6 +104,20 @@ class TestServerless(unittest.TestCase):
 
         self.assertEqual(aws_stack.sqs_queue_arn(queue_name), event_source_arn)
 
+    def test_lambda_with_configs_deployed(self):
+        function_name = 'sls-test-local-test'
+
+        lambda_client = aws_stack.connect_to_service('lambda')
+
+        resp = lambda_client.list_functions()
+        function = [fn for fn in resp['Functions'] if fn['FunctionName'] == function_name][0]
+        self.assertIn('Version', function)
+        version = function['Version']
+
+        resp = lambda_client.get_function_event_invoke_config(FunctionName=function_name, Qualifier=version)
+        self.assertEqual(resp.get('MaximumRetryAttempts'), 2)
+        self.assertEqual(resp.get('MaximumEventAgeInSeconds'), 7200)
+
     def test_apigateway_deployed(self):
         function_name = 'sls-test-local-router'
 
@@ -116,11 +133,11 @@ class TestServerless(unittest.TestCase):
         self.assertEqual(len(api_ids), 1)
 
         resources = apigw_client.get_resources(restApiId=api_ids[0])['items']
-        proxy_resources = [res for res in resources if res['path'] == '/{proxy+}']
+        proxy_resources = [res for res in resources if res['path'] == '/foo/bar']
         self.assertEqual(len(proxy_resources), 1)
 
         proxy_resource = proxy_resources[0]
-        for method in ['DELETE', 'OPTIONS', 'GET', 'POST', 'PUT', 'PATCH', 'HEAD']:
+        for method in ['DELETE', 'POST', 'PUT']:
             self.assertIn(method, proxy_resource['resourceMethods'])
             resource_method = proxy_resource['resourceMethods'][method]
             self.assertIn(aws_stack.lambda_function_arn(function_name), resource_method['methodIntegration']['uri'])

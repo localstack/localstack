@@ -17,13 +17,15 @@ from localstack.constants import (
     PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
 from localstack.utils.common import (
     empty_context_manager, run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
-    get_service_protocol, in_docker, safe_requests as requests)
+    get_service_protocol, in_docker, safe_requests as requests,
+    parse_request_data)
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.utils.aws.aws_stack import Environment, is_internal_call_context, set_default_region_in_headers
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
 from localstack.services.sqs.sqs_listener import is_sqs_queue_url
 from localstack.utils.server.http2_server import HTTPErrorResponse
 from localstack.services.cloudwatch.cloudwatch_listener import PATH_GET_RAW_METRICS
+from localstack.services.s3.s3_utils import S3_VIRTUAL_HOSTNAME_REGEX
 
 LOG = logging.getLogger(__name__)
 
@@ -52,7 +54,9 @@ class ProxyListenerEdge(ProxyListener):
         headers.get(HEADER_KILL_SIGNAL) and os._exit(0)
 
         target = headers.get('x-amz-target', '')
-        auth_header = headers.get('authorization', '')
+        auth_header = get_auth_string(method, path, headers, data)
+        if auth_header and not headers.get('authorization'):
+            headers['authorization'] = auth_header
         host = headers.get('host', '')
         headers[HEADER_LOCALSTACK_EDGE_URL] = 'https://%s' % host
 
@@ -147,6 +151,50 @@ def do_forward_request_network(port, method, path, data, headers):
     return response
 
 
+def get_auth_string(method, path, headers, data=None):
+    """
+    Get Auth header from Header (this is how aws client's like boto typically
+    provide it) or from query string or url encoded parameters (sometimes
+    happens with presigned requests. Always return in the Authorization Header
+    form.
+
+    Typically an auth string comes in as a header:
+
+        Authorization: AWS4-HMAC-SHA256 \
+        Credential=_not_needed_locally_/20210312/us-east-1/sqs/aws4_request, \
+        SignedHeaders=content-type;host;x-amz-date, \
+        Signature=9277c941f4ecafcc0f290728e50cd7a3fa0e41763fbd2373fcdd3faf2dbddc2e
+
+    Here's what Authorization looks like as part of an presigned GET request:
+
+       &X-Amz-Algorithm=AWS4-HMAC-SHA256\
+       &X-Amz-Credential=test%2F20210313%2Fus-east-1%2Fsqs%2Faws4_request\
+       &X-Amz-Date=20210313T011059Z&X-Amz-Expires=86400000&X-Amz-SignedHeaders=host\
+       &X-Amz-Signature=2c652c7bc9a3b75579db3d987d1e6dd056f0ac776c1e1d4ec91e2ce84e5ad3ae
+
+    """
+
+    auth_header = headers.get('authorization', '')
+
+    if auth_header:
+        return auth_header
+
+    data_components = parse_request_data(method, path, data)
+    algorithm = data_components.get('X-Amz-Algorithm')
+    credential = data_components.get('X-Amz-Credential')
+    signature = data_components.get('X-Amz-Signature')
+    signed_headers = data_components.get('X-Amz-SignedHeaders')
+
+    if algorithm and credential and signature and signed_headers:
+        return (
+            f'{algorithm} Credential={credential}, ' +
+            f'SignedHeaders={signed_headers}, ' +
+            f'Signature={signature}'
+        )
+
+    return ''
+
+
 def get_api_from_headers(headers, method=None, path=None, data=None):
     """ Determine API and backend port based on Authorization headers. """
 
@@ -177,8 +225,7 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = 'cognito-idp', config.PORT_COGNITO_IDP
     elif target.startswith('AWSCognitoIdentityService') or 'cognito-identity.' in host:
         result = 'cognito-identity', config.PORT_COGNITO_IDENTITY
-    elif result[0] == 's3' or re.match(r'.*s3(\-website)?\.([^\.]+\.)?amazonaws.com', host):
-        host = re.sub(r's3-website\..*\.amazonaws', 's3.amazonaws', host)
+    elif result[0] == 's3' or re.match(S3_VIRTUAL_HOSTNAME_REGEX, host):
         result = 's3', config.PORT_S3
     elif result[0] == 'states' in auth_header or host.startswith('states.'):
         result = 'stepfunctions', config.PORT_STEPFUNCTIONS
@@ -197,7 +244,7 @@ def get_api_from_headers(headers, method=None, path=None, data=None):
         result = result_before = 'dynamodbstreams', config.PORT_DYNAMODBSTREAMS
     elif ls_target == 'web':
         result = 'web', config.PORT_WEB_UI
-    elif result[0] == 'EventBridge':
+    elif result[0] == 'EventBridge' or target.startswith('AWSEvents'):
         result = 'events', config.PORT_EVENTS
 
     return result[0], result_before[1] or result[1], path, host
@@ -330,6 +377,12 @@ def get_api_from_custom_rules(method, path, data, headers):
     if stripped.count('/') >= 1 and method == 'PUT':
         # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
         # or `/<bucket>/object/object1/+`
+        return 's3', config.PORT_S3
+
+    auth_header = headers.get('Authorization') or ''
+
+    # detect S3 requests with "AWS id:key" Auth headers
+    if auth_header.startswith('AWS '):
         return 's3', config.PORT_S3
 
 

@@ -5,11 +5,11 @@ from localstack.utils import testutil
 from localstack.utils.aws import aws_stack
 from localstack.utils.common import load_file, clone, retry, short_uid
 from localstack.services.awslambda import lambda_api
-from localstack.services.awslambda.lambda_utils import LAMBDA_RUNTIME_PYTHON36
 from .lambdas import lambda_environment
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_LAMBDA_PYTHON = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_environment.py')
+TEST_LAMBDA_ECHO = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 TEST_LAMBDA_NAME_1 = 'lambda_sfn_1'
 TEST_LAMBDA_NAME_2 = 'lambda_sfn_2'
 TEST_RESULT_VALUE = 'testresult1'
@@ -119,6 +119,48 @@ STATE_MACHINE_CATCH = {
         }
     }
 }
+TEST_LAMBDA_NAME_5 = 'lambda_intrinsic_sfn_5'
+STATE_MACHINE_INTRINSIC_FUNCS = {
+    'StartAt': 'state0',
+    'States': {
+        'state0': {
+            'Type': 'Pass',
+            'Result': {
+                'v1': 1,
+                'v2': 'v2'
+            },
+            'Next': 'state1'
+        },
+        'state1': {
+            'Type': 'Pass',
+            'Parameters': {
+                'lambda_params': {
+                    'FunctionName': '__tbd__',
+                    'Payload': {'values.$': 'States.Array($.v1, $.v2)'}
+                }
+            },
+            'Next': 'state2'
+        },
+        'state2': {
+            'Type': 'Task',
+            'Resource': 'arn:aws:states:::lambda:invoke',
+            'Parameters': {
+                'FunctionName.$': '$.lambda_params.FunctionName',
+                'Payload.$': 'States.StringToJson(States.JsonToString($.lambda_params.Payload))'
+            },
+            'Next': 'state3'
+        },
+        'state3': {
+            'Type': 'Task',
+            'Resource': '__tbd__',
+            'ResultSelector': {
+                'payload.$': '$'
+            },
+            'ResultPath': '$.result_value',
+            'End': True
+        }
+    }
+}
 
 
 class TestStateMachine(unittest.TestCase):
@@ -131,32 +173,35 @@ class TestStateMachine(unittest.TestCase):
 
         zip_file = testutil.create_lambda_archive(
             load_file(TEST_LAMBDA_PYTHON),
-            get_content=True,
-            runtime=LAMBDA_RUNTIME_PYTHON36
+            get_content=True
+        )
+        zip_file2 = testutil.create_lambda_archive(
+            load_file(TEST_LAMBDA_ECHO),
+            get_content=True
         )
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_1,
             zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
             envvars={'Hello': TEST_RESULT_VALUE}
         )
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_2,
             zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
             envvars={'Hello': TEST_RESULT_VALUE}
         )
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_3,
             zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
             envvars={'Hello': 'Replace Value'}
         )
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_4,
             zip_file=zip_file,
-            runtime=LAMBDA_RUNTIME_PYTHON36,
             envvars={'Hello': TEST_RESULT_VALUE}
+        )
+        testutil.create_lambda_function(
+            func_name=TEST_LAMBDA_NAME_5,
+            zip_file=zip_file2
         )
 
     @classmethod
@@ -297,6 +342,41 @@ class TestStateMachine(unittest.TestCase):
             # assert that the result is correct
             result = self._get_execution_results(sm_arn)
             self.assertEqual(result.get('handled'), {'Hello': TEST_RESULT_VALUE})
+
+        # assert that the lambda has been invoked by the SM execution
+        retry(check_invocations, sleep=1, retries=10)
+
+        # clean up
+        self.cleanup(sm_arn, state_machines_before)
+
+    def test_intrinsic_functions(self):
+        state_machines_before = self.sfn_client.list_state_machines()['stateMachines']
+
+        # create state machine
+        role_arn = aws_stack.role_arn('sfn_role')
+        definition = clone(STATE_MACHINE_INTRINSIC_FUNCS)
+        lambda_arn_1 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_5)
+        lambda_arn_2 = aws_stack.lambda_function_arn(TEST_LAMBDA_NAME_5)
+        if isinstance(definition['States']['state1'].get('Parameters'), dict):
+            definition['States']['state1']['Parameters']['lambda_params']['FunctionName'] = lambda_arn_1
+            definition['States']['state3']['Resource'] = lambda_arn_2
+        definition = json.dumps(definition)
+        sm_name = 'intrinsic-%s' % short_uid()
+        result = self.sfn_client.create_state_machine(name=sm_name, definition=definition, roleArn=role_arn)
+
+        # run state machine
+        sm_arn = self.get_machine_arn(sm_name)
+        lambda_api.LAMBDA_EXECUTOR.function_invoke_times.clear()
+        input = {}
+        result = self.sfn_client.start_execution(stateMachineArn=sm_arn, input=json.dumps(input))
+        self.assertTrue(result.get('executionArn'))
+
+        def check_invocations():
+            self.assertIn(lambda_arn_1, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
+            self.assertIn(lambda_arn_2, lambda_api.LAMBDA_EXECUTOR.function_invoke_times)
+            # assert that the result is correct
+            result = self._get_execution_results(sm_arn)
+            self.assertEqual(result.get('result_value'), {'payload': {'values': [1, 'v2']}})
 
         # assert that the lambda has been invoked by the SM execution
         retry(check_invocations, sleep=1, retries=10)

@@ -90,7 +90,7 @@ def handler(event, context):
             forwarding_target = ddb_new_image['data'][MSG_BODY_MESSAGE_TARGET]
             target_name = forwarding_target.split(':')[-1]
             if forwarding_target.startswith('kinesis:'):
-                ddb_new_image['data'][MSG_BODY_MESSAGE_TARGET] = 's3:/test_chain_result'
+                ddb_new_image['data'][MSG_BODY_MESSAGE_TARGET] = 's3:test_chain_result'
                 kinesis_record['Data'] = json.dumps(ddb_new_image['data'])
                 forward_event_to_target_stream(kinesis_record, target_name)
             elif forwarding_target.startswith('s3:'):

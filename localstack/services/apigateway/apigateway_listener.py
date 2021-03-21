@@ -300,7 +300,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
         resource_path, context={}, resource_id=None, response_templates={}):
 
     relative_path, query_string_params = extract_query_string_params(path=invocation_path)
-    integration_type = integration.get('type') or integration.get('integrationType')
+    integration_type_orig = integration.get('type') or integration.get('integrationType') or ''
+    integration_type = integration_type_orig.upper()
     uri = integration.get('uri') or integration.get('integrationUri')
 
     if (uri.startswith('arn:aws:apigateway:') and ':lambda:path' in uri) or uri.startswith('arn:aws:lambda'):
@@ -327,7 +328,7 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
 
             result = lambda_api.process_apigateway_invocation(func_arn, relative_path, data_str,
                 stage, api_id, headers, path_params=path_params, query_string_params=query_string_params,
-                method=method, resource_path=path, request_context=request_context,
+                method=method, resource_path=resource_path, request_context=request_context,
                 event_context=context, stage_variables=stage_variables)
 
             if isinstance(result, FlaskResponse):
@@ -359,7 +360,8 @@ def invoke_rest_api_integration(api_id, stage, integration, method, path, invoca
 
             return response
 
-        msg = 'API Gateway AWS integration action URI "%s", method "%s" not yet implemented' % (uri, method)
+        msg = 'API Gateway %s integration action "%s", method "%s" not yet implemented' % (
+            integration_type, uri, method)
         LOGGER.warning(msg)
         return make_error_response(msg, 404)
 

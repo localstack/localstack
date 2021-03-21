@@ -66,6 +66,7 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **API Gateway V2 (WebSockets support)**
 * **AppSync**
 * **Athena**
+* **Batch**
 * **CloudFront**
 * **CloudTrail**
 * **Cognito**
@@ -90,27 +91,6 @@ In addition to the above, the [**Pro version** of LocalStack](https://localstack
 * **Test report dashboards**
 * ...and much, much more to come! (Check out our **feature roadmap** here: https://roadmap.localstack.cloud)
 
-## Why LocalStack?
-
-LocalStack builds on existing best-of-breed mocking/testing tools, notably
-[kinesalite](https://github.com/mhart/kinesalite)/[dynalite](https://github.com/mhart/dynalite)
-and [moto](https://github.com/spulec/moto), [ElasticMQ](https://github.com/softwaremill/elasticmq),
-and others. While these tools are *awesome* (!), they lack functionality for certain use cases.
-LocalStack combines the tools, makes them interoperable, and adds important missing functionality
-on top of them:
-
-* **Error injection:** LocalStack allows to inject errors frequently occurring in real Cloud environments,
-  for instance `ProvisionedThroughputExceededException` which is thrown by Kinesis or DynamoDB if the amount of
-  read/write throughput is exceeded.
-* **Isolated processes**: Services in LocalStack can be run in separate processes.
-  In moto, components are often hard-wired in memory (e.g., when forwarding a message on an SNS topic to an
-  SQS queue, the queue endpoint is looked up in a local hash map). In contrast, LocalStack services live in
-  isolation (separate processes/threads communicating via HTTP), which fosters true decoupling and more closely
-  resembles the real cloud environment.
-* **Pluggable services**: All services in LocalStack are easily pluggable (and replaceable), due to the fact that
-  we are using isolated processes for each service. This allows us to keep the framework up-to-date and select
-  best-of-breed mocks for each individual service.
-
 ## Requirements
 
 * `python` (both Python 2.x and 3.x supported)
@@ -129,7 +109,7 @@ pip install localstack
 should be installed and started entirely under a local non-root user. If you have problems
 with permissions in MacOS X Sierra, install with `pip install --user localstack`
 
-## Running 
+## Running
 
 By default, LocalStack gets started inside a Docker container using this command:
 
@@ -235,7 +215,7 @@ You can pass the following environment variables to LocalStack:
   Kinesis, DynamoDB, Elasticsearch, S3, Secretsmanager, SSM, SQS, SNS). Set it to `/tmp/localstack/data` to enable persistence
   (`/tmp/localstack` is mounted into the Docker container), leave blank to disable
   persistence (default).
-* `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated, and requires to use the `localstack/localstack-full` Docker image.
+* `PORT_WEB_UI`: Port for the Web user interface / dashboard (default: `8080`). Note that the Web UI is now deprecated (needs to be activated with `START_WEB=1`), and requires to use the `localstack/localstack-full` Docker image.
 * `<SERVICE>_BACKEND`: Custom endpoint URL to use for a specific service, where `<SERVICE>` is the uppercase
   service name (currently works for: `APIGATEWAY`, `CLOUDFORMATION`, `DYNAMODB`, `ELASTICSEARCH`,
   `KINESIS`, `S3`, `SNS`, `SQS`). This allows to easily integrate third-party services into LocalStack.
@@ -243,7 +223,7 @@ You can pass the following environment variables to LocalStack:
 * `DOCKER_FLAGS`: Allows to pass custom flags (e.g., volume mounts) to "docker run" when running LocalStack in Docker.
 * `DOCKER_CMD`: Shell command used to run Docker containers, e.g., set to `"sudo docker"` to run as sudo (default: `docker`).
 * `SKIP_INFRA_DOWNLOADS`: Whether to skip downloading additional infrastructure components (e.g., specific Elasticsearch versions).
-* `START_WEB`: Flag to control whether the Web UI should be started in Docker (values: `0`/`1`; default: `1`).
+* `START_WEB`: Flag to control whether the Web UI should be started in Docker (default: `false`; deprecated).
 * `LAMBDA_FALLBACK_URL`: Fallback URL to use when a non-existing Lambda is invoked. Either records invocations in DynamoDB (value `dynamodb://<table_name>`) or forwards invocations as a POST request (value `http(s)://...`).
 * `LAMBDA_FORWARD_URL`: URL used to forward all Lambda invocations (useful to run Lambdas via an external service).
 * `EXTRA_CORS_ALLOWED_HEADERS`: Comma-separated list of header names to be be added to `Access-Control-Allow-Headers` CORS header
@@ -268,6 +248,15 @@ An example passing the above environment variables to LocalStack to start Kinesi
 
 ```
 SERVICES=kinesis,lambda,sqs,dynamodb localstack start
+```
+
+### Verifying your docker-compose configuration using the command line
+
+You can use the `localstack config validate` command to check for common mis-configurations.
+
+By default it validates `docker-compose.yml`, the target file can be specified using the `--file` argument, e.g.,:
+```
+localstack config validate --file=localstack-docker-compose.yml
 ```
 
 ### Dynamically updating configuration at runtime

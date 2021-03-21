@@ -30,7 +30,7 @@ from localstack.services.awslambda.lambda_api import (
 from localstack.services.awslambda.lambda_utils import (
     LAMBDA_RUNTIME_DOTNETCORE2, LAMBDA_RUNTIME_DOTNETCORE31, LAMBDA_RUNTIME_RUBY25, LAMBDA_RUNTIME_PYTHON27,
     LAMBDA_RUNTIME_PYTHON36, LAMBDA_RUNTIME_JAVA8, LAMBDA_RUNTIME_JAVA11, LAMBDA_RUNTIME_NODEJS810,
-    LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS12X)
+    LAMBDA_RUNTIME_PROVIDED, LAMBDA_RUNTIME_PYTHON37, LAMBDA_RUNTIME_NODEJS14X)
 from .lambdas import lambda_integration
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
@@ -86,12 +86,15 @@ def _run_forward_to_fallback_url(url, fallback=True, lambda_name=None, num_reque
     else:
         config.LAMBDA_FORWARD_URL = url
     try:
+        result = []
         for i in range(num_requests):
             lambda_name = lambda_name or 'non-existing-lambda-%s' % i
             ctx = {'env': 'test'}
-            lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"foo":"bar"}',
+            tmp = lambda_client.invoke(FunctionName=lambda_name, Payload=b'{"foo":"bar"}',
                 InvocationType='RequestResponse',
                 ClientContext=to_str(base64.b64encode(to_bytes(json.dumps(ctx)))))
+        result.append(tmp)
+        return result
     finally:
         if fallback:
             config.LAMBDA_FALLBACK_URL = ''
@@ -176,8 +179,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
         class MyUpdateListener(ProxyListener):
             def forward_request(self, method, path, data, headers):
                 records.append({'data': data, 'headers': headers, 'method': method, 'path': path})
-                return 200
+                return lambda_result
 
+        lambda_result = {'result': 'test123'}
         local_port = get_free_tcp_port()
         proxy = start_proxy(local_port, backend_url=None, update_listener=MyUpdateListener())
 
@@ -198,7 +202,7 @@ class TestLambdaBaseFeatures(unittest.TestCase):
 
         # test 2: forward to LAMBDA_FORWARD_URL
         records = []
-        _run_forward_to_fallback_url(local_url, lambda_name=lambda_name, fallback=False)
+        inv_results = _run_forward_to_fallback_url(local_url, lambda_name=lambda_name, fallback=False)
         items_after = len(records)
         for record in records:
             headers = record['headers']
@@ -209,6 +213,9 @@ class TestLambdaBaseFeatures(unittest.TestCase):
             self.assertEqual(headers.get('X-Amz-Invocation-Type'), 'RequestResponse')
             self.assertEqual(json.loads(to_str(record['data'])), {'foo': 'bar'})
         self.assertEqual(items_after, 3)
+        # assert result payload matches
+        response_payload = inv_results[0]['Payload'].read()
+        self.assertEqual(json.loads(response_payload), lambda_result)
 
         # clean up / shutdown
         lambda_client = aws_stack.connect_to_service('lambda')
@@ -1281,7 +1288,7 @@ class TestNodeJSRuntimes(LambdaTestBase):
         testutil.create_lambda_function(
             func_name=TEST_LAMBDA_NAME_JS,
             zip_file=testutil.create_zip_file(handler_file, get_content=True),
-            runtime=LAMBDA_RUNTIME_NODEJS12X,
+            runtime=LAMBDA_RUNTIME_NODEJS14X,
             handler='lambda_handler.handler'
         )
 
@@ -1486,7 +1493,11 @@ class TestJavaRuntimes(LambdaTestBase):
         shutil.copy(jar_without_libs_file, os.path.join(zip_lib_dir, 'lambda.jar'))
         java_zip_with_lib = testutil.create_zip_file(zip_dir, get_content=True)
 
-        for archive in [java_jar_with_lib, java_zip_with_lib]:
+        java_zip_with_lib_gradle = load_file(os.path.join(
+            THIS_FOLDER, 'lambdas', 'java', 'build', 'distributions', 'lambda-function-built-by-gradle.zip'
+        ), mode='rb')
+
+        for archive in [java_jar_with_lib, java_zip_with_lib, java_zip_with_lib_gradle]:
             lambda_name = 'test-%s' % short_uid()
             testutil.create_lambda_function(func_name=lambda_name,
                                             zip_file=archive, runtime=LAMBDA_RUNTIME_JAVA11,
@@ -1497,6 +1508,7 @@ class TestJavaRuntimes(LambdaTestBase):
 
             self.assertEqual(result['StatusCode'], 200)
             self.assertIn('echo', to_str(result_data))
+
             # clean up
             testutil.delete_lambda_function(lambda_name)
 

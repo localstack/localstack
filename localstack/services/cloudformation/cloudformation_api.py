@@ -33,9 +33,9 @@ class CloudFormationRegion(RegionBackend):
         output_keys = {}
         for stack_id, stack in self.stacks.items():
             for output in stack.outputs:
-                if 'ExportName' not in output:
+                export_name = output.get('ExportName')
+                if not export_name:
                     continue
-                export_name = output['ExportName']
                 if export_name in output_keys:
                     # TODO: raise exception on stack creation in case of duplicate exports
                     LOG.warning('Found duplicate export name %s in stacks: %s %s' % (
@@ -64,6 +64,7 @@ class Stack(object):
         self.template['StackId'] = self.metadata['StackId'] = (self.metadata.get('StackId') or
             aws_stack.cloudformation_stack_arn(self.stack_name, short_uid()))
         self.template['Parameters'] = self.template.get('Parameters') or {}
+        self.template['Outputs'] = self.template.get('Outputs') or {}
         # initialize metadata
         self.metadata['Parameters'] = self.metadata.get('Parameters') or []
         self.metadata['StackStatus'] = 'CREATE_IN_PROGRESS'
@@ -100,13 +101,16 @@ class Stack(object):
 
     def set_stack_status(self, status):
         self.metadata['StackStatus'] = status
+        self.add_stack_event(self.stack_name, self.stack_id, status)
+
+    def add_stack_event(self, resource_id, physical_res_id, status):
         event = {
             'EventId': long_uid(),
             'Timestamp': timestamp_millis(),
             'StackId': self.stack_id,
             'StackName': self.stack_name,
-            'LogicalResourceId': self.stack_name,
-            'PhysicalResourceId': self.stack_id,
+            'LogicalResourceId': resource_id,
+            'PhysicalResourceId': physical_res_id,
             'ResourceStatus': status,
             'ResourceType': 'AWS::CloudFormation::Stack'
         }
@@ -123,6 +127,8 @@ class Stack(object):
         state['StackName'] = state.get('StackName') or self.stack_name
         state['StackId'] = state.get('StackId') or self.stack_id
         state['ResourceType'] = state.get('ResourceType') or self.resources[resource_id].get('Type')
+        state['LastUpdatedTimestamp'] = timestamp_millis()
+        self.add_stack_event(resource_id, physical_res_id, status)
 
     def resource_status(self, resource_id):
         result = self._lookup(self.resource_states, resource_id)
@@ -293,6 +299,11 @@ class StackChangeSet(Stack):
         result.update(self.resources)
         return result
 
+    @property
+    def changes(self):
+        result = self.metadata['Changes'] = self.metadata.get('Changes', [])
+        return result
+
 
 # --------------
 # API ENDPOINTS
@@ -302,8 +313,17 @@ def create_stack(req_params):
     state = CloudFormationRegion.get()
     template_deployer.prepare_template_body(req_params)
     template = template_preparer.parse_template(req_params['TemplateBody'])
-    template['StackName'] = req_params.get('StackName')
+    stack_name = template['StackName'] = req_params.get('StackName')
     stack = Stack(req_params, template)
+
+    # find existing stack with same name, and remove it if this stack is in DELETED state
+    existing = ([s for s in state.stacks.values() if s.stack_name == stack_name] or [None])[0]
+    if existing:
+        if 'DELETE' not in existing.status:
+            return error_response('Stack named "%s" already exists with status "%s"' % (
+                stack_name, existing.status), code=400, code_string='ValidationError')
+        state.stacks.pop(existing.stack_id)
+
     state.stacks[stack.stack_id] = stack
     LOG.debug('Creating stack "%s" with %s resources ...' % (stack.stack_name, len(stack.template_resources)))
     deployer = template_deployer.TemplateDeployer(stack)
@@ -420,6 +440,8 @@ def create_change_set(req_params):
         state.stacks[stack.stack_id] = stack
         stack.set_stack_status('CREATE_COMPLETE')
     change_set = StackChangeSet(req_params, template)
+    deployer = template_deployer.TemplateDeployer(stack)
+    deployer.construct_changes(stack, change_set, change_set_id=change_set.change_set_id, append_to_changeset=True)
     stack.change_sets.append(change_set)
     change_set.metadata['Status'] = 'CREATE_COMPLETE'
     return {'StackId': change_set.stack_id, 'Id': change_set.change_set_id}
@@ -436,9 +458,17 @@ def execute_change_set(req_params):
     deployer = template_deployer.TemplateDeployer(change_set.stack)
     deployer.apply_change_set(change_set)
     change_set.stack.metadata['ChangeSetId'] = change_set.change_set_id
-    stack = find_stack(stack_name)
-    stack.set_stack_status('CREATE_COMPLETE')
     return {}
+
+
+def list_change_sets(req_params):
+    stack_name = req_params.get('StackName')
+    stack = find_stack(stack_name)
+    if not stack:
+        return error_response('Unable to find stack "%s"' % stack_name)
+    result = [cs.metadata for cs in stack.change_sets]
+    result = {'Summaries': {'member': result}}
+    return result
 
 
 def describe_change_set(req_params):
@@ -516,10 +546,11 @@ def get_template_summary(req_params):
         stack = find_stack(stack_name)
         if not stack:
             return stack_not_found_error(stack_name)
-    template_deployer.prepare_template_body(req_params)
-    template = template_preparer.parse_template(req_params['TemplateBody'])
-    req_params['StackName'] = 'tmp-stack'
-    stack = Stack(req_params, template)
+    else:
+        template_deployer.prepare_template_body(req_params)
+        template = template_preparer.parse_template(req_params['TemplateBody'])
+        req_params['StackName'] = 'tmp-stack'
+        stack = Stack(req_params, template)
     result = stack.describe_details()
     id_summaries = {}
     for resource_id, resource in stack.template_resources.items():
@@ -564,6 +595,7 @@ ENDPOINTS = {
     'ExecuteChangeSet': execute_change_set,
     'GetTemplate': get_template,
     'GetTemplateSummary': get_template_summary,
+    'ListChangeSets': list_change_sets,
     'ListExports': list_exports,
     'ListImports': list_imports,
     'ListStacks': list_stacks,
