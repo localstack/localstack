@@ -39,15 +39,6 @@ X-Amz-Date: 20210202T193629Z
 Accept-Encoding: gzip
 
 ---
-GET /my-bucket1?cors= HTTP/1.1
-Host: localhost:4566
-User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
-Authorization: AWS4-HMAC-SHA256 Credential=mock_access_key/20210202/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=75f8a12677ac1d0a67b96c9573ed61c9432fa777a5470f895e4d3808dbcb7c67
-X-Amz-Content-Sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-X-Amz-Date: 20210202T193629Z
-Accept-Encoding: gzip
-
----
 GET /my-bucket1?versioning= HTTP/1.1
 Host: localhost:4566
 User-Agent: aws-sdk-go/1.37.0 (go1.15.5; darwin; amd64) APN/1.0 HashiCorp/1.0 Terraform/0.13.5 (+https://www.terraform.io)
