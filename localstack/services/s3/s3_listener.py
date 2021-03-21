@@ -1048,7 +1048,6 @@ class ProxyListenerS3(PersistingProxyListener):
 
         modified_data = None
 
-
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98
         # TODO we should evaluate whether to replace moto s3 with scality/S3:
