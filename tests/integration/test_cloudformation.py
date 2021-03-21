@@ -2056,3 +2056,30 @@ class CloudFormationTest(unittest.TestCase):
 
         apis = [item for item in rs['items'] if item['name'] == 'DemoApi_dev']
         self.assertEqual(len(apis), 0)
+
+    def test_cfn_with_exports(self):
+        cloudformation = aws_stack.connect_to_service('cloudformation')
+
+        # fetch initial list of exports
+        exports_before = cloudformation.list_exports()['Exports']
+
+        template = load_file(os.path.join(THIS_FOLDER, 'templates', 'template32.yaml'))
+
+        stack_name = 'stack-%s' % short_uid()
+        create_and_await_stack(
+            StackName=stack_name,
+            TemplateBody=template
+        )
+
+        exports = cloudformation.list_exports()['Exports']
+        self.assertEqual(len(exports_before) + 6, len(exports))
+        export_names = [e['Name'] for e in exports]
+        self.assertIn('{}-FullAccessCentralControlPolicy'.format(stack_name), export_names)
+        self.assertIn('{}-ReadAccessCentralControlPolicy'.format(stack_name), export_names)
+        self.assertIn('{}-cc-groups-stream'.format(stack_name), export_names)
+        self.assertIn('{}-cc-scenes-stream'.format(stack_name), export_names)
+        self.assertIn('{}-cc-customscenes-stream'.format(stack_name), export_names)
+        self.assertIn('{}-cc-schedules-stream'.format(stack_name), export_names)
+
+        # clean up
+        self.cleanup(stack_name)
