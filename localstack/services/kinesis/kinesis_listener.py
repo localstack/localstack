@@ -171,13 +171,13 @@ class ProxyListenerKinesis(ProxyListener):
                     # Remove double quotes from data written as bytes
                     # https://github.com/localstack/localstack/issues/3588
                     tmp = bytearray(record['Data']['data'])
-                    tmp = base64.b64encode(tmp).decode('utf-8')
-                    tmp = base64.b64decode(tmp).decode('utf-8').strip('"')
-                    record['Data'] = bytearray(tmp, 'utf-8')
-                elif isinstance(record['Data'], str):
-                    tmp = base64.b64decode(record['Data']).decode('utf-8').strip('"')
-                    tmp = bytes(tmp, 'utf-8')
-                    record['Data'] = base64.b64encode(tmp).decode('utf-8')
+                    if len(tmp) >= 2 and tmp[0] == tmp[-1] == b'"'[0]:
+                        record['Data'] = tmp[1:-1]
+                else:
+                    tmp = base64.b64decode(record['Data'])
+                    if len(tmp) >= 2 and tmp[0] == tmp[-1] == b'"'[0]:
+                        tmp = tmp[1:-1]
+                    record['Data'] = to_str(base64.b64encode(tmp))
 
             response._content = cbor2.dumps(results) if encoding_type == APPLICATION_CBOR else json.dumps(results)
             return response
