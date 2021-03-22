@@ -304,7 +304,7 @@ class IntegrationTest(unittest.TestCase):
             self.assertEqual(len(modifies), num_put_existing_items + num_updates_ddb)
 
         # this can take a long time in CI, make sure we give it enough time/retries
-        retry(check_events, retries=15, sleep=2)
+        retry(check_events, retries=15, sleep=3)
 
         # check cloudwatch notifications
         def check_cw_invocations():
