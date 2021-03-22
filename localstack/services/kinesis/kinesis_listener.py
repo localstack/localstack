@@ -41,12 +41,10 @@ class ProxyListenerKinesis(ProxyListener):
             consumer = clone(data)
             consumer['ConsumerStatus'] = 'ACTIVE'
             consumer['ConsumerARN'] = '%s/consumer/%s' % (data['StreamARN'], data['ConsumerName'])
-            consumer['ConsumerCreationTimestamp'] = float(now_utc())
+            consumer['ConsumerCreationTimestamp'] = now_utc()
             consumer = json_safe(consumer)
             STREAM_CONSUMERS.append(consumer)
 
-            if encoding_type is not APPLICATION_JSON:
-                consumer['ConsumerCreationTimestamp'] = int(consumer['ConsumerCreationTimestamp'])
             result = {'Consumer': consumer}
 
             return encoded_response(result, encoding_type)
@@ -93,7 +91,7 @@ class ProxyListenerKinesis(ProxyListener):
             return encoded_response(result, encoding_type)
 
         elif action == 'SubscribeToShard':
-            result = subscribe_to_shard(data)
+            result = subscribe_to_shard(data, headers)
             return result
 
         if random.random() < config.KINESIS_ERROR_PROBABILITY:
@@ -240,12 +238,15 @@ def encoded_response(data, encoding_type=APPLICATION_JSON, status_code=200):
     return response
 
 
-def subscribe_to_shard(data):
+def subscribe_to_shard(data, headers):
     kinesis = aws_stack.connect_to_service('kinesis')
     stream_name = find_stream_for_consumer(data['ConsumerARN'])
     iter_type = data['StartingPosition']['Type']
     iterator = kinesis.get_shard_iterator(StreamName=stream_name,
         ShardId=data['ShardId'], ShardIteratorType=iter_type)['ShardIterator']
+    data_needs_encoding = False
+    if 'java' in headers.get('User-Agent', '').split(' ')[0]:
+        data_needs_encoding = True
 
     def send_events():
         yield convert_to_binary_event_payload('', event_type='initial-response')
@@ -257,11 +258,14 @@ def subscribe_to_shard(data):
             records = result.get('Records', [])
             for record in records:
                 record['ApproximateArrivalTimestamp'] = record['ApproximateArrivalTimestamp'].timestamp()
-                record['Data'] = to_str(base64.b64encode(record['Data']))
+                if data_needs_encoding:
+                    record['Data'] = base64.b64encode(record['Data'])
+                record['Data'] = to_str(record['Data'])
             if not records:
                 time.sleep(1)
                 continue
-            result = json.dumps({'Records': records})
+
+            result = json.dumps({'Records': json_safe(records)})
             yield convert_to_binary_event_payload(result, event_type='SubscribeToShardEvent')
 
     headers = {}
