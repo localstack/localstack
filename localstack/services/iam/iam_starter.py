@@ -7,9 +7,9 @@ from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_T
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.models import (
     iam_backend as moto_iam_backend, aws_managed_policies,
-    AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy
+    AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy, Role
 )
-from localstack import config
+from localstack import config, constants
 from localstack.utils.common import short_uid
 from localstack.services.infra import start_moto_server
 
@@ -242,6 +242,13 @@ def apply_patches():
     # support service linked roles
 
     if not hasattr(IamResponse, 'create_service_linked_role'):
+        @property
+        def role_arn(self):
+            return getattr(self, 'service_linked_role_arn', None) or role_arn_orig(self)
+
+        role_arn_orig = Role.arn
+        Role.arn = role_arn
+
         def create_service_linked_role(self):
             name_prefix = 'service-linked-role'
             service_name = self._get_param('AWSServiceName')
@@ -255,6 +262,8 @@ def apply_patches():
                 role_name='%s-%s' % (name_prefix, short_uid()), assume_role_policy_document=policy_doc, path='/',
                 permissions_boundary='', description=description, tags={}, max_session_duration=3600)
             template = self.response_template(GET_ROLE_TEMPLATE)
+            role.service_linked_role_arn = 'arn:aws:iam::{0}:role/aws-service-role/{1}/{2}'.format(
+                constants.TEST_AWS_ACCOUNT_ID, service_name, role.name)
             result = re.sub(r'<(/)?GetRole', r'<\1CreateServiceLinkedRole', template.render(role=role))
             return result
 
