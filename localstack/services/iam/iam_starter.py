@@ -1,15 +1,19 @@
 import re
 import json
+import xmltodict
 from copy import deepcopy
 from urllib.parse import quote
-from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE
+from moto.iam.responses import IamResponse, GENERIC_EMPTY_TEMPLATE, LIST_ROLES_TEMPLATE, GET_ROLE_TEMPLATE
 from moto.iam.policy_validation import VALID_STATEMENT_ELEMENTS, IAMPolicyDocumentValidator
 from moto.iam.models import (
     iam_backend as moto_iam_backend, aws_managed_policies,
     AWSManagedPolicy, IAMNotFoundException, InlinePolicy, Policy
 )
 from localstack import config
+from localstack.utils.common import short_uid
 from localstack.services.infra import start_moto_server
+
+XMLNS_IAM = 'https://iam.amazonaws.com/doc/2010-05-08/'
 
 
 USER_RESPONSE_TEMPLATE = """<{{ action }}UserResponse>
@@ -66,7 +70,7 @@ ADDITIONAL_MANAGED_POLICIES = {
 
 
 SIMULATE_PRINCIPAL_POLICY_RESPONSE = """
-<SimulatePrincipalPolicyResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+<SimulatePrincipalPolicyResponse xmlns="__xmlns__">
   <SimulatePrincipalPolicyResult>
     <IsTruncated>false</IsTruncated>
     <EvaluationResults>
@@ -96,7 +100,7 @@ SIMULATE_PRINCIPAL_POLICY_RESPONSE = """
   <ResponseMetadata>
     <RequestId>004d7059-4c14-11e5-b121-bd8c7EXAMPLE</RequestId>
   </ResponseMetadata>
-</SimulatePrincipalPolicyResponse>"""
+</SimulatePrincipalPolicyResponse>""".replace('__xmlns__', XMLNS_IAM)
 
 
 def apply_patches():
@@ -234,6 +238,55 @@ def apply_patches():
             pass
 
     InlinePolicy.unapply_policy = inline_policy_unapply_policy
+
+    # support service linked roles
+
+    if not hasattr(IamResponse, 'create_service_linked_role'):
+        def create_service_linked_role(self):
+            name_prefix = 'service-linked-role'
+            service_name = self._get_param('AWSServiceName')
+            description = self._get_param('Description')
+            # TODO: how to support "CustomSuffix" API request parameter?
+            policy_doc = json.dumps({
+                'Version': '2012-10-17', 'Statement': [
+                    {'Effect': 'Allow', 'Principal': {'Service': service_name}, 'Action': 'sts:AssumeRole'}]
+            })
+            role = moto_iam_backend.create_role(
+                role_name='%s-%s' % (name_prefix, short_uid()), assume_role_policy_document=policy_doc, path='/',
+                permissions_boundary='', description=description, tags={}, max_session_duration=3600)
+            template = self.response_template(GET_ROLE_TEMPLATE)
+            result = re.sub(r'<(/)?GetRole', r'<\1CreateServiceLinkedRole', template.render(role=role))
+            return result
+
+        IamResponse.create_service_linked_role = create_service_linked_role
+
+    if not hasattr(IamResponse, 'delete_service_linked_role'):
+        def delete_service_linked_role(self):
+            role_name = self._get_param('RoleName')
+            moto_iam_backend.delete_role(role_name)
+            result = {
+                'DeleteServiceLinkedRoleResponse': {
+                    '@xmlns': XMLNS_IAM,
+                    'DeleteServiceLinkedRoleResult': {'DeletionTaskId': short_uid()}
+                }
+            }
+            result = xmltodict.unparse(result)
+            return result
+
+        IamResponse.delete_service_linked_role = delete_service_linked_role
+
+    if not hasattr(IamResponse, 'get_service_linked_role_deletion_status'):
+        def get_service_linked_role_deletion_status(self):
+            result = {
+                'GetServiceLinkedRoleDeletionStatusResponse': {
+                    '@xmlns': XMLNS_IAM,
+                    'GetServiceLinkedRoleDeletionStatusResult': {'Status': 'SUCCEEDED'}
+                }
+            }
+            result = xmltodict.unparse(result)
+            return result
+
+        IamResponse.get_service_linked_role_deletion_status = get_service_linked_role_deletion_status
 
 
 def start_iam(port=None, asynchronous=False, update_listener=None):
