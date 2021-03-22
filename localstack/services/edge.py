@@ -17,8 +17,7 @@ from localstack.constants import (
     PATH_USER_REQUEST, LOCALHOST, LOCALHOST_IP)
 from localstack.utils.common import (
     empty_context_manager, run, is_root, TMP_THREADS, to_bytes, truncate, to_str,
-    get_service_protocol, in_docker, safe_requests as requests,
-    parse_request_data)
+    get_service_protocol, in_docker, safe_requests as requests, parse_request_data)
 from localstack.services.infra import PROXY_LISTENERS
 from localstack.utils.aws.aws_stack import Environment, is_internal_call_context, set_default_region_in_headers
 from localstack.services.generic_proxy import ProxyListener, start_proxy_server, modify_and_forward
@@ -377,6 +376,12 @@ def get_api_from_custom_rules(method, path, data, headers):
     if stripped.count('/') >= 1 and method == 'PUT':
         # assume that this is an S3 PUT bucket object request with URL path `/<bucket>/object`
         # or `/<bucket>/object/object1/+`
+        return 's3', config.PORT_S3
+
+    auth_header = headers.get('Authorization') or ''
+
+    # detect S3 requests with "AWS id:key" Auth headers
+    if auth_header.startswith('AWS '):
         return 's3', config.PORT_S3
 
 

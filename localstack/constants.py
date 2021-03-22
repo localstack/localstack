@@ -21,6 +21,7 @@ DEFAULT_PORT_WEB_UI = 8080
 # host name for localhost
 LOCALHOST = 'localhost'
 LOCALHOST_IP = '127.0.0.1'
+LOCALHOST_HOSTNAME = 'localhost.localstack.cloud'
 
 # version of the Maven dependency with Java utility code
 LOCALSTACK_MAVEN_VERSION = '0.2.5'
@@ -139,5 +140,5 @@ INTERNAL_AWS_SECRET_ACCESS_KEY = '__internal_call__'
 OFFICIAL_IMAGES = ['localstack/localstack', 'localstack/localstack-light', 'localstack/localstack-full']
 
 # s3 virtual host name
-S3_VIRTUAL_HOSTNAME = 's3.localhost.localstack.cloud'
-S3_STATIC_WEBSITE_HOSTNAME = 's3-website.localhost.localstack.cloud'
+S3_VIRTUAL_HOSTNAME = 's3.%s' % LOCALHOST_HOSTNAME
+S3_STATIC_WEBSITE_HOSTNAME = 's3-website.%s' % LOCALHOST_HOSTNAME

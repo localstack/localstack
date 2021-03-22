@@ -354,21 +354,6 @@ RESOURCE_TO_FUNCTION = {
             }
         }
     },
-    'ApiGateway::RestApi': {
-        'create': {
-            'function': 'create_rest_api',
-            'parameters': {
-                'name': 'Name',
-                'description': 'Description'
-            }
-        },
-        'delete': {
-            'function': 'delete_rest_api',
-            'parameters': {
-                'restApiId': 'PhysicalResourceId',
-            }
-        }
-    },
     'ApiGateway::Resource': {
         'create': {
             'function': 'create_resource',

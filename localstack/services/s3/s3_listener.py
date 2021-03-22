@@ -264,14 +264,21 @@ def get_cors(bucket_name):
         response.status_code = int(code)
         return response
 
+    response.status_code = 200
     cors = BUCKET_CORS.get(bucket_name)
     if not cors:
+        response.status_code = 404
         cors = {
-            'CORSConfiguration': []
+            'Error': {
+                'Code': 'NoSuchCORSConfiguration',
+                'Message': 'The CORS configuration does not exist',
+                'BucketName': bucket_name,
+                'RequestId': short_uid(),
+                'HostId': short_uid()
+            }
         }
     body = xmltodict.unparse(cors)
     response._content = body
-    response.status_code = 200
     return response
 
 
@@ -476,7 +483,7 @@ def fix_location_constraint(response):
         content = to_str(response.content or '') or ''
     except Exception:
         content = ''
-    if 'LocationConstraint' in content:
+    if aws_stack.get_region() != 'us-east-1' and 'LocationConstraint' in content:
         pattern = r'<LocationConstraint([^>]*)>\s*</LocationConstraint>'
         replace = r'<LocationConstraint\1>%s</LocationConstraint>' % aws_stack.get_region()
         response._content = re.sub(pattern, replace, content)
@@ -1047,14 +1054,6 @@ class ProxyListenerS3(PersistingProxyListener):
                 return response
 
         modified_data = None
-
-        # TODO: For some reason, moto doesn't allow us to put a location constraint on us-east-1
-        to_find1 = to_bytes('<LocationConstraint>us-east-1</LocationConstraint>')
-        to_find2 = to_bytes('<CreateBucketConfiguration')
-        if data and data.startswith(to_bytes('<')) and to_find1 in data and to_find2 in data:
-            # Note: with the latest version, <CreateBucketConfiguration> must either
-            # contain a valid <LocationConstraint>, or not be present at all in the body.
-            modified_data = b''
 
         # If this request contains streaming v4 authentication signatures, strip them from the message
         # Related isse: https://github.com/localstack/localstack/issues/98

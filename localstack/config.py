@@ -1,5 +1,6 @@
 import re
 import os
+import json
 import socket
 import logging
 import platform
@@ -427,3 +428,15 @@ USE_PROFILER = is_env_true('USE_PROFILER')
 
 # whether to use the legacy CF deployment based on moto (TODO: remove in a future release)
 USE_MOTO_CF = is_env_true('USE_MOTO_CF')
+
+
+def load_config_file(config_file=None):
+    from localstack.utils.common import get_or_create_file, to_str
+    config_file = config_file or CONFIG_FILE_PATH
+    content = get_or_create_file(config_file)
+    try:
+        configs = json.loads(to_str(content) or '{}')
+    except Exception as e:
+        print('Unable to load local config file %s as JSON: %s' % (config_file, e))
+        return {}
+    return configs

@@ -87,6 +87,7 @@ def extract_key_name(headers, path):
     Extract the key name from the path depending on addressing_style
     """
     key_name = None
+    path = path.split('?')[0]  # strip off query params from path
     if uses_host_addressing(headers):
         split = path.split('/', 1)
         if len(split) > 1:
@@ -97,6 +98,10 @@ def extract_key_name(headers, path):
             key_name = split[2]
 
     return key_name if key_name else None
+
+
+def extract_bucket_and_key_name(headers, path):
+    return extract_bucket_name(headers, path), extract_key_name(headers, path)
 
 
 def validate_bucket_name(bucket_name):

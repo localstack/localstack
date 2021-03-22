@@ -687,12 +687,37 @@ class GatewayRestAPI(GenericBaseModel):
     def cloudformation_type():
         return 'AWS::ApiGateway::RestApi'
 
+    def get_physical_resource_id(self, attribute=None, **kwargs):
+        return self.props.get('id')
+
     def fetch_state(self, stack_name, resources):
         apis = aws_stack.connect_to_service('apigateway').get_rest_apis()['items']
         api_name = self.props.get('Name') or self.resource_id
         api_name = self.resolve_refs_recursively(stack_name, api_name, resources)
         result = list(filter(lambda api: api['name'] == api_name, apis))
         return result[0] if result else None
+
+    @staticmethod
+    def get_deploy_templates():
+        def _api_id(params, resources, resource_id, **kwargs):
+            resource = GatewayRestAPI(resources[resource_id])
+            return resource.physical_resource_id or resource.get_physical_resource_id()
+
+        return {
+            'create': {
+                'function': 'create_rest_api',
+                'parameters': {
+                    'name': 'Name',
+                    'description': 'Description'
+                }
+            },
+            'delete': {
+                'function': 'delete_rest_api',
+                'parameters': {
+                    'restApiId': _api_id,
+                }
+            }
+        }
 
 
 class GatewayDeployment(GenericBaseModel):
