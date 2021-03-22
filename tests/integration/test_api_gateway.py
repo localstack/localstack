@@ -24,6 +24,7 @@ from .test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_LIBS
 
 THIS_FOLDER = os.path.dirname(os.path.realpath(__file__))
 TEST_SWAGGER_FILE = os.path.join(THIS_FOLDER, 'files', 'swagger.json')
+TEST_IMPORT_REST_API_FILE = os.path.join(THIS_FOLDER, 'files', 'pets.json')
 TEST_LAMBDA_ECHO_FILE = os.path.join(THIS_FOLDER, 'lambdas', 'lambda_echo.py')
 
 
@@ -852,7 +853,8 @@ class TestAPIGateway(unittest.TestCase):
 
         spec_file = load_file(TEST_SWAGGER_FILE)
         rs = client.put_rest_api(
-            restApiId=rest_api_id, body=spec_file, mode='overwrite')
+            restApiId=rest_api_id, body=spec_file, mode='overwrite'
+        )
         self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
 
         rs = client.get_resources(restApiId=rest_api_id)
@@ -861,6 +863,25 @@ class TestAPIGateway(unittest.TestCase):
         resource = rs['items'][0]
         self.assertEqual(resource['path'], '/test')
         self.assertIn('GET', resource['resourceMethods'])
+
+        # clean up
+        client.delete_rest_api(restApiId=rest_api_id)
+
+        spec_file = load_file(TEST_IMPORT_REST_API_FILE)
+        rs = client.import_rest_api(
+            body=spec_file
+        )
+        self.assertEqual(rs['ResponseMetadata']['HTTPStatusCode'], 200)
+
+        rest_api_id = rs['id']
+
+        rs = client.get_resources(restApiId=rest_api_id)
+        resources = rs['items']
+        self.assertEqual(len(resources), 2)
+
+        paths = [res['path'] for res in resources]
+        self.assertIn('/pets', paths)
+        self.assertIn('/pets/{petId}', paths)
 
         # clean up
         client.delete_rest_api(restApiId=rest_api_id)

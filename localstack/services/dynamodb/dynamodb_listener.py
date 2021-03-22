@@ -701,7 +701,7 @@ def forward_to_lambda(records):
         for src in sources:
             if src.get('State') != 'Enabled':
                 continue
-            lambda_api.run_lambda(event=event, context={}, func_arn=src['FunctionArn'],
+            lambda_api.run_lambda(func_arn=src['FunctionArn'], event=event, context={},
                 asynchronous=not config.SYNCHRONOUS_DYNAMODB_EVENTS)
 
 

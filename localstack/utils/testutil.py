@@ -36,7 +36,6 @@ def rm_dir(dir):
     if is_alpine():
         # Using the native command can be an order of magnitude faster on Travis-CI
         return run('rm -r %s' % dir)
-
     shutil.rmtree(dir)
 
 
@@ -219,6 +218,25 @@ def connect_api_gateway_to_http_with_lambda_proxy(gateway_name, target_uri,
         resources=resources,
         stage_name=stage_name
     )
+
+
+def create_lambda_api_gateway_integration(gateway_name, func_name, handler_file,
+        methods=[], path=None, runtime=None, stage_name=None, auth_type=None):
+    methods = methods or ['GET', 'POST']
+    path = path or '/test'
+    auth_type = auth_type or 'REQUEST'
+    stage_name = stage_name or 'test'
+
+    # create Lambda
+    zip_file = create_lambda_archive(handler_file, get_content=True, runtime=runtime)
+    create_lambda_function(func_name=func_name, zip_file=zip_file, runtime=runtime)
+    func_arn = aws_stack.lambda_function_arn(func_name)
+    target_arn = aws_stack.apigateway_invocations_arn(func_arn)
+
+    # connect API GW to Lambda
+    result = connect_api_gateway_to_http_with_lambda_proxy(
+        gateway_name, target_arn, stage_name=stage_name, path=path, auth_type=auth_type)
+    return result
 
 
 def assert_objects(asserts, all_objects):
